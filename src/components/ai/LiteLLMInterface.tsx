@@ -26,6 +26,7 @@ import {
   TrendingUp,
   Dollar
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 // Types
 interface ModelInfo {
@@ -124,7 +125,7 @@ export default function LiteLLMInterface() {
       const data = await response.json();
       setModels(data.data || []);
     } catch (err) {
-      console.error('Error loading models:', err);
+      logger.error('Error loading models:', err);
     }
   };
 
@@ -135,7 +136,7 @@ export default function LiteLLMInterface() {
       const data = await response.json();
       setStats(data);
     } catch (err) {
-      console.error('Error loading stats:', err);
+      logger.error('Error loading stats:', err);
     }
   };
 
@@ -146,7 +147,7 @@ export default function LiteLLMInterface() {
       const data = await response.json();
       setBudget(data);
     } catch (err) {
-      console.error('Error loading budget:', err);
+      logger.error('Error loading budget:', err);
     }
   };
 
@@ -157,7 +158,7 @@ export default function LiteLLMInterface() {
       const data = await response.json();
       setHealth(data.litellm);
     } catch (err) {
-      console.error('Error loading health:', err);
+      logger.error('Error loading health:', err);
     }
   };
 
@@ -192,7 +193,7 @@ export default function LiteLLMInterface() {
         setChatMessages(prev => [...prev, assistantMessage]);
       }
     } catch (err) {
-      console.error('Chat error:', err);
+      logger.error('Chat error:', err);
       setChatMessages(prev => [...prev, {
         role: 'assistant',
         content: 'Sorry, I encountered an error. Please try again.'

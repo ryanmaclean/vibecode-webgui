@@ -177,6 +177,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     return args.map(arg => {
       // Remove dangerous characters
       const sanitized = arg.replace(/[;&|`$()[\]{}\\'"<>]/g, '')
+import { logger } from '@/lib/logger';
 
       // Limit length
       return sanitized.substring(0, 1000)
@@ -623,7 +624,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
 
     } catch (error) {
       // Log cleanup errors but don't throw
-      console.warn('Cleanup error:', error)
+      logger.warn('Cleanup error:', error)
     }
   }
 

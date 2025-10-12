@@ -69,7 +69,7 @@ class DatadogDatabaseMonitoring {
 
       return metrics
     } catch (error) {
-      console.error('Error collecting database metrics:', error)
+      logger.error('Error collecting database metrics:', error)
       throw error
     }
   }
@@ -99,7 +99,7 @@ class DatadogDatabaseMonitoring {
         total: Number(stats.total_connections)
       }
     } catch (error) {
-      console.error('Error getting connection metrics:', error)
+      logger.error('Error getting connection metrics:', error)
       return { active: 0, idle: 0, total: 0 }
     }
   }
@@ -132,7 +132,7 @@ class DatadogDatabaseMonitoring {
       }
     } catch (error) {
       // pg_stat_statements might not be enabled
-      console.warn('pg_stat_statements not available, using basic metrics')
+      logger.warn('pg_stat_statements not available, using basic metrics')
       return {
         queryCount: 0,
         averageQueryTime: 0,
@@ -179,7 +179,7 @@ class DatadogDatabaseMonitoring {
         }))
       }
     } catch (error) {
-      console.error('Error getting storage metrics:', error)
+      logger.error('Error getting storage metrics:', error)
       return {
         databaseSize: 0,
         tableStats: []
@@ -205,7 +205,7 @@ class DatadogDatabaseMonitoring {
         indexSize
       }
     } catch (error) {
-      console.error('Error getting vector store metrics:', error)
+      logger.error('Error getting vector store metrics:', error)
       return {
         totalEmbeddings: 0,
         averageEmbeddingDimensions: 0,
@@ -225,7 +225,7 @@ class DatadogDatabaseMonitoring {
 
       return Number(result[0]?.index_size || 0)
     } catch (error) {
-      console.error('Error getting vector index size:', error)
+      logger.error('Error getting vector index size:', error)
       return 0
     }
   }
@@ -315,6 +315,7 @@ class DatadogDatabaseMonitoring {
     }>
   }> {
     const checks: Array<{ name: string; status: 'pass' | 'fail'; message: string }> = []
+import { logger } from '@/lib/logger';
 
     try {
       // Check database connectivity
@@ -406,7 +407,7 @@ class DatadogDatabaseMonitoring {
         rows: Number(q.rows)
       }))
     } catch (error) {
-      console.error('Error getting slow queries:', error)
+      logger.error('Error getting slow queries:', error)
       return []
     }
   }

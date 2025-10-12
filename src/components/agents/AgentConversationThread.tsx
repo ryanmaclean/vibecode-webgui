@@ -17,6 +17,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import {
   Bot,
@@ -323,7 +325,7 @@ export function AgentConversationThread({
     try {
       await navigator.clipboard.writeText(content)
     } catch (error) {
-      console.error('Failed to copy message:', error)
+      logger.error('Failed to copy message:', error)
     }
   }, [])
 

@@ -5,6 +5,7 @@
 
 import { IPty } from 'node-pty';
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration';
+import { logger } from '@/lib/logger';
 
 // Terminal session management
 export const terminalSessions = new Map<string, {
@@ -22,7 +23,7 @@ setInterval(() => {
 
   for (const [sessionId, session] of terminalSessions.entries()) {
     if (session.lastActivity < thirtyMinutesAgo) {
-      console.log(`Cleaning up inactive terminal session: ${sessionId}`)
+      logger.info(`Cleaning up inactive terminal session: ${sessionId}`)
       session.pty.kill()
       terminalSessions.delete(sessionId)
     }

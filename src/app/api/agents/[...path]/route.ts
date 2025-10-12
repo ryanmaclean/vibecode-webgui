@@ -39,18 +39,25 @@ const logger = createChildLogger({ module: 'api', scope: 'agents' })
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
-// Initialize OpenAI client
-const client = createOpenAIAgentsClient()
-const toolRegistry = getToolRegistry()
+// Lazy-initialize OpenAI client to avoid build-time errors
+let client: ReturnType<typeof createOpenAIAgentsClient> | null = null
+let threadManager: ReturnType<typeof getThreadManager> | null = null
 
-// Initialize thread manager
-try {
-  initializeThreadManager({ client })
-} catch (error) {
-  logger.warn('Thread manager already initialized', { error })
+function getClient() {
+  if (!client) {
+    client = createOpenAIAgentsClient()
+    const toolRegistry = getToolRegistry()
+
+    try {
+      initializeThreadManager({ client })
+    } catch (error) {
+      logger.warn('Thread manager already initialized', { error })
+    }
+
+    threadManager = getThreadManager()
+  }
+  return { client, threadManager, toolRegistry: getToolRegistry() }
 }
-
-const threadManager = getThreadManager()
 
 // Validation schemas
 const createAgentSchema = z.object({
@@ -194,6 +201,7 @@ async function handleRequest(
 // Agent Handlers
 
 async function handleCreateAgent(request: NextRequest, userId: string) {
+  const { client } = getClient()
   const body = await request.json()
   const validated = createAgentSchema.parse(body)
 
@@ -212,6 +220,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
+  const { client, threadManager, toolRegistry } = getClient()
   const { searchParams } = new URL(request.url)
   const limit = Number(searchParams.get('limit')) || 20
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
@@ -238,6 +247,7 @@ async function handleAgentOperations(
   agentId: string,
   operation?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   // Verify ownership
   const agent = await client.getAgent(agentId)
   if (agent.metadata.userId !== userId) {
@@ -274,6 +284,7 @@ async function handleThreadRoutes(
   subResource?: string,
   subId?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   if (!id) {
     // Create new thread
     if (method === 'POST') {
@@ -328,6 +339,7 @@ async function handleThreadMessages(
   threadId: string,
   messageId?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   if (method === 'POST') {
     const body = await request.json()
     const validated = addMessageSchema.parse(body)
@@ -361,6 +373,7 @@ async function handleThreadRuns(
   threadId: string,
   runId?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !runId) {
     const body = await request.json()
     const validated = createRunSchema.parse(body)
@@ -414,6 +427,7 @@ async function handleFileRoutes(
   fileId?: string,
   operation?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !fileId) {
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -462,6 +476,7 @@ async function handleToolRoutes(
   userId: string,
   toolName?: string
 ) {
+  const { client, threadManager, toolRegistry } = getClient()
   if (method === 'GET') {
     if (toolName) {
       const tool = toolRegistry.get(toolName)
@@ -483,6 +498,7 @@ async function handleToolRoutes(
 // Helper Functions
 
 async function pollRun(threadId: string, runId: string, maxAttempts = 60) {
+  const { client, threadManager, toolRegistry } = getClient()
   let attempts = 0
 
   while (attempts < maxAttempts) {

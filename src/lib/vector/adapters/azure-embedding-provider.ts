@@ -24,6 +24,7 @@ const OpenAIClient = function(endpoint: string, credential: any, options?: any) 
 } as any as { new(endpoint: string, credential: any, options?: any): OpenAIClient };
 
 import { BaseVectorEmbeddingProvider } from './base-vector-embedding-provider';
+import { logger } from '@/lib/logger';
 
 export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
   private client: OpenAIClient | null = null;
@@ -62,7 +63,7 @@ export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
       const credential = new AzureKeyCredential(this.apiKey);
       this.client = new OpenAIClient(this.endpoint, credential, this.options.clientOptions);
     } catch (error) {
-      console.error('Error initializing Azure OpenAI client:', error);
+      logger.error('Error initializing Azure OpenAI client:', error);
       throw new Error('Failed to initialize Azure OpenAI client');
     }
   }
@@ -94,7 +95,7 @@ export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
 
       return response.data[0].embedding;
     } catch (error) {
-      console.error('Error generating Azure embedding:', error);
+      logger.error('Error generating Azure embedding:', error);
       // Return zero vector as fallback
       return this.generateZeroVector();
     }

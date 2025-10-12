@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, createContext, useContext, ReactNode } from 'react';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -46,7 +47,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(JSON.parse(storedUser));
         }
       } catch (error) {
-        console.error('Authentication check failed:', error);
+        logger.error('Authentication check failed:', error);
       } finally {
         setIsLoading(false);
       }
@@ -72,7 +73,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('vibeCodeUser', JSON.stringify(mockUser));
       return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      logger.error('Login failed:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -87,7 +88,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.removeItem('vibeCodeUser');
       setUser(null);
     } catch (error) {
-      console.error('Logout failed:', error);
+      logger.error('Logout failed:', error);
     } finally {
       setIsLoading(false);
     }
@@ -110,7 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('vibeCodeUser', JSON.stringify(mockUser));
       return true;
     } catch (error) {
-      console.error('Signup failed:', error);
+      logger.error('Signup failed:', error);
       return false;
     } finally {
       setIsLoading(false);

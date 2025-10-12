@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Settings, Sparkles, MessageSquare, FileText, Image, Paperclip, Globe, Zap, Terminal, Code, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
@@ -141,7 +143,7 @@ export const HuggingFaceChatInterface = ({
           setHfClient({ initialized: true } as any)
         }
       } catch (error) {
-        console.error('Failed to initialize Hugging Face client:', error)
+        logger.error('Failed to initialize Hugging Face client:', error)
       }
     }
     
@@ -175,7 +177,7 @@ export const HuggingFaceChatInterface = ({
         })))
       }
     } catch (error) {
-      console.error('Failed to load conversation:', error)
+      logger.error('Failed to load conversation:', error)
     }
   }
 
@@ -215,7 +217,7 @@ export const HuggingFaceChatInterface = ({
         throw new Error(data.error || 'HuggingFace API error')
       }
     } catch (error) {
-      console.error('HuggingFace API error:', error)
+      logger.error('HuggingFace API error:', error)
       throw error
     }
   }
@@ -257,7 +259,7 @@ export const HuggingFaceChatInterface = ({
         }
       }
     } catch (error) {
-      console.error('Failed to get model suggestion:', error)
+      logger.error('Failed to get model suggestion:', error)
     }
     return null
   }
@@ -426,7 +428,7 @@ export const HuggingFaceChatInterface = ({
       }
 
     } catch (error) {
-      console.error('Failed to send message:', error)
+      logger.error('Failed to send message:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         from: 'assistant',

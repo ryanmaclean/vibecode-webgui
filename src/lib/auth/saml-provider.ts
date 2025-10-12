@@ -159,10 +159,10 @@ export class SAMLProvider {
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
 
-      console.log('✅ SAML authentication successful for user:', user.email)
+      logger.info('✅ SAML authentication successful for user:', user.email)
       return user
     } catch (error) {
-      console.error('SAML response processing failed:', error)
+      logger.error('SAML response processing failed:', error)
       throw new Error(`SAML authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -449,6 +449,7 @@ export class SAMLProvider {
    */
   private generateId(): string {
     const randomHex = randomBytes(8).toString('hex');
+import { logger } from '@/lib/logger';
     return `_${Date.now()}_${randomHex}`;
   }
 
@@ -520,7 +521,7 @@ export function createSAMLProvider(providerId: string): SAMLProvider | null {
 
   const config = providers[providerId as keyof typeof providers]
   if (!config || !config.entityId || !config.singleSignOnUrl || !config.x509Certificate) {
-    console.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
+    logger.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
     return null
   }
 

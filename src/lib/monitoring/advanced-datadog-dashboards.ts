@@ -3,6 +3,8 @@
  * Creates and manages custom dashboards for VibeCode monitoring
  */
 
+import { logger } from '@/lib/logger';
+
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
 
 export interface DashboardWidget {
@@ -34,7 +36,7 @@ export class DatadogDashboardManager {
    */
   async createAIFeaturesDashboard(): Promise<string | null> {
     if (!this.apiKey || !this.appKey) {
-      console.warn('Datadog API keys not configured')
+      logger.warn('Datadog API keys not configured')
       return null
     }
 
@@ -227,7 +229,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      console.error('Failed to create AI features dashboard:', error)
+      logger.error('Failed to create AI features dashboard:', error)
       return null
     }
   }
@@ -340,7 +342,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      console.error('Failed to create user experience dashboard:', error)
+      logger.error('Failed to create user experience dashboard:', error)
       return null
     }
   }
@@ -447,7 +449,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      console.error('Failed to create infrastructure dashboard:', error)
+      logger.error('Failed to create infrastructure dashboard:', error)
       return null
     }
   }
@@ -509,7 +511,7 @@ export class DatadogDashboardManager {
       ) || []
 
     } catch (error) {
-      console.error('Failed to list dashboards:', error)
+      logger.error('Failed to list dashboards:', error)
       return []
     }
   }

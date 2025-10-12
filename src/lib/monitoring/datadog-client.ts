@@ -3,6 +3,8 @@
  * Actual Datadog metrics submission and health checks
  */
 
+import { logger } from '@/lib/logger';
+
 import { getDatadogApiKey, getDatadogSite } from './datadog-env'
 
 interface MetricData {
@@ -35,7 +37,7 @@ class MonitoringService {
    */
   async submitMetric(metric: MetricData): Promise<boolean> {
     if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
-      console.warn('Datadog API key not configured - metric submission skipped')
+      logger.warn('Datadog API key not configured - metric submission skipped')
       return false
     }
 
@@ -63,7 +65,7 @@ class MonitoringService {
 
       return true
     } catch (error) {
-      console.error('Failed to submit metric to Datadog:', error)
+      logger.error('Failed to submit metric to Datadog:', error)
       return false
     }
   }
@@ -73,7 +75,7 @@ class MonitoringService {
    */
   async submitEvent(title: string, text: string, tags?: string[]): Promise<boolean> {
     if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
-      console.warn('Datadog API key not configured - event submission skipped')
+      logger.warn('Datadog API key not configured - event submission skipped')
       return false
     }
 
@@ -99,7 +101,7 @@ class MonitoringService {
 
       return true
     } catch (error) {
-      console.error('Failed to submit event to Datadog:', error)
+      logger.error('Failed to submit event to Datadog:', error)
       return false
     }
   }

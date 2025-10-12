@@ -1,4 +1,5 @@
 import axios from 'axios'
+import { logger } from '@/lib/logger';
 
 export interface WebSearchResult {
   title: string
@@ -47,7 +48,7 @@ export class WebSearchService {
       // Filter and rank results
       return this.rankResults(results, query).slice(0, maxResults)
     } catch (error) {
-      console.error('Web search failed:', error)
+      logger.error('Web search failed:', error)
       return []
     }
   }
@@ -66,7 +67,7 @@ export class WebSearchService {
           return results
         }
       } catch (error) {
-        console.warn('Search method failed, trying next:', error.message)
+        logger.warn('Search method failed, trying next:', error.message)
         continue
       }
     }

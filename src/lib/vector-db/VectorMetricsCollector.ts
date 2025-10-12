@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 interface VectorMetrics {
     searchLatency: {
         avg: number;
@@ -127,7 +129,7 @@ export class VectorMetricsCollector {
         
         // Send metrics to Datadog (would integrate with Datadog client)
         if (process.env.DD_API_KEY) {
-            console.log('Sending vector metrics to Datadog:', Object.keys(metrics));
+            logger.info('Sending vector metrics to Datadog:', Object.keys(metrics));
             // Implementation would use Datadog API client here
         }
     }

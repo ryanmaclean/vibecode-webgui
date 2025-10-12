@@ -77,7 +77,7 @@ export function useFeatureFlag(
         })
       }
     } catch (error) {
-      console.error('Failed to evaluate feature flag:', error)
+      logger.error('Failed to evaluate feature flag:', error)
       setResult({
         flagKey,
         variant: 'control',
@@ -106,7 +106,7 @@ export function useFeatureFlag(
         })
       })
     } catch (error) {
-      console.error('Failed to track metric:', error)
+      logger.error('Failed to track metric:', error)
     }
   }, [flagKey, session?.user, options.context])
 
@@ -128,6 +128,7 @@ export function useFeatureFlag(
  */
 export function useFeatureFlags(
   flags: Array<{ key: string; defaultValue?: boolean }>,
+import { logger } from '@/lib/logger';
   context?: ExperimentContext
 ): {
   flags: Record<string, { isEnabled: boolean; variant: string; payload?: Record<string, any> }>
@@ -178,7 +179,7 @@ export function useFeatureFlags(
         setResults(fallbackResults)
       }
     } catch (error) {
-      console.error('Failed to evaluate feature flags:', error)
+      logger.error('Failed to evaluate feature flags:', error)
       // Fallback to defaults
       const fallbackResults: Record<string, ExperimentResult> = {}
       flags.forEach(flag => {
@@ -212,7 +213,7 @@ export function useFeatureFlags(
         })
       })
     } catch (error) {
-      console.error('Failed to track metric:', error)
+      logger.error('Failed to track metric:', error)
     }
   }, [session?.user, context])
 
@@ -323,7 +324,7 @@ export const ExperimentTracker = {
         })
       })
     } catch (error) {
-      console.error('Failed to track conversion:', error)
+      logger.error('Failed to track conversion:', error)
     }
   },
 
@@ -351,7 +352,7 @@ export const ExperimentTracker = {
         })
       })
     } catch (error) {
-      console.error('Failed to track event:', error)
+      logger.error('Failed to track event:', error)
     }
   },
 

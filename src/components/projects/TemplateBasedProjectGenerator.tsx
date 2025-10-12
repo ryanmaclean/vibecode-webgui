@@ -21,6 +21,7 @@ import {
 
 interface TemplateBasedProjectGeneratorProps {
   onComplete?: (data: { workspaceId: string; projectName: string }) => void
+import { logger } from '@/lib/logger';
   className?: string
 }
 
@@ -115,7 +116,7 @@ export function TemplateBasedProjectGenerator({
       onComplete?.(result)
 
     } catch (error) {
-      console.error('Template generation error:', error)
+      logger.error('Template generation error:', error)
       setGenerationResult({
         workspaceId: '',
         projectName: '',

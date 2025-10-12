@@ -14,6 +14,7 @@ import { Terminal } from '@xterm/xterm'
 import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
+import { logger } from '@/lib/logger';
 
 export interface WebGLTerminalProps {
   websocketUrl?: string
@@ -222,18 +223,18 @@ export default function WebGLTerminal({
               const data = typeof ev.data === 'string' ? ev.data : ''
               if (data && terminal.current) terminal.current.write(data)
             } catch (e) {
-              console.error('Failed to write websocket data to terminal:', e)
+              logger.error('Failed to write websocket data to terminal:', e)
             }
           }
 
           websocket.onopen = () => setIsConnected(true)
           websocket.onclose = () => setIsConnected(false)
           websocket.onerror = (error) => {
-            console.error('WebSocket error:', error)
+            logger.error('WebSocket error:', error)
             setIsConnected(false)
           }
         } catch (error) {
-          console.error('Failed to create WebSocket connection:', error)
+          logger.error('Failed to create WebSocket connection:', error)
         }
       }
 
@@ -242,7 +243,7 @@ export default function WebGLTerminal({
       terminal.current.loadAddon(addons.current.webLinks)
 
     } catch (error) {
-      console.error('Failed to initialize terminal addons:', error)
+      logger.error('Failed to initialize terminal addons:', error)
     }
   }, [enableWebGL, websocketUrl])
 
@@ -335,7 +336,7 @@ export default function WebGLTerminal({
       try {
         addons.current.fit.fit()
       } catch (error) {
-        console.error('Failed to fit terminal:', error)
+        logger.error('Failed to fit terminal:', error)
       }
     }
   }, [])
@@ -379,7 +380,7 @@ export default function WebGLTerminal({
         try {
           addon?.dispose?.()
         } catch (error) {
-          console.error('Failed to dispose addon:', error)
+          logger.error('Failed to dispose addon:', error)
         }
       })
       addons.current = {}

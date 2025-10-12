@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import axios, { AxiosInstance } from 'axios';
+import { logger } from '@/lib/logger';
 
 export interface AIModel {
     id: string;
@@ -87,7 +88,7 @@ export class OpenRouterClient {
             const response = await this.client.get('/models');
             return response.status === 200;
         } catch (error) {
-            console.error('API key validation failed:', error);
+            logger.error('API key validation failed:', error);
             return false;
         }
     }
@@ -98,7 +99,7 @@ export class OpenRouterClient {
             this.models = response.data.data;
             return this.models;
         } catch (error) {
-            console.error('Failed to fetch models:', error);
+            logger.error('Failed to fetch models:', error);
             throw new Error('Failed to fetch available models');
         }
     }
@@ -125,7 +126,7 @@ export class OpenRouterClient {
             const response = await this.client.post('/chat/completions', requestData);
             return response.data;
         } catch (error: any) {
-            console.error('Chat completion failed:', error);
+            logger.error('Chat completion failed:', error);
 
             if (error.response?.status === 401) {
                 throw new Error('Invalid API key. Please check your OpenRouter API key in settings.');
@@ -206,7 +207,7 @@ export class OpenRouterClient {
                 });
             });
         } catch (error: any) {
-            console.error('Streaming chat completion failed:', error);
+            logger.error('Streaming chat completion failed:', error);
             throw new Error(`Streaming AI request failed: ${error.response?.data?.error?.message || error.message}`);
         }
     }

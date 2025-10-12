@@ -5,6 +5,7 @@
 
 import { Pool, PoolClient } from 'pg';
 import { VectorChunk, SearchResult, SearchOptions } from '../../vector-db/vector-types';
+import { logger } from '@/lib/logger';
 
 export interface PGVectorConfig {
   host: string;
@@ -60,9 +61,9 @@ export class PGVectorClient {
       // Create vector extension if it doesn't exist
       await this.ensureVectorExtension();
 
-      console.log('PGVector client initialized successfully');
+      logger.info('PGVector client initialized successfully');
     } catch (error) {
-      console.error('Failed to initialize PGVector client:', error);
+      logger.error('Failed to initialize PGVector client:', error);
       throw error;
     }
   }
@@ -84,7 +85,7 @@ export class PGVectorClient {
       client.release();
       return true;
     } catch (error) {
-      console.error('PGVector ping failed:', error);
+      logger.error('PGVector ping failed:', error);
       return false;
     }
   }
@@ -102,11 +103,11 @@ export class PGVectorClient {
       `);
 
       if (result.rows.length === 0) {
-        console.log('Creating vector extension...');
+        logger.info('Creating vector extension...');
         await client.query('CREATE EXTENSION IF NOT EXISTS vector;');
       }
     } catch (error) {
-      console.error('Failed to ensure vector extension:', error);
+      logger.error('Failed to ensure vector extension:', error);
       throw error;
     } finally {
       client.release();
@@ -142,9 +143,9 @@ export class PGVectorClient {
 
       await client.query(indexQuery);
 
-      console.log(`Created collection: ${schema.name}`);
+      logger.info(`Created collection: ${schema.name}`);
     } catch (error) {
-      console.error(`Failed to create collection ${schema.name}:`, error);
+      logger.error(`Failed to create collection ${schema.name}:`, error);
       throw error;
     } finally {
       client.release();
@@ -188,7 +189,7 @@ export class PGVectorClient {
       const result = await client.query(query, values);
       return result.rowCount || 0;
     } catch (error) {
-      console.error(`Failed to store chunks in ${collectionName}:`, error);
+      logger.error(`Failed to store chunks in ${collectionName}:`, error);
       throw error;
     } finally {
       client.release();
@@ -240,7 +241,7 @@ export class PGVectorClient {
         similarity: parseFloat(row.similarity)
       }));
     } catch (error) {
-      console.error(`Failed to search in ${collectionName}:`, error);
+      logger.error(`Failed to search in ${collectionName}:`, error);
       throw error;
     } finally {
       client.release();
@@ -265,7 +266,7 @@ export class PGVectorClient {
       const result = await client.query(query, ids);
       return result.rowCount || 0;
     } catch (error) {
-      console.error(`Failed to delete from ${collectionName}:`, error);
+      logger.error(`Failed to delete from ${collectionName}:`, error);
       throw error;
     } finally {
       client.release();
@@ -299,7 +300,7 @@ export class PGVectorClient {
         lastUpdated: new Date(result.rows[0].last_updated)
       };
     } catch (error) {
-      console.error(`Failed to get stats for ${collectionName}:`, error);
+      logger.error(`Failed to get stats for ${collectionName}:`, error);
       throw error;
     } finally {
       client.release();
@@ -323,7 +324,7 @@ export class PGVectorClient {
       const result = await client.query(query);
       return result.rows.map(row => row.table_name);
     } catch (error) {
-      console.error('Failed to list collections:', error);
+      logger.error('Failed to list collections:', error);
       throw error;
     } finally {
       client.release();
@@ -341,7 +342,7 @@ export class PGVectorClient {
       await client.query(query);
       return true;
     } catch (error) {
-      console.error(`Failed to delete collection ${collectionName}:`, error);
+      logger.error(`Failed to delete collection ${collectionName}:`, error);
       return false;
     } finally {
       client.release();
@@ -375,7 +376,7 @@ export class PGVectorClient {
         metadata: row.metadata || {}
       };
     } catch (error) {
-      console.error(`Failed to get vector by ID ${id}:`, error);
+      logger.error(`Failed to get vector by ID ${id}:`, error);
       return null;
     } finally {
       client.release();
@@ -432,7 +433,7 @@ export class PGVectorClient {
       const result = await client.query(query, values);
       return (result.rowCount || 0) > 0;
     } catch (error) {
-      console.error(`Failed to update vector ${id}:`, error);
+      logger.error(`Failed to update vector ${id}:`, error);
       return false;
     } finally {
       client.release();
@@ -464,7 +465,7 @@ export class PGVectorClient {
         metadata: row.metadata || {}
       }));
     } catch (error) {
-      console.error('Failed to get vectors by file IDs:', error);
+      logger.error('Failed to get vectors by file IDs:', error);
       throw error;
     } finally {
       client.release();
@@ -482,7 +483,7 @@ export class PGVectorClient {
       await client.query(query);
       return true;
     } catch (error) {
-      console.error(`Failed to clear collection ${collectionName}:`, error);
+      logger.error(`Failed to clear collection ${collectionName}:`, error);
       return false;
     } finally {
       client.release();
@@ -499,7 +500,7 @@ export class PGVectorClient {
     options: SearchOptions = {}
   ): Promise<SearchResult[]> {
     // For now, return empty results - would need embedding service
-    console.warn('Text search requires embedding service integration');
+    logger.warn('Text search requires embedding service integration');
     return [];
   }
 
@@ -539,7 +540,7 @@ export class PGVectorClient {
         metric: 'cosine' // Default metric
       };
     } catch (error) {
-      console.error(`Failed to get schema for ${collectionName}:`, error);
+      logger.error(`Failed to get schema for ${collectionName}:`, error);
       return null;
     } finally {
       client.release();

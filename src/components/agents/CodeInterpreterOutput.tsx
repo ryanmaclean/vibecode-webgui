@@ -17,6 +17,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useCallback } from 'react'
 import {
   Terminal,
@@ -95,7 +97,7 @@ function OutputItem({ output, enableDownload }: OutputItemProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy output:', error)
+      logger.error('Failed to copy output:', error)
     }
   }, [output.content])
 
@@ -211,7 +213,7 @@ export function CodeInterpreterOutput({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy code:', error)
+      logger.error('Failed to copy code:', error)
     }
   }, [execution.code])
 

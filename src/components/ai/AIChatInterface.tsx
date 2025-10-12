@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+import { logger } from '@/lib/logger';
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
 
@@ -78,7 +79,7 @@ export const AIChatInterface = ({
           setMessages(history.messages || [])
         }
       } catch (error) {
-        console.error('Failed to load conversation history:', error)
+        logger.error('Failed to load conversation history:', error)
       }
     }
     load()
@@ -151,7 +152,7 @@ export const AIChatInterface = ({
       saveConversation(finalMessages)
 
     } catch (error) {
-      console.error('Error streaming AI response:', error)
+      logger.error('Error streaming AI response:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         type: 'assistant',
@@ -173,7 +174,7 @@ export const AIChatInterface = ({
         body: JSON.stringify({ messages: messagesToSave }),
       })
     } catch (error) {
-      console.error('Failed to save conversation:', error)
+      logger.error('Failed to save conversation:', error)
     }
   }
 

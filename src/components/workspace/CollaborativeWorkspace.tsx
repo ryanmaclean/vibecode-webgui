@@ -19,6 +19,7 @@ import {
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
+import { logger } from '@/lib/logger';
 
 interface User {
   id: string;
@@ -136,7 +137,7 @@ export function CollaborativeWorkspace({
   const loadWorkspaceData = async () => {
     // This would integrate with your workspace service
     // For now, simulate loading
-    console.log('Loading workspace data for:', workspaceId);
+    logger.info('Loading workspace data for:', workspaceId);
   };
 
   const handleTemplateSelect = async (template: any) => {
@@ -181,7 +182,7 @@ export function CollaborativeWorkspace({
 
       onProjectCreate?.(workspaceProject);
     } catch (error) {
-      console.error('Failed to create project:', error);
+      logger.error('Failed to create project:', error);
     }
   };
 

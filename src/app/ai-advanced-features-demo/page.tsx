@@ -23,6 +23,7 @@ import {
   AlertTriangle,
   XCircle
 } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
 export default function AIAdvancedFeaturesDemo() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -79,7 +80,7 @@ function processUserInput(input: string) {
 
 function addEventListener() {
   document.addEventListener('click', function() {
-    console.log('clicked');
+    logger.info('clicked');
   });
 }`);
 
@@ -201,9 +202,9 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
 }
 
 // Usage examples
-console.log(validateEmail('user@example.com')); // true
-console.log(validateEmail('invalid-email')); // false
-console.log(validateEmail('user@domain')); // false`,
+logger.info(validateEmail('user@example.com')); // true
+logger.info(validateEmail('invalid-email')); // false
+logger.info(validateEmail('user@domain')); // false`,
         tests: `test('validateEmail should validate correct emails', () => {
   expect(validateEmail('user@example.com')).toBe(true);
   expect(validateEmail('test.user@domain.co.uk')).toBe(true);

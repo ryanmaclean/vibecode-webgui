@@ -6,6 +6,8 @@
  * @module components/ai/UnifiedAgentChat.stories
  */
 
+import { logger } from '@/lib/logger';
+
 import type { Meta, StoryObj } from '@storybook/react'
 import { UnifiedAgentChat } from './UnifiedAgentChat'
 import type { AgentResponse } from '@/types/agent-api'
@@ -111,11 +113,11 @@ export const Default: Story = {
   args: {
     agent: mockAgent,
     onMessageSend: (message: string) => {
-      console.log('Sending message:', message)
+      logger.info('Sending message:', message)
       alert(`Message sent: ${message}`)
     },
     onConnectionStateChange: (state) => {
-      console.log('Connection state:', state)
+      logger.info('Connection state:', state)
     }
   }
 }

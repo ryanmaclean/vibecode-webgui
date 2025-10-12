@@ -1,6 +1,8 @@
 // Agent Framework Foundation - Basic multi-agent coordination system
 // Designed for future LangChain integration while providing immediate value
 
+import { logger } from '@/lib/logger';
+
 import { UnifiedAIClient, type UnifiedChatMessage } from './unified-ai-client'
 import { ollamaClient } from './ollama-client'
 import { vectorStore } from './vector-store'
@@ -73,7 +75,7 @@ export class Agent {
   }
 
   async executeTask(task: AgentTask, context: AgentContext): Promise<any> {
-    console.log(`Agent ${this.name} executing task: ${task.description}`)
+    logger.info(`Agent ${this.name} executing task: ${task.description}`)
     
     try {
       // Check if agent has required capabilities
@@ -118,14 +120,14 @@ Provide detailed reasoning and results.`
             )
             finalResult = { aiReasoning: response.content, capabilityResults: capResult }
           } catch (error) {
-            console.warn(`Capability ${capabilityName} failed:`, error)
+            logger.warn(`Capability ${capabilityName} failed:`, error)
           }
         }
       }
 
       return finalResult
     } catch (error) {
-      console.error(`Agent ${this.name} task execution failed:`, error)
+      logger.error(`Agent ${this.name} task execution failed:`, error)
       throw error
     }
   }
@@ -313,7 +315,7 @@ export class AgentWorkflow {
   }
 
   async execute(): Promise<Map<string, any>> {
-    console.log(`Executing workflow for goal: ${this.plan.goal}`)
+    logger.info(`Executing workflow for goal: ${this.plan.goal}`)
     
     // Sort tasks by dependencies and priority
     const sortedTasks = this.topologicalSort(this.plan.tasks)
@@ -331,7 +333,7 @@ export class AgentWorkflow {
           throw new Error(`No suitable agent found for task: ${task.description}`)
         }
 
-        console.log(`Executing task ${task.id} with agent ${agent.name}`)
+        logger.info(`Executing task ${task.id} with agent ${agent.name}`)
         
         const result = await agent.executeTask(task, this.context)
         
@@ -345,7 +347,7 @@ export class AgentWorkflow {
       } catch (error) {
         task.status = 'failed'
         task.error = error instanceof Error ? error.message : 'Unknown error'
-        console.error(`Task ${task.id} failed:`, error)
+        logger.error(`Task ${task.id} failed:`, error)
         
         // Decide whether to continue or abort based on task priority
         if (task.priority === 'high') {

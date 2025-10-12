@@ -5,6 +5,8 @@
  * based on available runtime (Kubernetes or Apple Container)
  */
 
+import { logger } from '@/lib/logger';
+
 import { WorkspaceProvisioningService } from './workspace-provisioning-simple'
 import { AppleContainerWorkspaceService } from './workspace-provisioning-apple-container'
 import { appleContainer } from '@/lib/container/apple-container'
@@ -27,22 +29,22 @@ export class WorkspaceServiceFactory {
     try {
       const isAppleContainerAvailable = await appleContainer.isAvailable()
       if (isAppleContainerAvailable) {
-        console.log('✅ Detected runtime: Apple Container')
+        logger.info('✅ Detected runtime: Apple Container')
         this.cachedRuntime = 'apple-container'
         return 'apple-container'
       }
     } catch (error) {
-      console.log('⚠️  Apple Container not available:', error)
+      logger.info('⚠️  Apple Container not available:', error)
     }
 
     // Check for Kubernetes
     if (process.env.KUBECONFIG || process.env.KUBERNETES_SERVICE_HOST) {
-      console.log('✅ Detected runtime: Kubernetes')
+      logger.info('✅ Detected runtime: Kubernetes')
       this.cachedRuntime = 'kubernetes'
       return 'kubernetes'
     }
 
-    console.log('❌ No workspace runtime available')
+    logger.info('❌ No workspace runtime available')
     this.cachedRuntime = 'none'
     return 'none'
   }

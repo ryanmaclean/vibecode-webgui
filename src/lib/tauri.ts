@@ -7,6 +7,8 @@
  */
 
 // Type definitions for Tauri commands
+import { logger } from '@/lib/logger';
+
 export interface TauriCommands {
   greet: (name: string) => Promise<string>;
   checkDocker: () => Promise<boolean>;
@@ -46,7 +48,7 @@ async function invokeTauri<T>(
  * import { tauriCommands } from '@/lib/tauri';
  *
  * const result = await tauriCommands.greet('World');
- * console.log(result); // "Hello, World! Welcome to VibeCode."
+ * logger.info(result); // "Hello, World! Welcome to VibeCode."
  * ```
  */
 export const tauriCommands: TauriCommands = {

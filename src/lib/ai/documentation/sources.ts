@@ -1,5 +1,6 @@
 import { DocumentationIngester } from './ingest';
 import axios from 'axios';
+import { logger } from '@/lib/logger';
 
 type Framework = {
   name: string;
@@ -95,7 +96,7 @@ export class DocumentationSources {
         
         // Debug log removed
       } catch (error) {
-        console.error(`Failed to load ${framework.name}:`, error.message);
+        logger.error(`Failed to load ${framework.name}:`, error.message);
       }
     }
   }
@@ -121,7 +122,7 @@ export class DocumentationSources {
       
       return true;
     } catch (error) {
-      console.error('Failed to load API documentation:', error);
+      logger.error('Failed to load API documentation:', error);
       return false;
     }
   }
@@ -148,7 +149,7 @@ export class DocumentationSources {
       
       return true;
     } catch (error) {
-      console.error(`Failed to load from ${url}:`, error.message);
+      logger.error(`Failed to load from ${url}:`, error.message);
       return false;
     }
   }
@@ -171,7 +172,7 @@ export class DocumentationSources {
       
       return true;
     } catch (error) {
-      console.error(`Failed to load from file ${filePath}:`, error.message);
+      logger.error(`Failed to load from file ${filePath}:`, error.message);
       return false;
     }
   }

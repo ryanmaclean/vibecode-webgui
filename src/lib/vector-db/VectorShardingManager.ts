@@ -1,6 +1,7 @@
 import { ConsistentHashRing } from './ConsistentHashRing';
 import { ShardInfo, VectorQuery, VectorQueryResult, ShardedQueryResult } from './sharding-types';
 import VectorDBConnectionPool from './VectorDBConnectionPool';
+import { logger } from '@/lib/logger';
 
 export class VectorShardingManager {
     private shardMap: Map<string, ShardInfo>;
@@ -62,7 +63,7 @@ export class VectorShardingManager {
                 successfulResults.push(...result.value);
                 queriedShards.push(shard.id);
             } else {
-                console.error(`Query failed on shard ${shard.id}:`, result.reason);
+                logger.error(`Query failed on shard ${shard.id}:`, result.reason);
             }
         }
 
@@ -154,7 +155,7 @@ export class VectorShardingManager {
                 const metrics = pool.getMetrics();
                 
                 if (metrics.healthStatus === 'unhealthy') {
-                    console.warn(`Shard ${shard.id} is unhealthy, marking for rebalancing`);
+                    logger.warn(`Shard ${shard.id} is unhealthy, marking for rebalancing`);
                     shard.isHealthy = false;
                 } else {
                     shard.isHealthy = true;

@@ -5,6 +5,7 @@
  */
 
 import { EnhancedVectorStore, UnifiedSearchOptions } from './enhanced-vector-store';
+import { logger } from '@/lib/logger';
 
 interface ShardedProviderConfig {
     provider: 'pgvector' | 'weaviate';
@@ -176,7 +177,7 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
                 metrics.lastHealthCheck = new Date();
             }
             
-            console.error(`Shard ${shardId} search failed:`, error);
+            logger.error(`Shard ${shardId} search failed:`, error);
             return [];
         }
     }

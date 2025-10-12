@@ -13,6 +13,7 @@ import {
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
+import { logger } from '@/lib/logger';
 
 export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient;
@@ -36,7 +37,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       this.isConnectionActive = true;
       return true;
     } catch (error) {
-      console.error('Failed to connect to PostgreSQL:', error);
+      logger.error('Failed to connect to PostgreSQL:', error);
       this.isConnectionActive = false;
       return false;
     }
@@ -50,7 +51,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       await this.prisma.$disconnect();
       this.isConnectionActive = false;
     } catch (error) {
-      console.error('Error disconnecting from PostgreSQL:', error);
+      logger.error('Error disconnecting from PostgreSQL:', error);
     }
   }
 
@@ -105,7 +106,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      console.error('Error storing vector chunks:', error);
+      logger.error('Error storing vector chunks:', error);
       throw error;
     }
   }
@@ -151,7 +152,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             }));
           }
         } catch (cacheError) {
-          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
         }
       }
 
@@ -267,15 +268,15 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             },
             cacheResults,
             workspaceId?.toString()
-          ).catch(err => console.warn('Background cache storage failed:', err));
+          ).catch(err => logger.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          console.warn('Failed to cache results:', cacheError);
+          logger.warn('Failed to cache results:', cacheError);
         }
       }
       
       return results;
     } catch (error) {
-      console.error('Error in vector search:', error);
+      logger.error('Error in vector search:', error);
       return [];
     }
   }
@@ -293,7 +294,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         where: { file_id: fileId }
       });
     } catch (error) {
-      console.error('Error deleting file chunks:', error);
+      logger.error('Error deleting file chunks:', error);
       throw error;
     }
   }
@@ -318,7 +319,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       
       return true;
     } catch (error) {
-      console.error('Error updating vector embedding:', error);
+      logger.error('Error updating vector embedding:', error);
       return false;
     }
   }
@@ -353,7 +354,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         cacheStats
       };
     } catch (error) {
-      console.error('Error getting vector store stats:', error);
+      logger.error('Error getting vector store stats:', error);
       return {
         totalChunks: 0,
         totalFiles: 0,

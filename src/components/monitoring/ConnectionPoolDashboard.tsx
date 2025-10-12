@@ -5,6 +5,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -100,7 +102,7 @@ export default function ConnectionPoolDashboard() {
       setData(dashboardData)
       setError(null)
     } catch (err) {
-      console.error('Failed to fetch dashboard data:', err)
+      logger.error('Failed to fetch dashboard data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {
       setLoading(false)

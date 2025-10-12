@@ -1,6 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { tools } from '../../lib/tools';
+import { logger } from '@/lib/logger';
 
 // IMPORTANT! Set the runtime to edge
 export const runtime = 'edge';
@@ -39,7 +40,7 @@ export default async function handler(req: Request) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error:', error);
     return new Response(JSON.stringify({ 
       error: 'Failed to process request',
       details: error.message 

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
+import { logger } from '@/lib/logger';
 
 interface GitHubRepo {
     id: string;
@@ -128,7 +129,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
             }
         } catch (error) {
             this.authenticated = false;
-            console.error('Failed to check GitHub authentication:', error);
+            logger.error('Failed to check GitHub authentication:', error);
         }
     }
 
@@ -143,12 +144,12 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
                     const workflowResponse = await axios.get(`${this.baseUrl}/api/github/repositories/${repo.id}/workflows`);
                     this.workflows.set(repo.id, workflowResponse.data);
                 } catch (error) {
-                    console.error(`Failed to load workflows for ${repo.name}:`, error);
+                    logger.error(`Failed to load workflows for ${repo.name}:`, error);
                     this.workflows.set(repo.id, []);
                 }
             }
         } catch (error) {
-            console.error('Failed to load repositories:', error);
+            logger.error('Failed to load repositories:', error);
             this.repos = [];
         }
     }
@@ -253,7 +254,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
             vscode.window.showInformationMessage(`Successfully created repository: ${repoName}`);
 
         } catch (error) {
-            console.error('Failed to create repository:', error);
+            logger.error('Failed to create repository:', error);
             vscode.window.showErrorMessage(
                 `Failed to create repository: ${error instanceof Error ? error.message : 'Unknown error'}`
             );
@@ -322,7 +323,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
             vscode.window.showInformationMessage(`Successfully setup ${selectedWorkflow.label} workflow!`);
 
         } catch (error) {
-            console.error('Failed to setup workflow:', error);
+            logger.error('Failed to setup workflow:', error);
             vscode.window.showErrorMessage(
                 `Failed to setup workflow: ${error instanceof Error ? error.message : 'Unknown error'}`
             );

@@ -4,6 +4,7 @@
  */
 
 import bcrypt from 'bcryptjs'
+import { logger } from '@/lib/logger';
 import { z } from 'zod'
 
 // User validation schemas
@@ -53,7 +54,7 @@ export async function hashPassword(password: string): Promise<string> {
   try {
     return await bcrypt.hash(password, SALT_ROUNDS)
   } catch (error) {
-    console.error('Password hashing failed:', error)
+    logger.error('Password hashing failed:', error)
     throw new Error('Failed to hash password')
   }
 }
@@ -65,7 +66,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   try {
     return await bcrypt.compare(password, hash)
   } catch (error) {
-    console.error('Password verification failed:', error)
+    logger.error('Password verification failed:', error)
     return false
   }
 }
@@ -132,7 +133,7 @@ export async function authenticateUser(credentials: LoginCredentials): Promise<U
 
     return user
   } catch (error) {
-    console.error('Authentication failed:', error)
+    logger.error('Authentication failed:', error)
     return null
   }
 }
@@ -174,7 +175,7 @@ export async function updateUserPassword(userId: string, newPassword: string): P
 
     return true
   } catch (error) {
-    console.error('Password update failed:', error)
+    logger.error('Password update failed:', error)
     return false
   }
 }
@@ -221,7 +222,7 @@ export async function initializeDefaultUsers(): Promise<void> {
     const adminPassword = env.DEFAULT_ADMIN_PASSWORD
     
     if (!adminPassword) {
-      console.warn('No DEFAULT_ADMIN_PASSWORD environment variable set. Skipping admin user creation.')
+      logger.warn('No DEFAULT_ADMIN_PASSWORD environment variable set. Skipping admin user creation.')
       return
     }
 
@@ -234,7 +235,7 @@ export async function initializeDefaultUsers(): Promise<void> {
 
     // Debug log removed
   } catch (error) {
-    console.error('❌ Failed to create default admin user:', error)
+    logger.error('❌ Failed to create default admin user:', error)
   }
 }
 

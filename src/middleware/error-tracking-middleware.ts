@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { trackApiError, trackError } from '../lib/monitoring/error-tracking';
+import { logger } from '@/lib/logger';
 
 export interface ErrorTrackingMiddlewareOptions {
   /**
@@ -76,7 +77,7 @@ export function withErrorTracking<R extends Response = NextResponse>(
             requestBody = body;
           }
         } catch (bodyError) {
-          console.warn('Failed to read request body for error tracking:', bodyError);
+          logger.warn('Failed to read request body for error tracking:', bodyError);
         }
       }
 
@@ -87,7 +88,7 @@ export function withErrorTracking<R extends Response = NextResponse>(
 
       // Track successful requests if enabled
       if (trackSuccess && trackDetails) {
-        console.log(`✅ API Success: ${requestDetails.method} ${requestDetails.pathname} - ${response.status} (${duration}ms)`);
+        logger.info(`✅ API Success: ${requestDetails.method} ${requestDetails.pathname} - ${response.status} (${duration}ms)`);
       }
 
       return response;
@@ -120,7 +121,7 @@ export function withErrorTracking<R extends Response = NextResponse>(
         try {
           onError(error as Error, request);
         } catch (handlerError) {
-          console.error('Error in custom error handler:', handlerError);
+          logger.error('Error in custom error handler:', handlerError);
         }
       }
 

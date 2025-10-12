@@ -4,6 +4,7 @@
  */
 
 import { test as baseTest, expect, Page } from '@playwright/test';
+import { logger } from '@/lib/logger';
 
 /**
  * Options for accessibility testing
@@ -44,12 +45,12 @@ export function createAccessibilityTest(options?: AccessibilityTestOptions) {
         const testOptions = { ...mergedOptions, ...pageOptions };
         
         // Use options in a real implementation
-        console.log('Using options:', testOptions);
+        logger.info('Using options:', testOptions);
         
         // This is a mock implementation - in a real setup, you would use axe-core or a similar library
         await page.evaluate(() => {
           // Placeholder for accessibility testing logic
-          console.log('Running accessibility tests');
+          logger.info('Running accessibility tests');
           return null;
         });
         

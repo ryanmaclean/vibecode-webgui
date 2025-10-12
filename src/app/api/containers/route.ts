@@ -4,6 +4,8 @@
  * Endpoints for managing Apple Container instances
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -48,7 +50,7 @@ export async function GET() {
       count: result.containers.length,
     })
   } catch (error) {
-    console.error('Error listing containers:', error)
+    logger.error('Error listing containers:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -104,7 +106,7 @@ export async function POST(req: NextRequest) {
       info: containerInfo,
     })
   } catch (error) {
-    console.error('Error starting container:', error)
+    logger.error('Error starting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

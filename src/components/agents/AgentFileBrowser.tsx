@@ -18,6 +18,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useCallback, useMemo } from 'react'
 import {
   File,
@@ -148,7 +150,7 @@ function FileTreeItem({
     try {
       await onDelete(file.id)
     } catch (error) {
-      console.error('Failed to delete file:', error)
+      logger.error('Failed to delete file:', error)
     } finally {
       setIsDeleting(false)
     }
@@ -293,7 +295,7 @@ export function AgentFileBrowser({
       await onUploadFile(file)
       event.target.value = '' // Reset input
     } catch (error) {
-      console.error('Failed to upload file:', error)
+      logger.error('Failed to upload file:', error)
     } finally {
       setIsUploading(false)
     }

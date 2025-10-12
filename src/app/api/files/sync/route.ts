@@ -15,6 +15,7 @@ import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
+import { logger } from '@/lib/logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -69,7 +70,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('File sync status error:', error)
+    logger.error('File sync status error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -111,7 +112,7 @@ export async function POST(request: NextRequest) {
       await createFilesInWorkspace(workspaceId, files)
       return NextResponse.json({ success: true, message: 'Sync initiated' })
     } catch (error) {
-      console.error('File creation error:', error)
+      logger.error('File creation error:', error)
       return NextResponse.json(
         { error: 'Failed to create files in workspace' },
         { status: 500 }
@@ -119,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    console.error('File sync POST error:', error)
+    logger.error('File sync POST error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -194,18 +195,18 @@ async function createFilesInWorkspace(workspaceId: string, files: Array<{path: s
   kubectl.stdin.end()
 
   kubectl.stdout.on('data', (data: Buffer) => {
-    console.log(`kubectl stdout: ${data}`)
+    logger.info(`kubectl stdout: ${data}`)
   })
 
   kubectl.stderr.on('data', (data: Buffer) => {
-    console.error(`kubectl stderr: ${data}`)
+    logger.error(`kubectl stderr: ${data}`)
   })
 
   kubectl.on('close', (code: number) => {
     if (code !== 0) {
-      console.error(`kubectl process exited with code ${code}`)
+      logger.error(`kubectl process exited with code ${code}`)
     } else {
-      console.log('File creation pod applied successfully')
+      logger.info('File creation pod applied successfully')
     }
   })
 }
@@ -218,7 +219,7 @@ declare global {
 // Initialize WebSocket server if it doesn't exist
 if (!global.wss) {
   global.wss = new WebSocketServer({ noServer: true })
-  console.log('WebSocket server initialized')
+  logger.info('WebSocket server initialized')
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
@@ -284,10 +285,10 @@ if (!global.wss) {
               break
 
             default:
-              console.warn('Unknown WebSocket message type:', message.type)
+              logger.warn('Unknown WebSocket message type:', message.type)
           }
         } catch (error) {
-          console.error('Failed to process WebSocket message:', error)
+          logger.error('Failed to process WebSocket message:', error)
         }
       })
 
@@ -314,7 +315,7 @@ if (!global.wss) {
       }))
 
     } catch (error) {
-      console.error('WebSocket connection error:', error)
+      logger.error('WebSocket connection error:', error)
       ws.close(1011, 'Internal server error')
     }
   })

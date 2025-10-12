@@ -5,6 +5,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
@@ -74,7 +76,7 @@ export function useAuth() {
         callbackUrl: '/'
       })
     } catch (error) {
-      console.error(`OAuth login failed for ${provider}:`, error)
+      logger.error(`OAuth login failed for ${provider}:`, error)
     }
   }, [])
 
@@ -85,7 +87,7 @@ export function useAuth() {
         redirect: true
       })
     } catch (error) {
-      console.error('Logout failed:', error)
+      logger.error('Logout failed:', error)
     }
   }, [])
 
@@ -106,11 +108,11 @@ export function useAuth() {
 
     if (!session && !isAuthPage) {
       // Not authenticated and not on auth page - redirect to login
-      console.log('🔄 Redirecting unauthenticated user to login')
+      logger.info('🔄 Redirecting unauthenticated user to login')
       redirectToLogin()
     } else if (session && isAuthPage) {
       // Authenticated but on auth page - redirect to dashboard
-      console.log('🔄 Redirecting authenticated user to dashboard')
+      logger.info('🔄 Redirecting authenticated user to dashboard')
       redirectToDashboard()
     }
   }, [session, status, redirectToLogin, redirectToDashboard])
@@ -122,7 +124,7 @@ export function useAuth() {
       const isAuthPage = pathname.startsWith('/auth/')
       
       if (!isAuthPage) {
-        console.log('🔄 Force redirecting unauthenticated user to login')
+        logger.info('🔄 Force redirecting unauthenticated user to login')
         window.location.href = '/auth/signin'
       }
     }

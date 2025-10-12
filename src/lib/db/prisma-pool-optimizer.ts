@@ -3,6 +3,8 @@
  * Optimizes Prisma connection pool configuration for vector operations
  */
 
+import { logger } from '@/lib/logger';
+
 interface PoolConfig {
   minConnections: number
   maxConnections: number
@@ -153,7 +155,7 @@ export class PrismaPoolOptimizer {
    */
   applyConfig(newConfig: Partial<PoolConfig>): void {
     this.currentConfig = { ...this.currentConfig, ...newConfig }
-    console.log('Applied new connection pool configuration:', newConfig)
+    logger.info('Applied new connection pool configuration:', newConfig)
   }
 
   /**

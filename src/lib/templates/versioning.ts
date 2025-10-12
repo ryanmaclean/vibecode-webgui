@@ -254,6 +254,7 @@ export class TemplateRegistry {
 
     // Check for newer versions
     for (let i = 0; i < currentIndex; i++) {
+import { logger } from '@/lib/logger';
       const version = metadata.versions[i]
       if (!version.deprecated) {
         const updateType = this.getUpdateType(currentVersion, version.version)
@@ -435,7 +436,7 @@ export class TemplateRegistry {
           update.breaking || false
         )
       } catch (error) {
-        console.error(`Failed to update template ${update.templateId}:`, error)
+        logger.error(`Failed to update template ${update.templateId}:`, error)
       }
     }
   }

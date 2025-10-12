@@ -4,6 +4,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useEffect } from 'react'
 import { GitHubIntegration } from '@/lib/github/integration'
 import type { GeneratedProject } from '@/lib/templates/generator'
@@ -146,7 +148,7 @@ export function GitHubIntegrationModal({
     try {
       await navigator.clipboard.writeText(text)
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
+      logger.error('Failed to copy to clipboard:', error)
     }
   }
 

@@ -6,6 +6,7 @@ import {
 } from "langchain/chains";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { mlflowClient } from "../mlflow/tracker";
+import { logger } from '@/lib/logger';
 
 /**
  * Configuration for the LangChain retriever.
@@ -46,7 +47,7 @@ export class VectorRetriever extends BaseRetriever {
       await mlflowClient.logMetric(run.run_id, "latency_ms", latency);
       await mlflowClient.endRun(run.run_id);
     } catch (e) {
-      console.warn("MLflow metric logging failed:", e);
+      logger.warn("MLflow metric logging failed:", e);
     }
     return content;
   }

@@ -61,7 +61,8 @@ class VectorStore {
           }
         }
       } catch (error) {
-        console.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
+        logger.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
+import { logger } from '@/lib/logger';
         this.embeddingService = null
       }
     }
@@ -90,14 +91,14 @@ class VectorStore {
       if (this.useLocalEmbeddings) {
         const embedding = generateLocalEmbedding(text, this.localEmbeddingDimensions)
         const duration = Date.now() - startTime
-        console.log(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
+        logger.info(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
       if (this.embeddingService) {
         const embedding = await this.embeddingService.generateEmbedding(text)
         const duration = Date.now() - startTime
-        console.log(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
+        logger.info(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
@@ -111,12 +112,12 @@ class VectorStore {
       })
 
       const duration = Date.now() - startTime
-      console.log(`Embedding generation took ${duration}ms for ${text.length} chars`)
+      logger.info(`Embedding generation took ${duration}ms for ${text.length} chars`)
 
       return response.data[0].embedding
     } catch (error) {
       const duration = Date.now() - startTime
-      console.error(`Error generating embedding after ${duration}ms:`, error)
+      logger.error(`Error generating embedding after ${duration}ms:`, error)
       // Fallback: return zero vector
       return new Array(1536).fill(0) // text-embedding-3-small returns 1536-dimensional vectors
     }
@@ -132,7 +133,7 @@ class VectorStore {
     tokens: number
   }>): Promise<void> {
     if (isBuilding || !prisma) {
-      console.log('Skipping vector storage during build')
+      logger.info('Skipping vector storage during build')
       return
     }
     
@@ -241,7 +242,7 @@ class VectorStore {
 
       // Debug log removed
     } catch (error) {
-      console.error('Error storing vector chunks:', error)
+      logger.error('Error storing vector chunks:', error)
       throw error
     }
   }
@@ -260,7 +261,7 @@ class VectorStore {
     } = {}
   ): Promise<SearchResult[]> {
     if (isBuilding || !prisma) {
-      console.log('Skipping vector search during build')
+      logger.info('Skipping vector search during build')
       return []
     }
     
@@ -303,7 +304,7 @@ class VectorStore {
             }));
           }
         } catch (cacheError) {
-          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
           // Continue with direct query if cache fails
         }
       }
@@ -405,16 +406,16 @@ class VectorStore {
             minSimilarity: threshold,
             workspace,
             useCache: true
-          }).catch(err => console.warn('Background cache storage failed:', err));
+          }).catch(err => logger.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          console.warn('Failed to cache results:', cacheError);
+          logger.warn('Failed to cache results:', cacheError);
           // Continue without caching if it fails
         }
       }
       
       return results;
     } catch (error) {
-      console.error('Error in vector search:', error)
+      logger.error('Error in vector search:', error)
       // Fallback to simple text search if vector search fails
       return this.fallbackTextSearch(query, options)
     }
@@ -488,7 +489,7 @@ class VectorStore {
         similarity: 0.5 // Default similarity for text search
       }))
     } catch (error) {
-      console.error('Error in fallback text search:', error)
+      logger.error('Error in fallback text search:', error)
       return []
     }
   }
@@ -531,7 +532,7 @@ class VectorStore {
 
       return context;
     } catch (error) {
-      console.error('Error getting context:', error);
+      logger.error('Error getting context:', error);
       return '';
     }
   }
@@ -541,7 +542,7 @@ class VectorStore {
    */
   async deleteFileChunks(fileId: number): Promise<void> {
     if (isBuilding || !prisma) {
-      console.log('Skipping delete during build')
+      logger.info('Skipping delete during build')
       return
     }
     
@@ -551,7 +552,7 @@ class VectorStore {
       })
       // Debug log removed
     } catch (error) {
-      console.error('Error deleting file chunks:', error)
+      logger.error('Error deleting file chunks:', error)
       throw error
     }
   }
@@ -565,7 +566,7 @@ class VectorStore {
     averageChunkSize: number
   }> {
     if (isBuilding || !prisma) {
-      console.log('Skipping stats during build')
+      logger.info('Skipping stats during build')
       return {
         totalChunks: 0,
         totalFiles: 0,
@@ -592,7 +593,7 @@ class VectorStore {
         averageChunkSize: avgTokens._avg.tokens || 0
       }
     } catch (error) {
-      console.error('Error getting vector store stats:', error)
+      logger.error('Error getting vector store stats:', error)
       return {
         totalChunks: 0,
         totalFiles: 0,
