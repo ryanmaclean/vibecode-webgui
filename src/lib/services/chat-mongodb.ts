@@ -1,420 +1,559 @@
-import { Collection } from 'mongodb'
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-import { Collection, ObjectId } from 'mongodb'
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-import { v4 as uuidv4 } from 'uuid'
-import { getDatabase } from '../mongodb'
-import { Conversation, Message, ChatSession, Assistant } from '../models/chat'
-import { logger } from '../monitoring'
+/**
+ * Chat Service with MongoDB
+ * Handles chat message storage, retrieval, and conversation management
+ */
 
-interface ChatStats {
-  totalConversations: number;
-  totalMessages: number;
-  averageMessagesPerConversation: number;
-  modelsUsed: string[];
+import { Collection, ObjectId } from 'mongodb';
+
+export interface ChatMessage {
+  _id?: ObjectId;
+  workspaceId: string;
+  userId: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  timestamp: Date;
+  metadata?: {
+    model?: string;
+    tokens?: number;
+    confidence?: number;
+    functionCalls?: any[];
+    [key: string]: any;
+  };
 }
 
-export class MongoDBChatService {
-  private conversationsCollection?: Collection<Conversation>
-  private sessionsCollection?: Collection<ChatSession>
-  private assistantsCollection?: Collection<Assistant>
+export interface ChatConversation {
+  _id?: ObjectId;
+  workspaceId: string;
+  userId: string;
+  title?: string;
+  messages: ObjectId[];
+  createdAt: Date;
+  updatedAt: Date;
+  isActive: boolean;
+}
 
-  private async getConversationsCollection(): Promise<Collection<Conversation>> {
-    if (!this.conversationsCollection) {
-      const db = await getDatabase()
-      this.conversationsCollection = db.collection<Conversation>('conversations')
-      
-      // Ensure indexes exist
-      await this.conversationsCollection.createIndex({ sessionId: 1 })
-      await this.conversationsCollection.createIndex({ userId: 1 })
-      await this.conversationsCollection.createIndex({ workspaceId: 1 })
-      await this.conversationsCollection.createIndex({ createdAt: -1 })
-      await this.conversationsCollection.createIndex({ updatedAt: -1 })
+export interface ChatStats {
+  totalMessages: number;
+  totalConversations: number;
+  averageMessagesPerConversation: number;
+  mostActiveUser: string;
+  messagesByRole: {
+    user: number;
+    assistant: number;
+    system: number;
+  };
+  averageResponseTime: number;
+}
+
+export interface ChatSearchOptions {
+  workspaceId?: string;
+  userId?: string;
+  role?: 'user' | 'assistant' | 'system';
+  startDate?: Date;
+  endDate?: Date;
+  limit?: number;
+  offset?: number;
+  searchTerm?: string;
+}
+
+/**
+ * Chat Service for MongoDB-based chat functionality
+ */
+export class ChatMongoDBService {
+  private messagesCollection: Collection<ChatMessage> | null = null;
+  private conversationsCollection: Collection<ChatConversation> | null = null;
+
+  /**
+   * Initialize the chat service with MongoDB collections
+   */
+  initialize(
+    messagesCollection: Collection<ChatMessage>,
+    conversationsCollection: Collection<ChatConversation>
+  ): void {
+    this.messagesCollection = messagesCollection;
+    this.conversationsCollection = conversationsCollection;
+  }
+
+  /**
+   * Save a chat message
+   */
+  async saveMessage(message: Omit<ChatMessage, '_id'>): Promise<ObjectId> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
     }
-    return this.conversationsCollection
+
+    const messageDoc: ChatMessage = {
+      ...message,
+      timestamp: new Date()
+    };
+
+    const result = await this.messagesCollection.insertOne(messageDoc);
+
+    // Update conversation if it exists
+    await this.updateConversation(message.workspaceId, result.insertedId);
+
+    return result.insertedId;
   }
 
-  private async getSessionsCollection(): Promise<Collection<ChatSession>> {
-    if (!this.sessionsCollection) {
-      const db = await getDatabase()
-      this.sessionsCollection = db.collection<ChatSession>('sessions')
-      
-      // Ensure indexes exist
-      await this.sessionsCollection.createIndex({ sessionId: 1 }, { unique: true })
-      await this.sessionsCollection.createIndex({ expiresAt: 1 }, { expireAfterSeconds: 0 })
-    }
-    return this.sessionsCollection
-  }
-
-  private async getAssistantsCollection(): Promise<Collection<Assistant>> {
-    if (!this.assistantsCollection) {
-      const db = await getDatabase()
-      this.assistantsCollection = db.collection<Assistant>('assistants')
-      
-      // Ensure indexes exist
-      await this.assistantsCollection.createIndex({ createdBy: 1 })
-      await this.assistantsCollection.createIndex({ name: 1 })
-    }
-    return this.assistantsCollection
-  }
-
-  // Session Management
-  async createSession(userId: string, userAgent?: string, ip?: string): Promise<ChatSession> {
-    const sessions = await this.getSessionsCollection()
-    
-    const session: ChatSession = {
-      sessionId: uuidv4(),
-      userId,
-      userAgent,
-      ip,
-      createdAt: new Date(),
-      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+  /**
+   * Get messages for a workspace
+   */
+  async getWorkspaceMessages(
+    workspaceId: string,
+    options: {
+      limit?: number;
+      offset?: number;
+      before?: Date;
+      after?: Date;
+    } = {}
+  ): Promise<ChatMessage[]> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
     }
 
-    try {
-      const result = await sessions.insertOne(session)
-      session._id = result.insertedId
-      
-      // Debug log removed
-      
-      return session
-    } catch (error) {
-      console.error('Failed to create chat session:', error, userId)
-      throw error
+    const { limit = 50, offset = 0, before, after } = options;
+
+    const query: any = { workspaceId };
+
+    if (before || after) {
+      query.timestamp = {};
+      if (after) query.timestamp.$gte = after;
+      if (before) query.timestamp.$lte = before;
     }
+
+    const messages = await this.messagesCollection
+      .find(query)
+      .sort({ timestamp: -1 })
+      .skip(offset)
+      .limit(limit)
+      .toArray();
+
+    return messages.reverse(); // Return in chronological order
   }
 
-  async getSession(sessionId: string): Promise<ChatSession | null> {
-    const sessions = await this.getSessionsCollection()
-    return await sessions.findOne({ sessionId })
-  }
+  /**
+   * Search messages across workspaces
+   */
+  async searchMessages(options: ChatSearchOptions): Promise<{
+    messages: ChatMessage[];
+    total: number;
+  }> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
 
-  async validateSession(sessionId: string): Promise<boolean> {
-    const session = await this.getSession(sessionId)
-    return session ? session.expiresAt > new Date() : false
-  }
-
-  // Conversation Management  
-  async createConversation(
-    title: string,
-    sessionId: string,
-    model: string,
-    userId: string,
-    workspaceId: string
-  ): Promise<Conversation> {
-    const conversations = await this.getConversationsCollection()
-    
-    const conversation: Conversation = {
-      id: uuidv4(),
-      title,
-      sessionId,
-      model,
-      userId,
+    const {
       workspaceId,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      messages: []
+      userId,
+      role,
+      startDate,
+      endDate,
+      limit = 20,
+      offset = 0,
+      searchTerm
+    } = options;
+
+    const searchCriteria: any = {};
+
+    if (workspaceId) searchCriteria.workspaceId = workspaceId;
+    if (userId) searchCriteria.userId = userId;
+    if (role) searchCriteria.role = role;
+
+    if (startDate || endDate) {
+      searchCriteria.timestamp = {};
+      if (startDate) searchCriteria.timestamp.$gte = startDate;
+      if (endDate) searchCriteria.timestamp.$lte = endDate;
     }
 
-    try {
-      const result = await conversations.insertOne(conversation)
-      conversation._id = result.insertedId
-      
-      // Debug log removed
-      
-      return conversation
-    } catch (error) {
-      console.error('Failed to create conversation:', error, userId)
-      throw error
+    // Text search in message content
+    if (searchTerm) {
+      searchCriteria.$text = { $search: searchTerm };
     }
+
+    const total = await this.messagesCollection.countDocuments(searchCriteria);
+
+    const messages = await this.messagesCollection
+      .find(searchCriteria)
+      .sort({ timestamp: -1 })
+      .skip(offset)
+      .limit(limit)
+      .toArray();
+
+    return {
+      messages: messages.reverse(),
+      total
+    };
   }
 
-  async getConversation(conversationId: string): Promise<Conversation | null> {
-    const conversations = await this.getConversationsCollection()
-    return await conversations.findOne({ id: conversationId })
+  /**
+   * Delete messages by ID
+   */
+  async deleteMessages(messageIds: ObjectId[]): Promise<number> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const result = await this.messagesCollection.deleteMany({
+      _id: { $in: messageIds }
+    });
+
+    return result.deletedCount || 0;
   }
 
-  async getConversationsByWorkspace(workspaceId: string, limit = 50): Promise<Conversation[]> {
-    const conversations = await this.getConversationsCollection()
-    return await conversations
+  /**
+   * Clear all messages for a workspace
+   */
+  async clearWorkspaceMessages(workspaceId: string): Promise<number> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const result = await this.messagesCollection.deleteMany({ workspaceId });
+    return result.deletedCount || 0;
+  }
+
+  /**
+   * Get conversation by ID
+   */
+  async getConversation(conversationId: ObjectId): Promise<ChatConversation | null> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    return await this.conversationsCollection.findOne({ _id: conversationId });
+  }
+
+  /**
+   * Get conversations for a workspace
+   */
+  async getWorkspaceConversations(workspaceId: string): Promise<ChatConversation[]> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    return await this.conversationsCollection
       .find({ workspaceId })
       .sort({ updatedAt: -1 })
-      .limit(limit)
-      .toArray()
+      .toArray();
   }
 
-  async getConversationsByUser(userId: string, limit = 50): Promise<Conversation[]> {
-    const conversations = await this.getConversationsCollection()
-    return await conversations
-      .find({ userId })
-      .sort({ updatedAt: -1 })
-      .limit(limit)
-      .toArray()
-  }
-
-  async addMessage(conversationId: string, message: Omit<Message, 'id' | 'createdAt'>): Promise<Message> {
-    const conversations = await this.getConversationsCollection()
-    
-    const newMessage: Message = {
-      id: uuidv4(),
-      ...message,
-      createdAt: new Date()
+  /**
+   * Create a new conversation
+   */
+  async createConversation(
+    workspaceId: string,
+    userId: string,
+    title?: string
+  ): Promise<ObjectId> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
     }
 
-    try {
-      const result = await conversations.updateOne(
-        { id: conversationId },
+    const conversation: Omit<ChatConversation, '_id'> = {
+      workspaceId,
+      userId,
+      title,
+      messages: [],
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      isActive: true
+    };
+
+    const result = await this.conversationsCollection.insertOne(conversation);
+    return result.insertedId;
+  }
+
+  /**
+   * Update conversation with new message
+   */
+  private async updateConversation(workspaceId: string, messageId: ObjectId): Promise<void> {
+    if (!this.conversationsCollection) return;
+
+    // Find the most recent active conversation for this workspace
+    const conversation = await this.conversationsCollection.findOne(
+      { workspaceId, isActive: true },
+      { sort: { updatedAt: -1 } }
+    );
+
+    if (conversation) {
+      // Add message to existing conversation
+      await this.conversationsCollection.updateOne(
+        { _id: conversation._id },
         {
-          $push: { messages: newMessage },
+          $push: { messages: messageId },
           $set: { updatedAt: new Date() }
         }
-      )
-
-      if (result.matchedCount === 0) {
-        throw new Error('Conversation not found')
-      }
-
-      // Debug log removed
-
-      return newMessage
-    } catch (error) {
-      console.error('Failed to add message:', error, conversationId)
-      throw error
+      );
+    } else {
+      // Create new conversation
+      await this.createConversation(workspaceId, 'system');
+      // Then add the message (simplified for this example)
     }
   }
 
-  async updateMessage(conversationId: string, messageId: string, content: string): Promise<void> {
-    const conversations = await this.getConversationsCollection()
-    
-    try {
-      const result = await conversations.updateOne(
-        { id: conversationId, 'messages.id': messageId },
-        {
-          $set: { 
-            'messages.$.content': content,
-            'messages.$.updatedAt': new Date(),
-            updatedAt: new Date()
-          }
-        }
-      )
-
-      if (result.matchedCount === 0) {
-        throw new Error('Conversation or message not found')
-      }
-
-      logger.info('Message updated', {
-        service: 'mongodb-chat',
-        conversationId,
-        messageId
-      })
-    } catch (error) {
-      logger.error('Failed to update message', {
-        service: 'mongodb-chat',
-        error: error instanceof Error ? error.message : String(error),
-        conversationId,
-        messageId
-      })
-      throw error
-    }
-  }
-
-  async deleteConversation(conversationId: string): Promise<void> {
-    const conversations = await this.getConversationsCollection()
-    
-    try {
-      const result = await conversations.deleteOne({ id: conversationId })
-      
-      if (result.deletedCount === 0) {
-        throw new Error('Conversation not found')
-      }
-
-      logger.info('Conversation deleted', {
-        service: 'mongodb-chat',
-        conversationId
-      })
-    } catch (error) {
-      logger.error('Failed to delete conversation', {
-        service: 'mongodb-chat',
-        error: error instanceof Error ? error.message : String(error),
-        conversationId
-      })
-      throw error
-    }
-  }
-
-  // Assistant Management
-  async createAssistant(
-    name: string,
-    description: string,
-    instructions: string,
-    model: string,
-    createdBy: string,
-    tools?: string[],
-    files?: string[]
-  ): Promise<Assistant> {
-    const assistants = await this.getAssistantsCollection()
-    
-    const assistant: Assistant = {
-      id: uuidv4(),
-      name,
-      description,
-      instructions,
-      model,
-      tools: tools || [],
-      files: files || [],
-      createdBy,
-      createdAt: new Date(),
-      updatedAt: new Date()
+  /**
+   * Get chat statistics
+   */
+  async getChatStats(workspaceId?: string): Promise<ChatStats> {
+    if (!this.messagesCollection || !this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
     }
 
-    try {
-      const result = await assistants.insertOne(assistant)
-      assistant._id = result.insertedId
-      
-      logger.info('Assistant created', {
-        service: 'mongodb-chat',
-        assistantId: assistant.id,
-        createdBy
-      })
-      
-      return assistant
-    } catch (error) {
-      logger.error('Failed to create assistant', {
-        service: 'mongodb-chat',
-        error: error instanceof Error ? error.message : String(error),
-        createdBy
-      })
-      throw error
-    }
-  }
+    const matchCriteria: any = {};
+    if (workspaceId) matchCriteria.workspaceId = workspaceId;
 
-  async getAssistantsByUser(userId: string): Promise<Assistant[]> {
-    const assistants = await this.getAssistantsCollection()
-    return await assistants
-      .find({ createdBy: userId })
-      .sort({ createdAt: -1 })
-      .toArray()
-  }
-
-  async getAssistant(assistantId: string): Promise<Assistant | null> {
-    const assistants = await this.getAssistantsCollection()
-    return await assistants.findOne({ id: assistantId })
-  }
-
-  // Search and Analytics
-  async searchConversations(
-    query: string,
-    userId: string,
-    workspaceId?: string,
-    limit = 20
-  ): Promise<Conversation[]> {
-    const conversations = await this.getConversationsCollection()
-    
-    const searchCriteria: Record<string, unknown> = {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    const searchCriteria: any = {
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      userId,
-      $text: { $search: query }
-    }
-    
-    if (workspaceId) {
-      searchCriteria.workspaceId = workspaceId
-    }
-
-    return await conversations
-      .find(searchCriteria)
-      .sort({ score: { $meta: 'textScore' } })
-      .limit(limit)
-      .toArray()
-  }
-
-  async getConversationStats(userId: string, workspaceId?: string): Promise<{
-    totalConversations: number
-    totalMessages: number
-    averageMessagesPerConversation: number
-    modelsUsed: string[]
-  }> {
-    const conversations = await this.getConversationsCollection()
-    
-    const matchCriteria: Record<string, unknown> = { userId }
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    const matchCriteria: any = { userId }
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    if (workspaceId) {
-      matchCriteria.workspaceId = workspaceId
-    }
-
-    const stats = await conversations.aggregate([
+    // Get message statistics
+    const messageStats = await this.messagesCollection.aggregate([
       { $match: matchCriteria },
       {
         $group: {
           _id: null,
-          totalConversations: { $sum: 1 },
-          totalMessages: { $sum: { $size: '$messages' } },
-          modelsUsed: { $addToSet: '$model' }
-        }
-      },
-      {
-        $addFields: {
-          averageMessagesPerConversation: {
-            $cond: {
-              if: { $eq: ['$totalConversations', 0] },
-              then: 0,
-              else: { $divide: ['$totalMessages', '$totalConversations'] }
-            }
-          }
+          totalMessages: { $sum: 1 },
+          userMessages: { $sum: { $cond: [{ $eq: ['$role', 'user'] }, 1, 0] } },
+          assistantMessages: { $sum: { $cond: [{ $eq: ['$role', 'assistant'] }, 1, 0] } },
+          systemMessages: { $sum: { $cond: [{ $eq: ['$role', 'system'] }, 1, 0] } }
         }
       }
-    ]).toArray()
+    ]).toArray();
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-    return (stats[0] as ChatStats) || {
-=======
-    return (stats[0] as ChatStats) || {
-<<<<<<< HEAD
-    return stats[0] || {
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      totalConversations: 0,
-=======
-    return (stats[0] as ChatStats) || {      totalConversations: 0,
->>>>>>> fix/consolidated-dependency-updates
-      totalMessages: 0,
-      averageMessagesPerConversation: 0,
-      modelsUsed: []
+    // Get conversation statistics
+    const conversationStats = await this.conversationsCollection.aggregate([
+      { $match: workspaceId ? { workspaceId } : {} },
+      {
+        $group: {
+          _id: null,
+          totalConversations: { $sum: 1 },
+          avgMessagesPerConversation: { $avg: { $size: '$messages' } }
+        }
+      }
+    ]).toArray();
+
+    const stats = messageStats[0] || { totalMessages: 0, userMessages: 0, assistantMessages: 0, systemMessages: 0 };
+    const convStats = conversationStats[0] || { totalConversations: 0, avgMessagesPerConversation: 0 };
+
+    return {
+      totalMessages: stats.totalMessages,
+      totalConversations: convStats.totalConversations,
+      averageMessagesPerConversation: convStats.avgMessagesPerConversation || 0,
+      mostActiveUser: 'system', // Would need more complex aggregation
+      messagesByRole: {
+        user: stats.userMessages,
+        assistant: stats.assistantMessages,
+        system: stats.systemMessages
+      },
+      averageResponseTime: 0 // Would need timing data
+    };
+  }
+
+  /**
+   * Export conversation data
+   */
+  async exportConversationData(
+    workspaceId: string,
+    format: 'json' | 'csv' = 'json'
+  ): Promise<string> {
+    const messages = await this.getWorkspaceMessages(workspaceId);
+
+    if (format === 'json') {
+      return JSON.stringify({
+        workspaceId,
+        exportDate: new Date().toISOString(),
+        messages,
+        count: messages.length
+      }, null, 2);
+    } else {
+      // CSV format
+      const headers = ['timestamp', 'userId', 'role', 'content'];
+      const csvRows = [
+        headers.join(','),
+        ...messages.map(msg => [
+          msg.timestamp.toISOString(),
+          msg.userId,
+          msg.role,
+          `"${msg.content.replace(/"/g, '""')}"`
+        ].join(','))
+      ];
+
+      return csvRows.join('\n');
     }
   }
 
-  // Cleanup operations
-  async cleanupExpiredSessions(): Promise<number> {
-    const sessions = await this.getSessionsCollection()
-    const result = await sessions.deleteMany({
-      expiresAt: { $lt: new Date() }
-    })
-    
-    logger.info('Expired sessions cleaned up', {
-      service: 'mongodb-chat',
-      deletedCount: result.deletedCount
-    })
-    
-    return result.deletedCount
+  /**
+   * Archive old conversations
+   */
+  async archiveOldConversations(daysOld: number = 30): Promise<number> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+    const result = await this.conversationsCollection.updateMany(
+      {
+        updatedAt: { $lt: cutoffDate },
+        isActive: true
+      },
+      {
+        $set: {
+          isActive: false,
+          archivedAt: new Date()
+        }
+      }
+    );
+
+    return result.modifiedCount || 0;
+  }
+
+  /**
+   * Clean up orphaned messages (messages not in any conversation)
+   */
+  async cleanupOrphanedMessages(): Promise<number> {
+    if (!this.messagesCollection || !this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    // Get all message IDs that are referenced in conversations
+    const referencedMessageIds = await this.conversationsCollection.distinct('messages');
+
+    // Delete messages that are not referenced
+    const result = await this.messagesCollection.deleteMany({
+      _id: { $nin: referencedMessageIds.map(id => new ObjectId(id)) }
+    });
+
+    return result.deletedCount || 0;
+  }
+
+  /**
+   * Get message by ID
+   */
+  async getMessage(messageId: ObjectId): Promise<ChatMessage | null> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    return await this.messagesCollection.findOne({ _id: messageId });
+  }
+
+  /**
+   * Update message metadata
+   */
+  async updateMessageMetadata(
+    messageId: ObjectId,
+    metadata: Partial<ChatMessage['metadata']>
+  ): Promise<boolean> {
+    if (!this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const result = await this.messagesCollection.updateOne(
+      { _id: messageId },
+      {
+        $set: {
+          metadata: { ...metadata },
+          timestamp: new Date() // Update timestamp for modified messages
+        }
+      }
+    );
+
+    return result.modifiedCount > 0;
+  }
+
+  /**
+   * Get conversations for a user
+   */
+  async getUserConversations(userId: string): Promise<ChatConversation[]> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    return await this.conversationsCollection
+      .find({ userId })
+      .sort({ updatedAt: -1 })
+      .toArray();
+  }
+
+  /**
+   * Delete conversation and all its messages
+   */
+  async deleteConversation(conversationId: ObjectId): Promise<boolean> {
+    if (!this.conversationsCollection || !this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    // Get conversation to find associated messages
+    const conversation = await this.conversationsCollection.findOne({ _id: conversationId });
+    if (!conversation) {
+      return false;
+    }
+
+    // Delete all messages in the conversation
+    if (conversation.messages.length > 0) {
+      await this.messagesCollection.deleteMany({
+        _id: { $in: conversation.messages.map(id => new ObjectId(id)) }
+      });
+    }
+
+    // Delete the conversation
+    const result = await this.conversationsCollection.deleteOne({ _id: conversationId });
+    return result.deletedCount > 0;
+  }
+
+  /**
+   * Get service health status
+   */
+  async getHealthStatus(): Promise<{
+    isHealthy: boolean;
+    messageCount: number;
+    conversationCount: number;
+    lastActivity: Date | null;
+  }> {
+    if (!this.messagesCollection || !this.conversationsCollection) {
+      return {
+        isHealthy: false,
+        messageCount: 0,
+        conversationCount: 0,
+        lastActivity: null
+      };
+    }
+
+    try {
+      const messageCount = await this.messagesCollection.countDocuments();
+      const conversationCount = await this.conversationsCollection.countDocuments();
+
+      // Get last activity
+      const lastMessage = await this.messagesCollection.findOne(
+        {},
+        { sort: { timestamp: -1 } }
+      );
+
+      return {
+        isHealthy: true,
+        messageCount,
+        conversationCount,
+        lastActivity: lastMessage?.timestamp || null
+      };
+    } catch (error) {
+      console.error('Failed to get chat service health:', error);
+      return {
+        isHealthy: false,
+        messageCount: 0,
+        conversationCount: 0,
+        lastActivity: null
+      };
+    }
+  }
+
+  /**
+   * Get collections for external access
+   */
+  getCollections() {
+    return {
+      messages: this.messagesCollection,
+      conversations: this.conversationsCollection
+    };
   }
 }
 
-// Export singleton instance
-export const mongodbChatService = new MongoDBChatService()
+// Export singleton instance for global use
+export const chatMongoDBService = new ChatMongoDBService();
