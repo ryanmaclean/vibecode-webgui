@@ -1,0 +1,58 @@
+#!/bin/sh
+set -eu
+export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+
+log() {
+  local msg="$1"
+  printf '[%s] %s\n' "$(date +%H:%M:%S)" "$msg" >/dev/console
+}
+
+log "init: mounting pseudo filesystems"
+mount -t proc none /proc
+mount -t sysfs none /sys
+mount -t devtmpfs none /dev
+mount -t tmpfs none /tmp -o mode=1777
+
+log "init: configuring hostname/network"
+if ip link show eth0 >/dev/null 2>&1; then
+  ip link set eth0 up
+  if udhcpc -q -f -n -t 3 -i eth0; then
+    log "init: DHCP lease acquired"
+  else
+    log "init: DHCP failed, continuing offline"
+  fi
+fi
+printf 'openvscode\n' > /proc/sys/kernel/hostname
+
+unset LD_PRELOAD || true
+unset LD_LIBRARY_PATH || true
+
+log "init: preparing user home"
+mkdir -p /home/default/.config
+export HOME=/home/default
+export USER=default
+chown -R 0:0 /home/default
+
+SERVER=/opt/openvscode/bin/openvscode-server
+if [ ! -x "$SERVER" ]; then
+  log "init: openvscode-server missing, dropping to shell"
+  exec /bin/sh
+fi
+
+log "init: launching OpenVSCode server"
+$SERVER --host 0.0.0.0 --port 3000 --without-connection-token &
+child=$!
+
+# Poll until server responds or timeout after 20s
+for i in $(seq 1 40); do
+  if wget -qO- http://127.0.0.1:3000/healthz >/dev/null 2>&1; then
+    log "init: OpenVSCode ready"
+    break
+  fi
+  sleep 0.5
+done
+
+wait $child || true
+log "init: server exited, powering off"
+sync
+poweroff -f
