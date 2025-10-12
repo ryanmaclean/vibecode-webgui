@@ -1,0 +1,57 @@
+{
+  "budgets": {
+    "build": {
+      "time": 15000,
+      "description": "Build time should be under 15 seconds"
+    },
+    "pageLoad": {
+      "time": 2000,
+      "description": "Page load time should be under 2 seconds"
+    },
+    "api": {
+      "responseTime": {
+        "p50": 500,
+        "p90": 1000,
+        "p95": 1500,
+        "description": "API response times"
+      }
+    },
+    "memory": {
+      "usage": 1073741824,
+      "description": "Memory usage should be under 1GB"
+    },
+    "bundle": {
+      "totalSize": 524288,
+      "jsChunkSize": 512000,
+      "cssSize": 102400,
+      "description": "Bundle size budgets (bytes)"
+    },
+    "lighthouse": {
+      "performance": 70,
+      "accessibility": 90,
+      "bestPractices": 80,
+      "seo": 80,
+      "description": "Minimum Lighthouse scores"
+    },
+    "webVitals": {
+      "fcp": 1800,
+      "lcp": 2500,
+      "fid": 100,
+      "cls": 0.1,
+      "ttfb": 600,
+      "description": "Core Web Vitals thresholds"
+    }
+  },
+  "thresholds": {
+    "regressionTolerance": 0.1,
+    "description": "10% regression tolerance from baseline"
+  },
+  "monitoring": {
+    "enabled": true,
+    "endpoints": {
+      "datadog": "${DATADOG_API_ENDPOINT}",
+      "prometheus": "${PROMETHEUS_ENDPOINT}"
+    },
+    "sampleRate": 1.0
+  }
+}
