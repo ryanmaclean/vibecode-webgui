@@ -1,579 +1,621 @@
+/**
+ * Function Calling Service
+ * Handles AI-powered function calling and execution for VibeCode
+ */
+
 export interface FunctionDefinition {
-  name: string
-  description: string
+  name: string;
+  description: string;
   parameters: {
-    type: string  // Changed from string literal 'object' to string to allow more flexibility
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    type: 'object'
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+    type: string;
     properties: Record<string, {
-      type: string
-      description: string
-      enum?: string[]
-    }>
-    required?: string[]
-  }
+      type: string;
+      description: string;
+      required?: boolean;
+    }>;
+    required?: string[];
+  };
 }
 
 export interface FunctionCall {
-  name: string
-  arguments: Record<string, any>
+  name: string;
+  arguments: Record<string, any>;
 }
 
-export interface FunctionResult {
-  success: boolean
-  result?: any
-  error?: string
-  metadata?: Record<string, any>
+export interface FunctionExecutionResult {
+  success: boolean;
+  result?: any;
+  error?: string;
+  executionTime: number;
+  functionName: string;
 }
 
+export interface FunctionCallingOptions {
+  maxRetries?: number;
+  timeout?: number;
+  enableLogging?: boolean;
+  enableMetrics?: boolean;
+}
+
+/**
+ * Function Calling Service for AI-powered function execution
+ */
 export class FunctionCallingService {
-  private functions: Map<string, (args: any) => Promise<FunctionResult>> = new Map()
+  private functions: Map<string, FunctionDefinition> = new Map();
+  private executionHistory: Array<{
+    call: FunctionCall;
+    result: FunctionExecutionResult;
+    timestamp: Date;
+  }> = [];
+  private metrics = {
+    totalCalls: 0,
+    successfulCalls: 0,
+    failedCalls: 0,
+    averageExecutionTime: 0
+  };
 
-  constructor() {
-    this.registerBuiltinFunctions()
+  /**
+   * Register a function for AI calling
+   */
+  registerFunction(definition: FunctionDefinition): void {
+    this.functions.set(definition.name, definition);
   }
 
-  private registerBuiltinFunctions() {
-    // Web search function
-    this.registerFunction(
+  /**
+   * Unregister a function
+   */
+  unregisterFunction(functionName: string): boolean {
+    return this.functions.delete(functionName);
+  }
+
+  /**
+   * Get all registered functions
+   */
+  getRegisteredFunctions(): FunctionDefinition[] {
+    return Array.from(this.functions.values());
+  }
+
+  /**
+   * Get function definition by name
+   */
+  getFunctionDefinition(functionName: string): FunctionDefinition | undefined {
+    return this.functions.get(functionName);
+  }
+
+  /**
+   * Execute a function call
+   */
+  async executeFunction(
+    call: FunctionCall,
+    options: FunctionCallingOptions = {}
+  ): Promise<FunctionExecutionResult> {
+    const startTime = Date.now();
+    const maxRetries = options.maxRetries || 3;
+    const timeout = options.timeout || 30000; // 30 seconds
+
+    let attempts = 0;
+    let lastError: string | undefined;
+
+    this.metrics.totalCalls++;
+
+    while (attempts < maxRetries) {
+      try {
+        const result = await this.executeFunctionAttempt(call, timeout);
+
+        this.metrics.successfulCalls++;
+        this.metrics.averageExecutionTime =
+          (this.metrics.averageExecutionTime * (this.metrics.successfulCalls - 1) + result.executionTime) /
+          this.metrics.successfulCalls;
+
+        // Store execution history
+        this.executionHistory.push({
+          call,
+          result,
+          timestamp: new Date()
+        });
+
+        // Keep only recent history (last 1000 entries)
+        if (this.executionHistory.length > 1000) {
+          this.executionHistory = this.executionHistory.slice(-1000);
+        }
+
+        if (options.enableLogging) {
+          console.log(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
+        }
+
+        return result;
+      } catch (error) {
+        attempts++;
+        lastError = error instanceof Error ? error.message : String(error);
+
+        if (options.enableLogging) {
+          console.warn(`Function ${call.name} attempt ${attempts} failed:`, lastError);
+        }
+
+        // Wait before retry (exponential backoff)
+        if (attempts < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, Math.pow(2, attempts) * 100));
+        }
+      }
+    }
+
+    this.metrics.failedCalls++;
+
+    const failedResult: FunctionExecutionResult = {
+      success: false,
+      error: lastError || 'Function execution failed after all retries',
+      executionTime: Date.now() - startTime,
+      functionName: call.name
+    };
+
+    // Store failed execution in history
+    this.executionHistory.push({
+      call,
+      result: failedResult,
+      timestamp: new Date()
+    });
+
+    return failedResult;
+  }
+
+  /**
+   * Execute a single function attempt with timeout
+   */
+  private async executeFunctionAttempt(
+    call: FunctionCall,
+    timeout: number
+  ): Promise<FunctionExecutionResult> {
+    const startTime = Date.now();
+
+    // Create a promise that rejects after timeout
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      setTimeout(() => reject(new Error(`Function execution timed out after ${timeout}ms`)), timeout);
+    });
+
+    // Create the function execution promise
+    const executionPromise = this.performFunctionExecution(call);
+
+    // Race between execution and timeout
+    const result = await Promise.race([executionPromise, timeoutPromise]);
+
+    return {
+      success: true,
+      result,
+      executionTime: Date.now() - startTime,
+      functionName: call.name
+    };
+  }
+
+  /**
+   * Perform the actual function execution
+   */
+  private async performFunctionExecution(call: FunctionCall): Promise<any> {
+    // This would integrate with the actual function implementations
+    // For now, we'll simulate based on common function patterns
+
+    switch (call.name) {
+      case 'read_file':
+        return this.simulateReadFile(call.arguments);
+      case 'write_file':
+        return this.simulateWriteFile(call.arguments);
+      case 'run_command':
+        return this.simulateRunCommand(call.arguments);
+      case 'search_code':
+        return this.simulateSearchCode(call.arguments);
+      case 'analyze_code':
+        return this.simulateAnalyzeCode(call.arguments);
+      case 'generate_test':
+        return this.simulateGenerateTest(call.arguments);
+      case 'deploy_project':
+        return this.simulateDeployProject(call.arguments);
+      case 'get_workspace_info':
+        return this.simulateGetWorkspaceInfo(call.arguments);
+      default:
+        throw new Error(`Unknown function: ${call.name}`);
+    }
+  }
+
+  /**
+   * Simulate read file function
+   */
+  private simulateReadFile(args: Record<string, any>): any {
+    return {
+      content: '// Simulated file content',
+      path: args.path,
+      size: 1024,
+      lastModified: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Simulate write file function
+   */
+  private simulateWriteFile(args: Record<string, any>): any {
+    return {
+      success: true,
+      path: args.path,
+      bytesWritten: args.content?.length || 0
+    };
+  }
+
+  /**
+   * Simulate run command function
+   */
+  private simulateRunCommand(args: Record<string, any>): any {
+    return {
+      success: true,
+      stdout: 'Command executed successfully',
+      stderr: '',
+      exitCode: 0,
+      executionTime: 100
+    };
+  }
+
+  /**
+   * Simulate search code function
+   */
+  private simulateSearchCode(args: Record<string, any>): any {
+    return {
+      results: [
+        {
+          file: 'example.ts',
+          line: 42,
+          content: 'const result = searchFunction(query);',
+          relevance: 0.95
+        }
+      ],
+      totalMatches: 1,
+      executionTime: 150
+    };
+  }
+
+  /**
+   * Simulate analyze code function
+   */
+  private simulateAnalyzeCode(args: Record<string, any>): any {
+    return {
+      complexity: 5,
+      linesOfCode: 150,
+      functions: 3,
+      classes: 1,
+      dependencies: ['lodash', 'axios'],
+      issues: [],
+      suggestions: ['Add error handling', 'Consider adding tests']
+    };
+  }
+
+  /**
+   * Simulate generate test function
+   */
+  private simulateGenerateTest(args: Record<string, any>): any {
+    return {
+      testFile: 'example.test.ts',
+      content: `describe('Example', () => {
+  test('should work', () => {
+    expect(true).toBe(true);
+  });
+});`,
+      framework: 'jest',
+      coverage: 'unit'
+    };
+  }
+
+  /**
+   * Simulate deploy project function
+   */
+  private simulateDeployProject(args: Record<string, any>): any {
+    return {
+      success: true,
+      deploymentUrl: 'https://example.vercel.app',
+      buildTime: 45000,
+      status: 'deployed'
+    };
+  }
+
+  /**
+   * Simulate get workspace info function
+   */
+  private simulateGetWorkspaceInfo(args: Record<string, any>): any {
+    return {
+      workspaceId: args.workspaceId || 'default',
+      files: 25,
+      lastModified: new Date().toISOString(),
+      collaborators: 2,
+      status: 'active'
+    };
+  }
+
+  /**
+   * Batch execute multiple function calls
+   */
+  async batchExecuteFunctions(
+    calls: FunctionCall[],
+    options: FunctionCallingOptions = {}
+  ): Promise<FunctionExecutionResult[]> {
+    const promises = calls.map(call => this.executeFunction(call, options));
+    return Promise.all(promises);
+  }
+
+  /**
+   * Get execution metrics
+   */
+  getMetrics(): {
+    totalCalls: number;
+    successfulCalls: number;
+    failedCalls: number;
+    successRate: number;
+    averageExecutionTime: number;
+  } {
+    return {
+      ...this.metrics,
+      successRate: this.metrics.totalCalls > 0
+        ? this.metrics.successfulCalls / this.metrics.totalCalls
+        : 0
+    };
+  }
+
+  /**
+   * Get execution history
+   */
+  getExecutionHistory(limit: number = 100): Array<{
+    call: FunctionCall;
+    result: FunctionExecutionResult;
+    timestamp: Date;
+  }> {
+    return this.executionHistory.slice(-limit);
+  }
+
+  /**
+   * Clear execution history
+   */
+  clearHistory(): void {
+    this.executionHistory = [];
+  }
+
+  /**
+   * Get function calling schema for AI models
+   */
+  getFunctionCallingSchema(): {
+    type: string;
+    functions: FunctionDefinition[];
+  } {
+    return {
+      type: 'function_calling',
+      functions: this.getRegisteredFunctions()
+    };
+  }
+
+  /**
+   * Validate function call against definition
+   */
+  validateFunctionCall(call: FunctionCall): {
+    isValid: boolean;
+    errors: string[];
+  } {
+    const errors: string[] = [];
+    const definition = this.functions.get(call.name);
+
+    if (!definition) {
+      errors.push(`Function '${call.name}' is not registered`);
+      return { isValid: false, errors };
+    }
+
+    // Validate required parameters
+    const requiredParams = definition.parameters.required || [];
+    for (const param of requiredParams) {
+      if (!(param in call.arguments)) {
+        errors.push(`Missing required parameter: ${param}`);
+      }
+    }
+
+    // Validate parameter types (basic validation)
+    for (const [paramName, paramDef] of Object.entries(definition.parameters.properties)) {
+      if (paramName in call.arguments) {
+        const value = call.arguments[paramName];
+        const expectedType = paramDef.type;
+
+        // Basic type checking
+        if (expectedType === 'string' && typeof value !== 'string') {
+          errors.push(`Parameter '${paramName}' should be a string`);
+        } else if (expectedType === 'number' && typeof value !== 'number') {
+          errors.push(`Parameter '${paramName}' should be a number`);
+        } else if (expectedType === 'boolean' && typeof value !== 'boolean') {
+          errors.push(`Parameter '${paramName}' should be a boolean`);
+        } else if (expectedType === 'array' && !Array.isArray(value)) {
+          errors.push(`Parameter '${paramName}' should be an array`);
+        } else if (expectedType === 'object' && (typeof value !== 'object' || value === null)) {
+          errors.push(`Parameter '${paramName}' should be an object`);
+        }
+      }
+    }
+
+    return {
+      isValid: errors.length === 0,
+      errors
+    };
+  }
+
+  /**
+   * Register common VibeCode functions
+   */
+  registerCommonFunctions(): void {
+    const commonFunctions: FunctionDefinition[] = [
       {
-        name: 'web_search',
-        description: 'Search the web for current information on a given topic',
+        name: 'read_file',
+        description: 'Read the contents of a file',
         parameters: {
           type: 'object',
           properties: {
-            query: {
-              type: 'string',
-              description: 'The search query to execute'
-            },
-            maxResults: {
-              type: 'number',
-              description: 'Maximum number of search results to return (default: 5)'
-            },
-            timeFilter: {
-              type: 'string',
-              description: 'Time filter for search results',
-              enum: ['day', 'week', 'month', 'year']
-            }
+            path: { type: 'string', description: 'File path to read' },
+            encoding: { type: 'string', description: 'File encoding (optional)' }
+          },
+          required: ['path']
+        }
+      },
+      {
+        name: 'write_file',
+        description: 'Write content to a file',
+        parameters: {
+          type: 'object',
+          properties: {
+            path: { type: 'string', description: 'File path to write' },
+            content: { type: 'string', description: 'Content to write' },
+            encoding: { type: 'string', description: 'File encoding (optional)' }
+          },
+          required: ['path', 'content']
+        }
+      },
+      {
+        name: 'run_command',
+        description: 'Execute a terminal command',
+        parameters: {
+          type: 'object',
+          properties: {
+            command: { type: 'string', description: 'Command to execute' },
+            cwd: { type: 'string', description: 'Working directory (optional)' },
+            timeout: { type: 'number', description: 'Command timeout in seconds (optional)' }
+          },
+          required: ['command']
+        }
+      },
+      {
+        name: 'search_code',
+        description: 'Search for code patterns in the codebase',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query' },
+            language: { type: 'string', description: 'Programming language filter (optional)' },
+            filePattern: { type: 'string', description: 'File pattern filter (optional)' },
+            maxResults: { type: 'number', description: 'Maximum results to return (optional)' }
           },
           required: ['query']
         }
       },
-      this.webSearch.bind(this)
-    )
-
-    // File operation functions
-    this.registerFunction(
       {
-        name: 'create_file',
-        description: 'Create a new file with specified content',
+        name: 'analyze_code',
+        description: 'Analyze code for complexity, patterns, and issues',
         parameters: {
           type: 'object',
           properties: {
-            filename: {
-              type: 'string',
-              description: 'Name of the file to create'
-            },
-            content: {
-              type: 'string',
-              description: 'Content to write to the file'
-            },
-            workspaceId: {
-              type: 'string',
-              description: 'Workspace ID where the file should be created'
-            }
-          },
-          required: ['filename', 'content']
-        }
-      },
-      this.createFile.bind(this)
-    )
-
-    // Code execution function
-    this.registerFunction(
-      {
-        name: 'execute_code',
-        description: 'Execute code in a sandboxed environment',
-        parameters: {
-          type: 'object',
-          properties: {
-            code: {
-              type: 'string',
-              description: 'The code to execute'
-            },
-            language: {
-              type: 'string',
-              description: 'Programming language',
-              enum: ['javascript', 'python', 'bash']
-            },
-            workspaceId: {
-              type: 'string',
-              description: 'Workspace ID for execution context'
-            }
+            code: { type: 'string', description: 'Code to analyze' },
+            language: { type: 'string', description: 'Programming language' },
+            includeMetrics: { type: 'boolean', description: 'Include detailed metrics (optional)' }
           },
           required: ['code', 'language']
         }
       },
-      this.executeCode.bind(this)
-    )
-
-    // Workspace management functions
-    this.registerFunction(
       {
-        name: 'list_files',
-        description: 'List files in a workspace directory',
+        name: 'generate_test',
+        description: 'Generate tests for the provided code',
         parameters: {
           type: 'object',
           properties: {
-            workspaceId: {
-              type: 'string',
-              description: 'Workspace ID to list files from'
-            },
-            path: {
-              type: 'string',
-              description: 'Directory path within workspace (default: root)'
-            },
-            extensions: {
-              type: 'string',
-              description: 'Comma-separated list of file extensions to filter by'
-            }
+            code: { type: 'string', description: 'Code to generate tests for' },
+            language: { type: 'string', description: 'Programming language' },
+            framework: { type: 'string', description: 'Testing framework' },
+            coverage: { type: 'string', description: 'Test coverage type (unit, integration, e2e)' }
+          },
+          required: ['code', 'language']
+        }
+      },
+      {
+        name: 'deploy_project',
+        description: 'Deploy a project to a hosting platform',
+        parameters: {
+          type: 'object',
+          properties: {
+            projectPath: { type: 'string', description: 'Path to project directory' },
+            platform: { type: 'string', description: 'Deployment platform (vercel, netlify, etc.)' },
+            buildCommand: { type: 'string', description: 'Build command (optional)' },
+            environment: { type: 'string', description: 'Deployment environment (optional)' }
+          },
+          required: ['projectPath', 'platform']
+        }
+      },
+      {
+        name: 'get_workspace_info',
+        description: 'Get information about a workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            workspaceId: { type: 'string', description: 'Workspace ID to query' },
+            includeFiles: { type: 'boolean', description: 'Include file list (optional)' },
+            includeCollaborators: { type: 'boolean', description: 'Include collaborator list (optional)' }
           },
           required: ['workspaceId']
         }
-      },
-      this.listFiles.bind(this)
-    )
+      }
+    ];
 
-    // Package management function
-    this.registerFunction(
-      {
-        name: 'install_package',
-        description: 'Install a package or dependency in the workspace',
-        parameters: {
-          type: 'object',
-          properties: {
-            packageName: {
-              type: 'string',
-              description: 'Name of the package to install'
-            },
-            packageManager: {
-              type: 'string',
-              description: 'Package manager to use',
-              enum: ['npm', 'yarn', 'pip', 'composer']
-            },
-            workspaceId: {
-              type: 'string',
-              description: 'Workspace ID where package should be installed'
-            },
-            version: {
-              type: 'string',
-              description: 'Specific version to install (optional)'
-            }
-          },
-          required: ['packageName', 'packageManager', 'workspaceId']
-        }
-      },
-      this.installPackage.bind(this)
-    )
+    commonFunctions.forEach(fn => this.registerFunction(fn));
   }
 
-  registerFunction(
-    definition: FunctionDefinition,
-    implementation: (args: any) => Promise<FunctionResult>
-  ) {
-    this.functions.set(definition.name, implementation)
-  }
+  /**
+   * Create function calling prompt for AI models
+   */
+  createFunctionCallingPrompt(
+    userQuery: string,
+    availableFunctions?: string[]
+  ): {
+    prompt: string;
+    schema: any;
+  } {
+    const functionsToInclude = availableFunctions
+      ? this.getRegisteredFunctions().filter(fn => availableFunctions.includes(fn.name))
+      : this.getRegisteredFunctions();
 
-  getFunctionDefinitions(): FunctionDefinition[] {
-    return Array.from(this.registeredDefinitions.values())
-  }
-
-  private registeredDefinitions: Map<string, FunctionDefinition> = new Map()
-
-  async executeFunction(call: FunctionCall): Promise<FunctionResult> {
-    const func = this.functions.get(call.name)
-    if (!func) {
-      return {
-        success: false,
-        error: `Function ${call.name} not found`
-      }
-    }
-
-    try {
-      const result = await func(call.arguments)
-      return result
-    } catch (error) {
-      return {
-        success: false,
-        error: error instanceof Error ? error.message : String(error)
-      }
-    }
-  }
-
-  // Built-in function implementations
-  private async webSearch(args: any): Promise<FunctionResult> {
-    try {
-      const { webSearchService } = await import('./web-search')
-      const results = await webSearchService.searchWeb(args.query, {
-        maxResults: args.maxResults || 5,
-        timeFilter: args.timeFilter
-      })
-
-      return {
-        success: true,
-        result: results,
-        metadata: {
-          query: args.query,
-          resultCount: results.length
-        }
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Web search failed: ${error.message}`
-      }
-    }
-  }
-
-  private async createFile(args: any): Promise<FunctionResult> {
-    try {
-      const fs = await import('fs').then(m => m.promises)
-      const path = await import('path')
-      
-      const workspaceDir = path.join(process.cwd(), 'data', 'workspaces', args.workspaceId || 'default')
-      await fs.mkdir(workspaceDir, { recursive: true })
-      
-      const filePath = path.join(workspaceDir, args.filename)
-      await fs.writeFile(filePath, args.content, 'utf-8')
-
-      return {
-        success: true,
-        result: {
-          filename: args.filename,
-          path: filePath,
-          size: args.content.length
-        },
-        metadata: {
-          action: 'file_created',
-          workspaceId: args.workspaceId
-        }
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `File creation failed: ${error.message}`
-      }
-    }
-  }
-
-  private async executeCode(args: any): Promise<FunctionResult> {
-    try {
-      // This is a simplified implementation - in production, you'd want proper sandboxing
-      const { spawn } = await import('child_process')
-      const fs = await import('fs').then(m => m.promises)
-      const path = await import('path')
-      const os = await import('os')
-
-      const tempDir = await fs.mkdtemp(path.join(os.tmpdir(), 'vibecode-exec-'))
-      
-      let command: string
-      let extension: string
-      
-      switch (args.language) {
-        case 'javascript':
-          command = 'node'
-          extension = 'js'
-          break
-        case 'python':
-          command = 'python3'
-          extension = 'py'
-          break
-        case 'bash':
-          command = 'bash'
-          extension = 'sh'
-          break
-        default:
-          return {
-            success: false,
-            error: `Unsupported language: ${args.language}`
-          }
-      }
-
-      const scriptPath = path.join(tempDir, `script.${extension}`)
-      await fs.writeFile(scriptPath, args.code)
-
-      return new Promise((resolve) => {
-        const child = spawn(command, [scriptPath], {
-          timeout: 10000,
-          cwd: tempDir
-        })
-
-        let stdout = ''
-        let stderr = ''
-
-        child.stdout?.on('data', (data) => {
-          stdout += data.toString()
-        })
-
-        child.stderr?.on('data', (data) => {
-          stderr += data.toString()
-        })
-
-        child.on('close', async (code) => {
-          // Cleanup
-          await fs.rm(tempDir, { recursive: true, force: true })
-          
-          const result: FunctionResult = {
-            success: code === 0,
-            result: {
-              stdout: stdout.trim(),
-              stderr: stderr.trim(),
-              exitCode: code
-            },
-            metadata: {
-              language: args.language,
-              executionTime: Date.now()
+    const schema = {
+      type: 'object',
+      properties: {
+        function_calls: {
+          type: 'array',
+          items: {
+            type: 'object',
+            properties: {
+              name: { type: 'string' },
+              arguments: { type: 'object' }
             }
           }
-          
-          // Add error property if the execution failed
-          if (code !== 0) {
-            result.error = stderr.trim() || 'Execution failed with non-zero exit code';
-          }
-          
-          resolve(result)
-        })
-
-        child.on('error', async (error) => {
-          await fs.rm(tempDir, { recursive: true, force: true })
-          resolve({
-            success: false,
-            error: `Execution failed: ${error.message}`
-          })
-        })
-      })
-    } catch (error) {
-      return {
-        success: false,
-        error: `Code execution setup failed: ${error.message}`
-      }
-    }
-  }
-
-  private async listFiles(args: any): Promise<FunctionResult> {
-    try {
-      const fs = await import('fs').then(m => m.promises)
-      const path = await import('path')
-      
-      const workspaceDir = path.join(process.cwd(), 'data', 'workspaces', args.workspaceId)
-      const targetDir = path.join(workspaceDir, args.path || '')
-
-      const files = await fs.readdir(targetDir, { withFileTypes: true })
-      const fileList: Array<{
-        name: string;
-        type: string;
-        size: number;
-        modified: Date;
-      }> = [];
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      const fileList = []
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-
-=======
->>>>>>> fix/consolidated-dependency-updates
-      for (const file of files) {
-        const stat = await fs.stat(path.join(targetDir, file.name))
-        
-        if (args.extensions) {
-          const allowedExts = args.extensions.split(',').map((ext: string) => ext.trim())
-          const fileExt = path.extname(file.name).slice(1)
-          if (!allowedExts.includes(fileExt)) continue
-        }
-
-        fileList.push({
-          name: file.name,
-          type: file.isDirectory() ? 'directory' : 'file',
-          size: stat.size,
-          modified: stat.mtime
-        })
-      }
-
-      return {
-        success: true,
-        result: fileList,
-        metadata: {
-          path: args.path || '/',
-          workspaceId: args.workspaceId,
-          totalFiles: fileList.length
         }
       }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Failed to list files: ${error.message}`
+    };
+
+    const prompt = `
+You have access to the following functions:
+
+${functionsToInclude.map(fn => `
+Function: ${fn.name}
+Description: ${fn.description}
+Parameters: ${JSON.stringify(fn.parameters.properties, null, 2)}
+`).join('\n')}
+
+User Query: "${userQuery}"
+
+If you need to use any of these functions to help answer the query, respond with a function call in the following JSON format:
+{
+  "function_calls": [
+    {
+      "name": "function_name",
+      "arguments": {
+        "param1": "value1",
+        "param2": "value2"
       }
     }
-  }
+  ]
+}
 
-  private async installPackage(args: any): Promise<FunctionResult> {
-    try {
-      const { spawn } = await import('child_process')
-      const path = await import('path')
+If you don't need to use any functions, just respond with your answer directly.
 
-      const workspaceDir = path.join(process.cwd(), 'data', 'workspaces', args.workspaceId)
-      const packageSpec = args.version ? `${args.packageName}@${args.version}` : args.packageName
+Choose the most appropriate function(s) based on the user's request.
+`;
 
-      let command: string
-      let cmdArgs: string[]
-
-      switch (args.packageManager) {
-        case 'npm':
-          command = 'npm'
-          cmdArgs = ['install', packageSpec]
-          break
-        case 'yarn':
-          command = 'yarn'
-          cmdArgs = ['add', packageSpec]
-          break
-        case 'pip':
-          command = 'pip3'
-          cmdArgs = ['install', packageSpec]
-          break
-        case 'composer':
-          command = 'composer'
-          cmdArgs = ['require', packageSpec]
-          break
-        default:
-          return {
-            success: false,
-            error: `Unsupported package manager: ${args.packageManager}`
-          }
-      }
-
-      return new Promise((resolve) => {
-        const child = spawn(command, cmdArgs, {
-          cwd: workspaceDir,
-          timeout: 60000
-        })
-
-        let output = ''
-        let error = ''
-
-        child.stdout?.on('data', (data) => {
-          output += data.toString()
-        })
-
-        child.stderr?.on('data', (data) => {
-          error += data.toString()
-        })
-
-        child.on('close', (code) => {
-          resolve({
-            success: code === 0,
-            result: {
-              packageName: args.packageName,
-              version: args.version,
-              output: output.trim(),
-              error: error.trim()
-            },
-            metadata: {
-              packageManager: args.packageManager,
-              workspaceId: args.workspaceId,
-              exitCode: code
-            }
-          })
-        })
-      })
-    } catch (error) {
-      return {
-        success: false,
-        error: `Package installation failed: ${error.message}`
-      }
-    }
+    return { prompt, schema };
   }
 }
 
-// Export singleton instance
-export const functionCallingService = new FunctionCallingService()
+// Export singleton instance for global use
+export const functionCallingService = new FunctionCallingService();
 
-// Store function definitions separately for registration
-<<<<<<< HEAD
-<<<<<<< HEAD
-const functionDefinitions: FunctionDefinition[] = [
-=======
-const functionDefinitions: FunctionDefinition[] = [
-<<<<<<< HEAD
-const functionDefinitions = [
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-  {
-=======
-const functionDefinitions: FunctionDefinition[] = [  {
->>>>>>> fix/consolidated-dependency-updates
-    name: 'web_search',
-    description: 'Search the web for current information on a given topic',
-    parameters: {
-      type: 'object',
-      properties: {
-        query: { type: 'string', description: 'The search query to execute' },
-        maxResults: { type: 'number', description: 'Maximum number of results (default: 5)' },
-        timeFilter: { type: 'string', description: 'Time filter', enum: ['day', 'week', 'month', 'year'] }
-      },
-      required: ['query']
-    }
-  },
-  {
-    name: 'create_file',
-    description: 'Create a new file with specified content',
-    parameters: {
-      type: 'object',
-      properties: {
-        filename: { type: 'string', description: 'Name of the file to create' },
-        content: { type: 'string', description: 'Content to write to the file' },
-        workspaceId: { type: 'string', description: 'Workspace ID where the file should be created' }
-      },
-      required: ['filename', 'content']
-    }
-  },
-  {
-    name: 'execute_code',
-    description: 'Execute code in a sandboxed environment',
-    parameters: {
-      type: 'object',
-      properties: {
-        code: { type: 'string', description: 'The code to execute' },
-        language: { type: 'string', description: 'Programming language', enum: ['javascript', 'python', 'bash'] },
-        workspaceId: { type: 'string', description: 'Workspace ID for execution context' }
-      },
-      required: ['code', 'language']
-    }
-  },
-  {
-    name: 'list_files',
-    description: 'List files in a workspace directory',
-    parameters: {
-      type: 'object',
-      properties: {
-        workspaceId: { type: 'string', description: 'Workspace ID to list files from' },
-        path: { type: 'string', description: 'Directory path within workspace' },
-        extensions: { type: 'string', description: 'Comma-separated list of file extensions' }
-      },
-      required: ['workspaceId']
-    }
-  }
-]
-
-// Store definitions for external access
-functionCallingService['registeredDefinitions'] = new Map<string, FunctionDefinition>(
-  functionDefinitions.map(def => [def.name, def])
-)
+// Initialize with common functions
+functionCallingService.registerCommonFunctions();
