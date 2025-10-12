@@ -16,7 +16,7 @@ import {
   DetailedConnectionPoolInfo,
   HealthCheckOptions,
   HealthCheckResult,
-} from '@/lib/db-types'
+} from '@/lib/db/db-types'
 
 describe('Database Types', () => {
   describe('LogLevel enum', () => {

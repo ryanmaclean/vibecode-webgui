@@ -10,7 +10,7 @@ export * from './analytics';
 export * from './agents/multi-agent-workflow';
 export * from './vector-stores/pgvector-client';
 export * from './local/ollama-client';
-export * from './enhanced-ai-manager';
+// export * from './enhanced-ai-manager';  // Module not found - commented out
 export * from './automated-test-generator';
 export * from './smart-code-completion';
 export * from './natural-language-to-code';

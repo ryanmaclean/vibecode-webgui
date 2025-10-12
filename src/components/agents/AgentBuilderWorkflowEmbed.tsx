@@ -13,7 +13,8 @@
 
 'use client'
 
-import '@openai/chatkit'
+// Import ChatKit types only - the component loads at runtime
+import type {} from '@openai/chatkit'
 
 import { useMemo, useState } from 'react'
 import { ChatKit, useChatKit, type UseChatKitOptions } from '@openai/chatkit-react'
