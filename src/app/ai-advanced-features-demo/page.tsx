@@ -9,25 +9,15 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-<<<<<<< Updated upstream
-import { 
-  Loader2, 
-  Code, 
-  TestTube, 
-  Lightbulb, 
-  FileText, 
-  Zap, 
-  Shield, 
-  Gauge, 
-=======
 import {
   Loader2,
+  Code,
   TestTube,
   Lightbulb,
   FileText,
+  Zap,
   Shield,
   Gauge,
->>>>>>> Stashed changes
   Database,
   CheckCircle,
   AlertTriangle,
