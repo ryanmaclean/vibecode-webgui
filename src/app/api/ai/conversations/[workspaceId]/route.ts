@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
-import { authOptions } from '@/lib/auth/auth-options';
+import { authOptions } from '@/lib/auth';
 
 // GET - Retrieve conversation history for a workspace
 export async function GET(

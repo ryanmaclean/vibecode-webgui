@@ -61,3 +61,21 @@ export const logger = {
     winstonLogger.debug(message, metadata || {});
   },
 };
+
+// Create a child logger with additional metadata
+export function createChildLogger(metadata: Record<string, unknown>) {
+  return {
+    error: (message: any, additionalMeta?: Record<string, unknown>) => {
+      winstonLogger.error(message, { ...metadata, ...additionalMeta });
+    },
+    warn: (message: any, additionalMeta?: Record<string, unknown>) => {
+      winstonLogger.warn(message, { ...metadata, ...additionalMeta });
+    },
+    info: (message: any, additionalMeta?: Record<string, unknown>) => {
+      winstonLogger.info(message, { ...metadata, ...additionalMeta });
+    },
+    debug: (message: any, additionalMeta?: Record<string, unknown>) => {
+      winstonLogger.debug(message, { ...metadata, ...additionalMeta });
+    },
+  };
+}

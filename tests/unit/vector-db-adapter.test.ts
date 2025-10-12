@@ -3,10 +3,10 @@
  * Tests the core functionality of vector database adapters
  */
 
-import { BaseVectorDatabaseAdapter } from '../../src/lib/vector-db/base-vector-database-adapter';
-import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';
-import { logger } from '../../src/lib/logger';
-import { appLogger } from '../../src/lib/server-monitoring';
+import { BaseVectorDatabaseAdapter } from '@/lib/vector-db/base-vector-database-adapter';
+import { VectorDatabaseProvider } from '@/lib/vector-db/vector-types';
+import { logger } from '@/lib/logger';
+import { appLogger } from '@/lib/server-monitoring';
 
 // Define types for query parameters and results
 type QueryResult = { rows: Record<string, unknown>[] };
@@ -242,7 +242,7 @@ class MockVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
 }
 
 // Mock telemetry and logging
-jest.mock('../../src/lib/logger', () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
@@ -251,7 +251,7 @@ jest.mock('../../src/lib/logger', () => ({
   }
 }));
 
-jest.mock('../../src/lib/server-monitoring', () => ({
+jest.mock('@/lib/server-monitoring', () => ({
   metrics: {
     increment: jest.fn(),
     histogram: jest.fn(),
