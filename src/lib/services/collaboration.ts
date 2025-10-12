@@ -1,419 +1,591 @@
-import { Server as SocketIOServer } from 'socket.io'
-import { Server as HTTPServer } from 'http'
-import { mongodbChatService } from './chat-mongodb'
-import { datadogMetrics } from '../monitoring/datadog-metrics'
+/**
+ * Collaboration Service
+ * Handles real-time collaboration features for workspaces
+ */
 
-export interface CollaborativeUser {
-  id: string
-  name: string
-  avatar?: string
-  color: string
-  isActive: boolean
-  lastSeen: Date
+import { Server as SocketIOServer } from 'socket.io';
+import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+
+export interface WorkspaceUser {
+  userId: string;
+  username: string;
+  avatar?: string;
+  role: 'owner' | 'editor' | 'viewer';
+  joinedAt: Date;
+  lastActivity: Date;
   cursor?: {
-    x: number
-    y: number
-    messageId?: string
-  }
+    x: number;
+    y: number;
+    file?: string;
+  };
 }
 
-export interface WorkspaceState {
-  id: string
-  activeUsers: Map<string, CollaborativeUser>
-  activeConversations: Set<string>
-  sharedCursor: Map<string, { x: number; y: number; timestamp: Date }>
-  typingUsers: Map<string, { conversationId: string; timestamp: Date }>
-  lastActivity: Date
+export interface WorkspaceSession {
+  workspaceId: string;
+  users: Map<string, WorkspaceUser>;
+  createdAt: Date;
+  maxUsers: number;
 }
 
 export interface CollaborationEvent {
-  type: 'user_joined' | 'user_left' | 'user_typing' | 'message_sent' | 'cursor_moved' | 'file_shared'
-  userId: string
-  workspaceId: string
-  conversationId?: string
-  data?: any
-  timestamp: Date
+  type: 'user_joined' | 'user_left' | 'cursor_move' | 'file_edit' | 'chat_message';
+  workspaceId: string;
+  userId: string;
+  data: any;
+  timestamp: Date;
 }
 
+export interface FileEdit {
+  filePath: string;
+  operation: 'insert' | 'delete' | 'replace';
+  position: number;
+  content: string;
+  length?: number;
+}
+
+/**
+ * Collaboration Service for real-time workspace features
+ */
 export class CollaborationService {
-  private io: SocketIOServer | null = null
-  private workspaces: Map<string, WorkspaceState> = new Map()
-  private userColors = [
-    '#3B82F6', '#EF4444', '#10B981', '#F59E0B', '#8B5CF6', 
-    '#EC4899', '#06B6D4', '#84CC16', '#F97316', '#6366F1'
-  ]
-  private colorIndex = 0
+  private io: SocketIOServer<DefaultEventsMap, DefaultEventsMap> | null = null;
+  private sessions: Map<string, WorkspaceSession> = new Map();
+  private userSockets: Map<string, string> = new Map(); // userId -> socketId
+  private socketUsers: Map<string, string> = new Map(); // socketId -> userId
 
-  initialize(httpServer: HTTPServer) {
-    this.io = new SocketIOServer(httpServer, {
-      cors: {
-        origin: process.env.NEXTAUTH_URL || 'http://localhost:3000',
-        methods: ['GET', 'POST']
-      },
-      path: '/api/collaboration/socket'
-    })
-
-    this.setupEventHandlers()
-    this.startCleanupInterval()
+  /**
+   * Initialize the collaboration service with Socket.IO
+   */
+  initialize(io: SocketIOServer): void {
+    this.io = io;
+    this.setupSocketHandlers();
   }
 
-  private setupEventHandlers() {
-    if (!this.io) return
+  /**
+   * Setup Socket.IO event handlers
+   */
+  private setupSocketHandlers(): void {
+    if (!this.io) return;
 
     this.io.on('connection', (socket) => {
-      // Debug log removed
+      console.log('User connected:', socket.id);
 
-      socket.on('join_workspace', async (data) => {
-        const { workspaceId, userId, userName, conversationId } = data
-        await this.handleUserJoinWorkspace(socket, workspaceId, userId, userName, conversationId)
-      })
+      // Handle user joining workspace
+      socket.on('join_workspace', async (data: { workspaceId: string; userId: string; username: string }) => {
+        await this.handleUserJoin(socket, data);
+      });
 
-      socket.on('leave_workspace', async (data) => {
-        const { workspaceId, userId } = data
-        await this.handleUserLeaveWorkspace(socket, workspaceId, userId)
-      })
+      // Handle cursor movement
+      socket.on('cursor_move', (data: { x: number; y: number; file?: string }) => {
+        this.handleCursorMove(socket, data);
+      });
 
-      socket.on('typing_start', (data) => {
-        this.handleTypingStart(socket, data)
-      })
+      // Handle file edits
+      socket.on('file_edit', (data: FileEdit) => {
+        this.handleFileEdit(socket, data);
+      });
 
-      socket.on('typing_stop', (data) => {
-        this.handleTypingStop(socket, data)
-      })
+      // Handle chat messages
+      socket.on('chat_message', (data: { content: string; conversationId?: string }) => {
+        this.handleChatMessage(socket, data);
+      });
 
-      socket.on('cursor_move', (data) => {
-        this.handleCursorMove(socket, data)
-      })
+      // Handle user leaving
+      socket.on('leave_workspace', (data: { workspaceId: string }) => {
+        this.handleUserLeave(socket, data);
+      });
 
-      socket.on('message_draft', (data) => {
-        this.handleMessageDraft(socket, data)
-      })
-
-      socket.on('file_share', async (data) => {
-        await this.handleFileShare(socket, data)
-      })
-
+      // Handle disconnect
       socket.on('disconnect', () => {
-        this.handleDisconnect(socket)
-      })
-    })
-  }
-
-  private async handleUserJoinWorkspace(
-    socket: any, 
-    workspaceId: string, 
-    userId: string, 
-    userName: string, 
-    conversationId?: string
-  ) {
-    try {
-      // Join the workspace room
-      await socket.join(`workspace:${workspaceId}`)
-      if (conversationId) {
-        await socket.join(`conversation:${conversationId}`)
-      }
-
-      // Get or create workspace state
-      let workspace = this.workspaces.get(workspaceId)
-      if (!workspace) {
-        workspace = {
-          id: workspaceId,
-          activeUsers: new Map(),
-          activeConversations: new Set(),
-          sharedCursor: new Map(),
-          typingUsers: new Map(),
-          lastActivity: new Date()
-        }
-        this.workspaces.set(workspaceId, workspace)
-      }
-
-      // Add user to workspace
-      const user: CollaborativeUser = {
-        id: userId,
-        name: userName,
-        color: this.userColors[this.colorIndex % this.userColors.length],
-        isActive: true,
-        lastSeen: new Date()
-      }
-      this.colorIndex++
-
-      workspace.activeUsers.set(userId, user)
-      if (conversationId) {
-        workspace.activeConversations.add(conversationId)
-      }
-      workspace.lastActivity = new Date()
-
-      // Store socket metadata
-      socket.userId = userId
-      socket.workspaceId = workspaceId
-      socket.conversationId = conversationId
-
-      // Notify other users
-      socket.to(`workspace:${workspaceId}`).emit('user_joined', {
-        user,
-        workspaceId,
-        conversationId,
-        activeUsers: Array.from(workspace.activeUsers.values())
-      })
-
-      // Send current workspace state to joining user
-      socket.emit('workspace_state', {
-        workspaceId,
-        activeUsers: Array.from(workspace.activeUsers.values()),
-        activeConversations: Array.from(workspace.activeConversations)
-      })
-
-      // Record collaboration metric
-      datadogMetrics.recordUserAction('workspace_join', userId, workspaceId)
-
-      // Debug log removed
-
-    } catch (error) {
-      console.error('Error handling user join workspace:', error)
-      socket.emit('error', { message: 'Failed to join workspace' })
-    }
-  }
-
-  private async handleUserLeaveWorkspace(socket: any, workspaceId: string, userId: string) {
-    try {
-      const workspace = this.workspaces.get(workspaceId)
-      if (!workspace) return
-
-      // Remove user from workspace
-      const user = workspace.activeUsers.get(userId)
-      workspace.activeUsers.delete(userId)
-      workspace.typingUsers.delete(userId)
-      workspace.sharedCursor.delete(userId)
-
-      // Leave socket rooms
-      await socket.leave(`workspace:${workspaceId}`)
-      if (socket.conversationId) {
-        await socket.leave(`conversation:${socket.conversationId}`)
-      }
-
-      // Notify other users
-      socket.to(`workspace:${workspaceId}`).emit('user_left', {
-        userId,
-        user,
-        workspaceId,
-        activeUsers: Array.from(workspace.activeUsers.values())
-      })
-
-      // Clean up empty workspace
-      if (workspace.activeUsers.size === 0) {
-        this.workspaces.delete(workspaceId)
-      }
-
-      datadogMetrics.recordUserAction('workspace_leave', userId, workspaceId)
-
-      // Debug log removed
-
-    } catch (error) {
-      console.error('Error handling user leave workspace:', error)
-    }
-  }
-
-  private handleTypingStart(socket: any, data: { conversationId: string }) {
-    const { conversationId } = data
-    const { userId, workspaceId } = socket
-
-    if (!userId || !workspaceId) return
-
-    const workspace = this.workspaces.get(workspaceId)
-    if (!workspace) return
-
-    workspace.typingUsers.set(userId, {
-      conversationId,
-      timestamp: new Date()
-    })
-
-    // Notify other users in the conversation
-    socket.to(`conversation:${conversationId}`).emit('user_typing', {
-      userId,
-      conversationId,
-      isTyping: true
-    })
-  }
-
-  private handleTypingStop(socket: any, data: { conversationId: string }) {
-    const { conversationId } = data
-    const { userId, workspaceId } = socket
-
-    if (!userId || !workspaceId) return
-
-    const workspace = this.workspaces.get(workspaceId)
-    if (!workspace) return
-
-    workspace.typingUsers.delete(userId)
-
-    socket.to(`conversation:${conversationId}`).emit('user_typing', {
-      userId,
-      conversationId,
-      isTyping: false
-    })
-  }
-
-  private handleCursorMove(socket: any, data: { x: number, y: number, messageId?: string }) {
-    const { userId, workspaceId } = socket
-    if (!userId || !workspaceId) return
-
-    const workspace = this.workspaces.get(workspaceId)
-    if (!workspace) return
-
-    workspace.sharedCursor.set(userId, {
-      x: data.x,
-      y: data.y,
-      timestamp: new Date()
-    })
-
-    // Throttled broadcast to other users
-    socket.to(`workspace:${workspaceId}`).emit('cursor_moved', {
-      userId,
-      cursor: data,
-      timestamp: new Date()
-    })
-  }
-
-  private handleMessageDraft(socket: any, data: { conversationId: string, content: string }) {
-    const { conversationId, content } = data
-    const { userId } = socket
-
-    // Broadcast draft message to other users in conversation (for live previews)
-    socket.to(`conversation:${conversationId}`).emit('message_draft', {
-      userId,
-      conversationId,
-      content: content.slice(0, 100), // Limit draft preview length
-      timestamp: new Date()
-    })
-  }
-
-  private async handleFileShare(socket: any, data: { fileName: string, fileSize: number, conversationId: string }) {
-    const { fileName, fileSize, conversationId } = data
-    const { userId, workspaceId } = socket
-
-    try {
-      // Notify users in the conversation about file share
-      socket.to(`conversation:${conversationId}`).emit('file_shared', {
-        userId,
-        fileName,
-        fileSize,
-        conversationId,
-        timestamp: new Date()
-      })
-
-      datadogMetrics.recordUserAction('file_share', userId, workspaceId, {
-        tags: { file_size: fileSize > 1024*1024 ? 'large' : 'small' }
-      })
-    } catch (error) {
-      console.error('Error broadcasting file share:', error)
-    }
-  }
-
-  private handleDisconnect(socket: any) {
-    const { userId, workspaceId } = socket
-    if (userId && workspaceId) {
-      this.handleUserLeaveWorkspace(socket, workspaceId, userId)
-    }
-    // Debug log removed
-  }
-
-  // Broadcast message to all users in a conversation
-  async broadcastMessage(conversationId: string, message: any, excludeUserId?: string) {
-    if (!this.io) return
-
-    const messageData = {
-      ...message,
-      timestamp: new Date()
-    }
-
-    // Let all clients handle this - if excludeUserId is set, clients will need to check
-    // their own ID and ignore the message if they match
-    this.io.to(`conversation:${conversationId}`).emit('new_message', {
-      ...messageData,
-      _excludeUserId: excludeUserId // Include this so clients can filter
-<<<<<<< HEAD
+        this.handleDisconnect(socket);
+      });
     });
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    if (excludeUserId) {
-      this.io.to(`conversation:${conversationId}`).except(excludeUserId).emit('new_message', messageData)
-    } else {
-      this.io.to(`conversation:${conversationId}`).emit('new_message', messageData)
+  }
+
+  /**
+   * Handle user joining a workspace
+   */
+  private async handleUserJoin(
+    socket: any,
+    data: { workspaceId: string; userId: string; username: string }
+  ): Promise<void> {
+    const { workspaceId, userId, username } = data;
+
+    // Track user socket mapping
+    this.userSockets.set(userId, socket.id);
+    this.socketUsers.set(socket.id, userId);
+
+    // Get or create workspace session
+    let session = this.sessions.get(workspaceId);
+    if (!session) {
+      session = {
+        workspaceId,
+        users: new Map(),
+        createdAt: new Date(),
+        maxUsers: 10 // Configurable limit
+      };
+      this.sessions.set(workspaceId, session);
     }
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+
+    // Check if workspace is full
+    if (session.users.size >= session.maxUsers && !session.users.has(userId)) {
+      socket.emit('workspace_full', { workspaceId, maxUsers: session.maxUsers });
+      return;
+    }
+
+    // Add user to workspace
+    const workspaceUser: WorkspaceUser = {
+      userId,
+      username,
+      role: 'editor', // Default role, could be determined by permissions
+      joinedAt: new Date(),
+      lastActivity: new Date()
+    };
+
+    session.users.set(userId, workspaceUser);
+
+    // Join socket to workspace room
+    await socket.join(`workspace:${workspaceId}`);
+
+    // Notify other users in workspace
+    socket.to(`workspace:${workspaceId}`).emit('user_joined', {
+      user: workspaceUser,
+      workspaceId,
+      timestamp: new Date()
+    });
+
+    // Send current workspace state to joining user
+    socket.emit('workspace_state', {
+      users: Array.from(session.users.values()),
+      workspaceId,
+      timestamp: new Date()
+    });
+
+    console.log(`User ${username} joined workspace ${workspaceId}`);
   }
-=======
-    });  }
->>>>>>> fix/consolidated-dependency-updates
 
-  // Broadcast workspace events
-  async broadcastWorkspaceEvent(workspaceId: string, event: CollaborationEvent) {
-    if (!this.io) return
+  /**
+   * Handle cursor movement
+   */
+  private handleCursorMove(socket: any, data: { x: number; y: number; file?: string }): void {
+    const userId = this.socketUsers.get(socket.id);
+    if (!userId) return;
 
-    this.io.to(`workspace:${workspaceId}`).emit('workspace_event', event)
-    
-    datadogMetrics.recordUserAction('collaboration_event', event.userId, workspaceId, {
-      tags: { event_type: event.type }
-    })
+    // Find user's workspace
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      const user = session.users.get(userId);
+      if (user) {
+        // Update user's cursor position
+        user.cursor = { x: data.x, y: data.y, file: data.file };
+        user.lastActivity = new Date();
+
+        // Broadcast cursor movement to other users in workspace
+        socket.to(`workspace:${workspaceId}`).emit('cursor_move', {
+          userId,
+          username: user.username,
+          cursor: user.cursor,
+          timestamp: new Date()
+        });
+
+        break;
+      }
+    }
   }
 
-  // Get workspace statistics
-  getWorkspaceStats(workspaceId: string) {
-    const workspace = this.workspaces.get(workspaceId)
-    if (!workspace) return null
+  /**
+   * Handle file edits
+   */
+  private handleFileEdit(socket: any, data: FileEdit): void {
+    const userId = this.socketUsers.get(socket.id);
+    if (!userId) return;
+
+    // Find user's workspace
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      const user = session.users.get(userId);
+      if (user) {
+        // Update user's last activity
+        user.lastActivity = new Date();
+
+        // Broadcast file edit to other users in workspace
+        socket.to(`workspace:${workspaceId}`).emit('file_edit', {
+          fileEdit: data,
+          userId,
+          username: user.username,
+          timestamp: new Date()
+        });
+
+        // Log collaboration event
+        this.logCollaborationEvent({
+          type: 'file_edit',
+          workspaceId,
+          userId,
+          data,
+          timestamp: new Date()
+        });
+
+        break;
+      }
+    }
+  }
+
+  /**
+   * Handle chat messages
+   */
+  private handleChatMessage(socket: any, data: { content: string; conversationId?: string }): void {
+    const userId = this.socketUsers.get(socket.id);
+    if (!userId) return;
+
+    // Find user's workspace
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      const user = session.users.get(userId);
+      if (user) {
+        // Update user's last activity
+        user.lastActivity = new Date();
+
+        // Broadcast chat message to workspace
+        this.io?.to(`workspace:${workspaceId}`).emit('chat_message', {
+          content: data.content,
+          userId,
+          username: user.username,
+          conversationId: data.conversationId,
+          timestamp: new Date()
+        });
+
+        // Log collaboration event
+        this.logCollaborationEvent({
+          type: 'chat_message',
+          workspaceId,
+          userId,
+          data: { content: data.content, conversationId: data.conversationId },
+          timestamp: new Date()
+        });
+
+        break;
+      }
+    }
+  }
+
+  /**
+   * Handle user leaving workspace
+   */
+  private handleUserLeave(socket: any, data: { workspaceId: string }): void {
+    const userId = this.socketUsers.get(socket.id);
+    if (!userId) return;
+
+    const { workspaceId } = data;
+    const session = this.sessions.get(workspaceId);
+
+    if (session) {
+      const user = session.users.get(userId);
+      if (user) {
+        // Remove user from workspace
+        session.users.delete(userId);
+
+        // Leave socket room
+        socket.leave(`workspace:${workspaceId}`);
+
+        // Notify other users
+        socket.to(`workspace:${workspaceId}`).emit('user_left', {
+          userId,
+          username: user.username,
+          workspaceId,
+          timestamp: new Date()
+        });
+
+        // Clean up empty sessions
+        if (session.users.size === 0) {
+          this.sessions.delete(workspaceId);
+        }
+
+        console.log(`User ${user.username} left workspace ${workspaceId}`);
+      }
+    }
+
+    // Clean up socket mappings
+    this.userSockets.delete(userId);
+    this.socketUsers.delete(socket.id);
+  }
+
+  /**
+   * Handle socket disconnect
+   */
+  private handleDisconnect(socket: any): void {
+    const userId = this.socketUsers.get(socket.id);
+    if (!userId) return;
+
+    // Find and remove user from all workspaces
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      const user = session.users.get(userId);
+      if (user) {
+        session.users.delete(userId);
+
+        // Notify other users in workspace
+        socket.to(`workspace:${workspaceId}`).emit('user_left', {
+          userId,
+          username: user.username,
+          workspaceId,
+          timestamp: new Date()
+        });
+
+        // Clean up empty sessions
+        if (session.users.size === 0) {
+          this.sessions.delete(workspaceId);
+        }
+      }
+    }
+
+    // Clean up socket mappings
+    this.userSockets.delete(userId);
+    this.socketUsers.delete(socket.id);
+
+    console.log('User disconnected:', socket.id);
+  }
+
+  /**
+   * Send message to specific workspace
+   */
+  sendToWorkspace(workspaceId: string, event: string, data: any): void {
+    this.io?.to(`workspace:${workspaceId}`).emit(event, data);
+  }
+
+  /**
+   * Send message to specific user
+   */
+  sendToUser(userId: string, event: string, data: any): void {
+    const socketId = this.userSockets.get(userId);
+    if (socketId) {
+      this.io?.to(socketId).emit(event, data);
+    }
+  }
+
+  /**
+   * Get workspace session information
+   */
+  getWorkspaceSession(workspaceId: string): WorkspaceSession | undefined {
+    return this.sessions.get(workspaceId);
+  }
+
+  /**
+   * Get all active workspace sessions
+   */
+  getActiveSessions(): WorkspaceSession[] {
+    return Array.from(this.sessions.values());
+  }
+
+  /**
+   * Get user information by socket ID
+   */
+  getUserBySocketId(socketId: string): { userId: string; workspaceId?: string } | null {
+    const userId = this.socketUsers.get(socketId);
+    if (!userId) return null;
+
+    // Find which workspace the user is in
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      if (session.users.has(userId)) {
+        return { userId, workspaceId };
+      }
+    }
+
+    return { userId };
+  }
+
+  /**
+   * Check if user is in workspace
+   */
+  isUserInWorkspace(userId: string, workspaceId: string): boolean {
+    const session = this.sessions.get(workspaceId);
+    return session?.users.has(userId) || false;
+  }
+
+  /**
+   * Get collaboration statistics
+   */
+  getCollaborationStats(): {
+    activeSessions: number;
+    totalUsers: number;
+    averageUsersPerSession: number;
+    sessionsByWorkspace: Record<string, number>;
+  } {
+    const sessions = Array.from(this.sessions.values());
+    const totalUsers = sessions.reduce((sum, session) => sum + session.users.size, 0);
+
+    const sessionsByWorkspace: Record<string, number> = {};
+    sessions.forEach(session => {
+      sessionsByWorkspace[session.workspaceId] = session.users.size;
+    });
 
     return {
-      activeUsers: workspace.activeUsers.size,
-      activeConversations: workspace.activeConversations.size,
-      typingUsers: workspace.typingUsers.size,
-      lastActivity: workspace.lastActivity,
-      users: Array.from(workspace.activeUsers.values())
+      activeSessions: sessions.length,
+      totalUsers,
+      averageUsersPerSession: sessions.length > 0 ? totalUsers / sessions.length : 0,
+      sessionsByWorkspace
+    };
+  }
+
+  /**
+   * Log collaboration event
+   */
+  private logCollaborationEvent(event: CollaborationEvent): void {
+    // This would integrate with your logging/monitoring system
+    console.log('Collaboration event:', {
+      type: event.type,
+      workspaceId: event.workspaceId,
+      userId: event.userId,
+      timestamp: event.timestamp
+    });
+
+    // Store event for analytics (in production, this would go to a database)
+    // For now, we'll just keep it in memory for this session
+  }
+
+  /**
+   * Clean up inactive sessions
+   */
+  cleanupInactiveSessions(maxIdleTime: number = 30 * 60 * 1000): void { // 30 minutes default
+    const now = Date.now();
+
+    for (const [workspaceId, session] of this.sessions.entries()) {
+      // Check if all users have been inactive for too long
+      const inactiveUsers = Array.from(session.users.values()).filter(
+        user => now - user.lastActivity.getTime() > maxIdleTime
+      );
+
+      if (inactiveUsers.length === session.users.size && session.users.size > 0) {
+        // All users inactive, clean up session
+        this.sessions.delete(workspaceId);
+        console.log(`Cleaned up inactive workspace session: ${workspaceId}`);
+      }
     }
   }
 
-  // Clean up inactive workspaces and users
-  private startCleanupInterval() {
-    setInterval(() => {
-      const now = new Date()
-      const inactivityThreshold = 30 * 60 * 1000 // 30 minutes
-
-      for (const [workspaceId, workspace] of this.workspaces.entries()) {
-        // Remove inactive typing indicators
-        for (const [userId, typing] of workspace.typingUsers.entries()) {
-          if (now.getTime() - typing.timestamp.getTime() > 10000) { // 10 seconds
-            workspace.typingUsers.delete(userId)
-          }
-        }
-
-        // Remove old cursor positions
-        for (const [userId, cursor] of workspace.sharedCursor.entries()) {
-          if (now.getTime() - cursor.timestamp.getTime() > 5000) { // 5 seconds
-            workspace.sharedCursor.delete(userId)
-          }
-        }
-
-        // Mark inactive users
-        for (const [userId, user] of workspace.activeUsers.entries()) {
-          if (now.getTime() - user.lastSeen.getTime() > inactivityThreshold) {
-            user.isActive = false
-          }
-        }
-
-        // Clean up completely empty workspaces
-        if (workspace.activeUsers.size === 0 && 
-            now.getTime() - workspace.lastActivity.getTime() > inactivityThreshold) {
-          this.workspaces.delete(workspaceId)
-          // Debug log removed
-        }
+  /**
+   * Force disconnect user from all workspaces
+   */
+  forceDisconnectUser(userId: string): void {
+    const socketId = this.userSockets.get(userId);
+    if (socketId) {
+      const socket = this.io?.sockets.sockets.get(socketId);
+      if (socket) {
+        socket.disconnect();
       }
-    }, 30000) // Run cleanup every 30 seconds
+    }
+  }
+
+  /**
+   * Get service health status
+   */
+  getHealthStatus(): {
+    isHealthy: boolean;
+    activeConnections: number;
+    activeSessions: number;
+    uptime: number;
+  } {
+    const uptime = this.io ? Date.now() - (this.io as any).engine.startTime : 0;
+
+    return {
+      isHealthy: this.io !== null,
+      activeConnections: this.io?.sockets.sockets.size || 0,
+      activeSessions: this.sessions.size,
+      uptime
+    };
+  }
+
+  /**
+   * Broadcast system message to all connected users
+   */
+  broadcastSystemMessage(message: string, data?: any): void {
+    this.io?.emit('system_message', {
+      message,
+      data,
+      timestamp: new Date()
+    });
+  }
+
+  /**
+   * Send notification to specific user
+   */
+  sendNotification(userId: string, notification: {
+    type: 'info' | 'warning' | 'error' | 'success';
+    title: string;
+    message: string;
+    data?: any;
+  }): void {
+    this.sendToUser(userId, 'notification', {
+      ...notification,
+      timestamp: new Date()
+    });
+  }
+
+  /**
+   * Update user role in workspace
+   */
+  updateUserRole(workspaceId: string, userId: string, role: WorkspaceUser['role']): boolean {
+    const session = this.sessions.get(workspaceId);
+    if (!session) return false;
+
+    const user = session.users.get(userId);
+    if (!user) return false;
+
+    user.role = role;
+    session.users.set(userId, user);
+
+    // Notify all users in workspace about role change
+    this.io?.to(`workspace:${workspaceId}`).emit('user_role_updated', {
+      userId,
+      username: user.username,
+      role,
+      workspaceId,
+      timestamp: new Date()
+    });
+
+    return true;
+  }
+
+  /**
+   * Get users in workspace
+   */
+  getWorkspaceUsers(workspaceId: string): WorkspaceUser[] {
+    const session = this.sessions.get(workspaceId);
+    return session ? Array.from(session.users.values()) : [];
+  }
+
+  /**
+   * Check if workspace exists
+   */
+  workspaceExists(workspaceId: string): boolean {
+    return this.sessions.has(workspaceId);
+  }
+
+  /**
+   * Create workspace session (for testing/admin purposes)
+   */
+  createWorkspaceSession(workspaceId: string, maxUsers: number = 10): WorkspaceSession {
+    const session: WorkspaceSession = {
+      workspaceId,
+      users: new Map(),
+      createdAt: new Date(),
+      maxUsers
+    };
+
+    this.sessions.set(workspaceId, session);
+    return session;
+  }
+
+  /**
+   * Remove workspace session
+   */
+  removeWorkspaceSession(workspaceId: string): boolean {
+    const session = this.sessions.get(workspaceId);
+    if (!session) return false;
+
+    // Disconnect all users in the workspace
+    for (const [userId] of session.users) {
+      this.forceDisconnectUser(userId);
+    }
+
+    this.sessions.delete(workspaceId);
+    return true;
   }
 }
 
-// Export singleton instance
-export const collaborationService = new CollaborationService()
-
-// Types are already exported above with interface declarations
+// Export singleton instance for global use
+export const collaborationService = new CollaborationService();

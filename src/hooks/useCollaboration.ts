@@ -1,340 +1,527 @@
-'use client'
+/**
+ * useCollaboration Hook
+ * React hook for managing collaborative workspace features
+ */
 
-import { useEffect, useState, useCallback, useRef } from 'react'
-import io, { Socket } from 'socket.io-client'
+import { useState, useEffect, useCallback, useRef } from 'react';
 
-// Define the interface locally instead of importing from an unavailable module
-export interface CollaborativeUser {
-  id: string
-  name: string
-  avatar?: string
-  color?: string
-  isActive: boolean
-  lastSeen?: Date
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  color: string;
+  isActive: boolean;
+  role: 'owner' | 'collaborator' | 'viewer';
+  lastSeen: Date;
+  cursor?: {
+    x: number;
+    y: number;
+    file?: string;
+  };
 }
 
-interface UseCollaborationProps {
-  workspaceId: string
-  conversationId?: string
-  userId: string
-  userName: string
-  enabled?: boolean
+export interface WorkspaceActivity {
+  id: string;
+  type: 'user_joined' | 'user_left' | 'file_opened' | 'file_edited' | 'project_created' | 'terminal_command';
+  userId: string;
+  userName: string;
+  timestamp: Date;
+  data?: {
+    file?: string;
+    project?: string;
+    command?: string;
+    message?: string;
+  };
 }
 
-interface TypingUser {
-  userId: string
-  conversationId: string
-  timestamp: Date
+export interface ChatMessage {
+  id: string;
+  userId: string;
+  userName: string;
+  message: string;
+  timestamp: Date;
+  type?: 'message' | 'system';
 }
 
-interface CursorPosition {
-  userId: string
-  x: number
-  y: number
-  timestamp: Date
+export interface CollaborationState {
+  workspaceId: string;
+  currentUser: User | null;
+  activeUsers: User[];
+  workspaceActivity: WorkspaceActivity[];
+  chatMessages: ChatMessage[];
+  isConnected: boolean;
+  connectionError?: string;
 }
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-import { CollaborativeUser } from '@/lib/services/collaboration'
+export interface CollaborationActions {
+  // User management
+  joinWorkspace: (workspaceId: string, user: Omit<User, 'isActive' | 'lastSeen'>) => Promise<void>;
+  leaveWorkspace: () => Promise<void>;
+  inviteUser: (email: string, role: User['role']) => Promise<void>;
+  updateUserPresence: (presence: Partial<User>) => void;
 
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-interface UseCollaborationProps {
-  workspaceId: string
-  conversationId?: string
-  userId: string
-  userName: string
-  enabled?: boolean
+  // Activity management
+  addActivity: (activity: Omit<WorkspaceActivity, 'id' | 'timestamp'>) => void;
+  clearActivity: () => void;
+
+  // Chat management
+  sendMessage: (message: string) => Promise<void>;
+  clearChat: () => void;
+
+  // File operations
+  openFile: (filePath: string) => void;
+  editFile: (filePath: string, content: string) => void;
+  closeFile: (filePath: string) => void;
+
+  // Cursor tracking
+  updateCursor: (x: number, y: number, file?: string) => void;
+  clearCursor: () => void;
+
+  // Connection management
+  reconnect: () => Promise<void>;
+  disconnect: () => void;
 }
 
-interface TypingUser {
-  userId: string
-  conversationId: string
-  timestamp: Date
+export interface UseCollaborationOptions {
+  workspaceId?: string;
+  user?: Omit<User, 'isActive' | 'lastSeen'>;
+  autoConnect?: boolean;
+  enableChat?: boolean;
+  enableActivityTracking?: boolean;
+  enableCursorTracking?: boolean;
+  onUserJoin?: (user: User) => void;
+  onUserLeave?: (user: User) => void;
+  onMessage?: (message: ChatMessage) => void;
+  onActivity?: (activity: WorkspaceActivity) => void;
+  onError?: (error: string) => void;
 }
 
-interface CursorPosition {
-  userId: string
-  x: number
-  y: number
-  timestamp: Date
+export interface UseCollaborationReturn extends CollaborationState, CollaborationActions {
+  // Additional computed properties
+  onlineUsers: User[];
+  recentActivity: WorkspaceActivity[];
+  unreadMessages: number;
 }
 
-<<<<<<< HEAD
-=======
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> merge-conflict-cleanup
-export function useCollaboration({
-  workspaceId,
-  conversationId,
-  userId,
-  userName,
-  enabled = true
-}: UseCollaborationProps) {
-  const [socket, setSocket] = useState<Socket | null>(null)
-  const [isConnected, setIsConnected] = useState(false)
-  const [activeUsers, setActiveUsers] = useState<CollaborativeUser[]>([])
-  const [typingUsers, setTypingUsers] = useState<TypingUser[]>([])
-  const [cursors, setCursors] = useState<CursorPosition[]>([])
-  const [connectionError, setConnectionError] = useState<string | null>(null)
+/**
+ * React hook for collaborative workspace features
+ */
+export function useCollaboration(options: UseCollaborationOptions = {}): UseCollaborationReturn {
+  const {
+    workspaceId: initialWorkspaceId,
+    user: initialUser,
+    autoConnect = true,
+    enableChat = true,
+    enableActivityTracking = true,
+    enableCursorTracking = true,
+    onUserJoin,
+    onUserLeave,
+    onMessage,
+    onActivity,
+    onError
+  } = options;
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-  const socketRef = useRef<Socket | null>(null)
-=======
->>>>>>> fix/consolidated-dependency-updates
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
-=======
-  const socketRef = useRef<Socket | null>(null)
-  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null)
-  const cursorThrottleRef = useRef<NodeJS.Timeout | null>(null)
-<<<<<<< HEAD
-  const typingTimeoutRef = useRef<NodeJS.Timeout>()
-  const cursorThrottleRef = useRef<NodeJS.Timeout>()
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+  const [workspaceId, setWorkspaceId] = useState(initialWorkspaceId || '');
+  const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [activeUsers, setActiveUsers] = useState<User[]>([]);
+  const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([]);
+  const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
+  const [isConnected, setIsConnected] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | undefined>();
 
-  // Initialize socket connection
-  useEffect(() => {
-    if (!enabled || !workspaceId || !userId) return
+  // Refs for cleanup and intervals
+  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
+  const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
+  const cursorTimeoutRef = useRef<NodeJS.Timeout>();
 
-    const initializeSocket = async () => {
-      try {
-        // Initialize socket endpoint
-        await fetch('/api/collaboration/socket')
-        
-        const socketInstance = io({
-          path: '/api/collaboration/socket',
-          transports: ['websocket', 'polling']
-        })
+  /**
+   * Join workspace
+   */
+  const joinWorkspace = useCallback(async (wsId: string, user: Omit<User, 'isActive' | 'lastSeen'>) => {
+    try {
+      setWorkspaceId(wsId);
+      setConnectionError(undefined);
 
-        socketInstance.on('connect', () => {
-          // Debug log removed
-          setIsConnected(true)
-          setConnectionError(null)
+      // Create full user object
+      const fullUser: User = {
+        ...user,
+        isActive: true,
+        lastSeen: new Date()
+      };
 
-          // Join workspace
-          socketInstance.emit('join_workspace', {
-            workspaceId,
-            conversationId,
-            userId,
-            userName
-          })
-        })
+      setCurrentUser(fullUser);
 
-        socketInstance.on('disconnect', () => {
-          // Debug log removed
-          setIsConnected(false)
-          setActiveUsers([])
-          setTypingUsers([])
-          setCursors([])
-        })
+      // This would integrate with your collaboration service
+      // For now, simulate connection
+      await simulateConnection(wsId);
 
-        socketInstance.on('connect_error', (error) => {
-          console.error('❌ Collaboration connection error:', error)
-          setConnectionError(error.message)
-          setIsConnected(false)
-        })
+      setIsConnected(true);
 
-        // Handle workspace events
-        socketInstance.on('workspace_state', (data) => {
-          setActiveUsers(data.activeUsers || [])
-        })
-
-        socketInstance.on('user_joined', (data) => {
-          setActiveUsers(data.activeUsers || [])
-          // Debug log removed
-        })
-
-        socketInstance.on('user_left', (data) => {
-          setActiveUsers(data.activeUsers || [])
-          // Debug log removed
-        })
-
-        socketInstance.on('user_typing', (data) => {
-          setTypingUsers(current => {
-            const filtered = current.filter(u => u.userId !== data.userId)
-            if (data.isTyping) {
-              return [...filtered, {
-                userId: data.userId,
-                conversationId: data.conversationId,
-                timestamp: new Date()
-              }]
-            }
-            return filtered
-          })
-        })
-
-        socketInstance.on('cursor_moved', (data) => {
-          setCursors(current => {
-            const filtered = current.filter(c => c.userId !== data.userId)
-            return [...filtered, {
-              userId: data.userId,
-              x: data.cursor.x,
-              y: data.cursor.y,
-              timestamp: new Date(data.timestamp)
-            }]
-          })
-        })
-
-        setSocket(socketInstance)
-        socketRef.current = socketInstance
-
-      } catch (error) {
-        console.error('Failed to initialize collaboration:', error)
-        setConnectionError(error instanceof Error ? error.message : 'Connection failed')
+      // Add join activity
+      if (enableActivityTracking) {
+        addActivity({
+          type: 'user_joined',
+          userId: user.id,
+          userName: user.name,
+          data: { message: 'joined the workspace' }
+        });
       }
+
+      onUserJoin?.(fullUser);
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to join workspace';
+      setConnectionError(errorMessage);
+      onError?.(errorMessage);
     }
+  }, [enableActivityTracking, onUserJoin, onError]);
 
-    initializeSocket()
+  /**
+   * Leave workspace
+   */
+  const leaveWorkspace = useCallback(async () => {
+    try {
+      if (currentUser) {
+        // Add leave activity
+        if (enableActivityTracking) {
+          addActivity({
+            type: 'user_left',
+            userId: currentUser.id,
+            userName: currentUser.name,
+            data: { message: 'left the workspace' }
+          });
+        }
 
-    return () => {
-      // Use ref for reliable cleanup
-      if (socketRef.current) {
-        socketRef.current.emit('leave_workspace', { workspaceId, userId })
-        socketRef.current.disconnect()
-        socketRef.current = null
+        onUserLeave?.(currentUser);
       }
+
+      await disconnect();
+      cleanup();
+
+    } catch (error) {
+      console.error('Error leaving workspace:', error);
     }
-  }, [enabled, workspaceId, conversationId, userId, userName])
+  }, [currentUser, enableActivityTracking, onUserLeave]);
 
-  // Typing indicators
-  const startTyping = useCallback((conversationId: string) => {
-    if (!socket || !isConnected) return
+  /**
+   * Invite user to workspace
+   */
+  const inviteUser = useCallback(async (email: string, role: User['role']) => {
+    try {
+      // This would integrate with your invitation service
+      console.log(`Inviting ${email} as ${role}`);
 
-    socket.emit('typing_start', { conversationId })
+      // Simulate invitation
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
-    // Auto-stop typing after 3 seconds of inactivity
-    if (typingTimeoutRef.current !== null) {
-      clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = null
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+      // Add system message
+      if (enableChat) {
+        const systemMessage: ChatMessage = {
+          id: `system-${Date.now()}`,
+          userId: 'system',
+          userName: 'System',
+          message: `Invitation sent to ${email}`,
+          timestamp: new Date(),
+          type: 'system'
+        };
+
+        setChatMessages(prev => [...prev, systemMessage]);
+        onMessage?.(systemMessage);
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to invite user';
+      onError?.(errorMessage);
     }
-    
-    typingTimeoutRef.current = setTimeout(() => {
-      stopTyping(conversationId)
-    }, 3000) as NodeJS.Timeout
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    }, 3000)
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-  }, [socket, isConnected])
+  }, [enableChat, onMessage, onError]);
 
-  const stopTyping = useCallback((conversationId: string) => {
-    if (!socket || !isConnected) return
+  /**
+   * Update user presence
+   */
+  const updateUserPresence = useCallback((presence: Partial<User>) => {
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        ...presence,
+        lastSeen: new Date()
+      };
+      setCurrentUser(updatedUser);
 
-    socket.emit('typing_stop', { conversationId })
-    
-    if (typingTimeoutRef.current !== null) {
-      clearTimeout(typingTimeoutRef.current)
-      typingTimeoutRef.current = null
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    if (typingTimeoutRef.current) {
-      clearTimeout(typingTimeoutRef.current)
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+      // This would broadcast to other users
+      console.log('Updating user presence:', presence);
     }
-  }, [socket, isConnected])
+  }, [currentUser]);
 
-  // Cursor sharing
-  const updateCursor = useCallback((x: number, y: number, messageId?: string) => {
-    if (!socket || !isConnected) return
+  /**
+   * Add workspace activity
+   */
+  const addActivity = useCallback((activity: Omit<WorkspaceActivity, 'id' | 'timestamp'>) => {
+    const fullActivity: WorkspaceActivity = {
+      ...activity,
+      id: `activity-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+      timestamp: new Date()
+    };
 
-    // Throttle cursor updates to avoid spam
-    if (cursorThrottleRef.current) return
+    setWorkspaceActivity(prev => [fullActivity, ...prev.slice(0, 99)]); // Keep last 100 activities
+    onActivity?.(fullActivity);
+  }, [onActivity]);
 
-    socket.emit('cursor_move', { x, y, messageId })
-    
-    cursorThrottleRef.current = setTimeout(() => {
-      cursorThrottleRef.current = null
-    }, 100) as NodeJS.Timeout // 10 FPS max
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-      cursorThrottleRef.current = undefined
-    }, 100) // 10 FPS max
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-  }, [socket, isConnected])
+  /**
+   * Clear activity feed
+   */
+  const clearActivity = useCallback(() => {
+    setWorkspaceActivity([]);
+  }, []);
 
-  // Get user info by ID
-  const getUserById = useCallback((userId: string) => {
-    return activeUsers.find(user => user.id === userId)
-  }, [activeUsers])
+  /**
+   * Send chat message
+   */
+  const sendMessage = useCallback(async (message: string) => {
+    if (!currentUser || !message.trim()) return;
 
-  // Get typing users for a conversation
-  const getTypingUsers = useCallback((conversationId: string) => {
-    return typingUsers
-      .filter(t => t.conversationId === conversationId)
-      .map(t => getUserById(t.userId))
-      .filter(Boolean) as CollaborativeUser[]
-  }, [typingUsers, getUserById])
+    try {
+      const chatMessage: ChatMessage = {
+        id: `msg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+        userId: currentUser.id,
+        userName: currentUser.name,
+        message: message.trim(),
+        timestamp: new Date()
+      };
 
-  // Clean up old cursors and typing indicators
+      setChatMessages(prev => [...prev, chatMessage]);
+      onMessage?.(chatMessage);
+
+      // Add to activity feed
+      if (enableActivityTracking) {
+        addActivity({
+          type: 'terminal_command',
+          userId: currentUser.id,
+          userName: currentUser.name,
+          data: { command: message }
+        });
+      }
+
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to send message';
+      onError?.(errorMessage);
+    }
+  }, [currentUser, enableActivityTracking, addActivity, onMessage, onError]);
+
+  /**
+   * Clear chat messages
+   */
+  const clearChat = useCallback(() => {
+    setChatMessages([]);
+  }, []);
+
+  /**
+   * Open file
+   */
+  const openFile = useCallback((filePath: string) => {
+    if (currentUser && enableActivityTracking) {
+      addActivity({
+        type: 'file_opened',
+        userId: currentUser.id,
+        userName: currentUser.name,
+        data: { file: filePath }
+      });
+    }
+  }, [currentUser, enableActivityTracking, addActivity]);
+
+  /**
+   * Edit file
+   */
+  const editFile = useCallback((filePath: string, content: string) => {
+    if (currentUser && enableActivityTracking) {
+      addActivity({
+        type: 'file_edited',
+        userId: currentUser.id,
+        userName: currentUser.name,
+        data: { file: filePath }
+      });
+    }
+  }, [currentUser, enableActivityTracking, addActivity]);
+
+  /**
+   * Close file
+   */
+  const closeFile = useCallback((filePath: string) => {
+    // File closing activity would go here if needed
+    console.log('File closed:', filePath);
+  }, []);
+
+  /**
+   * Update cursor position
+   */
+  const updateCursor = useCallback((x: number, y: number, file?: string) => {
+    if (currentUser && enableCursorTracking) {
+      const updatedUser = {
+        ...currentUser,
+        cursor: { x, y, file },
+        lastSeen: new Date()
+      };
+      setCurrentUser(updatedUser);
+
+      // Clear cursor after inactivity
+      if (cursorTimeoutRef.current) {
+        clearTimeout(cursorTimeoutRef.current);
+      }
+      cursorTimeoutRef.current = setTimeout(() => {
+        clearCursor();
+      }, 5000); // Hide cursor after 5 seconds of inactivity
+    }
+  }, [currentUser, enableCursorTracking]);
+
+  /**
+   * Clear cursor position
+   */
+  const clearCursor = useCallback(() => {
+    if (currentUser) {
+      const updatedUser = {
+        ...currentUser,
+        cursor: undefined,
+        lastSeen: new Date()
+      };
+      setCurrentUser(updatedUser);
+    }
+  }, [currentUser]);
+
+  /**
+   * Reconnect to workspace
+   */
+  const reconnect = useCallback(async () => {
+    if (!workspaceId || !currentUser) return;
+
+    try {
+      setConnectionError(undefined);
+      await simulateConnection(workspaceId);
+      setIsConnected(true);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Failed to reconnect';
+      setConnectionError(errorMessage);
+      setIsConnected(false);
+      onError?.(errorMessage);
+
+      // Schedule retry
+      reconnectTimeoutRef.current = setTimeout(() => {
+        reconnect();
+      }, 5000);
+    }
+  }, [workspaceId, currentUser, onError]);
+
+  /**
+   * Disconnect from workspace
+   */
+  const disconnect = useCallback(async () => {
+    setIsConnected(false);
+    setConnectionError(undefined);
+
+    // This would disconnect from your collaboration service
+    console.log('Disconnected from workspace');
+  }, []);
+
+  /**
+   * Simulate connection (replace with real collaboration service)
+   */
+  const simulateConnection = async (wsId: string): Promise<void> => {
+    // Simulate connection delay
+    await new Promise(resolve => setTimeout(resolve, 500));
+
+    // Simulate other users in workspace
+    const mockUsers: User[] = [
+      {
+        id: 'user-2',
+        name: 'Alice Developer',
+        email: 'alice@example.com',
+        color: '#ef4444',
+        isActive: true,
+        role: 'collaborator',
+        lastSeen: new Date()
+      },
+      {
+        id: 'user-3',
+        name: 'Bob Designer',
+        email: 'bob@example.com',
+        color: '#22c55e',
+        isActive: true,
+        role: 'viewer',
+        lastSeen: new Date()
+      }
+    ];
+
+    setActiveUsers(mockUsers);
+
+    // Start heartbeat
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+    heartbeatIntervalRef.current = setInterval(() => {
+      updateUserPresence({ lastSeen: new Date() });
+    }, 30000); // Update presence every 30 seconds
+  };
+
+  /**
+   * Cleanup function
+   */
+  const cleanup = useCallback(() => {
+    if (reconnectTimeoutRef.current) {
+      clearTimeout(reconnectTimeoutRef.current);
+    }
+    if (heartbeatIntervalRef.current) {
+      clearInterval(heartbeatIntervalRef.current);
+    }
+    if (cursorTimeoutRef.current) {
+      clearTimeout(cursorTimeoutRef.current);
+    }
+  }, []);
+
+  // Auto-connect on mount
   useEffect(() => {
-    const cleanup = setInterval(() => {
-      const now = new Date()
-      
-      // Remove old typing indicators (10 seconds)
-      setTypingUsers(current => 
-        current.filter(t => now.getTime() - t.timestamp.getTime() < 10000)
-      )
+    if (autoConnect && initialWorkspaceId && initialUser) {
+      joinWorkspace(initialWorkspaceId, initialUser);
+    }
 
-      // Remove old cursors (5 seconds)
-      setCursors(current => 
-        current.filter(c => now.getTime() - c.timestamp.getTime() < 5000)
-      )
-    }, 5000) as NodeJS.Timeout
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    }, 5000)
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+    return cleanup;
+  }, [autoConnect, initialWorkspaceId, initialUser]);
 
-    return () => clearInterval(cleanup)
-  }, [])
+  // Computed properties
+  const onlineUsers = activeUsers.filter(user => user.isActive);
+  const recentActivity = workspaceActivity.slice(0, 10);
+  const unreadMessages = chatMessages.filter(msg =>
+    msg.type === 'message' && msg.userId !== currentUser?.id
+  ).length;
 
   return {
-    // Connection state
+    // State
+    workspaceId,
+    currentUser,
+    activeUsers,
+    workspaceActivity,
+    chatMessages,
     isConnected,
     connectionError,
-    
-    // Users and presence
-    activeUsers,
-    getUserById,
-    
-    // Typing indicators
-    typingUsers: getTypingUsers,
-    startTyping,
-    stopTyping,
-    
-    // Cursor sharing
-    cursors,
+
+    // Computed properties
+    onlineUsers,
+    recentActivity,
+    unreadMessages,
+
+    // Actions
+    joinWorkspace,
+    leaveWorkspace,
+    inviteUser,
+    updateUserPresence,
+    addActivity,
+    clearActivity,
+    sendMessage,
+    clearChat,
+    openFile,
+    editFile,
+    closeFile,
     updateCursor,
-    
-    // Raw socket for custom events
-    socket: isConnected ? socket : null
-  }
+    clearCursor,
+    reconnect,
+    disconnect
+  };
 }
