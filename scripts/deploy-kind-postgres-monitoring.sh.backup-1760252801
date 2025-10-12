@@ -319,7 +319,10 @@ spec:
             "port": 5432,
             "username": "datadog",
             "password": "datadog_monitoring_password",
+<<<<<<< HEAD
+=======
             "dbname": "vibecode",
+>>>>>>> merge-conflict-cleanup
             "dbm": true,
             "collect_schemas": {"enabled": true, "collection_interval": 600},
             "collect_activity": {"enabled": true, "collection_interval": 10},
@@ -529,6 +532,7 @@ verify_setup() {
 # Display connection information
 display_connection_info() {
     print_status "Connection Information:"
+    echo "======================================"
     echo "KIND Cluster: $CLUSTER_NAME"
     echo "Namespace: $NAMESPACE"
     echo "Datadog Namespace: $DATADOG_NAMESPACE"
