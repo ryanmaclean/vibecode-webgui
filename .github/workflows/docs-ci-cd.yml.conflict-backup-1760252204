@@ -16,11 +16,22 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
+<<<<<<< HEAD
+  packages: write        # For Docker image publishing
+  security-events: write  # For security scan results
+  id-token: write        # For OIDC authentication
 =======
+=======
+>>>>>>> merge-conflict-cleanup
 
 concurrency:
   group: docs-ci-${{ github.ref }}
   cancel-in-progress: true
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
 env:
   REGISTRY: vibecodecr.azurecr.io

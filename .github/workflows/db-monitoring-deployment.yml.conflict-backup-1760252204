@@ -201,6 +201,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: validate-vector-index
     timeout-minutes: 15
+<<<<<<< HEAD
+<<<<<<< HEAD
+    env:
+      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
+=======
+>>>>>>> fix/consolidated-dependency-updates
 =======
 >>>>>>> merge-conflict-cleanup
     steps:
@@ -248,7 +254,12 @@ jobs:
 
       - name: Setup Azure CLI
         if: ${{ env.AZURE_CREDENTIALS != '' }}
+<<<<<<< HEAD
+<<<<<<< HEAD
+        uses: azure/login@v2
 =======
+=======
+>>>>>>> merge-conflict-cleanup
         uses: azure/login@v1
 >>>>>>> fix/consolidated-dependency-updates
         with:
@@ -341,7 +352,12 @@ jobs:
       - name: Configure PostgreSQL server for monitoring
         uses: azure/login@v2
         with:
+<<<<<<< HEAD
+<<<<<<< HEAD
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+=======
           creds: ${{ env.AZURE_CREDENTIALS }}
+>>>>>>> fix/consolidated-dependency-updates
 =======
           creds: ${{ env.AZURE_CREDENTIALS }}
 >>>>>>> merge-conflict-cleanup
@@ -399,16 +415,41 @@ jobs:
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           export ENVIRONMENT=${{ env.ENVIRONMENT }}
+<<<<<<< HEAD
+
+          # Check if dashboards directory exists
+          if [ -d "monitoring/dashboards" ]; then
+            echo "Deploying dashboards from monitoring/dashboards directory..."
+            # Deploy all dashboards in the monitoring/dashboards directory
+            for dashboard_file in monitoring/dashboards/*.json; do
+              if [ -f "$dashboard_file" ]; then
+                echo "Deploying dashboard: $dashboard_file"
+                npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env "$ENVIRONMENT" || echo "Warning: Failed to deploy $dashboard_file"
+              fi
+            done
+          else
+            echo "Warning: monitoring/dashboards directory not found, skipping dashboard deployment"
+          fi
+=======
           
           # Deploy all dashboards in the monitoring/dashboards directory
           for dashboard_file in monitoring/dashboards/*.json; do
             echo "Deploying dashboard: $dashboard_file"
             npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
           done
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
           DATADOG_SITE: ${{ env.DD_SITE }}
+<<<<<<< HEAD
+<<<<<<< HEAD
+        continue-on-error: true
+=======
+>>>>>>> fix/consolidated-dependency-updates
 =======
 >>>>>>> merge-conflict-cleanup
             
@@ -416,14 +457,54 @@ jobs:
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
         run: |
           export ENVIRONMENT=${{ env.ENVIRONMENT }}
+<<<<<<< HEAD
+
+          # Check if alerts directory exists
+          if [ -d "monitoring/alerts" ]; then
+            echo "Deploying monitors from monitoring/alerts directory..."
+            npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env "$ENVIRONMENT" || echo "Warning: Failed to deploy monitors"
+          else
+            echo "Warning: monitoring/alerts directory not found, skipping monitor deployment"
+          fi
+=======
           
           # Deploy vector database monitors
           npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
           DATADOG_SITE: ${{ env.DD_SITE }}
+<<<<<<< HEAD
+<<<<<<< HEAD
+        continue-on-error: true
+
+      - name: Set up database monitoring
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' && env.POSTGRES_CONNECTION != '' }}
+        run: |
+          export ENVIRONMENT=${{ env.ENVIRONMENT }}
+
+          # Check if setup script exists
+          if [ -f "scripts/setup-datadog-dbm.js" ] || [ -f "scripts/setup-datadog-dbm.ts" ]; then
+            echo "Setting up Datadog Database Monitoring..."
+            if [ -f "scripts/setup-datadog-dbm.ts" ]; then
+              npx tsx scripts/setup-datadog-dbm.ts \
+                --environment "$ENVIRONMENT" \
+                --connection-string "$POSTGRES_CONNECTION"
+            else
+              node scripts/setup-datadog-dbm.js \
+                --environment "$ENVIRONMENT" \
+                --connection-string "$POSTGRES_CONNECTION"
+            fi
+          else
+            echo "Warning: Database monitoring setup script not found, skipping"
+          fi
 =======
+=======
+>>>>>>> merge-conflict-cleanup
             
       - name: Set up database monitoring
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
@@ -434,11 +515,32 @@ jobs:
           node scripts/setup-datadog-dbm.js \
             --environment $ENVIRONMENT \
             --connection-string "$POSTGRES_CONNECTION"
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
           DATADOG_SITE: ${{ env.DD_SITE }}
+<<<<<<< HEAD
+<<<<<<< HEAD
+        continue-on-error: true
+
+      - name: Verify monitoring deployment
+        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
+        run: |
+          if [ -f "scripts/verify-datadog-integration.js" ]; then
+            echo "Verifying Datadog integration..."
+            node scripts/verify-datadog-integration.js \
+              --environment "${{ env.ENVIRONMENT }}" \
+              --timeout 300 || echo "Warning: Verification failed"
+          else
+            echo "Warning: Verification script not found, skipping verification"
+          fi
 =======
+=======
+>>>>>>> merge-conflict-cleanup
       
       - name: Verify monitoring deployment
         if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
@@ -446,10 +548,19 @@ jobs:
           node scripts/verify-datadog-integration.js \
             --environment $ENVIRONMENT \
             --timeout 300
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
         env:
           DATADOG_API_KEY: ${{ env.DD_API_KEY }}
           DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
           DATADOG_SITE: ${{ env.DD_SITE }}
+<<<<<<< HEAD
+<<<<<<< HEAD
+        continue-on-error: true
+=======
+>>>>>>> fix/consolidated-dependency-updates
 =======
 >>>>>>> merge-conflict-cleanup
 
