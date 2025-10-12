@@ -4,7 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
-import styles from './AIChatInterface.module.css'
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
 
@@ -347,8 +346,8 @@ export const AIChatInterface = ({
           {isStreaming && (
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay100}`}></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay200}`}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               <span className="text-sm">AI is thinking...</span>
             </div>
           )}
