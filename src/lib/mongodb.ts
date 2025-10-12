@@ -1,7 +1,6 @@
 import { logger } from '@/lib/logger';
 
 import { MongoClient, Db } from 'mongodb'
-import { logger } from './monitoring'
 
 const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017/vibecode_chat'
 

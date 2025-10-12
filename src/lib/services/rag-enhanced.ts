@@ -1,4 +1,5 @@
 import { webSearchService, WebSearchResult } from './web-search'
+import { logger } from '@/lib/logger'
 
 export interface RAGContext {
   sources: RAGSource[]
@@ -189,7 +190,6 @@ export class EnhancedRAGService {
   private extractRelevantChunks(content: string, queryTerms: string[]): string[] {
     const sentences = content.split(/[.!?]+/).filter(s => s.trim().length > 20)
     const relevantChunks: { chunk: string; score: number }[] = []
-import { logger } from '@/lib/logger';
 
     // Group sentences into chunks of 3-5 sentences
     for (let i = 0; i < sentences.length; i += 3) {
