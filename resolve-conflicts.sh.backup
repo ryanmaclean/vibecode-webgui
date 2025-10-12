@@ -4,6 +4,7 @@
 echo "🔧 RESOLVING REMAINING MERGE CONFLICTS"
 
 # Find all files with merge conflicts
+conflict_files=$(find . -name "*.ts" -o -name "*.tsx" -o -name "*.js" -o -name "*.jsx" | xargs grep -l "<<<<<<< HEAD" 2>/dev/null)
 
 if [ -z "$conflict_files" ]; then
     echo "✅ No merge conflicts found!"
@@ -14,6 +15,7 @@ echo "📋 Found $(echo "$conflict_files" | wc -l) files with conflicts:"
 
 # List files with conflicts
 echo "$conflict_files" | while read file; do
+    conflict_count=$(grep -c "<<<<<<< HEAD" "$file" 2>/dev/null || echo "0")
     echo "  - $file ($conflict_count conflicts)"
 done
 
