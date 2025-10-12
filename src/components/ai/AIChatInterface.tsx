@@ -4,7 +4,6 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
-import styles from './AIChatInterface.module.css'
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
 
@@ -221,24 +220,25 @@ export const AIChatInterface = ({
   const currentModel = availableModels.find(m => m.id === selectedModel)
 
   return (
-    <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`}>
+    <div className={`flex flex-col h-full bg-white dark:bg-gray-900 ${className}`} role="region" aria-label="AI Chat Interface">
       {/* Header */}
-      <div className="border-b border-gray-200 dark:border-gray-700 p-4">
+      <header className="border-b border-gray-200 dark:border-gray-700 p-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center space-x-2">
-            <Bot className="w-6 h-6 text-blue-600" />
-            <h2 className="font-semibold text-lg">AI Assistant</h2>
-            <Badge variant="outline">{currentModel?.name}</Badge>
+            <Bot className="w-6 h-6 text-blue-600" aria-hidden="true" />
+            <h2 className="font-semibold text-lg" id="chat-heading">AI Assistant</h2>
+            <Badge variant="outline" aria-label={`Current model: ${currentModel?.name}`}>{currentModel?.name}</Badge>
           </div>
-          <div className="flex items-center space-x-1">
+          <div className="flex items-center space-x-1" role="toolbar" aria-label="Chat controls">
             <Button
               variant="ghost"
               size="sm"
               onClick={() => setShowSettings(!showSettings)}
-              title="Settings"
-              aria-label="Settings"
+              aria-label={showSettings ? 'Hide settings' : 'Show settings'}
+              aria-expanded={showSettings}
+              aria-controls="settings-panel"
             >
-              <Settings className="w-4 h-4" />
+              <Settings className="w-4 h-4" aria-hidden="true" />
             </Button>
             {/* <Button
               variant="ghost"
@@ -262,13 +262,20 @@ export const AIChatInterface = ({
 
       {/* Settings Panel */}
       {showSettings && (
-        <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div
+          id="settings-panel"
+          className="p-4 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800"
+          role="region"
+          aria-labelledby="settings-heading"
+        >
+          <h3 id="settings-heading" className="sr-only">Chat Settings</h3>
           <label htmlFor="model-select" className="block text-sm font-medium mb-2">Select AI Model:</label>
           <select
             id="model-select"
             value={selectedModel}
             onChange={(e) => setSelectedModel(e.target.value)}
             className="w-full p-2 border rounded-md bg-white dark:bg-gray-900"
+            aria-label="AI model selection"
           >
             {availableModels.map(model => (
               <option key={model.id} value={model.id}>
@@ -347,8 +354,8 @@ export const AIChatInterface = ({
           {isStreaming && (
             <div className="flex items-center space-x-2 text-gray-500">
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce"></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay100}`}></div>
-              <div className={`w-2 h-2 bg-blue-600 rounded-full animate-bounce ${styles.delay200}`}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }}></div>
+              <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }}></div>
               <span className="text-sm">AI is thinking...</span>
             </div>
           )}

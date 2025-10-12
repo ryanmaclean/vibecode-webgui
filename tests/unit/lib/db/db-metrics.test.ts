@@ -4,7 +4,7 @@
  */
 
 // Mock the logger dependency
-jest.mock('../../logger', () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     warn: jest.fn(),
     info: jest.fn(),
