@@ -175,12 +175,13 @@ RUN set -eux && \
     # Install Go
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz" && \
     cd /tmp && \
-    curl -fsSLo "${GO_TARBALL}" "https://dl.google.com/go/${GO_TARBALL}" && \
-    curl -fsSLo "${GO_TARBALL}.sha256" "https://dl.google.com/go/${GO_TARBALL}.sha256" && \
-    sha256sum --check --strict "${GO_TARBALL}.sha256" && \
+    curl -fsSLO "https://dl.google.com/go/${GO_TARBALL}" && \
+    curl -fsSL "https://dl.google.com/go/${GO_TARBALL}.sha256" -o go.sha256 && \
+    echo "$(cat go.sha256)  ${GO_TARBALL}" | sha256sum --check --strict && \
     tar -C /usr/local -xzf "${GO_TARBALL}" && \
-    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256" && \
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go
+    rm -f "${GO_TARBALL}" go.sha256 && \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go && \
+    go version
 
 # Layer 5: Install Helm with verification and kubectl with kubectx
 RUN set -eux && \

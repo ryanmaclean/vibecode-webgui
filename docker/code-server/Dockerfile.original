@@ -174,12 +174,13 @@ RUN set -eux; \
     esac; \
     GO_TARBALL="go${GO_VERSION}.linux-${GO_ARCH}.tar.gz"; \
     cd /tmp; \
-    wget "https://go.dev/dl/${GO_TARBALL}"; \
-    wget "https://go.dev/dl/${GO_TARBALL}.sha256"; \
-    sha256sum --check --strict "${GO_TARBALL}.sha256"; \
+    curl -fsSLO "https://dl.google.com/go/${GO_TARBALL}"; \
+    curl -fsSL "https://dl.google.com/go/${GO_TARBALL}.sha256" -o go.sha256; \
+    echo "$(cat go.sha256)  ${GO_TARBALL}" | sha256sum --check --strict; \
     tar -C /usr/local -xzf "${GO_TARBALL}"; \
-    rm -f "${GO_TARBALL}" "${GO_TARBALL}.sha256"; \
-    ln -sf /usr/local/go/bin/go /usr/local/bin/go
+    rm -f "${GO_TARBALL}" go.sha256; \
+    ln -sf /usr/local/go/bin/go /usr/local/bin/go; \
+    go version
 
 # Install AI CLI tools and database tools
 # 1. Goose for database migrations (install as root, make globally accessible)
