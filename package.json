@@ -266,7 +266,7 @@
     "chrome-launcher": "1.2.0",
     "dotenv": "17.2.1",
     "eslint": "^9",
-    "eslint-config-next": "15.4.6",
+    "eslint-config-next": "15.5.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "globals": "16.4.0",
     "husky": "9.1.7",
