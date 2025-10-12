@@ -78,8 +78,6 @@ The authentication system has been successfully configured with 10 test user acc
 - **CSRF Protection**: Built-in CSRF token handling
 - **Session Expiry**: Configurable session timeouts
 
-<<<<<<< HEAD
-=======
 ### 🔒 API Key Protection System
 - **Pre-commit Hooks**: Automatic API key detection before commits
 - **BFG Docker Integration**: Git history scanning with `jtmotox/bfg`
@@ -88,7 +86,6 @@ The authentication system has been successfully configured with 10 test user acc
 - **Integration Tests**: 11/11 tests passing with real API validation
 - **Emergency Cleanup**: BFG Docker commands for history sanitization
 
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ## 🚀 **Usage Examples**
 
 ### Sign In Process
@@ -104,8 +101,6 @@ node test-credentials.js
 
 # Test specific endpoint
 curl -s "http://localhost:3000/api/health/simple" | jq .
-<<<<<<< HEAD
-=======
 
 # Test AI project generation (requires authentication)
 curl -X POST http://localhost:3000/api/ai/generate-project \
@@ -118,7 +113,6 @@ curl -X POST http://localhost:3000/api/code-server/session \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer <session-token>" \
   -d '{"workspaceId": "test-workspace", "userId": "test-user"}'
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 ```
 
 ### Environment Validation

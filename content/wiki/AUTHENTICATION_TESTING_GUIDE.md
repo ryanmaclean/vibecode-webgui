@@ -67,23 +67,17 @@ curl -X POST http://localhost:3000/api/code-server/session \
 - ✅ **CSRF Token**: http://localhost:3000/api/auth/csrf
 - ✅ **Session Endpoint**: http://localhost:3000/api/auth/session
 - ✅ **Health Check**: http://localhost:3000/api/health/simple
-<<<<<<< HEAD
-=======
 - ✅ **AI Project Generation**: http://localhost:3000/api/ai/generate-project (POST, authenticated)
 - ✅ **Code-Server Sessions**: http://localhost:3000/api/code-server/session (POST, authenticated)
 - ✅ **File Sync**: http://localhost:3000/api/files/sync (POST, authenticated)
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 ### **Authentication Flow**
 1. **CSRF Token**: Generated successfully
 2. **Credentials Provider**: Registered and working
 3. **Session Creation**: JWT sessions created on successful login
 4. **Role-Based Access**: Admin vs user roles properly assigned
-<<<<<<< HEAD
-=======
 5. **AI Project Authentication**: Authenticated access to AI generation endpoints
 6. **Workspace Isolation**: User-specific workspace access control verified
->>>>>>> 17acf85bc89c0fd79c29f83bb2ab3bbd81b89d8c
 
 ## 🔧 **Files Created/Updated**
 
