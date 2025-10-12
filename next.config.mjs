@@ -289,18 +289,12 @@ const nextConfig = {
     })
     config.externals = externals
 
-<<<<<<< Updated upstream
-    // Note: Removed webpack minimize configuration - Next.js 15 uses SWC minification by default
-    // which provides better performance. The previous webpack minimizer was causing build errors.
-=======
+    // Next.js 15 uses SWC minification by default for better performance
+    // Enable minification in production, disable in development
     config.optimization = {
       ...config.optimization,
       minimize: !dev,
     }
-
-    // TerserPlugin modification removed - Next.js 15 uses SWC minifier
-    // The webpack minimizer array doesn't contain TerserPlugin in Next.js 15+
->>>>>>> Stashed changes
 
     config.module = config.module || {}
     config.module.rules = config.module.rules || []
