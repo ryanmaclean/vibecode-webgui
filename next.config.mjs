@@ -68,7 +68,7 @@ const datadogStubAliases = {
 
 const serverExternalPackages = [
   '@datadog/browser-rum',
-  'dd-trace',
+  // dd-trace is stubbed via webpack alias, not externalized
   '@datadog/libdatadog',
   '@datadog/native-appsec',
   '@datadog/native-metrics',
@@ -78,7 +78,8 @@ const serverExternalPackages = [
   '@opentelemetry/exporter-jaeger',
 ]
 
-const datadogResourceRegExp = /^(dd-trace|@datadog\/libdatadog|@datadog\/native-appsec|@datadog\/native-metrics|ansi-color|@opentelemetry\/exporter-jaeger)$/
+// Exclude dd-trace from ignore plugin since we're aliasing it to a stub
+const datadogResourceRegExp = /^(@datadog\/libdatadog|@datadog\/native-appsec|@datadog\/native-metrics|ansi-color|@opentelemetry\/exporter-jaeger)$/
 
 const ensureArray = (value) => {
   if (!value) return []
@@ -226,7 +227,8 @@ const nextConfig = {
         pg: false,
         redis: false,
       }
-    } else if (dev) {
+    } else {
+      // For all server builds, stub dd-trace to avoid bundling native modules
       config.resolve.alias = {
         ...config.resolve.alias,
         'dd-trace': datadogStubAliases['dd-trace'],
@@ -260,47 +262,43 @@ const nextConfig = {
       '@opentelemetry/sdk-metrics': false,
     }
 
-    const externals = ensureArray(config.externals)
-    addUniqueStrings(externals, [
-      '@datadog/libdatadog',
-      '@datadog/native-appsec',
-      '@datadog/native-metrics',
-      'dd-trace',
-      'ansi-color',
-      '@opentelemetry/exporter-jaeger',
-      '@opentelemetry/sdk-node',
-      '@opentelemetry/auto-instrumentations-node',
-      '@opentelemetry/exporter-otlp-http',
-      '@opentelemetry/exporter-prometheus',
-      '@opentelemetry/resources',
-      '@opentelemetry/semantic-conventions',
-      '@opentelemetry/core',
-      '@opentelemetry/api',
-      '@opentelemetry/instrumentation',
-      '@opentelemetry/sdk-trace-web',
-      '@opentelemetry/auto-instrumentations-web',
-      '@opentelemetry/sdk-trace-base',
-      '@opentelemetry/sdk-metrics',
-    ])
-    externals.push({
-      pg: 'commonjs pg',
-      'pg-native': 'commonjs pg-native',
-      'pg-connection-string': 'commonjs pg-connection-string',
-    })
-    config.externals = externals
-
-<<<<<<< Updated upstream
-    // Note: Removed webpack minimize configuration - Next.js 15 uses SWC minification by default
-    // which provides better performance. The previous webpack minimizer was causing build errors.
-=======
-    config.optimization = {
-      ...config.optimization,
-      minimize: !dev,
+    // For server builds, configure externals but NOT dd-trace (it's stubbed via alias)
+    if (isServer) {
+      const externals = ensureArray(config.externals)
+      addUniqueStrings(externals, [
+        '@datadog/libdatadog',
+        '@datadog/native-appsec',
+        '@datadog/native-metrics',
+        'ansi-color',
+        '@opentelemetry/exporter-jaeger',
+        '@opentelemetry/sdk-node',
+        '@opentelemetry/auto-instrumentations-node',
+        '@opentelemetry/exporter-otlp-http',
+        '@opentelemetry/exporter-prometheus',
+        '@opentelemetry/resources',
+        '@opentelemetry/semantic-conventions',
+        '@opentelemetry/core',
+        '@opentelemetry/api',
+        '@opentelemetry/instrumentation',
+        '@opentelemetry/sdk-trace-web',
+        '@opentelemetry/auto-instrumentations-web',
+        '@opentelemetry/sdk-trace-base',
+        '@opentelemetry/sdk-metrics',
+      ])
+      externals.push({
+        pg: 'commonjs pg',
+        'pg-native': 'commonjs pg-native',
+        'pg-connection-string': 'commonjs pg-connection-string',
+      })
+      config.externals = externals
     }
 
-    // TerserPlugin modification removed - Next.js 15 uses SWC minifier
-    // The webpack minimizer array doesn't contain TerserPlugin in Next.js 15+
->>>>>>> Stashed changes
+    // Next.js 15 uses SWC minification by default for better performance
+    // Temporarily disable minification due to webpack plugin constructor error
+    config.optimization = {
+      ...config.optimization,
+      minimize: false, // Disabled temporarily to bypass webpack error
+    }
 
     config.module = config.module || {}
     config.module.rules = config.module.rules || []
