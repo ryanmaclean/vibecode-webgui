@@ -3,7 +3,7 @@ import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/monitoring'
+import { logger } from '@/lib/logger'
 
 // Streaming chat endpoint with MongoDB persistence
 export async function POST(request: NextRequest) {
