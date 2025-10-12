@@ -1,1004 +1,460 @@
 /**
- * Enhanced Cache Manager for VibeCode WebGUI
- * Handles caching, session storage, and real-time features with fallback support
+ * Redis Client for Caching
+ * Provides Redis-based caching functionality for VibeCode
  */
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-import { metrics } from '../server-monitoring';
-import { RedisError } from './redis-error';
-import { LocalFallbackCache } from './local-fallback-cache';
-import { redisConnection, RedisClientType } from './redis-connection';
-=======
-=======
-/**
- * Redis/Valkey client with enhanced type safety
- */
->>>>>>> merge-conflict-cleanup
-import { Redis } from 'ioredis';
-import { metrics } from '../server-monitoring';
+import { createClient, RedisClientType } from 'redis';
+import { CacheTTL } from './cache-constants';
 
-// Enhanced Redis interfaces for type safety
-interface RedisCommands {
-  get(key: string): Promise<string | null>;
-  setex(key: string, seconds: number, value: string): Promise<'OK'>;
-  del(...keys: string[]): Promise<number>;
-  exists(key: string): Promise<number>;
-  mget(...keys: string[]): Promise<(string | null)[]>;
-  pipeline(): Pipeline;
-  incr(key: string): Promise<number>;
-  expire(key: string, seconds: number): Promise<number>;
-  keys(pattern: string): Promise<string[]>;
-  info(section?: string): Promise<string>;
-  dbsize(): Promise<number>;
-  flushdb(): Promise<'OK'>;
-  ping(): Promise<string>;
-}
-
-// Pipeline interface
-interface Pipeline {
-  setex(key: string, seconds: number, value: string): Pipeline;
-  exec(): Promise<[Error | null, any][]>;
-}
-
-// Combined Redis type with command extensions
-type EnhancedRedis = Redis & RedisCommands;
-
-// Redis connection options
-interface RedisConnectionOptions {
+export interface RedisConfig {
   host: string;
   port: number;
   password?: string;
-  db: number;
-  retryDelayOnFailover: number;
-  enableReadyCheck: boolean;
-  maxRetriesPerRequest: number;
-  lazyConnect: boolean;
-  keepAlive: number;
-  family: number;
-  commandTimeout: number;
-  connectTimeout: number;
+  database?: number;
+  keyPrefix?: string;
+  retryDelayOnFailover?: number;
+  maxRetriesPerRequest?: number;
 }
 
-// Valkey configuration based on environment 
-// Note: Using Redis-compatible client libraries (ioredis) to connect to Valkey server
-const getValkeyConfig = () => {
-<<<<<<< HEAD
-  const isProduction = process.env.NODE_ENV === 'production';
-  
-=======
->>>>>>> merge-conflict-cleanup
-  // Upstash provides Redis-compatible API (acceptable for managed service)
-  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-    return {
-      type: 'upstash' as const,
-      url: process.env.UPSTASH_REDIS_REST_URL,
-      token: process.env.UPSTASH_REDIS_REST_TOKEN
-    };
-  }
-  
-  // Standard Valkey for development/self-hosted (Redis-compatible protocol)  
-  if (process.env.VALKEY_URL || process.env.REDIS_URL) {
-    return {
-      type: 'standard' as const,
-      url: process.env.VALKEY_URL || process.env.REDIS_URL // Prefer VALKEY_URL
-    };
-  }
-  
-  // Fallback configuration for Valkey
-  return {
-    type: 'standard' as const,
-    host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379'),
-    password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0')
-  };
-};
-
-const config = getValkeyConfig();
-
-// Create Valkey client with optimized settings (using Redis-compatible ioredis client)
-<<<<<<< HEAD
-let redisClient: Redis | null = null;
-=======
-let redisClient: any = null;
->>>>>>> merge-conflict-cleanup
-
-try {
-  if (config.type === 'standard') {
-    if ('url' in config) {
-<<<<<<< HEAD
-=======
-      // @ts-expect-error - ioredis constructor typing issue
->>>>>>> merge-conflict-cleanup
-      redisClient = new Redis(config.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        // Connection pool settings
-        family: 4,
-        // Performance optimizations
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    } else {
-<<<<<<< HEAD
-=======
-      // @ts-expect-error - ioredis constructor typing issue
->>>>>>> merge-conflict-cleanup
-      redisClient = new Redis({
-        host: config.host,
-        port: config.port,
-        password: config.password,
-        db: config.db,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30000,
-        family: 4,
-        commandTimeout: 5000,
-        connectTimeout: 10000,
-      });
-    }
-
-    // Event listeners for monitoring
-    redisClient.on('connect', () => {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    redis.on('connect', () => {
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      console.log('Redis connected successfully');
-      metrics.increment('redis.connection.success');
-    });
-
-    redisClient.on('error', (error) => {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    redis.on('error', (error) => {
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      console.error('Redis connection error:', error);
-      metrics.increment('redis.connection.error');
-    });
-
-    redisClient.on('ready', () => {
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    redis.on('ready', () => {
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      console.log('Redis client ready');
-      metrics.increment('redis.ready');
-    });
-  }
-} catch (error) {
-  console.warn('Redis client initialization failed:', error);
-  redisClient = null;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-  redis = null;
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+export interface CacheEntry<T = any> {
+  value: T;
+  expiry: number;
+  createdAt: number;
 }
->>>>>>> fix/consolidated-dependency-updates
-
-// Cache key generators
-export const CacheKeys = {
-  user: (userId: string) => `user:${userId}`,
-  workspace: (workspaceId: string) => `workspace:${workspaceId}`,
-  project: (projectId: string) => `project:${projectId}`,
-  aiResponse: (hash: string) => `ai:response:${hash}`,
-  vectorSearch: (query: string, workspaceId?: string) => 
-    `vector:search:${Buffer.from(query + (workspaceId || '')).toString('base64')}`,
-  fileContent: (fileId: string) => `file:content:${fileId}`,
-  embeddings: (contentHash: string) => `embeddings:${contentHash}`,
-  rateLimit: (identifier: string) => `ratelimit:${identifier}`,
-  session: (sessionId: string) => `session:${sessionId}`,
-  apiMetrics: (endpoint: string, timeWindow: string) => `metrics:${endpoint}:${timeWindow}`,
-};
-
-// Cache TTL constants (in seconds)
-export const CacheTTL = {
-  SHORT: 60,           // 1 minute
-  MEDIUM: 300,         // 5 minutes  
-  LONG: 1800,          // 30 minutes
-  HOUR: 3600,          // 1 hour
-  DAY: 86400,          // 24 hours
-  WEEK: 604800,        // 7 days
-  EMBEDDINGS: 2592000, // 30 days (embeddings rarely change)
-};
 
 /**
- * Enhanced cache operations with performance monitoring and error handling
+ * Redis-based cache client
  */
-export class CacheManager {
-<<<<<<< HEAD
-<<<<<<< HEAD
-  private redis: RedisClientType | null = null;
-  private readonly localCache: LocalFallbackCache;
-  private readonly useLocalFallback: boolean;
+export class RedisCacheClient {
+  private client: RedisClientType | null = null;
+  private config: RedisConfig;
+  private isConnected = false;
 
-  constructor(options = { useLocalFallback: true }) {
-    this.redis = redisConnection.getClient();
-    this.useLocalFallback = options.useLocalFallback;
-    this.localCache = new LocalFallbackCache();
-=======
-=======
->>>>>>> merge-conflict-cleanup
-  private redis: any;
+  constructor(config: RedisConfig) {
+    this.config = {
+      keyPrefix: 'vibecode:',
+      retryDelayOnFailover: 100,
+      maxRetriesPerRequest: 3,
+      ...config
+    };
+  }
 
-  constructor() {
-    this.redis = redisClient;
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-  private redis: Redis | null;
+  /**
+   * Initialize Redis connection
+   */
+  async connect(): Promise<void> {
+    try {
+      this.client = createClient({
+        socket: {
+          host: this.config.host,
+          port: this.config.port,
+        },
+        password: this.config.password,
+        database: this.config.database || 0,
+        keyPrefix: this.config.keyPrefix,
+        retry_strategy: (options) => {
+          if (options.error && options.error.code === 'ECONNREFUSED') {
+            console.error('Redis server connection refused');
+            return new Error('Redis server connection refused');
+          }
+          if (options.total_retry_time > 1000 * 60 * 60) {
+            console.error('Redis retry time exhausted');
+            return new Error('Retry time exhausted');
+          }
+          if (options.attempt > 10) {
+            console.error('Redis max retry attempts exceeded');
+            return new Error('Max retry attempts exceeded');
+          }
+          return Math.min(options.attempt * 100, 3000);
+        }
+      });
 
-  constructor() {
-    this.redis = redis;
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+      // Event listeners for monitoring
+      this.client.on('connect', () => {
+        console.log('Redis client connected');
+        this.isConnected = true;
+      });
+
+      this.client.on('error', (error) => {
+        console.error('Redis client error:', error);
+        this.isConnected = false;
+      });
+
+      this.client.on('ready', () => {
+        console.log('Redis client ready');
+        this.isConnected = true;
+      });
+
+      this.client.on('end', () => {
+        console.log('Redis client connection ended');
+        this.isConnected = false;
+      });
+
+      await this.client.connect();
+    } catch (error) {
+      console.warn('Redis client initialization failed:', error);
+      this.client = null;
+      this.isConnected = false;
+      throw error;
+    }
+  }
+
+  /**
+   * Close Redis connection
+   */
+  async disconnect(): Promise<void> {
+    if (this.client) {
+      await this.client.quit();
+      this.client = null;
+      this.isConnected = false;
+    }
+  }
+
+  /**
+   * Check if Redis is connected
+   */
+  isHealthy(): boolean {
+    return this.isConnected && this.client !== null;
   }
 
   /**
    * Get value from cache
    */
   async get<T>(key: string): Promise<T | null> {
-    if (!this.redis) return null;
+    if (!this.client || !this.isConnected) {
+      return null;
+    }
 
     try {
-      const value = await this.redis.get(key);
+      const value = await this.client.get(key);
       if (value === null) {
-        metrics.increment('cache.miss');
         return null;
       }
-      
-      metrics.increment('cache.hit');
-      return JSON.parse(value);
+
+      const parsed = JSON.parse(value) as CacheEntry<T>;
+      const now = Date.now();
+
+      // Check if entry has expired
+      if (parsed.expiry && now > parsed.expiry) {
+        await this.client.del(key);
+        return null;
+      }
+
+      return parsed.value;
     } catch (error) {
-      console.error('Cache get error:', error);
-      metrics.increment('cache.error');
+      console.warn(`Failed to get cache key ${key}:`, error);
       return null;
     }
   }
 
   /**
-   * Set value in cache with TTL
+   * Set value in cache
    */
-  async set<T>(key: string, value: T, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
-    if (!this.redis) return false;
+  async set<T>(
+    key: string,
+    value: T,
+    ttl: CacheTTL = CacheTTL.MEDIUM
+  ): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-      const serialized = JSON.stringify(value);
-      await this.redis.setex(key, ttl, serialized);
-      metrics.increment('cache.set');
+      const ttlMs = this.getTTLInMs(ttl);
+      const cacheEntry: CacheEntry<T> = {
+        value,
+        expiry: Date.now() + ttlMs,
+        createdAt: Date.now()
+      };
+
+      const serialized = JSON.stringify(cacheEntry);
+      await this.client.setEx(key, Math.floor(ttlMs / 1000), serialized);
       return true;
     } catch (error) {
-      console.error('Cache set error:', error);
-      metrics.increment('cache.error');
+      console.warn(`Failed to set cache key ${key}:`, error);
       return false;
     }
   }
 
   /**
-   * Delete cache entries
+   * Delete key from cache
    */
-  async del(...keys: string[]): Promise<number> {
-    if (!this.redis) return 0;
+  async delete(key: string): Promise<boolean> {
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-<<<<<<< HEAD
-      const result = await this.redis.del(...keys);
-      metrics.increment('cache.delete');
-      return result;
-=======
-      const keys = Array.isArray(key) ? key : [key];
-      await this.redis.del(...keys);
-      
-      metrics.increment('cache.delete', { count: keys.length as any });
-<<<<<<< HEAD
-      await this.redis.del(...keys);
-      
-      metrics.increment('cache.delete', { count: keys.length });
-=======
->>>>>>> main
-      return true;
->>>>>>> merge-conflict-cleanup
+      const result = await this.client.del(key);
+      return result > 0;
     } catch (error) {
-      console.error('Cache delete error:', error);
-      metrics.increment('cache.error');
+      console.warn(`Failed to delete cache key ${key}:`, error);
+      return false;
+    }
+  }
+
+  /**
+   * Delete multiple keys from cache
+   */
+  async deleteMany(keys: string[]): Promise<number> {
+    if (!this.client || !this.isConnected || keys.length === 0) {
+      return 0;
+    }
+
+    try {
+      const result = await this.client.del(keys);
+      return result;
+    } catch (error) {
+      console.warn(`Failed to delete cache keys:`, error);
       return 0;
     }
   }
 
   /**
-   * Check if key exists
+   * Check if key exists in cache
    */
   async exists(key: string): Promise<boolean> {
-    if (!this.redis) return false;
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-      const result = await this.redis.exists(key);
-      return result === 1;
+      const result = await this.client.exists(key);
+      return result > 0;
     } catch (error) {
-      console.error('Cache exists error:', error);
+      console.warn(`Failed to check cache key ${key}:`, error);
       return false;
     }
   }
 
   /**
-   * Get multiple values
+   * Set multiple key-value pairs
    */
-  async mget<T>(...keys: string[]): Promise<(T | null)[]> {
-    if (!this.redis) return keys.map(() => null);
+  async setMany(pairs: Array<{ key: string; value: any; ttl?: CacheTTL }>): Promise<boolean> {
+    if (!this.client || !this.isConnected || pairs.length === 0) {
+      return false;
+    }
 
     try {
-      const values = await this.redis.mget(...keys);
-      return values.map(value => value ? JSON.parse(value) : null);
+      const pipeline = this.client.multi();
+
+      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
+        const ttlMs = this.getTTLInMs(ttl);
+        const cacheEntry: CacheEntry = {
+          value,
+          expiry: Date.now() + ttlMs,
+          createdAt: Date.now()
+        };
+
+        const serialized = JSON.stringify(cacheEntry);
+        pipeline.setEx(key, Math.floor(ttlMs / 1000), serialized);
+      }
+
+      await pipeline.exec();
+      return true;
     } catch (error) {
-      console.error('Cache mget error:', error);
+      console.warn('Failed to set multiple cache entries:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Get multiple values from cache
+   */
+  async getMany<T>(keys: string[]): Promise<Array<T | null>> {
+    if (!this.client || !this.isConnected || keys.length === 0) {
+      return keys.map(() => null);
+    }
+
+    try {
+      const values = await this.client.mGet(keys);
+      const now = Date.now();
+
+      return values.map(value => {
+        if (value === null) return null;
+
+        try {
+          const parsed = JSON.parse(value) as CacheEntry<T>;
+
+          // Check if entry has expired
+          if (parsed.expiry && now > parsed.expiry) {
+            return null;
+          }
+
+          return parsed.value;
+        } catch (parseError) {
+          console.warn('Failed to parse cached value:', parseError);
+          return null;
+        }
+      });
+    } catch (error) {
+      console.warn('Failed to get multiple cache entries:', error);
       return keys.map(() => null);
     }
   }
 
   /**
-<<<<<<< HEAD
-   * Get cache keys matching pattern
-=======
-   * Set multiple keys at once
+   * Increment numeric value in cache
    */
-  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
-    if (!this.redis || pairs.length === 0) return false;
+  async increment(key: string, increment: number = 1): Promise<number | null> {
+    if (!this.client || !this.isConnected) {
+      return null;
+    }
 
     try {
-      const pipeline = this.redis.pipeline();
-      
-      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
-        const serialized = JSON.stringify(value);
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-        // @ts-ignore - Type mismatch issue
-=======
->>>>>>> main
-        pipeline.setex(key, ttl, serialized);
-      }
-      
-      await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length as any });
-<<<<<<< HEAD
-      metrics.increment('cache.mset.success', { count: pairs.length });
-=======
->>>>>>> main
-      return true;
+      const result = await this.client.incrBy(key, increment);
+      return result;
     } catch (error) {
-      metrics.increment('cache.mset.error');
-      console.error('Cache mset error:', error);
-      return false;
+      console.warn(`Failed to increment cache key ${key}:`, error);
+      return null;
     }
   }
 
   /**
-   * Increment counter (useful for rate limiting, metrics)
+   * Get or set pattern - atomic operation
    */
-  async incr(key: string, ttl?: number): Promise<number> {
-    if (!this.redis) return 0;
+  async getOrSet<T>(
+    key: string,
+    factory: () => Promise<T>,
+    ttl: CacheTTL = CacheTTL.MEDIUM
+  ): Promise<T> {
+    const existing = await this.get<T>(key);
 
-    try {
-      const value = await this.redis.incr(key);
-      
-      if (ttl && value === 1) {
-        // Set TTL only on first increment
-        await this.redis.expire(key, ttl);
-      }
-      
-      return value;
-    } catch (error) {
-      console.error('Cache incr error:', error);
-      return 0;
+    if (existing !== null) {
+      return existing;
     }
+
+    const value = await factory();
+    await this.set(key, value, ttl);
+    return value;
   }
 
   /**
-   * Get keys matching pattern
->>>>>>> merge-conflict-cleanup
-   */
-  async keys(pattern: string): Promise<string[]> {
-    if (!this.redis) return [];
-
-    try {
-      return await this.redis.keys(pattern);
-    } catch (error) {
-      console.error('Cache keys error:', error);
-      return [];
-    }
-  }
-
-  /**
-   * Clear all cache (use with caution)
+   * Clear all cache entries
    */
   async clear(): Promise<boolean> {
-    if (!this.redis) return false;
+    if (!this.client || !this.isConnected) {
+      return false;
+    }
 
     try {
-      await this.redis.flushdb();
-      metrics.increment('cache.clear');
+      await this.client.flushAll();
       return true;
     } catch (error) {
-      console.error('Cache clear error:', error);
+      console.warn('Failed to clear cache:', error);
       return false;
     }
   }
 
   /**
-   * Health check
-   */
-  async healthCheck(): Promise<boolean> {
-    if (!this.redis) return false;
-
-    try {
-      await this.redis.ping();
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-}
-
-// Export singleton instance
-export const cache = new CacheManager();
-
-/**
- * Cache wrapper for functions with automatic key generation
- */
-export function withCache<T extends any[], R>(
-  fn: (...args: T) => Promise<R>,
-  keyGenerator: (...args: T) => string,
-  ttl: number = CacheTTL.MEDIUM
-) {
-  return async (...args: T): Promise<R> => {
-    const key = keyGenerator(...args);
-    
-    // Try to get from cache first
-    const cached = await cache.get<R>(key);
-    if (cached !== null) {
-      return cached;
-    }
-    
-    // Execute function and cache result
-    const result = await fn(...args);
-    await cache.set(key, result, ttl);
-    
-    return result;
-  };
-}
-
-/**
- * Cache invalidation patterns
- */
-export class CacheInvalidation {
-  static async invalidateUser(userId: string) {
-    const patterns = [
-      CacheKeys.user(userId),
-      `workspace:*:user:${userId}`,
-      `project:*:user:${userId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      const keys = await cache.keys(pattern);
-      if (keys.length > 0) {
-        await cache.del(keys);
-      }
-    }
-  }
-
-  static async invalidateWorkspace(workspaceId: string) {
-    const patterns = [
-      CacheKeys.workspace(workspaceId),
-      `project:*:workspace:${workspaceId}`,
-      `vector:search:*:${workspaceId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      const keys = await cache.keys(pattern);
-      if (keys.length > 0) {
-        await cache.del(keys);
-      }
-    }
-  }
-
-  static async invalidateProject(projectId: string) {
-    await cache.del(CacheKeys.project(projectId));
-  }
-}
-
-export default cache;
-export class CacheManager {
-  private redis: any;
-
-  constructor() {
-    this.redis = redisClient;
->>>>>>> fix/consolidated-dependency-updates
-  }
-
-  /**
-   * Get value from cache with metrics and error handling
-   */
-  async get<T = any>(key: string): Promise<T | null> {
-    if (!this.redis) {
-      // Fallback to local cache if Redis is unavailable
-      if (this.useLocalFallback) {
-        return this.localCache.get<T>(key);
-      }
-      return null;
-    }
-
-    const startTime = Date.now();
-    
-    try {
-      const value = await this.redis.get(key);
-      const duration = Date.now() - startTime;
-      
-      metrics.histogram('cache.get.duration', duration);
-      
-      if (value) {
-        metrics.increment('cache.hit');
-        return JSON.parse(value);
-      } else {
-        metrics.increment('cache.miss');
-        return null;
-      }
-    } catch (error) {
-      metrics.increment('cache.error');
-      console.error('Cache get error:', error);
-      
-      // Fallback to local cache on Redis failure
-      if (this.useLocalFallback) {
-        const localValue = this.localCache.get<T>(key);
-        if (localValue !== null) {
-          metrics.increment('cache.hit.local.fallback');
-          return localValue;
-        }
-      }
-      
-      throw new RedisError(`Failed to get value for key: ${key}`, 'get', error);
-    }
-  }
-
-  /**
-   * Set value in cache with TTL and metrics
-   */
-  async set(key: string, value: any, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
-    // Store in local fallback cache
-    if (this.useLocalFallback) {
-      this.localCache.set(key, value, ttl);
-      
-      if (!this.redis) {
-        metrics.increment('cache.set.local');
-        return true;
-      }
-    }
-    
-    if (!this.redis) return false;
-
-    const startTime = Date.now();
-    
-    try {
-      const serialized = JSON.stringify(value);
-      await this.redis.setex(key, ttl, serialized);
-      
-      const duration = Date.now() - startTime;
-      metrics.histogram('cache.set.duration', duration);
-      metrics.increment('cache.set.success');
-      
-      return true;
-    } catch (error) {
-      metrics.increment('cache.set.error');
-      console.error('Cache set error:', error);
-      throw new RedisError(`Failed to set value for key: ${key}`, 'set', error);
-    }
-  }
-
-  /**
-   * Delete key from cache with error handling
-   */
-  async del(key: string | string[]): Promise<boolean> {
-    // Remove from local fallback cache
-    if (this.useLocalFallback) {
-      const keys = Array.isArray(key) ? key : [key];
-      keys.forEach(k => this.localCache.delete(k));
-      
-      if (!this.redis) {
-        metrics.increment('cache.delete.local');
-        return true;
-      }
-    }
-    
-    if (!this.redis) return false;
-
-    try {
-      const keys = Array.isArray(key) ? key : [key];
-<<<<<<< HEAD
-      await this.redis.del(keys);
-      
-      metrics.increment('cache.delete');
-      return true;
-=======
-      // @ts-expect-error - Type mismatch issue
-      await this.redis.del(...keys);
-      
-      metrics.increment('cache.delete', { count: keys.length as any });      return true;
->>>>>>> fix/consolidated-dependency-updates
-    } catch (error) {
-      metrics.increment('cache.delete.error');
-      console.error('Cache delete error:', error);
-      throw new RedisError(`Failed to delete key(s): ${Array.isArray(key) ? key.join(', ') : key}`, 'del', error);
-    }
-  }
-
-  /**
-   * Check if key exists with error handling
-   */
-  async exists(key: string): Promise<boolean> {
-    // Check local fallback cache
-    if (this.useLocalFallback) {
-      const exists = this.localCache.has(key);
-      if (exists) {
-        metrics.increment('cache.exists.local');
-        return true;
-      }
-      
-      if (!this.redis) {
-        return false;
-      }
-    }
-    
-    if (!this.redis) return false;
-
-    try {
-      const result = await this.redis.exists(key);
-      return result === 1;
-    } catch (error) {
-      console.error('Cache exists error:', error);
-      throw new RedisError(`Failed to check existence of key: ${key}`, 'exists', error);
-    }
-  }
-
-  /**
-   * Get multiple keys at once with error handling
-   */
-  async mget<T = any>(keys: string[]): Promise<(T | null)[]> {
-    if (!this.redis || keys.length === 0) {
-      // Fallback to local cache if Redis is unavailable
-      if (this.useLocalFallback) {
-        return this.localCache.mget<T>(keys);
-      }
-      return keys.map(() => null);
-    }
-
-    try {
-      const values = await this.redis.mget(keys);
-      return values.map((value: string | null) => value ? JSON.parse(value) : null);
-    } catch (error) {
-      console.error('Cache mget error:', error);
-      
-      // Fallback to local cache on Redis failure
-      if (this.useLocalFallback) {
-        const localValues = this.localCache.mget<T>(keys);
-        metrics.increment('cache.mget.fallback');
-        return localValues;
-      }
-      
-      throw new RedisError(`Failed to get multiple values for keys: ${keys.join(', ')}`, 'mget', error);
-    }
-  }
-
-  /**
-   * Set multiple keys at once with error handling
-   */
-  async mset(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
-    // Store in local fallback cache
-    if (this.useLocalFallback) {
-      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
-        this.localCache.set(key, value, ttl);
-      }
-      
-      if (!this.redis || pairs.length === 0) {
-        metrics.increment('cache.mset.local');
-        return true;
-      }
-    }
-    
-    if (!this.redis || pairs.length === 0) return false;
-
-    try {
-      const pipeline = this.redis.pipeline();
-      
-      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
-        const serialized = JSON.stringify(value);
-<<<<<<< HEAD
-=======
-        // @ts-expect-error - Type mismatch issue
->>>>>>> fix/consolidated-dependency-updates
-        pipeline.setex(key, ttl, serialized);
-      }
-      
-      await pipeline.exec();
-<<<<<<< HEAD
-      metrics.increment('cache.mset.success');
-      return true;
-=======
-      metrics.increment('cache.mset.success', { count: pairs.length as any });      return true;
->>>>>>> fix/consolidated-dependency-updates
-    } catch (error) {
-      metrics.increment('cache.mset.error');
-      console.error('Cache mset error:', error);
-      throw new RedisError(`Failed to set multiple values for ${pairs.length} keys`, 'mset', error);
-    }
-  }
-
-  /**
-   * Increment counter with error handling
-   */
-  async incr(key: string, ttl?: number): Promise<number> {
-    if (!this.redis) {
-      // No good local fallback for atomic increments
-      return 0;
-    }
-
-    try {
-      const value = await this.redis.incr(key);
-      
-      if (ttl && value === 1) {
-        // Set TTL only on first increment
-        await this.redis.expire(key, ttl);
-      }
-      
-      return value;
-    } catch (error) {
-      console.error('Cache incr error:', error);
-      throw new RedisError(`Failed to increment counter for key: ${key}`, 'incr', error);
-    }
-  }
-
-  /**
-   * Get keys matching pattern with error handling
-   */
-  async keys(pattern: string): Promise<string[]> {
-    if (!this.redis) {
-      // Limited local fallback for key pattern matching
-      if (this.useLocalFallback) {
-        return this.localCache.keysMatching(pattern);
-      }
-      return [];
-    }
-
-    try {
-      return await this.redis.keys(pattern);
-    } catch (error) {
-      console.error('Cache keys error:', error);
-      throw new RedisError(`Failed to get keys matching pattern: ${pattern}`, 'keys', error);
-    }
-  }
-
-  /**
-   * Get cache statistics with error handling
+   * Get cache statistics
    */
   async getStats(): Promise<{
     connected: boolean;
-    keyCount: number;
-    memoryUsage: string;
-    hitRate: number;
-    localFallbackEnabled: boolean;
-    localFallbackSize: number;
+    keyCount?: number;
+    memoryUsage?: number;
+    hitRate?: number;
   }> {
-    const localFallbackStats = {
-      localFallbackEnabled: this.useLocalFallback,
-      localFallbackSize: this.useLocalFallback ? this.localCache.size : 0
-    };
-    
-    if (!this.redis) {
-      return {
-        connected: false,
-        keyCount: this.useLocalFallback ? this.localCache.size : 0,
-        memoryUsage: '0B',
-        hitRate: 0,
-        ...localFallbackStats
-      };
+    if (!this.client || !this.isConnected) {
+      return { connected: false };
     }
 
     try {
-      const info = await this.redis.info('memory');
-      const dbSize = await this.redis.dbsize();
-      
-      // Parse memory usage from info
-      const memoryMatch = info.match(/used_memory_human:(.+)/);
-      const memoryUsage = memoryMatch ? memoryMatch[1].trim() : '0B';
+      const info = await this.client.info('memory');
+      const keyspaceInfo = await this.client.info('keyspace');
 
-      // Calculate hit rate from metrics (simplified)
-      const hitRate = 0.85; // This would be calculated from actual metrics
-      
       return {
         connected: true,
-        keyCount: dbSize,
-        memoryUsage,
-        hitRate,
-        ...localFallbackStats
+        keyCount: this.extractKeyCount(keyspaceInfo),
+        memoryUsage: this.extractMemoryUsage(info),
       };
     } catch (error) {
-      console.error('Cache stats error:', error);
-      return {
-        connected: false,
-        keyCount: this.useLocalFallback ? this.localCache.size : 0,
-        memoryUsage: '0B',
-        hitRate: 0,
-        ...localFallbackStats
-      };
+      console.warn('Failed to get cache stats:', error);
+      return { connected: this.isConnected };
     }
   }
 
   /**
-   * Clear all cache with error handling
+   * Convert CacheTTL enum to milliseconds
    */
-  async clear(): Promise<boolean> {
-    // Clear local fallback cache
-    if (this.useLocalFallback) {
-      this.localCache.clear();
-      metrics.increment('cache.clear.local');
-      
-      if (!this.redis) {
-        return true;
-      }
-    }
-    
-    if (!this.redis) return false;
-
-    try {
-      await this.redis.flushdb();
-      metrics.increment('cache.clear');
-      return true;
-    } catch (error) {
-      console.error('Cache clear error:', error);
-      throw new RedisError('Failed to clear cache', 'clear', error);
+  private getTTLInMs(ttl: CacheTTL): number {
+    switch (ttl) {
+      case CacheTTL.SHORT:
+        return 5 * 60 * 1000; // 5 minutes
+      case CacheTTL.MEDIUM:
+        return 30 * 60 * 1000; // 30 minutes
+      case CacheTTL.LONG:
+        return 2 * 60 * 60 * 1000; // 2 hours
+      case CacheTTL.EXTENDED:
+        return 24 * 60 * 60 * 1000; // 24 hours
+      default:
+        return 30 * 60 * 1000; // Default to medium
     }
   }
 
   /**
-   * Health check with error handling
+   * Extract key count from Redis INFO command output
    */
-  async healthCheck(): Promise<boolean> {
-    if (!this.redis) return false;
-
-    try {
-      const result = await this.redis.ping();
-      return result === 'PONG';
-    } catch (error) {
-      console.error('Cache health check failed:', error);
-      return false;
-    }
+  private extractKeyCount(infoOutput: string): number {
+    const match = infoOutput.match(/db0:keys=(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
   }
 
   /**
-   * Attempt to reconnect to Redis if disconnected
+   * Extract memory usage from Redis INFO command output
    */
-  async reconnect(): Promise<boolean> {
-    try {
-      return await redisConnection.reconnect();
-    } catch (error) {
-      console.error('Error during Redis reconnection:', error);
-      return false;
-    } finally {
-      // Update our Redis client reference
-      this.redis = redisConnection.getClient();
-    }
+  private extractMemoryUsage(infoOutput: string): number {
+    const match = infoOutput.match(/used_memory:(\d+)/);
+    return match ? parseInt(match[1], 10) : 0;
+  }
+
+  /**
+   * Get the underlying Redis client (for advanced operations)
+   */
+  getClient(): RedisClientType | null {
+    return this.client;
+  }
+
+  /**
+   * Get configuration
+   */
+  getConfig(): RedisConfig {
+    return { ...this.config };
+  }
+}
+
+// Export singleton instance for global use
+let redisClient: RedisCacheClient | null = null;
+
+/**
+ * Get or create Redis cache client instance
+ */
+export async function getRedisClient(config?: RedisConfig): Promise<RedisCacheClient | null> {
+  if (redisClient && redisClient.isHealthy()) {
+    return redisClient;
+  }
+
+  if (!config) {
+    console.warn('No Redis configuration provided');
+    return null;
+  }
+
+  try {
+    redisClient = new RedisCacheClient(config);
+    await redisClient.connect();
+    return redisClient;
+  } catch (error) {
+    console.error('Failed to initialize Redis client:', error);
+    return null;
   }
 }
 
 /**
- * Cache wrapper for functions with automatic key generation and error handling
+ * Close Redis client connection
  */
-export function withCache<T extends any[], R>(
-  fn: (...args: T) => Promise<R>,
-  keyGenerator: (...args: T) => string,
-  ttl: number = CacheTTL.MEDIUM
-) {
-  return async (...args: T): Promise<R> => {
-    const key = keyGenerator(...args);
-    
-    try {
-      // Try to get from cache first
-      const cached = await cache.get<R>(key);
-      if (cached !== null) {
-        return cached;
-      }
-    } catch (error) {
-      // Log but continue to execute the function
-      console.warn(`Cache retrieval failed for key ${key}, falling back to function execution:`, error);
-    }
-    
-    // Execute function
-    const result = await fn(...args);
-    
-    try {
-      // Cache result
-      await cache.set(key, result, ttl);
-    } catch (error) {
-      // Log but don't fail the operation
-      console.warn(`Failed to cache result for key ${key}:`, error);
-    }
-    
-    return result;
-  };
-}
-
-/**
- * Cache invalidation patterns with error handling
- */
-export class CacheInvalidation {
-  static async invalidateUser(userId: string) {
-    const patterns = [
-      CacheKeys.user(userId),
-      `workspace:*:user:${userId}`,
-      `project:*:user:${userId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      try {
-        const keys = await cache.keys(pattern);
-        if (keys.length > 0) {
-          await cache.del(keys);
-        }
-      } catch (error) {
-        console.error(`Failed to invalidate user cache for pattern ${pattern}:`, error);
-        // Continue with other patterns even if one fails
-      }
-    }
-  }
-
-  static async invalidateWorkspace(workspaceId: string) {
-    const patterns = [
-      CacheKeys.workspace(workspaceId),
-      `project:*:workspace:${workspaceId}`,
-      `vector:search:*:${workspaceId}`,
-    ];
-    
-    for (const pattern of patterns) {
-      try {
-        const keys = await cache.keys(pattern);
-        if (keys.length > 0) {
-          await cache.del(keys);
-        }
-      } catch (error) {
-        console.error(`Failed to invalidate workspace cache for pattern ${pattern}:`, error);
-        // Continue with other patterns even if one fails
-      }
-    }
-  }
-
-  static async invalidateProject(projectId: string) {
-    try {
-      await cache.del(CacheKeys.project(projectId));
-    } catch (error) {
-      console.error(`Failed to invalidate project cache for project ${projectId}:`, error);
-      // Let the error propagate as this is a simple operation that should succeed
-      throw error;
-    }
+export async function closeRedisClient(): Promise<void> {
+  if (redisClient) {
+    await redisClient.disconnect();
+    redisClient = null;
   }
 }
-
-// Export singleton instance
-export const cache = new CacheManager();
-
-export default cache;
