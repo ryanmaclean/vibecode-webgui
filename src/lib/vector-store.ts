@@ -62,7 +62,7 @@ class VectorStore {
           }
         }
       } catch (error) {
-        logger.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
+        console.error('Embedding service initialization failed; falling back to OpenRouter/local', error)
         this.embeddingService = null
       }
     }
