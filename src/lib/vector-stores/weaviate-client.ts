@@ -1,617 +1,941 @@
 /**
  * Weaviate Vector Database Client
- * Enterprise-grade vector database for AI applications
- * Provides advanced vector search, hybrid search, and generative AI capabilities
+ * Implementation of vector database operations using Weaviate
  */
 
-import weaviate from 'weaviate-ts-client'
+import { VectorChunk, SearchResult, SearchOptions } from '../vector-db/vector-types';
 
-export interface WeaviateDocument {
-  id?: string
-  content: string
-  metadata: {
-    fileName: string
-    filePath: string
-    language?: string
-    fileId: number
-    workspaceId: number
-    startLine?: number
-    endLine?: number
-    tokens: number
-    chunkIndex: number
-    createdAt: string
-  }
-  vector?: number[]
+export interface WeaviateConfig {
+  host: string;
+  port?: number;
+  protocol?: 'http' | 'https';
+  apiKey?: string;
+  openaiApiKey?: string;
+  model?: string;
+  timeout?: number;
+  retries?: number;
 }
 
-export interface WeaviateSearchOptions {
-  query: string
-  limit?: number
-  certainty?: number
-  workspaceId?: number
-  fileIds?: number[]
-  language?: string
-  hybrid?: boolean
-  generative?: {
-    singlePrompt: string
-  }
+export interface WeaviateClass {
+  class: string;
+  description?: string;
+  vectorIndexType?: 'hnsw' | 'flat';
+  vectorIndexConfig?: {
+    distance?: 'cosine' | 'l2-squared' | 'manhattan' | 'hamming';
+    ef?: number;
+    efConstruction?: number;
+    maxConnections?: number;
+  };
+  properties?: Array<{
+    name: string;
+    dataType: string[];
+    description?: string;
+  }>;
 }
 
-export interface WeaviateSearchResult {
-  id: string
-  content: string
-  metadata: WeaviateDocument['metadata']
-  certainty: number
-  distance?: number
-  generatedText?: string
-}
+/**
+ * Weaviate Vector Database Client
+ */
+export class WeaviateClient {
+  private config: WeaviateConfig;
+  private client: any = null;
+  private isConnected = false;
 
-export interface WeaviateStats {
-  totalObjects: number
-  totalVectors: number
-  indexes: Array<{
-    className: string
-    objectCount: number
-    properties: string[]
-  }>
-  memoryUsage?: {
-    indexSize: string
-    vectorSize: string
-  }
-}
-
-export class WeaviateVectorStore {
-  private client: any // WeaviateClient
-  private className: string
-  private isConnected: boolean = false
-
-  constructor(config: {
-    host?: string
-    apiKey?: string
-    className?: string
-    openaiApiKey?: string
-  }) {
-    const {
-      host = process.env.WEAVIATE_HOST || 'http://localhost:8080',
-      apiKey = process.env.WEAVIATE_API_KEY,
-      className = 'VibeCodeDocument',
-      openaiApiKey = process.env.OPENAI_API_KEY
-    } = config
-
-    // Initialize Weaviate client with proper configuration
-    try {
-      const clientConfig: any = {
-        scheme: host.startsWith('https') ? 'https' : 'http',
-        host: host.replace(/^https?:\/\//, ''),
-<<<<<<< HEAD
-        apiKey: apiKey,
-<<<<<<< HEAD
-<<<<<<< HEAD
-        ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
-=======
-        ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})
-<<<<<<< HEAD
-        headers: openaiApiKey ? { 'X-OpenAI-Api-Key': openaiApiKey } : undefined
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      })
-=======
-        apiKey: apiKey
-      }
-      
-      // Add OpenAI API key if provided
-      if (openaiApiKey) {
-        clientConfig.additionalHeaders = { 'X-OpenAI-Api-Key': openaiApiKey }
-      }
-      
-      this.client = weaviate.client(clientConfig)
->>>>>>> ai-sdk-openai-v2-test
-=======
-        ...(openaiApiKey ? { additionalHeaders: { 'X-OpenAI-Api-Key': openaiApiKey } } : {})      })
->>>>>>> fix/consolidated-dependency-updates
-    } catch (error) {
-      console.warn('Failed to initialize Weaviate client:', error)
-      // Use a mock client that will fail gracefully
-      this.client = {
-        misc: {
-          readyChecker: () => ({ do: () => Promise.resolve(false) }),
-          metaGetter: () => ({ do: () => Promise.resolve({}) })
-        },
-        schema: {
-          getter: () => ({ do: () => Promise.resolve({ classes: [] }) }),
-          classCreator: () => ({ withClass: () => ({ do: () => Promise.resolve() }) })
-        },
-        batch: {
-          objectsBatcher: () => ({
-            withObject: (obj: any) => ({
-              withObject: (obj: any) => this.client.batch.objectsBatcher(),
-              do: () => Promise.resolve()
-            }),
-            do: () => Promise.resolve()
-          }),
-          objectsBatchDeleter: () => ({
-            withClassName: () => ({
-              withWhere: () => ({ do: () => Promise.resolve({ results: { successful: 0 } }) })
-            })
-          })
-        },
-        graphQL: {
-          get: () => ({
-            withClassName: () => ({
-              withFields: () => ({
-                withLimit: () => ({
-                  withNearText: () => ({ do: () => Promise.resolve({ data: {} }) }),
-                  withHybrid: () => ({ do: () => Promise.resolve({ data: {} }) }),
-                  withWhere: () => ({ do: () => Promise.resolve({ data: {} }) }),
-                  withGenerate: () => ({ do: () => Promise.resolve({ data: {} }) }),
-                  do: () => Promise.resolve({ data: {} })
-                })
-              })
-            })
-          }),
-          aggregate: () => ({
-            withClassName: () => ({
-              withFields: () => ({ do: () => Promise.resolve({ data: {} }) })
-            })
-          })
-        }
-      }
-    }
-    this.className = className
+  constructor(config: WeaviateConfig) {
+    this.config = {
+      port: 8080,
+      protocol: 'http',
+      timeout: 30000,
+      retries: 3,
+      ...config
+    };
   }
 
   /**
-   * Initialize Weaviate schema and connection
+   * Initialize the Weaviate client connection
    */
-  async initialize(): Promise<boolean> {
+  async initialize(): Promise<void> {
     try {
+      // Initialize Weaviate client
+      const weaviate = await import('weaviate-ts-client');
+
+      this.client = weaviate.weaviate.client({
+        scheme: this.config.protocol,
+        host: this.config.host,
+        ...(this.config.apiKey && { apiKey: this.config.apiKey }),
+        ...(this.config.timeout && { timeout: this.config.timeout }),
+        ...(this.config.retries && { retries: this.config.retries })
+      });
+
       // Test connection
-      const ready = await this.client.misc.readyChecker().do()
-      if (!ready) {
-        console.warn('Weaviate not ready')
-        return false
-      }
+      await this.client.misc.readyChecker().do();
 
-      // Check if schema exists
-      const schema = await this.client.schema.getter().do()
-      const classExists = schema.classes?.some((c: any) => c.class === this.className)
+      this.isConnected = true;
+      console.log('Weaviate client initialized successfully');
 
-      if (!classExists) {
-        await this.createSchema()
-      }
-
-      this.isConnected = true
-      // Debug log removed
-      return true
     } catch (error) {
-      console.error('Failed to initialize Weaviate:', error)
-      this.isConnected = false
-      return false
+      console.error('Failed to initialize Weaviate client:', error);
+      throw error;
     }
   }
 
   /**
-   * Create Weaviate schema for VibeCode documents
+   * Close the Weaviate connection
    */
-  private async createSchema(): Promise<void> {
-    const classDefinition = {
-      class: this.className,
-      description: 'VibeCode document chunks for RAG and semantic search',
-      vectorizer: 'text2vec-openai',
-      moduleConfig: {
-        'text2vec-openai': {
-          model: 'text-embedding-3-small',
-          dimensions: 1536,
-          type: 'text'
-        },
-        'generative-openai': {
-          model: 'gpt-3.5-turbo'
-        }
-      },
-      properties: [
-        {
-          name: 'content',
-          dataType: ['text'],
-          description: 'The actual text content of the document chunk',
-          moduleConfig: {
-            'text2vec-openai': {
-              skip: false,
-              vectorizePropertyName: false
-            }
-          }
-        },
-        {
-          name: 'fileName',
-          dataType: ['text'],
-          description: 'Name of the source file',
-          moduleConfig: {
-            'text2vec-openai': { skip: true }
-          }
-        },
-        {
-          name: 'filePath',
-          dataType: ['text'],
-          description: 'Full path to the source file',
-          moduleConfig: {
-            'text2vec-openai': { skip: true }
-          }
-        },
-        {
-          name: 'language',
-          dataType: ['text'],
-          description: 'Programming language or file type',
-          moduleConfig: {
-            'text2vec-openai': { skip: true }
-          }
-        },
-        {
-          name: 'fileId',
-          dataType: ['int'],
-          description: 'Database file ID reference'
-        },
-        {
-          name: 'workspaceId',
-          dataType: ['int'],
-          description: 'Workspace ID for isolation'
-        },
-        {
-          name: 'startLine',
-          dataType: ['int'],
-          description: 'Starting line number in source file'
-        },
-        {
-          name: 'endLine',
-          dataType: ['int'],
-          description: 'Ending line number in source file'
-        },
-        {
-          name: 'tokens',
-          dataType: ['int'],
-          description: 'Estimated token count for this chunk'
-        },
-        {
-          name: 'chunkIndex',
-          dataType: ['int'],
-          description: 'Index of this chunk within the file'
-        },
-        {
-          name: 'createdAt',
-          dataType: ['date'],
-          description: 'When this chunk was indexed'
-        }
-      ]
+  async close(): Promise<void> {
+    if (this.client) {
+      // Weaviate client doesn't have a specific close method
+      this.client = null;
     }
-
-    await this.client.schema.classCreator().withClass(classDefinition).do()
-    // Debug log removed
+    this.isConnected = false;
   }
 
   /**
-   * Check if Weaviate is available and connected
+   * Check if the Weaviate connection is healthy
    */
-  async isAvailable(): Promise<boolean> {
-    if (!this.isConnected) {
-      return await this.initialize()
+  async ping(): Promise<boolean> {
+    try {
+      if (!this.client) return false;
+
+      await this.client.misc.readyChecker().do();
+      return true;
+    } catch (error) {
+      console.error('Weaviate ping failed:', error);
+      return false;
     }
-    return true
   }
 
   /**
-   * Store document chunks in Weaviate
+   * Check if connected to Weaviate
    */
-  async storeDocuments(documents: WeaviateDocument[]): Promise<boolean> {
-    if (!await this.isAvailable()) {
-      throw new Error('Weaviate not available')
+  isHealthy(): boolean {
+    return this.client !== null && this.isConnected;
+  }
+
+  /**
+   * Create a class (collection) in Weaviate
+   */
+  async createClass(classDefinition: WeaviateClass): Promise<void> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
     }
 
     try {
-      // Prepare batch operation
-      let batch = this.client.batch.objectsBatcher()
-      let batchSize = 0
+      const schema = await this.client.schema.getter().do();
+      const existingClass = schema.classes.find((c: any) => c.class === classDefinition.class);
 
-      for (const doc of documents) {
-        const object = {
-          class: this.className,
+      if (!existingClass) {
+        await this.client.schema.classCreator().withClass(classDefinition).do();
+        console.log(`Created Weaviate class: ${classDefinition.class}`);
+      }
+    } catch (error) {
+      console.error(`Failed to create Weaviate class ${classDefinition.class}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Store vector chunks in Weaviate
+   */
+  async store(chunks: VectorChunk[]): Promise<number> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      let storedCount = 0;
+
+      for (const chunk of chunks) {
+        const dataObject = {
+          class: 'VectorChunk',
           properties: {
-            content: doc.content,
-            fileName: doc.metadata.fileName,
-            filePath: doc.metadata.filePath,
-            language: doc.metadata.language,
-            fileId: doc.metadata.fileId,
-            workspaceId: doc.metadata.workspaceId,
-            startLine: doc.metadata.startLine,
-            endLine: doc.metadata.endLine,
-            tokens: doc.metadata.tokens,
-            chunkIndex: doc.metadata.chunkIndex,
-            createdAt: doc.metadata.createdAt
+            content: chunk.content,
+            metadata: JSON.stringify(chunk.metadata),
+            workspaceId: chunk.metadata.fileId || 0,
+            fileId: chunk.metadata.fileId || 0,
+            fileName: chunk.metadata.fileName || '',
+            language: chunk.metadata.language || '',
+            tokens: chunk.metadata.tokens || 0
           },
-          id: doc.id
+          vector: chunk.embedding
+        };
+
+        // Store with automatic vectorization if OpenAI key is provided
+        if (this.config.openaiApiKey) {
+          await this.client.data.creator().withClassName('VectorChunk').withProperties(dataObject.properties).do();
+        } else {
+          await this.client.data.creator().withClassName('VectorChunk').withVector(dataObject.vector).withProperties(dataObject.properties).do();
         }
 
-        batch = batch.withObject(object)
-        batchSize++
-
-        // Process batch when it reaches 100 objects
-        if (batchSize >= 100) {
-          await batch.do()
-          batch = this.client.batch.objectsBatcher()
-          batchSize = 0
-          
-          // Small delay to prevent overwhelming the server
-          await new Promise(resolve => setTimeout(resolve, 100))
-        }
+        storedCount++;
       }
 
-      // Process remaining objects
-      if (batchSize > 0) {
-        await batch.do()
-      }
-
-      // Debug log removed
-      return true
+      return storedCount;
     } catch (error) {
-      console.error('Failed to store documents in Weaviate:', error)
-      throw error
+      console.error('Failed to store chunks in Weaviate:', error);
+      throw error;
     }
   }
 
   /**
-   * Semantic search with optional hybrid search
+   * Search for similar vectors using the provided query embedding
    */
-  async search(options: WeaviateSearchOptions): Promise<WeaviateSearchResult[]> {
-    if (!await this.isAvailable()) {
-      throw new Error('Weaviate not available')
+  async searchWithVector(
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
     }
 
-    const {
-      query,
-      limit = 10,
-      certainty = 0.7,
-      workspaceId,
-      fileIds,
-      language,
-      hybrid = false,
-      generative
-    } = options
-
     try {
-      let queryBuilder = this.client.graphQL.get()
-        .withClassName(this.className)
-        .withFields('content fileName filePath language fileId workspaceId startLine endLine tokens chunkIndex createdAt _additional { id certainty distance }')
-        .withLimit(limit)
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
 
-      if (hybrid) {
-        // Hybrid search combining vector and keyword search
-        queryBuilder = queryBuilder.withHybrid({
-          query,
-          alpha: 0.7 // 0.7 = more vector, 0.3 = more keyword
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { distance certainty }')
+        .withNearVector({
+          vector: queryEmbedding,
+          distance: 1 - threshold // Convert similarity threshold to distance
         })
-      } else {
-        // Pure vector search
-        queryBuilder = queryBuilder.withNearText({
-          concepts: [query],
-          certainty
-        })
+        .withLimit(limit);
+
+      const result = await query.do();
+
+      if (!result.data || !result.data.Get || !result.data.Get.VectorChunk) {
+        return [];
       }
 
-      // Add filters
-      const whereFilters: any[] = []
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        chunk: {
+          id: item.id,
+          content: item.content,
+          embedding: queryEmbedding, // We don't get the original embedding back
+          metadata: JSON.parse(item.metadata || '{}')
+        },
+        similarity: item._additional.certainty || 0
+      }));
+    } catch (error) {
+      console.error('Failed to search in Weaviate:', error);
+      throw error;
+    }
+  }
 
-      if (workspaceId) {
-        whereFilters.push({
+  /**
+   * Search for similar vectors using text query (generates embedding internally)
+   */
+  async searchWithText(
+    query: string,
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+
+      // Use Weaviate's text-based search (nearText)
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { distance certainty }')
+        .withNearText({
+          concepts: [query],
+          distance: 0.7 // Default distance threshold for text search
+        })
+        .withLimit(limit);
+
+      const result = await query.do();
+
+      if (!result.data || !result.data.Get || !result.data.Get.VectorChunk) {
+        return [];
+      }
+
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        chunk: {
+          id: item.id,
+          content: item.content,
+          embedding: [], // We don't get the original embedding back
+          metadata: JSON.parse(item.metadata || '{}')
+        },
+        similarity: item._additional.certainty || 0
+      }));
+    } catch (error) {
+      console.error('Failed to search with text in Weaviate:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete vectors by their IDs
+   */
+  async delete(ids: string[]): Promise<number> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      let deletedCount = 0;
+
+      for (const id of ids) {
+        try {
+          await this.client.data.deleter().withClassName('VectorChunk').withId(id).do();
+          deletedCount++;
+        } catch (error: any) {
+          // Item might not exist, which is fine
+          if (error.statusCode !== 404) {
+            throw error;
+          }
+        }
+      }
+
+      return deletedCount;
+    } catch (error) {
+      console.error('Failed to delete from Weaviate:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get statistics about the vector database
+   */
+  async getStats(): Promise<{
+    totalVectors: number;
+    indexSize: number;
+    lastUpdated: Date;
+  }> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      // Get object count from Weaviate
+      const result = await this.client.graphql
+        .aggregate()
+        .withClassName('VectorChunk')
+        .withFields('meta { count }')
+        .do();
+
+      const totalVectors = result.data.Aggregate.VectorChunk[0]?.meta?.count || 0;
+
+      return {
+        totalVectors,
+        indexSize: totalVectors * 1000, // Rough estimate
+        lastUpdated: new Date()
+      };
+    } catch (error) {
+      console.error('Failed to get Weaviate stats:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Generate embeddings for the given text (placeholder implementation)
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    // This would integrate with an embedding service (OpenAI, etc.)
+    // For now, return a placeholder embedding
+    const dimensions = 1536; // OpenAI text-embedding-ada-002 dimensions
+    return new Array(dimensions).fill(0).map(() => Math.random() * 2 - 1);
+  }
+
+  /**
+   * Get the dimensionality of vectors in this database
+   */
+  getDimensions(): number {
+    return 1536; // Standard for OpenAI embeddings
+  }
+
+  /**
+   * Clear all vectors from the database
+   */
+  async clear(): Promise<void> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      // Delete all objects in the VectorChunk class
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id')
+        .withLimit(10000); // Get all IDs
+
+      const result = await query.do();
+
+      if (result.data?.Get?.VectorChunk) {
+        const ids = result.data.Get.VectorChunk.map((item: any) => item.id);
+
+        // Delete in batches
+        const batchSize = 100;
+        for (let i = 0; i < ids.length; i += batchSize) {
+          const batch = ids.slice(i, i + batchSize);
+          await Promise.all(
+            batch.map(id => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
+          );
+        }
+      }
+    } catch (error) {
+      console.error('Failed to clear Weaviate data:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create an index for the given field if it doesn't exist
+   */
+  async createIndex(field: string, options?: any): Promise<void> {
+    // Weaviate handles indexing automatically through schema configuration
+    console.log(`Index for ${field} is handled by Weaviate schema configuration`);
+  }
+
+  /**
+   * Delete an index for the given field
+   */
+  async deleteIndex(field: string): Promise<void> {
+    // Weaviate index management is handled at the class level
+    console.log(`Index deletion for ${field} is handled by Weaviate class management`);
+  }
+
+  /**
+   * Get all available indexes
+   */
+  async getIndexes(): Promise<string[]> {
+    // Weaviate doesn't expose indexes in the same way as traditional databases
+    return ['vector_index']; // Placeholder
+  }
+
+  /**
+   * Invalidate cache for specific table and content type
+   */
+  async invalidateCache(table: string, contentType?: string): Promise<number> {
+    // Weaviate doesn't have traditional cache invalidation
+    // This would integrate with your caching layer
+    return 0;
+  }
+
+  /**
+   * Get vector by ID
+   */
+  async getById(id: string): Promise<VectorChunk | null> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const result = await this.client.data.getter().withClassName('VectorChunk').withId(id).do();
+
+      if (!result || !result.properties) {
+        return null;
+      }
+
+      return {
+        id: result.id,
+        content: result.properties.content,
+        embedding: result.vector || [],
+        metadata: JSON.parse(result.properties.metadata || '{}')
+      };
+    } catch (error: any) {
+      if (error.statusCode === 404) {
+        return null; // Item not found
+      }
+
+      console.error('Failed to get vector by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Update vector by ID
+   */
+  async update(id: string, chunk: Partial<VectorChunk>): Promise<boolean> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const existing = await this.getById(id);
+      if (!existing) return false;
+
+      const updated = {
+        ...existing,
+        ...chunk
+      };
+
+      await this.client.data.updater()
+        .withClassName('VectorChunk')
+        .withId(id)
+        .withProperties({
+          content: updated.content,
+          metadata: JSON.stringify(updated.metadata)
+        })
+        .withVector(updated.embedding)
+        .do();
+
+      return true;
+    } catch (error) {
+      console.error('Failed to update vector:', error);
+      return false;
+    }
+  }
+
+  /**
+   * Batch operation for multiple vectors
+   */
+  async batch(operations: Array<{
+    type: 'insert' | 'update' | 'delete';
+    data?: VectorChunk;
+    id?: string;
+  }>): Promise<number> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    let processedCount = 0;
+
+    try {
+      for (const operation of operations) {
+        switch (operation.type) {
+          case 'insert':
+            if (operation.data) {
+              await this.store([operation.data]);
+              processedCount++;
+            }
+            break;
+
+          case 'update':
+            if (operation.id && operation.data) {
+              await this.update(operation.id, operation.data);
+              processedCount++;
+            }
+            break;
+
+          case 'delete':
+            if (operation.id) {
+              await this.delete([operation.id]);
+              processedCount++;
+            }
+            break;
+        }
+      }
+
+      return processedCount;
+    } catch (error) {
+      console.error('Failed to execute batch operation:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get similar vectors within a specific workspace
+   */
+  async searchByWorkspace(
+    workspaceId: number,
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { distance certainty }')
+        .withWhere({
           path: ['workspaceId'],
           operator: 'Equal',
-          valueInt: workspaceId
+          valueNumber: workspaceId
         })
+        .withNearVector({
+          vector: queryEmbedding,
+          distance: 1 - threshold
+        })
+        .withLimit(limit);
+
+      const result = await query.do();
+
+      if (!result.data?.Get?.VectorChunk) {
+        return [];
       }
 
-      if (fileIds && fileIds.length > 0) {
-        whereFilters.push({
-          path: ['fileId'],
-          operator: 'ContainsAny',
-          valueInt: fileIds
-        })
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        chunk: {
+          id: item.id,
+          content: item.content,
+          embedding: queryEmbedding,
+          metadata: JSON.parse(item.metadata || '{}')
+        },
+        similarity: item._additional.certainty || 0
+      }));
+    } catch (error) {
+      console.error('Failed to search by workspace in Weaviate:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get vectors by file IDs
+   */
+  async getByFileIds(fileIds: number[]): Promise<VectorChunk[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const chunks: VectorChunk[] = [];
+
+      for (const fileId of fileIds) {
+        const query = this.client.graphql
+          .get()
+          .withClassName('VectorChunk')
+          .withFields('id content metadata _additional { vector }')
+          .withWhere({
+            path: ['fileId'],
+            operator: 'Equal',
+            valueNumber: fileId
+          })
+          .withLimit(1000);
+
+        const result = await query.do();
+
+        if (result.data?.Get?.VectorChunk) {
+          chunks.push(...result.data.Get.VectorChunk.map((item: any) => ({
+            id: item.id,
+            content: item.content,
+            embedding: item._additional.vector || [],
+            metadata: JSON.parse(item.metadata || '{}')
+          })));
+        }
       }
 
-      if (language) {
-        whereFilters.push({
+      return chunks;
+    } catch (error) {
+      console.error('Failed to get vectors by file IDs:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search with hybrid scoring (semantic + keyword)
+   */
+  async hybridSearch(
+    query: string,
+    queryEmbedding: number[],
+    options: SearchOptions & {
+      keywordWeight?: number;
+      semanticWeight?: number;
+    }
+  ): Promise<SearchResult[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const keywordWeight = options.keywordWeight || 0.3;
+      const semanticWeight = options.semanticWeight || 0.7;
+
+      // Weaviate supports hybrid search through nearText with vector
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { distance certainty }')
+        .withHybrid({
+          query: query,
+          vector: queryEmbedding,
+          alpha: semanticWeight // Weight for semantic vs keyword search
+        })
+        .withLimit(limit);
+
+      const result = await query.do();
+
+      if (!result.data?.Get?.VectorChunk) {
+        return [];
+      }
+
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        chunk: {
+          id: item.id,
+          content: item.content,
+          embedding: queryEmbedding,
+          metadata: JSON.parse(item.metadata || '{}')
+        },
+        similarity: item._additional.certainty || 0
+      }));
+    } catch (error) {
+      console.error('Failed to perform hybrid search in Weaviate:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get recommendations based on user behavior
+   */
+  async getRecommendations(
+    userId: string,
+    currentFileId: number,
+    options: {
+      limit?: number;
+      excludeCurrentFile?: boolean;
+    }
+  ): Promise<VectorChunk[]> {
+    // Simplified implementation for Weaviate
+    return [];
+  }
+
+  /**
+   * Get trending content based on recent activity
+   */
+  async getTrendingContent(
+    workspaceId: number,
+    options: {
+      limit?: number;
+      timeWindow?: number;
+    }
+  ): Promise<VectorChunk[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { vector }')
+        .withWhere({
+          path: ['workspaceId'],
+          operator: 'Equal',
+          valueNumber: workspaceId
+        })
+        .withLimit(limit)
+        .withSort([{ path: ['_creationTimeUnix'], order: 'desc' }]);
+
+      const result = await query.do();
+
+      if (!result.data?.Get?.VectorChunk) {
+        return [];
+      }
+
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        id: item.id,
+        content: item.content,
+        embedding: item._additional.vector || [],
+        metadata: JSON.parse(item.metadata || '{}')
+      }));
+    } catch (error) {
+      console.error('Failed to get trending content from Weaviate:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Search with filters
+   */
+  async searchWithFilters(
+    queryEmbedding: number[],
+    filters: {
+      language?: string;
+      fileType?: string;
+      minTokens?: number;
+      maxTokens?: number;
+      dateRange?: { start: Date; end: Date };
+    },
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      // Build where clause from filters
+      const whereConditions: any[] = [];
+
+      if (filters.language) {
+        whereConditions.push({
           path: ['language'],
           operator: 'Equal',
-          valueText: language
-        })
+          valueString: filters.language
+        });
       }
 
-      if (whereFilters.length > 0) {
-        const whereClause = whereFilters.length === 1 
-          ? whereFilters[0] 
-          : { operator: 'And', operands: whereFilters }
-        
-        queryBuilder = queryBuilder.withWhere(whereClause)
+      if (filters.minTokens) {
+        whereConditions.push({
+          path: ['tokens'],
+          operator: 'GreaterThanEqual',
+          valueNumber: filters.minTokens
+        });
       }
 
-      // Add generative search if requested
-      if (generative) {
-        queryBuilder = queryBuilder.withGenerate({
-          singlePrompt: generative.singlePrompt
-        })
+      if (filters.maxTokens) {
+        whereConditions.push({
+          path: ['tokens'],
+          operator: 'LessThanEqual',
+          valueNumber: filters.maxTokens
+        });
       }
 
-      const result = await queryBuilder.do()
-      
-      const objects = result.data?.Get?.[this.className] || []
-      
-      return objects.map((obj: any) => ({
-        id: obj._additional.id,
-        content: obj.content,
-        metadata: {
-          fileName: obj.fileName,
-          filePath: obj.filePath,
-          language: obj.language,
-          fileId: obj.fileId,
-          workspaceId: obj.workspaceId,
-          startLine: obj.startLine,
-          endLine: obj.endLine,
-          tokens: obj.tokens,
-          chunkIndex: obj.chunkIndex,
-          createdAt: obj.createdAt
-        },
-        certainty: obj._additional.certainty,
-        distance: obj._additional.distance,
-        generatedText: obj._additional?.generate?.singleResult
-      }))
-    } catch (error) {
-      console.error('Weaviate search failed:', error)
-      throw error
-    }
-  }
+      let whereClause: any = {};
+      if (whereConditions.length > 0) {
+        whereClause = {
+          operator: 'And',
+          operands: whereConditions
+        };
+      }
 
-  /**
-   * Delete documents by workspace or file
-   */
-  async deleteDocuments(options: {
-    workspaceId?: number
-    fileIds?: number[]
-  }): Promise<number> {
-    if (!await this.isAvailable()) {
-      throw new Error('Weaviate not available')
-    }
-
-    const { workspaceId, fileIds } = options
-    const whereFilters: any[] = []
-
-    if (workspaceId) {
-      whereFilters.push({
-        path: ['workspaceId'],
-        operator: 'Equal',
-        valueInt: workspaceId
-      })
-    }
-
-    if (fileIds && fileIds.length > 0) {
-      whereFilters.push({
-        path: ['fileId'],
-        operator: 'ContainsAny',
-        valueInt: fileIds
-      })
-    }
-
-    if (whereFilters.length === 0) {
-      throw new Error('Must specify workspaceId or fileIds for deletion')
-    }
-
-    try {
-      const whereClause = whereFilters.length === 1 
-        ? whereFilters[0] 
-        : { operator: 'And', operands: whereFilters }
-
-      const result = await this.client.batch
-        .objectsBatchDeleter()
-        .withClassName(this.className)
+      const query = this.client.graphql
+        .get()
+        .withClassName('VectorChunk')
+        .withFields('id content metadata _additional { distance certainty }')
         .withWhere(whereClause)
-        .do()
+        .withNearVector({
+          vector: queryEmbedding,
+          distance: 1 - threshold
+        })
+        .withLimit(limit);
 
-      const deletedCount = result.results?.successful || 0
-      // Debug log removed
-      return deletedCount
+      const result = await query.do();
+
+      if (!result.data?.Get?.VectorChunk) {
+        return [];
+      }
+
+      return result.data.Get.VectorChunk.map((item: any) => ({
+        chunk: {
+          id: item.id,
+          content: item.content,
+          embedding: queryEmbedding,
+          metadata: JSON.parse(item.metadata || '{}')
+        },
+        similarity: item._additional.certainty || 0
+      }));
     } catch (error) {
-      console.error('Failed to delete documents from Weaviate:', error)
-      throw error
+      console.error('Failed to search with filters in Weaviate:', error);
+      throw error;
     }
   }
 
   /**
-   * Get database statistics and health info
+   * Get content analytics
    */
-  async getStats(): Promise<WeaviateStats> {
-    if (!await this.isAvailable()) {
-      throw new Error('Weaviate not available')
-    }
-
-    try {
-      const schema = await this.client.schema.getter().do()
-      const meta = await this.client.misc.metaGetter().do()
-      
-      const indexes = schema.classes?.map((cls: any) => ({
-        className: cls.class || 'Unknown',
-        objectCount: 0, // Would need aggregate query to get actual count
-        properties: cls.properties?.map((prop: any) => prop.name) || []
-      })) || []
-
-      // Get object count for our class
-      const aggregate = await this.client.graphQL
-        .aggregate()
-        .withClassName(this.className)
-        .withFields('meta { count }')
-        .do()
-
-      const objectCount = aggregate.data?.Aggregate?.[this.className]?.[0]?.meta?.count || 0
-
-      return {
-        totalObjects: objectCount,
-        totalVectors: objectCount,
-        indexes: indexes.map((idx: any) => 
-          idx.className === this.className 
-            ? { ...idx, objectCount } 
-            : idx
-        ),
-        memoryUsage: {
-          indexSize: 'Unknown', // Would need cluster stats
-          vectorSize: 'Unknown'
-        }
-      }
-    } catch (error) {
-      console.error('Failed to get Weaviate stats:', error)
-      return {
-        totalObjects: 0,
-        totalVectors: 0,
-        indexes: []
-      }
-    }
-  }
-
-  /**
-   * Health check for Weaviate instance
-   */
-  async healthCheck(): Promise<{
-    status: 'healthy' | 'unhealthy'
-    details: {
-      connected: boolean
-      schemaReady: boolean
-      version?: string
-      modules?: string[]
-    }
+  async getAnalytics(workspaceId: number): Promise<{
+    totalFiles: number;
+    totalChunks: number;
+    languageBreakdown: Record<string, number>;
+    recentActivity: Array<{
+      date: Date;
+      filesAdded: number;
+      searchesPerformed: number;
+    }>;
   }> {
-    try {
-      const ready = await this.client.misc.readyChecker().do()
-      const meta = await this.client.misc.metaGetter().do()
-      
-      return {
-        status: ready && this.isConnected ? 'healthy' : 'unhealthy',
-        details: {
-          connected: this.isConnected,
-          schemaReady: ready,
-          version: meta.version,
-          modules: meta.modules ? Object.keys(meta.modules) : []
-        }
-      }
-    } catch (error) {
-      return {
-        status: 'unhealthy',
-        details: {
-          connected: false,
-          schemaReady: false
-        }
-      }
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
     }
+
+    try {
+      // Get total counts
+      const countQuery = this.client.graphql
+        .aggregate()
+        .withClassName('VectorChunk')
+        .withWhere({
+          path: ['workspaceId'],
+          operator: 'Equal',
+          valueNumber: workspaceId
+        })
+        .withFields('meta { count }');
+
+      const countResult = await countQuery.do();
+      const totalChunks = countResult.data.Aggregate.VectorChunk[0]?.meta?.count || 0;
+
+      // Get unique file count
+      const fileQuery = this.client.graphql
+        .aggregate()
+        .withClassName('VectorChunk')
+        .withWhere({
+          path: ['workspaceId'],
+          operator: 'Equal',
+          valueNumber: workspaceId
+        })
+        .withGroupBy(['fileId'])
+        .withFields('groupedBy { value } meta { count }');
+
+      const fileResult = await fileQuery.do();
+
+      const totalFiles = fileResult.data.Aggregate.VectorChunk.length || 0;
+
+      // Get language breakdown
+      const languageQuery = this.client.graphql
+        .aggregate()
+        .withClassName('VectorChunk')
+        .withWhere({
+          path: ['workspaceId'],
+          operator: 'Equal',
+          valueNumber: workspaceId
+        })
+        .withGroupBy(['language'])
+        .withFields('groupedBy { value } meta { count }');
+
+      const languageResult = await languageQuery.do();
+
+      const languageBreakdown: Record<string, number> = {};
+      languageResult.data.Aggregate.VectorChunk.forEach((group: any) => {
+        if (group.groupedBy.value) {
+          languageBreakdown[group.groupedBy.value] = group.meta.count;
+        }
+      });
+
+      return {
+        totalFiles,
+        totalChunks,
+        languageBreakdown,
+        recentActivity: [
+          {
+            date: new Date(),
+            filesAdded: totalFiles,
+            searchesPerformed: 0 // Would need search tracking
+          }
+        ]
+      };
+    } catch (error) {
+      console.error('Failed to get Weaviate analytics:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get the underlying Weaviate client
+   */
+  getClient(): any {
+    return this.client;
+  }
+
+  /**
+   * Get configuration
+   */
+  getConfig(): WeaviateConfig {
+    return { ...this.config };
   }
 }
 
-// Export singleton instance
-export const weaviateStore = new WeaviateVectorStore({
-  host: process.env.WEAVIATE_HOST,
+// Export singleton instance for global use
+export const weaviateClient = new WeaviateClient({
+  host: process.env.WEAVIATE_HOST || 'localhost',
+  port: parseInt(process.env.WEAVIATE_PORT || '8080'),
+  protocol: (process.env.WEAVIATE_PROTOCOL as 'http' | 'https') || 'http',
   apiKey: process.env.WEAVIATE_API_KEY,
-  openaiApiKey: process.env.OPENAI_API_KEY
-})
-
-export default weaviateStore
+  openaiApiKey: process.env.OPENAI_API_KEY,
+  model: process.env.WEAVIATE_MODEL || 'text-embedding-ada-002'
+});
