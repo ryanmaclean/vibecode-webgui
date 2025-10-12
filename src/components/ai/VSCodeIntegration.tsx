@@ -71,8 +71,7 @@ export default function VSCodeIntegration({
       <CardContent className="flex-1 p-0 overflow-y-auto">
         <AIChatInterface
           workspaceId={workspaceId}
-          initialPrompt={selectedText ? `Explain this code:\n\`\`\`\n${selectedText}\n\`\`\`` : ''}
-          context={{ currentFile, selectedText }}
+          initialContext={currentFile ? [currentFile] : []}
         />
       </CardContent>
       <div className="p-2 border-t border-gray-700">
