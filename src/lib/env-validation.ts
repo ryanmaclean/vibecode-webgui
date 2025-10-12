@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod'
+import { logger } from '@/lib/logger'
 
 // Define environment variable schemas
 const envSchema = z.object({
@@ -281,7 +282,6 @@ export function getDatadogConfig(): {
  */
 export function getOAuthConfig(): {
   github: { id?: string; secret?: string; available: boolean }
-import { logger } from '@/lib/logger';
   google: { id?: string; secret?: string; available: boolean }
 } {
   const env = getEnv()

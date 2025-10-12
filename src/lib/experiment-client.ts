@@ -8,6 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
+import { logger } from '@/lib/logger'
 
 interface ExperimentResult {
   flagKey: string
@@ -128,7 +129,6 @@ export function useFeatureFlag(
  */
 export function useFeatureFlags(
   flags: Array<{ key: string; defaultValue?: boolean }>,
-import { logger } from '@/lib/logger';
   context?: ExperimentContext
 ): {
   flags: Record<string, { isEnabled: boolean; variant: string; payload?: Record<string, any> }>
