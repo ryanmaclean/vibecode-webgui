@@ -104,8 +104,8 @@ Pull requests fail if:
 ## 📚 Documentation
 
 - [Performance Testing Guide](./PERFORMANCE_TESTING.md) - Complete testing documentation
-- [RUM Guide](../../monitoring/RUM.md) - Real User Monitoring setup
-- [Performance Budget](../../../performance-budget.json) - Budget configuration
+- [RUM Guide](../monitoring/RUM.md) - Real User Monitoring setup
+- [Performance Budget](../../performance-budget.json) - Budget configuration
 - [CI Testing Guide](./CI_TESTING.md) - CI/CD integration details
 
 ## 🔧 Configuration Files

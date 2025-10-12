@@ -1,7 +1,7 @@
 # Performance Testing & Monitoring - Implementation Summary
 
 **Issue**: #77 - Performance: Add performance testing and monitoring  
-**PR**: copilot/add-performance-testing-monitoring  
+**Branch**: copilot/add-performance-testing-monitoring  
 **Date**: 2025-10-12  
 **Status**: Phase 1 & 2 Complete ✅
 
@@ -344,7 +344,6 @@ The performance testing and monitoring infrastructure is now production-ready wi
 
 ---
 
-**Implementation by**: GitHub Copilot  
 **Date**: 2025-10-12  
-**PR**: copilot/add-performance-testing-monitoring  
+**Branch**: copilot/add-performance-testing-monitoring  
 **Issue**: #77
