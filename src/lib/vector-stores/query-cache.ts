@@ -3,6 +3,8 @@
  * Caches search results to reduce provider switching overhead
  */
 
+import { logger } from '@/lib/logger';
+
 interface CachedResult {
   results: any[]
   timestamp: number
@@ -51,7 +53,7 @@ export class VectorQueryCache {
     this.accessFrequency.set(key, (this.accessFrequency.get(key) || 0) + 1)
     this.hitCount++
     
-    console.log(`Cache hit for query: ${query.substring(0, 50)}...`)
+    logger.info(`Cache hit for query: ${query.substring(0, 50)}...`)
     return cached.results
   }
 
@@ -79,7 +81,7 @@ export class VectorQueryCache {
     // Initialize access frequency
     this.accessFrequency.set(key, 1)
     
-    console.log(`Cached ${results.length} results for query: ${query.substring(0, 50)}...`)
+    logger.info(`Cached ${results.length} results for query: ${query.substring(0, 50)}...`)
   }
 
   /**

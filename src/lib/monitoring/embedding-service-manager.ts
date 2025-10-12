@@ -4,6 +4,7 @@
  */
 
 import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddingServiceFactory';
+import { logger } from '@/lib/logger';
 
 // Global service instance for monitoring
 let embeddingService: EmbeddingServiceType | null = null;
@@ -16,7 +17,7 @@ export async function getEmbeddingService(): Promise<EmbeddingServiceType> {
       embeddingService = service;
       serviceReleaseFunction = releaseConnection;
     } catch (error) {
-      console.error('Failed to create embedding service:', error);
+      logger.error('Failed to create embedding service:', error);
       throw new Error('Embedding service not available');
     }
   }

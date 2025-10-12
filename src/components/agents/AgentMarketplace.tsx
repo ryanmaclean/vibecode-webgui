@@ -17,6 +17,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useMemo, useCallback } from 'react'
 import {
   Store,
@@ -110,7 +112,7 @@ function AgentCard({ agent, onInstall, onPreview }: AgentCardProps) {
     try {
       await onInstall(agent.id)
     } catch (error) {
-      console.error('Failed to install agent:', error)
+      logger.error('Failed to install agent:', error)
     } finally {
       setIsInstalling(false)
     }

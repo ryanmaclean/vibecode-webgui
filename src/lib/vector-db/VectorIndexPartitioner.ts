@@ -1,3 +1,5 @@
+import { logger } from '@/lib/logger';
+
 interface PartitionConfig {
     partitionCount: number;
     partitionStrategy: 'range' | 'hash' | 'list';
@@ -71,8 +73,8 @@ export class VectorIndexPartitioner {
         `;
         
         // This would execute against the database
-        console.log(`Creating partition table: ${tableName}`);
-        console.log(sql);
+        logger.info(`Creating partition table: ${tableName}`);
+        logger.info(sql);
     }
 
     private async createVectorIndex(tableName: string, indexName: string, _vectorDimension: number): Promise<void> {
@@ -92,9 +94,9 @@ export class VectorIndexPartitioner {
             WITH (lists = 100);
         `;
 
-        console.log(`Creating indexes for table: ${tableName}`);
-        console.log(hnswSql);
-        console.log(ivfSql);
+        logger.info(`Creating indexes for table: ${tableName}`);
+        logger.info(hnswSql);
+        logger.info(ivfSql);
     }
 
     determineTargetPartition(documentId: string): string {
@@ -140,7 +142,7 @@ export class VectorIndexPartitioner {
     }
 
     async rebalancePartitions(): Promise<void> {
-        console.log('Starting partition rebalancing...');
+        logger.info('Starting partition rebalancing...');
         
         // Analyze current partition sizes
         const partitionSizes = await this.analyzePartitionSizes();
@@ -181,7 +183,7 @@ export class VectorIndexPartitioner {
     }
 
     private async splitPartition(partitionId: string): Promise<void> {
-        console.log(`Splitting oversized partition: ${partitionId}`);
+        logger.info(`Splitting oversized partition: ${partitionId}`);
         // Implementation would:
         // 1. Create new partition
         // 2. Redistribute data
@@ -223,7 +225,7 @@ export class VectorIndexPartitioner {
 
     private async rebuildPartitionIndex(partition: IndexPartition): Promise<void> {
         partition.status = 'rebuilding';
-        console.log(`Rebuilding index for partition: ${partition.id}`);
+        logger.info(`Rebuilding index for partition: ${partition.id}`);
         
         // This would execute: REINDEX INDEX partition.indexName;
         // Mark as active when complete

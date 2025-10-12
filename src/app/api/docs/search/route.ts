@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import docsIndex from '@/data/docs-index.json';
+import { logger } from '@/lib/logger';
 
 interface SearchResult {
   id: string;
@@ -107,7 +108,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Documentation search error:', error);
+    logger.error('Documentation search error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -140,7 +141,7 @@ export async function POST(request: NextRequest) {
     return GET(new NextRequest(url));
 
   } catch (error) {
-    console.error('Documentation search POST error:', error);
+    logger.error('Documentation search POST error:', error);
     return NextResponse.json(
       { error: 'Invalid request body' },
       { status: 400 }

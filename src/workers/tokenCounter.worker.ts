@@ -10,8 +10,10 @@
  * Usage:
  * const worker = new Worker(new URL('./tokenCounter.worker.ts', import.meta.url))
  * worker.postMessage({ text: 'Your text here', model: 'gpt-4' })
- * worker.onmessage = (e) => console.log('Token count:', e.data.tokenCount)
+ * worker.onmessage = (e) => logger.info('Token count:', e.data.tokenCount)
  */
+
+import { logger } from '@/lib/logger';
 
 import { encoding_for_model, Tiktoken } from 'tiktoken'
 

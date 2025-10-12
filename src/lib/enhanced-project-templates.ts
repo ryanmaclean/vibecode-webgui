@@ -5,6 +5,7 @@
 
 import { GeneratedProject } from './templates/generator';
 import { TemplateFile } from './templates/index';
+import { logger } from '@/lib/logger';
 
 /**
  * Enhanced template configuration
@@ -479,7 +480,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     
     res.status(200).json(response);
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error:', error);
     res.status(500).json({ message: 'Internal server error' });
   }
 }`;

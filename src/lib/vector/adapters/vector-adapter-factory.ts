@@ -17,6 +17,7 @@ import { RedisVectorAdapter } from './redis-vector-adapter';
 import { OpenAIEmbeddingProvider } from './openai-embedding-provider';
 import { AzureEmbeddingProvider } from './azure-embedding-provider';
 import { RedisVectorCacheAdapter } from './redis-vector-cache-adapter';
+import { logger } from '@/lib/logger';
 
 export class VectorAdapterFactory {
   /**
@@ -77,7 +78,7 @@ export class VectorAdapterFactory {
       case 'local':
         // Local embedding provider would be created here
         // For now, fallback to OpenAI
-        console.warn('Local embedding provider not implemented yet. Using OpenAI provider as fallback.');
+        logger.warn('Local embedding provider not implemented yet. Using OpenAI provider as fallback.');
         return new OpenAIEmbeddingProvider(
           apiKey || process.env.OPENAI_API_KEY || '',
           model || 'text-embedding-3-small',
@@ -115,7 +116,7 @@ export class VectorAdapterFactory {
       case 'azurecache':
         // Azure Cache adapter would be created here
         // For now, fallback to Redis
-        console.warn('Azure Cache adapter not implemented yet. Using Redis adapter as fallback.');
+        logger.warn('Azure Cache adapter not implemented yet. Using Redis adapter as fallback.');
         return new RedisVectorCacheAdapter(
           cacheConfig.connectionString,
           cacheConfig.ttl || { default: 3600, min: 60, max: 86400 },
@@ -125,7 +126,7 @@ export class VectorAdapterFactory {
       case 'memory':
         // Memory cache adapter would be created here
         // For now, fallback to Redis with local connection
-        console.warn('Memory cache adapter not implemented yet. Using Redis adapter as fallback.');
+        logger.warn('Memory cache adapter not implemented yet. Using Redis adapter as fallback.');
         return new RedisVectorCacheAdapter(
           undefined,
           cacheConfig.ttl || { default: 3600, min: 60, max: 86400 },
@@ -152,7 +153,7 @@ export class VectorAdapterFactory {
     
     // Initialize connection
     databaseAdapter.connect().catch((err: Error) => {
-      console.error('Failed to connect to vector database:', err);
+      logger.error('Failed to connect to vector database:', err);
     });
     
     return databaseAdapter;

@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient } from './openrouter-client';
+import { logger } from '@/lib/logger';
 
 export class CodeGenerator {
     private openRouterClient: OpenRouterClient;
@@ -239,7 +240,7 @@ export class CodeGenerator {
     }
 
     private handleError(message: string, error: any): void {
-        console.error(message, error);
+        logger.error(message, error);
         this.outputChannel.appendLine(`${message}: ${error.message}`);
         vscode.window.showErrorMessage(`${message}: ${error.message}`);
     }

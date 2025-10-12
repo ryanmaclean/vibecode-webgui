@@ -4,6 +4,8 @@
  * Endpoints for managing a specific container
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -68,7 +70,7 @@ export async function GET(
 
     return NextResponse.json(containerInfo)
   } catch (error) {
-    console.error('Error getting container:', error)
+    logger.error('Error getting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -104,7 +106,7 @@ export async function DELETE(
 
     if (!stopResult.success) {
       // Container might already be stopped, continue to remove
-      console.warn('Failed to stop container:', stopResult.error)
+      logger.warn('Failed to stop container:', stopResult.error)
     }
 
     // Remove container
@@ -122,7 +124,7 @@ export async function DELETE(
       message: 'Container stopped and removed',
     })
   } catch (error) {
-    console.error('Error deleting container:', error)
+    logger.error('Error deleting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

@@ -3,6 +3,8 @@
  * Provides real-time connection pool metrics, alerts, and capacity planning
  */
 
+import { logger } from '@/lib/logger';
+
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../../lib/monitoring/auth'
 import { connectionPoolMonitor } from '../../../../../lib/monitoring/connection-pool-monitor'
@@ -84,7 +86,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(dashboardData)
 
   } catch (error) {
-    console.error('Connection pool dashboard error:', error)
+    logger.error('Connection pool dashboard error:', error)
     
     return NextResponse.json(
       {
@@ -222,7 +224,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    console.error('Failed to update pool metrics:', error)
+    logger.error('Failed to update pool metrics:', error)
     
     return NextResponse.json(
       {

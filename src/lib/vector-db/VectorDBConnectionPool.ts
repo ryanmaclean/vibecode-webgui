@@ -1,5 +1,6 @@
 import { Pool, PoolClient, QueryResult } from 'pg';
 import { VectorDatabaseConfig } from '@/lib/vector-db/vector-db-config';
+import { logger } from '@/lib/logger';
 
 interface PoolMetrics {
     totalConnections: number;
@@ -67,7 +68,7 @@ class VectorDBConnectionPool {
         });
 
         this.pool.on('error', (err) => {
-            console.error('Pool error:', err);
+            logger.error('Pool error:', err);
             this.metrics.connectionFailures++;
             this.metrics.healthStatus = 'degraded';
         });
@@ -127,10 +128,10 @@ class VectorDBConnectionPool {
         
         if (currentLoad > totalConnections * 0.8 && totalConnections < maxConnections) {
             // Scale up if load is high and we haven't reached max
-            console.log('High load detected, pool will auto-scale up');
+            logger.info('High load detected, pool will auto-scale up');
         } else if (currentLoad === 0 && this.metrics.idleConnections > (this.config.pool?.min ?? 2)) {
             // Scale down if no waiting clients and many idle connections
-            console.log('Low load detected, pool will naturally scale down');
+            logger.info('Low load detected, pool will naturally scale down');
         }
     }
 

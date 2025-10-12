@@ -7,6 +7,7 @@ import { PrometheusExporter } from '@opentelemetry/exporter-prometheus';
 import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk-metrics';
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
+import { logger } from '@/lib/logger';
 
 interface PrometheusConfig {
   port: number;
@@ -32,7 +33,7 @@ class AgentAPIPrometheusExporter {
    */
   initialize(config: PrometheusConfig): void {
     if (this.exporter) {
-      console.warn('Prometheus exporter already initialized');
+      logger.warn('Prometheus exporter already initialized');
       return;
     }
 
@@ -54,7 +55,7 @@ class AgentAPIPrometheusExporter {
           preventServerStart: config.preventServerStart
         },
         () => {
-          console.log(
+          logger.info(
             `📊 Prometheus metrics available at http://${config.hostname || 'localhost'}:${config.port}${config.endpoint}`
           );
         }
@@ -66,9 +67,9 @@ class AgentAPIPrometheusExporter {
         readers: [this.exporter]
       });
 
-      console.log('✅ AgentAPI Prometheus exporter initialized');
+      logger.info('✅ AgentAPI Prometheus exporter initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize Prometheus exporter:', error);
+      logger.error('❌ Failed to initialize Prometheus exporter:', error);
       throw error;
     }
   }
@@ -151,7 +152,7 @@ class AgentAPIPrometheusExporter {
   async shutdown(): Promise<void> {
     if (this.meterProvider) {
       await this.meterProvider.shutdown();
-      console.log('✅ Prometheus exporter shutdown complete');
+      logger.info('✅ Prometheus exporter shutdown complete');
     }
   }
 
@@ -253,7 +254,7 @@ export async function createMetricsHandler(): Promise<(req: any, res: any) => Pr
       });
       res.end(metrics);
     } catch (error) {
-      console.error('Error collecting metrics:', error);
+      logger.error('Error collecting metrics:', error);
       res.writeHead(500, { 'Content-Type': 'text/plain' });
       res.end('Error collecting metrics');
     }

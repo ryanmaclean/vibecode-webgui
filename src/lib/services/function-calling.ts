@@ -3,6 +3,8 @@
  * Handles AI-powered function calling and execution for VibeCode
  */
 
+import { logger } from '@/lib/logger';
+
 export interface FunctionDefinition {
   name: string;
   description: string;
@@ -120,7 +122,7 @@ export class FunctionCallingService {
         }
 
         if (options.enableLogging) {
-          console.log(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
+          logger.info(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
         }
 
         return result;
@@ -129,7 +131,7 @@ export class FunctionCallingService {
         lastError = error instanceof Error ? error.message : String(error);
 
         if (options.enableLogging) {
-          console.warn(`Function ${call.name} attempt ${attempts} failed:`, lastError);
+          logger.warn(`Function ${call.name} attempt ${attempts} failed:`, lastError);
         }
 
         // Wait before retry (exponential backoff)

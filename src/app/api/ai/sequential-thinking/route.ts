@@ -6,6 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
+import { logger } from '@/lib/logger';
 
 // Add type augmentation for NextRequest
 declare module 'next/server' {
@@ -28,7 +29,7 @@ function logSequentialThinking(
   _metadata: Record<string, any>
 ) {
   // Implementation will be added in the future
-  // console.log(`Sequential thinking ${_event}:`, _metadata);
+  // logger.info(`Sequential thinking ${_event}:`, _metadata);
 }
 
 async function handlePOST(request: NextRequest) {

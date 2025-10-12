@@ -1,5 +1,6 @@
 // Global error handling utilities
 import Link from 'next/link';
+import { logger } from '@/lib/logger';
 
 export class AppError extends Error {
   public readonly statusCode: number;
@@ -58,7 +59,7 @@ export class ServerError extends AppError {
 
 // Error handler for API routes
 export function handleApiError(error: unknown): Response {
-  console.error('API Error:', error);
+  logger.error('API Error:', error);
 
   if (error instanceof AppError) {
     return new Response(
@@ -190,12 +191,12 @@ export function ErrorBoundary({
 export function setupGlobalErrorHandling() {
   if (typeof window !== 'undefined') {
     window.addEventListener('unhandledrejection', (event) => {
-      console.error('Unhandled promise rejection:', event.reason);
+      logger.error('Unhandled promise rejection:', event.reason);
       // You could send this to an error reporting service
     });
 
     window.addEventListener('error', (event) => {
-      console.error('Global error:', event.error);
+      logger.error('Global error:', event.error);
       // You could send this to an error reporting service
     });
   }

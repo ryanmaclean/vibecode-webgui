@@ -12,6 +12,7 @@
 import { useEffect, useRef, useState } from 'react'
 import Editor, { Monaco } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
+import { logger } from '@/lib/logger';
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
 import { cn } from '@/lib/utils'
 
@@ -116,7 +117,7 @@ export function AgentMonacoEditor({
       setupKeybindings(editor, monaco)
     }
 
-    console.log('Monaco Editor mounted with Agent API integration')
+    logger.info('Monaco Editor mounted with Agent API integration')
   }
 
   // ==========================================================================
@@ -158,9 +159,9 @@ export function AgentMonacoEditor({
         latency: 0,
       })
 
-      console.log('Agent API initialized successfully')
+      logger.info('Agent API initialized successfully')
     } catch (error) {
-      console.error('Failed to initialize Agent API:', error)
+      logger.error('Failed to initialize Agent API:', error)
       setStatus((prev) => ({
         ...prev,
         agentConnected: false,
@@ -215,7 +216,7 @@ export function AgentMonacoEditor({
       providersRef.current.forEach((provider) => provider.dispose())
       providersRef.current = []
 
-      console.log('Monaco Editor cleanup complete')
+      logger.info('Monaco Editor cleanup complete')
     }
   }, [])
 

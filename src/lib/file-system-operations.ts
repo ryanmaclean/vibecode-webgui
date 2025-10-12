@@ -16,6 +16,7 @@ import { Mutex } from 'async-mutex'
 
 // Global file locks manager - shared across all instances within a workspace
 const globalFileLocks = new Map<string, Map<string, { userId: string; timestamp: Date; lockId: string }>>()
+import { logger } from '@/lib/logger';
 
 // Security constants
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -229,7 +230,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       .on('change', (filePath: string) => this.handleFileEvent('changed', filePath))
       .on('unlink', (filePath: string) => this.handleFileEvent('deleted', filePath))
       .on('error', (err: unknown) => {
-        console.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
+        logger.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
         this.emit('error', err)
       })
   }

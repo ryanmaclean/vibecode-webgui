@@ -4,6 +4,8 @@
  * Supports horizontal and vertical scaling with cost optimization
  */
 
+import { logger } from '@/lib/logger';
+
 export interface WorkspaceMetrics {
   workspaceId: string
   userId: string
@@ -244,7 +246,7 @@ export class WorkspaceAutoScaler {
         }
       }
     } catch (error) {
-      console.error('Auto-scaling evaluation error:', error)
+      logger.error('Auto-scaling evaluation error:', error)
     } finally {
       this.isEvaluating = false
     }
@@ -353,7 +355,7 @@ export class WorkspaceAutoScaler {
       scalingAction.status = 'failed'
       scalingAction.error = error instanceof Error ? error.message : 'Unknown error'
       
-      console.error(`❌ Scaling action failed for workspace ${workspaceId}:`, error)
+      logger.error(`❌ Scaling action failed for workspace ${workspaceId}:`, error)
     } finally {
       // Remove completed/failed action and mark as not scaling
       resources.scaling.pendingActions = resources.scaling.pendingActions.filter(

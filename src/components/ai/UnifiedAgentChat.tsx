@@ -17,6 +17,8 @@
 
 'use client'
 
+import { logger } from '@/lib/logger';
+
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
   Send,
@@ -102,7 +104,7 @@ function CodeBlock({ code, language = 'plaintext' }: CodeBlockProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      console.error('Failed to copy code:', error)
+      logger.error('Failed to copy code:', error)
     }
   }, [code])
 
@@ -397,7 +399,7 @@ export function UnifiedAgentChat({
           })
         },
         onError: (error) => {
-          console.error('SSE error:', error)
+          logger.error('SSE error:', error)
           setConnectionState('failed')
         },
         onStateChange: (state) => {
@@ -488,7 +490,7 @@ export function UnifiedAgentChat({
         )
       )
     } catch (error) {
-      console.error('Failed to send message:', error)
+      logger.error('Failed to send message:', error)
 
       // Update message status to error
       setMessages(prev =>
@@ -510,7 +512,7 @@ export function UnifiedAgentChat({
     try {
       await navigator.clipboard.writeText(content)
     } catch (error) {
-      console.error('Failed to copy message:', error)
+      logger.error('Failed to copy message:', error)
     }
   }, [])
 

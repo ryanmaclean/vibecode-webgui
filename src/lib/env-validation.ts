@@ -135,35 +135,35 @@ export function validateEnv(): Env {
     }
     
     if (warnings.length > 0) {
-      console.warn('⚠️  Environment variable warnings:')
-      warnings.forEach(warning => console.warn(`  - ${warning}`))
+      logger.warn('⚠️  Environment variable warnings:')
+      warnings.forEach(warning => logger.warn(`  - ${warning}`))
     }
     
     return validatedEnv
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      console.error('❌ Environment variable validation failed:')
+      logger.error('❌ Environment variable validation failed:')
       error.errors.forEach(err => {
-        console.error(`  - ${err.path.join('.')}: ${err.message}`)
+        logger.error(`  - ${err.path.join('.')}: ${err.message}`)
       })
       
       // In development, provide helpful suggestions
       if (process.env.NODE_ENV === 'development') {
-        console.error('\n💡 To fix these issues:')
-        console.error('  1. Copy .env.example to .env')
-        console.error('  2. Fill in the required values')
-        console.error('  3. Restart the development server')
+        logger.error('\n💡 To fix these issues:')
+        logger.error('  1. Copy .env.example to .env')
+        logger.error('  2. Fill in the required values')
+        logger.error('  3. Restart the development server')
       }
     } else {
-      console.error('❌ Unexpected error validating environment variables:', error)
+      logger.error('❌ Unexpected error validating environment variables:', error)
     }
     
     // Exit in production, continue with warnings in development
     if (process.env.NODE_ENV === 'production') {
       process.exit(1)
     } else {
-      console.warn('⚠️  Continuing with invalid environment in development mode')
+      logger.warn('⚠️  Continuing with invalid environment in development mode')
       return envSchema.parse({}) // Use defaults
     }
   }
@@ -281,6 +281,7 @@ export function getDatadogConfig(): {
  */
 export function getOAuthConfig(): {
   github: { id?: string; secret?: string; available: boolean }
+import { logger } from '@/lib/logger';
   google: { id?: string; secret?: string; available: boolean }
 } {
   const env = getEnv()

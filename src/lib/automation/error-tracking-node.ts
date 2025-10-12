@@ -8,6 +8,7 @@
 import { execSync, spawn } from 'child_process';
 import { writeFileSync, readFileSync } from 'fs';
 import { join } from 'path';
+import { logger } from '@/lib/logger';
 
 export interface ErrorTrackingConfig {
   enabled: boolean;
@@ -56,7 +57,7 @@ class NodeScriptErrorTracker {
    */
   init(): void {
     if (!this.config.enabled || !this.config.apiKey) {
-      console.log('⚠️  Datadog Error Tracking is disabled or not configured');
+      logger.info('⚠️  Datadog Error Tracking is disabled or not configured');
       return;
     }
 
@@ -66,7 +67,7 @@ class NodeScriptErrorTracker {
     // Track script start
     this.trackScriptStart();
 
-    console.log(`📊 Datadog Error Tracking initialized for ${this.context.scriptName}`);
+    logger.info(`📊 Datadog Error Tracking initialized for ${this.context.scriptName}`);
   }
 
   /**
@@ -216,7 +217,7 @@ class NodeScriptErrorTracker {
     };
 
     this.sendToDatadog(payload);
-    console.error(`❌ Error tracked: ${errorContext.error.name} - ${errorContext.error.message}`);
+    logger.error(`❌ Error tracked: ${errorContext.error.name} - ${errorContext.error.message}`);
   }
 
   /**
@@ -248,7 +249,7 @@ class NodeScriptErrorTracker {
     };
 
     this.sendToDatadog(payload);
-    console.warn(`⚠️  Warning tracked: ${message}`);
+    logger.warn(`⚠️  Warning tracked: ${message}`);
   }
 
   /**
@@ -412,10 +413,10 @@ class NodeScriptErrorTracker {
       });
 
       if (!response.ok) {
-        console.warn(`Failed to send data to Datadog: ${response.status} ${response.statusText}`);
+        logger.warn(`Failed to send data to Datadog: ${response.status} ${response.statusText}`);
       }
     } catch (error) {
-      console.warn('Failed to send data to Datadog:', error);
+      logger.warn('Failed to send data to Datadog:', error);
     }
   }
 }
@@ -464,7 +465,7 @@ export async function safeExecuteCommand(
   const startTime = Date.now();
   
   try {
-    console.log(`🔧 Executing: ${command}`);
+    logger.info(`🔧 Executing: ${command}`);
     
     const output = execSync(command, {
       encoding: 'utf8',
@@ -511,8 +512,8 @@ export function checkErrorTrackingAvailability(): boolean {
   const apiKey = process.env.DD_API_KEY;
   
   if (!enabled || !apiKey) {
-    console.log('⚠️  Datadog Error Tracking is disabled or not configured');
-    console.log('   Set DD_ERROR_TRACKING_ENABLED=true and DD_API_KEY to enable');
+    logger.info('⚠️  Datadog Error Tracking is disabled or not configured');
+    logger.info('   Set DD_ERROR_TRACKING_ENABLED=true and DD_API_KEY to enable');
     return false;
   }
   

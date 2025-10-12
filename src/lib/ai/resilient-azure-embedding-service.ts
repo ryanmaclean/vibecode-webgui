@@ -45,7 +45,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
       maxRetries: 2                 // Retry twice with backoff
     })
 
-    console.log(`🛡️ Resilient Azure Embedding Service initialized with circuit breaker`)
+    logger.info(`🛡️ Resilient Azure Embedding Service initialized with circuit breaker`)
   }
 
   /**
@@ -65,7 +65,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
       )
     } catch (error) {
       if (error instanceof CircuitBreakerError) {
-        console.error(`⚡ Circuit breaker preventing Azure OpenAI call for "${text.substring(0, 30)}..."`)
+        logger.error(`⚡ Circuit breaker preventing Azure OpenAI call for "${text.substring(0, 30)}..."`)
         
         // If fallback is enabled, try local embedding
         if (options.fallbackToLocal) {
@@ -84,6 +84,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
     texts: string[],
     options: ResilientEmbeddingOptions = {}
   ): Promise<Array<{ text: string; embedding: number[]; source: 'azure' | 'fallback' }>> {
+import { logger } from '@/lib/logger';
     const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fallback' }> = []
     
     // Process in smaller batches to avoid overwhelming the service
@@ -96,7 +97,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
           const embedding = await this.generateEmbedding(text, options)
           return { text, embedding, source: 'azure' as const }
         } catch (error) {
-          console.warn(`Failed to generate embedding for "${text.substring(0, 30)}...":`, error.message)
+          logger.warn(`Failed to generate embedding for "${text.substring(0, 30)}...":`, error.message)
           
           if (options.fallbackToLocal) {
             const fallbackEmbedding = await this.generateFallbackEmbedding(text)
@@ -119,7 +120,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
     const azureCount = results.filter(r => r.source === 'azure').length
     const fallbackCount = results.filter(r => r.source === 'fallback').length
     
-    console.log(`📊 Batch embedding results: ${azureCount} from Azure, ${fallbackCount} from fallback`)
+    logger.info(`📊 Batch embedding results: ${azureCount} from Azure, ${fallbackCount} from fallback`)
     
     return results
   }
@@ -180,7 +181,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
   resetCircuitBreaker(): void {
     const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
     circuitBreaker.reset()
-    console.log(`🔄 Circuit breaker reset for ${this.serviceName}`)
+    logger.info(`🔄 Circuit breaker reset for ${this.serviceName}`)
   }
 
   /**
@@ -188,7 +189,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
    * In production, this could be replaced with a local embedding model
    */
   private async generateFallbackEmbedding(text: string): Promise<number[]> {
-    console.log(`🔄 Generating fallback embedding for: "${text.substring(0, 30)}..."`)
+    logger.info(`🔄 Generating fallback embedding for: "${text.substring(0, 30)}..."`)
     
     // Simple deterministic embedding based on text hash
     // In production, use a local model like sentence-transformers
@@ -240,9 +241,9 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
    */
   setCircuitBreakerEnabled(enabled: boolean): void {
     if (enabled) {
-      console.log(`✅ Circuit breaker enabled for ${this.serviceName}`)
+      logger.info(`✅ Circuit breaker enabled for ${this.serviceName}`)
     } else {
-      console.log(`⚠️ Circuit breaker disabled for ${this.serviceName}`)
+      logger.info(`⚠️ Circuit breaker disabled for ${this.serviceName}`)
       // Force circuit closed when disabled
       const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
       circuitBreaker.forceState('CLOSED' as any)

@@ -13,6 +13,7 @@ import {
   poolConfig, 
   connectionPool 
 } from './db-pool';
+import { logger } from '@/lib/logger';
 
 /**
  * Creates a robust database connection with retry capability

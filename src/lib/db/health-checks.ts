@@ -2,6 +2,7 @@
 
 import { prisma } from "@/lib/prisma/client";
 import weaviateClient from "@/lib/weaviate/client";
+import { logger } from '@/lib/logger';
 
 /**
  * Perform a lightweight health check against the PostgreSQL instance.
@@ -14,7 +15,7 @@ export async function checkPostgresHealth(): Promise<boolean> {
     await prisma.$queryRaw`SELECT 1`;
     return true;
   } catch (err) {
-    console.error("PostgreSQL health check failed:", err);
+    logger.error("PostgreSQL health check failed:", err);
     return false;
   }
 }
@@ -32,7 +33,7 @@ export async function checkWeaviateHealth(): Promise<boolean> {
     // The client returns an object with `healthy` boolean property
     return !!resp?.healthy;
   } catch (err) {
-    console.error("Weaviate health check failed:", err);
+    logger.error("Weaviate health check failed:", err);
     return false;
   }
 }

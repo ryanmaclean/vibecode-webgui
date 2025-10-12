@@ -28,6 +28,7 @@ interface RateLimitResult {
 
 // In-memory store for development (use Redis in production)
 const requestStore = new Map<string, { count: number; reset: number; requests: number[] }>()
+import { logger } from '@/lib/logger';
 
 // Cleanup old entries every 5 minutes
 setInterval(() => {
@@ -206,7 +207,7 @@ export class RedisRateLimiter {
       }
 
     } catch (error) {
-      console.error('Redis rate limiting error:', error)
+      logger.error('Redis rate limiting error:', error)
 
       // Fallback to allowing request if Redis fails
       return {

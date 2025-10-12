@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import { OpenRouterClient, ChatMessage } from './openrouter-client';
+import { logger } from '@/lib/logger';
 
 export interface ProjectTemplate {
     name: string;
@@ -257,7 +258,7 @@ Generate between 5-15 files depending on project complexity.`;
     }
 
     private handleError(message: string, error: any): void {
-        console.error(message, error);
+        logger.error(message, error);
         this.outputChannel.appendLine(`${message}: ${error.message}`);
         vscode.window.showErrorMessage(`${message}: ${error.message}`);
     }

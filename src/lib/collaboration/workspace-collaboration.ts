@@ -14,6 +14,7 @@
 import { EventEmitter } from 'events';
 import { Redis } from 'ioredis';
 import { WebSocket } from 'ws';
+import { logger } from '@/lib/logger';
 
 export interface CollaborationUser {
   id: string;
@@ -527,7 +528,7 @@ export class WorkspaceCollaboration extends EventEmitter {
           const event: CollaborationEvent = JSON.parse(message);
           this.handleRemoteEvent(event);
         } catch (error) {
-          console.error('Failed to parse collaboration event:', error);
+          logger.error('Failed to parse collaboration event:', error);
         }
       }
     });

@@ -46,7 +46,7 @@ export function UserList() {
       const data = await response.json()
       setUsers(data)
     } catch (error) {
-      console.error('Failed to fetch users:', error)
+      logger.error('Failed to fetch users:', error)
     } finally {
       setLoading(false)
     }
@@ -150,7 +150,7 @@ cart
   .addItem({ id: 2, name: 'Mouse', price: 29.99 }, 2)
   .applyDiscount(10)
 
-console.log('Total:', cart.getTotal())`,
+logger.info('Total:', cart.getTotal())`,
 }
 
 export default function EditorPage() {
@@ -332,6 +332,7 @@ export default function EditorPage() {
                   <p className="text-sm text-muted-foreground">
                     Get intelligent code suggestions as you type. The AI understands your context
                     and provides relevant completions with &lt;300ms latency.
+import { logger } from '@/lib/logger';
                   </p>
                   <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
                     <li>Context-aware suggestions based on surrounding code</li>

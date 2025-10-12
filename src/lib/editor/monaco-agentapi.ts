@@ -23,6 +23,7 @@ import type {
   ModelType,
 } from '@/types/agent-api'
 import { createWebSocketStreamingClient, type WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client'
+import { logger } from '@/lib/logger'
 
 // ============================================================================
 // Types
@@ -619,7 +620,7 @@ export class MonacoAgentAPI {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[MonacoAgentAPI]', ...args)
+      logger.info('[MonacoAgentAPI]', ...args)
     }
   }
 }

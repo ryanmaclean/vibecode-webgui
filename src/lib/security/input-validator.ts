@@ -4,6 +4,7 @@
  */
 
 import { z } from 'zod';
+import { logger } from '@/lib/logger';
 // Use dynamic import for DOMPurify to avoid edge runtime issues
 // import DOMPurify from 'isomorphic-dompurify';
 
@@ -213,7 +214,7 @@ export class AISecurityLogger {
     activity: string,
     details: Record<string, any>
   ): void {
-    console.warn('[AI_SECURITY]', {
+    logger.warn('[AI_SECURITY]', {
       timestamp: new Date().toISOString(),
       userId,
       activity,
@@ -230,7 +231,7 @@ export class AISecurityLogger {
     input: string,
     validationError: string
   ): void {
-    console.warn('[AI_VALIDATION_FAILURE]', {
+    logger.warn('[AI_VALIDATION_FAILURE]', {
       timestamp: new Date().toISOString(),
       userId,
       inputLength: input.length,

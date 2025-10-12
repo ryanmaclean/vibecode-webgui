@@ -3,6 +3,8 @@
  * Stub implementation for initial deployment - will be replaced with full K8s integration
  */
 
+import { logger } from '@/lib/logger';
+
 import { z } from 'zod'
 
 const WorkspaceRequestSchema = z.object({
@@ -44,7 +46,7 @@ export class WorkspaceProvisioningService {
 
   constructor() {
     this.namespace = process.env.WORKSPACE_NAMESPACE || 'vibecode-workspaces'
-    console.log('🔧 WorkspaceProvisioningService initialized (simplified mode)')
+    logger.info('🔧 WorkspaceProvisioningService initialized (simplified mode)')
   }
 
   /**
@@ -53,8 +55,8 @@ export class WorkspaceProvisioningService {
   async createWorkspace(request: WorkspaceRequest): Promise<WorkspaceStatus> {
     const validatedRequest = WorkspaceRequestSchema.parse(request)
     
-    console.log(`🚀 Creating workspace for project: ${validatedRequest.projectName}`)
-    console.log('⚠️ Using simplified workspace provisioning - full K8s integration pending')
+    logger.info(`🚀 Creating workspace for project: ${validatedRequest.projectName}`)
+    logger.info('⚠️ Using simplified workspace provisioning - full K8s integration pending')
 
     // Generate unique workspace ID
     const workspaceId = `ws-${validatedRequest.projectId}-${Date.now()}`
@@ -84,8 +86,8 @@ export class WorkspaceProvisioningService {
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     }
 
-    console.log(`✅ Workspace created (simulated): ${workspaceId}`)
-    console.log(`🌐 Workspace URL: ${workspace.url}`)
+    logger.info(`✅ Workspace created (simulated): ${workspaceId}`)
+    logger.info(`🌐 Workspace URL: ${workspace.url}`)
     
     return workspace
   }
@@ -94,8 +96,8 @@ export class WorkspaceProvisioningService {
    * Get workspace status (simplified implementation)
    */
   async getWorkspaceStatus(workspaceId: string): Promise<WorkspaceStatus | null> {
-    console.log(`🔍 Getting workspace status: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace status - returning mock data')
+    logger.info(`🔍 Getting workspace status: ${workspaceId}`)
+    logger.info('⚠️ Using simplified workspace status - returning mock data')
 
     // Return mock status for now
     return {
@@ -124,21 +126,21 @@ export class WorkspaceProvisioningService {
    * Delete workspace (simplified implementation)
    */
   async deleteWorkspace(workspaceId: string): Promise<void> {
-    console.log(`🗑️ Deleting workspace: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace deletion - no actual resources deleted')
+    logger.info(`🗑️ Deleting workspace: ${workspaceId}`)
+    logger.info('⚠️ Using simplified workspace deletion - no actual resources deleted')
 
     // Simulate deletion delay
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    console.log(`✅ Workspace deleted (simulated): ${workspaceId}`)
+    logger.info(`✅ Workspace deleted (simulated): ${workspaceId}`)
   }
 
   /**
    * List all workspaces (simplified implementation)
    */
   async listWorkspaces(): Promise<WorkspaceStatus[]> {
-    console.log('📋 Listing workspaces')
-    console.log('⚠️ Using simplified workspace listing - returning empty list')
+    logger.info('📋 Listing workspaces')
+    logger.info('⚠️ Using simplified workspace listing - returning empty list')
 
     return []
   }

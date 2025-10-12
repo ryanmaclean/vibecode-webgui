@@ -3,6 +3,8 @@
  * Intelligent caching layer for database queries, vector searches, and API responses
  */
 
+import { logger } from '@/lib/logger';
+
 import { EventEmitter } from 'events'
 
 export interface CacheEntry<T = any> {
@@ -82,7 +84,7 @@ export class QueryCache extends EventEmitter {
     }
 
     this.startCleanupTimer()
-    console.log('🚀 Query cache initialized with config:', {
+    logger.info('🚀 Query cache initialized with config:', {
       maxSize: `${this.config.maxSize / 1024 / 1024}MB`,
       maxEntries: this.config.maxEntries,
       defaultTTL: `${this.config.defaultTTL / 1000}s`
@@ -129,7 +131,7 @@ export class QueryCache extends EventEmitter {
       return value as T
 
     } catch (error) {
-      console.error('Cache get error:', error)
+      logger.error('Cache get error:', error)
       this.recordMiss()
       return null
     }
@@ -188,7 +190,7 @@ export class QueryCache extends EventEmitter {
       this.emit('set', key, entry)
       
     } catch (error) {
-      console.error('Cache set error:', error)
+      logger.error('Cache set error:', error)
       throw error
     }
   }
@@ -286,13 +288,13 @@ export class QueryCache extends EventEmitter {
     value: any
     options?: any
   }>): Promise<void> {
-    console.log(`🔥 Warming up cache with ${warmUpData.length} entries...`)
+    logger.info(`🔥 Warming up cache with ${warmUpData.length} entries...`)
     
     for (const item of warmUpData) {
       await this.set(item.key, item.value, item.options)
     }
     
-    console.log(`✅ Cache warmed up successfully`)
+    logger.info(`✅ Cache warmed up successfully`)
   }
 
   /**
@@ -354,7 +356,7 @@ export class QueryCache extends EventEmitter {
     }
 
     if (cleanedCount > 0) {
-      console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
+      logger.info(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
       this.updateMetrics()
     }
   }
@@ -376,7 +378,7 @@ export class QueryCache extends EventEmitter {
       clearInterval(this.cleanupTimer)
     }
     this.clear()
-    console.log('🛑 Query cache destroyed')
+    logger.info('🛑 Query cache destroyed')
   }
 
   /**
