@@ -45,6 +45,7 @@ if (!isDockerBuild) {
 }
 
 import { getDatadogApiKey } from './datadog-env'
+import { logger } from '@/lib/logger'
 
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
@@ -67,7 +68,6 @@ export function initializeOpenTelemetry() {
   if (!NodeSDK || !getNodeAutoInstrumentations || !OTLPTraceExporter || !PrometheusExporter || !Resource || !ATTR_SERVICE_NAME || !ATTR_SERVICE_VERSION) {
     // Debug log removed
     return null;
-import { logger } from '@/lib/logger';
   }
 
   // Debug log removed
