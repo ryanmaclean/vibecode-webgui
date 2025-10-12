@@ -42,6 +42,13 @@ const CONFIG = {
     '**/.next/**',
     '**/coverage/**',
   ],
+  // Files that should keep console.log (mock tracers, test utils, etc.)
+  skipFiles: [
+    'src/instrument.ts',
+    'src/instrumentation.ts',
+    'src/stubs/dd-trace.js',
+    'src/lib/logger.ts', // The logger itself
+  ],
 };
 
 // Statistics tracker
@@ -145,28 +152,53 @@ function hasConsoleCalls(content) {
  * Add logger import to file content
  */
 function addLoggerImport(content) {
-  // Find the last import statement
-  const importRegex = /^import\s+.*?;?\s*$/gm;
-  let lastImportIndex = -1;
-  let match;
+  // Find the last import statement (including multiline imports)
+  const lines = content.split('\n');
+  let lastImportLine = -1;
+  let inImport = false;
 
-  while ((match = importRegex.exec(content)) !== null) {
-    lastImportIndex = match.index + match[0].length;
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+
+    // Check if this is an import line
+    if (line.startsWith('import ')) {
+      inImport = true;
+      // Check if it's a single-line import with semicolon
+      if (line.includes(';') || !line.includes('{')) {
+        lastImportLine = i;
+        inImport = false;
+      }
+    } else if (inImport) {
+      // Continue multiline import
+      if (line.includes(';') || line.endsWith(';')) {
+        lastImportLine = i;
+        inImport = false;
+      }
+    } else if (lastImportLine !== -1 && line && !line.startsWith('//') && !line.startsWith('/*') && !line.startsWith('*')) {
+      // Found first non-import, non-comment line after imports
+      break;
+    }
   }
 
   const loggerImport = "import { logger } from '@/lib/logger';";
 
-  if (lastImportIndex === -1) {
+  if (lastImportLine === -1) {
     // No imports found, add at the beginning (after any leading comments)
-    const firstNonCommentLine = content.search(/^(?!\/\/|\/\*|\*|['"]use \w+['"]).+/m);
-    if (firstNonCommentLine === -1) {
-      return loggerImport + '\n\n' + content;
+    let insertLine = 0;
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i].trim();
+      if (line && !line.startsWith('//') && !line.startsWith('/*') && !line.startsWith('*') && !line.match(/^['"]use \w+['"]/)) {
+        insertLine = i;
+        break;
+      }
     }
-    return content.slice(0, firstNonCommentLine) + loggerImport + '\n\n' + content.slice(firstNonCommentLine);
+    lines.splice(insertLine, 0, loggerImport, '');
+    return lines.join('\n');
   }
 
-  // Add after last import
-  return content.slice(0, lastImportIndex) + '\n' + loggerImport + content.slice(lastImportIndex);
+  // Add after last import line
+  lines.splice(lastImportLine + 1, 0, loggerImport);
+  return lines.join('\n');
 }
 
 /**
@@ -210,12 +242,29 @@ function replaceConsoleCalls(content, filePath) {
 }
 
 /**
+ * Check if file should be skipped
+ */
+function shouldSkipFile(filePath) {
+  const relativePath = path.relative(process.cwd(), filePath);
+  return CONFIG.skipFiles.some(skip => relativePath.includes(skip));
+}
+
+/**
  * Process a single file
  */
 async function processFile(filePath, options) {
   try {
     const content = fs.readFileSync(filePath, 'utf8');
     stats.filesScanned++;
+
+    // Skip special files
+    if (shouldSkipFile(filePath)) {
+      if (options.verbose) {
+        console.log(`  ⏭  ${path.relative(CONFIG.sourceDir, filePath)} - Skipped (special file)`);
+      }
+      stats.skipped.push({ filePath, reason: 'Special file (mock tracer, logger, etc.)' });
+      return null;
+    }
 
     // Skip if no console calls
     if (!hasConsoleCalls(content)) {
@@ -315,6 +364,13 @@ function printReport(results, options) {
           console.log(`       Line ${rep.line}: ${rep.original.substring(0, 60)}...`);
         });
       }
+    });
+  }
+
+  if (stats.skipped.length > 0 && options.verbose) {
+    console.log(`\n⏭  Skipped files:\n`);
+    stats.skipped.forEach(skip => {
+      console.log(`  ${formatPath(skip.filePath)}: ${skip.reason}`);
     });
   }
 
