@@ -125,9 +125,28 @@ src-tauri/swift/.build/
 infrastructure/**/secrets/
 k8s/secrets/
 
-# VM directories - large binaries excluded from git
+# VM directories - exclude large binaries but keep source files
 # Package with scripts/release/package-fast-openvscode-vm.sh and upload to releases
-fast-openvscode-vm/
+fast-openvscode-vm/*.cpio.gz
+fast-openvscode-vm/*.tar.gz
+fast-openvscode-vm/vmlinuz-*
+fast-openvscode-vm/qemu.log
+fast-openvscode-vm/downloads/
+fast-openvscode-vm/rootfs/bin/
+fast-openvscode-vm/rootfs/lib/
+fast-openvscode-vm/rootfs/lib64/
+fast-openvscode-vm/rootfs/opt/
+fast-openvscode-vm/rootfs/usr/
+fast-openvscode-vm/rootfs/var/
+fast-openvscode-vm/rootfs/home/
+fast-openvscode-vm/rootfs/proc/
+fast-openvscode-vm/rootfs/sys/
+fast-openvscode-vm/rootfs/dev/
+fast-openvscode-vm/rootfs/run/
+fast-openvscode-vm/rootfs/tmp/
+# Keep: rootfs/init, rootfs/etc/*, and all scripts in scripts/
+
+# Insiders VM - same pattern
 fast-openvscode-vm-insiders/
 
 # Terraform and IaC artefacts
