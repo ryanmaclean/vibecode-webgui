@@ -182,7 +182,7 @@
     "cmdk": "^1.1.1",
     "codemirror": "^6.0.2",
     "critters": "0.0.23",
-    "dd-trace": "5.61.1",
+    "dd-trace": "5.71.0",
     "framer-motion": "12.23.22",
     "gray-matter": "^4.0.3",
     "ioredis": "5.7.0",
