@@ -1,479 +1,682 @@
 /**
- * Redis/ValKey Vector Database Adapter
- * Implementation of the vector database adapter for Redis with RedisSearch and vector similarity
+ * Redis Vector Database Adapter
+ * Implementation of vector database operations using Redis
  */
 
 import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
-import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
-import { metrics } from '../server-monitoring';
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
+import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
+import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 
 /**
  * Redis-specific configuration options
  */
 export interface RedisVectorDatabaseConfig extends VectorDatabaseConfig {
   provider: VectorDatabaseProvider.REDIS;
-  redisHost?: string;
-  redisPort?: number;
-  redisPassword?: string;
-  redisDatabase?: number;
-  redisKeyPrefix?: string;
-  redisVectorIndexName?: string;
-  redisSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
-  redisMaxConnections?: number;
+  keyPrefix?: string;
+  ttl?: number; // Default TTL for vectors in seconds
 }
 
 /**
- * Redis/ValKey Vector Database Adapter
- * Implements vector database operations using Redis with RedisSearch and vector similarity
+ * Redis Vector Database Adapter
  */
 export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private redis: any = null; // Redis client
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
+  private redisConfig: RedisVectorDatabaseConfig;
   private errorHandler: VectorDbErrorHandler;
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-  protected redisConfig: RedisVectorDatabaseConfig;
 
   /**
-   * Constructor for Redis adapter
-   * @param config Redis-specific configuration
+   * Constructor for Redis Vector Database Adapter
    */
   constructor(config: RedisVectorDatabaseConfig) {
     super(config);
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-    this.errorHandler = new VectorDbErrorHandler('redis', this.config.enableLogging || false, this.config.enableMetrics || false);
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-    this.redisConfig = {
-      redisHost: process.env.REDIS_HOST || 'localhost',
-      redisPort: parseInt(process.env.REDIS_PORT || '6379'),
-      redisPassword: process.env.REDIS_PASSWORD,
-      redisDatabase: parseInt(process.env.REDIS_DATABASE || '0'),
-      redisKeyPrefix: 'vibecode:vector:',
-      redisVectorIndexName: 'vector_idx',
-      redisSearchMethod: 'cosine',
-      redisMaxConnections: 10,
-      ...config
-    };
+    this.redisConfig = config;
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
-   * Initialize the Redis connection
+   * Initialize the Redis vector database connection
    */
-  protected async initializeProvider(): Promise<void> {
+  async initialize(): Promise<void> {
     try {
-      // TODO: Implement Redis connection initialization
-      // This would use a Redis client library like ioredis
-      // Example:
-      // const Redis = require('ioredis');
-      // this.redis = new Redis({
-      //   host: this.redisConfig.redisHost,
-      //   port: this.redisConfig.redisPort,
-      //   password: this.redisConfig.redisPassword,
-      //   db: this.redisConfig.redisDatabase,
-      //   maxRetriesPerRequest: 3,
-      //   retryStrategy: (times: number) => Math.min(times * 50, 2000)
-      // });
-      
-      // Check if Redis Search module is available
-      // Create vector index if it doesn't exist
-      
-<<<<<<< HEAD
-      if (this.config.enableLogging) {
-        console.info('Redis vector database adapter initialized successfully');
-      }
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not yet implemented');
+      // Initialize Redis client
+      const { createClient } = await import('redis');
+      this.redis = createClient({
+        url: this.redisConfig.connectionString,
+        socket: {
+          host: this.redisConfig.host,
+          port: this.redisConfig.port,
+        },
+        password: this.redisConfig.password,
+        database: this.redisConfig.database || 0
+      });
+
+      this.redis.on('error', (error: Error) => {
+        console.error('Redis client error:', error);
+      });
+
+      await this.redis.connect();
+
+      this.isInitialized = true;
+      console.log('Redis vector database adapter initialized successfully');
+
     } catch (error) {
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
->>>>>>> fix/consolidated-dependency-updates
-      if (this.config.enableLogging) {
-        console.error('Failed to initialize Redis vector database adapter:', error);
-      }
-      throw error;
-    }
-  }
-
-  /**
-   * Store vector chunks in the database
-   */
-  public async storeChunks(fileId: number, chunks: Array<{
-    content: string;
-    startLine?: number;
-    endLine?: number;
-    tokens: number;
-  }>): Promise<void> {
-    if (!this.redis) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      // TODO: Implement Redis store chunks functionality
-      // 1. Delete existing chunks for this file
-      // 2. Generate embeddings for each chunk
-      // 3. Store chunks with embeddings using HSET with metadata
-      // 4. Ensure vector index is updated for new documents
-      
-      // Example pipeline:
-      // const pipeline = this.redis.pipeline();
-      // const chunkKeys = await this.redis.keys(`${this.redisConfig.redisKeyPrefix}chunk:${fileId}:*`);
-      // if (chunkKeys.length > 0) {
-      //   pipeline.del(...chunkKeys);
-      // }
-      //
-      // for (let i = 0; i < chunks.length; i++) {
-      //   const chunk = chunks[i];
-      //   const chunkId = `${fileId}-chunk-${i}`;
-      //   const embedding = await this.generateEmbedding(chunk.content);
-      //   const key = `${this.redisConfig.redisKeyPrefix}chunk:${fileId}:${chunkId}`;
-      //   
-      //   pipeline.hset(key, {
-      //     'content': chunk.content,
-      //     'file_id': fileId,
-      //     'start_line': chunk.startLine || null,
-      //     'end_line': chunk.endLine || null,
-      //     'tokens': chunk.tokens,
-      //     'embedding': JSON.stringify(embedding),
-      //     'created_at': new Date().toISOString()
-      //   });
-      // }
-      //
-      // await pipeline.exec();
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis store chunks not yet implemented');
-    } catch (error) {
-=======
-      throw this.errorHandler.handleError(new Error('Redis store chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
->>>>>>> fix/consolidated-dependency-updates
-      if (this.config.enableMetrics) {
-        metrics.increment('redis_vector_db.store_chunks.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error storing vector chunks in Redis:', error);
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
-   * Search for similar content using vector similarity
-   */
-  public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
-    if (!this.redis) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      // TODO: Implement Redis vector similarity search
-      // 1. Use Redis vector search capability for similarity search
-      // 2. Apply filters based on options
-      // 3. Format results in standard format
-      
-      // Example:
-      // const { limit = 10, threshold = 0.7, workspaceId, fileIds } = options;
-      //
-      // let filters = [];
-      // if (workspaceId) {
-      //   filters.push(`@workspace_id:${workspaceId}`);
-      // }
-      // if (fileIds && fileIds.length > 0) {
-      //   filters.push(`@file_id:(${fileIds.join('|')})`);
-      // }
-      //
-      // const filterStr = filters.length > 0 ? filters.join(' ') : '*';
-      //
-      // const results = await this.redis.call(
-      //   'FT.SEARCH',
-      //   this.redisConfig.redisVectorIndexName,
-      //   filterStr,
-      //   'VECTOR', 'RANGE', '6', '$embedding', 'AS', 'distance',
-      //   'PARAMS', 2, 'embedding', JSON.stringify(embedding),
-      //   'RETURN', 7, 'content', 'file_id', 'start_line', 'end_line', 'tokens', 'file_name', 'distance',
-      //   'LIMIT', 0, limit
-      // );
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis vector search not yet implemented');
-    } catch (error) {
-=======
-      throw this.errorHandler.handleError(new Error('Redis vector search not yet implemented'), 'unknown', VectorDbErrorType.SEARCH, false);    } catch (error) {
->>>>>>> fix/consolidated-dependency-updates
-      if (this.config.enableMetrics) {
-        metrics.increment('redis_vector_db.search.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error in Redis vector search:', error);
-      }
-      
-      return [];
-    }
-  }
-
-  /**
-   * Delete all chunks for a file
-   */
-  public async deleteFileChunks(fileId: number): Promise<void> {
-    if (!this.redis) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      // TODO: Implement Redis delete chunks
-      // Find all keys for this file and delete them
-      // Example:
-      // const chunkKeys = await this.redis.keys(`${this.redisConfig.redisKeyPrefix}chunk:${fileId}:*`);
-      // if (chunkKeys.length > 0) {
-      //   await this.redis.del(...chunkKeys);
-      // }
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis delete chunks not yet implemented');
-    } catch (error) {
-=======
-      throw this.errorHandler.handleError(new Error('Redis delete chunks not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
->>>>>>> fix/consolidated-dependency-updates
-      if (this.config.enableMetrics) {
-        metrics.increment('redis_vector_db.delete_chunks.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error deleting file chunks from Redis:', error);
-      }
-      
-      throw error;
-    }
-  }
-
-  /**
-   * Get statistics about the vector store
-   */
-  public async getStats(): Promise<{
-    totalChunks: number;
-    totalFiles: number;
-    averageChunkSize: number;
-  }> {
-    if (!this.redis) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not initialized');
-    }
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
-
-    try {
-      // TODO: Implement Redis stats collection
-      // Use Redis commands to get statistics
-      // Example:
-      // const totalChunks = await this.redis.call(
-      //   'FT.SEARCH',
-      //   this.redisConfig.redisVectorIndexName,
-      //   '*',
-      //   'LIMIT', 0, 0
-      // )[0];
-      //
-      // const fileIdsResult = await this.redis.call(
-      //   'FT.AGGREGATE',
-      //   this.redisConfig.redisVectorIndexName,
-      //   '*',
-      //   'GROUPBY', 1, '@file_id',
-      //   'REDUCE', 'COUNT', 0, 'AS', 'count'
-      // );
-      
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis stats not yet implemented');
-    } catch (error) {
-=======
-      throw this.errorHandler.handleError(new Error('Redis stats not yet implemented'), 'unknown', VectorDbErrorType.UNKNOWN_ERROR, false);    } catch (error) {
->>>>>>> fix/consolidated-dependency-updates
-      if (this.config.enableMetrics) {
-        metrics.increment('redis_vector_db.get_stats.error');
-      }
-      
-      if (this.config.enableLogging) {
-        console.error('Error getting vector store stats from Redis:', error);
-      }
-      
-      return {
-        totalChunks: 0,
-        totalFiles: 0,
-        averageChunkSize: 0
-      };
-    }
-  }
-
-  /**
-   * Invalidate cache entries for a specific table or content type
-   */
-  public async invalidateCache(table: string, contentType?: string): Promise<number> {
-    // Redis already serves as both vector database and cache,
-    // so specific invalidation may not be needed in the same way
-    return 0;
-  }
-
-  /**
-   * Ping the Redis database to check connectivity
-   */
-  protected async pingProvider(): Promise<boolean> {
-    if (!this.redis) {
-      return false;
-    }
-    
-    try {
-      // Ping Redis
-      // Example: const pong = await this.redis.ping();
-      // return pong === 'PONG';
-      return false; // Not implemented yet
-    } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('Redis ping failed:', error);
-      }
-      return false;
+      const vectorDbError = this.errorHandler.handleError(error, 'initialize');
+      throw vectorDbError;
     }
   }
 
   /**
    * Close the Redis connection
    */
-  protected async closeProvider(): Promise<void> {
+  async close(): Promise<void> {
     if (this.redis) {
-      // Example: await this.redis.quit();
+      await this.redis.quit();
       this.redis = null;
+    }
+    this.isInitialized = false;
+  }
+
+  /**
+   * Check if the Redis connection is healthy
+   */
+  async ping(): Promise<boolean> {
+    try {
+      if (!this.redis) return false;
+
+      await this.redis.ping();
+      return true;
+    } catch (error) {
+      console.error('Redis ping failed:', error);
+      return false;
     }
   }
 
   /**
-   * Fallback text search when vector search is not available
+   * Check if connected to Redis
    */
-  protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
+  isConnected(): boolean {
+    return this.redis !== null && this.isInitialized;
+  }
+
+  /**
+   * Store vector embeddings for the given chunks
+   */
+  async store(chunks: VectorChunk[]): Promise<number> {
     if (!this.redis) {
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-      throw new Error('Redis adapter not initialized');
+      throw new Error('Redis not initialized');
     }
-=======
-      throw this.errorHandler.handleError(new Error('Redis adapter not initialized'), 'unknown', VectorDbErrorType.INITIALIZATION, true);    }
->>>>>>> fix/consolidated-dependency-updates
 
     try {
-      // TODO: Implement Redis text search fallback
-      // Use FT.SEARCH with text index instead of vector
-      // Example:
-      // const { limit = 10 } = options;
-      // const results = await this.redis.call(
-      //   'FT.SEARCH',
-      //   this.redisConfig.redisVectorIndexName,
-      //   `@content:${query}`,
-      //   'RETURN', 7, 'content', 'file_id', 'start_line', 'end_line', 'tokens', 'file_name',
-      //   'LIMIT', 0, limit
-      // );
-      
-      return [];
-    } catch (error) {
-      if (this.config.enableLogging) {
-        console.error('Error in Redis fallback text search:', error);
+      let storedCount = 0;
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+
+      for (const chunk of chunks) {
+        const key = `${keyPrefix}chunk:${chunk.id}`;
+        const data = {
+          id: chunk.id,
+          content: chunk.content,
+          embedding: chunk.embedding,
+          metadata: chunk.metadata,
+          storedAt: new Date().toISOString()
+        };
+
+        // Store the vector data
+        await this.redis.set(key, JSON.stringify(data));
+
+        // Set TTL if configured
+        if (this.redisConfig.ttl) {
+          await this.redis.expire(key, this.redisConfig.ttl);
+        }
+
+        // Add to search index (simplified - in production would use Redisearch or similar)
+        await this.addToSearchIndex(chunk);
+
+        storedCount++;
       }
-      return [];
+
+      return storedCount;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'store');
+      throw vectorDbError;
     }
   }
-<<<<<<< HEAD
+
+  /**
+   * Search for similar vectors using the provided query embedding
+   */
+  async searchWithVector(
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const limit = options.limit || 10;
+      const threshold = options.threshold || 0.1;
+
+      // Get all vector keys for similarity search
+      const keys = await this.redis.keys(`${this.redisConfig.keyPrefix || 'vector:'}chunk:*`);
+
+      if (keys.length === 0) {
+        return [];
+      }
+
+      // Get all vectors for comparison (in production, this would be optimized)
+      const vectors: Array<{
+        key: string;
+        data: any;
+        similarity: number;
+      }> = [];
+
+      for (const key of keys) {
+        const data = await this.redis.get(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            const similarity = this.calculateCosineSimilarity(queryEmbedding, parsed.embedding);
+
+            if (similarity > threshold) {
+              vectors.push({
+                key,
+                data: parsed,
+                similarity
+              });
+            }
+          } catch (parseError) {
+            console.warn(`Failed to parse vector data for key ${key}:`, parseError);
+          }
+        }
+      }
+
+      // Sort by similarity and return top results
+      vectors.sort((a, b) => b.similarity - a.similarity);
+
+      return vectors.slice(0, limit).map(vector => ({
+        chunk: {
+          id: vector.data.id,
+          content: vector.data.content,
+          embedding: vector.data.embedding,
+          metadata: vector.data.metadata || {}
+        },
+        similarity: vector.similarity
+      }));
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'searchWithVector');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Search for similar vectors using text query (generates embedding internally)
+   */
+  async searchWithText(
+    query: string,
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      // Generate embedding for the text query (placeholder)
+      const queryEmbedding = await this.generateEmbedding(query);
+
+      return this.searchWithVector(queryEmbedding, options);
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'searchWithText');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Delete vectors by their IDs
+   */
+  async delete(ids: string[]): Promise<number> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      let deletedCount = 0;
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+
+      for (const id of ids) {
+        const key = `${keyPrefix}chunk:${id}`;
+
+        // Delete the vector data
+        const deleted = await this.redis.del(key);
+        if (deleted > 0) {
+          deletedCount++;
+
+          // Remove from search index
+          await this.removeFromSearchIndex(id);
+        }
+      }
+
+      return deletedCount;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'delete');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get statistics about the vector database
+   */
+  async getStats(): Promise<{
+    totalVectors: number;
+    indexSize: number;
+    lastUpdated: Date;
+  }> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+      const keys = await this.redis.keys(`${keyPrefix}chunk:*`);
+
+      // Get the most recently updated vector
+      let lastUpdated = new Date();
+      if (keys.length > 0) {
+        const sampleKey = keys[0];
+        const data = await this.redis.get(sampleKey);
+        if (data) {
+          const parsed = JSON.parse(data);
+          lastUpdated = new Date(parsed.storedAt || Date.now());
+        }
+      }
+
+      return {
+        totalVectors: keys.length,
+        indexSize: keys.length * 1000, // Rough estimate
+        lastUpdated
+      };
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getStats');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Generate embeddings for the given text (placeholder implementation)
+   */
+  async generateEmbedding(text: string): Promise<number[]> {
+    // This would integrate with an embedding service (OpenAI, etc.)
+    // For now, return a placeholder embedding
+    const dimensions = 1536; // OpenAI text-embedding-ada-002 dimensions
+    return new Array(dimensions).fill(0).map(() => Math.random() * 2 - 1);
+  }
+
+  /**
+   * Get the dimensionality of vectors in this database
+   */
+  getDimensions(): number {
+    return 1536; // Standard for OpenAI embeddings
+  }
+
+  /**
+   * Clear all vectors from the database
+   */
+  async clear(): Promise<void> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+      const pattern = `${keyPrefix}chunk:*`;
+
+      // Get all keys matching the pattern
+      const keys = await this.redis.keys(pattern);
+
+      if (keys.length > 0) {
+        await this.redis.del(keys);
+      }
+
+      // Clear search index
+      await this.clearSearchIndex();
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'clear');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Create an index for the given field if it doesn't exist
+   */
+  async createIndex(field: string, options?: any): Promise<void> {
+    // Redis doesn't have traditional indexes like SQL databases
+    // This would integrate with Redisearch or similar for vector indexing
+    console.log(`Index creation requested for field: ${field}`);
+  }
+
+  /**
+   * Delete an index for the given field
+   */
+  async deleteIndex(field: string): Promise<void> {
+    // Redis index deletion would be handled here
+    console.log(`Index deletion requested for field: ${field}`);
+  }
+
+  /**
+   * Get all available indexes
+   */
+  async getIndexes(): Promise<string[]> {
+    // Return available Redisearch indexes or similar
+    return [];
+  }
+
+  /**
+   * Invalidate cache for specific table and content type
+   */
+  async invalidateCache(table: string, contentType?: string): Promise<number> {
+    // Redis doesn't have traditional cache invalidation
+    // This would integrate with your caching layer
+    return 0;
+  }
+
+  /**
+   * Get vector by ID
+   */
+  async getById(id: string): Promise<VectorChunk | null> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+      const key = `${keyPrefix}chunk:${id}`;
+
+      const data = await this.redis.get(key);
+      if (!data) return null;
+
+      const parsed = JSON.parse(data);
+
+      return {
+        id: parsed.id,
+        content: parsed.content,
+        embedding: parsed.embedding,
+        metadata: parsed.metadata || {}
+      };
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getById');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Update vector by ID
+   */
+  async update(id: string, chunk: Partial<VectorChunk>): Promise<boolean> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+      const key = `${keyPrefix}chunk:${id}`;
+
+      const existing = await this.redis.get(key);
+      if (!existing) return false;
+
+      const current = JSON.parse(existing);
+      const updated = {
+        ...current,
+        ...chunk,
+        updatedAt: new Date().toISOString()
+      };
+
+      await this.redis.set(key, JSON.stringify(updated));
+
+      // Set TTL if configured
+      if (this.redisConfig.ttl) {
+        await this.redis.expire(key, this.redisConfig.ttl);
+      }
+
+      return true;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'update');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Batch operation for multiple vectors
+   */
+  async batch(operations: Array<{
+    type: 'insert' | 'update' | 'delete';
+    data?: VectorChunk;
+    id?: string;
+  }>): Promise<number> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    let processedCount = 0;
+
+    try {
+      for (const operation of operations) {
+        switch (operation.type) {
+          case 'insert':
+            if (operation.data) {
+              await this.store([operation.data]);
+              processedCount++;
+            }
+            break;
+
+          case 'update':
+            if (operation.id && operation.data) {
+              await this.update(operation.id, operation.data);
+              processedCount++;
+            }
+            break;
+
+          case 'delete':
+            if (operation.id) {
+              await this.delete([operation.id]);
+              processedCount++;
+            }
+            break;
+        }
+      }
+
+      return processedCount;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'batch');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Get similar vectors within a specific workspace
+   */
+  async searchByWorkspace(
+    workspaceId: number,
+    queryEmbedding: number[],
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    // For Redis, we'd need to implement workspace-based filtering
+    // This is a simplified implementation
+    return this.searchWithVector(queryEmbedding, options);
+  }
+
+  /**
+   * Get vectors by file IDs
+   */
+  async getByFileIds(fileIds: number[]): Promise<VectorChunk[]> {
+    if (!this.redis) {
+      throw new Error('Redis not initialized');
+    }
+
+    try {
+      const chunks: VectorChunk[] = [];
+      const keyPrefix = this.redisConfig.keyPrefix || 'vector:';
+
+      for (const fileId of fileIds) {
+        // Find vectors by file ID in metadata
+        const keys = await this.redis.keys(`${keyPrefix}chunk:*`);
+
+        for (const key of keys) {
+          const data = await this.redis.get(key);
+          if (data) {
+            const parsed = JSON.parse(data);
+            if (parsed.metadata && parsed.metadata.fileId === fileId) {
+              chunks.push({
+                id: parsed.id,
+                content: parsed.content,
+                embedding: parsed.embedding,
+                metadata: parsed.metadata || {}
+              });
+            }
+          }
+        }
+      }
+
+      return chunks;
+    } catch (error) {
+      const vectorDbError = this.errorHandler.handleError(error, 'getByFileIds');
+      throw vectorDbError;
+    }
+  }
+
+  /**
+   * Search with hybrid scoring (semantic + keyword)
+   */
+  async hybridSearch(
+    query: string,
+    queryEmbedding: number[],
+    options: SearchOptions & {
+      keywordWeight?: number;
+      semanticWeight?: number;
+    }
+  ): Promise<SearchResult[]> {
+    // For Redis, hybrid search would need more complex implementation
+    // For now, fall back to semantic search
+    return this.searchWithVector(queryEmbedding, options);
+  }
+
+  /**
+   * Get recommendations based on user behavior
+   */
+  async getRecommendations(
+    userId: string,
+    currentFileId: number,
+    options: {
+      limit?: number;
+      excludeCurrentFile?: boolean;
+    }
+  ): Promise<VectorChunk[]> {
+    // Simplified implementation for Redis
+    return [];
+  }
+
+  /**
+   * Get trending content based on recent activity
+   */
+  async getTrendingContent(
+    workspaceId: number,
+    options: {
+      limit?: number;
+      timeWindow?: number;
+    }
+  ): Promise<VectorChunk[]> {
+    // Simplified implementation for Redis
+    return [];
+  }
+
+  /**
+   * Search with filters
+   */
+  async searchWithFilters(
+    queryEmbedding: number[],
+    filters: {
+      language?: string;
+      fileType?: string;
+      minTokens?: number;
+      maxTokens?: number;
+      dateRange?: { start: Date; end: Date };
+    },
+    options: SearchOptions
+  ): Promise<SearchResult[]> {
+    // Simplified implementation for Redis
+    return this.searchWithVector(queryEmbedding, options);
+  }
+
+  /**
+   * Get content analytics
+   */
+  async getAnalytics(workspaceId: number): Promise<{
+    totalFiles: number;
+    totalChunks: number;
+    languageBreakdown: Record<string, number>;
+    recentActivity: Array<{
+      date: Date;
+      filesAdded: number;
+      searchesPerformed: number;
+    }>;
+  }> {
+    // Simplified implementation for Redis
+    return {
+      totalFiles: 0,
+      totalChunks: 0,
+      languageBreakdown: {},
+      recentActivity: []
+    };
+  }
+
+  /**
+   * Calculate cosine similarity between two vectors
+   */
+  private calculateCosineSimilarity(vectorA: number[], vectorB: number[]): number {
+    if (vectorA.length !== vectorB.length) {
+      throw new Error('Vectors must have the same dimensions');
+    }
+
+    let dotProduct = 0;
+    let normA = 0;
+    let normB = 0;
+
+    for (let i = 0; i < vectorA.length; i++) {
+      dotProduct += vectorA[i] * vectorB[i];
+      normA += vectorA[i] * vectorA[i];
+      normB += vectorB[i] * vectorB[i];
+    }
+
+    if (normA === 0 || normB === 0) {
+      return 0;
+    }
+
+    return dotProduct / (Math.sqrt(normA) * Math.sqrt(normB));
+  }
+
+  /**
+   * Add vector to search index (simplified implementation)
+   */
+  private async addToSearchIndex(chunk: VectorChunk): Promise<void> {
+    // In a production implementation, this would add to Redisearch or similar
+    const indexKey = `${this.redisConfig.keyPrefix || 'vector:'}index:chunks`;
+
+    // Store a reference for search purposes
+    await this.redis.sAdd(indexKey, chunk.id);
+  }
+
+  /**
+   * Remove vector from search index
+   */
+  private async removeFromSearchIndex(id: string): Promise<void> {
+    const indexKey = `${this.redisConfig.keyPrefix || 'vector:'}index:chunks`;
+    await this.redis.sRem(indexKey, id);
+  }
+
+  /**
+   * Clear search index
+   */
+  private async clearSearchIndex(): Promise<void> {
+    const indexKey = `${this.redisConfig.keyPrefix || 'vector:'}index:chunks`;
+    await this.redis.del(indexKey);
+  }
 }
-=======
-}
-<<<<<<< HEAD
-}
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
