@@ -133,6 +133,29 @@ spec:
 
       # Test that we can create a test PVC
       echo "Testing PVC creation..."
+<<<<<<< HEAD
+      PVC_NAME="test-pvc-$RANDOM"
+      cat <<EOF | retry ${KCTL} apply -f -
+      apiVersion: v1
+      kind: PersistentVolumeClaim
+      metadata:
+        name: ${PVC_NAME}
+        namespace: {{ .Values.global.namespace }}
+        labels:
+          app.kubernetes.io/name: {{ include "vibecode-platform.name" . }}
+          app.kubernetes.io/component: test
+      spec:
+        accessModes:
+          - {{ .Values.codeServer.persistence.accessMode }}
+        resources:
+          requests:
+            storage: 1Gi
+        storageClassName: {{ default .Values.global.storageClass .Values.codeServer.persistence.storageClass }}
+      EOF
+      echo "✓ PVC creation submitted"
+
+      # Wait for PVC to reach Bound
+=======
       SUFFIX="$(gen_suffix)"; [ -z "$SUFFIX" ] && SUFFIX="$(date +%s | tr -cd '0-9' | tail -c6)"
       PVC_NAME="test-pvc-${SUFFIX}"
       PVC_MANIFEST="/tmp/${PVC_NAME}.yaml"
@@ -195,6 +218,7 @@ spec:
       retry ${KCTL} apply -f "${BINDER_MANIFEST}"
 
       # Wait for PVC to reach Bound now that a consumer exists
+>>>>>>> merge-conflict-cleanup
       echo "Waiting for PVC ${PVC_NAME} to become Bound..."
       for i in $(seq 1 60); do
         PHASE=$(${KCTL} get pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} -o jsonpath='{.status.phase}' 2>/dev/null || echo "")
@@ -205,15 +229,21 @@ spec:
         sleep 5
         if [ "$i" -eq 60 ]; then
           echo "❌ PVC ${PVC_NAME} did not reach Bound state in time (phase='$PHASE')" >&2
+<<<<<<< HEAD
+=======
           # Cleanup binder pod before exit
           ${KCTL} delete pod ${BINDER_NAME} --namespace={{ .Values.global.namespace }} || true
+>>>>>>> merge-conflict-cleanup
           exit 1
         fi
       done
 
       # Cleanup test PVC
+<<<<<<< HEAD
+=======
       # Cleanup binder pod and PVC
       retry ${KCTL} delete pod ${BINDER_NAME} --namespace={{ .Values.global.namespace }} || true
+>>>>>>> merge-conflict-cleanup
       retry ${KCTL} delete pvc ${PVC_NAME} --namespace={{ .Values.global.namespace }} || true
       # Also cleanup any leftover test-labeled PVCs from prior runs
       retry ${KCTL} delete pvc -l app.kubernetes.io/component=test --namespace={{ .Values.global.namespace }} || true
