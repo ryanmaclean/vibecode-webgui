@@ -258,7 +258,7 @@ export const AIChatInterface = ({
             </Button> */}
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Settings Panel */}
       {showSettings && (
