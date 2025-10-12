@@ -83,17 +83,20 @@ description: test infrastructure documentation
 - ✅ Concurrent Request Handling
 - ✅ Memory Usage Monitoring
 
-### 🚀 **New NPM Scripts:**
+### 🚀 **Available NPM Scripts:**
 
 ```bash
-# Run all tests without Docker dependencies
-npm run test:no-docker
+# Run all tests
+npm run test
 
-# Run tests with real API integration
-npm run test:real-apis
+# Run unit tests only
+npm run test:unit
 
-# Use custom Jest config for no-Docker testing
-npm test -- --config=jest.no-docker.config.js
+# Run integration tests
+npm run test:integration
+
+# Run with coverage
+npm run test:coverage
 ```
 
 ### 🔧 **API Key Requirements:**
@@ -108,16 +111,16 @@ npm test -- --config=jest.no-docker.config.js
 
 ### 🎮 **How to Run Tests:**
 
-#### **Basic Test Run (No API Keys Required):**
+#### **Basic Test Run:**
 ```bash
-npm run test:no-docker
+npm run test:unit
 ```
 
 #### **Full Integration Testing (API Keys Required):**
 ```bash
 export OPENROUTER_API_KEY="your-real-key"
 export DATABASE_URL="postgresql://..."
-npm run test:real-apis
+npm run test:integration
 ```
 
 #### **Specific Test Suites:**
@@ -173,15 +176,15 @@ npm test -- --testPathPattern="real-openrouter-integration"
 
 ### 🔄 **Continuous Integration Ready:**
 
-The new test infrastructure is designed for CI/CD environments:
+The test infrastructure is designed for CI/CD environments:
 
 ```yaml
 # Example GitHub Actions
-- name: Run Tests (No Docker)
-  run: npm run test:no-docker
+- name: Run Unit Tests
+  run: npm run test:unit
   
-- name: Run Real API Tests
-  run: npm run test:real-apis
+- name: Run Integration Tests
+  run: npm run test:integration
   env:
     OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
     DATABASE_URL: ${{ secrets.DATABASE_URL }}
