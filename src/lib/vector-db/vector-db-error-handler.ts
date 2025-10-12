@@ -1,785 +1,462 @@
 /**
  * Vector Database Error Handler
- * Standardized error handling for vector database operations
+ * Centralized error handling for vector database operations
  */
 
-import { logger } from '../logger';
+export enum VectorDbErrorType {
+  CONNECTION_ERROR = 'connection_error',
+  QUERY_ERROR = 'query_error',
+  INDEX_ERROR = 'index_error',
+  VALIDATION_ERROR = 'validation_error',
+  AUTHENTICATION_ERROR = 'authentication_error',
+  RATE_LIMIT_ERROR = 'rate_limit_error',
+  TIMEOUT_ERROR = 'timeout_error',
+  STORAGE_ERROR = 'storage_error',
+  CONFIGURATION_ERROR = 'configuration_error',
+  UNKNOWN_ERROR = 'unknown_error'
+}
 
-/**
- * Details object for vector database errors
- */
-export interface VectorDBErrorDetails {
-  code?: string | number;
-  errno?: number;
-  sqlMessage?: string;
+export interface VectorDbErrorDetails {
+  type: VectorDbErrorType;
+  message: string;
+  originalError?: Error;
+  context?: Record<string, any>;
+  timestamp: Date;
   stack?: string;
-  originalError?: unknown;
-  [key: string]: unknown;
+  retryable: boolean;
+  severity: 'low' | 'medium' | 'high' | 'critical';
+}
+
+export interface ErrorRecoveryOptions {
+  maxRetries?: number;
+  retryDelay?: number;
+  exponentialBackoff?: boolean;
+  fallbackStrategy?: 'default' | 'alternative' | 'none';
 }
 
 /**
- * Type guard for objects with code property
+ * Vector Database Error Class
  */
-<<<<<<< HEAD
-<<<<<<< HEAD
-function hasCode(e: unknown): e is { code: string | number } {
-  return typeof e === 'object' && e !== null && 'code' in e;
-}
-
-=======
 export class VectorDbError extends Error {
-  type: VectorDbErrorType;
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-export enum VectorDBErrorType {
-  CONNECTION_FAILED = 'CONNECTION_FAILED',
-  QUERY_FAILED = 'QUERY_FAILED',
-  VECTOR_CREATION_FAILED = 'VECTOR_CREATION_FAILED',
-  VECTOR_UPDATE_FAILED = 'VECTOR_UPDATE_FAILED',
-  VECTOR_DELETION_FAILED = 'VECTOR_DELETION_FAILED',
-  EMBEDDING_GENERATION_FAILED = 'EMBEDDING_GENERATION_FAILED',
-  SIMILARITY_SEARCH_FAILED = 'SIMILARITY_SEARCH_FAILED',
-  INDEX_OPERATION_FAILED = 'INDEX_OPERATION_FAILED',
-  CONFIGURATION_ERROR = 'CONFIGURATION_ERROR',
-  AUTHORIZATION_ERROR = 'AUTHORIZATION_ERROR',
-  UNSUPPORTED_OPERATION = 'UNSUPPORTED_OPERATION',
-  UNKNOWN_ERROR = 'UNKNOWN_ERROR',
-  // Additional enum values for enhanced error patterns
-  INITIALIZATION = 'INITIALIZATION',
-  SERVICE = 'SERVICE',
-  TIMEOUT = 'TIMEOUT',
-  SEARCH = 'SEARCH'
-<<<<<<< HEAD
-  // Note: AUTHENTICATION and CONNECTION are aliases for AUTHORIZATION_ERROR and CONNECTION_FAILED respectively
-=======
->>>>>>> merge-conflict-cleanup
-}
+  public readonly type: VectorDbErrorType;
+  public readonly context?: Record<string, any>;
+  public readonly retryable: boolean;
+  public readonly severity: 'low' | 'medium' | 'high' | 'critical';
 
-export class VectorDBError extends Error {
-  type: VectorDBErrorType;
-<<<<<<< HEAD
-=======
-export class VectorDbError extends Error {
-  type: VectorDbErrorType;
->>>>>>> fix/consolidated-dependency-updates
-=======
->>>>>>> merge-conflict-cleanup
-  operation: string;
-  provider: string;
-  details: VectorDBErrorDetails | null;
-  timestamp: string;
-  // Whether the error is considered retryable (optional; set by handlers)
-  retryable?: boolean;
-
-  constructor(
-    message: string,
-<<<<<<< HEAD
-<<<<<<< HEAD
-    type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
-=======
-    type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
->>>>>>> fix/consolidated-dependency-updates
-=======
-    type: VectorDbErrorType = VectorDbErrorType.UNKNOWN_ERROR,
-=======
->>>>>>> main
-    type: VectorDBErrorType = VectorDBErrorType.UNKNOWN_ERROR,
->>>>>>> merge-conflict-cleanup
-    operation: string = 'unknown',
-    provider: string = 'unknown',
-    details: VectorDBErrorDetails | null = null
-  ) {
-    super(message);
-<<<<<<< HEAD
-<<<<<<< HEAD
-    this.name = 'VectorDBError';
-=======
-        this.name = 'VectorDbError';
->>>>>>> fix/consolidated-dependency-updates
-=======
+  constructor(details: VectorDbErrorDetails) {
+    super(details.message);
     this.name = 'VectorDbError';
-=======
->>>>>>> main
-    this.name = 'VectorDBError';
->>>>>>> merge-conflict-cleanup
-    this.type = type;
-    this.operation = operation;
-    this.provider = provider;
-    this.details = details;
-    this.timestamp = new Date().toISOString();
+    this.type = details.type;
+    this.context = details.context;
+    this.retryable = details.retryable;
+    this.severity = details.severity;
 
-    // Log error details
-    this.logError();
+    if (details.stack) {
+      this.stack = details.stack;
+    } else if (details.originalError?.stack) {
+      this.stack = details.originalError.stack;
+    }
   }
 
-  private logError() {
-    logger.error({
-      message: this.message,
-      errorType: this.type,
-      operation: this.operation,
-      provider: this.provider,
-      details: this.details,
-      timestamp: this.timestamp
-    });
-  }
-
-  public toJSON() {
+  /**
+   * Convert to JSON for logging
+   */
+  toJSON() {
     return {
       name: this.name,
       message: this.message,
       type: this.type,
-      operation: this.operation,
-      provider: this.provider,
-      timestamp: this.timestamp,
-      // Only include non-sensitive details
-      details: this.sanitizeDetails(this.details)
+      context: this.context,
+      retryable: this.retryable,
+      severity: this.severity,
+      stack: this.stack,
+      timestamp: new Date().toISOString()
     };
-  }
-
-  private sanitizeDetails(details: VectorDBErrorDetails | null): VectorDBErrorDetails | null {
-    if (!details) return null;
-
-    // Create a copy to avoid modifying the original
-    const sanitized = { ...details };
-
-    // Remove sensitive information
-    const sensitiveKeys = [
-      'password', 'apiKey', 'api_key', 'secret', 'token', 'connectionString',
-      'connection_string', 'auth', 'credential', 'credentials'
-    ];
-
-    sensitiveKeys.forEach(key => {
-      if (key in sanitized) {
-        sanitized[key] = '[REDACTED]';
-      }
-    });
-
-    return sanitized;
   }
 }
 
-<<<<<<< HEAD
-export const handleVectorDBError = (
-  error: unknown,
-  operation: string,
-  provider: string
-): VectorDBError => {
-  // If already a VectorDBError, return it
-  if (error instanceof VectorDBError) {
-=======
-// Legacy alias for backward compatibility
-export const VectorDBError = VectorDbError;
-
 /**
- * Helper function to determine the error type based on error properties
- * @param error Any error object to analyze
- * @returns The appropriate VectorDbErrorType
+ * Vector Database Error Handler
  */
-export function getErrorType(error: any): VectorDbErrorType {
-  const message = error?.message?.toLowerCase() || '';
-  const code = error?.code?.toString() || '';
-  const status = error?.status || error?.statusCode || 0;
-  
-  // Connection errors
-  if (
-    code === 'ECONNREFUSED' ||
-    code === 'ECONNRESET' ||
-    code === 'ENOTFOUND' ||
-    code === 'ETIMEDOUT' ||
-    error.name === 'ConnectionError' ||
-    message.includes('connect') ||
-    message.includes('connection')
-  ) {
-    return VectorDbErrorType.CONNECTION;
+export class VectorDbErrorHandler {
+  private errorCounts: Map<VectorDbErrorType, number> = new Map();
+  private recentErrors: Array<{
+    error: VectorDbError;
+    timestamp: Date;
+    operation: string;
+  }> = [];
+
+  /**
+   * Handle and classify vector database errors
+   */
+  handleError(
+    error: Error | unknown,
+    operation: string,
+    context?: Record<string, any>
+  ): VectorDbError {
+    const errorDetails = this.classifyError(error, operation, context);
+    const vectorDbError = new VectorDbError(errorDetails);
+
+    // Track error statistics
+    this.trackError(vectorDbError, operation);
+
+    // Log error based on severity
+    this.logError(vectorDbError, operation);
+
+    return vectorDbError;
   }
-  
-  // Authentication/Authorization errors
-  if (
-    code === 'EAUTH' ||
-    status === 401 ||
-    status === 403 ||
-    message.includes('unauthorized') ||
-    message.includes('authentication') ||
-    message.includes('auth') ||
-    message.includes('permission') ||
-    message.includes('credentials')
-  ) {
-    return VectorDbErrorType.AUTHORIZATION_ERROR;
+
+  /**
+   * Classify error type and determine properties
+   */
+  private classifyError(
+    error: Error | unknown,
+    operation: string,
+    context?: Record<string, any>
+  ): VectorDbErrorDetails {
+    const message = error instanceof Error ? error.message : String(error);
+    const originalError = error instanceof Error ? error : undefined;
+
+    // Connection-related errors
+    if (message.includes('ECONNREFUSED') || message.includes('Connection refused')) {
+      return {
+        type: VectorDbErrorType.CONNECTION_ERROR,
+        message: `Connection failed for operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: true,
+        severity: 'high'
+      };
+    }
+
+    if (message.includes('timeout') || message.includes('ETIMEDOUT')) {
+      return {
+        type: VectorDbErrorType.TIMEOUT_ERROR,
+        message: `Operation timed out: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: true,
+        severity: 'medium'
+      };
+    }
+
+    if (message.includes('authentication') || message.includes('unauthorized') || message.includes('403')) {
+      return {
+        type: VectorDbErrorType.AUTHENTICATION_ERROR,
+        message: `Authentication failed for operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'high'
+      };
+    }
+
+    if (message.includes('rate limit') || message.includes('429')) {
+      return {
+        type: VectorDbErrorType.RATE_LIMIT_ERROR,
+        message: `Rate limit exceeded for operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: true,
+        severity: 'medium'
+      };
+    }
+
+    // Query/Index related errors
+    if (message.includes('syntax') || message.includes('invalid query') || message.includes('SQL')) {
+      return {
+        type: VectorDbErrorType.QUERY_ERROR,
+        message: `Query error in operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'medium'
+      };
+    }
+
+    if (message.includes('index') || message.includes('vector') || message.includes('dimension')) {
+      return {
+        type: VectorDbErrorType.INDEX_ERROR,
+        message: `Index error in operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'medium'
+      };
+    }
+
+    // Validation errors
+    if (message.includes('validation') || message.includes('invalid') || message.includes('required')) {
+      return {
+        type: VectorDbErrorType.VALIDATION_ERROR,
+        message: `Validation error in operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'low'
+      };
+    }
+
+    // Storage/Database errors
+    if (message.includes('disk') || message.includes('storage') || message.includes('database')) {
+      return {
+        type: VectorDbErrorType.STORAGE_ERROR,
+        message: `Storage error in operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: true,
+        severity: 'high'
+      };
+    }
+
+    // Configuration errors
+    if (message.includes('config') || message.includes('missing') || message.includes('undefined')) {
+      return {
+        type: VectorDbErrorType.CONFIGURATION_ERROR,
+        message: `Configuration error in operation: ${operation}`,
+        originalError,
+        context: { ...context, operation },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'medium'
+      };
+    }
+
+    // Default to unknown error
+    return {
+      type: VectorDbErrorType.UNKNOWN_ERROR,
+      message: `Unknown error in operation: ${operation} - ${message}`,
+      originalError,
+      context: { ...context, operation, originalMessage: message },
+      timestamp: new Date(),
+      retryable: false,
+      severity: 'medium'
+    };
   }
-  
-  // Timeout errors
-  if (
-    code === 'ETIMEDOUT' ||
-    code === 'ESOCKETTIMEDOUT' ||
-    message.includes('timeout') ||
-    message.includes('timed out')
-  ) {
-    return VectorDbErrorType.TIMEOUT;
+
+  /**
+   * Track error statistics
+   */
+  private trackError(error: VectorDbError, operation: string): void {
+    // Increment error count for this type
+    const currentCount = this.errorCounts.get(error.type) || 0;
+    this.errorCounts.set(error.type, currentCount + 1);
+
+    // Store recent error for analysis
+    this.recentErrors.push({
+      error,
+      timestamp: new Date(),
+      operation
+    });
+
+    // Keep only recent errors (last 100)
+    if (this.recentErrors.length > 100) {
+      this.recentErrors = this.recentErrors.slice(-100);
+    }
   }
-  
-  // Query errors
-  if (
-    code === 'EQUERY' ||
-    message.includes('query') ||
-    message.includes('sql')
-  ) {
-    return VectorDbErrorType.QUERY_FAILED;
+
+  /**
+   * Log error based on severity
+   */
+  private logError(error: VectorDbError, operation: string): void {
+    const logData = {
+      type: error.type,
+      message: error.message,
+      operation,
+      context: error.context,
+      timestamp: error.timestamp || new Date()
+    };
+
+    switch (error.severity) {
+      case 'critical':
+        console.error('CRITICAL VectorDB Error:', logData);
+        // In production, this would trigger alerts
+        break;
+      case 'high':
+        console.error('HIGH VectorDB Error:', logData);
+        break;
+      case 'medium':
+        console.warn('MEDIUM VectorDB Error:', logData);
+        break;
+      case 'low':
+        console.info('LOW VectorDB Error:', logData);
+        break;
+    }
   }
-  
-  // Initialization errors
-  if (
-    message.includes('initialize') ||
-    message.includes('init') ||
-    message.includes('not initialized')
-  ) {
-    return VectorDbErrorType.INITIALIZATION;
+
+  /**
+   * Attempt error recovery with retry logic
+   */
+  async withRetry<T>(
+    operation: () => Promise<T>,
+    options: ErrorRecoveryOptions = {}
+  ): Promise<T> {
+    const maxRetries = options.maxRetries || 3;
+    const retryDelay = options.retryDelay || 1000;
+    const exponentialBackoff = options.exponentialBackoff !== false;
+
+    let lastError: Error | null = null;
+
+    for (let attempt = 0; attempt <= maxRetries; attempt++) {
+      try {
+        return await operation();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Check if error is retryable
+        const vectorDbError = this.handleError(lastError, 'retry_operation');
+        if (!vectorDbError.retryable || attempt === maxRetries) {
+          throw lastError;
+        }
+
+        // Wait before retry
+        const delay = exponentialBackoff ? retryDelay * Math.pow(2, attempt) : retryDelay;
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
+
+    throw lastError || new Error('Retry operation failed');
   }
-  
-  // Vector operation errors
-  if (message.includes('embedding')) {
-    return VectorDbErrorType.EMBEDDING_GENERATION_FAILED;
+
+  /**
+   * Get error statistics
+   */
+  getErrorStats(): {
+    totalErrors: number;
+    errorsByType: Record<string, number>;
+    recentErrors: Array<{
+      type: VectorDbErrorType;
+      message: string;
+      operation: string;
+      timestamp: Date;
+    }>;
+    errorRate: number;
+  } {
+    const errorsByType: Record<string, number> = {};
+    this.errorCounts.forEach((count, type) => {
+      errorsByType[type] = count;
+    });
+
+    const recentErrorSummary = this.recentErrors.slice(-10).map(entry => ({
+      type: entry.error.type,
+      message: entry.error.message,
+      operation: entry.operation,
+      timestamp: entry.timestamp
+    }));
+
+    // Calculate error rate (errors per minute over last hour)
+    const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
+    const recentErrorCount = this.recentErrors.filter(e => e.timestamp > oneHourAgo).length;
+    const errorRate = recentErrorCount / 60; // per minute
+
+    return {
+      totalErrors: this.recentErrors.length,
+      errorsByType,
+      recentErrors: recentErrorSummary,
+      errorRate
+    };
   }
-  
-  if (message.includes('search')) {
-    return VectorDbErrorType.SEARCH;
+
+  /**
+   * Get error recovery suggestions
+   */
+  getRecoverySuggestions(): Array<{
+    type: VectorDbErrorType;
+    suggestion: string;
+    priority: 'high' | 'medium' | 'low';
+  }> {
+    const suggestions: Array<{
+      type: VectorDbErrorType;
+      suggestion: string;
+      priority: 'high' | 'medium' | 'low';
+    }> = [];
+
+    const stats = this.getErrorStats();
+
+    // Connection errors - high priority
+    if (stats.errorsByType[VectorDbErrorType.CONNECTION_ERROR] > 5) {
+      suggestions.push({
+        type: VectorDbErrorType.CONNECTION_ERROR,
+        suggestion: 'Check database connectivity and network configuration',
+        priority: 'high'
+      });
+    }
+
+    // Timeout errors - medium priority
+    if (stats.errorsByType[VectorDbErrorType.TIMEOUT_ERROR] > 3) {
+      suggestions.push({
+        type: VectorDbErrorType.TIMEOUT_ERROR,
+        suggestion: 'Review query performance and consider adding indexes',
+        priority: 'medium'
+      });
+    }
+
+    // Authentication errors - high priority
+    if (stats.errorsByType[VectorDbErrorType.AUTHENTICATION_ERROR] > 0) {
+      suggestions.push({
+        type: VectorDbErrorType.AUTHENTICATION_ERROR,
+        suggestion: 'Verify database credentials and permissions',
+        priority: 'high'
+      });
+    }
+
+    // Rate limit errors - medium priority
+    if (stats.errorsByType[VectorDbErrorType.RATE_LIMIT_ERROR] > 2) {
+      suggestions.push({
+        type: VectorDbErrorType.RATE_LIMIT_ERROR,
+        suggestion: 'Implement rate limiting or upgrade service tier',
+        priority: 'medium'
+      });
+    }
+
+    return suggestions;
   }
-  
-  if (message.includes('index')) {
-    return VectorDbErrorType.INDEX_OPERATION_FAILED;
+
+  /**
+   * Clear error statistics
+   */
+  clearStats(): void {
+    this.errorCounts.clear();
+    this.recentErrors = [];
   }
-  
-  if (message.includes('not implemented') || message.includes('unsupported')) {
-    return VectorDbErrorType.UNSUPPORTED_OPERATION;
+
+  /**
+   * Check if service is healthy based on error patterns
+   */
+  isHealthy(): boolean {
+    const stats = this.getErrorStats();
+
+    // Unhealthy if error rate is too high or critical errors occurred recently
+    if (stats.errorRate > 1) return false; // More than 1 error per minute
+
+    const recentCriticalErrors = this.recentErrors.filter(
+      e => e.error.severity === 'critical' && e.timestamp > new Date(Date.now() - 5 * 60 * 1000)
+    );
+
+    return recentCriticalErrors.length === 0;
   }
-  
-  // Default case
-  return VectorDbErrorType.UNKNOWN_ERROR;
 }
 
 /**
  * Legacy function-based error handler
  * @deprecated Use VectorDbErrorHandler class instead
  */
-<<<<<<< HEAD
 export function handleVectorDbError(
-=======
-=======
->>>>>>> main
-export const handleVectorDBError = (
->>>>>>> merge-conflict-cleanup
-  error: any,
+  error: Error | unknown,
   operation: string,
-  provider: string,
-  shouldRetry: boolean = false
+  context?: Record<string, any>
 ): VectorDbError {
-  // If it's already a VectorDbError, return it
-  if (error instanceof VectorDbError) {
-<<<<<<< HEAD
->>>>>>> fix/consolidated-dependency-updates
-=======
-=======
->>>>>>> main
-): VectorDBError => {
-  // If already a VectorDBError, return it
-  if (error instanceof VectorDBError) {
->>>>>>> merge-conflict-cleanup
-    return error;
-  }
-
-  // Normalize incoming error value
-  // - undefined/null -> Unknown error
-  // - string -> message = string
-  // - object without string message -> Unknown error
-  // - Error -> use as-is
-  let baseError: Error;
-  const originalError: unknown = error;
-  if (error instanceof Error) {
-    baseError = error;
-  } else if (error == null) {
-    baseError = new Error('Unknown error');
-  } else if (typeof error === 'string') {
-    baseError = new Error(error);
-<<<<<<< HEAD
-  } else if (typeof error === 'object' && 'message' in error && typeof error.message === 'string') {
-    baseError = new Error(error.message);
-  } else if (typeof error === 'object' && 'message' in error && error.message) {
-    // Non-string message (e.g., object)
-    const msg = error.message as { text?: string };
-    baseError = new Error(String(msg.text || 'Unknown error'));
-=======
-  } else if (typeof (error as any).message === 'string') {
-    baseError = new Error((error as any).message);
-  } else if ((error as any).message && typeof (error as any).message !== 'string') {
-    // Non-string message (e.g., object)
-    baseError = new Error(String((error as any).message?.text || 'Unknown error'));
->>>>>>> merge-conflict-cleanup
-  } else {
-    baseError = new Error('Unknown error');
-  }
-
-  // Map common database errors to appropriate types
-<<<<<<< HEAD
-  let errorType = VectorDBErrorType.UNKNOWN_ERROR;
-  const errorMessage = baseError.message || 'Unknown vector database error';
-  const errorDetails: VectorDBErrorDetails = {};
-
-  // Connection errors
-  if (
-    (hasCode(error) && (error.code === 'ECONNREFUSED' || error.code === 'ETIMEDOUT')) ||
-    baseError.name === 'ConnectionError' ||
-    errorMessage.includes('connect') ||
-    errorMessage.includes('connection')
-  ) {
-    errorType = VectorDBErrorType.CONNECTION_FAILED;
-  }
-  // Authentication errors
-  else if (
-    (hasCode(error) && (error.code === 'EAUTH' || error.code === 401 || error.code === 403)) ||
-    errorMessage.includes('auth') ||
-    errorMessage.includes('credentials') ||
-    errorMessage.includes('permission')
-  ) {
-    errorType = VectorDBErrorType.AUTHORIZATION_ERROR;
-  }
-  // Query errors
-  else if (
-    (hasCode(error) && error.code === 'EQUERY') ||
-    errorMessage.includes('query') ||
-    errorMessage.includes('SQL')
-  ) {
-    errorType = VectorDBErrorType.QUERY_FAILED;
-  }
-
-  // Extract useful information from the error
-  if (hasCode(error)) {
-    errorDetails.code = error.code;
-  }
-  if (typeof error === 'object' && error !== null && 'errno' in error && typeof error.errno === 'number') {
-    errorDetails.errno = error.errno;
-  }
-  if (typeof error === 'object' && error !== null && 'sqlMessage' in error && typeof error.sqlMessage === 'string') {
-    errorDetails.sqlMessage = error.sqlMessage;
-  }
-  if (baseError.stack) {
-    errorDetails.stack = baseError.stack;
-  }
-  // Preserve original error for diagnostics (redacted later by toJSON)
-  if (!(error instanceof Error)) {
-    errorDetails.originalError = originalError;
-  }
-
-  return new VectorDBError(
-=======
-  const errorType = getErrorType(error);
-  const errorMessage = error.message || 'Unknown vector database error';
-  const errorDetails: Record<string, any> = {};
-
-  // Extract useful information from the error
-  if (error.code) errorDetails.code = error.code;
-  if (error.errno) errorDetails.errno = error.errno;
-  if (error.sqlMessage) errorDetails.sqlMessage = error.sqlMessage;
-  if (error.stack) errorDetails.stack = error.stack;
-
-  return new VectorDbError(
-<<<<<<< HEAD
->>>>>>> fix/consolidated-dependency-updates
-=======
-=======
->>>>>>> main
-  let errorType = VectorDBErrorType.UNKNOWN_ERROR;
-  const errorMessage = baseError.message || 'Unknown vector database error';
-  let errorDetails: Record<string, unknown> = {};
-
-  // Connection errors
-  if (
-    (error as any)?.code === 'ECONNREFUSED' ||
-    (error as any)?.code === 'ETIMEDOUT' ||
-    baseError.name === 'ConnectionError' ||
-    errorMessage.includes('connect') ||
-    errorMessage.includes('connection')
-  ) {
-    errorType = VectorDBErrorType.CONNECTION_FAILED;
-  }
-  // Authentication errors
-  else if (
-    (error as any)?.code === 'EAUTH' ||
-    (error as any)?.code === 401 ||
-    (error as any)?.code === 403 ||
-    errorMessage.includes('auth') ||
-    errorMessage.includes('credentials') ||
-    errorMessage.includes('permission')
-  ) {
-    errorType = VectorDBErrorType.AUTHORIZATION_ERROR;
-  }
-  // Query errors
-  else if (
-    (error as any)?.code === 'EQUERY' ||
-    errorMessage.includes('query') ||
-    errorMessage.includes('SQL')
-  ) {
-    errorType = VectorDBErrorType.QUERY_FAILED;
-  }
-
-  // Extract useful information from the error
-  if ((error as any)?.code) errorDetails = { ...errorDetails, code: (error as any).code };
-  if ((error as any)?.errno) errorDetails = { ...errorDetails, errno: (error as any).errno };
-  if ((error as any)?.sqlMessage) errorDetails = { ...errorDetails, sqlMessage: (error as any).sqlMessage };
-  if ((baseError as any)?.stack) errorDetails = { ...errorDetails, stack: (baseError as any).stack };
-  // Preserve original error for diagnostics (redacted later by toJSON)
-  if (!(error instanceof Error)) {
-    errorDetails = { ...errorDetails, originalError };
-  }
-
-  return new VectorDBError(
->>>>>>> merge-conflict-cleanup
-    errorMessage,
-    errorType,
-    operation,
-    provider,
-    errorDetails
-  );
-};
-=======
+  const handler = new VectorDbErrorHandler();
+  return handler.handleError(error, operation, context);
 }
->>>>>>> fix/consolidated-dependency-updates
 
-/**
- * Backward/alternate naming compatibility for imports expecting VectorDb* symbols
- */
-export { VectorDBErrorType as VectorDbErrorType };
-export { VectorDBError as VectorDbError };
-
-/**
- * Enhanced handler class providing provider-aware categorization and retryability helpers.
- * Many adapters import this class from './vector-db-error-handler'.
- */
-export class VectorDbErrorHandler {
-  private provider: string;
-  private enableLogging: boolean;
-  private enableMetrics: boolean;
-
-  constructor(provider: string, enableLogging: boolean = false, enableMetrics: boolean = false) {
-    this.provider = provider;
-    this.enableLogging = enableLogging;
-    this.enableMetrics = enableMetrics;
-  }
-
-  /**
-   * Normalize and enrich an error with consistent formatting.
-   */
-  public handleError(
-    error: unknown,
-    operation: string,
-    errorType?: VectorDBErrorType,
-    retryable?: boolean,
-<<<<<<< HEAD
-    additionalContext: VectorDBErrorDetails = {}
-  ): VectorDBError {
-    // Check for Azure PostgreSQL specific pgvector errors first
-    if (this.isAzurePgVectorError(error)) {
-      const message = (error instanceof Error)
-        ? error.message
-        : (typeof error === 'object' && error !== null && 'message' in error && typeof error.message === 'string')
-          ? error.message
-          : 'Azure PostgreSQL pgvector extension error';
-
-      const azureContext = {
-        ...additionalContext,
-        azure: true,
-        pgvectorError: true,
-        requiresAdminAction: true,
-        ...(typeof retryable === 'boolean' ? { retryable } : {}),
-      };
-
-      const azureError = new VectorDBError(
-        message,
-        VectorDBErrorType.INITIALIZATION,
-        operation,
-        this.provider,
-        azureContext
-      );
-
-      if (typeof retryable === 'boolean') {
-        azureError.retryable = retryable;
-      }
-
-      return azureError;
-    }
-
-=======
-    additionalContext: Record<string, any> = {}
-  ): VectorDBError {
->>>>>>> merge-conflict-cleanup
-    // Categorize if no explicit type provided (use local fallback to avoid circular imports)
-    const resolvedType = errorType ?? this.categorizeFallback(error);
-
-    // Attach context (including retryable if provided)
-    const context = {
-      ...additionalContext,
-      ...(typeof retryable === 'boolean' ? { retryable } : {}),
-    };
-
-    // Delegate to base normalizer for consistency
-    const normalized = handleVectorDBError(
-      error,
-      operation,
-      this.provider
-<<<<<<< HEAD
-=======
-    );
-
-    // Override type if we resolved a more specific one
-    if (resolvedType && normalized.type !== resolvedType) {
-      normalized.type = resolvedType;
-    }
-
-    // Merge context into details and set top-level retryable property when provided
-    normalized.details = { ...(normalized.details || {}), ...context };
-    if (typeof retryable === 'boolean') {
-      (normalized as any).retryable = retryable;
-    }
-
-    // Optional logging hook
-    if (this.enableLogging) {
-      logger.error('Vector DB operation error', {
-        provider: this.provider,
-        operation,
-        type: normalized.type,
-        message: normalized.message,
-        context,
-      });
-    }
-
-    return normalized;
-  }
-
-  /**
-   * Determine if an error is retryable using provider-aware patterns.
-   */
-  public isRetryableError(error: any): boolean {
-    const t = this.categorizeFallback(error);
-    return (
-      t === VectorDBErrorType.CONNECTION_FAILED ||
-      t === VectorDBErrorType.TIMEOUT ||
-      t === VectorDBErrorType.SERVICE ||
-      t === VectorDBErrorType.UNKNOWN_ERROR
->>>>>>> merge-conflict-cleanup
-    );
-
-    // Override type if we resolved a more specific one
-    if (resolvedType && normalized.type !== resolvedType) {
-      normalized.type = resolvedType;
-    }
-
-    // Merge context into details and set top-level retryable property when provided
-    normalized.details = { ...(normalized.details || {}), ...context };
-    if (typeof retryable === 'boolean') {
-      normalized.retryable = retryable;
-    }
-
-    // Optional logging hook
-    if (this.enableLogging) {
-      logger.error('Vector DB operation error', {
-        provider: this.provider,
-        operation,
-        type: normalized.type,
-        message: normalized.message,
-        context,
-      });
-    }
-
-    return normalized;
-  }
-
-  /**
-   * Determine if an error is retryable using provider-aware patterns.
-   */
-  public isRetryableError(error: unknown): boolean {
-    const t = this.categorizeFallback(error);
-    return (
-      t === VectorDBErrorType.CONNECTION_FAILED ||
-      t === VectorDBErrorType.TIMEOUT ||
-      t === VectorDBErrorType.SERVICE ||
-      t === VectorDBErrorType.UNKNOWN_ERROR
-    );
-  }
-<<<<<<< HEAD
-
-  /**
-   * Check if error is authentication related
-   */
-  public isAuthError(error: unknown): boolean {
-    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
-    const code = String(hasCode(error) ? error.code : '');
-    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
-      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
-      : 0;
-
-    return (
-      code === 'EAUTH' || status === 401 || status === 403 ||
-      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') ||
-      msg.includes('credentials') || msg.includes('permission')
-    );
-  }
-
-  /**
-   * Check if error is network/connection related
-   */
-  public isNetworkError(error: unknown): boolean {
-    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
-    const code = String(hasCode(error) ? error.code : '');
-
-    return (
-      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ENETWORK' ||
-      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
-    );
-  }
-
-  /**
-   * Check if error is timeout related
-   */
-  public isTimeoutError(error: unknown): boolean {
-    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
-    const code = String(hasCode(error) ? error.code : '');
-    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
-      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
-      : 0;
-
-    return (
-      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
-      msg.includes('timeout') || msg.includes('timed out')
-    );
-  }
-
-  /**
-   * Check if an error is related to Azure PostgreSQL pgvector limitations
-   */
-  private isAzurePgVectorError(error: unknown): boolean {
-    if (!error) return false;
-    const message = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
-
-    // Check for Azure PostgreSQL specific pgvector errors
-    return (
-      message.includes('vector') &&
-      (
-        message.includes('shared_preload_libraries') ||
-        message.includes('extension "vector" is not available') ||
-        message.includes('extension vector does not exist') ||
-        message.includes('could not open extension control file "vector.control"') ||
-        message.includes('serverparametertocmsunallowedparametervalue') ||
-        message.includes('value \'vector\' is invalid for server parameter') ||
-        message.includes('operator does not exist: vector') ||
-        message.includes('type "vector" does not exist')
-      )
-    );
-  }
-
-  /**
-   * Fallback categorization to avoid importing database-error-patterns (prevents circular deps).
-   */
-  private categorizeFallback(error: unknown): VectorDBErrorType {
-    if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
-    const msg = String((typeof error === 'object' && error !== null && 'message' in error) ? error.message : '').toLowerCase();
-    const code = String(hasCode(error) ? error.code : '');
-    const status = (typeof error === 'object' && error !== null && ('status' in error || 'statusCode' in error))
-      ? ((error as { status?: number }).status ?? (error as { statusCode?: number }).statusCode ?? 0)
-      : 0;
-
-    // Connection
-    if (
-      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||
-      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
-    ) return VectorDBErrorType.CONNECTION_FAILED;
-
-    // Auth
-    if (
-      code === 'EAUTH' || status === 401 || status === 403 ||
-      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('credentials') || msg.includes('permission')
-    ) return VectorDBErrorType.AUTHORIZATION_ERROR;
-
-    // Timeout
-    if (
-      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
-      msg.includes('timeout') || msg.includes('timed out')
-    ) return VectorDBErrorType.TIMEOUT;
-
-    // Rate limiting / service
-    if (
-      status === 429 || status === 503 ||
-      msg.includes('rate limit') || msg.includes('throttl') || msg.includes('service unavailable')
-    ) return VectorDBErrorType.SERVICE;
-
-    // Query / syntax
-    if (
-      msg.includes('query') || msg.includes('syntax') || msg.includes('sql') || msg.includes('malformed')
-    ) return VectorDBErrorType.QUERY_FAILED;
-
-    // Vector specific
-    if (msg.includes('vector')) return VectorDBErrorType.VECTOR_CREATION_FAILED;
-
-    // Initialization / configuration
-    if (msg.includes('not initialized') || msg.includes('initialize') || msg.includes('configuration'))
-      return VectorDBErrorType.INITIALIZATION;
-
-    return VectorDBErrorType.UNKNOWN_ERROR;
-  }
-
-  /**
-   * Fallback categorization to avoid importing database-error-patterns (prevents circular deps).
-   */
-  private categorizeFallback(error: any): VectorDBErrorType {
-    if (!error) return VectorDBErrorType.UNKNOWN_ERROR;
-    const msg = String(error.message || '').toLowerCase();
-    const code = String((error as any).code ?? '');
-    const status = (error as any).status ?? (error as any).statusCode ?? 0;
-
-    // Connection
-    if (
-      code === 'ECONNREFUSED' || code === 'ECONNRESET' || code === 'ETIMEDOUT' ||
-      msg.includes('connection') || msg.includes('connect') || msg.includes('network')
-    ) return VectorDBErrorType.CONNECTION_FAILED;
-
-    // Auth
-    if (
-      code === 'EAUTH' || status === 401 || status === 403 ||
-      msg.includes('auth') || msg.includes('unauthorized') || msg.includes('forbidden') || msg.includes('credentials') || msg.includes('permission')
-    ) return VectorDBErrorType.AUTHORIZATION_ERROR;
-
-    // Timeout
-    if (
-      code === 'ETIMEDOUT' || status === 408 || status === 504 ||
-      msg.includes('timeout') || msg.includes('timed out')
-    ) return VectorDBErrorType.TIMEOUT;
-
-    // Rate limiting / service
-    if (
-      status === 429 || status === 503 ||
-      msg.includes('rate limit') || msg.includes('throttl') || msg.includes('service unavailable')
-    ) return VectorDBErrorType.SERVICE;
-
-    // Query / syntax
-    if (
-      msg.includes('query') || msg.includes('syntax') || msg.includes('sql') || msg.includes('malformed')
-    ) return VectorDBErrorType.QUERY_FAILED;
-
-    // Vector specific
-    if (msg.includes('vector')) return VectorDBErrorType.VECTOR_CREATION_FAILED;
-
-    // Initialization / configuration
-    if (msg.includes('not initialized') || msg.includes('initialize') || msg.includes('configuration'))
-      return VectorDBErrorType.INITIALIZATION;
-
-    return VectorDBErrorType.UNKNOWN_ERROR;
-  }
-}
-<<<<<<< HEAD
-=======
-}
->>>>>>> fix/consolidated-dependency-updates
-=======
-<<<<<<< HEAD
-};
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
+// Export singleton instance for global use
+export const vectorDbErrorHandler = new VectorDbErrorHandler();

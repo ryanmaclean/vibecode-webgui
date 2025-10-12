@@ -1,754 +1,672 @@
-'use client'
+/**
+ * Project Scaffolder Component
+ * Provides an intuitive interface for creating new projects from templates
+ */
 
-import React, { useState } from 'react'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Input } from '@/components/ui/input'
-import { Textarea } from '@/components/ui/textarea'
-import { Badge } from '@/components/ui/badge'
-import { Progress } from '@/components/ui/progress'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Label } from '@/components/ui/label'
-import { Switch } from '@/components/ui/switch'
+'use client';
+
+import React, { useState, useEffect } from 'react';
 import {
-  Wand2,
-  Download,
-  Copy,
-  CheckCircle,
-  AlertCircle,
-  FileText,
-  Folder,
-  Code,
-  Package,
-  Settings,
-  Play
-} from 'lucide-react'
-import { ProjectTemplate, FileTemplate } from '@/lib/project-templates'
+  PlusIcon,
+  MagnifyingGlassIcon,
+  StarIcon as StarIconOutline,
+  StarIcon as StarIconSolid,
+  ClockIcon,
+  TagIcon,
+  FolderIcon,
+  DocumentIcon,
+  CogIcon,
+  CheckCircleIcon,
+  ExclamationTriangleIcon
+} from '@heroicons/react/24/outline';
+import { StarIcon as StarIconSolidFilled } from '@heroicons/react/24/solid';
+
+interface ProjectTemplate {
+  id: string;
+  name: string;
+  description: string;
+  category: string;
+  language: string;
+  framework: string;
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  stars: number;
+  downloads: number;
+  tags: string[];
+  previewImage?: string;
+  estimatedTime: string;
+  features: string[];
+}
+
+interface ProjectConfig {
+  name: string;
+  description: string;
+  templateId: string;
+  workspaceId?: number;
+  settings: {
+    includeTests: boolean;
+    includeDocs: boolean;
+    includeCI: boolean;
+    packageManager: 'npm' | 'yarn' | 'pnpm';
+  };
+  customizations: {
+    author?: string;
+    license?: string;
+    version?: string;
+  };
+}
+
+interface GenerationStatus {
+  status: 'idle' | 'generating' | 'success' | 'error';
+  message: string;
+  progress?: number;
+  error?: string;
+  generatedFiles?: Array<{
+    name: string;
+    path: string;
+    type: 'file' | 'directory';
+    size?: number;
+  }>;
+}
 
 interface ProjectScaffolderProps {
-  template: ProjectTemplate
-  projectName: string
-<<<<<<< HEAD
-<<<<<<< HEAD
-  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
-=======
-  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void
-=======
-  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-  onDownload?: (projectData: ProjectData) => void
-=======
-  onGenerate?: (projectData: { files: GeneratedFile[]; name: string }) => void,  onDownload?: (projectData: ProjectData) => void
->>>>>>> fix/consolidated-dependency-updates
-}
-
-interface GeneratedFile {
-  path: string
-  content: string
-  type: 'file' | 'directory'
-}
-
-interface ProjectData {
-  name: string
-  template: ProjectTemplate
-  files: GeneratedFile[]
-  packageJson: any
-  envFile: string
-  dockerFile?: string
-  readmeContent: string
+  workspaceId?: number;
+  onProjectCreate?: (project: {
+    name: string;
+    templateId: string;
+    files: Array<{ name: string; path: string; content: string }>;
+  }) => void;
+  onTemplateSelect?: (template: ProjectTemplate) => void;
+  className?: string;
 }
 
 export function ProjectScaffolder({
-  template,
-  projectName,
-  onGenerate,
-  onDownload
+  workspaceId,
+  onProjectCreate,
+  onTemplateSelect,
+  className = ''
 }: ProjectScaffolderProps) {
-  const [generatedFiles, setGeneratedFiles] = useState<GeneratedFile[]>([])
-  const [isGenerating, setIsGenerating] = useState(false)
-  const [generationProgress, setGenerationProgress] = useState(0)
-  const [projectConfig, setProjectConfig] = useState({
-    includeDocker: true,
-    includeTests: true,
-    includeCI: true,
-    includeDocs: true,
-    setupDatabase: template.envVars?.some(env => env.name.includes('DATABASE')),
-    setupAuth: template.envVars?.some(env => env.name.includes('AUTH')),
-  })
-  const [customVariables, setCustomVariables] = useState<Record<string, string>>({
-    projectName: projectName,
-    description: `A ${template.name} project built with VibeCode`,
-    author: 'Your Name',
-    license: 'MIT'
-  })
+  const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
+  const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
+  const [projectConfig, setProjectConfig] = useState<ProjectConfig>({
+    name: '',
+    description: '',
+    templateId: '',
+    workspaceId,
+    settings: {
+      includeTests: true,
+      includeDocs: true,
+      includeCI: false,
+      packageManager: 'npm'
+    },
+    customizations: {}
+  });
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus>({
+    status: 'idle',
+    message: 'Ready to create project'
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const generateProjectFiles = async () => {
-    setIsGenerating(true)
-    setGenerationProgress(0)
+  // Load available templates
+  useEffect(() => {
+    loadTemplates();
+  }, []);
 
-    const files: GeneratedFile[] = []
-    const totalSteps = 8
-
-    // Step 1: Generate core files from template
-    setGenerationProgress(12)
-    for (const fileTemplate of template.fileStructure) {
-      let content = fileTemplate.content
-
-      // Replace template variables
-      if (fileTemplate.isTemplate && fileTemplate.variables) {
-        for (const variable of fileTemplate.variables) {
-          const value = customVariables[variable] || variable
-          content = content.replace(new RegExp(`{{${variable}}}`, 'g'), value)
-        }
+  const loadTemplates = async () => {
+    // This would integrate with the template marketplace API
+    // For now, using mock data
+    const mockTemplates: ProjectTemplate[] = [
+      {
+        id: 'react-ts-vite',
+        name: 'React TypeScript Vite',
+        description: 'Modern React application with TypeScript and Vite build system',
+        category: 'web',
+        language: 'typescript',
+        framework: 'react',
+        complexity: 'intermediate',
+        stars: 4.8,
+        downloads: 15420,
+        tags: ['react', 'typescript', 'vite', 'modern'],
+        estimatedTime: '5 min',
+        features: ['TypeScript', 'Vite', 'ESLint', 'Prettier', 'Testing']
+      },
+      {
+        id: 'nextjs-fullstack',
+        name: 'Next.js Full Stack',
+        description: 'Complete full-stack application with Next.js, API routes, and database',
+        category: 'web',
+        language: 'typescript',
+        framework: 'nextjs',
+        complexity: 'advanced',
+        stars: 4.6,
+        downloads: 8930,
+        tags: ['nextjs', 'fullstack', 'api', 'database'],
+        estimatedTime: '8 min',
+        features: ['Next.js', 'API Routes', 'Database', 'Authentication', 'Deployment']
+      },
+      {
+        id: 'vue-nuxt-starter',
+        name: 'Vue Nuxt Starter',
+        description: 'Vue.js application with Nuxt.js framework and server-side rendering',
+        category: 'web',
+        language: 'javascript',
+        framework: 'vue',
+        complexity: 'intermediate',
+        stars: 4.4,
+        downloads: 5620,
+        tags: ['vue', 'nuxt', 'ssr', 'javascript'],
+        estimatedTime: '6 min',
+        features: ['Vue 3', 'Nuxt 3', 'SSR', 'TypeScript', 'Tailwind CSS']
       }
+    ];
 
-      files.push({
-        path: fileTemplate.path,
-        content,
-        type: 'file'
-      })
+    setTemplates(mockTemplates);
+  };
+
+  const filteredTemplates = templates.filter(template => {
+    const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         template.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                         template.tags.some(tag => tag.toLowerCase().includes(searchQuery.toLowerCase()));
+
+    const matchesCategory = selectedCategory === 'all' || template.category === selectedCategory;
+
+    return matchesSearch && matchesCategory;
+  });
+
+  const categories = [
+    { id: 'all', name: 'All Templates', count: templates.length },
+    { id: 'web', name: 'Web Apps', count: templates.filter(t => t.category === 'web').length },
+    { id: 'mobile', name: 'Mobile', count: templates.filter(t => t.category === 'mobile').length },
+    { id: 'desktop', name: 'Desktop', count: templates.filter(t => t.category === 'desktop').length }
+  ];
+
+  const handleTemplateSelect = (template: ProjectTemplate) => {
+    setSelectedTemplate(template);
+    setProjectConfig(prev => ({
+      ...prev,
+      templateId: template.id
+    }));
+    onTemplateSelect?.(template);
+  };
+
+  const handleCreateProject = async () => {
+    if (!selectedTemplate || !projectConfig.name.trim()) {
+      setGenerationStatus({
+        status: 'error',
+        message: 'Please select a template and enter a project name'
+      });
+      return;
     }
 
-    // Step 2: Generate package.json
-    setGenerationProgress(25)
-    const packageJson = {
-      name: projectName.toLowerCase().replace(/\s+/g, '-'),
-      version: '1.0.0',
-      description: customVariables.description,
-      author: customVariables.author,
-      license: customVariables.license,
-      scripts: template.scripts,
-      dependencies: template.dependencies,
-      devDependencies: template.devDependencies || {}
+    setGenerationStatus({
+      status: 'generating',
+      message: 'Creating project structure...',
+      progress: 0
+    });
+
+    try {
+      // Simulate project generation process
+      await generateProject();
+
+      setGenerationStatus({
+        status: 'success',
+        message: 'Project created successfully!',
+        progress: 100,
+        generatedFiles: [
+          { name: 'package.json', path: 'package.json', type: 'file' },
+          { name: 'src', path: 'src', type: 'directory' },
+          { name: 'public', path: 'public', type: 'directory' },
+          { name: 'README.md', path: 'README.md', type: 'file' }
+        ]
+      });
+
+      onProjectCreate?.({
+        name: projectConfig.name,
+        templateId: selectedTemplate.id,
+        files: [] // Would contain actual file contents
+      });
+
+    } catch (error) {
+      setGenerationStatus({
+        status: 'error',
+        message: 'Failed to create project',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  };
+
+  const generateProject = async (): Promise<void> => {
+    // Simulate project generation steps
+    const steps = [
+      { message: 'Creating project structure...', duration: 1000, progress: 25 },
+      { message: 'Installing dependencies...', duration: 2000, progress: 50 },
+      { message: 'Configuring build tools...', duration: 1500, progress: 75 },
+      { message: 'Finalizing project...', duration: 1000, progress: 100 }
+    ];
+
+    for (const step of steps) {
+      setGenerationStatus(prev => ({
+        ...prev,
+        message: step.message,
+        progress: step.progress
+      }));
+
+      await new Promise(resolve => setTimeout(resolve, step.duration));
+    }
+  };
+
+  const updateProjectConfig = (updates: Partial<ProjectConfig>) => {
+    setProjectConfig(prev => ({ ...prev, ...updates }));
+  };
+
+  const renderStars = (rating: number) => {
+    const stars = [];
+    const fullStars = Math.floor(rating);
+    const hasHalfStar = rating % 1 >= 0.5;
+
+    for (let i = 0; i < fullStars; i++) {
+      stars.push(
+        <StarIconSolidFilled key={i} className="h-4 w-4 text-yellow-400" />
+      );
     }
 
-    files.push({
-      path: 'package.json',
-      content: JSON.stringify(packageJson, null, 2),
-      type: 'file'
-    })
-
-    // Step 3: Generate environment file
-    setGenerationProgress(37)
-    let envContent = '# Environment Variables\n'
-    envContent += `# ${template.name} Configuration\n\n`
-
-    if (template.envVars) {
-      for (const envVar of template.envVars) {
-        envContent += `# ${envVar.description}\n`
-        if (envVar.required) {
-          envContent += `${envVar.name}=${envVar.example || ''}\n\n`
-        } else {
-          envContent += `# ${envVar.name}=${envVar.example || ''}\n\n`
-        }
-      }
+    if (hasHalfStar) {
+      stars.push(
+        <div key="half" className="relative h-4 w-4">
+          <StarIconOutline className="h-4 w-4 text-yellow-400" />
+          <div className="absolute inset-0 overflow-hidden w-1/2">
+            <StarIconSolidFilled className="h-4 w-4 text-yellow-400" />
+          </div>
+        </div>
+      );
     }
 
-    files.push({
-      path: '.env.example',
-      content: envContent,
-      type: 'file'
-    })
-
-    // Step 4: Generate README.md
-    setGenerationProgress(50)
-    const readmeContent = generateReadme(template, projectName, customVariables)
-    files.push({
-      path: 'README.md',
-      content: readmeContent,
-      type: 'file'
-    })
-
-    // Step 5: Generate Docker files (if enabled)
-    setGenerationProgress(62)
-    if (projectConfig.includeDocker) {
-      const dockerFiles = generateDockerFiles(template, packageJson)
-      files.push(...dockerFiles)
+    const remainingStars = 5 - fullStars - (hasHalfStar ? 1 : 0);
+    for (let i = 0; i < remainingStars; i++) {
+      stars.push(
+        <StarIconOutline key={`empty-${i}`} className="h-4 w-4 text-gray-300" />
+      );
     }
 
-    // Step 6: Generate test files (if enabled)
-    setGenerationProgress(75)
-    if (projectConfig.includeTests) {
-      const testFiles = generateTestFiles(template)
-      files.push(...testFiles)
-    }
-
-    // Step 7: Generate CI/CD files (if enabled)
-    setGenerationProgress(87)
-    if (projectConfig.includeCI) {
-      const ciFiles = generateCIFiles(template)
-      files.push(...ciFiles)
-    }
-
-    // Step 8: Generate additional documentation
-    setGenerationProgress(100)
-    if (projectConfig.includeDocs) {
-      const docFiles = generateDocumentationFiles(template)
-      files.push(...docFiles)
-    }
-
-    setGeneratedFiles(files)
-<<<<<<< HEAD
-    onGenerate?.({ files, name: projectName })
-=======
-<<<<<<< HEAD
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    onGenerate?.({ files: generatedFiles, name: projectName });
-    onGenerate?.({ files, name: projectName })
-    onGenerate?.({ files, name: projectName })
-=======
-    onGenerate?.({ files, name: projectName })
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-
-    setTimeout(() => {
-      setIsGenerating(false)
-    }, 500)
-  }
-
-  const openInEditor = () => {
-    const projectData: ProjectData = {
-      name: projectName,
-      template,
-      files: generatedFiles,
-      packageJson: JSON.parse(generatedFiles.find(f => f.path === 'package.json')?.content || '{}'),
-      envFile: generatedFiles.find(f => f.path === '.env.example')?.content || '',
-      dockerFile: generatedFiles.find(f => f.path === 'Dockerfile')?.content,
-      readmeContent: generatedFiles.find(f => f.path === 'README.md')?.content || ''
-    }
-
-    onGenerate?.(projectData)
-  }
-
-  const downloadProject = () => {
-    const projectData: ProjectData = {
-      name: projectName,
-      template,
-      files: generatedFiles,
-      packageJson: JSON.parse(generatedFiles.find(f => f.path === 'package.json')?.content || '{}'),
-      envFile: generatedFiles.find(f => f.path === '.env.example')?.content || '',
-      dockerFile: generatedFiles.find(f => f.path === 'Dockerfile')?.content,
-      readmeContent: generatedFiles.find(f => f.path === 'README.md')?.content || ''
-    }
-
-    onDownload?.(projectData)
-  }
+    return stars;
+  };
 
   return (
-    <div className="w-full max-w-6xl mx-auto p-6">
-      <div className="mb-6">
-        <h2 className="text-2xl font-bold mb-2">AI-Powered Project Scaffolder</h2>
-        <p className="text-gray-600">
-          Customize your <strong>{template.name}</strong> project and generate production-ready code.
-        </p>
-      </div>
+    <div className={`max-w-6xl mx-auto ${className}`}>
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Template Selection */}
+        <div className="lg:col-span-2 space-y-6">
+          {/* Header */}
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">Create New Project</h2>
+              <p className="text-gray-600 mt-1">Choose a template to get started</p>
+            </div>
+          </div>
 
-      <div className="grid lg:grid-cols-3 gap-6">
-        {/* Configuration Panel */}
-        <div className="lg:col-span-1 space-y-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Settings className="w-5 h-5" />
-                Project Configuration
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Basic Settings */}
-              <div className="space-y-3">
-                <div>
-                  <Label htmlFor="projectName">Project Name</Label>
-                  <Input
-                    id="projectName"
-                    value={customVariables.projectName}
-                    onChange={(e) => setCustomVariables(prev => ({
-                      ...prev,
-                      projectName: e.target.value
-                    }))}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea
-                    id="description"
-                    value={customVariables.description}
-                    onChange={(e) => setCustomVariables(prev => ({
-                      ...prev,
-                      description: e.target.value
-                    }))}
-                    rows={2}
-                  />
-                </div>
-
-                <div>
-                  <Label htmlFor="author">Author</Label>
-                  <Input
-                    id="author"
-                    value={customVariables.author}
-                    onChange={(e) => setCustomVariables(prev => ({
-                      ...prev,
-                      author: e.target.value
-                    }))}
-                  />
-                </div>
+          {/* Search and Filters */}
+          <div className="bg-white rounded-lg border border-gray-200 p-4">
+            <div className="flex items-center space-x-4 mb-4">
+              <div className="flex-1 relative">
+                <MagnifyingGlassIcon className="h-5 w-5 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search templates..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                />
               </div>
+            </div>
 
-              {/* Feature Toggles */}
-              <div className="space-y-3 pt-4 border-t">
-                <Label className="text-sm font-medium">Features</Label>
+            {/* Category Filters */}
+            <div className="flex flex-wrap gap-2">
+              {categories.map(category => (
+                <button
+                  key={category.id}
+                  onClick={() => setSelectedCategory(category.id)}
+                  className={`px-3 py-2 rounded-md text-sm font-medium transition-colors ${
+                    selectedCategory === category.id
+                      ? 'bg-blue-100 text-blue-800 border border-blue-200'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {category.name} ({category.count})
+                </button>
+              ))}
+            </div>
+          </div>
 
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="docker" className="text-sm">Docker Support</Label>
-                    <Switch
-                      id="docker"
-                      checked={projectConfig.includeDocker}
-                      onCheckedChange={(checked) => setProjectConfig(prev => ({
-                        ...prev,
-                        includeDocker: checked
-                      }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="tests" className="text-sm">Test Setup</Label>
-                    <Switch
-                      id="tests"
-                      checked={projectConfig.includeTests}
-                      onCheckedChange={(checked) => setProjectConfig(prev => ({
-                        ...prev,
-                        includeTests: checked
-                      }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="ci" className="text-sm">CI/CD Pipeline</Label>
-                    <Switch
-                      id="ci"
-                      checked={projectConfig.includeCI}
-                      onCheckedChange={(checked) => setProjectConfig(prev => ({
-                        ...prev,
-                        includeCI: checked
-                      }))}
-                    />
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="docs" className="text-sm">Documentation</Label>
-                    <Switch
-                      id="docs"
-                      checked={projectConfig.includeDocs}
-                      onCheckedChange={(checked) => setProjectConfig(prev => ({
-                        ...prev,
-                        includeDocs: checked
-                      }))}
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <Button
-                onClick={generateProjectFiles}
-                disabled={isGenerating}
-                className="w-full"
+          {/* Templates Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {filteredTemplates.map((template) => (
+              <div
+                key={template.id}
+                className={`bg-white rounded-lg border-2 cursor-pointer transition-all hover:shadow-md ${
+                  selectedTemplate?.id === template.id
+                    ? 'border-blue-500 bg-blue-50'
+                    : 'border-gray-200 hover:border-gray-300'
+                }`}
+                onClick={() => handleTemplateSelect(template)}
               >
-                <Wand2 className="w-4 h-4 mr-2" />
-                {isGenerating ? 'Generating...' : 'Generate Project'}
-              </Button>
-
-              {isGenerating && (
-                <div className="space-y-2">
-                  <Progress value={generationProgress} className="w-full" />
-                  <p className="text-sm text-gray-600 text-center">
-                    {generationProgress}% complete
-                  </p>
+                {/* Template Preview */}
+                <div className="aspect-video bg-gradient-to-br from-blue-50 to-indigo-100 rounded-t-lg flex items-center justify-center">
+                  {template.previewImage ? (
+                    <img
+                      src={template.previewImage}
+                      alt={template.name}
+                      className="w-full h-full object-cover rounded-t-lg"
+                    />
+                  ) : (
+                    <div className="text-center">
+                      <FolderIcon className="h-12 w-12 text-blue-600 mx-auto mb-2" />
+                      <p className="text-sm text-gray-600">{template.name}</p>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </div>
 
-        {/* Preview Panel */}
-        <div className="lg:col-span-2">
-          {generatedFiles.length > 0 ? (
-            <Card>
-              <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <FileText className="w-5 h-5" />
-                    Generated Project Files
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button onClick={openInEditor} className="flex items-center gap-2">
-                      <Play className="w-4 h-4" />
-                      Open in Editor
-                    </Button>
-                    <Button onClick={downloadProject} variant="outline" className="flex items-center gap-2">
-                      <Download className="w-4 h-4" />
-                      Download ZIP
-                    </Button>
+                {/* Template Info */}
+                <div className="p-4">
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1">
+                      <h3 className="font-semibold text-gray-900">{template.name}</h3>
+                      <p className="text-sm text-gray-600 line-clamp-2 mt-1">
+                        {template.description}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Stats */}
+                  <div className="flex items-center space-x-4 text-sm text-gray-500 mb-3">
+                    <div className="flex items-center">
+                      {renderStars(template.stars)}
+                      <span className="ml-1">{template.stars}</span>
+                    </div>
+                    <div className="flex items-center">
+                      <DocumentIcon className="h-4 w-4 mr-1" />
+                      {template.downloads.toLocaleString()}
+                    </div>
+                  </div>
+
+                  {/* Tags */}
+                  <div className="flex flex-wrap gap-1 mb-3">
+                    {template.tags.slice(0, 3).map((tag) => (
+                      <span
+                        key={tag}
+                        className="inline-flex items-center px-2 py-1 rounded-full text-xs bg-gray-100 text-gray-700"
+                      >
+                        <TagIcon className="h-3 w-3 mr-1" />
+                        {tag}
+                      </span>
+                    ))}
+                    {template.tags.length > 3 && (
+                      <span className="text-xs text-gray-500">+{template.tags.length - 3} more</span>
+                    )}
+                  </div>
+
+                  {/* Metadata */}
+                  <div className="flex items-center justify-between text-sm text-gray-500">
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                      template.complexity === 'beginner'
+                        ? 'bg-green-100 text-green-800'
+                        : template.complexity === 'intermediate'
+                        ? 'bg-yellow-100 text-yellow-800'
+                        : 'bg-red-100 text-red-800'
+                    }`}>
+                      {template.complexity}
+                    </span>
+                    <div className="flex items-center">
+                      <ClockIcon className="h-4 w-4 mr-1" />
+                      {template.estimatedTime}
+                    </div>
                   </div>
                 </div>
-                <CardDescription>
-                  {generatedFiles.length} files generated successfully
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Tabs defaultValue="files" className="w-full">
-                  <TabsList className="grid w-full grid-cols-3">
-                    <TabsTrigger value="files">File Tree</TabsTrigger>
-                    <TabsTrigger value="preview">File Preview</TabsTrigger>
-                    <TabsTrigger value="summary">Project Summary</TabsTrigger>
-                  </TabsList>
+              </div>
+            ))}
+          </div>
 
-                  <TabsContent value="files" className="mt-4">
-                    <FileTree files={generatedFiles} />
-                  </TabsContent>
-
-                  <TabsContent value="preview" className="mt-4">
-                    <FilePreview files={generatedFiles} />
-                  </TabsContent>
-
-                  <TabsContent value="summary" className="mt-4">
-                    <ProjectSummary
-                      template={template}
-                      projectName={projectName}
-                      config={projectConfig}
-                    />
-                  </TabsContent>
-                </Tabs>
-              </CardContent>
-            </Card>
-          ) : (
-            <Card>
-              <CardContent className="flex flex-col items-center justify-center py-12">
-                <Code className="w-12 h-12 text-gray-400 mb-4" />
-                <h3 className="text-lg font-semibold mb-2">Ready to Generate</h3>
-                <p className="text-gray-600 text-center mb-4">
-                  Configure your project settings and click &quot;Generate Project&quot; to create your files.
-                </p>
-                <Badge variant="outline" className="flex items-center gap-1">
-                  <Play className="w-3 h-3" />
-                  {template.name} Template
-                </Badge>
-              </CardContent>
-            </Card>
+          {/* Empty State */}
+          {filteredTemplates.length === 0 && (
+            <div className="text-center py-12">
+              <FolderIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-gray-900 mb-2">No templates found</h3>
+              <p className="text-gray-600">
+                Try adjusting your search criteria or browse all templates.
+              </p>
+            </div>
           )}
         </div>
-      </div>
-    </div>
-  )
-}
 
-// Helper functions for generating different types of files
-function generateReadme(template: ProjectTemplate, projectName: string, variables: Record<string, string>): string {
-  return `# ${projectName}
+        {/* Project Configuration */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg border border-gray-200 p-6">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Project Configuration</h3>
 
-${variables.description}
+            {selectedTemplate ? (
+              <>
+                {/* Selected Template Info */}
+                <div className="mb-6 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center space-x-3">
+                    <div className="flex-shrink-0">
+                      <CheckCircleIcon className="h-5 w-5 text-blue-600" />
+                    </div>
+                    <div>
+                      <p className="font-medium text-blue-900">{selectedTemplate.name}</p>
+                      <p className="text-sm text-blue-700">{selectedTemplate.language} • {selectedTemplate.framework}</p>
+                    </div>
+                  </div>
+                </div>
 
-## Features
+                {/* Project Details */}
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Project Name *
+                    </label>
+                    <input
+                      type="text"
+                      value={projectConfig.name}
+                      onChange={(e) => updateProjectConfig({ name: e.target.value })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="my-awesome-project"
+                      required
+                    />
+                  </div>
 
-${template.features.map(feature => `- ${feature}`).join('\n')}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Description
+                    </label>
+                    <textarea
+                      value={projectConfig.description}
+                      onChange={(e) => updateProjectConfig({ description: e.target.value })}
+                      rows={3}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      placeholder="Brief description of your project..."
+                    />
+                  </div>
 
-## Getting Started
+                  {/* Generation Settings */}
+                  <div className="border-t border-gray-200 pt-4">
+                    <h4 className="font-medium text-gray-900 mb-3">Generation Settings</h4>
+                    <div className="space-y-3">
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={projectConfig.settings.includeTests}
+                          onChange={(e) => updateProjectConfig({
+                            settings: { ...projectConfig.settings, includeTests: e.target.checked }
+                          })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include tests</span>
+                      </label>
 
-### Prerequisites
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={projectConfig.settings.includeDocs}
+                          onChange={(e) => updateProjectConfig({
+                            settings: { ...projectConfig.settings, includeDocs: e.target.checked }
+                          })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include documentation</span>
+                      </label>
 
-- Node.js 18+ (for ${template.language} projects)
-${template.framework ? `- ${template.framework} knowledge` : ''}
+                      <label className="flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={projectConfig.settings.includeCI}
+                          onChange={(e) => updateProjectConfig({
+                            settings: { ...projectConfig.settings, includeCI: e.target.checked }
+                          })}
+                          className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        <span className="ml-2 text-sm text-gray-700">Include CI/CD configuration</span>
+                      </label>
+                    </div>
+                  </div>
 
-### Installation
+                  {/* Package Manager */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      Package Manager
+                    </label>
+                    <select
+                      value={projectConfig.settings.packageManager}
+                      onChange={(e) => updateProjectConfig({
+                        settings: { ...projectConfig.settings, packageManager: e.target.value as any }
+                      })}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    >
+                      <option value="npm">npm</option>
+                      <option value="yarn">yarn</option>
+                      <option value="pnpm">pnpm</option>
+                    </select>
+                  </div>
 
-${template.setupInstructions.map((instruction, index) => `${index + 1}. ${instruction}`).join('\n')}
+                  {/* Advanced Settings */}
+                  <div>
+                    <button
+                      onClick={() => setShowAdvanced(!showAdvanced)}
+                      className="text-sm text-blue-600 hover:text-blue-800 font-medium"
+                    >
+                      {showAdvanced ? 'Hide' : 'Show'} Advanced Settings
+                    </button>
 
-## Environment Variables
+                    {showAdvanced && (
+                      <div className="mt-3 space-y-3 p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            Author
+                          </label>
+                          <input
+                            type="text"
+                            value={projectConfig.customizations.author || ''}
+                            onChange={(e) => updateProjectConfig({
+                              customizations: { ...projectConfig.customizations, author: e.target.value }
+                            })}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                            placeholder="Your name"
+                          />
+                        </div>
 
-${template.envVars?.map(env => `- \`${env.name}\`: ${env.description}${env.required ? ' (required)' : ''}`).join('\n') || 'No environment variables required.'}
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-1">
+                            License
+                          </label>
+                          <select
+                            value={projectConfig.customizations.license || 'MIT'}
+                            onChange={(e) => updateProjectConfig({
+                              customizations: { ...projectConfig.customizations, license: e.target.value }
+                            })}
+                            className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+                          >
+                            <option value="MIT">MIT</option>
+                            <option value="Apache-2.0">Apache 2.0</option>
+                            <option value="GPL-3.0">GPL 3.0</option>
+                            <option value="ISC">ISC</option>
+                          </select>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
 
-## Scripts
+                {/* Generation Status */}
+                {generationStatus.status !== 'idle' && (
+                  <div className="mt-6 p-4 border-t border-gray-200">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex-shrink-0">
+                        {generationStatus.status === 'success' && (
+                          <CheckCircleIcon className="h-6 w-6 text-green-600" />
+                        )}
+                        {generationStatus.status === 'error' && (
+                          <ExclamationTriangleIcon className="h-6 w-6 text-red-600" />
+                        )}
+                        {generationStatus.status === 'generating' && (
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className="font-medium text-gray-900">{generationStatus.message}</p>
+                        {generationStatus.progress !== undefined && generationStatus.status === 'generating' && (
+                          <div className="mt-2">
+                            <div className="w-full bg-gray-200 rounded-full h-2">
+                              <div
+                                className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                style={{ width: `${generationStatus.progress}%` }}
+                              ></div>
+                            </div>
+                            <p className="text-sm text-gray-600 mt-1">
+                              {generationStatus.progress}% complete
+                            </p>
+                          </div>
+                        )}
+                        {generationStatus.error && (
+                          <p className="text-sm text-red-600 mt-2">{generationStatus.error}</p>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                )}
 
-${Object.entries(template.scripts).map(([script, command]) => `- \`npm run ${script}\`: ${command}`).join('\n')}
-
-## Tech Stack
-
-- **Language**: ${template.language}
-${template.framework ? `- **Framework**: ${template.framework}` : ''}
-- **Category**: ${template.category}
-
-## License
-
-${variables.license} © ${variables.author}
-
----
-
-Built with ❤️ using [VibeCode](https://vibecode.dev)
-`
-}
-
-function generateDockerFiles(template: ProjectTemplate, packageJson: any): GeneratedFile[] {
-  const dockerfile = `# Multi-stage Docker build for ${template.name}
-FROM node:18-alpine AS builder
-
-WORKDIR /app
-COPY package*.json ./
-RUN npm ci --only=production
-
-COPY . .
-RUN npm run build
-
-FROM node:18-alpine AS runner
-WORKDIR /app
-
-COPY --from=builder /app/package*.json ./
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/public ./public
-
-EXPOSE 3000
-CMD ["npm", "start"]
-`
-
-  const dockerCompose = `version: '3.8'
-
-services:
-  app:
-    build: .
-    ports:
-      - "3000:3000"
-    environment:
-      - NODE_ENV=production
-    depends_on:
-      - db
-      - redis
-
-  db:
-    image: pgvector/pgvector:pg16
-    environment:
-      POSTGRES_DB: ${packageJson.name}
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    volumes:
-      - db_data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
-
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-
-volumes:
-  db_data:
-`
-
-  return [
-    { path: 'Dockerfile', content: dockerfile, type: 'file' },
-    { path: 'docker-compose.yml', content: dockerCompose, type: 'file' },
-    { path: '.dockerignore', content: 'node_modules\n.git\n.env\n.env.local\n', type: 'file' }
-  ]
-}
-
-function generateTestFiles(template: ProjectTemplate): GeneratedFile[] {
-  const jestConfig = `module.exports = {
-  testEnvironment: 'node',
-  testMatch: ['**/__tests__/**/*.test.js'],
-  collectCoverageFrom: [
-    'src/**/*.{js,ts,tsx}',
-    '!src/**/*.d.ts',
-  ],
-  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
-}
-`
-
-  const sampleTest = `describe('${template.name} Tests', () => {
-  test('should pass sample test', () => {
-    expect(true).toBe(true)
-  })
-})
-`
-
-  return [
-    { path: 'jest.config.js', content: jestConfig, type: 'file' },
-    { path: '__tests__/sample.test.js', content: sampleTest, type: 'file' },
-    { path: 'jest.setup.js', content: '// Jest setup file\n', type: 'file' }
-  ]
-}
-
-function generateCIFiles(template: ProjectTemplate): GeneratedFile[] {
-  const githubWorkflow = `name: CI/CD Pipeline
-
-on:
-  push:
-    branches: [ main, develop ]
-  pull_request:
-    branches: [ main ]
-
-jobs:
-  test:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-
-    - name: Install dependencies
-      run: npm ci
-
-    - name: Run tests
-      run: npm test
-
-    - name: Build
-      run: npm run build
-
-  deploy:
-    needs: test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    steps:
-    - uses: actions/checkout@v4
-    - name: Deploy to production
-      run: echo "Deploy step here"
-`
-
-  return [
-    { path: '.github/workflows/ci.yml', content: githubWorkflow, type: 'file' }
-  ]
-}
-
-function generateDocumentationFiles(template: ProjectTemplate): GeneratedFile[] {
-  const contributing = `# Contributing to ${template.name}
-
-Thank you for your interest in contributing! Here's how you can help:
-
-## Development Setup
-
-1. Fork the repository
-2. Clone your fork
-3. Install dependencies: \`npm install\`
-4. Start development server: \`npm run dev\`
-
-## Pull Request Process
-
-1. Create a feature branch
-2. Make your changes
-3. Add tests if applicable
-4. Ensure all tests pass
-5. Submit a pull request
-
-## Code Style
-
-- Follow the existing code style
-- Use TypeScript for type safety
-- Write meaningful commit messages
-`
-
-  return [
-    { path: 'CONTRIBUTING.md', content: contributing, type: 'file' },
-    { path: 'docs/api.md', content: '# API Documentation\n\nAPI documentation goes here.\n', type: 'file' }
-  ]
-}
-
-// UI Components for file preview
-function FileTree({ files }: { files: GeneratedFile[] }) {
-  return (
-    <div className="space-y-1 max-h-96 overflow-y-auto">
-      {files.map((file, index) => (
-        <div key={index} className="flex items-center gap-2 text-sm p-2 hover:bg-gray-50 rounded">
-          <FileText className="w-4 h-4 text-gray-400" />
-          <span className="font-mono">{file.path}</span>
-        </div>
-      ))}
-    </div>
-  )
-}
-
-function FilePreview({ files }: { files: GeneratedFile[] }) {
-  const [selectedFile, setSelectedFile] = useState(files[0])
-
-  return (
-    <div className="grid grid-cols-3 gap-4 h-96">
-      <div className="col-span-1 border-r pr-4">
-        <div className="space-y-1 max-h-full overflow-y-auto">
-          {files.map((file, index) => (
-            <div
-              key={index}
-              className={`flex items-center gap-2 text-sm p-2 cursor-pointer rounded ${
-                selectedFile.path === file.path ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'
-              }`}
-              onClick={() => setSelectedFile(file)}
-            >
-              <FileText className="w-4 h-4" />
-              <span className="font-mono text-xs">{file.path}</span>
-            </div>
-          ))}
-        </div>
-      </div>
-      <div className="col-span-2">
-        <div className="bg-gray-900 text-gray-100 p-4 rounded h-full overflow-auto">
-          <pre className="text-xs">
-            <code>{selectedFile.content}</code>
-          </pre>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function ProjectSummary({
-  template,
-  projectName,
-  config
-}: {
-  template: ProjectTemplate
-  projectName: string
-  config: any
-}) {
-  return (
-    <div className="space-y-4">
-      <div>
-        <h4 className="font-semibold mb-2">Project Overview</h4>
-        <div className="grid grid-cols-2 gap-4 text-sm">
-          <div>
-            <span className="text-gray-600">Name:</span> {projectName}
-          </div>
-          <div>
-            <span className="text-gray-600">Template:</span> {template.name}
-          </div>
-          <div>
-            <span className="text-gray-600">Language:</span> {template.language}
-          </div>
-          <div>
-            <span className="text-gray-600">Framework:</span> {template.framework || 'None'}
+                {/* Action Buttons */}
+                <div className="mt-6 pt-4 border-t border-gray-200">
+                  <button
+                    onClick={handleCreateProject}
+                    disabled={generationStatus.status === 'generating' || !projectConfig.name.trim()}
+                    className={`w-full py-3 px-4 rounded-md font-medium transition-colors ${
+                      generationStatus.status === 'generating' || !projectConfig.name.trim()
+                        ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                        : 'bg-blue-600 text-white hover:bg-blue-700'
+                    }`}
+                  >
+                    {generationStatus.status === 'generating' ? (
+                      <>
+                        <CogIcon className="h-5 w-5 animate-spin mr-2 inline" />
+                        Creating Project...
+                      </>
+                    ) : (
+                      <>
+                        <PlusIcon className="h-5 w-5 mr-2 inline" />
+                        Create Project
+                      </>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="text-center py-8">
+                <FolderIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <p className="text-gray-600">Select a template to configure your project</p>
+              </div>
+            )}
           </div>
         </div>
       </div>
-
-      <div>
-        <h4 className="font-semibold mb-2">Enabled Features</h4>
-        <div className="flex flex-wrap gap-2">
-          {config.includeDocker && <Badge variant="secondary">Docker</Badge>}
-          {config.includeTests && <Badge variant="secondary">Testing</Badge>}
-          {config.includeCI && <Badge variant="secondary">CI/CD</Badge>}
-          {config.includeDocs && <Badge variant="secondary">Documentation</Badge>}
-        </div>
-      </div>
-
-      <div>
-        <h4 className="font-semibold mb-2">Next Steps</h4>
-        <ol className="text-sm space-y-1">
-          <li><strong>Option 1:</strong> Click &quot;Open in Editor&quot; to start coding immediately</li>
-          <li><strong>Option 2:</strong> Download ZIP for local development</li>
-          <li>3. Configure your environment variables</li>
-          <li>4. Start development and iterate with AI assistance</li>
-        </ol>
-      </div>
     </div>
-  )
+  );
 }
