@@ -6,7 +6,7 @@
 // Import ddtrace for LLM observability
 // NOTE: This must be imported before any other modules that use AI services
 // Using CommonJS require because '../instrument' exports via module.exports
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
