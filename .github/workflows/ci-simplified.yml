@@ -53,7 +53,6 @@ jobs:
 
       - name: Lint code
         run: npm run lint
-        continue-on-error: true
 
       - name: Check for hardcoded secrets
         run: |
@@ -142,10 +141,9 @@ jobs:
           npm test -- --passWithNoTests \
             --testPathIgnorePatterns="tests/e2e|tests/k8s" \
             --maxWorkers=2
-        continue-on-error: true
 
       - name: Run integration tests
-        run: npm run test:integration || echo "Integration tests completed with warnings"
+        run: npm run test:integration || echo "Some integration tests failed (review logs)"
         continue-on-error: true
 
       - name: Upload test results

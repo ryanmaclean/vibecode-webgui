@@ -4,6 +4,7 @@
  */
 
 import { queryCache, cacheUtils } from './query-cache'
+import { logger } from '@/lib/logger'
 
 export interface CachedVectorResult {
   documents: Array<{
@@ -168,7 +169,6 @@ export class VectorCacheAdapter {
       tags?: string[]
     } = {}
   ): Promise<{ data: T; cached: boolean; cacheKey: string }> {
-import { logger } from '@/lib/logger';
     const cacheKey = cacheUtils.databaseQueryKey(sql, params)
     
     try {
