@@ -6,7 +6,6 @@ import { vectorStore } from '../../lib/vector-db/vector-store-service.js';
 import { prisma } from '../../lib/prisma.js';
 import type { SearchCodeArgs, AnalyzeCodeArgs } from '../types.js';
 import { logger } from '@/lib/logger';
-
 /**
  * Search code semantically using vector search
  * @param args - Search parameters including query, optional workspaceId and language

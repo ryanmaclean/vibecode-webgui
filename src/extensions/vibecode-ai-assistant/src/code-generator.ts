@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient } from './openrouter-client';
 import { logger } from '@/lib/logger';
-
 export class CodeGenerator {
     private openRouterClient: OpenRouterClient;
     private outputChannel: vscode.OutputChannel;

@@ -31,7 +31,6 @@ import { VectorStoreRetriever } from 'langchain/vectorstores/base';
 import { Document } from 'langchain/document';
 import { validateAIQuery, validatePrompt, aiRateLimiter, AISecurityLogger } from '../security/input-validator';
 import { logger } from '@/lib/logger';
-
 interface AIConfig {
   openAIApiKey?: string;
   chromaDbUrl?: string;

@@ -4,12 +4,10 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useEffect } from 'react'
 import { modelOrchestrator, ModelConfig, TaskType, RequestContext } from '@/lib/ai/model-orchestration'
 import { 
-  ChartBarIcon, 
+ChartBarIcon, 
   CogIcon, 
   BoltIcon, 
   ClockIcon,
@@ -18,6 +16,7 @@ import {
   ExclamationTriangleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
+import { logger } from '@/lib/logger';
 
 interface ModelStats {
   name: string

@@ -10,7 +10,6 @@ import { createMCPClient } from '../mcp-client';
 import type { AgentConfig } from './base-adapter';
 import type { MCPClient } from '../mcp-client';
 import { logger } from '@/lib/logger';
-
 export class GooseAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;

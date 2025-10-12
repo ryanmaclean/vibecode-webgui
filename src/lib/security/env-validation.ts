@@ -5,7 +5,6 @@
 
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-
 // Define required environment variables with validation rules
 const envSchema = z.object({
   // Core Application

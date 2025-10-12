@@ -9,11 +9,9 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useEffect, useRef } from 'react'
 import {
-  Bot,
+Bot,
   Code,
   Search,
   Zap,
@@ -34,6 +32,7 @@ import type {
   CodeAnalysisResponse,
   CodeContext
 } from '@/lib/claude-code-sdk'
+import { logger } from '@/lib/logger';
 
 interface AICodeAssistantProps {
   className?: string

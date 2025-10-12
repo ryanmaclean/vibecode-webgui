@@ -6,7 +6,6 @@
 import { VectorSearchService } from './vector-search';
 import { EmbeddingGenerator } from './embedding-generator';
 import { logger } from '@/lib/logger';
-
 interface ProjectTemplate {
   id: string;
   name: string;

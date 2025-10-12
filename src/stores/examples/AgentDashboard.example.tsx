@@ -1,3 +1,4 @@
+
 /**
  * Agent Dashboard Example
  *
@@ -22,7 +23,6 @@ import {
   useBreakpointDetector,
 } from '@/stores';
 import { logger } from '@/lib/logger';
-
 // ============================================================================
 // Agent Dashboard
 // ============================================================================

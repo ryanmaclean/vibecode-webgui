@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Query Result Cache for Enhanced Vector Store
  * Caches search results to reduce provider switching overhead
  */
-
-import { logger } from '@/lib/logger';
 
 interface CachedResult {
   results: any[]

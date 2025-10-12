@@ -9,8 +9,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { access } from 'fs/promises'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 const execAsync = promisify(exec)
 
 export interface ClaudeCodeConfig {

@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient, ChatMessage } from './openrouter-client';
 import { logger } from '@/lib/logger';
-
 export class ChatWebviewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'vibeCodeChat';
     private _view?: vscode.WebviewView;

@@ -8,7 +8,6 @@ import { vectorStore as newVectorStore } from '../vector-db/vector-store-service
 import { PrismaClient } from '@prisma/client';
 import { PgVectorSearch } from '../cache/pgvector-search';
 import { logger } from '@/lib/logger';
-
 /**
  * Migration helper to move from the old vector store to the new adapter pattern
  */

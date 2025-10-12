@@ -7,14 +7,13 @@ import { IVectorDatabaseAdapter } from '../interfaces/vector-database-adapter';
 import { IVectorEmbeddingProvider } from '../interfaces/vector-embedding-provider';
 import { IVectorCacheAdapter } from '../interfaces/vector-cache-adapter';
 import { 
-  SearchResult, 
+SearchResult, 
   VectorChunk, 
   VectorDatabaseConfig, 
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
 import { logger } from '@/lib/logger';
-
 export abstract class BaseVectorDatabaseAdapter implements IVectorDatabaseAdapter {
   protected config: VectorDatabaseConfig;
   protected embeddingProvider: IVectorEmbeddingProvider;

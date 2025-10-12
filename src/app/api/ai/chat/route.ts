@@ -7,8 +7,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 

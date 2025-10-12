@@ -11,13 +11,12 @@
  * @module streaming/websocket-streaming-client
  */
 
-import { logger } from '@/lib/logger';
-
 import {
-  WebSocketConnectionPool,
+WebSocketConnectionPool,
   getPooledWebSocket,
   releasePooledWebSocket
 } from '@/lib/websocket-connection-pooling'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Message Protocol Types

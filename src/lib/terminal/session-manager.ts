@@ -6,7 +6,6 @@
 import { IPty } from 'node-pty';
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration';
 import { logger } from '@/lib/logger';
-
 // Terminal session management
 export const terminalSessions = new Map<string, {
   pty: IPty

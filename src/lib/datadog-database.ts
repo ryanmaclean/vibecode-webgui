@@ -4,7 +4,7 @@
  */
 
 import { prisma } from './prisma'
-
+import { logger } from '@/lib/logger';
 interface DatabaseMetrics {
   connections: {
     active: number
@@ -315,9 +315,7 @@ class DatadogDatabaseMonitoring {
     }>
   }> {
     const checks: Array<{ name: string; status: 'pass' | 'fail'; message: string }> = []
-import { logger } from '@/lib/logger';
-
-    try {
+try {
       // Check database connectivity
       await prisma.$queryRaw`SELECT 1`
       checks.push({

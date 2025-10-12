@@ -1,10 +1,8 @@
 import { datadogRum } from '@datadog/browser-rum';
 import { getRUMPublicConfig } from './datadog-env'
-
+import { logger } from '@/lib/logger';
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
-import { logger } from '@/lib/logger';
-
 interface RUMConfig {
   applicationId: string;
   clientToken: string;

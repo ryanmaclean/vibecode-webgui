@@ -8,7 +8,6 @@ import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
 import { z } from 'zod';
 import { logger } from '@/lib/logger';
-
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']).optional(),

@@ -14,12 +14,13 @@
  */
 
 import {
-  SSEClient,
+SSEClient,
   SSEClientConfig,
   SSEClientHandlers,
   SSEMetrics
 } from './sse-client'
 import { prometheusExporter } from '@/lib/monitoring/agentapi-prometheus'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // HTTP/2 Configuration
@@ -726,8 +727,7 @@ export async function benchmarkSSEClients(
 
   // Create and connect clients
   for (let i = 0; i < clientCount; i++) {
-import { logger } from '@/lib/logger';
-    const client = createOptimizedSSEClient(config, {
+const client = createOptimizedSSEClient(config, {
       onMessage: () => {},
       onOpen: () => {},
       onError: (error) => {

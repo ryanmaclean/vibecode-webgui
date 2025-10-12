@@ -1,7 +1,8 @@
+import { logger } from '@/lib/logger';
+
+
 // Vector Database Abstraction Layer
 // Unified interface for multiple vector database providers (pgvector, Chroma, Weaviate - all open source)
-
-import { logger } from '@/lib/logger';
 
 export interface VectorDocument {
   id: string

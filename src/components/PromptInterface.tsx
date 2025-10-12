@@ -9,7 +9,7 @@ import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 import {
-  Send,
+Send,
   Sparkles,
   Code,
   Eye,
@@ -46,7 +46,6 @@ import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
 import MessageList from './MessageList';
 import { logger } from '@/lib/logger';
-
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;

@@ -6,7 +6,6 @@
 // Simple StatsD implementation for Datadog
 import dgram from 'dgram';
 import { logger } from '@/lib/logger';
-
 interface DatadogConfig {
   host?: string;
   port?: number;

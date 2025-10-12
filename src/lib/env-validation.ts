@@ -4,8 +4,7 @@
  */
 
 import { z } from 'zod'
-import { logger } from '@/lib/logger'
-
+import { logger } from '@/lib/logger';
 // Define environment variable schemas
 const envSchema = z.object({
   // Node environment

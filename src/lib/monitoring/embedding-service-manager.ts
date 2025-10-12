@@ -5,7 +5,6 @@
 
 import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddingServiceFactory';
 import { logger } from '@/lib/logger';
-
 // Global service instance for monitoring
 let embeddingService: EmbeddingServiceType | null = null;
 let serviceReleaseFunction: (() => Promise<void>) | null = null;

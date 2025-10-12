@@ -5,13 +5,11 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import { useSession, signIn, signOut } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect } from 'react'
 import { AuthState, LoginCredentials, OAuthProvider } from '@/types/auth'
-
+import { logger } from '@/lib/logger';
 const OAUTH_PROVIDERS: OAuthProvider[] = [
   {
     id: 'github',

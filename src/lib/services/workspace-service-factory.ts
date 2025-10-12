@@ -5,12 +5,10 @@
  * based on available runtime (Kubernetes or Apple Container)
  */
 
-import { logger } from '@/lib/logger';
-
 import { WorkspaceProvisioningService } from './workspace-provisioning-simple'
 import { AppleContainerWorkspaceService } from './workspace-provisioning-apple-container'
 import { appleContainer } from '@/lib/container/apple-container'
-
+import { logger } from '@/lib/logger';
 export type WorkspaceRuntime = 'kubernetes' | 'apple-container' | 'none'
 
 export class WorkspaceServiceFactory {

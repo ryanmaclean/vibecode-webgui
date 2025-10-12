@@ -7,7 +7,6 @@ import { existsSync, readFileSync } from 'node:fs';
 import { LiteLLMClient } from './litellm-client';
 import type { ChatCompletionRequest, ChatCompletionResponse } from './litellm-client';
 import { logger } from '@/lib/logger';
-
 type Provider = 'openrouter' | 'openai';
 
 interface FallbackEntry {

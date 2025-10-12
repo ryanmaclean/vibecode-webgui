@@ -4,9 +4,8 @@
  */
 
 import bcrypt from 'bcryptjs'
-import { logger } from '@/lib/logger';
 import { z } from 'zod'
-
+import { logger } from '@/lib/logger';
 // User validation schemas
 export const userSchema = z.object({
   id: z.string(),

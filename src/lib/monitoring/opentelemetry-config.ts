@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * OpenTelemetry Configuration with Dependency Error Handling
  * 
@@ -6,8 +9,6 @@
  */
 
 // Conditional imports with fallbacks
-import { logger } from '@/lib/logger';
-
 let NodeSDK: any = null;
 let getNodeAutoInstrumentations: any = null;
 let PeriodicExportingMetricReader: any = null;

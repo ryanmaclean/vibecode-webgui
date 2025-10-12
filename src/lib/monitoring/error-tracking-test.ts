@@ -8,7 +8,6 @@
 import { trackError, trackApiError, trackDatabaseError, trackAuthError, trackValidationError, trackPerformanceIssue } from './error-tracking';
 import { createComponentErrorTracker, DatabaseErrorTracker, AuthErrorTracker, FileErrorTracker, AIErrorTracker } from './error-tracking-utils';
 import { logger } from '@/lib/logger';
-
 // Test configuration
 const TEST_CONFIG = {
   enabled: process.env.DD_ERROR_TRACKING_TEST_MODE === 'true',

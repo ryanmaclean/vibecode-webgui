@@ -1,13 +1,12 @@
 import { EnhancedVectorStore } from "./enhanced-vector-store";
 import {
-  BaseRetriever,
+BaseRetriever,
   RetrievalQAChain,
   PromptTemplate,
 } from "langchain/chains";
 import { OpenAIEmbeddings } from "@langchain/openai";
 import { mlflowClient } from "../mlflow/tracker";
 import { logger } from '@/lib/logger';
-
 /**
  * Configuration for the LangChain retriever.
  */

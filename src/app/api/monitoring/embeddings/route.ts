@@ -7,7 +7,6 @@ import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddin
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
 import { PrismaClient } from '@prisma/client';
 import { logger } from '@/lib/logger';
-
 // Global service instance for monitoring
 let embeddingService: EmbeddingServiceType | null = null;
 let serviceReleaseFunction: (() => Promise<void>) | null = null;

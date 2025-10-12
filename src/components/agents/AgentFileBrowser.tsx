@@ -18,11 +18,9 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useCallback, useMemo } from 'react'
 import {
-  File,
+File,
   Folder,
   FolderOpen,
   Upload,
@@ -42,6 +40,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions

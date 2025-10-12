@@ -6,7 +6,6 @@
 
 import { EnhancedVectorStore, UnifiedSearchOptions } from './enhanced-vector-store';
 import { logger } from '@/lib/logger';
-
 interface ShardedProviderConfig {
     provider: 'pgvector' | 'weaviate';
     shardCount: number;

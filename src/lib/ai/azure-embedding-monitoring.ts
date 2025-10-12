@@ -9,7 +9,6 @@ import { VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { type AzureEmbeddingService } from './azureEmbeddingService';
 import { logger } from '@/lib/logger';
-
 /**
  * Registers monitoring hooks on the Azure Embedding Service
  * @param service The Azure Embedding Service instance to monitor

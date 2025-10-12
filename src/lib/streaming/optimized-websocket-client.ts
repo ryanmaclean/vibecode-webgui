@@ -14,7 +14,7 @@
  */
 
 import {
-  WebSocketStreamingClient,
+WebSocketStreamingClient,
   WebSocketStreamConfig,
   StreamHandlers,
   StreamChunk,
@@ -25,6 +25,7 @@ import {
   globalWebSocketPool
 } from '@/lib/websocket-connection-pooling'
 import { prometheusExporter } from '@/lib/monitoring/agentapi-prometheus'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Binary Protocol Configuration
@@ -681,8 +682,7 @@ export async function benchmarkWebSocketClients(
 
   // Create clients
   for (let i = 0; i < clientCount; i++) {
-import { logger } from '@/lib/logger';
-    const client = createOptimizedWebSocketClient(config, {
+const client = createOptimizedWebSocketClient(config, {
       onChunk: () => {},
       onError: (error) => logger.error(`Client ${i} error:`, error)
     })

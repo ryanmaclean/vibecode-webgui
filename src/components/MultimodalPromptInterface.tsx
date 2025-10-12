@@ -1,3 +1,4 @@
+
 /**
  * Multimodal Prompt Interface Component
  * Advanced input interface supporting text, voice, and image inputs for AI interactions
@@ -20,7 +21,6 @@ import {
 } from '@heroicons/react/24/outline';
 import { MicrophoneIcon as MicrophoneIconSolid } from '@heroicons/react/24/solid';
 import { logger } from '@/lib/logger';
-
 export interface MultimodalMessage {
   id: string;
   type: 'text' | 'voice' | 'image' | 'file';

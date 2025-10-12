@@ -8,7 +8,6 @@ import path from 'path'
 import { EmbeddingServiceFactory } from '@/lib/ai/embeddingServiceFactory'
 import { PrismaClient } from '@prisma/client'
 import { logger } from '@/lib/logger';
-
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 

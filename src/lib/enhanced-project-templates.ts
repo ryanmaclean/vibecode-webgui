@@ -6,7 +6,6 @@
 import { GeneratedProject } from './templates/generator';
 import { TemplateFile } from './templates/index';
 import { logger } from '@/lib/logger';
-
 /**
  * Enhanced template configuration
  */

@@ -6,7 +6,6 @@
 import type { AgentTaskConfig, WorkflowContext } from './types';
 import type { StartAgentRequest, AgentResponse } from '@/types/agent-api';
 import { logger } from '@/lib/logger';
-
 /**
  * Agent API client interface
  */

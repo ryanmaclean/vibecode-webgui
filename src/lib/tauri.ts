@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Tauri Integration Module
  *
@@ -7,8 +10,6 @@
  */
 
 // Type definitions for Tauri commands
-import { logger } from '@/lib/logger';
-
 export interface TauriCommands {
   greet: (name: string) => Promise<string>;
   checkDocker: () => Promise<boolean>;
