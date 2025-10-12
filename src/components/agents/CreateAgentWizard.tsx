@@ -19,7 +19,7 @@
 
 import React, { useState, useCallback } from 'react'
 import {
-  Wand2,
+Wand2,
   ArrowRight,
   ArrowLeft,
   Check,
@@ -34,6 +34,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -202,8 +203,7 @@ function DetailsStep({ data, onChange }: DetailsStepProps) {
         <h3 className="text-lg font-medium">Configure Your Agent</h3>
         <p className="text-sm text-muted-foreground">
           Customize the agent&apos;s behavior and capabilities
-import { logger } from '@/lib/logger';
-        </p>
+</p>
       </div>
 
       <div className="space-y-4">

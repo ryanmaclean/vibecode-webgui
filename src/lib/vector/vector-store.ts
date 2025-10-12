@@ -7,7 +7,6 @@ import { IVectorDatabaseAdapter } from './interfaces/vector-database-adapter';
 import { VectorAdapterFactory } from './adapters/vector-adapter-factory';
 import { VectorDatabaseConfig, SearchResult, VectorStoreStats } from './interfaces/vector-types';
 import { logger } from '@/lib/logger';
-
 export class VectorStore {
   private adapter: IVectorDatabaseAdapter;
   private initialized: boolean = false;

@@ -3,13 +3,11 @@
  * Provides session validation and user authentication for protected endpoints
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { getToken } from 'next-auth/jwt'
 import { createAuthRateLimit } from '../rate-limiting'
 import { logSecurityEvent } from './user-manager'
-
+import { logger } from '@/lib/logger';
 export interface AuthenticatedRequest extends NextRequest {
   user?: {
     id: string

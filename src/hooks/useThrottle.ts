@@ -1,7 +1,5 @@
-import { logger } from '@/lib/logger';
-
 import { useCallback, useRef } from 'react'
-
+import { logger } from '@/lib/logger';
 /**
  * Throttles a callback function to execute at most once per specified delay
  *

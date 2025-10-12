@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 'use strict';
 
 /**
@@ -6,8 +9,6 @@
  * plain JavaScript so it can be required from bootstrap scripts (e.g. Next.js
  * instrumentation running under Node without a TypeScript transpiler).
  */
-
-import { logger } from '@/lib/logger';
 
 const VALID_KEYS = new Set(['API_KEY', 'APP_KEY', 'SITE', 'SERVICE', 'ENV', 'VERSION']);
 

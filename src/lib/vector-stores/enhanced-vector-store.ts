@@ -9,7 +9,6 @@ import { RedisVectorDatabaseAdapter } from '../vector-db/redis-vector-database-a
 import { SqlServerVectorDatabaseAdapter } from '../vector-db/sqlserver-vector-database-adapter';
 import { CosmosDbVectorDatabaseAdapter } from '../vector-db/cosmosdb-vector-database-adapter';
 import { logger } from '@/lib/logger';
-
 export interface VectorStoreConfig {
   primaryProvider: 'postgres' | 'redis' | 'sqlserver' | 'cosmosdb';
   fallbackProviders: string[];

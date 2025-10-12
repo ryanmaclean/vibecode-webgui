@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { useCollaboration } from '../../hooks/useCollaboration'
-
+import { logger } from '@/lib/logger';
 export interface CursorPosition {
   line: number
   column: number
@@ -79,8 +79,7 @@ export default function CursorTracking({
    * Convert editor position to screen coordinates
    */
   const getScreenPosition = useCallback((position: CursorPosition): { x: number; y: number } | null => {
-import { logger } from '@/lib/logger';
-    if (!editorView || !editorRect) return null
+if (!editorView || !editorRect) return null
 
     try {
       const pos = editorView.state.doc.line(position.line + 1).from + position.column

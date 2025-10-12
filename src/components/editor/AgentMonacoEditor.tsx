@@ -12,10 +12,9 @@
 import { useEffect, useRef, useState } from 'react'
 import Editor, { Monaco } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
-import { logger } from '@/lib/logger';
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
 import { cn } from '@/lib/utils'
-
+import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================

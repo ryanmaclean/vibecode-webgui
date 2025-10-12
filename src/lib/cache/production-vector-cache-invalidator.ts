@@ -5,7 +5,6 @@
 
 import { metrics } from '../server-monitoring';
 import { logger } from '@/lib/logger';
-
 /**
  * Cache invalidation configuration
  */

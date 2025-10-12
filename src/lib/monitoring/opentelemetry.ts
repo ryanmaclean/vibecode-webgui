@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * OpenTelemetry Configuration and Setup
  * Provides vendor-neutral observability integration
@@ -45,8 +48,6 @@ if (!isDockerBuild) {
 }
 
 import { getDatadogApiKey } from './datadog-env'
-import { logger } from '@/lib/logger'
-
 const isServer = typeof window === 'undefined'
 const serviceName = 'vibecode-webgui'
 const serviceVersion = process.env.npm_package_version || '0.1.0'

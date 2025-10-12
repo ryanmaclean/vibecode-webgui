@@ -1,7 +1,6 @@
 import * as vscode from 'vscode';
 import axios, { AxiosInstance } from 'axios';
 import { logger } from '@/lib/logger';
-
 export interface AIModel {
     id: string;
     name: string;

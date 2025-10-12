@@ -2,7 +2,6 @@ import { Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { EventEmitter } from 'events';
 import { PoolStatus } from '../vector-db/pool-status';
 import { logger } from '@/lib/logger';
-
 // Use a simple logger implementation
 const createLogger = (name: string) => ({
   info: (message: string, ...args: any[]) => logger.info(`[${name}] INFO: ${message}`, ...args),

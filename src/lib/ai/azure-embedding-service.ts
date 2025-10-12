@@ -3,7 +3,6 @@ import { BaseEmbeddingService, EmbeddingServiceConfig } from './embedding-servic
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { PoolClient } from 'pg';
 import { logger } from '@/lib/logger';
-
 /**
  * Configuration specific to Azure OpenAI embedding service
  */

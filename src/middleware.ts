@@ -3,7 +3,6 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
 import { logger } from '@/lib/logger';
-
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
     /bot/i, /crawler/i, /spider/i, /scraper/i, /automated/i,

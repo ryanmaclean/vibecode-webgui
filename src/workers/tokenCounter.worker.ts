@@ -13,10 +13,8 @@
  * worker.onmessage = (e) => logger.info('Token count:', e.data.tokenCount)
  */
 
-import { logger } from '@/lib/logger';
-
 import { encoding_for_model, Tiktoken } from 'tiktoken'
-
+import { logger } from '@/lib/logger';
 interface TokenCountRequest {
   text: string
   model: string

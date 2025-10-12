@@ -11,7 +11,6 @@
 
 import { MultimodalAgent, MultimodalInput, AgentContext } from '../lib/multimodal-agent';
 import { logger } from '@/lib/logger';
-
 export interface SampleScenario {
   id: string;
   title: string;

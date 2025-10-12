@@ -9,13 +9,11 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Code, FileText, AlertCircle, Loader } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
 import type { ChatRequest, ChatResponse, CodeContext } from '@/lib/claude-code-sdk'
-
+import { logger } from '@/lib/logger';
 interface Message {
   id: string
   role: 'user' | 'assistant'

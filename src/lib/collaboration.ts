@@ -9,6 +9,7 @@
 
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
+import { logger } from '@/lib/logger';
 // IndexeddbPersistence not available in this project - using alternative storage
 
 export interface CollaborationUser {
@@ -197,8 +198,7 @@ export class CollaborationManager {
     // Generate consistent color based on user ID
     let hash = 0
     for (let i = 0; i < userId.length; i++) {
-import { logger } from '@/lib/logger';
-      hash = userId.charCodeAt(i) + ((hash << 5) - hash)
+hash = userId.charCodeAt(i) + ((hash << 5) - hash)
     }
 
     return colors[Math.abs(hash) % colors.length]

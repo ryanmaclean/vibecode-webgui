@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Project Template Generator
  * Generates project templates and scaffolds for VibeCode
@@ -357,8 +360,6 @@ jobs:
 import ReactDOM from 'react-dom/client'
 import App from './App.tsx'
 import './index.css'
-import { logger } from '@/lib/logger';
-
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />

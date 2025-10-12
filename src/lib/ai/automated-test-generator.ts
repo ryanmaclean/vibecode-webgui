@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Automated Test Generator
  * AI-powered test generation for code quality and reliability
  */
-
-import { logger } from '@/lib/logger';
 
 export interface TestGenerationOptions {
   framework: 'jest' | 'vitest' | 'cypress' | 'playwright';

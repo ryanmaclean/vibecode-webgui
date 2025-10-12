@@ -2,7 +2,6 @@ import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchWithRetry, streamResponse } from '@/lib/utils/fetch';
 import { logger } from '@/lib/logger';
-
 export type GenerationStatus = 'idle' | 'initializing' | 'generating' | 'seeding' | 'installing' | 'finalizing' | 'completed' | 'error';
 
 export interface ProgressData {

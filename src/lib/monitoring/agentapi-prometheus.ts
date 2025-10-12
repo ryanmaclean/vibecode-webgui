@@ -8,7 +8,6 @@ import { MeterProvider, PeriodicExportingMetricReader } from '@opentelemetry/sdk
 import { Resource } from '@opentelemetry/resources';
 import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic-conventions';
 import { logger } from '@/lib/logger';
-
 interface PrometheusConfig {
   port: number;
   endpoint: string;

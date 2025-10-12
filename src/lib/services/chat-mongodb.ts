@@ -5,7 +5,6 @@
 
 import { Collection, ObjectId } from 'mongodb';
 import { logger } from '@/lib/logger';
-
 export interface ChatMessage {
   _id?: ObjectId;
   workspaceId: string;

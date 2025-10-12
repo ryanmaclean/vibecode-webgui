@@ -7,7 +7,6 @@
 
 import { trackError, trackApiError, trackDatabaseError, trackAuthError, trackValidationError, trackPerformanceIssue } from '../monitoring/error-tracking';
 import { logger } from '@/lib/logger';
-
 export interface ErrorContext {
   userId?: string;
   sessionId?: string;

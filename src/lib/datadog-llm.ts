@@ -1,3 +1,6 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Datadog LLM Observability Configuration
  * Provides monitoring for AI/LLM operations in VibeCode
@@ -10,8 +13,6 @@
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
-import { logger } from '@/lib/logger'
-
 interface LLMSpanMetadata {
   tags?: string[];
   input?: unknown;

@@ -17,11 +17,9 @@
 
 'use client'
 
-import { logger } from '@/lib/logger';
-
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import {
-  Bot,
+Bot,
   User,
   System,
   MoreVertical,
@@ -37,6 +35,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
+import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions

@@ -7,7 +7,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { validateAIQuery, aiRateLimiter, AISecurityLogger } from '../lib/security/input-validator';
 import { logger } from '@/lib/logger';
-
 // Security configuration
 const SECURITY_CONFIG = {
   maxRequestSize: 10 * 1024 * 1024, // 10MB

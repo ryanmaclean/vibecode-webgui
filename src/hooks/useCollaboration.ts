@@ -5,7 +5,6 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { logger } from '@/lib/logger';
-
 export interface User {
   id: string;
   name: string;

@@ -4,7 +4,6 @@ import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { ConsoleModal } from '@/components/console/ConsoleModal';
 import { logger } from '@/lib/logger';
-
 type ConsoleContextType = {
   openConsole: (workspaceId: string) => void;
   closeConsole: () => void;

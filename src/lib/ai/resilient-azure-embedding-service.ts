@@ -6,7 +6,7 @@
 import { AzureEmbeddingService } from './azureEmbeddingService'
 import { circuitBreakerManager, CircuitBreakerError } from '../resilience/circuit-breaker'
 import { PrismaClient } from '@prisma/client'
-
+import { logger } from '@/lib/logger';
 interface ResilientEmbeddingOptions {
   dimensions?: number
   user?: string
@@ -84,8 +84,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
     texts: string[],
     options: ResilientEmbeddingOptions = {}
   ): Promise<Array<{ text: string; embedding: number[]; source: 'azure' | 'fallback' }>> {
-import { logger } from '@/lib/logger';
-    const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fallback' }> = []
+const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fallback' }> = []
     
     // Process in smaller batches to avoid overwhelming the service
     const batchSize = 10

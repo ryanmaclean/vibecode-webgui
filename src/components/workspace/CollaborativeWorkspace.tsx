@@ -1,3 +1,4 @@
+
 /**
  * Collaborative Workspace Component
  * Real-time collaborative workspace with multiple users and shared projects
@@ -20,7 +21,6 @@ import {
   PencilIcon
 } from '@heroicons/react/24/outline';
 import { logger } from '@/lib/logger';
-
 interface User {
   id: string;
   name: string;

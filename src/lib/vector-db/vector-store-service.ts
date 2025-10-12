@@ -8,7 +8,6 @@ import { VectorDatabaseFactory } from './vector-database-factory';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { SearchOptions, SearchResult, VectorChunk } from './vector-types';
 import { logger } from '@/lib/logger';
-
 /**
  * Vector Store Service
  * Provides a high-level interface for RAG operations using the adapter pattern

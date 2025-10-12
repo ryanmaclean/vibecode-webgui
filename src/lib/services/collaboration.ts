@@ -6,7 +6,6 @@
 import { Server as SocketIOServer } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 import { logger } from '@/lib/logger';
-
 export interface WorkspaceUser {
   userId: string;
   username: string;

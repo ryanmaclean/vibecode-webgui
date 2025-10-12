@@ -15,7 +15,6 @@
 
 import bcrypt from 'bcryptjs';
 import { logger } from '@/lib/logger';
-
 /**
  * Security configuration for password operations
  */

@@ -1,9 +1,10 @@
+import { logger } from '@/lib/logger';
+
+
 /**
  * Function Calling Service
  * Handles AI-powered function calling and execution for VibeCode
  */
-
-import { logger } from '@/lib/logger';
 
 export interface FunctionDefinition {
   name: string;

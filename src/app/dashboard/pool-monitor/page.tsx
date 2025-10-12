@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { AlertLevel } from '@/lib/db/connection-pool-monitor';
 import { logger } from '@/lib/logger';
-
 interface PoolStatus {
   size: number;
   available: number;

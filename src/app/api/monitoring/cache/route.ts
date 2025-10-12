@@ -3,13 +3,11 @@
  * Provides cache statistics, management operations, and health monitoring
  */
 
-import { logger } from '@/lib/logger';
-
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
 import { queryCache } from '../../../../lib/cache/query-cache'
 import { vectorCacheAdapter } from '../../../../lib/cache/vector-cache-adapter'
-
+import { logger } from '@/lib/logger';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
