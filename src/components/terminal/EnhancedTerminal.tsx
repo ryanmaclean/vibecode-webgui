@@ -1,421 +1,625 @@
 /**
- * Enhanced Terminal with AI Integration
- * Combines WebGL performance with Claude Code CLI integration
- * Replaces code-server terminal for better AI-powered development
+ * Enhanced Terminal Component
+ * Advanced terminal interface with AI integration and workspace features
  */
 
-'use client'
+'use client';
 
-/// <reference path="../../../types/@xterm/addon-webgl/index.d.ts" />
+import React, { useEffect, useRef, useState, useCallback } from 'react';
+import { Terminal } from '@xterm/xterm';
+import { FitAddon } from '@xterm/addon-fit';
+import {
+  PlayIcon,
+  SquareIcon,
+  ArrowPathIcon,
+  MagnifyingGlassIcon,
+  CommandLineIcon,
+  CpuChipIcon,
+  ExclamationTriangleIcon,
+  CheckCircleIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 
-import React, { useEffect, useRef, useState, useCallback } from 'react'
-import { Terminal } from '@xterm/xterm'
-import { FitAddon } from '@xterm/addon-fit'
-<<<<<<< HEAD
-=======
-<<<<<<< HEAD
-import { WebglAddon } from '@xterm/addon-webgl'
-=======
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-import { WebLinksAddon } from '@xterm/addon-web-links'
-import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
-import '@xterm/xterm/css/xterm.css'
-
-export interface EnhancedTerminalProps {
-  workspaceId: string
-  className?: string
-  theme?: 'dark' | 'light'
-  enableAI?: boolean
-  enableWebGL?: boolean
-  onReady?: (terminal: Terminal) => void
+interface TerminalSession {
+  id: string;
+  name: string;
+  status: 'running' | 'stopped' | 'error';
+  command?: string;
+  output: string[];
+  exitCode?: number;
+  startTime?: Date;
+  endTime?: Date;
 }
 
-export default function EnhancedTerminal({
-  workspaceId,
-  className = '',
-  theme = 'dark',
-  enableAI = true,
-  enableWebGL = true,
-  onReady
-}: EnhancedTerminalProps) {
-  const terminalRef = useRef<HTMLDivElement>(null)
-  const terminal = useRef<Terminal | null>(null)
-  const claudeRef = useRef<ClaudeCliIntegration | null>(null)
-  const addons = useRef<any>({})
-  
-  const [isReady, setIsReady] = useState(false)
-  const [isAIMode, setIsAIMode] = useState(false)
-  const [aiContext, setAiContext] = useState<string[]>([])
+interface CommandSuggestion {
+  command: string;
+  description: string;
+  category: 'navigation' | 'git' | 'npm' | 'system' | 'ai';
+}
 
-  // Terminal themes
-  const themes = {
-    dark: {
-      background: '#1e1e1e',
-      foreground: '#d4d4d4',
-      cursor: '#ffffff',
-      selection: '#264f78',
-      black: '#000000',
-      red: '#cd3131',
-      green: '#0dbc79',
-      yellow: '#e5e510',
-      blue: '#2472c8',
-      magenta: '#bc3fbc',
-      cyan: '#11a8cd',
-      white: '#e5e5e5',
-      brightBlack: '#666666',
-      brightRed: '#f14c4c',
-      brightGreen: '#23d18b',
-      brightYellow: '#f5f543',
-      brightBlue: '#3b8eea',
-      brightMagenta: '#d670d6',
-      brightCyan: '#29b8db',
-      brightWhite: '#ffffff'
-    },
-    light: {
-      background: '#ffffff',
-      foreground: '#383a42',
-      cursor: '#383a42',
-      selection: '#e5e5e6',
-      black: '#383a42',
-      red: '#e45649',
-      green: '#50a14f',
-      yellow: '#c18401',
-      blue: '#4078f2',
-      magenta: '#a626a4',
-      cyan: '#0184bc',
-      white: '#fafafa',
-      brightBlack: '#4f525d',
-      brightRed: '#e06c75',
-      brightGreen: '#98c379',
-      brightYellow: '#e5c07b',
-      brightBlue: '#61afef',
-      brightMagenta: '#c678dd',
-      brightCyan: '#56b6c2',
-      brightWhite: '#ffffff'
-    }
-  }
+interface EnhancedTerminalProps {
+  workspaceId?: number;
+  projectId?: string;
+  onCommandExecute?: (command: string, output: string) => void;
+  onAISuggestion?: (suggestion: string) => void;
+  className?: string;
+  initialCommand?: string;
+}
+
+export function EnhancedTerminal({
+  workspaceId,
+  projectId,
+  onCommandExecute,
+  onAISuggestion,
+  className = '',
+  initialCommand
+}: EnhancedTerminalProps) {
+  const terminalRef = useRef<HTMLDivElement>(null);
+  const terminal = useRef<Terminal | null>(null);
+  const fitAddon = useRef<FitAddon | null>(null);
+  const [sessions, setSessions] = useState<TerminalSession[]>([]);
+  const [activeSession, setActiveSession] = useState<string | null>(null);
+  const [isConnected, setIsConnected] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [showAISuggestions, setShowAISuggestions] = useState(false);
+  const [aiSuggestions, setAiSuggestions] = useState<CommandSuggestion[]>([]);
+  const [currentCommand, setCurrentCommand] = useState('');
+  const [commandHistory, setCommandHistory] = useState<string[]>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
 
   // Initialize terminal
-  const initializeTerminal = useCallback(() => {
-    if (!terminalRef.current || terminal.current) return
+  useEffect(() => {
+    if (terminalRef.current && !terminal.current) {
+      initializeTerminal();
+    }
 
-    const terminalTheme = themes[theme]
+    return () => {
+      if (terminal.current) {
+        terminal.current.dispose();
+      }
+    };
+  }, []);
 
-    terminal.current = new Terminal({
-      cols: 120,
-      rows: 30,
-      cursorBlink: true,
-      cursorStyle: 'block',
-      fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
+  // Handle initial command
+  useEffect(() => {
+    if (initialCommand && terminal.current) {
+      executeCommand(initialCommand);
+    }
+  }, [initialCommand]);
+
+  const initializeTerminal = () => {
+    if (!terminalRef.current) return;
+
+    const term = new Terminal({
+      theme: {
+        background: '#1f2937',
+        foreground: '#f9fafb',
+        cursor: '#fbbf24',
+        selection: '#374151',
+        black: '#1f2937',
+        red: '#ef4444',
+        green: '#10b981',
+        yellow: '#f59e0b',
+        blue: '#3b82f6',
+        magenta: '#8b5cf6',
+        cyan: '#06b6d4',
+        white: '#f9fafb',
+        brightBlack: '#374151',
+        brightRed: '#f87171',
+        brightGreen: '#34d399',
+        brightYellow: '#fbbf24',
+        brightBlue: '#60a5fa',
+        brightMagenta: '#a78bfa',
+        brightCyan: '#22d3ee',
+        brightWhite: '#f3f4f6'
+      },
       fontSize: 14,
-      lineHeight: 1.2,
-      theme: terminalTheme,
-      scrollback: 10000,
-      allowTransparency: false,
-      convertEol: true,
-    })
+      fontFamily: 'JetBrains Mono, Consolas, monospace',
+      cursorBlink: true,
+      allowTransparency: true,
+      scrollback: 1000
+    });
 
-    // Initialize addons
-    addons.current.fit = new FitAddon()
-    terminal.current.loadAddon(addons.current.fit)
+    const fit = new FitAddon();
+    term.loadAddon(fit);
 
-<<<<<<< HEAD
-    // WebGL addon not available - using canvas renderer
-<<<<<<< HEAD
-    // WebGL addon not available - using canvas renderer
-=======
->>>>>>> fix/consolidated-dependency-updates
-=======
-    // WebGL addon not available - using canvas renderer
-<<<<<<< HEAD
-    if (enableWebGL) {
-      addons.current.webgl = new WebglAddon()
-      terminal.current.loadAddon(addons.current.webgl)
-    }
-=======
-    // WebGL addon not available - using canvas renderer
->>>>>>> main
->>>>>>> merge-conflict-cleanup
-
-    addons.current.webLinks = new WebLinksAddon()
-    terminal.current.loadAddon(addons.current.webLinks)
-
-    terminal.current.open(terminalRef.current)
-    addons.current.fit.fit()
-
-    // Set up WebSocket connection
-    setupWebSocketConnection()
-
-    // Set up AI integration
-    if (enableAI) {
-      setupAIIntegration()
-    }
-
-    // Set up keyboard shortcuts (without search addon dependency)
-    setupKeyboardShortcuts()
-
-    setIsReady(true)
-    onReady?.(terminal.current)
-  }, [theme, enableWebGL, enableAI, onReady, workspaceId])
-
-  // Set up WebSocket connection to backend terminal
-  const setupWebSocketConnection = useCallback(() => {
-    if (!terminal.current) return
-
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const wsUrl = `${protocol}//${window.location.host}/api/terminal/ws?workspaceId=${workspaceId}`
-
-    const websocket = new WebSocket(wsUrl)
-    
-    websocket.onopen = () => {
-      // Debug log removed
-      terminal.current?.write('\r\n\x1b[32m✓ Terminal connected\x1b[0m\r\n')
-      
-      // Request new terminal session
-      websocket.send(JSON.stringify({
-        type: 'create-terminal',
-        workspaceId,
-        cols: terminal.current?.cols,
-        rows: terminal.current?.rows
-      }))
-    }
-
-    websocket.onmessage = (event) => {
-      const data = JSON.parse(event.data)
-      
-      if (data.type === 'terminal-output') {
-        terminal.current?.write(data.data)
-      } else if (data.type === 'ai-suggestion') {
-        handleAISuggestion(data)
-      }
-    }
-
-    websocket.onerror = (error) => {
-      console.error('Terminal WebSocket error:', error)
-      terminal.current?.write('\r\n\x1b[31m✗ Terminal connection error\x1b[0m\r\n')
-    }
-
-    websocket.onclose = () => {
-      // Debug log removed
-      terminal.current?.write('\r\n\x1b[33m⚠ Terminal disconnected\x1b[0m\r\n')
-    }
-
-    // Send terminal input to backend
-    terminal.current.onData((data) => {
-      if (websocket.readyState === WebSocket.OPEN) {
-        if (isAIMode && data === '\r') {
-          // AI mode: send to Claude
-          handleAICommand()
-        } else {
-          websocket.send(JSON.stringify({
-            type: 'terminal-input',
-            data
-          }))
-        }
-      }
-    })
+    term.open(terminalRef.current);
+    fit.fit();
 
     // Handle terminal resize
-    terminal.current.onResize(({ cols, rows }) => {
-      if (websocket.readyState === WebSocket.OPEN) {
-        websocket.send(JSON.stringify({
-          type: 'terminal-resize',
-          cols,
-          rows
-        }))
+    const resizeObserver = new ResizeObserver(() => {
+      fit.fit();
+    });
+    resizeObserver.observe(terminalRef.current);
+
+    // Handle input
+    term.onData((data) => {
+      handleTerminalInput(data);
+    });
+
+    // Handle cursor position
+    term.onCursorMove(() => {
+      // Update AI suggestions based on current command
+      const currentLine = getCurrentLine();
+      if (currentLine.trim()) {
+        generateAISuggestions(currentLine);
       }
-    })
-  }, [workspaceId, isAIMode])
+    });
 
-  // Set up AI integration
-  const setupAIIntegration = useCallback(() => {
-    claudeRef.current = new ClaudeCliIntegration({
-      apiKey: process.env.NEXT_PUBLIC_CLAUDE_API_KEY,
-      workingDirectory: `/workspaces/${workspaceId}`,
-      timeout: 30000
-    })
-  }, [workspaceId])
+    terminal.current = term;
+    fitAddon.current = fit;
 
-  // Set up keyboard shortcuts
-  const setupKeyboardShortcuts = useCallback(() => {
-    if (!terminal.current) return
+    // Create initial session
+    const initialSession: TerminalSession = {
+      id: 'session-1',
+      name: 'Terminal Session',
+      status: 'running',
+      output: [],
+      startTime: new Date()
+    };
 
-    terminal.current.attachCustomKeyEventHandler((event) => {
-      // Ctrl+Shift+A: Toggle AI mode
-      if (event.ctrlKey && event.shiftKey && event.key === 'A') {
-        event.preventDefault()
-        toggleAIMode()
-        return false
+    setSessions([initialSession]);
+    setActiveSession(initialSession.id);
+
+    // Welcome message
+    writeToTerminal('\x1b[32mWelcome to VibeCode Enhanced Terminal\x1b[0m\r\n');
+    writeToTerminal('\x1b[36mType "help" for available commands or use AI suggestions.\x1b[0m\r\n');
+    writeToTerminal('\x1b[90m─────────────────────────────────────────────────────────────────\x1b[0m\r\n');
+    writeToTerminal('\r\n');
+  };
+
+  const handleTerminalInput = (data: string) => {
+    if (!terminal.current) return;
+
+    // Handle special keys
+    if (data === '\r') { // Enter
+      handleCommand(currentCommand);
+      setCurrentCommand('');
+      setHistoryIndex(-1);
+      return;
+    }
+
+    if (data === '\x7f') { // Backspace
+      if (currentCommand.length > 0) {
+        setCurrentCommand(prev => prev.slice(0, -1));
+        terminal.current.write('\b \b');
       }
+      return;
+    }
 
-      // Ctrl+Shift+C: Ask Claude about current command
-      if (event.ctrlKey && event.shiftKey && event.key === 'C') {
-        event.preventDefault()
-        askClaudeAboutCommand()
-        return false
+    if (data === '\x1b[A') { // Up arrow
+      if (commandHistory.length > 0 && historyIndex < commandHistory.length - 1) {
+        const newIndex = historyIndex + 1;
+        setHistoryIndex(newIndex);
+        setCurrentCommand(commandHistory[commandHistory.length - 1 - newIndex]);
+        // Clear current line and write new command
+        terminal.current.write('\x1b[2K\r');
+        writeToTerminal(`\x1b[36m$\x1b[0m ${commandHistory[commandHistory.length - 1 - newIndex]}`);
       }
+      return;
+    }
 
-      return true
-    })
-  }, [])
+    if (data === '\x1b[B') { // Down arrow
+      if (historyIndex > 0) {
+        const newIndex = historyIndex - 1;
+        setHistoryIndex(newIndex);
+        setCurrentCommand(commandHistory[commandHistory.length - 1 - newIndex]);
+        terminal.current.write('\x1b[2K\r');
+        writeToTerminal(`\x1b[36m$\x1b[0m ${commandHistory[commandHistory.length - 1 - newIndex]}`);
+      } else if (historyIndex === 0) {
+        setHistoryIndex(-1);
+        setCurrentCommand('');
+        terminal.current.write('\x1b[2K\r');
+        writeToTerminal('\x1b[36m$\x1b[0m ');
+      }
+      return;
+    }
 
-  // Toggle AI mode
-  const toggleAIMode = useCallback(() => {
-    setIsAIMode(prev => {
-      const newMode = !prev
-      if (terminal.current) {
-        if (newMode) {
-          terminal.current.write('\r\n\x1b[32m🤖 AI Mode ON - Type commands and press Enter for AI assistance\x1b[0m\r\n')
-          terminal.current.write('\x1b[36mai> \x1b[0m')
-        } else {
-          terminal.current.write('\r\n\x1b[33m🔧 AI Mode OFF - Back to normal terminal\x1b[0m\r\n')
+    if (data === '\x1b[C') { // Right arrow
+      return; // Ignore for now
+    }
+
+    if (data === '\x1b[D') { // Left arrow
+      return; // Ignore for now
+    }
+
+    // Handle tab completion
+    if (data === '\t') {
+      handleTabCompletion();
+      return;
+    }
+
+    // Regular character input
+    if (data >= ' ' && data <= '~') {
+      setCurrentCommand(prev => prev + data);
+      terminal.current.write(data);
+    }
+  };
+
+  const handleCommand = async (command: string) => {
+    if (!command.trim()) return;
+
+    // Add to history
+    setCommandHistory(prev => [...prev, command]);
+
+    // Write command to terminal
+    writeToTerminal(`\x1b[36m$\x1b[0m ${command}\r\n`);
+
+    try {
+      const output = await executeCommand(command);
+
+      // Update session
+      setSessions(prev => prev.map(session =>
+        session.id === activeSession
+          ? {
+              ...session,
+              command,
+              output: [...session.output, ...output.split('\n')],
+              status: 'running'
+            }
+          : session
+      ));
+
+      onCommandExecute?.(command, output);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Command failed';
+      writeToTerminal(`\x1b[31mError: ${errorMessage}\x1b[0m\r\n`);
+
+      // Update session with error
+      setSessions(prev => prev.map(session =>
+        session.id === activeSession
+          ? {
+              ...session,
+              status: 'error',
+              output: [...session.output, `Error: ${errorMessage}`],
+              exitCode: 1
+            }
+          : session
+      ));
+    }
+
+    writeToTerminal('\r\n');
+  };
+
+  const executeCommand = async (command: string): Promise<string> => {
+    // This would integrate with your command execution service
+    // For now, simulate command execution
+
+    const [cmd, ...args] = command.trim().split(' ');
+
+    switch (cmd) {
+      case 'help':
+        return [
+          'Available commands:',
+          '  help                    - Show this help message',
+          '  clear                   - Clear terminal',
+          '  ls [path]              - List directory contents',
+          '  cd <path>              - Change directory',
+          '  pwd                     - Print current directory',
+          '  cat <file>             - Display file contents',
+          '  echo <text>            - Display text',
+          '  ai <query>             - Ask AI for help',
+          '  git <command>          - Git operations',
+          '  npm <command>          - NPM operations',
+          '  history                 - Show command history',
+          '',
+          'Use Tab for auto-completion and ↑/↓ for command history.'
+        ].join('\n');
+
+      case 'clear':
+        if (terminal.current) {
+          terminal.current.clear();
         }
-      }
-      return newMode
-    })
-  }, [])
+        return '';
 
-  // Handle AI command
-  const handleAICommand = useCallback(async () => {
-    if (!terminal.current || !claudeRef.current) return
+      case 'echo':
+        return args.join(' ');
 
-    // Get current line content
-    const buffer = terminal.current.buffer.active
-    const currentLine = buffer.getLine(buffer.cursorY)
-    const command = currentLine?.translateToString(true).replace(/^ai>\s*/, '') || ''
+      case 'pwd':
+        return '/workspace';
 
-    if (!command.trim()) return
+      case 'ls':
+        return [
+          'src/',
+          'public/',
+          'package.json',
+          'README.md',
+          'tsconfig.json',
+          '.gitignore'
+        ].join('\n');
 
-    terminal.current.write('\r\n\x1b[36m🤔 Thinking...\x1b[0m\r\n')
+      case 'ai':
+        const query = args.join(' ');
+        return await handleAIQuery(query);
 
-    try {
-      // Send to Claude for processing
-      const response = await claudeRef.current.chatWithClaude(
-        `Help me with this terminal command or question: ${command}`,
-        aiContext
-      )
+      case 'git':
+        return handleGitCommand(args);
 
-      if (response.success) {
-        terminal.current.write('\r\n\x1b[32m🤖 Claude:\x1b[0m\r\n')
-        terminal.current.write(response.output + '\r\n')
-        
-        // Add to context for future AI interactions
-        setAiContext(prev => [...prev.slice(-10), command, response.output])
-      } else {
-        terminal.current.write('\r\n\x1b[31m❌ AI Error: ' + (response.error || 'Unknown error') + '\x1b[0m\r\n')
-      }
-    } catch (error) {
-      terminal.current.write('\r\n\x1b[31m❌ AI Connection Error\x1b[0m\r\n')
-      console.error('Claude integration error:', error)
+      case 'npm':
+        return handleNpmCommand(args);
+
+      default:
+        return `Command not found: ${cmd}. Type 'help' for available commands.`;
+    }
+  };
+
+  const handleAIQuery = async (query: string): Promise<string> => {
+    // This would integrate with your AI services
+    // For now, return mock response
+    await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate AI processing
+
+    if (query.toLowerCase().includes('error')) {
+      return [
+        'I see you\'re having an error. Let me help you debug this.',
+        '',
+        'Common solutions:',
+        '1. Check your dependencies: npm ls',
+        '2. Review error logs: npm run logs 2>&1 | tail -20',
+        '3. Check TypeScript configuration',
+        '4. Verify environment variables',
+        '',
+        'Would you like me to examine your specific error message?'
+      ].join('\n');
     }
 
-    terminal.current.write('\x1b[36mai> \x1b[0m')
-  }, [aiContext])
+    return [
+      'I can help you with that! Here are some suggestions:',
+      '',
+      '• For React components: Use functional components with hooks',
+      '• For styling: Consider Tailwind CSS for rapid development',
+      '• For state management: Redux Toolkit or Zustand',
+      '• For API calls: React Query or SWR',
+      '',
+      'Try: npm create react-app my-app --template typescript'
+    ].join('\n');
+  };
 
-  // Ask Claude about current command
-  const askClaudeAboutCommand = useCallback(async () => {
-    if (!terminal.current || !claudeRef.current) return
-
-    const buffer = terminal.current.buffer.active
-    const currentLine = buffer.getLine(buffer.cursorY)
-    const command = currentLine?.translateToString(true) || ''
-
-    if (!command.trim()) {
-      terminal.current.write('\r\n\x1b[33m⚠ No command found on current line\x1b[0m\r\n')
-      return
+  const handleGitCommand = (args: string[]): string => {
+    if (args.length === 0) {
+      return 'Git commands: status, add, commit, push, pull, log, branch';
     }
 
-    terminal.current.write('\r\n\x1b[36m🤖 Analyzing command...\x1b[0m\r\n')
+    const subcommand = args[0];
+    switch (subcommand) {
+      case 'status':
+        return [
+          'On branch main',
+          'Your branch is up to date with \'origin/main\'.',
+          '',
+          'Changes not staged for commit:',
+          '  modified:   src/components/Terminal.tsx',
+          '',
+          'Untracked files:',
+          '  src/components/EnhancedTerminal.tsx',
+          '',
+          'no changes added to commit'
+        ].join('\n');
 
-    try {
-      const response = await claudeRef.current.explainCode(command, 'bash')
-      
-      if (response.success) {
-        terminal.current.write('\r\n\x1b[32m💡 Command Explanation:\x1b[0m\r\n')
-        terminal.current.write(response.output + '\r\n')
-      } else {
-        terminal.current.write('\r\n\x1b[31m❌ Could not analyze command\x1b[0m\r\n')
-      }
-    } catch (error) {
-      terminal.current.write('\r\n\x1b[31m❌ Analysis failed\x1b[0m\r\n')
-      console.error('Command analysis error:', error)
+      case 'add':
+        return 'Added files to staging area';
+
+      case 'commit':
+        return '[main abc1234] Add enhanced terminal component';
+
+      default:
+        return `Git ${subcommand}: command not recognized`;
     }
-  }, [])
+  };
 
-  // Handle AI suggestions
-  const handleAISuggestion = useCallback((data: any) => {
-    if (!terminal.current) return
-
-    terminal.current.write('\r\n\x1b[35m💡 AI Suggestion: ' + data.suggestion + '\x1b[0m\r\n')
-  }, [])
-
-  // Search functionality is disabled (optional addon not installed)
-
-  // Handle resize
-  const handleResize = useCallback(() => {
-    if (addons.current.fit) {
-      addons.current.fit.fit()
+  const handleNpmCommand = (args: string[]): string => {
+    if (args.length === 0) {
+      return 'NPM commands: install, start, build, test, run <script>';
     }
-  }, [])
 
-  // Initialize terminal on mount
-  useEffect(() => {
-    initializeTerminal()
+    const subcommand = args[0];
+    switch (subcommand) {
+      case 'install':
+        return [
+          'Installing dependencies...',
+          '+ react@18.2.0',
+          '+ typescript@4.9.5',
+          '+ @xterm/xterm@5.0.0',
+          'Done!'
+        ].join('\n');
 
-    // Handle window resize
-    window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-      // Cleanup WebSocket connections and terminal
+      case 'start':
+        return 'Starting development server...\nServer running at http://localhost:3000';
+
+      case 'build':
+        return [
+          'Building project...',
+          '✓ Compiled successfully',
+          '✓ Type checking passed',
+          '✓ Bundle size: 2.4 MB'
+        ].join('\n');
+
+      default:
+        return `npm ${subcommand}: command not recognized`;
+    }
+  };
+
+  const handleTabCompletion = () => {
+    // Simple tab completion for common commands
+    const commonCommands = ['help', 'clear', 'ls', 'cd', 'pwd', 'cat', 'echo', 'git', 'npm'];
+    const currentCmd = currentCommand.toLowerCase();
+
+    const matches = commonCommands.filter(cmd => cmd.startsWith(currentCmd));
+
+    if (matches.length === 1) {
+      const completion = matches[0].slice(currentCommand.length);
+      setCurrentCommand(prev => prev + completion);
       if (terminal.current) {
-        terminal.current.dispose()
+        terminal.current.write(completion);
       }
+    } else if (matches.length > 1) {
+      writeToTerminal('\r\n');
+      matches.forEach(match => {
+        writeToTerminal(`${match}  `);
+      });
+      writeToTerminal('\r\n');
+      writeToTerminal(`\x1b[36m$\x1b[0m ${currentCommand}`);
     }
-  }, [initializeTerminal, handleResize])
+  };
+
+  const generateAISuggestions = async (partialCommand: string) => {
+    // Generate AI-powered command suggestions
+    const suggestions: CommandSuggestion[] = [];
+
+    if (partialCommand.startsWith('git ')) {
+      suggestions.push(
+        { command: 'git status', description: 'Check repository status', category: 'git' },
+        { command: 'git add .', description: 'Stage all changes', category: 'git' },
+        { command: 'git commit -m "message"', description: 'Commit with message', category: 'git' }
+      );
+    } else if (partialCommand.startsWith('npm ')) {
+      suggestions.push(
+        { command: 'npm install', description: 'Install dependencies', category: 'npm' },
+        { command: 'npm start', description: 'Start development server', category: 'npm' },
+        { command: 'npm run build', description: 'Build for production', category: 'npm' }
+      );
+    } else if (partialCommand.includes('error') || partialCommand.includes('debug')) {
+      suggestions.push(
+        { command: 'npm run logs', description: 'Check application logs', category: 'system' },
+        { command: 'npm run test', description: 'Run test suite', category: 'npm' }
+      );
+    } else {
+      suggestions.push(
+        { command: 'help', description: 'Show available commands', category: 'system' },
+        { command: 'ls', description: 'List directory contents', category: 'navigation' },
+        { command: 'pwd', description: 'Show current directory', category: 'navigation' }
+      );
+    }
+
+    setAiSuggestions(suggestions);
+    setShowAISuggestions(suggestions.length > 0);
+  };
+
+  const getCurrentLine = (): string => {
+    // Get the current command line content
+    return currentCommand;
+  };
+
+  const writeToTerminal = (text: string) => {
+    if (terminal.current) {
+      terminal.current.write(text);
+    }
+  };
+
+  const handleAISuggestionSelect = (suggestion: CommandSuggestion) => {
+    setCurrentCommand(suggestion.command);
+    setShowAISuggestions(false);
+
+    if (terminal.current) {
+      // Clear current line and write suggestion
+      terminal.current.write('\x1b[2K\r');
+      writeToTerminal(`\x1b[36m$\x1b[0m ${suggestion.command}`);
+    }
+
+    onAISuggestion?.(suggestion.command);
+  };
+
+  const filteredSuggestions = aiSuggestions.filter(suggestion =>
+    suggestion.command.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    suggestion.description.toLowerCase().includes(searchQuery.toLowerCase())
+  );
 
   return (
-    <div className={`relative w-full h-full ${className}`}>
-      {/* Terminal container */}
-      <div
-        ref={terminalRef}
-        className="w-full h-full focus:outline-none"
-        style={{
-          fontFamily: 'JetBrains Mono, Consolas, Monaco, monospace',
-          fontSize: '14px'
-        }}
-      />
-
-      {/* Loading overlay */}
-      {!isReady && (
-        <div className="absolute inset-0 bg-gray-900/50 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-lg">
-            <div className="flex items-center space-x-3">
-              <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
-              <span className="text-gray-900 dark:text-white">Initializing enhanced terminal...</span>
+    <div className={`flex flex-col h-full bg-gray-900 ${className}`}>
+      {/* Terminal Header */}
+      <div className="flex items-center justify-between p-3 bg-gray-800 border-b border-gray-700">
+        <div className="flex items-center space-x-3">
+          <CommandLineIcon className="h-5 w-5 text-gray-400" />
+          <span className="text-sm font-medium text-gray-300">Enhanced Terminal</span>
+          {isConnected && (
+            <div className="flex items-center space-x-1">
+              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-xs text-green-400">Connected</span>
             </div>
-          </div>
+          )}
         </div>
-      )}
 
-      {/* AI Mode indicator */}
-      {isAIMode && (
-        <div className="absolute top-2 left-2">
-          <div className="flex items-center space-x-2 px-3 py-1 rounded-full text-xs bg-green-100 dark:bg-green-900/20 text-green-700 dark:text-green-300">
-            <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
-            <span>AI Mode</span>
-          </div>
+        <div className="flex items-center space-x-2">
+          {/* AI Suggestions Toggle */}
+          <button
+            onClick={() => setShowAISuggestions(!showAISuggestions)}
+            className={`px-2 py-1 text-xs rounded transition-colors ${
+              showAISuggestions
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+            }`}
+          >
+            AI Suggestions
+          </button>
+
+          {/* Session Management */}
+          <select
+            value={activeSession || ''}
+            onChange={(e) => setActiveSession(e.target.value)}
+            className="px-2 py-1 text-xs bg-gray-700 text-gray-300 rounded border-none focus:ring-1 focus:ring-blue-500"
+          >
+            {sessions.map(session => (
+              <option key={session.id} value={session.id}>
+                {session.name} ({session.status})
+              </option>
+            ))}
+          </select>
         </div>
-      )}
+      </div>
 
-      {/* Shortcuts help */}
-      <div className="absolute top-2 right-2">
-        <div className="text-xs text-gray-500 bg-gray-100 dark:bg-gray-800 rounded px-2 py-1">
-          <div>Ctrl+Shift+A: AI Mode</div>
-          <div>Ctrl+Shift+C: Explain Command</div>
-          <div>Ctrl+Shift+F: Search</div>
+      {/* Terminal Container */}
+      <div className="flex-1 relative">
+        <div ref={terminalRef} className="h-full" />
+
+        {/* AI Suggestions Panel */}
+        {showAISuggestions && (
+          <div className="absolute bottom-0 left-0 right-0 bg-gray-800 border-t border-gray-700 p-3">
+            <div className="flex items-center space-x-2 mb-3">
+              <MagnifyingGlassIcon className="h-4 w-4 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search suggestions..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="flex-1 px-2 py-1 text-sm bg-gray-700 text-gray-300 rounded border-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-32 overflow-y-auto">
+              {filteredSuggestions.map((suggestion, index) => (
+                <button
+                  key={index}
+                  onClick={() => handleAISuggestionSelect(suggestion)}
+                  className="p-2 text-left bg-gray-700 hover:bg-gray-600 rounded text-sm transition-colors"
+                >
+                  <div className="font-mono text-blue-400">{suggestion.command}</div>
+                  <div className="text-xs text-gray-400 mt-1">{suggestion.description}</div>
+                  <div className="text-xs text-gray-500 mt-1 capitalize">{suggestion.category}</div>
+                </button>
+              ))}
+            </div>
+
+            {filteredSuggestions.length === 0 && (
+              <div className="text-center py-4">
+                <p className="text-sm text-gray-400">No suggestions found</p>
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Terminal Footer */}
+      <div className="p-3 bg-gray-800 border-t border-gray-700">
+        <div className="flex items-center justify-between text-xs text-gray-400">
+          <div className="flex items-center space-x-4">
+            <span>Status: {isConnected ? 'Connected' : 'Disconnected'}</span>
+            <span>History: {commandHistory.length} commands</span>
+          </div>
+          <div className="flex items-center space-x-2">
+            <CpuChipIcon className="h-4 w-4" />
+            <span>VibeCode Terminal v1.0</span>
+          </div>
         </div>
       </div>
     </div>
-  )
+  );
 }
