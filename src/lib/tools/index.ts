@@ -1,5 +1,5 @@
 import { tool } from 'ai';
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 
 export const tools = {
   getGithubRepoInfo: tool({
