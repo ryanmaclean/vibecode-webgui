@@ -58,9 +58,10 @@ The root tests are organized into specialized categories:
 - `test-vector-db-connection-pooling.js` - Vector database pools
 - `test-vector-db-connection.js` - Vector database connectivity
 - `test-robust-db-connection.js` - Robust connection handling
-- `test-vector-db.js` - Vector database operations
 
 **Requirements**: `DATABASE_URL`
+
+**Note**: Some legacy manual test scripts have been archived to `archive/root-test-scripts/` for reference. Use the maintained test suite above for active development.
 
 ### AI & Embedding Tests (`tests/root-tests/ai-embedding/`)
 - `test-ai-generation.js` - AI content generation

@@ -218,20 +218,23 @@ node test-db-connection.js
 
 ### Vector Database Test
 
+For current test scripts, see `tests/` directory. Legacy test scripts are archived in `archive/root-test-scripts/`:
+
 ```bash
-node test-vector-db.js
+# Archived test scripts (for reference only)
+node archive/root-test-scripts/test-vector-db.js
 ```
 
-### Robust Connection Test
+### Current Testing
+
+For up-to-date database testing, use the maintained test suites:
 
 ```bash
-node test-robust-db-connection.js
-```
+# Run database integration tests
+npm run test:integration
 
-### Embedding Service Test
-
-```bash
-node test-embedding-service-robust.js
+# Run database health checks
+npm run test:health
 ```
 
 ## Performance Considerations
