@@ -253,15 +253,15 @@ services:
 ### **Development**
 ```bash
 npm run dev              # Start development server
-npm run verify:rag       # Verify RAG functionality
-npm run test:no-docker   # Run tests without containers
 npm run build            # Production build
+npm run test:unit        # Run unit tests
+npm run test:integration # Run integration tests
 ```
 
 ### **Testing**
 ```bash
-npm run test:real-apis   # Test with real API integration
-npm run samples:populate # Add Apache library samples
+npm run test             # Run all tests
+npm run test:coverage    # Run tests with coverage
 npm test -- --testPathPattern="auth" # Core auth tests
 ```
 
@@ -323,8 +323,8 @@ docker-compose up -d
 # Verify health
 curl http://localhost:3000/api/health
 
-# Populate sample data (optional)
-npm run samples:populate
+# Run integration tests
+npm run test:integration
 ```
 
 ### **4. Monitoring Setup**
