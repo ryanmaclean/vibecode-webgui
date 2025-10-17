@@ -7,7 +7,7 @@
  * - Type guards for safe argument parsing
  */
 
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 
 // Workspace tool schemas
 export const CreateWorkspaceArgsSchema = z.object({

@@ -3,7 +3,7 @@
  * Ensures all required secrets are present and properly configured
  */
 
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 import { logger } from '@/lib/logger';
 // Define required environment variables with validation rules
 const envSchema = z.object({

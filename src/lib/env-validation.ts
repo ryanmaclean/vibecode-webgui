@@ -3,7 +3,7 @@
  * Validates and provides type-safe access to environment variables
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { logger } from '@/lib/logger';
 // Define environment variable schemas
 const envSchema = z.object({
