@@ -9,35 +9,161 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-<<<<<<< Updated upstream
-import { 
-  Loader2, 
-  Code, 
-  TestTube, 
-  Lightbulb, 
-  FileText, 
-  Zap, 
-  Shield, 
-  Gauge, 
-=======
-import {
-  Loader2,
-  TestTube,
-  Lightbulb,
-  FileText,
-  Shield,
-  Gauge,
->>>>>>> Stashed changes
-  Database,
-  CheckCircle,
-  AlertTriangle,
-  XCircle
-} from 'lucide-react';
+import * as LucideIcons from 'lucide-react';
+import type { LucideIcon } from 'lucide-react';
+import { logger } from '@/lib/logger';
 
+interface TestSuggestion {
+  name: string;
+  code: string;
+}
+
+interface TestGenerationResult {
+  tests: TestSuggestion[];
+  coverage: string;
+  recommendations: string[];
+}
+
+interface CodeCompletionSuggestion {
+  type: string;
+  code: string;
+}
+
+interface CodeCompletionResult {
+  suggestions: CodeCompletionSuggestion[];
+}
+
+interface NaturalLanguageToCodeResult {
+  code: string;
+  tests: string;
+  documentation: string;
+}
+
+type SeverityLevel = 'critical' | 'high' | 'medium' | 'low';
+
+interface CodeReviewIssue {
+  severity: SeverityLevel;
+  category: string;
+  message: string;
+  lineNumber: number;
+  suggestion: string;
+  impact: string;
+}
+
+interface CodeReviewResult {
+  issues: CodeReviewIssue[];
+  summary: string;
+  recommendations: string[];
+}
+
+interface PerformanceIssue {
+  type: string;
+  severity: SeverityLevel;
+  title: string;
+  description: string;
+  suggestion: string;
+  estimatedImprovement: string;
+}
+
+interface PerformanceAnalysisResult {
+  issues: PerformanceIssue[];
+  optimizationScore: number;
+  summary: string;
+  recommendations: string[];
+}
+
+interface IntegrationScenario {
+  name: string;
+  category: string;
+  priority: SeverityLevel;
+  description: string;
+}
+
+interface IntegrationTestSuite {
+  name: string;
+  scenarios: IntegrationScenario[];
+  setupScripts: string[];
+  estimatedDuration: number;
+}
+
+interface IntegrationTestingResult {
+  testSuite: IntegrationTestSuite;
+  summary: string;
+  recommendations: string[];
+}
+
+interface AIResults {
+  testGeneration?: TestGenerationResult;
+  codeCompletion?: CodeCompletionResult;
+  naturalLanguageToCode?: NaturalLanguageToCodeResult;
+  codeReview?: CodeReviewResult;
+  performanceAnalysis?: PerformanceAnalysisResult;
+  integrationTesting?: IntegrationTestingResult;
+}
+
+const iconRegistry = LucideIcons as Record<string, unknown>;
+
+const isLucideIcon = (value: unknown): value is LucideIcon =>
+  typeof value === 'function';
+
+const FallbackIcon = React.forwardRef<SVGSVGElement, React.SVGProps<SVGSVGElement>>(
+  ({ className, ...props }, ref) => (
+    <svg
+      ref={ref}
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+      {...props}
+    >
+      <circle cx="12" cy="12" r="10" opacity="0.2" />
+      <path d="M12 6v6l4 2" />
+    </svg>
+  )
+);
+FallbackIcon.displayName = 'FallbackIcon';
+
+const resolveIcon = (primary: string, fallback?: string): LucideIcon => {
+  const candidate = iconRegistry[primary];
+  if (isLucideIcon(candidate)) {
+    return candidate;
+  }
+
+  if (fallback) {
+    const fallbackCandidate = iconRegistry[fallback];
+    if (isLucideIcon(fallbackCandidate)) {
+      return fallbackCandidate;
+    }
+  }
+
+  return FallbackIcon;
+};
+
+const LoaderIcon = resolveIcon('Loader');
+const TestTubeIcon = resolveIcon('TestTube', 'Flask');
+const LightbulbIcon = resolveIcon('Lightbulb');
+const FileTextIcon = resolveIcon('FileText');
+const ShieldIcon = resolveIcon('Shield');
+const GaugeIcon = resolveIcon('Gauge', 'Speedometer');
+const DatabaseIcon = resolveIcon('Database');
+const CheckCircleIcon = resolveIcon('CheckCircle');
+const AlertTriangleIcon = resolveIcon('AlertTriangle', 'TriangleAlert');
+const XCircleIcon = resolveIcon('XCircle');
 export default function AIAdvancedFeaturesDemo() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);
-  const [results, setResults] = useState<any>({});
+  const [results, setResults] = useState<AIResults>({});
+  const {
+    testGeneration,
+    codeCompletion,
+    naturalLanguageToCode,
+    codeReview,
+    performanceAnalysis,
+    integrationTesting
+  } = results;
 
   // Test Generation State
   const [testCode, setTestCode] = useState(`function calculateSum(a: number, b: number): number {
@@ -89,7 +215,7 @@ function processUserInput(input: string) {
 
 function addEventListener() {
   document.addEventListener('click', function() {
-    console.log('clicked');
+    logger.info('clicked');
   });
 }`);
 
@@ -102,7 +228,7 @@ function addEventListener() {
     // Simulate API call
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       testGeneration: {
         tests: [
@@ -138,7 +264,7 @@ function addEventListener() {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1500));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       codeCompletion: {
         suggestions: [
@@ -155,6 +281,15 @@ function addEventListener() {
 }
 
 export function UserProfile({ user, onEdit }: UserProfileProps) {
+  const {
+    testGeneration,
+    codeCompletion,
+    naturalLanguageToCode,
+    codeReview,
+    performanceAnalysis,
+    integrationTesting,
+  } = results;
+
   return (
     <div className="user-profile">
       <div className="avatar">
@@ -202,7 +337,7 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 1800));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       naturalLanguageToCode: {
         code: `function validateEmail(email: string): boolean {
@@ -211,9 +346,9 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
 }
 
 // Usage examples
-console.log(validateEmail('user@example.com')); // true
-console.log(validateEmail('invalid-email')); // false
-console.log(validateEmail('user@domain')); // false`,
+logger.info(validateEmail('user@example.com')); // true
+logger.info(validateEmail('invalid-email')); // false
+logger.info(validateEmail('user@domain')); // false`,
         tests: `test('validateEmail should validate correct emails', () => {
   expect(validateEmail('user@example.com')).toBe(true);
   expect(validateEmail('test.user@domain.co.uk')).toBe(true);
@@ -242,7 +377,7 @@ test('validateEmail should reject invalid emails', () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 2500));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       codeReview: {
         issues: [
@@ -278,7 +413,7 @@ test('validateEmail should reject invalid emails', () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 2000));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       performanceAnalysis: {
         issues: [
@@ -315,7 +450,7 @@ test('validateEmail should reject invalid emails', () => {
     setIsLoading(true);
     await new Promise(resolve => setTimeout(resolve, 3000));
     
-    setResults(prev => ({
+    setResults((prev) => ({
       ...prev,
       integrationTesting: {
         testSuite: {
@@ -363,7 +498,7 @@ test('validateEmail should reject invalid emails', () => {
     setIsLoading(false);
   };
 
-  const getSeverityColor = (severity: string) => {
+  const getSeverityColor = (severity: SeverityLevel): string => {
     switch (severity) {
       case 'critical': return 'bg-red-100 text-red-800';
       case 'high': return 'bg-orange-100 text-orange-800';
@@ -373,13 +508,13 @@ test('validateEmail should reject invalid emails', () => {
     }
   };
 
-  const getSeverityIcon = (severity: string) => {
+  const getSeverityIcon = (severity: SeverityLevel): React.ReactElement => {
     switch (severity) {
-      case 'critical': return <XCircle className="h-4 w-4" />;
-      case 'high': return <AlertTriangle className="h-4 w-4" />;
-      case 'medium': return <AlertTriangle className="h-4 w-4" />;
-      case 'low': return <CheckCircle className="h-4 w-4" />;
-      default: return <CheckCircle className="h-4 w-4" />;
+      case 'critical': return <XCircleIcon className="h-4 w-4" />;
+      case 'high': return <AlertTriangleIcon className="h-4 w-4" />;
+      case 'medium': return <AlertTriangleIcon className="h-4 w-4" />;
+      case 'low': return <CheckCircleIcon className="h-4 w-4" />;
+      default: return <CheckCircleIcon className="h-4 w-4" />;
     }
   };
 
@@ -408,7 +543,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <TestTube className="h-5 w-5" />
+                  <TestTubeIcon className="h-5 w-5" />
                   Automated Test Generation
                 </CardTitle>
                 <CardDescription>
@@ -428,7 +563,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Lightbulb className="h-5 w-5" />
+                  <LightbulbIcon className="h-5 w-5" />
                   Smart Code Completion
                 </CardTitle>
                 <CardDescription>
@@ -448,7 +583,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <FileText className="h-5 w-5" />
+                  <FileTextIcon className="h-5 w-5" />
                   Natural Language to Code
                 </CardTitle>
                 <CardDescription>
@@ -468,7 +603,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Shield className="h-5 w-5" />
+                  <ShieldIcon className="h-5 w-5" />
                   Code Review Automation
                 </CardTitle>
                 <CardDescription>
@@ -488,7 +623,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Gauge className="h-5 w-5" />
+                  <GaugeIcon className="h-5 w-5" />
                   Performance Optimization
                 </CardTitle>
                 <CardDescription>
@@ -508,7 +643,7 @@ test('validateEmail should reject invalid emails', () => {
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
-                  <Database className="h-5 w-5" />
+                  <DatabaseIcon className="h-5 w-5" />
                   Integration Testing
                 </CardTitle>
                 <CardDescription>
@@ -547,21 +682,21 @@ test('validateEmail should reject invalid emails', () => {
                 />
               </div>
               <Button onClick={handleTestGeneration} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <TestTube className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <TestTubeIcon className="mr-2 h-4 w-4" />}
                 Generate Tests
               </Button>
 
-              {results.testGeneration && (
+              {testGeneration ? (
                 <div className="space-y-4">
                   <Alert>
-                    <CheckCircle className="h-4 w-4" />
+                    <CheckCircleIcon className="h-4 w-4" />
                     <AlertDescription>
-                      Generated {results.testGeneration.tests.length} tests with {results.testGeneration.coverage} coverage
+                      Generated {testGeneration.tests.length} tests with {testGeneration.coverage} coverage
                     </AlertDescription>
                   </Alert>
 
                   <div className="space-y-4">
-                    {results.testGeneration.tests.map((test: any, index: number) => (
+                    {testGeneration.tests.map((test, index) => (
                       <Card key={index}>
                         <CardHeader>
                           <CardTitle className="text-sm">{test.name}</CardTitle>
@@ -578,13 +713,13 @@ test('validateEmail should reject invalid emails', () => {
                   <div>
                     <h4 className="font-semibold mb-2">Recommendations</h4>
                     <ul className="space-y-1">
-                      {results.testGeneration.recommendations.map((rec: string, index: number) => (
+                      {testGeneration.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-muted-foreground">• {rec}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -625,21 +760,21 @@ test('validateEmail should reject invalid emails', () => {
                 </div>
               </div>
               <Button onClick={handleCodeCompletion} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Lightbulb className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <LightbulbIcon className="mr-2 h-4 w-4" />}
                 Generate Code
               </Button>
 
-              {results.codeCompletion && (
+              {codeCompletion ? (
                 <div className="space-y-4">
                   <Alert>
-                    <Lightbulb className="h-4 w-4" />
+                    <LightbulbIcon className="h-4 w-4" />
                     <AlertDescription>
-                      Generated {results.codeCompletion.suggestions.length} code suggestions
+                      Generated {codeCompletion.suggestions.length} code suggestions
                     </AlertDescription>
                   </Alert>
 
                   <div className="space-y-4">
-                    {results.codeCompletion.suggestions.map((suggestion: any, index: number) => (
+                    {codeCompletion.suggestions.map((suggestion, index) => (
                       <Card key={index}>
                         <CardHeader>
                           <CardTitle className="text-sm capitalize">{suggestion.type} Suggestion</CardTitle>
@@ -652,8 +787,8 @@ test('validateEmail should reject invalid emails', () => {
                       </Card>
                     ))}
                   </div>
-                </div>
-              )}
+                  </div>
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -678,14 +813,14 @@ test('validateEmail should reject invalid emails', () => {
                 />
               </div>
               <Button onClick={handleNaturalLanguageToCode} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <FileText className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <FileTextIcon className="mr-2 h-4 w-4" />}
                 Generate Code
               </Button>
 
-              {results.naturalLanguageToCode && (
+              {naturalLanguageToCode ? (
                 <div className="space-y-4">
                   <Alert>
-                    <FileText className="h-4 w-4" />
+                    <FileTextIcon className="h-4 w-4" />
                     <AlertDescription>
                       Generated code with tests and documentation
                     </AlertDescription>
@@ -699,22 +834,22 @@ test('validateEmail should reject invalid emails', () => {
                     </TabsList>
                     <TabsContent value="code">
                       <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                        <code>{results.naturalLanguageToCode.code}</code>
+                        <code>{naturalLanguageToCode.code}</code>
                       </pre>
                     </TabsContent>
                     <TabsContent value="tests">
                       <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                        <code>{results.naturalLanguageToCode.tests}</code>
+                        <code>{naturalLanguageToCode.tests}</code>
                       </pre>
                     </TabsContent>
                     <TabsContent value="docs">
                       <pre className="bg-muted p-4 rounded text-sm overflow-x-auto">
-                        <code>{results.naturalLanguageToCode.documentation}</code>
+                        <code>{naturalLanguageToCode.documentation}</code>
                       </pre>
                     </TabsContent>
                   </Tabs>
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -739,21 +874,21 @@ test('validateEmail should reject invalid emails', () => {
                 />
               </div>
               <Button onClick={handleCodeReview} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Shield className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <ShieldIcon className="mr-2 h-4 w-4" />}
                 Review Code
               </Button>
 
-              {results.codeReview && (
+              {codeReview ? (
                 <div className="space-y-4">
                   <Alert>
-                    <Shield className="h-4 w-4" />
+                    <ShieldIcon className="h-4 w-4" />
                     <AlertDescription>
-                      {results.codeReview.summary}
+                      {codeReview.summary}
                     </AlertDescription>
                   </Alert>
 
                   <div className="space-y-4">
-                    {results.codeReview.issues.map((issue: any, index: number) => (
+                    {codeReview.issues.map((issue, index) => (
                       <Card key={index} className="border-l-4 border-l-red-500">
                         <CardHeader>
                           <div className="flex items-center justify-between">
@@ -781,13 +916,13 @@ test('validateEmail should reject invalid emails', () => {
                   <div>
                     <h4 className="font-semibold mb-2">Recommendations</h4>
                     <ul className="space-y-1">
-                      {results.codeReview.recommendations.map((rec: string, index: number) => (
+                    {codeReview.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-muted-foreground">• {rec}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -812,27 +947,27 @@ test('validateEmail should reject invalid emails', () => {
                 />
               </div>
               <Button onClick={handlePerformanceAnalysis} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Gauge className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <GaugeIcon className="mr-2 h-4 w-4" />}
                 Analyze Performance
               </Button>
 
-              {results.performanceAnalysis && (
+              {performanceAnalysis ? (
                 <div className="space-y-4">
                   <div className="flex items-center gap-4">
                     <Alert>
-                      <Gauge className="h-4 w-4" />
+                      <GaugeIcon className="h-4 w-4" />
                       <AlertDescription>
-                        {results.performanceAnalysis.summary}
+                        {performanceAnalysis.summary}
                       </AlertDescription>
                     </Alert>
                     <div className="text-center">
-                      <div className="text-2xl font-bold">{results.performanceAnalysis.optimizationScore}</div>
+                      <div className="text-2xl font-bold">{performanceAnalysis.optimizationScore}</div>
                       <div className="text-sm text-muted-foreground">Optimization Score</div>
                     </div>
                   </div>
 
                   <div className="space-y-4">
-                    {results.performanceAnalysis.issues.map((issue: any, index: number) => (
+                    {performanceAnalysis.issues.map((issue, index) => (
                       <Card key={index} className="border-l-4 border-l-orange-500">
                         <CardHeader>
                           <div className="flex items-center justify-between">
@@ -858,13 +993,13 @@ test('validateEmail should reject invalid emails', () => {
                   <div>
                     <h4 className="font-semibold mb-2">Optimization Recommendations</h4>
                     <ul className="space-y-1">
-                      {results.performanceAnalysis.recommendations.map((rec: string, index: number) => (
+                      {performanceAnalysis.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-muted-foreground">• {rec}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
@@ -901,30 +1036,30 @@ test('validateEmail should reject invalid emails', () => {
                 </div>
               </div>
               <Button onClick={handleIntegrationTesting} disabled={isLoading}>
-                {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Database className="mr-2 h-4 w-4" />}
+                {isLoading ? <LoaderIcon className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseIcon className="mr-2 h-4 w-4" />}
                 Generate Test Suite
               </Button>
 
-              {results.integrationTesting && (
+              {integrationTesting ? (
                 <div className="space-y-4">
                   <Alert>
-                    <Database className="h-4 w-4" />
+                    <DatabaseIcon className="h-4 w-4" />
                     <AlertDescription>
-                      {results.integrationTesting.summary}
+                      {integrationTesting.summary}
                     </AlertDescription>
                   </Alert>
 
                   <Card>
                     <CardHeader>
-                      <CardTitle>{results.integrationTesting.testSuite.name}</CardTitle>
+                      <CardTitle>{integrationTesting.testSuite.name}</CardTitle>
                       <CardDescription>
-                        Estimated duration: {results.integrationTesting.testSuite.estimatedDuration} minutes
+                        Estimated duration: {integrationTesting.testSuite.estimatedDuration} minutes
                       </CardDescription>
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-4">
                         <h4 className="font-semibold">Test Scenarios</h4>
-                        {results.integrationTesting.testSuite.scenarios.map((scenario: any, index: number) => (
+                        {integrationTesting.testSuite.scenarios.map((scenario, index) => (
                           <div key={index} className="flex items-center justify-between p-3 border rounded">
                             <div>
                               <div className="font-medium">{scenario.name}</div>
@@ -943,7 +1078,7 @@ test('validateEmail should reject invalid emails', () => {
                       <div className="mt-4">
                         <h4 className="font-semibold mb-2">Setup Scripts</h4>
                         <div className="space-y-1">
-                          {results.integrationTesting.testSuite.setupScripts.map((script: string, index: number) => (
+                          {integrationTesting.testSuite.setupScripts.map((script: string, index: number) => (
                             <div key={index} className="text-sm font-mono bg-muted p-2 rounded">
                               {script}
                             </div>
@@ -956,13 +1091,13 @@ test('validateEmail should reject invalid emails', () => {
                   <div>
                     <h4 className="font-semibold mb-2">Implementation Recommendations</h4>
                     <ul className="space-y-1">
-                      {results.integrationTesting.recommendations.map((rec: string, index: number) => (
+                      {integrationTesting.recommendations.map((rec, index) => (
                         <li key={index} className="text-sm text-muted-foreground">• {rec}</li>
                       ))}
                     </ul>
                   </div>
                 </div>
-              )}
+              ) : null}
             </CardContent>
           </Card>
         </TabsContent>
