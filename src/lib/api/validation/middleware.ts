@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z, ZodError, ZodSchema } from 'zod'
+import { z, ZodSchema, isZodError } from '@/lib/zod-compat'
 import { logger } from '@/lib/logger';
 export interface ValidationOptions {
   /** Transform successful validation results */
@@ -47,7 +47,7 @@ export async function validateRequestBody<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (isZodError(error)) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       return {
@@ -138,7 +138,7 @@ export function validateQueryParams<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (isZodError(error)) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       return {
@@ -198,7 +198,7 @@ export function validatePathParams<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (error instanceof ZodError) {
+    if (isZodError(error)) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       return {

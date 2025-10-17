@@ -3,7 +3,7 @@
  * Prevents injection attacks and ensures safe AI model interactions
  */
 
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 import { logger } from '@/lib/logger';
 // Use dynamic import for DOMPurify to avoid edge runtime issues
 // import DOMPurify from 'isomorphic-dompurify';

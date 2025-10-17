@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 import { logger } from '@/lib/logger';
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
