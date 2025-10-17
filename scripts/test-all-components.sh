@@ -1,53 +1,45 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
 # VibeCode Complete Component Testing Suite
 # Tests ALL components across LOCAL DEV, KIND, DOCKER COMPOSE, and K8S
 
-echo "🧪 VibeCode Complete Component Testing Suite"
-echo "============================================="
+set -euo pipefail
 
-# Colors for output
-RED='\033[0;31m'
-GREEN='\033[0;32m'
-YELLOW='\033[1;33m'
-BLUE='\033[0;34m'
-PURPLE='\033[0;35m'
-NC='\033[0m' # No Color
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
+
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
+
+log_step "🧪 VibeCode Complete Component Testing Suite"
 
 # Test configuration
 CLUSTER_NAME="vibecode-test"
 NAMESPACE="vibecode"
 DATADOG_NAMESPACE="datadog"
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
 
 # Test counters
 TOTAL_TESTS=0
 PASSED_TESTS=0
 FAILED_TESTS=0
 
-# Helper functions
-log_info() {
-    echo -e "${BLUE}[INFO]${NC} $1"
+# Additional helper for test logging
+log_test() {
+    printf '%b[TEST]%b %s\n' "${LOG_COLOR_BLUE}" "${LOG_COLOR_RESET}" "$*"
+    ((TOTAL_TESTS++))
 }
 
-log_success() {
-    echo -e "${GREEN}[PASS]${NC} $1"
-    ((PASSED_TESTS++))
-}
-
-log_warning() {
-    echo -e "${YELLOW}[WARN]${NC} $1"
-}
-
-log_error() {
-    echo -e "${RED}[FAIL]${NC} $1"
+log_fail() {
+    log_error "$*"
     ((FAILED_TESTS++))
 }
 
-log_test() {
-    echo -e "${PURPLE}[TEST]${NC} $1"
-    ((TOTAL_TESTS++))
+log_pass() {
+    log_success "$*"
+    ((PASSED_TESTS++))
 }
 
 # Test function wrapper
@@ -57,9 +49,9 @@ run_test() {
     
     log_test "$test_name"
     if eval "$test_command"; then
-        log_success "$test_name"
+        log_pass "$test_name"
     else
-        log_error "$test_name"
+        log_fail "$test_name"
     fi
 }
 
@@ -76,12 +68,12 @@ cleanup() {
     pkill -f "npm run dev" &>/dev/null || true
     
     # Stop docker-compose
-    cd "$BASE_DIR" && docker-compose down &>/dev/null || true
+    cd "$REPO_ROOT" && docker-compose down &>/dev/null || true
 }
 
 trap cleanup EXIT
 
-echo -e "\n${BLUE}=== COMPONENT TEST MATRIX ===${NC}"
+log_step "=== COMPONENT TEST MATRIX ==="
 echo "┌─────────────────┬─────────┬─────────────┬──────┬─────┐"
 echo "│ Component       │ Local   │ Docker      │ KIND │ K8s │"
 echo "│                 │ Dev     │ Compose     │      │     │"
@@ -98,10 +90,9 @@ echo "└─────────────────┴─────�
 # 1. LOCAL DEVELOPMENT TESTS
 # ================================================
 
-echo -e "\n${BLUE}1. LOCAL DEVELOPMENT ENVIRONMENT TESTS${NC}"
-echo "=========================================="
+log_step "1. LOCAL DEVELOPMENT ENVIRONMENT TESTS"
 
-cd "$BASE_DIR/docs"
+cd "$REPO_ROOT/docs"
 
 # Test 1.1: Node.js and npm setup
 run_test "Node.js version check" "node --version | grep -q 'v2[0-9]'"
@@ -145,10 +136,10 @@ kill $DEV_PID &>/dev/null || true
 # 2. DOCKER COMPOSE TESTS
 # ================================================
 
-echo -e "\n${BLUE}2. DOCKER COMPOSE ENVIRONMENT TESTS${NC}"
+log_step "2. DOCKER COMPOSE ENVIRONMENT TESTS"
 echo "====================================="
 
-cd "$BASE_DIR"
+cd "$REPO_ROOT"
 
 # Test 2.1: Docker Compose configuration
 run_test "Docker Compose config validation" "docker-compose config"
@@ -194,7 +185,7 @@ docker-compose down
 # 3. KIND CLUSTER TESTS
 # ================================================
 
-echo -e "\n${BLUE}3. KIND CLUSTER TESTS${NC}"
+log_step "3. KIND CLUSTER TESTS"
 echo "======================"
 
 # Test 3.1: KIND cluster setup
@@ -211,8 +202,8 @@ run_test "kubectl node readiness" "kubectl get nodes | grep -q 'Ready'"
 
 # Test 3.3: Deploy monitoring stack
 log_info "Deploying monitoring stack to KIND..."
-chmod +x "$BASE_DIR/scripts/deploy-kind-with-monitoring.sh"
-"$BASE_DIR/scripts/deploy-kind-with-monitoring.sh" &>/dev/null
+chmod +x "$REPO_ROOT/scripts/deploy-kind-with-monitoring.sh"
+"$REPO_ROOT/scripts/deploy-kind-with-monitoring.sh" &>/dev/null
 
 # Test 3.4: Namespace validation
 run_test "VibeCode namespace exists" "kubectl get namespace $NAMESPACE"
@@ -252,10 +243,10 @@ run_test "Datadog agent collecting metrics" "kubectl logs -l app=datadog-agent -
 # 4. KUBERNETES MANIFESTS TESTS
 # ================================================
 
-echo -e "\n${BLUE}4. KUBERNETES MANIFESTS TESTS${NC}"
+log_step "4. KUBERNETES MANIFESTS TESTS"
 echo "==============================="
 
-cd "$BASE_DIR"
+cd "$REPO_ROOT"
 
 # Test 4.1: Manifest file validation
 run_test "Docs deployment manifest exists" "[ -f 'k8s/docs-deployment.yaml' ]"
@@ -286,7 +277,7 @@ fi
 # 5. INTEGRATION TESTS
 # ================================================
 
-echo -e "\n${BLUE}5. INTEGRATION TESTS${NC}"
+log_step "5. INTEGRATION TESTS"
 echo "===================="
 
 # Test 5.1: Cross-component connectivity
@@ -317,7 +308,7 @@ run_test "Scale back to normal" "kubectl scale deployment vibecode-docs --replic
 # 6. PERFORMANCE AND SECURITY TESTS
 # ================================================
 
-echo -e "\n${BLUE}6. PERFORMANCE AND SECURITY TESTS${NC}"
+log_step "6. PERFORMANCE AND SECURITY TESTS"
 echo "=================================="
 
 # Test 6.1: Resource usage validation
@@ -337,10 +328,10 @@ fi
 # 7. TERRAFORM CONFIGURATION TESTS
 # ================================================
 
-echo -e "\n${BLUE}7. TERRAFORM CONFIGURATION TESTS${NC}"
+log_step "7. TERRAFORM CONFIGURATION TESTS"
 echo "=================================="
 
-cd "$BASE_DIR/infrastructure/terraform/azure"
+cd "$REPO_ROOT/infrastructure/terraform/azure"
 
 # Test 7.1: Terraform syntax and validation
 run_test "Terraform format check" "terraform fmt -check=true"
@@ -358,13 +349,13 @@ run_test "AKS cluster configuration" "grep -q 'azurerm_kubernetes_cluster' *.tf"
 run_test "Container registry configuration" "grep -q 'azurerm_container_registry' *.tf"
 run_test "Datadog configuration" "grep -q 'datadog' kubernetes-deployment.tf"
 
-cd "$BASE_DIR"
+cd "$REPO_ROOT"
 
 # ================================================
 # FINAL RESULTS
 # ================================================
 
-echo -e "\n${BLUE}=== TEST EXECUTION SUMMARY ===${NC}"
+log_step "=== TEST EXECUTION SUMMARY ==="
 echo "┌────────────────────────────────────────────┐"
 echo "│              TEST RESULTS                  │"
 echo "├────────────────────────────────────────────┤"
@@ -373,28 +364,28 @@ printf "│ Passed:         %-26s │\n" "$PASSED_TESTS"
 printf "│ Failed:         %-26s │\n" "$FAILED_TESTS"
 echo "├────────────────────────────────────────────┤"
 
-if [ $FAILED_TESTS -eq 0 ]; then
-    echo -e "│ Status: ${GREEN}ALL TESTS PASSED ✅${NC}             │"
+if [ "$FAILED_TESTS" -eq 0 ]; then
+    printf "│ Status: %bALL TESTS PASSED ✅%b             │\n" "${LOG_COLOR_GREEN}" "${LOG_COLOR_RESET}"
     echo "│ Components ready for production!           │"
 else
-    echo -e "│ Status: ${RED}SOME TESTS FAILED ❌${NC}            │"
+    printf "│ Status: %bSOME TESTS FAILED ❌%b            │\n" "${LOG_COLOR_RED}" "${LOG_COLOR_RESET}"
     echo "│ Review failed tests before deployment      │"
 fi
 
 echo "└────────────────────────────────────────────┘"
 
-echo -e "\n${BLUE}Component Test Matrix Results:${NC}"
+log_step "Component Test Matrix Results:"
 echo "┌─────────────────┬─────────┬─────────────┬──────┬─────┐"
 echo "│ Component       │ Local   │ Docker      │ KIND │ K8s │"
 echo "│                 │ Dev     │ Compose     │      │     │"
 echo "├─────────────────┼─────────┼─────────────┼──────┼─────┤"
-echo -e "│ Docs Service    │ ${GREEN}✅${NC}       │ ${GREEN}✅${NC}           │ ${GREEN}✅${NC}    │ ${GREEN}✅${NC}   │"
-echo -e "│ Datadog Agent   │ ${YELLOW}N/A${NC}     │ ${GREEN}✅${NC}           │ ${GREEN}✅${NC}    │ ${GREEN}✅${NC}   │"
-echo -e "│ Database        │ ${GREEN}✅${NC}       │ ${GREEN}✅${NC}           │ ${YELLOW}Ext${NC}  │ ${GREEN}✅${NC}   │"
-echo -e "│ Security        │ ${GREEN}✅${NC}       │ ${GREEN}✅${NC}           │ ${GREEN}✅${NC}    │ ${GREEN}✅${NC}   │"
-echo -e "│ Monitoring      │ ${YELLOW}N/A${NC}     │ ${GREEN}✅${NC}           │ ${GREEN}✅${NC}    │ ${GREEN}✅${NC}   │"
+echo "│ Docs Service    │ ✅       │ ✅           │ ✅    │ ✅   │"
+echo "│ Datadog Agent   │ N/A     │ ✅           │ ✅    │ ✅   │"
+echo "│ Database        │ ✅       │ ✅           │ Ext  │ ✅   │"
+echo "│ Security        │ ✅       │ ✅           │ ✅    │ ✅   │"
+echo "│ Monitoring      │ N/A     │ ✅           │ ✅    │ ✅   │"
 echo "└─────────────────┴─────────┴─────────────┴──────┴─────┘"
 
-echo -e "\n${PURPLE}🎯 All deployment methods tested and validated!${NC}"
+log_success "🎯 All deployment methods tested and validated!"
 
 exit $FAILED_TESTS

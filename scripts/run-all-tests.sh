@@ -1,30 +1,29 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
 # Master Test Runner
 # Orchestrates all component tests across all environments
 
-echo "🧪 VibeCode Master Test Suite"
-echo "============================="
-echo "Running comprehensive tests for all components across all deployment methods"
+set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-PURPLE='\033[0;35m'
-CYAN='\033[0;36m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
+
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
+
+log_step "🧪 VibeCode Master Test Suite"
+echo "Running comprehensive tests for all components across all deployment methods"
 
 # Test suite tracking
 TOTAL_SUITES=0
 PASSED_SUITES=0
 FAILED_SUITES=0
 
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
-TEST_DIR="$BASE_DIR/tests"
-SCRIPTS_DIR="$BASE_DIR/scripts"
+TEST_DIR="$REPO_ROOT/tests"
+SCRIPTS_DIR="$REPO_ROOT/scripts"
 
 # Helper functions
 run_test_suite() {
@@ -32,8 +31,8 @@ run_test_suite() {
     local script_path="$2"
     local description="$3"
     
-    echo -e "\n${CYAN}📋 Test Suite: $suite_name${NC}"
-    echo -e "${BLUE}Description: $description${NC}"
+    log_step "📋 Test Suite: $suite_name"
+    log_info "Description: $description"
     echo "Script: $script_path"
     echo "────────────────────────────────────────────────────"
     
@@ -41,20 +40,20 @@ run_test_suite() {
     
     if [ -x "$script_path" ]; then
         if "$script_path"; then
-            echo -e "${GREEN}✅ $suite_name: PASSED${NC}"
+            log_success "✅ $suite_name: PASSED"
             ((PASSED_SUITES++))
         else
-            echo -e "${RED}❌ $suite_name: FAILED${NC}"
+            log_error "❌ $suite_name: FAILED"
             ((FAILED_SUITES++))
         fi
     else
-        echo -e "${RED}❌ $suite_name: SCRIPT NOT EXECUTABLE${NC}"
+        log_error "❌ $suite_name: SCRIPT NOT EXECUTABLE"
         ((FAILED_SUITES++))
     fi
 }
 
 # Display test matrix
-echo -e "\n${PURPLE}🎯 Test Matrix Overview${NC}"
+echo -e "\n${PURPLE}🎯 Test Matrix Overview"
 echo "┌─────────────────────────────────────────────────────────────┐"
 echo "│                    VIBECODE TEST MATRIX                     │"
 echo "├─────────────────────────────────────────────────────────────┤"
@@ -111,18 +110,17 @@ run_test_suite \
     "$SCRIPTS_DIR/test-all-components.sh" \
     "Comprehensive test matrix for all components across all environments"
 
-echo -e "\n${PURPLE}════════════════════════════════════════${NC}"
-echo -e "${PURPLE}         MASTER TEST RESULTS              ${NC}"
-echo -e "${PURPLE}════════════════════════════════════════${NC}"
+echo -e "\n${PURPLE}════════════════════════════════════════"
+echo -e "${PURPLE}         MASTER TEST RESULTS              "
+echo -e "${PURPLE}════════════════════════════════════════"
 
-echo -e "\n${BLUE}Test Suite Summary:${NC}"
+log_step "Test Suite Summary:"
 echo "┌─────────────────────────┬──────────┬────────┐"
 echo "│ Test Suite              │ Status   │ Result │"
 echo "├─────────────────────────┼──────────┼────────┤"
 
 # Create result matrix
 declare -a suite_names=("Local Development" "Docker Compose" "KIND Cluster" "K8s Manifests" "Integration Tests" "Complete Pipeline" "All Components")
-declare -a suite_results=()
 
 # This would be populated by actual test results
 for suite in "${suite_names[@]}"; do
@@ -131,7 +129,7 @@ done
 
 echo "└─────────────────────────┴──────────┴────────┘"
 
-echo -e "\n${BLUE}Overall Statistics:${NC}"
+log_step "Overall Statistics:"
 echo "┌────────────────────────┬─────────┐"
 printf "│ %-22s │ %7s │\n" "Total Test Suites" "$TOTAL_SUITES"
 printf "│ %-22s │ %7s │\n" "Passed Suites" "$PASSED_SUITES"
@@ -140,7 +138,7 @@ printf "│ %-22s │ %6.1f%% │\n" "Success Rate" "$(echo "scale=1; $PASSED_SU
 echo "└────────────────────────┴─────────┘"
 
 # Component Status Matrix
-echo -e "\n${PURPLE}🎯 Component Readiness Matrix:${NC}"
+echo -e "\n${PURPLE}🎯 Component Readiness Matrix:"
 echo "┌─────────────────┬─────────┬─────────────┬──────┬─────┬──────────┐"
 echo "│ Component       │ Local   │ Docker      │ KIND │ K8s │ Status   │"
 echo "│                 │ Dev     │ Compose     │      │     │          │"
@@ -159,10 +157,10 @@ fi
 echo "└─────────────────┴─────────┴─────────────┴──────┴─────┴──────────┘"
 
 # Final verdict
-echo -e "\n${PURPLE}🎯 FINAL VERDICT:${NC}"
+echo -e "\n${PURPLE}🎯 FINAL VERDICT:"
 if [ $FAILED_SUITES -eq 0 ]; then
-    echo -e "${GREEN}✅ ALL TEST SUITES PASSED!${NC}"
-    echo -e "${GREEN}🚀 VibeCode is ready for production deployment!${NC}"
+    log_success "✅ ALL TEST SUITES PASSED!"
+    log_success "🚀 VibeCode is ready for production deployment!"
     echo ""
     echo "✨ Achievements:"
     echo "  📚 Documentation system fully tested"
@@ -176,8 +174,8 @@ if [ $FAILED_SUITES -eq 0 ]; then
     echo ""
     echo "🎉 Ready for 'terraform apply' to deploy to Azure!"
 else
-    echo -e "${RED}❌ SOME TEST SUITES FAILED!${NC}"
-    echo -e "${YELLOW}⚠️  Please fix the failing tests before production deployment.${NC}"
+    log_error "❌ SOME TEST SUITES FAILED!"
+    log_warn "⚠️  Please fix the failing tests before production deployment."
     echo ""
     echo "🔧 Next Steps:"
     echo "  1. Review failed test output above"
@@ -186,7 +184,7 @@ else
     echo "  4. Ensure all tests pass before deployment"
 fi
 
-echo -e "\n${BLUE}📋 Test Artifacts:${NC}"
+log_step "📋 Test Artifacts:"
 echo "  📂 Test Scripts: $TEST_DIR/"
 echo "  🔧 Deployment Scripts: $SCRIPTS_DIR/"
 echo "  📊 Logs: Check individual test outputs above"

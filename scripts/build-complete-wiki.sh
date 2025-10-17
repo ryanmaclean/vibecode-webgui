@@ -1,26 +1,25 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
 # Complete Wiki Build Script
 # Ensures ALL markdown files are included in the Astro wiki build
 
-echo "📚 VibeCode Complete Wiki Build"
-echo "================================"
+set -euo pipefail
 
-# Colors
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
 
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
-DOCS_DIR="$BASE_DIR/docs"
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
+
+log_step "📚 VibeCode Complete Wiki Build"
+
+DOCS_DIR="$REPO_ROOT/docs"
 CONTENT_DIR="$DOCS_DIR/src/content/docs"
 
-cd "$BASE_DIR"
-
-echo -e "\n${BLUE}1. Analyzing Markdown Files${NC}"
+log_step "1. Analyzing Markdown Files"
 echo "----------------------------"
 
 # Find all root-level markdown files that should be in the wiki
@@ -32,12 +31,12 @@ echo "📋 Found $ROOT_MD_COUNT root-level markdown files"
 echo "📁 Found $EXISTING_CONTENT_FILES files in content directory"
 
 # List root markdown files
-echo -e "\n${YELLOW}Root markdown files to include:${NC}"
+log_warn "Root markdown files to include:"
 for file in $ROOT_MD_FILES; do
     echo "  📄 $(basename "$file")"
 done
 
-echo -e "\n${BLUE}2. Copying Missing Markdown Files${NC}"
+log_step "2. Copying Missing Markdown Files"
 echo "----------------------------------"
 
 # Copy root markdown files to content directory if they don't exist
@@ -57,7 +56,7 @@ done
 
 echo "📦 Copied $COPIED_COUNT new markdown files"
 
-echo -e "\n${BLUE}3. Updating Astro to Latest Version${NC}"
+log_step "3. Updating Astro to Latest Version"
 echo "-----------------------------------"
 
 cd "$DOCS_DIR"
@@ -73,7 +72,7 @@ npm update astro @astrojs/starlight --silent
 NEW_ASTRO=$(grep '"astro"' package.json | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+')
 echo "📦 Updated Astro version: $NEW_ASTRO"
 
-echo -e "\n${BLUE}4. Regenerating Astro Configuration${NC}"
+log_step "4. Regenerating Astro Configuration"
 echo "------------------------------------"
 
 # Create dynamic sidebar configuration
@@ -213,7 +212,7 @@ export default defineConfig({
 });
 EOF
 
-echo -e "\n${BLUE}5. Building Complete Wiki${NC}"
+log_step "5. Building Complete Wiki"
 echo "--------------------------"
 
 # Clean previous build
@@ -227,13 +226,13 @@ npm run build
 BUILT_PAGES=$(find dist/ -name "*.html" | wc -l)
 INDEXED_WORDS=$(grep -r "Indexed.*words" dist/ | grep -o '[0-9]\+ words' | head -1 || echo "0 words")
 
-echo -e "\n${GREEN}✅ Build Complete!${NC}"
+log_success "✅ Build Complete!"
 echo "📊 Build Statistics:"
 echo "  📄 HTML pages generated: $BUILT_PAGES"
 echo "  🔍 Search index: $INDEXED_WORDS"
 echo "  📁 Content files processed: $(find src/content/docs -name '*.md' | wc -l)"
 
-echo -e "\n${BLUE}6. Validation${NC}"
+log_step "6. Validation"
 echo "---------------"
 
 # Test that key files were built
@@ -254,21 +253,21 @@ else
 fi
 
 # List all generated HTML files
-echo -e "\n${YELLOW}Generated pages:${NC}"
+log_warn "Generated pages:"
 find dist/ -name "*.html" | sed 's|dist/||' | sort | head -20
 
 if [ "$BUILT_PAGES" -gt 1 ]; then
-    echo -e "\n${GREEN}🎉 Success! Wiki built with $BUILT_PAGES pages from all markdown files${NC}"
+    log_success "🎉 Success! Wiki built with $BUILT_PAGES pages from all markdown files"
     echo "📚 All documentation is now available in the wiki"
 else
-    echo -e "\n${RED}❌ Build issue: Only $BUILT_PAGES pages generated${NC}"
+    echo -e "\n${RED}❌ Build issue: Only $BUILT_PAGES pages generated"
     echo "🔧 This may indicate a configuration problem"
     exit 1
 fi
 
 cd "$BASE_DIR"
 
-echo -e "\n${BLUE}7. Testing Complete Wiki${NC}"
+log_step "7. Testing Complete Wiki"
 echo "-------------------------"
 
 # Run comprehensive tests
@@ -285,14 +284,14 @@ if [ -f "tests/local-dev-tests.sh" ]; then
     echo "✅ Wiki build tests completed"
 fi
 
-echo -e "\n${GREEN}🎯 Complete Wiki Build Summary:${NC}"
+log_success "🎯 Complete Wiki Build Summary:"
 echo "  📄 Total markdown files: $(find "$CONTENT_DIR" -name '*.md' | wc -l)"  
 echo "  🏗️  Generated HTML pages: $BUILT_PAGES"
 echo "  🔍 Search indexing: Enabled"
 echo "  📊 Datadog RUM: Configured"
 echo "  🎨 Custom styling: Applied"
 
-echo -e "\n${GREEN}✅ Complete wiki built successfully!${NC}"
+log_success "✅ Complete wiki built successfully!"
 echo "🚀 Ready for deployment with all markdown files included"
 
 exit 0

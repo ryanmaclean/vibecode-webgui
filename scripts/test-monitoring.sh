@@ -1,27 +1,33 @@
-#!/bin/bash
-set -e
-
+#!/usr/bin/env bash
 # Test Monitoring Integration Script
-echo "🔍 Testing Datadog Monitoring Integration"
-echo "========================================"
 
-# Colors for output
-GREEN='\033[0;32m'
-RED='\033[0;31m'
-BLUE='\033[0;34m'
-YELLOW='\033[1;33m'
-NC='\033[0m'
+set -euo pipefail
 
-BASE_DIR="/Users/ryan.maclean/vibecode-webgui"
-cd "$BASE_DIR"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "${SCRIPT_DIR}/lib/bootstrap.sh"
+bootstrap_init "${SCRIPT_DIR}"
+# shellcheck disable=SC1091
+source "${LIB_DIR}/logging.sh"
+
+REPO_ROOT="$(cd "${SCRIPTS_ROOT}/.." && pwd)"
+cd "$REPO_ROOT"
+
+log_step "🔍 Testing Datadog Monitoring Integration"
 
 # Load environment variables: prefer .env, fall back to .env.local
 if [ -f ".env" ]; then
-    echo "📁 Loading environment variables from .env"
-    export $(grep -v '^#' .env | grep -v '^$' | xargs)
+    log_info "Loading environment variables from .env"
+    set -a
+    # shellcheck disable=SC1091
+    source .env
+    set +a
 elif [ -f ".env.local" ]; then
-    echo "📁 Loading environment variables from .env.local (fallback)"
-    export $(grep -v '^#' .env.local | grep -v '^$' | xargs)
+    log_info "Loading environment variables from .env.local (fallback)"
+    set -a
+    # shellcheck disable=SC1091
+    source .env.local
+    set +a
 fi
 
 # Test counters
@@ -32,20 +38,19 @@ run_test() {
     local test_name="$1"
     local command="$2"
     
-    echo -e "\n${BLUE}Testing: ${test_name}${NC}"
-    echo "Command: $command"
+    log_info "Testing: ${test_name}"
     
     ((TOTAL_TESTS++))
     
     if eval "$command" > /dev/null 2>&1; then
-        echo -e "${GREEN}✅ PASS${NC} - $test_name"
+        log_success "✅ PASS - $test_name"
         ((PASSED_TESTS++))
     else
-        echo -e "${RED}❌ FAIL${NC} - $test_name"
+        log_error "❌ FAIL - $test_name"
     fi
 }
 
-echo -e "\n${BLUE}1. Environment Configuration Tests${NC}"
+log_step "1. Environment Configuration Tests"
 echo "-----------------------------------"
 
 # Test environment variables
@@ -53,48 +58,42 @@ run_test "DD_API_KEY is set" "[ ! -z \"\$DD_API_KEY\" ]"
 run_test "DD_SERVICE is configured" "[ ! -z \"\$DD_SERVICE\" ] || [ ! -z \"\${DD_SERVICE:-vibecode-webgui}\" ]"
 run_test "DD_ENV is configured" "[ ! -z \"\$DD_ENV\" ] || [ ! -z \"\${DD_ENV:-development}\" ]"
 
-echo -e "\n${BLUE}2. Package Dependencies${NC}"
-echo "------------------------"
+log_step "2. Package Dependencies"
 
 # Test required packages
 run_test "dd-trace package is installed" "npm list dd-trace"
 run_test "@datadog/browser-rum is installed" "npm list @datadog/browser-rum"
 run_test "@datadog/datadog-api-client is installed" "npm list @datadog/datadog-api-client"
 
-echo -e "\n${BLUE}3. Instrumentation Files${NC}"
-echo "-------------------------"
+log_step "3. Instrumentation Files"
 
 # Test instrumentation files exist
 run_test "src/instrument.ts exists" "[ -f src/instrument.ts ]"
 run_test "LLM tracer exists" "[ -f src/lib/monitoring/llm-tracer.ts ]"
 run_test "RUM client exists" "[ -f src/lib/monitoring/rum-client.ts ]"
 
-echo -e "\n${BLUE}4. Configuration Validation${NC}"
-echo "----------------------------"
+log_step "4. Configuration Validation"
 
 # Test TypeScript compilation
 run_test "Instrumentation compiles" "npx tsc --noEmit src/instrument.ts"
 run_test "LLM tracer compiles" "npx tsc --noEmit src/lib/monitoring/llm-tracer.ts"
 run_test "RUM client compiles" "npx tsc --noEmit src/lib/monitoring/rum-client.ts"
 
-echo -e "\n${BLUE}5. Docker Compose Monitoring${NC}"
-echo "------------------------------"
+log_step "5. Docker Compose Monitoring"
 
 # Test Docker Compose configuration
 run_test "Datadog agent configured in docker-compose" "grep -q 'datadog-agent:' docker-compose.yml"
 run_test "DD_APM_ENABLED in docker-compose" "grep -q 'DD_APM_ENABLED=true' docker-compose.yml"
 run_test "DD_LOGS_ENABLED in docker-compose" "grep -q 'DD_LOGS_ENABLED=true' docker-compose.yml"
 
-echo -e "\n${BLUE}6. Frontend RUM Configuration${NC}"
-echo "-------------------------------"
+log_step "6. Frontend RUM Configuration"
 
 # Test RUM configuration in built docs
 run_test "RUM script in Astro config" "grep -q 'datadog-rum.js' docs/astro.config.mjs"
 run_test "sessionSampleRate configured" "grep -q 'sessionSampleRate.*100' docs/astro.config.mjs"
 run_test "sessionReplaySampleRate configured" "grep -q 'sessionReplaySampleRate.*20' docs/astro.config.mjs"
 
-echo -e "\n${BLUE}7. Live Monitoring Test${NC}"
-echo "------------------------"
+log_step "7. Live Monitoring Test"
 
 # Test if Datadog agent is accessible
 if command -v curl >/dev/null 2>&1; then
@@ -104,8 +103,7 @@ else
     echo "⚠️  curl not available, skipping live monitoring tests"
 fi
 
-echo -e "\n${BLUE}8. Synthetic Monitoring Data${NC}"
-echo "------------------------------"
+log_step "8. Synthetic Monitoring Data"
 
 # Create a simple test to send monitoring data
 cat > /tmp/test-monitoring.js << 'EOF'
@@ -138,10 +136,9 @@ llmSpan.finish();
 console.log('✅ LLM test span created successfully');
 EOF
 
-run_test "Test monitoring data creation" "cd '$BASE_DIR' && node /tmp/test-monitoring.js"
+run_test "Test monitoring data creation" "cd '$REPO_ROOT' && node /tmp/test-monitoring.js"
 
-echo -e "\n${BLUE}9. Environment Files Check${NC}"
-echo "----------------------------"
+log_step "9. Environment Files Check"
 
 # Check for proper environment configuration
 if [ -f ".env" ] || [ -f ".env.local" ]; then
@@ -153,8 +150,7 @@ else
     echo "⚠️  No .env or .env.local found, using environment variables"
 fi
 
-echo -e "\n${YELLOW}10. Integration Recommendations${NC}"
-echo "------------------------------------"
+log_step "10. Integration Recommendations"
 
 echo "📋 To complete monitoring setup:"
 echo "  1. Ensure valid Datadog API keys are set"
@@ -162,19 +158,18 @@ echo "  2. Configure RUM client token for frontend monitoring"
 echo "  3. Start Docker Compose to test agent connectivity"
 echo "  4. Deploy to staging/production for full validation"
 
-echo -e "\n${GREEN}📊 Test Results Summary:${NC}"
+log_step "📊 Test Results Summary"
 echo "  Total Tests: $TOTAL_TESTS"
 echo "  Passed: $PASSED_TESTS"
 echo "  Failed: $((TOTAL_TESTS - PASSED_TESTS))"
 
-if [ $PASSED_TESTS -eq $TOTAL_TESTS ]; then
-    echo -e "\n${GREEN}🎉 All monitoring tests passed!${NC}"
+if [ "$PASSED_TESTS" -eq "$TOTAL_TESTS" ]; then
+    log_success "🎉 All monitoring tests passed!"
     echo "Your Datadog monitoring integration is properly configured."
+    rm -f /tmp/test-monitoring.js
     exit 0
 else
-    echo -e "\n${YELLOW}⚠️  Some tests failed. Review the configuration above.${NC}"
+    log_warn "⚠️  Some tests failed. Review the configuration above."
+    rm -f /tmp/test-monitoring.js
     exit 1
 fi
-
-# Cleanup
-rm -f /tmp/test-monitoring.js
