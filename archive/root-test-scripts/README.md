@@ -10,6 +10,17 @@ These files were used during development for:
 - Datadog monitoring integration debugging
 - Vector database functionality testing
 
+## ⚠️ Important: Reference Only
+
+**These scripts are non-functional in their current archived state.** They contain relative import paths (e.g., `'./src/lib/...'`) that do not resolve correctly from the `archive/` directory. 
+
+These files are preserved for:
+- Historical reference
+- Understanding past development approaches
+- Code examples and patterns
+
+**Do not attempt to run these scripts directly.** They would require significant modifications to work from this location.
+
 ## Why Archived?
 
 These scripts were moved out of the project root to:
@@ -49,6 +60,24 @@ For current, maintained tests, see:
 - `tests/` - Jest/Playwright test suites
 - `scripts/tests/` - Shell script test harnesses
 - `tests/manual/` - Current manual testing scripts
+
+### Running Modern Test Suites
+
+Instead of these archived scripts, use the maintained test infrastructure:
+
+```bash
+# Database connectivity tests
+npm run test:integration
+
+# Health endpoint validation
+npm run test:health
+
+# Full test suite
+npm test
+
+# E2E tests
+npm run test:e2e
+```
 
 ## Date Archived
 
