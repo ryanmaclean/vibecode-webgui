@@ -4,6 +4,7 @@
  */
 
 import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env'
+import { logger } from '@/lib/logger'
 
 interface MetricData {
   metric: string
@@ -456,16 +457,6 @@ class MonitoringService {
       console.warn('Failed to track performance:', error)
     })
   }
-}
-
-// Simple logger implementation
-export const logger = {
-  info: (message: string, ...args: any[]) => {
-    // Info logged
-  },
-  warn: (message: string, ...args: any[]) => console.warn(`[WARN] ${message}`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`[ERROR] ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => console.debug(`[DEBUG] ${message}`, ...args)
 }
 
 // Export singleton instance
