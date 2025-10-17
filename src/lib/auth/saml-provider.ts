@@ -4,7 +4,7 @@
  * Supports multiple SAML identity providers (Okta, Azure AD, Google Workspace, etc.)
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { randomBytes } from 'crypto'
 import { logger } from '@/lib/logger';
 export interface SAMLConfig {
