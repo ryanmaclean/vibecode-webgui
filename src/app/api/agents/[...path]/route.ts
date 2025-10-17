@@ -32,7 +32,7 @@ import {
   initializeThreadManager,
 } from '@/lib/agents/thread-manager'
 import { createChildLogger } from '@/lib/logger'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 const logger = createChildLogger({ module: 'api', scope: 'agents' })
 

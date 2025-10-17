@@ -3,7 +3,7 @@
  * Core functions for generating complete projects from AI prompts
  */
 
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 import { llmObservability } from '@/lib/datadog-llm';
 import type { Span } from 'dd-trace';
 import { logger } from '../logger';

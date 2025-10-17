@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 // Security: Input validation schema
 const ClaudeAnalyzeRequestSchema = z.object({
