@@ -3,7 +3,7 @@
  * Manages multiple AI providers and automatically selects the best model for each task
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 // Model capability definitions
 export interface ModelCapabilities {

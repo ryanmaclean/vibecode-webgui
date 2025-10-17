@@ -3,7 +3,7 @@
  */
 
 import { Octokit } from '@octokit/rest'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import type { GeneratedProject } from '@/lib/templates/generator'
 
 const createRepoSchema = z.object({

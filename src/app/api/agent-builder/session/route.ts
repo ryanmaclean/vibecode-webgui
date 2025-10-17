@@ -9,7 +9,7 @@ import { authOptions } from '@/lib/auth';
 import { getAgentBuilderClient } from '@/lib/agents/agent-builder-client';
 import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
 import { createChildLogger } from '@/lib/logger';
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 
 const logger = createChildLogger({ module: 'api', scope: 'agent-builder-session' });
 

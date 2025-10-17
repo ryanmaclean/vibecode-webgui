@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { createSAMLProvider } from '@/lib/auth/saml-provider'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 export const dynamic = 'force-dynamic'
 
