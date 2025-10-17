@@ -4,7 +4,7 @@
  */
 
 import bcrypt from 'bcryptjs'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { logger } from '@/lib/logger';
 // User validation schemas
 export const userSchema = z.object({

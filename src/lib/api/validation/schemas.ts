@@ -5,7 +5,7 @@
  * Implements security-first validation with reasonable constraints
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 // ============================================================================
 // Common Field Schemas
