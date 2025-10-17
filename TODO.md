@@ -39,8 +39,8 @@ release/* branches:
 ```
 
 ## 🧩 TYPE-SAFETY / BUILD BLOCKERS
+- [x] (Codex) **Health metrics API** (`src/app/api/health/database/metrics/route.ts`) — typed connection snapshots to eliminate implicit `any` filters.
 - [x] (Codex) **AI advanced features demo** (`src/app/ai-advanced-features-demo/page.tsx`) — solidified result interfaces and state narrowing (ReactNode + `tests/testSuite` errors cleared).
-- [ ] **Health metrics API** (`src/app/api/health/database/metrics/route.ts`) — annotate pg-stat helpers (`conn`, `age`, `idle` implicit anys).
 - [ ] **Health route test** (`src/app/api/health/__tests__/route.test.ts`) — stop deleting readonly helpers (copy instead of `delete`).
 - [ ] **Function-call controller** (`src/app/api/ai/function-call/route.ts`) — update types for `metadata`, config spreads, and `getFunctionDefinition` rename.
 - [ ] **Zustand stores & middleware** (`src/stores/uiStore.ts`, `middleware/optimisticMiddleware.ts`, `middleware/sseMiddleware.ts`) — add `zustand` types and refit middleware generics (coordinate before starting; >150 errors).
