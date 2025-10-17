@@ -103,7 +103,7 @@ FROM codercom/code-server:4.101.2
 - ✅ **AI Integration**: RAG context automatically injected into chat
 
 ### **RAG Data Flow**
-```
+```mermaid
 1. File Upload → 2. Chunking → 3. Embedding → 4. pgvector Storage
                                                         ↓
 5. User Query → 6. Query Embedding → 7. Similarity Search → 8. Context Retrieval
@@ -216,14 +216,14 @@ code-server:
 # Start full stack
 npm run dev
 
-# Populate sample libraries
-npm run samples:populate
+# Run unit tests
+npm run test:unit
 
-# Run tests without Docker
-npm run test:no-docker
+# Run integration tests
+npm run test:integration
 
-# Test with real APIs
-npm run test:real-apis
+# Run all tests
+npm run test
 ```
 
 ### **Production**
