@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { logger } from '@/lib/logger';
 // Zod validation schemas for workspace ID parameter
 const WorkspaceIdParamSchema = z.object({

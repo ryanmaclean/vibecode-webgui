@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { generateFromTemplate, GenerateFromTemplateOptions } from '@/lib/templates/generator'
 import { getTemplateById } from '@/lib/templates'
 import { llmObservability } from '@/lib/datadog-llm'

@@ -4,7 +4,7 @@
  */
 
 import OpenAI from 'openai'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import { logger } from '@/lib/logger';
 // Project template schema
 const ProjectTemplateSchema = z.object({
@@ -325,7 +325,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
           }
         }, null, 2),
         'src/server.ts': `import express from 'express'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 const app = express()
 const port = process.env.PORT || 3000

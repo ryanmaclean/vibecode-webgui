@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { mfaProvider } from '@/lib/auth/mfa-provider'
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 
 export const dynamic = 'force-dynamic'
 
