@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getMetricsCollector } from '../../../../../lib/db/database-metrics';
-import { getConnectionPoolStatus, getDetailedConnectionPoolInfo, createRobustConnection } from '../../../../../lib/db/robust-db-connection';
+import {
+  getConnectionPoolStatus,
+  getDetailedConnectionPoolInfo,
+  createRobustConnection
+} from '../../../../../lib/db/robust-db-connection';
 import { logger } from '../../../../../lib/logger';
 
 
@@ -44,6 +48,43 @@ interface VectorMetrics {
   vectorIndexes: VectorIndex[];
 }
 
+type ConnectionSnapshot = {
+  ageMs?: unknown;
+  idleTimeMs?: unknown;
+  [key: string]: unknown;
+};
+
+interface DetailedPoolEntry {
+  stats?: {
+    connections?: unknown;
+    [key: string]: unknown;
+  };
+  connections?: unknown;
+  [key: string]: unknown;
+}
+
+interface ConnectionDetail {
+  ageMs?: number;
+  idleTimeMs?: number;
+}
+
+type ConnectionSnapshot = {
+  ageMs?: unknown;
+  idleTimeMs?: unknown;
+  [key: string]: unknown;
+};
+
+type DetailedPoolEntry = {
+  type?: string;
+  connected?: boolean;
+  stats?: {
+    connections?: unknown;
+    [key: string]: unknown;
+  };
+  connections?: unknown;
+  [key: string]: unknown;
+};
+
 // Query result interfaces
 interface PgVectorQueryResult {
   installed: boolean;
@@ -76,7 +117,7 @@ interface VectorIndexQueryResult {
 export async function GET(_request: NextRequest) {
   const collector = getMetricsCollector();
   const poolStatus = getConnectionPoolStatus();
-  const detailedPoolInfo = getDetailedConnectionPoolInfo();
+  const detailedPoolInfo = getDetailedConnectionPoolInfo() as Record<string, DetailedPoolEntry>;
   
   // Update connection metrics
   const totalConnections = poolStatus.pools.reduce((sum, pool) => sum + pool.totalConnections, 0);
@@ -126,8 +167,24 @@ export async function GET(_request: NextRequest) {
     )
   };
   
-  // Connection age distribution
-  const connectionAges = detailedPoolInfo.connections.map(conn => conn.ageMs);
+  const toConnectionSnapshots = (value: unknown): ConnectionSnapshot[] =>
+    Array.isArray(value)
+      ? value.filter((item): item is ConnectionSnapshot => typeof item === 'object' && item !== null)
+      : [];
+
+  const normalizeConnectionDetail = (snapshot: ConnectionSnapshot): ConnectionDetail => ({
+    ageMs: typeof snapshot?.ageMs === 'number' ? snapshot.ageMs : undefined,
+    idleTimeMs: typeof snapshot?.idleTimeMs === 'number' ? snapshot.idleTimeMs : undefined
+  });
+
+  const connectionDetails: ConnectionDetail[] = Object.values(detailedPoolInfo)
+    .flatMap((entry) => [
+      ...toConnectionSnapshots(entry.stats?.connections),
+      ...toConnectionSnapshots(entry.connections)
+    ])
+    .map(normalizeConnectionDetail);
+
+  const connectionAges = connectionDetails.map((conn) => conn.ageMs ?? 0);
   const ageDistribution = {
     // Convert to seconds and group into buckets
     '<30s': connectionAges.filter(age => age < 30000).length,
@@ -138,7 +195,7 @@ export async function GET(_request: NextRequest) {
   };
   
   // Connection idle time distribution
-  const connectionIdleTimes = detailedPoolInfo.connections.map(conn => conn.idleTimeMs);
+  const connectionIdleTimes = connectionDetails.map((conn) => conn.idleTimeMs ?? 0);
   const idleTimeDistribution = {
     // Convert to seconds and group into buckets
     '<10s': connectionIdleTimes.filter(idle => idle < 10000).length,
