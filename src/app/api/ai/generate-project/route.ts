@@ -7,7 +7,7 @@
 import { NextRequest } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { z } from 'zod';
+import { z } from '@/lib/zod-compat';
 import { llmObservability } from '@/lib/datadog-llm';
 
 import type { Span } from 'dd-trace';
