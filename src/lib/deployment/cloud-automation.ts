@@ -3,7 +3,7 @@
  * Supports Vercel, Netlify, AWS, and other cloud providers
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import type { GeneratedProject } from '@/lib/templates/generator'
 
 // Cloud provider types

@@ -2,7 +2,7 @@
  * Template versioning and update management system
  */
 
-import { z } from 'zod'
+import { z } from '@/lib/zod-compat'
 import type { ProjectTemplate } from './index'
 import { logger } from '@/lib/logger';
 export interface TemplateVersion {
