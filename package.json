@@ -281,7 +281,7 @@
     "jest-environment-jsdom": "^30.0.4",
     "jest-junit": "16.0.0",
     "jest-watch-typeahead": "3.0.1",
-    "lighthouse": "12.8.1",
+    "lighthouse": "13.0.0",
     "markdownlint-cli2": "0.15.0",
     "msw": "^2.10.5",
     "null-loader": "4.0.1",
