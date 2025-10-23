@@ -447,3 +447,41 @@ export async function closeValkeyClient(): Promise<void> {
     valkeyClient = null;
   }
 }
+
+// Cache keys and TTL constants for performance metrics
+export const CacheKeys = {
+  PERFORMANCE_METRICS: 'performance:metrics',
+  AGENT_HEALTH: 'agent:health',
+  CONVERSATION_CONTEXT: 'conversation:context',
+  SESSION_DATA: 'session:data'
+} as const;
+
+export const CacheTTL = {
+  SHORT: 300,     // 5 minutes
+  MEDIUM: 1800,   // 30 minutes  
+  LONG: 3600,     // 1 hour
+  EXTENDED: 7200  // 2 hours
+} as const;
+
+// Default cache instance
+export const cache = {
+  async get<T>(key: string): Promise<T | null> {
+    const client = await getValkeyClient();
+    return client ? client.get<T>(key) : null;
+  },
+  
+  async set<T>(key: string, value: T, ttl?: number): Promise<boolean> {
+    const client = await getValkeyClient();
+    return client ? client.set(key, value, ttl) : false;
+  },
+  
+  async delete(key: string): Promise<boolean> {
+    const client = await getValkeyClient();
+    return client ? client.delete(key) : false;
+  },
+  
+  async exists(key: string): Promise<boolean> {
+    const client = await getValkeyClient();
+    return client ? client.exists(key) : false;
+  }
+};
