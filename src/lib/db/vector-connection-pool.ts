@@ -1,7 +1,8 @@
 import { Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { EventEmitter } from 'events';
-import { PoolStatus } from '../vector-db/pool-status';
 import { logger } from '@/lib/logger';
+import { getGlobalCoordinator } from './connection-pool-coordinator';
+import { ConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolStatus } from './connection-pool-types';
 // Use a simple logger implementation
 const createLogger = (name: string) => ({
   info: (message: string, ...args: any[]) => logger.info(`[${name}] INFO: ${message}`, ...args),
@@ -48,8 +49,9 @@ export enum PoolEvent {
 /**
  * Enhanced connection pool for vector database connections with detailed metrics
  * and dynamic scaling capabilities.
+ * Now integrated with global connection pool coordinator for cross-pool coordination.
  */
-export class VectorConnectionPool extends EventEmitter {
+export class VectorConnectionPool extends EventEmitter implements ManagedConnectionPool {
   private pool: Pool;
   private readonly logger = createLogger('VectorConnectionPool');
   private readonly options: any;
@@ -75,18 +77,20 @@ export class VectorConnectionPool extends EventEmitter {
    * @param config PostgreSQL pool configuration
    * @param options Additional pool options
    * @param name Optional name for the pool
+   * @param budget Optional connection budget (will register with coordinator)
    */
   constructor(
     config: PoolConfig,
     options: Partial<typeof DEFAULT_POOL_CONFIG> = {},
-    name: string = 'vector-db-pool'
+    name: string = 'vector-db-pool',
+    budget?: ConnectionBudget
   ) {
     super();
-    
+
     this.name = name;
     this.options = { ...DEFAULT_POOL_CONFIG, ...options };
     this.poolSize = this.options.max;
-    
+
     // Create the underlying PostgreSQL pool
     this.pool = new Pool({
       ...config,
@@ -94,11 +98,22 @@ export class VectorConnectionPool extends EventEmitter {
       idleTimeoutMillis: this.options.idleTimeoutMillis,
       connectionTimeoutMillis: this.options.acquireTimeoutMillis
     });
-    
+
     // Set up event listeners
     this.setupEventListeners();
-    
+
     this.logger.info(`Created VectorConnectionPool "${name}" with max size ${this.options.max}`);
+
+    // Register with global coordinator if budget provided
+    if (budget) {
+      try {
+        const coordinator = getGlobalCoordinator();
+        coordinator.registerPool(this, budget);
+        this.logger.info(`Registered with global coordinator`, { budget });
+      } catch (error) {
+        this.logger.warn('Failed to register with coordinator, operating independently', { error });
+      }
+    }
   }
 
   /**
@@ -157,22 +172,30 @@ export class VectorConnectionPool extends EventEmitter {
       
       // Acquire a client from the pool
       const client = await this.pool.connect();
-      
+
       // Update metrics
       this.activeConnections++;
       this.totalAcquired++;
       this.waitingClients--;
       const acquireTime = Date.now() - startTime;
       this.acquireTimeTotal += acquireTime;
-      
+
       // Emit event
-      this.emit(PoolEvent.ACQUIRED, { 
-        poolName: this.name, 
+      this.emit(PoolEvent.ACQUIRED, {
+        poolName: this.name,
         activeConnections: this.activeConnections,
         acquireTime,
         totalAcquired: this.totalAcquired
       });
-      
+
+      // Report to global coordinator
+      try {
+        const coordinator = getGlobalCoordinator();
+        coordinator.reportConnectionAcquired(this.name, acquireTime);
+      } catch (error) {
+        // Coordinator unavailable, continue without reporting
+      }
+
       this.logger.debug(`Acquired connection, active: ${this.activeConnections}/${this.poolSize}, acquire time: ${acquireTime}ms`);
       
       // Wrap the release method to track metrics
@@ -180,16 +203,24 @@ export class VectorConnectionPool extends EventEmitter {
       client.release = (err?: Error) => {
         this.activeConnections--;
         this.totalReleased++;
-        
-        this.emit(PoolEvent.RELEASED, { 
-          poolName: this.name, 
+
+        this.emit(PoolEvent.RELEASED, {
+          poolName: this.name,
           activeConnections: this.activeConnections,
           totalReleased: this.totalReleased,
           error: err
         });
-        
+
+        // Report to global coordinator
+        try {
+          const coordinator = getGlobalCoordinator();
+          coordinator.reportConnectionReleased(this.name);
+        } catch (error) {
+          // Coordinator unavailable, continue without reporting
+        }
+
         this.logger.debug(`Released connection, active: ${this.activeConnections}/${this.poolSize}`);
-        
+
         return originalRelease.call(client, err);
       };
       
@@ -285,34 +316,30 @@ export class VectorConnectionPool extends EventEmitter {
    * Gets the current status of the pool
    * @returns Pool status information
    */
-  public getStatus(): PoolStatus {
+  public getStatus(): PoolStatus & { waitingClients: number; idleConnections: number } {
     return {
+      name: this.name,
       size: this.poolSize,
       available: this.poolSize - this.activeConnections,
       inUse: this.activeConnections,
       maxSize: this.options.max,
+      minSize: this.options.min,
+      utilization: this.poolSize > 0 ? (this.activeConnections / this.poolSize) * 100 : 0,
       waitingClients: this.waitingClients,
-      idleConnections: this.poolSize - this.activeConnections
+      idleConnections: this.poolSize - this.activeConnections,
+      lastHealthCheck: this.lastHealthCheck
     };
   }
 
   /**
    * Gets detailed metrics about the pool
    */
-  public getMetrics() {
-    const avgAcquireTime = this.totalAcquired > 0 
-      ? this.acquireTimeTotal / this.totalAcquired 
+  public getMetrics(): PoolMetrics {
+    const avgAcquireTime = this.totalAcquired > 0
+      ? this.acquireTimeTotal / this.totalAcquired
       : 0;
-    
+
     return {
-      name: this.name,
-      poolSize: this.poolSize,
-      minSize: this.options.min,
-      maxSize: this.options.max,
-      activeConnections: this.activeConnections,
-      availableConnections: this.poolSize - this.activeConnections,
-      waitingClients: this.waitingClients,
-      utilization: this.poolSize > 0 ? (this.activeConnections / this.poolSize) * 100 : 0,
       totalCreated: this.totalCreated,
       totalAcquired: this.totalAcquired,
       totalReleased: this.totalReleased,
@@ -321,8 +348,24 @@ export class VectorConnectionPool extends EventEmitter {
       totalTimeouts: this.totalTimeouts,
       totalExhausted: this.totalExhausted,
       avgAcquireTime,
-      lastHealthCheck: this.lastHealthCheck
+      peakConnections: Math.max(this.poolSize, this.activeConnections)
     };
+  }
+
+  /**
+   * Get connection details for leak detection
+   * Note: pg Pool doesn't expose individual connection metadata,
+   * so we return aggregate information
+   */
+  public getConnections(): Array<{
+    id: string;
+    inUse: boolean;
+    createdAt: number;
+    lastUsed: number;
+  }> {
+    // pg Pool doesn't expose individual connections
+    // Return empty array - leak detection relies on pool-level metrics
+    return [];
   }
 
   /**

@@ -6,12 +6,15 @@ This document provides the current implementation status of the standardized err
 
 | Component | Status | Notes |
 |-----------|--------|-------|
-| `vector-db-error-handler-new.ts` | ✅ Complete | Enhanced error handler with provider-specific patterns |
+| `vector-db-error-handler.ts` | ✅ Complete | **CANONICAL** - Production error handler with comprehensive features |
+| `vector-retry-handler.ts` | ✅ Complete | **CANONICAL** - Retry handler with circuit breaker pattern |
 | `database-error-patterns.ts` | ✅ Complete | Database-specific error patterns for improved categorization |
 | `ERROR_HANDLING_GUIDE.md` | ✅ Complete | Comprehensive documentation for the new system |
 | `PHASED_ROLLOUT_PLAN.md` | ✅ Complete | Detailed phased rollout strategy |
 | Unit Tests | ✅ Complete | Enhanced test coverage for error handling |
 | Migration Scripts | ✅ Complete | Scripts for standardizing error handling across adapters |
+
+**Note**: As of 2025-10-23, duplicate `-new.ts` files have been consolidated. The canonical implementations are now in place.
 
 ## Vector Database Adapters
 
