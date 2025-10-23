@@ -14,7 +14,7 @@
 
 // import { console } from './logger'
 
-const logger = createChildLogger({ module: 'security', scope: 'keychain' })
+const logger = console
 
 // Server-only imports (not available in Edge Runtime)
 let execSync: typeof import('child_process').execSync

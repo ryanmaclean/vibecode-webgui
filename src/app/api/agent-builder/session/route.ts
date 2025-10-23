@@ -11,7 +11,7 @@ import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
 // import { console } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
 
-const logger = createChildLogger({ module: 'api', scope: 'agent-builder-session' });
+const logger = console;
 
 const stateValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
