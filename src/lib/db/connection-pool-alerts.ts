@@ -330,8 +330,13 @@ export default class ConnectionPoolAlertService {
         });
       }
     } catch (error) {
-      console.error('Error monitoring connection pool:', error);
-      
+      // Use Winston logger for production-safe logging
+      const { logger } = require('@/lib/logger');
+      logger.error('Error monitoring connection pool', {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      });
+
       // Add general error alert
       this.addAlert({
         severity: AlertSeverity.WARNING,
@@ -460,7 +465,13 @@ export default class ConnectionPoolAlertService {
       try {
         listener(alert);
       } catch (error) {
-        console.error('Error in alert listener:', error);
+        // Use Winston logger for production-safe logging
+        const { logger } = require('@/lib/logger');
+        logger.error('Error in alert listener', {
+          error: error instanceof Error ? error.message : String(error),
+          alertType: alert.type,
+          alertSeverity: alert.severity
+        });
       }
     }
   }
