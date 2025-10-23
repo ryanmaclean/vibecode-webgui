@@ -247,4 +247,4 @@ alerts:
 
 - [Helm Deployment Guide](./helm-deployment-guide) - Complete Helm deployment with storage configuration
 - [Helm Scaling Analysis](./helm-scaling-analysis) - Resource scaling strategy across environments
-- [Production Status Report](./production-status-report) - Current deployment metrics
+- [Production Status Report](./production-status/) - Current deployment metrics

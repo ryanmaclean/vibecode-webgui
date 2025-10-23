@@ -25,6 +25,13 @@ DEVNULL = subprocess.DEVNULL
 class BenchmarkError(RuntimeError):
   pass
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+REPO_ROOT = SCRIPT_DIR.parent.parent
+DEFAULT_INITRD = REPO_ROOT / "bench-images" / "busybox" / "busybox-initramfs.cpio.gz"
+QEMU_BINARIES = {
+    "x86_64": "qemu-system-x86_64",
+}
+
 
 
 
@@ -56,6 +63,104 @@ def summarise(label: str, samples: list[float]) -> dict:
       "max_seconds": max(samples),
       "samples": samples,
   }
+
+
+
+
+def measure_kernel_boot(
+    kernel: Path,
+    initrd: Path,
+    arch: str,
+    iterations: int,
+    timeout: float,
+) -> dict:
+  if arch not in QEMU_BINARIES:
+    raise BenchmarkError(f"Unsupported kernel architecture: {arch}")
+
+  qemu_bin = QEMU_BINARIES[arch]
+  if shutil.which(qemu_bin) is None:
+    raise BenchmarkError(
+        f"{qemu_bin} not found in PATH. Install qemu-system-{arch} to run kernel benchmarks."
+    )
+
+  if not kernel.is_file():
+    raise BenchmarkError(f"Kernel image not found: {kernel}")
+
+  if not initrd.is_file():
+    raise BenchmarkError(f"Initrd image not found: {initrd}")
+
+  samples: list[float] = []
+  append_args = "console=ttyS0 root=/dev/ram0 rdinit=/init nokaslr"
+
+  for iteration in range(1, iterations + 1):
+    cmd = [
+        qemu_bin,
+        "-m",
+        "512",
+        "-machine",
+        "accel=tcg",
+        "-kernel",
+        str(kernel),
+        "-initrd",
+        str(initrd),
+        "-append",
+        append_args,
+        "-nographic",
+        "-no-reboot",
+    ]
+
+    start = time.perf_counter()
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+    boot_time: float | None = None
+
+    try:
+      assert proc.stdout is not None
+      for line in proc.stdout:
+        now = time.perf_counter()
+        normalized = line.strip()
+        if normalized.endswith("/ #") or normalized.endswith("#"):
+          boot_time = now - start
+          break
+        if now - start > timeout:
+          raise BenchmarkError(
+              f"Kernel boot timed out after {timeout:.1f}s (iteration {iteration})"
+          )
+    finally:
+      try:
+        if boot_time is not None and proc.stdin and not proc.stdin.closed:
+          proc.stdin.write("poweroff\n")
+          proc.stdin.flush()
+      except BrokenPipeError:
+        pass
+
+      proc.terminate()
+      try:
+        proc.wait(timeout=5)
+      except subprocess.TimeoutExpired:
+        proc.kill()
+
+    if boot_time is None:
+      raise BenchmarkError("Failed to detect BusyBox shell prompt during kernel boot")
+
+    samples.append(boot_time)
+
+  return summarise("minivim kernel boot", samples)
+
+
+
+def format_row(entry: dict) -> str:
+  return (
+      f"{entry['label']:<32} avg={entry['avg_seconds']:.4f}s "
+      f"min={entry['min_seconds']:.4f}s max={entry['max_seconds']:.4f}s"
+  )
 
 
 
@@ -105,8 +210,27 @@ def main(argv: list[str] | None = None) -> int:
   parser = argparse.ArgumentParser(description=__doc__)
   parser.add_argument("--iterations", type=int, default=5, help="Runs per benchmark (default: 5)")
   parser.add_argument("--output", type=Path, help="Optional JSON file for raw results")
+  parser.add_argument("--report", type=Path, help="Alias for --output when measuring kernels")
   parser.add_argument("--no-node", action="store_true", help="Skip Node.js benchmarks")
   parser.add_argument("--warm", action="store_true", help="Measure start/stop on a warmed container")
+  parser.add_argument("--kernel", type=Path, help="Path to a kernel image for MiniVim boot benchmarks")
+  parser.add_argument(
+      "--initrd",
+      type=Path,
+      help=f"Initrd to pair with --kernel (default: {DEFAULT_INITRD})",
+  )
+  parser.add_argument(
+      "--kernel-arch",
+      default="x86_64",
+      choices=tuple(QEMU_BINARIES.keys()),
+      help="Architecture for --kernel boot test",
+  )
+  parser.add_argument(
+      "--kernel-timeout",
+      type=float,
+      default=30.0,
+      help="Seconds to wait for kernel boot prompt",
+  )
   parser.add_argument("--image", default="alpine:3.20", help="Base image for shell tests (default: alpine:3.20)")
   parser.add_argument("--node-image", default="node:22-alpine", help="Image used for Node.js tests")
   parser.add_argument("--show-samples", action="store_true", help="Print individual samples")
@@ -117,25 +241,69 @@ def main(argv: list[str] | None = None) -> int:
   parser.add_argument("--dd-tag", action="append", default=None, help="Additional DogStatsD tag (can be repeated). Defaults to DOGSTATSD_TAGS env (comma separated)")
   args = parser.parse_args(argv)
 
-  if shutil.which("docker") is None:
-    raise BenchmarkError("Docker CLI not found in PATH")
+  output_path = args.report if args.report else args.output
+  kernel_mode = args.kernel is not None
 
-  ensure_docker_image(args.image)
   results: list[dict] = []
 
-  extra_tags = []
+  metric_tags: list[str] = []
   env_tags = os.environ.get("DOGSTATSD_TAGS")
   if env_tags:
-    extra_tags.extend(tag for tag in env_tags.split(",") if tag)
+    metric_tags.extend(tag for tag in env_tags.split(",") if tag)
   if args.dd_tag:
-    extra_tags.extend(tag for tag in args.dd_tag if tag)
+    metric_tags.extend(tag for tag in args.dd_tag if tag)
+
   dogstatsd_sender = DogStatsDSender(
       host=args.dogstatsd_host,
       port=args.dogstatsd_port,
       enabled=args.dogstatsd,
       prefix=args.metric_prefix,
-      default_tags=extra_tags,
+      default_tags=metric_tags,
   )
+
+  if kernel_mode:
+    kernel_path = args.kernel.expanduser().resolve()
+    initrd_candidate = args.initrd if args.initrd is not None else DEFAULT_INITRD
+    initrd_path = initrd_candidate.expanduser().resolve()
+
+    kernel_result = measure_kernel_boot(
+        kernel_path,
+        initrd_path,
+        args.kernel_arch,
+        args.iterations,
+        args.kernel_timeout,
+    )
+    kernel_result["tags"] = [
+        "scope:kernel",
+        f"arch:{args.kernel_arch}",
+        f"kernel:{kernel_path.name}",
+    ]
+    results.append(kernel_result)
+
+    print("Benchmark results")
+    print("-----------------")
+    for entry in results:
+      print(format_row(entry))
+      if args.show_samples:
+        print("  samples:", ", ".join(f"{s:.4f}" for s in entry["samples"]))
+
+    emit_duration_metrics(results, dogstatsd_sender)
+
+    if output_path:
+      payload = {
+          "timestamp": time.time(),
+          "iterations": args.iterations,
+          "results": results,
+      }
+      output_path.write_text(json.dumps(payload, indent=2))
+      print(f"\nWrote JSON results to {output_path}")
+
+    return 0
+
+  if shutil.which("docker") is None:
+    raise BenchmarkError("Docker CLI not found in PATH")
+
+  ensure_docker_image(args.image)
 
   shell_host_cmd = ["/bin/sh", "-c", "echo ready"]
   shell_container_cmd = ["docker", "run", "--rm", args.image, "echo", "ready"]
@@ -197,12 +365,6 @@ def main(argv: list[str] | None = None) -> int:
         entry["tags"] = ["scope:container", "action:stop", f"image:{args.image}"]
     results.extend(warm_results)
 
-  def format_row(entry: dict) -> str:
-    return (
-        f"{entry['label']:<32} avg={entry['avg_seconds']:.4f}s "
-        f"min={entry['min_seconds']:.4f}s max={entry['max_seconds']:.4f}s"
-    )
-
   print("Benchmark results")
   print("-----------------")
   for entry in results:
@@ -212,14 +374,14 @@ def main(argv: list[str] | None = None) -> int:
 
   emit_duration_metrics(results, dogstatsd_sender)
 
-  if args.output:
+  if output_path:
     payload = {
         "timestamp": time.time(),
         "iterations": args.iterations,
         "results": results,
     }
-    args.output.write_text(json.dumps(payload, indent=2))
-    print(f"\nWrote JSON results to {args.output}")
+    output_path.write_text(json.dumps(payload, indent=2))
+    print(f"\nWrote JSON results to {output_path}")
 
   return 0
 

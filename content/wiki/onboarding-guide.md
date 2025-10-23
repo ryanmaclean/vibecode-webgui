@@ -48,7 +48,7 @@ cp .env.example .env.local
 docker-compose -f docker-compose.dev.yml up -d
 
 # 5. Initialize database
-npm run db:deploy
+npm run db:migrate
 npm run db:generate
 
 # 6. Run health check

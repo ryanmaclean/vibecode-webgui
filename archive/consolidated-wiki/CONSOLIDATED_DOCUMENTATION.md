@@ -7,6 +7,8 @@ description: Auto-generated placeholder. Update as needed.
 
 This document consolidates key information from various documentation sources across the VibeCode platform, providing a unified reference for developers, operators, and users.
 
+> Last updated: October 23, 2025
+
 ## 📋 Table of Contents
 
 1. [Platform Overview](#platform-overview)

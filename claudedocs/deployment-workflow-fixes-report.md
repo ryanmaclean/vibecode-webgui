@@ -104,7 +104,7 @@ Fixed critical deployment issues across three GitHub Actions workflows affecting
     if kubectl get deployment vibecode-webgui -n vibecode-webgui-staging >/dev/null 2>&1; then
       kubectl exec -n vibecode-webgui-staging \
         deployment/vibecode-webgui -- \
-        npm run db:deploy || echo "::warning::Database migration failed or not available"
+        npm run db:migrate || echo "::warning::Database migration failed or not available"
     else
       echo "::warning::vibecode-webgui deployment not found, skipping migrations"
     fi

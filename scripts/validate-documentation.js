@@ -12,6 +12,7 @@ class DocumentationValidator {
   constructor() {
     this.errors = [];
     this.warnings = [];
+    this.linkFailures = [];
     this.stats = {
       totalFiles: 0,
       brokenLinks: 0,
@@ -36,43 +37,119 @@ class DocumentationValidator {
 
   async validateStructure() {
     console.log('📁 Validating documentation structure...');
-    
-    const requiredFiles = [
-      'README.md',
-      'docs/DOCUMENTATION_INDEX.md',
-      'docs/CONSOLIDATED_DOCUMENTATION.md',
-      'docs/DATADOG_MONITORING.md',
-      'docs/OPENTELEMETRY_INTEGRATION.md',
-      'CONTRIBUTING.md',
-      'CODE_OF_CONDUCT.md'
+
+    const requiredResources = [
+      {
+        label: 'Project README',
+        paths: ['README.md']
+      },
+      {
+        label: 'Documentation index',
+        paths: [
+          'docs/DOCUMENTATION_INDEX.md',
+          'content/wiki/DOCUMENTATION_INDEX.md',
+          'archive/consolidated-wiki/DOCUMENTATION_INDEX.md'
+        ]
+      },
+      {
+        label: 'Consolidated documentation overview',
+        paths: [
+          'docs/CONSOLIDATED_DOCUMENTATION.md',
+          'docs/src/content/docs/wiki-archive/CONSOLIDATED_DOCUMENTATION.md',
+          'archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
+        ]
+      },
+      {
+        label: 'Datadog monitoring guide',
+        paths: [
+          'docs/DATADOG_MONITORING.md',
+          'docs/datadog/monitoring.md',
+          'content/wiki/monitoring/DATADOG_MONITORING.md',
+          'archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
+        ]
+      },
+      {
+        label: 'OpenTelemetry integration guide',
+        paths: [
+          'docs/OPENTELEMETRY_INTEGRATION.md',
+          'docs/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
+        ]
+      },
+      {
+        label: 'Contributing guide',
+        paths: ['CONTRIBUTING.md']
+      },
+      {
+        label: 'Code of conduct',
+        paths: [
+          'CODE_OF_CONDUCT.md',
+          'docs/CODE_OF_CONDUCT.md',
+          'content/wiki/CODE_OF_CONDUCT.md',
+          'archive/consolidated-wiki/CODE_OF_CONDUCT.md'
+        ]
+      }
     ];
 
-    for (const file of requiredFiles) {
-      const filePath = path.join(process.cwd(), file);
-      try {
-        await fs.access(filePath);
-        console.log(`  ✅ ${file}`);
-      } catch (error) {
-        this.errors.push(`Missing required file: ${file}`);
-        this.stats.missingFiles++;
-        console.log(`  ❌ ${file} - Missing`);
+    for (const resource of requiredResources) {
+      const existingPath = await this.findExistingPath(resource.paths);
+      if (existingPath) {
+        console.log(`  ✅ ${resource.label} (${existingPath})`);
+        continue;
       }
+
+      this.errors.push(
+        `Missing required ${resource.label} (checked: ${resource.paths.join(', ')})`
+      );
+      this.stats.missingFiles++;
+      console.log(`  ❌ ${resource.label} - Missing`);
+    }
+  }
+
+  async findExistingPath(candidatePaths) {
+    for (const relativePath of candidatePaths) {
+      if (await this.fileExists(relativePath)) {
+        return relativePath;
+      }
+    }
+    return null;
+  }
+
+  async fileExists(relativePath) {
+    const absolutePath = path.join(process.cwd(), relativePath);
+    try {
+      await fs.access(absolutePath);
+      return true;
+    } catch (error) {
+      return false;
     }
   }
 
   async validateLinks() {
     console.log('\n🔗 Validating documentation links...');
-    
-    const mdFiles = glob.sync('**/*.md', {
-      ignore: [
-        'node_modules/**', 
-        'docs/node_modules/**', 
-        'services/**/node_modules/**',
-        'extensions/**/node_modules/**',
-        '.git/**',
-        'docs/dist/**'
-      ]
-    });
+
+    const linkPatterns = [
+      'docs/src/content/docs/**/*.md',
+      'README.md',
+      'CONTRIBUTING.md'
+    ];
+
+    const linkIgnore = [
+      'node_modules/**',
+      'docs/node_modules/**',
+      'services/**/node_modules/**',
+      'extensions/**/node_modules/**',
+      '.git/**',
+      'docs/dist/**',
+      'docs/reports/**',
+      'docs/src/content/docs/wiki-archive/**',
+      'docs/src/content/docs/**/conflict-backup-*'
+    ];
+
+    const mdFiles = Array.from(new Set(linkPatterns.flatMap(pattern => 
+      glob.sync(pattern, { ignore: linkIgnore })
+    )));
 
     this.stats.totalFiles = mdFiles.length;
 
@@ -103,30 +180,125 @@ class DocumentationValidator {
   }
 
   async validateLocalLink(sourceFile, linkUrl, linkText) {
-    // Resolve relative path from source file
-    const sourceDir = path.dirname(sourceFile);
-    const targetPath = path.resolve(sourceDir, linkUrl);
-    
-    try {
-      await fs.access(targetPath);
-    } catch (error) {
-      this.errors.push(`Broken link in ${sourceFile}: "${linkText}" -> ${linkUrl}`);
-      this.stats.brokenLinks++;
+    const sanitizedUrl = linkUrl.split('#')[0].split('?')[0].trim();
+
+    if (
+      !sanitizedUrl ||
+      sanitizedUrl.startsWith('javascript:') ||
+      sanitizedUrl.includes('${')
+    ) {
+      return;
     }
+
+    const candidatePaths = this.generateCandidatePaths(sourceFile, sanitizedUrl);
+
+    for (const candidate of candidatePaths) {
+      if (await this.fileExists(candidate)) {
+        return;
+      }
+    }
+
+    const message = `Broken link in ${sourceFile}: "${linkText}" -> ${linkUrl}`;
+    this.linkFailures.push(message);
+    this.stats.brokenLinks++;
+  }
+
+  generateCandidatePaths(sourceFile, linkUrl) {
+    const candidates = new Set();
+    const repoRoot = process.cwd();
+    const docsRoot = path.resolve(repoRoot, 'docs/src/content/docs');
+    const normalizedUrl = linkUrl.replace(/\\/g, '/');
+    const sourceDir = path.dirname(sourceFile);
+
+    const addVariants = (relativePath) => {
+      if (!relativePath) {
+        return;
+      }
+
+      let normalized = relativePath.replace(/\\/g, '/');
+      normalized = normalized.replace(/^\.\/+/, '');
+      if (!normalized) {
+        return;
+      }
+
+      const withoutTrailingSlash = normalized.replace(/\/+$/, '');
+      const basePath = withoutTrailingSlash || normalized;
+
+      candidates.add(basePath);
+
+      if (!basePath.endsWith('.md')) {
+        candidates.add(`${basePath}.md`);
+        candidates.add(`${basePath}/index.md`);
+      }
+    };
+
+    const addAbsoluteCandidate = (absolutePath) => {
+      const relative = path.relative(repoRoot, absolutePath);
+      addVariants(relative);
+    };
+
+    if (normalizedUrl.startsWith('/')) {
+      const trimmed = normalizedUrl.replace(/^\/+/, '');
+      addAbsoluteCandidate(path.join(docsRoot, trimmed));
+    } else {
+      addAbsoluteCandidate(path.resolve(repoRoot, sourceDir, normalizedUrl));
+      addAbsoluteCandidate(path.resolve(docsRoot, normalizedUrl));
+      addAbsoluteCandidate(path.resolve(repoRoot, normalizedUrl));
+    }
+
+    addVariants(normalizedUrl);
+
+    return Array.from(candidates).filter(Boolean);
   }
 
   async validateContent() {
     console.log('\n📖 Validating content quality...');
-    
-    const criticalFiles = [
-      'README.md',
-      'docs/CONSOLIDATED_DOCUMENTATION.md',
-      'docs/DATADOG_MONITORING.md',
-      'docs/OPENTELEMETRY_INTEGRATION.md'
+
+    const criticalResources = [
+      {
+        label: 'README',
+        paths: ['README.md']
+      },
+      {
+        label: 'Consolidated documentation overview',
+        paths: [
+          'docs/CONSOLIDATED_DOCUMENTATION.md',
+          'docs/src/content/docs/wiki-archive/CONSOLIDATED_DOCUMENTATION.md',
+          'archive/consolidated-wiki/CONSOLIDATED_DOCUMENTATION.md'
+        ]
+      },
+      {
+        label: 'Datadog monitoring guide',
+        paths: [
+          'docs/DATADOG_MONITORING.md',
+          'docs/datadog/monitoring.md',
+          'content/wiki/monitoring/DATADOG_MONITORING.md',
+          'archive/consolidated-wiki/monitoring/DATADOG_MONITORING.md'
+        ]
+      },
+      {
+        label: 'OpenTelemetry integration guide',
+        paths: [
+          'docs/OPENTELEMETRY_INTEGRATION.md',
+          'docs/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md',
+          'archive/consolidated-wiki/monitoring/OPENTELEMETRY_INTEGRATION.md'
+        ]
+      }
     ];
 
-    for (const file of criticalFiles) {
-      await this.validateFileContent(file);
+    for (const resource of criticalResources) {
+      const existingPath = await this.findExistingPath(resource.paths);
+      if (!existingPath) {
+        this.errors.push(
+          `Missing critical documentation file for ${resource.label} (checked: ${resource.paths.join(', ')})`
+        );
+        this.stats.missingFiles++;
+        console.log(`  ❌ ${resource.label} - Missing`);
+        continue;
+      }
+
+      await this.validateFileContent(existingPath);
     }
   }
 
@@ -182,10 +354,15 @@ class DocumentationValidator {
     console.log(`  Errors: ${this.errors.length}`);
     console.log(`  Warnings: ${this.warnings.length}\n`);
 
-    // Errors
     if (this.errors.length > 0) {
       console.log('❌ Errors:');
       this.errors.forEach(error => console.log(`  • ${error}`));
+      console.log();
+    }
+
+    if (this.linkFailures.length > 0) {
+      console.log('❌ Broken Links:');
+      this.linkFailures.forEach(failure => console.log(`  • ${failure}`));
       console.log();
     }
 
@@ -235,13 +412,20 @@ class DocumentationValidator {
       console.log('  • Include proper headers and navigation');
     }
 
-    // Exit with error if critical issues found
-    if (this.errors.length > 0) {
+    const hasCriticalErrors = this.errors.length > 0;
+    const hasBrokenLinks = this.linkFailures.length > 0;
+
+    if (hasCriticalErrors) {
       console.log('\n❌ Documentation validation failed due to errors');
       process.exit(1);
-    } else {
-      console.log('\n✅ Documentation validation completed successfully');
     }
+
+    if (hasBrokenLinks) {
+      console.log('\n❌ Documentation validation failed due to broken links');
+      process.exit(2);
+    }
+
+    console.log('\n✅ Documentation validation completed successfully');
   }
 }
 
