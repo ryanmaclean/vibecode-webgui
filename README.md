@@ -580,5 +580,6 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 **Need Help?** 
 - Check the [Developer Guide](docs/src/content/docs/developer-guide.md)
 - Review [API Documentation](docs/src/content/docs/api-reference.md)
+- **Troubleshooting**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions
 - Run health checks: `npm run perf:health`
 - View monitoring: `http://localhost:3000/api/monitoring/performance`
