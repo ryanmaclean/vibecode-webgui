@@ -1,5 +1,5 @@
 # AgentAPI Python dependencies with SkyWalking instrumentation
-aiohttp==3.9.1
+aiohttp==3.12.14
 aiohttp-cors==0.7.0
 PyYAML==6.0.1
 
@@ -8,4 +8,4 @@ apache-skywalking==1.1.0
 
 # Additional dependencies for SkyWalking
 grpcio==1.62.2
-protobuf==4.25.3
+protobuf==4.25.8
