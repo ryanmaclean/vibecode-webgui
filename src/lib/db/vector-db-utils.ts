@@ -27,7 +27,10 @@ export async function initializeVectorDatabase(options: VectorDatabaseOptions = 
     throw new Error('Database connection URL is required. Set DATABASE_URL or provide connectionUrl.');
   }
 
-  const log = verbose ? console.log : () => {};
+  // Use Winston logger instead of console.log for production safety
+  const log = verbose
+    ? (message: string) => logger.info(message)
+    : () => {};
   
   // Create PrismaClient with connection URL
   const prismaOptions = {

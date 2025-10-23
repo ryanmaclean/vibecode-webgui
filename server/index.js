@@ -9,6 +9,33 @@ const cors = require('cors');
 const helmet = require('helmet');
 const pty = require('node-pty');
 const chokidar = require('chokidar');
+const winston = require('winston');
+
+// Initialize Winston logger for server
+const logger = winston.createLogger({
+  level: process.env.LOG_LEVEL || (process.env.NODE_ENV === 'production' ? 'info' : 'debug'),
+  format: winston.format.combine(
+    winston.format.timestamp(),
+    winston.format.errors({ stack: true }),
+    winston.format.json()
+  ),
+  defaultMeta: { service: 'websocket-server' },
+  transports: [
+    new winston.transports.Console({
+      format: winston.format.combine(
+        winston.format.colorize(),
+        winston.format.timestamp(),
+        winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+          let msg = `${timestamp} [${level}]: ${message}`;
+          if (Object.keys(metadata).length > 0) {
+            msg += ` ${JSON.stringify(metadata)}`;
+          }
+          return msg;
+        })
+      ),
+    }),
+  ],
+});
 
 // Configuration with security validation
 const PORT = process.env.WS_PORT || 3001;
@@ -17,18 +44,18 @@ const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
 
 // Security check: ensure JWT_SECRET is configured in production
 if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
-  console.error('FATAL: JWT_SECRET or NEXTAUTH_SECRET must be set in production');
+  logger.error('FATAL: JWT_SECRET or NEXTAUTH_SECRET must be set in production');
   process.exit(1);
 }
 
 if (process.env.NODE_ENV === 'production' && JWT_SECRET === 'dev-secret-key') {
-  console.error('FATAL: JWT_SECRET cannot use default value in production');
+  logger.error('FATAL: JWT_SECRET cannot use default value in production');
   process.exit(1);
 }
 
 if (!JWT_SECRET) {
-  console.warn('⚠️  WARNING: No JWT_SECRET configured. Using insecure default for development only.');
-  console.warn('⚠️  Set NEXTAUTH_SECRET or JWT_SECRET environment variable.');
+  logger.warn('WARNING: No JWT_SECRET configured. Using insecure default for development only.');
+  logger.warn('Set NEXTAUTH_SECRET or JWT_SECRET environment variable.');
 }
 
 // Initialize Express app
@@ -67,7 +94,7 @@ app.get('/health', async (req, res) => {
       uptime: process.uptime()
     });
   } catch (error) {
-    console.error('Health check failed:', error);
+    logger.error('Health check failed', { error: error.message, stack: error.stack });
     res.status(503).json({
       status: 'unhealthy',
       dependencies: {
@@ -80,7 +107,7 @@ app.get('/health', async (req, res) => {
 
 // Initialize Redis client
 const redis = Redis.createClient({ url: REDIS_URL });
-redis.on('error', (err) => console.error('Redis Client Error', err));
+redis.on('error', (err) => logger.error('Redis Client Error', { error: err.message, stack: err.stack }));
 redis.connect();
 
 // Initialize Socket.IO
@@ -102,12 +129,12 @@ io.use(async (socket, next) => {
                  socket.handshake.headers.authorization?.replace('Bearer ', '');
 
     if (!token) {
-      console.error('No authentication token provided');
+      logger.warn('Authentication attempt without token');
       return next(new Error('Authentication token required'));
     }
 
     if (!JWT_SECRET) {
-      console.error('JWT_SECRET not configured');
+      logger.error('JWT_SECRET not configured during authentication attempt');
       return next(new Error('Server configuration error'));
     }
 
@@ -115,7 +142,7 @@ io.use(async (socket, next) => {
 
     // Verify required claims
     if (!decoded.sub && !decoded.id) {
-      console.error('Token missing required subject claim');
+      logger.warn('Token missing required subject claim');
       return next(new Error('Invalid token: missing subject'));
     }
 
@@ -127,12 +154,18 @@ io.use(async (socket, next) => {
       name: decoded.name
     };
 
-    // Log successful authentication
-    console.log(`User authenticated: ${socket.user.email} (${socket.user.id})`);
+    // Log successful authentication (sanitized - no sensitive data)
+    logger.info('User authenticated', {
+      userId: socket.user.id,
+      role: socket.user.role
+    });
 
     next();
   } catch (err) {
-    console.error('Authentication error:', err.message);
+    logger.warn('Authentication error', {
+      errorType: err.name,
+      message: err.message
+    });
     if (err.name === 'TokenExpiredError') {
       return next(new Error('Token expired'));
     } else if (err.name === 'JsonWebTokenError') {
@@ -150,7 +183,11 @@ const requireRole = (role) => {
     }
 
     if (socket.user.role !== role) {
-      console.warn(`Access denied for user ${socket.user.id} (role: ${socket.user.role}) to ${role}-only resource`);
+      logger.warn('Access denied - insufficient permissions', {
+        userId: socket.user.id,
+        userRole: socket.user.role,
+        requiredRole: role
+      });
       return next(new Error('Insufficient permissions'));
     }
 
@@ -164,7 +201,10 @@ const fileWatchers = new Map();
 
 // Socket.IO connection handler
 io.on('connection', (socket) => {
-  console.log(`User connected: ${socket.userEmail} (${socket.id})`);
+  logger.info('User connected', {
+    userId: socket.user?.id,
+    socketId: socket.id
+  });
 
   // Join project room
   socket.on('join-project', async (projectId) => {
@@ -173,22 +213,29 @@ io.on('connection', (socket) => {
       socket.currentProject = projectId;
 
       // Store user presence in Redis
-      await redis.setEx(`presence:${projectId}:${socket.userId}`, 300, JSON.stringify({
-        userId: socket.userId,
-        email: socket.userEmail,
+      await redis.setEx(`presence:${projectId}:${socket.user.id}`, 300, JSON.stringify({
+        userId: socket.user.id,
+        email: socket.user.email,
         socketId: socket.id,
         joinedAt: new Date().toISOString()
       }));
 
       // Notify other users in the project
       socket.to(`project:${projectId}`).emit('user-joined', {
-        userId: socket.userId,
-        email: socket.userEmail
+        userId: socket.user.id,
+        email: socket.user.email
       });
 
-      console.log(`User ${socket.userEmail} joined project ${projectId}`);
+      logger.info('User joined project', {
+        userId: socket.user.id,
+        projectId: projectId
+      });
     } catch (error) {
-      console.error('Error joining project:', error);
+      logger.error('Error joining project', {
+        error: error.message,
+        userId: socket.user?.id,
+        projectId: projectId
+      });
       socket.emit('error', { message: 'Failed to join project' });
     }
   });
@@ -220,15 +267,19 @@ io.on('connection', (socket) => {
 
       // Handle terminal exit
       terminal.on('exit', (code) => {
-        console.log(`Terminal ${terminalId} exited with code ${code}`);
+        logger.info('Terminal exited', { terminalId, exitCode: code });
         terminals.delete(terminalId);
         socket.emit('terminal-exit', { terminalId, code });
       });
 
       socket.emit('terminal-created', { terminalId });
-      console.log(`Terminal ${terminalId} created for project ${projectId}`);
+      logger.info('Terminal created', { terminalId, projectId });
     } catch (error) {
-      console.error('Error creating terminal:', error);
+      logger.error('Error creating terminal', {
+        error: error.message,
+        terminalId: data.terminalId,
+        projectId: data.projectId
+      });
       socket.emit('error', { message: 'Failed to create terminal' });
     }
   });
@@ -245,7 +296,10 @@ io.on('connection', (socket) => {
         socket.emit('error', { message: 'Terminal not found' });
       }
     } catch (error) {
-      console.error('Error handling terminal input:', error);
+      logger.error('Error handling terminal input', {
+        error: error.message,
+        terminalId: data.terminalId
+      });
     }
   });
 
@@ -259,7 +313,10 @@ io.on('connection', (socket) => {
         terminal.resize(cols, rows);
       }
     } catch (error) {
-      console.error('Error resizing terminal:', error);
+      logger.error('Error resizing terminal', {
+        error: error.message,
+        terminalId: data.terminalId
+      });
     }
   });
 
@@ -303,9 +360,13 @@ io.on('connection', (socket) => {
         });
 
       fileWatchers.set(watchKey, watcher);
-      console.log(`Started watching files for project ${projectId} at ${path}`);
+      logger.info('Started watching files', { projectId, path });
     } catch (error) {
-      console.error('Error setting up file watcher:', error);
+      logger.error('Error setting up file watcher', {
+        error: error.message,
+        projectId: data.projectId,
+        path: data.path
+      });
     }
   });
 
@@ -333,7 +394,10 @@ io.on('connection', (socket) => {
   // Handle disconnection
   socket.on('disconnect', async () => {
     try {
-      console.log(`User disconnected: ${socket.userEmail} (${socket.id})`);
+      logger.info('User disconnected', {
+        userId: socket.user?.id,
+        socketId: socket.id
+      });
 
       // Clean up terminals
       for (const [terminalId, terminal] of terminals.entries()) {
@@ -345,23 +409,26 @@ io.on('connection', (socket) => {
 
       // Remove user presence
       if (socket.currentProject) {
-        await redis.del(`presence:${socket.currentProject}:${socket.userId}`);
+        await redis.del(`presence:${socket.currentProject}:${socket.user.id}`);
 
         // Notify other users
         socket.to(`project:${socket.currentProject}`).emit('user-left', {
-          userId: socket.userId,
-          email: socket.userEmail
+          userId: socket.user.id,
+          email: socket.user.email
         });
       }
     } catch (error) {
-      console.error('Error handling disconnect:', error);
+      logger.error('Error handling disconnect', {
+        error: error.message,
+        userId: socket.user?.id
+      });
     }
   });
 });
 
 // Graceful shutdown
 process.on('SIGTERM', async () => {
-  console.log('SIGTERM received, shutting down gracefully');
+  logger.info('SIGTERM received, shutting down gracefully');
 
   // Close all terminals
   for (const terminal of terminals.values()) {
@@ -378,18 +445,20 @@ process.on('SIGTERM', async () => {
 
   // Close server
   server.close(() => {
-    console.log('Server closed');
+    logger.info('Server closed successfully');
     process.exit(0);
   });
 });
 
 // Start server
 server.listen(PORT, () => {
-  console.log(`🚀 WebSocket server running on port ${PORT}`);
-  console.log(`📡 Environment: ${process.env.NODE_ENV || 'development'}`);
-  console.log(`🔌 Redis URL: ${REDIS_URL}`);
+  logger.info('WebSocket server started', {
+    port: PORT,
+    environment: process.env.NODE_ENV || 'development',
+    redisUrl: REDIS_URL.replace(/:[^:@]+@/, ':****@') // Mask password in Redis URL
+  });
   if (!JWT_SECRET && process.env.NODE_ENV !== 'production') {
-    console.warn('⚠️  Using fallback JWT secret for development');
+    logger.warn('Using fallback JWT secret for development');
   }
 });
 

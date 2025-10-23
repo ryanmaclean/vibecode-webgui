@@ -10,6 +10,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
+import { claudeSessionActionSchema, claudeSessionQuerySchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -28,15 +30,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const body = await request.json()
-    const { action, workspaceId, sessionId, message } = body
-
-    if (!workspaceId || typeof workspaceId !== 'string') {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    // Validate request body with Zod
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = claudeSessionActionSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
+
+    const { action, workspaceId } = validatedData
 
     // Get workspace directory
     const workspaceDir = `/workspaces/${workspaceId}`
@@ -68,15 +83,9 @@ export async function POST(request: NextRequest) {
         }
 
       case 'send':
-        if (!sessionId || !message) {
-          return NextResponse.json(
-            { error: 'Session ID and message are required for send action' },
-            { status: 400 }
-          )
-        }
-
+        if (validatedData.action !== 'send') break
         try {
-          await claudeCli.sendToSession(sessionId, message)
+          await claudeCli.sendToSession(validatedData.sessionId, validatedData.message)
 
           return NextResponse.json({
             success: true,
@@ -90,15 +99,9 @@ export async function POST(request: NextRequest) {
         }
 
       case 'close':
-        if (!sessionId) {
-          return NextResponse.json(
-            { error: 'Session ID is required for close action' },
-            { status: 400 }
-          )
-        }
-
+        if (validatedData.action !== 'close') break
         try {
-          await claudeCli.closeSession(sessionId)
+          await claudeCli.closeSession(validatedData.sessionId)
           activeSessions.delete(`${session.user.id}-${workspaceId}`)
 
           return NextResponse.json({
@@ -122,11 +125,6 @@ export async function POST(request: NextRequest) {
           sessionId: activeSessionId || null
         })
 
-      default:
-        return NextResponse.json(
-          { error: 'Invalid action. Must be one of: start, send, close, status' },
-          { status: 400 }
-        )
     }
 
   } catch (error) {
@@ -153,26 +151,41 @@ export async function GET(request: NextRequest) {
       )
     }
 
+    // Validate query parameters with Zod
     const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('workspaceId')
-
-    if (!workspaceId) {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
+    const queryData = {
+      workspaceId: searchParams.get('workspaceId') || ''
     }
 
-    // Check session status
-    const userSessionKey = `${session.user.id}-${workspaceId}`
-    const activeSessionId = activeSessions.get(userSessionKey)
+    try {
+      const validatedQuery = claudeSessionQuerySchema.parse(queryData)
+      const { workspaceId } = validatedQuery
 
-    return NextResponse.json({
-      success: true,
-      hasActiveSession: !!activeSessionId,
-      sessionId: activeSessionId || null,
-      totalActiveSessions: activeSessions.size
-    })
+      // Check session status
+      const userSessionKey = `${session.user.id}-${workspaceId}`
+      const activeSessionId = activeSessions.get(userSessionKey)
+
+      return NextResponse.json({
+        success: true,
+        hasActiveSession: !!activeSessionId,
+        sessionId: activeSessionId || null,
+        totalActiveSessions: activeSessions.size
+      })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid query parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
 
   } catch (error) {
     // Server error logged

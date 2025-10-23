@@ -4,6 +4,8 @@ import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
 import { logger } from '@/lib/monitoring'
+import { chatStreamSchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
 
 // Streaming chat endpoint with MongoDB persistence
 export async function POST(request: NextRequest) {
@@ -25,23 +27,36 @@ export async function POST(request: NextRequest) {
 
     userId = token?.sub || testUserId || 'anonymous'
 
-    const body = await request.json()
-    const { 
-      conversationId, 
-      message, 
-      model = 'anthropic/claude-3.5-sonnet',
-      workspaceId = 'default',
-      files = [],
-      enableWebSearch = false,
-      enableRAG = true
-    } = body
-
-    if (!conversationId || !message) {
-      return NextResponse.json(
-        { error: 'conversationId and message are required' },
-        { status: 400 }
-      )
+    // Validate request body with Zod
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = chatStreamSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
+
+    const {
+      conversationId,
+      message,
+      model,
+      workspaceId,
+      files,
+      enableWebSearch,
+      enableRAG
+    } = validatedData
 
     // Validate session and conversation
     let conversation = await mongodbChatService.getConversation(conversationId)

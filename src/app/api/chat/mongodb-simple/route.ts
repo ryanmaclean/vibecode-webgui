@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToMongoDB } from '@/lib/mongodb'
 import { v4 as uuidv4 } from 'uuid'
+import { mongodbChatActionSchema, mongodbChatQuerySchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
 
 // Simple MongoDB chat test without complex service layer
 export async function POST(request: NextRequest) {
@@ -15,12 +17,31 @@ export async function POST(request: NextRequest) {
     }
 
     const userId = testUserId || 'anonymous'
-    const body = await request.json()
-    const { action } = body
+
+    // Validate request body with Zod
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = mongodbChatActionSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
 
     const { db } = await connectToMongoDB()
 
-    switch (action) {
+    switch (validatedData.action) {
       case 'create_session':
         const session = {
           sessionId: uuidv4(),
@@ -40,7 +61,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'create_conversation':
-        const { title, sessionId, model = 'anthropic/claude-3.5-sonnet', workspaceId = 'default' } = body
+        if (validatedData.action !== 'create_conversation') break
+        const { title, sessionId, model, workspaceId } = validatedData
         
         const conversation = {
           id: uuidv4(),
@@ -65,7 +87,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'add_message':
-        const { conversationId, content, from = 'user' } = body
+        if (validatedData.action !== 'add_message') break
+        const { conversationId, content, from } = validatedData
         
         const message = {
           id: uuidv4(),

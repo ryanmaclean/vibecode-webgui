@@ -251,3 +251,92 @@ export const createTerminalSessionSchema = z.object({
 export const terminalSessionIdSchema = z.object({
   sessionId: z.string().uuid()
 })
+
+// ============================================================================
+// Chat/Streaming Schemas
+// ============================================================================
+
+export const chatStreamSchema = z.object({
+  conversationId: z.string().min(1).max(100),
+  message: z.string().min(1).max(100_000), // 100KB limit
+  model: z.string().min(1).max(100).optional().default('anthropic/claude-3.5-sonnet'),
+  workspaceId: workspaceIdSchema.optional().default('default'),
+  files: z.array(z.string()).optional().default([]),
+  enableWebSearch: z.boolean().optional().default(false),
+  enableRAG: z.boolean().optional().default(true)
+})
+
+export const mongodbChatActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('create_session')
+  }),
+  z.object({
+    action: z.literal('create_conversation'),
+    title: z.string().min(1).max(200).optional(),
+    sessionId: z.string().uuid(),
+    model: z.string().min(1).max(100).optional().default('anthropic/claude-3.5-sonnet'),
+    workspaceId: workspaceIdSchema.optional().default('default')
+  }),
+  z.object({
+    action: z.literal('add_message'),
+    conversationId: z.string().uuid(),
+    content: z.string().min(1).max(100_000),
+    from: z.enum(['user', 'assistant']).optional().default('user')
+  }),
+  z.object({
+    action: z.literal('get_conversations')
+  })
+])
+
+export const mongodbChatQuerySchema = z.object({
+  action: z.enum(['health']).optional()
+})
+
+// ============================================================================
+// Auth/Login Tracking Schemas
+// ============================================================================
+
+export const loginTrackingSchema = z.object({
+  event: z.enum(['login_attempt', 'login_success', 'login_failure', 'logout']),
+  userId: z.string().min(1).max(100).optional(),
+  email: emailSchema.optional(),
+  provider: z.string().min(1).max(50).optional(),
+  sessionId: z.string().min(1).max(200).optional(),
+  loginMethod: z.string().min(1).max(50).optional()
+})
+
+// ============================================================================
+// Claude CLI Schemas
+// ============================================================================
+
+export const claudeChatSchema = z.object({
+  message: z.string().min(1).max(100_000),
+  workspaceId: workspaceIdSchema,
+  contextFiles: z.array(z.string()).optional()
+})
+
+export const claudeSessionActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('start'),
+    workspaceId: workspaceIdSchema
+  }),
+  z.object({
+    action: z.literal('send'),
+    workspaceId: workspaceIdSchema,
+    sessionId: z.string().min(1).max(200),
+    message: z.string().min(1).max(100_000)
+  }),
+  z.object({
+    action: z.literal('close'),
+    workspaceId: workspaceIdSchema,
+    sessionId: z.string().min(1).max(200)
+  }),
+  z.object({
+    action: z.literal('status'),
+    workspaceId: workspaceIdSchema
+  })
+])
+
+export const claudeSessionQuerySchema = z.object({
+  workspaceId: workspaceIdSchema
+})
