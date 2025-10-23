@@ -2,24 +2,25 @@ import { hashPassword, isValidBcryptHash, verifyPassword } from '@/lib/auth/pass
 
 describe('auth password utilities', () => {
   const bcryptPattern = /^\$2[aby]\$12\$[./A-Za-z0-9]{53}$/
+  const testPassword = 'SecureTest123!'
 
   it('hashPassword returns a bcrypt hash with the default rounds', async () => {
-    const hash = await hashPassword('correct horse battery staple')
+    const hash = await hashPassword(testPassword)
 
     expect(hash).toMatch(bcryptPattern)
     expect(isValidBcryptHash(hash)).toBe(true)
   })
 
   it('verifyPassword resolves true when hash matches the plaintext', async () => {
-    const hash = await hashPassword('correct horse battery staple')
+    const hash = await hashPassword(testPassword)
 
-    await expect(verifyPassword('correct horse battery staple', hash)).resolves.toBe(true)
+    await expect(verifyPassword(testPassword, hash)).resolves.toBe(true)
   })
 
   it('verifyPassword resolves false when the password is wrong', async () => {
-    const hash = await hashPassword('correct horse battery staple')
+    const hash = await hashPassword(testPassword)
 
-    await expect(verifyPassword('wrong battery staple', hash)).resolves.toBe(false)
+    await expect(verifyPassword('WrongPassword123!', hash)).resolves.toBe(false)
   })
 
   it('verifyPassword rejects when the hash is not a bcrypt hash', async () => {
@@ -28,7 +29,7 @@ describe('auth password utilities', () => {
   })
 
   it('isValidBcryptHash accurately validates hashes', async () => {
-    const validHash = await hashPassword('some password', 12)
+    const validHash = await hashPassword(testPassword, 12)
 
     expect(isValidBcryptHash(validHash)).toBe(true)
     expect(isValidBcryptHash('')).toBe(false)
@@ -39,6 +40,6 @@ describe('auth password utilities', () => {
 
   it('hashPassword throws for invalid inputs', async () => {
     await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
-    await expect(hashPassword('valid', 2)).rejects.toThrow('Salt rounds must be an integer between')
+    await expect(hashPassword('ValidPass123!', 2)).rejects.toThrow('Salt rounds must be an integer between')
   })
 })

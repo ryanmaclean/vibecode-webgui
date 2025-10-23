@@ -552,6 +552,8 @@ curl http://localhost:3000/api/monitoring/performance?action=health
 
 We welcome contributions! Please see our [Contributing Guidelines](CONTRIBUTING.md) for details.
 
+**Code of Conduct**: This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code.
+
 ### Quick Contribution Guide
 
 1. **Fork** the repository
