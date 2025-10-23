@@ -57,16 +57,16 @@ docker run --rm \
     # Send metrics to Datadog
     if [ "${DD_API_KEY}" != "dummy-key-for-local-dev" ]; then
       METRIC_OK=1
-      python3 /work/scripts/benchmarks/_dogstatsd.py \
-        "musl.busybox.build.duration" \
+      python3 /work/scripts/benchmarks/emit_to_datadog.py \
+        musl.busybox.build.duration \
         "$BUILD_DURATION" \
         "libc:musl,image:datadog-alpine" || { echo "Metric send failed (non-fatal)"; METRIC_OK=0; }
-      
-      python3 /work/scripts/benchmarks/_dogstatsd.py \
-        "musl.busybox.binary.size" \
+
+      python3 /work/scripts/benchmarks/emit_to_datadog.py \
+        musl.busybox.binary.size \
         "$BINARY_SIZE" \
         "libc:musl,image:datadog-alpine" || { echo "Metric send failed (non-fatal)"; METRIC_OK=0; }
-      
+
       if [ "$METRIC_OK" -eq 1 ]; then
         echo "✓ Metrics sent to Datadog"
       else
