@@ -1,5 +1,19 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
+import { z } from '@/lib/zod-compat'
+import { logger } from '@/lib/logger'
+
+// Validation schema
+const huggingfaceChatSchema = z.object({
+  model: z.string().min(1).max(200),
+  input: z.string().min(1).max(50_000), // 50KB max input
+  context: z.array(z.object({
+    role: z.string(),
+    content: z.string()
+  })).max(50).optional(),
+  max_tokens: z.number().int().positive().max(8000).optional(),
+  temperature: z.number().min(0).max(2).optional()
+});
 
 interface ChatRequest {
   model: string
@@ -11,8 +25,30 @@ interface ChatRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: ChatRequest = await request.json()
-    const { model, input, context = [], max_tokens = 150, temperature = 0.7 } = body
+    // Validate request body
+    let validatedData;
+    try {
+      const body = await request.json();
+      validatedData = huggingfaceChatSchema.parse(body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.warn('HuggingFace chat validation failed', { errors: error.errors });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
+
+    const { model, input, context = [], max_tokens = 150, temperature = 0.7 } = validatedData;
 
     const apiKey = process.env.HUGGINGFACE_API_TOKEN
     if (!apiKey) {

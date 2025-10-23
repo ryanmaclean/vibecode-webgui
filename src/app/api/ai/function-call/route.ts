@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { functionCallingService, FunctionCall } from '@/lib/services/function-calling'
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger'
+import { z } from '@/lib/zod-compat'
+import { aiFunctionCallSchema } from '@/lib/api/validation/schemas'
+
 interface FunctionCallRequest {
   function_call: FunctionCall
   workspaceId?: string
@@ -8,15 +11,30 @@ interface FunctionCallRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: FunctionCallRequest = await request.json()
-    const { function_call, workspaceId } = body
-
-    if (!function_call?.name) {
-      return NextResponse.json({
-        success: false,
-        error: 'function_call.name is required'
-      }, { status: 400 })
+    // Validate request body
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = aiFunctionCallSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.warn('Function call validation failed', { errors: error.errors })
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
+
+    const { function_call, workspaceId } = validatedData
 
     // Add workspaceId to function arguments if provided and not already present
     const functionArgs = {
