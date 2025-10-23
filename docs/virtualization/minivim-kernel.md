@@ -117,3 +117,120 @@ python3 scripts/benchmarks/vim_hypervisor_bench.py --runs 3 --output bench-image
   per-arch artifacts (`minivim-<arch>`). The job installs required cross
   toolchains (`gcc-aarch64-linux-gnu`, `gcc-arm-linux-gnueabihf`) so no
   self-hosted runners are needed.
+
+## arm64 6.17.x Build Notes
+
+Updated for Linux 6.17.x on Apple Silicon (M1/M2/M3/M4) systems.
+
+### Configuration Updates for 6.17.x
+
+The `minivim-arm64.config` has been enhanced with Apple Silicon-specific optimizations:
+
+**Apple-specific drivers:**
+- `CONFIG_APPLE_AIC=y` - Apple Interrupt Controller for M-series processors
+- `CONFIG_APPLE_PMGR_PWRSTATE=y` - Power management state driver
+- `CONFIG_ARM_APPLE_SOC_CPUFREQ=y` - CPU frequency scaling for Apple SoC
+
+**Performance features:**
+- CPU frequency governors (performance, powersave, ondemand) for dynamic scaling
+- Thermal management with power allocator governor
+- Performance/Efficiency core detection via `CONFIG_ARM64_PSEUDO_NMI=y`
+
+**Pruned subsystems:**
+- Disabled 25+ ARM64 SoC platforms (Qualcomm, Rockchip, MediaTek, etc.)
+- Disabled unnecessary PCIe controllers (HyperKit/Lima use virtio)
+- Disabled GPIO/PHY drivers not needed for virtualization
+- Optimized for HZ=100 to reduce timer interrupts
+
+### Build Command for arm64 6.17.x
+
+```bash
+# Clean build (first time or after config changes)
+PATH="/usr/local/opt/make/libexec/gnubin:$PATH" \
+CC="ccache clang" KCFLAGS=-pipe \
+MINIVIM_JOBS=$(sysctl -n hw.logicalcpu) \
+./scripts/benchmarks/build-minivim-kernel.sh arm64 6.17.14
+
+# Incremental build (faster)
+SKIP_MRPROPER=1 \
+PATH="/usr/local/opt/make/libexec/gnubin:$PATH" \
+CC="ccache clang" KCFLAGS=-pipe \
+MINIVIM_JOBS=$(sysctl -n hw.logicalcpu) \
+./scripts/benchmarks/build-minivim-kernel.sh arm64 6.17.14
+
+# Or use the convenience wrapper (defaults to 6.17.14)
+./scripts/benchmarks/build-minivim-kernel-6.17.sh arm64
+```
+
+### Expected Performance (Projected)
+
+Based on M-series processor improvements over Intel:
+
+| Metric | Intel i7-9750H | Apple M1 Max (8P+2E) | Improvement |
+|--------|----------------|----------------------|-------------|
+| Clean Build | ~20 minutes | ~10-12 minutes | ~2x faster |
+| Incremental Build | ~8 minutes | ~4-5 minutes | ~2x faster |
+| Kernel Size | ~12 MB | ~8-10 MB | 20% smaller |
+| Boot Time (est.) | 4.38s | 2.5-2.8s | 43% faster |
+
+**Note:** Actual timings depend on hardware (M1/M2/M3/M4), ccache state, and thermal conditions.
+
+### Validation Steps
+
+**1. Build verification:**
+```bash
+# Check output exists
+ls -lh bench-images/minivim/Image-arm64-6.17.14
+
+# Verify CPU info captured
+cat bench-images/minivim/cpuinfo-arm64.txt
+```
+
+**2. Boot test with Lima (vmType=vz):**
+```bash
+limactl start --name=minivim-test-617 \
+  --vm-type=vz \
+  --arch=aarch64 \
+  --kernel=bench-images/minivim/Image-arm64-6.17.14 \
+  --initrd=bench-images/busybox/busybox-neovim-initrd.cpio.gz
+```
+
+**3. HyperKit validation (once permissions available):**
+```bash
+python3 scripts/benchmarks/vim_hypervisor_bench.py \
+  --kernel bench-images/minivim/Image-arm64-6.17.14 \
+  --runs 3 \
+  --output reports/benchmarks/arm64-6.17-hyperkit.json
+```
+
+### Known Differences from x86_64
+
+- **Image format:** `Image` (uncompressed) vs `bzImage` (compressed)
+- **Boot loader:** Direct kernel load in Virtualization.framework (no GRUB needed)
+- **Serial console:** Uses `CONFIG_SERIAL_AMBA_PL011` instead of `CONFIG_SERIAL_8250`
+- **Interrupt controller:** Apple AIC instead of x2APIC
+- **No ACPI:** ARM64 uses Device Tree instead
+
+### Troubleshooting
+
+**Build fails with "merge_config.sh not found":**
+Ensure you're in the repository root and the kernel source tree structure is intact.
+
+**"CONFIG_APPLE_AIC" not recognized:**
+Update to kernel 6.17+ which includes Apple Silicon mainline support.
+
+**Lima boot hangs:**
+- Verify `--vm-type=vz` is set (not `qemu`)
+- Check kernel console output for serial driver issues
+- Ensure initrd is compatible with arm64 busybox
+
+**Performance lower than expected:**
+- Verify ccache is installed and working: `ccache -s`
+- Check thermal throttling: `sudo powermetrics --samplers smc -n 1`
+- Use Performance mode on laptops when building
+
+### References
+
+- Issue #574: MiniVim kernel refresh – arm64 6.17.x
+- `reports/benchmarks/` - Build timing logs and CPU profiles
+- `reports/virtualization-20251002.md` - Baseline benchmarks
