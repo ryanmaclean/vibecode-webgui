@@ -1,7 +1,7 @@
 import { ChromaClient } from 'chromadb';
 import { Document } from '@langchain/core/documents';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { RecursiveCharacterTextSplitter } from '@langchain/text-splitters';
+import { RecursiveCharacterTextSplitter } from '@langchain/textsplitters';
 
 export class DocumentationIngester {
   private chroma: ChromaClient;
