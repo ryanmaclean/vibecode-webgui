@@ -108,6 +108,7 @@ export default defineConfig({
           label: 'Security & Compliance',
           collapsed: true,
           items: [
+            { label: 'Security Improvements (Oct 22)', link: '/security-improvements-2025-10-22/', badge: 'New' },
             { label: 'Security Assessment', link: '/security-assessment/' },
             { label: 'Repository Guidelines', link: '/agents/' },
             { label: 'CI/CD Fixes', link: '/ci-cd-fixes/' },
