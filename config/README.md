@@ -16,6 +16,13 @@ This directory contains reference configuration files for Model Context Protocol
    cp config/mcp_config.json ~/.codeium/windsurf/mcp_config.json
    ```
 
+3. **Update environment defaults** (optional but recommended):
+
+   - The config shells into the repo using `CLI_MCP_WORKING_DIR` (defaults to `$HOME/vibecode-webgui` when not provided).
+   - Export the variable (e.g., `export CLI_MCP_WORKING_DIR=/path/to/vibecode-webgui`) or add it to the MCP config if your checkout lives elsewhere.
+   - Override `PYTHON_CMD` if your Python 3.13 binary is in a different location.
+   - When launching AI CLIs directly, consult [docs/MCP_DATADOG_INTEGRATION.md](../docs/MCP_DATADOG_INTEGRATION.md#tracing-external-ai-clis) for the current instrumentation status. Today only Python-based CLIs emit spans via `ddtrace-run`; compiled binaries such as Codex/Claude and Node-based CLIs require upstream support before Datadog traces appear.
+
 3. **Restart Windsurf/Cascade**
 
 ## Files
@@ -69,7 +76,8 @@ To customize for your environment:
 1. Update Python path if different from `/opt/homebrew/opt/python@3.13/bin/python3.13`
 2. Update script paths if your repo is not at `~/vibecode-webgui`
 3. Adjust Datadog Agent connection settings if needed
-4. Add/remove MCP servers as needed
+4. Override `CLI_MCP_WORKING_DIR` or `PYTHON_CMD` as needed
+5. Add/remove MCP servers as needed
 
 ## Documentation
 

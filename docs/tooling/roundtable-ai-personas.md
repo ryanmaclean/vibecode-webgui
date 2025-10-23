@@ -302,7 +302,8 @@ final_report = session.integrate(results)
 
 ## 📝 Notes
 
-- **Roundtable-AI Status**: Installed but not connected (requires IDE restart)
+- **Roundtable-AI Status**: Installed; use `scripts/roundtable/run-roundtable.sh` to log availability (writes to `~/.roundtable/availability_check.json`).
+- **Daily Practice**: Store the availability snapshot in `archive/agents/daily-status/` and flag outages to the Orchestrator persona.
 - **Current Approach**: Manual coordination via GitHub + TODO.md
 - **Future Enhancement**: Enable roundtable-ai for true parallel execution
 - **Lessons Learned**: Document for future multi-agent tasks
