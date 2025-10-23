@@ -149,6 +149,9 @@ fast-openvscode-vm/rootfs/tmp/
 # Insiders VM - same pattern
 fast-openvscode-vm-insiders/
 
+# Build artifacts and work directories
+artifacts/
+
 # Terraform and IaC artefacts
 *.tfvars
 *.tfplan
