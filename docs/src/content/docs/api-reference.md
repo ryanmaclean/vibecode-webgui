@@ -53,41 +53,41 @@ x-api-key: <your_api_key>
 ## API Categories
 
 ### 🤖 AI Services
-- **[/api/ai/chat](/api/ai/chat)** - AI chat completions
-- **[/api/ai/generate-project](/api/ai/generate-project)** - Generate projects from prompts
-- **[/api/ai/search](/api/ai/search)** - Vector search for RAG
-- **[/api/claude/chat](/api/claude/chat)** - Claude-specific chat endpoint
+- **`/api/ai/chat`** - AI chat completions
+- **`/api/ai/generate-project`** - Generate projects from prompts
+- **`/api/ai/search`** - Vector search for RAG
+- **`/api/claude/chat`** - Claude-specific chat endpoint
 
 ### 🔒 Authentication
-- **[/api/auth/[...nextauth]](/api/auth/[...nextauth])** - NextAuth.js endpoints
-- **[/api/auth/mfa/setup](/api/auth/mfa/setup)** - Multi-factor authentication setup
-- **[/api/auth/saml/sso](/api/auth/saml/sso)** - SAML SSO integration
+- **`/api/auth/[...nextauth]`** - NextAuth.js endpoints
+- **`/api/auth/mfa/setup`** - Multi-factor authentication setup
+- **`/api/auth/saml/sso`** - SAML SSO integration
 
 ### 📂 File Management
-- **[/api/files](/api/files)** - File CRUD operations
-- **[/api/files/sync](/api/files/sync)** - Real-time file synchronization
+- **`/api/files`** - File CRUD operations
+- **`/api/files/sync`** - Real-time file synchronization
 
 ### 📊 Monitoring
-- **[/api/monitoring/dashboard](/api/monitoring/dashboard)** - Monitoring dashboard data
-- **[/api/monitoring/metrics](/api/monitoring/metrics)** - Performance metrics
-- **[/api/monitoring/security](/api/monitoring/security)** - Security monitoring
+- **`/api/monitoring/dashboard`** - Monitoring dashboard data
+- **`/api/monitoring/metrics`** - Performance metrics
+- **`/api/monitoring/security`** - Security monitoring
 
 ### 🛠️ Development Tools
-- **[/api/code-server/session](/api/code-server/session)** - Code server management
-- **[/api/terminal/session](/api/terminal/session)** - Terminal sessions
-- **[/api/terminal/ws](/api/terminal/ws)** - WebSocket terminal connection
+- **`/api/code-server/session`** - Code server management
+- **`/api/terminal/session`** - Terminal sessions
+- **`/api/terminal/ws`** - WebSocket terminal connection
 
 ### 💬 Chat & Communication
-- **[/api/chat/stream](/api/chat/stream)** - Streaming chat
-- **[/api/chat/mongodb](/api/chat/mongodb)** - Persistent chat storage
+- **`/api/chat/stream`** - Streaming chat
+- **`/api/chat/mongodb`** - Persistent chat storage
 
 ### 🎯 Project Management
-- **[/api/projects/template](/api/projects/template)** - Template-based project generation
-- **[/api/templates](/api/templates)** - Template management
+- **`/api/projects/template`** - Template-based project generation
+- **`/api/templates`** - Template management
 
 ### ⚡ Health & Diagnostics
-- **[/api/health](/api/health)** - Comprehensive health check
-- **[/api/health/simple](/api/health/simple)** - Simple health check
+- **`/api/health`** - Comprehensive health check
+- **`/api/health/simple`** - Simple health check
 
 ## Common Response Format
 
@@ -198,7 +198,7 @@ print(data)
 - **Python**: `pip install vibecode-api`
 - **Go**: `go get github.com/vibecode/go-client`
 
-For detailed endpoint documentation, see the [auto-generated API docs](./API.md).
+For detailed endpoint documentation, refer to the auto-generated Postman collection published in the CI artifacts.
 
 ---
 

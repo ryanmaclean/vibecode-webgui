@@ -87,7 +87,7 @@
     "ai:costs": "curl -s http://localhost:3000/api/ai/management?action=costs | jq",
     "ai:performance": "curl -s http://localhost:3000/api/ai/management?action=performance | jq",
     "db:validate": "./scripts/validate-database-config.sh",
-    "db:deploy": "./scripts/deploy-database-migrations.sh",
+    "db:migrate": "./scripts/deploy-database-migrations.sh",
     "db:setup": "psql $DATABASE_URL -f database/production-setup.sql",
     "db:status": "npx prisma migrate status",
     "db:generate": "npx prisma generate",
