@@ -99,6 +99,7 @@
     "docs:index": "echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'",
     "docs:consolidated": "echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'",
     "docs:link-audit": "node scripts/docs-link-audit.js",
+    "security:install-hook": "tsx scripts/security/install-hook.ts",
     "security:test": "./scripts/security-test.sh",
     "security:audit": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
