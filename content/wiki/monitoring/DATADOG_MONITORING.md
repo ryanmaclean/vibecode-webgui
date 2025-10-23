@@ -2,6 +2,25 @@
 
 This document describes the comprehensive Datadog monitoring implementation for the VibeCode platform, including AI terminal features, Claude Code CLI usage, and OpenRouter API monitoring.
 
+> Last updated: October 23, 2025
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Quick Start](#quick-start)
+- [Dashboards](#dashboards)
+- [Alerts](#alerts)
+- [Custom Metrics](#custom-metrics)
+- [Health Monitoring](#health-monitoring)
+- [Frontend Integration](#frontend-integration)
+- [Development & Testing](#development--testing)
+- [Production Deployment](#production-deployment)
+- [Troubleshooting](#troubleshooting)
+- [Security Considerations](#security-considerations)
+- [Performance Impact](#performance-impact)
+- [Support](#support)
+
 ## Overview
 
 The enhanced monitoring system provides:

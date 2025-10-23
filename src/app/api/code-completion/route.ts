@@ -1,8 +1,26 @@
 import { createHmac, createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { logger } from '../../../lib/logger';
+import { logger } from '../../../lib/logger'
+import { z } from '@/lib/zod-compat'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
 
+// Code completion request validation schema
+const codeCompletionSchema = z.object({
+  completionMetadata: z.object({
+    language: z.string().min(1).max(50).optional(),
+    filename: z.string().max(255).optional(),
+    technologies: z.array(z.string()).max(20).optional(),
+    relatedFiles: z.array(z.object({
+      path: z.string().max(500),
+      content: z.string().max(10000)
+    })).max(10).optional(),
+    textBeforeCursor: z.string().max(5000).optional(),
+    textAfterCursor: z.string().max(5000).optional()
+  }).optional(),
+  provider: z.string().min(1).max(50).optional(),
+  model: z.string().min(1).max(100).optional()
+})
 
 type CompletionMetadata = {
   language?: string
@@ -846,7 +864,16 @@ async function generateCompletion(body: CompletionRequestBody): Promise<Completi
 
 export async function POST(request: NextRequest) {
   try {
-    const body = (await request.json()) as CompletionRequestBody
+    // Validate request body
+    const validation = await validateRequestBody(request, codeCompletionSchema)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: validation.error },
+        { status: 400 }
+      )
+    }
+
+    const body = validation.data as CompletionRequestBody
     const completion = await generateCompletion(body)
 
     return NextResponse.json(completion)

@@ -94,7 +94,7 @@ VibeCode is built as a modern, cloud-native application with the following archi
    docker-compose -f docker-compose.dev.yml up -d postgres redis
    
    # Run database migrations
-   npm run db:deploy
+   npm run db:migrate
    npm run db:generate
    ```
 

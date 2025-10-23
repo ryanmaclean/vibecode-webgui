@@ -19,9 +19,9 @@
 
 import React, { useState, useCallback, useRef, useEffect } from 'react'
 import {
-Bot,
+  Bot,
   User,
-  System,
+  Shield,
   MoreVertical,
   Edit,
   Trash2,
@@ -127,7 +127,7 @@ function MessageItem({
       case 'assistant':
         return <Bot className="h-4 w-4" aria-label="Assistant message" />
       case 'system':
-        return <System className="h-4 w-4" aria-label="System message" />
+        return <Shield className="h-4 w-4" aria-label="System message" />
     }
   }
 

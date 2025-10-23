@@ -1,3 +1,4 @@
+import { randomUUID } from 'crypto';
 import { logger } from '@/lib/logger';
 
 
@@ -69,6 +70,10 @@ export interface GenerationOptions {
   includeTests?: boolean;
   includeCI?: boolean;
   customVariables?: Record<string, string>;
+}
+
+export interface GenerateFromTemplateOptions extends GenerationOptions {
+  templateId: string;
 }
 
 /**
@@ -512,7 +517,7 @@ export default function RootLayout({
     // React TypeScript Vite Generator
     this.generators.set('react-ts-vite', (options: GenerationOptions) => {
       const template = this.templates.get('react-ts-vite')!;
-      const projectId = crypto.randomUUID();
+      const projectId = randomUUID();
 
       return {
         id: projectId,
@@ -540,7 +545,7 @@ export default function RootLayout({
     // Next.js TypeScript Generator
     this.generators.set('nextjs-ts', (options: GenerationOptions) => {
       const template = this.templates.get('nextjs-ts')!;
-      const projectId = crypto.randomUUID();
+      const projectId = randomUUID();
 
       return {
         id: projectId,
@@ -679,3 +684,10 @@ export default function RootLayout({
 
 // Export singleton instance for global use
 export const templateGenerator = new TemplateGenerator();
+
+export async function generateFromTemplate(
+  options: GenerateFromTemplateOptions
+): Promise<GeneratedProject> {
+  const { templateId, ...generationOptions } = options;
+  return templateGenerator.generateProject(templateId, generationOptions);
+}

@@ -10,6 +10,8 @@ import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { z } from '@/lib/zod-compat'
 
+export const runtime = 'nodejs'
+
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
