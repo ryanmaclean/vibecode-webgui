@@ -3,17 +3,44 @@ import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import { z } from '@/lib/zod-compat';
+import { logger } from '@/lib/logger';
+
+// Validation schema for security
+const gradioRunSchema = z.object({
+  code: z.string().min(1).max(1_000_000), // 1MB code limit
+  port: z.number().int().min(3000).max(9999).optional(),
+  share: z.boolean().optional()
+});
 
 // A simple in-memory store to keep track of running Gradio processes
 const runningProcesses: Map<string, any> = new Map();
 
 export async function POST(request: Request) {
   try {
-    const { code } = await request.json();
-
-    if (!code) {
-      return NextResponse.json({ error: 'No code provided' }, { status: 400 });
+    // Validate request body
+    let validatedData;
+    try {
+      const body = await request.json();
+      validatedData = gradioRunSchema.parse(body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.warn('Gradio run validation failed', { errors: error.errors });
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        );
+      }
+      throw error;
     }
+
+    const { code } = validatedData;
 
     // Create a unique directory for this execution to isolate files
     const execId = crypto.randomUUID();

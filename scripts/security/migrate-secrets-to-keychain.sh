@@ -70,6 +70,7 @@ SECRETS=(
     "SESSION_SECRET"
     "REDIS_PASSWORD"
     "AZURE_OPENAI_API_KEY"
+    "OPENROUTER_API_KEY"
 )
 
 # Function to store secret in Keychain
