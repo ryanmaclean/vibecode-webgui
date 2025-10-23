@@ -5,7 +5,8 @@
   "main": "servers/filesystem/server.js",
   "scripts": {
     "start": "node servers/filesystem/server.js",
-    "start:sequential-thinking": "node servers/sequential_thinking/server.js"
+    "start:sequential-thinking": "node servers/sequential_thinking/server.js",
+    "dev:sequential-thinking": "PORT=${PORT:-3004} node --watch servers/sequential_thinking/server.js"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.0.0"

@@ -6,6 +6,7 @@
  */
 
 const tracer = require('dd-trace');
+const { pathToFileURL } = require('url');
 
 // Get service name and package from args
 const [,, serviceName, packageName] = process.argv;
@@ -32,20 +33,45 @@ try {
   console.error(`Warning: Failed to initialize Datadog tracing: ${error.message}`);
 }
 
-// Import and run the MCP server
-const span = tracer.startSpan(`mcp.${serviceName}.main`, {
-  service: `mcp-${serviceName}`,
-  resource: packageName,
-});
+async function loadPackage() {
+  const span = tracer.startSpan(`mcp.${serviceName}.main`, {
+    service: `mcp-${serviceName}`,
+    resource: packageName,
+  });
 
-try {
-  // Dynamic import of the package
-  require(packageName);
-} catch (error) {
-  span.setTag('error', true);
-  span.setTag('error.message', error.message);
-  span.setTag('error.stack', error.stack);
-  throw error;
-} finally {
-  span.finish();
+  try {
+    try {
+      require(packageName);
+      return;
+    } catch (requireError) {
+      if (!['ERR_REQUIRE_ESM', 'MODULE_NOT_FOUND'].includes(requireError.code)) {
+        throw requireError;
+      }
+
+      let resolvedPath;
+      try {
+        resolvedPath = require.resolve(packageName);
+      } catch (resolveError) {
+        if (resolveError.code !== 'MODULE_NOT_FOUND') {
+          throw resolveError;
+        }
+        // Attempt to load common bin entry if package has no default export
+        resolvedPath = require.resolve(`${packageName}/dist/index.js`);
+      }
+
+      await import(pathToFileURL(resolvedPath).href);
+    }
+  } catch (error) {
+    span.setTag('error', true);
+    span.setTag('error.message', error.message);
+    span.setTag('error.stack', error.stack);
+    throw error;
+  } finally {
+    span.finish();
+  }
 }
+
+loadPackage().catch((error) => {
+  console.error(`Failed to start ${serviceName} MCP server:`, error);
+  process.exit(1);
+});

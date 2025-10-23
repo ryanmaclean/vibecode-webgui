@@ -1,11 +1,13 @@
 #!/usr/bin/env node
 
+const http = require('http');
 const { Server } = require('@modelcontextprotocol/sdk/server/index.js');
 const { StdioServerTransport } = require('@modelcontextprotocol/sdk/server/stdio.js');
 const { CallToolRequestSchema, ListToolsRequestSchema } = require('@modelcontextprotocol/sdk/types.js');
 
 class SequentialThinkingMCPServer {
   constructor() {
+    this.httpPort = Number(process.env.PORT || process.env.MCP_SERVER_PORT || 3004);
     this.server = new Server(
       {
         name: 'sequential-thinking-mcp-server',
@@ -112,6 +114,72 @@ class SequentialThinkingMCPServer {
     const transport = new StdioServerTransport();
     await this.server.connect(transport);
     console.error('Sequential Thinking MCP server running on stdio');
+    this.startHttpServer();
+  }
+
+  startHttpServer() {
+    const requestHandler = async (req, res) => {
+      if (req.method === 'GET' && req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(
+          JSON.stringify({
+            status: 'healthy',
+            service: 'sequential-thinking-mcp-http',
+            timestamp: new Date().toISOString(),
+          })
+        );
+        return;
+      }
+
+      if (req.method === 'POST' && req.url === '/v1/tools/think_sequentially') {
+        let body = '';
+
+        req.on('data', (chunk) => {
+          body += chunk;
+        });
+
+        req.on('end', async () => {
+          try {
+            const parsed = JSON.parse(body || '{}');
+            const prompt = typeof parsed.prompt === 'string' ? parsed.prompt.trim() : '';
+            const numStepsRaw = parsed.num_steps ?? parsed.numSteps ?? 5;
+            const numSteps = Number.isFinite(Number(numStepsRaw)) ? Math.max(1, Number(numStepsRaw)) : 5;
+
+            if (!prompt) {
+              res.writeHead(400, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Prompt is required and cannot be empty.' }));
+              return;
+            }
+
+            const data = await this.thinkSequentially(prompt, numSteps);
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify(data));
+          } catch (error) {
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(
+              JSON.stringify({
+                error: 'Failed to process sequential thinking request.',
+                message: error instanceof Error ? error.message : 'Unknown error',
+              })
+            );
+          }
+        });
+        return;
+      }
+
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not Found' }));
+    };
+
+    const server = http.createServer(requestHandler);
+
+    server.listen(this.httpPort, () => {
+      console.error(`Sequential Thinking MCP HTTP server listening on port ${this.httpPort}`);
+    });
+
+    server.on('error', (error) => {
+      console.error(`Sequential Thinking MCP HTTP server error: ${error instanceof Error ? error.message : error}`);
+    });
   }
 }
 

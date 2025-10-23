@@ -69,3 +69,15 @@ These guidelines apply when contributing to the Next.js/TypeScript application.
 - **Dependencies:** Add new packages via npm and document rationale when introducing them.
 
 Document any deviations or new conventions here so the next agent inherits a consistent environment.
+
+### MCP Sequential Thinking (Local Dev)
+- Install once: `cd docker/mcp-servers && npm install --legacy-peer-deps`.
+- Start the server: `npm run start:sequential-thinking` (or `npm run dev:sequential-thinking` for auto-reload).
+- The API expects the service at `http://localhost:3004/v1/tools/think_sequentially`; keep that port consistent.
+- Verify before hitting the Next.js route: `curl -s http://localhost:3004/v1/tools/think_sequentially -H 'Content-Type: application/json' -d '{"prompt":"sanity check","num_steps":2}'`.
+- Multi-agent assignments for current cycle live in `archive/agents/2025-10-22-mcp-roundtable-plan.md` (Codex personas 1-10).
+
+### Roundtable CLI Helper
+- Run availability check: `./scripts/roundtable/run-roundtable.sh`.
+- Override subagents: `./scripts/roundtable/run-roundtable.sh --agents codex`.
+- Results stored at `~/.roundtable/availability_check.json`; share in daily status if agents change.
