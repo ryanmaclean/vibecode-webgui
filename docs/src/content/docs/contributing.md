@@ -24,7 +24,7 @@ If you're new to open source or VibeCode, check out our [Good First Issues](http
 
 ## Code of Conduct
 
-This project adheres to our [Code of Conduct](CODE_OF_CONDUCT.md). By participating, you're expected to uphold this code. Please report any unacceptable behavior to [conduct@vibecode.dev](mailto:conduct@vibecode.dev).
+This project adheres to our [Code of Conduct](./code-of-conduct/). By participating, you're expected to uphold this code. Please report any unacceptable behavior to [conduct@vibecode.dev](mailto:conduct@vibecode.dev).
 
 ## Getting Started
 

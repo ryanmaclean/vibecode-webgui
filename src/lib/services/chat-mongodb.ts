@@ -557,3 +557,4 @@ export class ChatMongoDBService {
 
 // Export singleton instance for global use
 export const chatMongoDBService = new ChatMongoDBService();
+export const mongodbChatService = chatMongoDBService;

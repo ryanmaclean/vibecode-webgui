@@ -287,7 +287,7 @@ cp .env.example .env
 docker-compose -f docker-compose.dev.yml up -d
 
 # Initialize database
-npm run db:deploy
+npm run db:migrate
 npm run db:generate
 
 # Start development server
@@ -388,7 +388,7 @@ The application provides REST API endpoints for various functionalities:
     const categories = {
       development: ['dev', 'dev:simple', 'build', 'start', 'lint', 'type-check'],
       testing: ['test', 'test:watch', 'test:e2e', 'test:integration', 'test:security'],
-      database: ['db:deploy', 'db:status', 'db:validate', 'db:setup'],
+      database: ['db:migrate', 'db:status', 'db:validate', 'db:setup'],
       monitoring: ['monitoring:health', 'monitoring:metrics', 'perf:monitor'],
       security: ['security:test', 'security:audit', 'security:scan'],
       ai: ['ai:status', 'ai:models', 'ai:usage', 'ai:costs'],
@@ -423,7 +423,7 @@ The application provides REST API endpoints for various functionalities:
       'test:e2e': 'Run end-to-end tests',
       'test:integration': 'Run integration tests',
       'test:security': 'Run security tests',
-      'db:deploy': 'Deploy database migrations',
+      'db:migrate': 'Deploy database migrations',
       'db:status': 'Check migration status',
       'db:validate': 'Validate database configuration',
       'monitoring:health': 'Check system health',
@@ -533,7 +533,7 @@ docker build -t ${this.packageJson.name} .
 docker-compose -f docker-compose.prod.yml up -d
 
 # Run database migrations
-docker-compose exec app npm run db:deploy
+docker-compose exec app npm run db:migrate
 \`\`\`
 
 #### Environment Variables

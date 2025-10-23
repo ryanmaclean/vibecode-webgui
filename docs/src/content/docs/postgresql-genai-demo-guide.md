@@ -599,10 +599,10 @@ With these principles in place, you'll have robust observability for your AI-pow
 
 ## Resources
 
-- [Dashboard Template](../monitoring/dashboards/genai-vector-performance.json)
-- [Migration Script](../scripts/vector-db-migrations/migrate-vector-data.js)
-- [Benchmark Tool](../scripts/benchmark-vector-search.js)
-- [CI/CD Workflow](.github/workflows/db-monitoring-deployment.yml)
+- [Dashboard Template](https://github.com/ryanmaclean/vibecode-webgui/blob/main/datadog/vector-database-dashboard.json)
+- [Migration Script](https://github.com/ryanmaclean/vibecode-webgui/blob/main/scripts/vector-db-migrations/migrate-vector-data.js)
+- [Benchmark Tool](https://github.com/ryanmaclean/vibecode-webgui/blob/main/scripts/benchmark-vector-search.js)
+- [CI/CD Workflow](https://github.com/ryanmaclean/vibecode-webgui/blob/main/.github/workflows/db-monitoring-deployment.yml)
 
 ## Related Documentation
 
