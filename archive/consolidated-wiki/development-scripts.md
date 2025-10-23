@@ -99,7 +99,7 @@ npm run test:docs:preview      # use Astro preview mode
 
 ### Database Management
 ```bash
-npm run db:deploy
+npm run db:migrate
 ```
 Deploy database migrations
 
@@ -223,7 +223,7 @@ cp .env.example .env
 docker-compose -f docker-compose.dev.yml up -d
 
 # Initialize database
-npm run db:deploy
+npm run db:migrate
 npm run db:generate
 
 # Start development
@@ -236,7 +236,7 @@ npm run dev
 1. **Start Development**: `npm run dev`
 2. **Run Tests**: `npm run test && npm run test:e2e`
 3. **Check Code Quality**: `npm run lint && npm run type-check`
-4. **Database Changes**: `npm run db:deploy`
+4. **Database Changes**: `npm run db:migrate`
 5. **Security Check**: `npm run security:test`
 
 ### Pre-commit Checks

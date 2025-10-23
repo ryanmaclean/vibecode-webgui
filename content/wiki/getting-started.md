@@ -57,7 +57,7 @@ Before you begin, ensure you have:
 
 4. **Initialize the database**
    ```bash
-   npm run db:deploy
+   npm run db:migrate
    npm run db:generate
    ```
 
@@ -83,7 +83,7 @@ Before you begin, ensure you have:
 
 3. **Initialize the database**
    ```bash
-   docker-compose exec app npm run db:deploy
+   docker-compose exec app npm run db:migrate
    ```
 
 ## Your First AI Project

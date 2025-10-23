@@ -84,16 +84,26 @@ case "${ARCH}" in
         ;;
 esac
 
-# Merge config fragments
-echo "Merging config fragments..."
-./scripts/kconfig/merge_config.sh -m .config "${BASE_CONFIG}" "${ARCH_CONFIG}"
-
-# Build the kernel
-echo "Building kernel..."
 BUILD_ARCH="${ARCH}"
 if [ "${ARCH}" = "armv7" ]; then
     BUILD_ARCH="arm"
 fi
+
+# Merge config fragments
+echo "Merging config fragments..."
+./scripts/kconfig/merge_config.sh -m .config "${BASE_CONFIG}" "${ARCH_CONFIG}"
+
+echo "Reconciling kernel defaults..."
+OLDDEFCONFIG_LOG="$(mktemp -t minivim-olddefconfig.XXXXXX)"
+if ! make ARCH="${BUILD_ARCH}" olddefconfig > "${OLDDEFCONFIG_LOG}" 2>&1; then
+    echo "ERROR: make olddefconfig failed. Details:"
+    cat "${OLDDEFCONFIG_LOG}"
+    exit 1
+fi
+rm -f "${OLDDEFCONFIG_LOG}"
+
+# Build the kernel
+echo "Building kernel..."
 
 # Determine output image name
 case "${ARCH}" in

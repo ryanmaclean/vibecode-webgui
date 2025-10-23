@@ -7,6 +7,15 @@ description: Active project tasks and priorities
 
 ## 🚨 CRITICAL ISSUES REQUIRING IMMEDIATE ATTENTION
 
+### 🔧 **Build Blockers – Oct 23, 2025**
+**Status**: ❌ **BUILD FAILING**
+
+- [ ] **Restore Valkey cache module** (`src/lib/cache/valkey-client.ts`) so it exports `cache`, `CacheKeys`, and `CacheTTL` plus the unified cache manager. Use the full implementation from the last good commit and ensure downstream imports compile.
+- [ ] **Reinstate vector DB core files** (`base-vector-database-adapter.ts`, `vector-db-error-handler.ts`, and related adapters) to replace the merge-conflict stubs. Verify `VectorDatabaseFactory` can initialize PostgreSQL successfully.
+- [ ] **Harmonize MongoDB chat service exports** by keeping both `chatMongoDBService` and `mongodbChatService` aliases or updating all imports; prevent import errors in `/app/api/chat/*`.
+- [ ] **Resolve Tailwind v4 utility regressions** by replacing remaining `@apply bg-* / text-* / border-*` usages (e.g., in `globals*.css` and shared components) with raw CSS or Tailwind v4 `@utility` definitions.
+- [ ] **Fix Edge runtime logger incompatibility**: migrate affected API routes to `runtime = 'nodejs'` or provide an Edge-safe logger shim so Winston no longer triggers runtime errors during builds.
+
 ### 💰 **URGENT: GitHub Actions Cost Optimization ($100 Bill)**
 **Status**: ❌ **IMMEDIATE ACTION REQUIRED**
 

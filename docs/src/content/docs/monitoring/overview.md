@@ -80,7 +80,7 @@ source .env.local
 
 ## Next Steps
 
-- [Datadog Setup](/monitoring/datadog/) - Configure enterprise monitoring
-- [Prometheus Configuration](/monitoring/prometheus/) - Set up open source metrics
-- [Vector Pipeline](/monitoring/vector/) - Configure data routing
-- [OpenTelemetry Integration](/monitoring/opentelemetry/) - Add vendor-neutral telemetry
+- [Datadog Setup](../DATADOG_LOCAL_DEVELOPMENT/) - Configure enterprise monitoring
+- Prometheus Configuration (coming soon)
+- Vector Pipeline (see repository docs in `vector/` folder)
+- [OpenTelemetry Integration](https://github.com/ryanmaclean/vibecode-webgui/blob/main/content/wiki/monitoring/OPENTELEMETRY_INTEGRATION.md) - Add vendor-neutral telemetry
