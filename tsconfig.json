@@ -44,8 +44,7 @@
     "types": [
       "node",
       "jest"
-    ],
-    "strictNullChecks": true
+    ]
   },
   "include": [
     "next-env.d.ts",
@@ -53,7 +52,8 @@
     "src/**/*.tsx",
     "src/types/**/*.d.ts",
     ".next/types/**/*.ts",
-    "types/**/*.d.ts"
+    "types/**/*.d.ts",
+    ".next/dev/types/**/*.ts"
   ],
   "exclude": [
     "node_modules",

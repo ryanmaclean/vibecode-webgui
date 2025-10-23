@@ -131,15 +131,39 @@ const webSocketHandler = (ws: any, request: any) => {
         }))
         return
       }
-      
+
+      // SECURITY: Validate workspace ID format
+      if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid workspace ID format'
+        }))
+        return
+      }
+
+      // SECURITY: Validate terminal dimensions
+      const cols = Math.min(Math.max(message.cols || 120, 10), 500)
+      const rows = Math.min(Math.max(message.rows || 30, 10), 100)
+
       const sessionId = generateSessionId()
-      const workspaceDir = `/workspaces/${workspaceId}`
-      
+
+      // SECURITY: Construct safe workspace path using path.join
+      const workspaceDir = require('path').join('/workspaces', workspaceId)
+
+      // SECURITY: Validate workspace path is within allowed directory
+      if (!workspaceDir.startsWith('/workspaces/')) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid workspace path'
+        }))
+        return
+      }
+
       // Create PTY process
       const ptyProcess = spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
         name: 'xterm-256color',
-        cols: message.cols || 120,
-        rows: message.rows || 30,
+        cols,
+        rows,
         cwd: workspaceDir,
         env: {
           ...process.env,
@@ -229,6 +253,23 @@ const webSocketHandler = (ws: any, request: any) => {
 
     const session = terminalSessions.get(sessionId)
     if (session) {
+      // SECURITY: Validate input size to prevent DoS
+      if (!message.data || typeof message.data !== 'string') {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Invalid terminal input'
+        }))
+        return
+      }
+
+      if (message.data.length > 10_000) {
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Terminal input too large (max 10KB)'
+        }))
+        return
+      }
+
       session.lastActivity = new Date()
       session.pty.write(message.data)
 

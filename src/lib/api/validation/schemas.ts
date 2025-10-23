@@ -340,3 +340,166 @@ export const claudeSessionActionSchema = z.discriminatedUnion('action', [
 export const claudeSessionQuerySchema = z.object({
   workspaceId: workspaceIdSchema
 })
+
+// ============================================================================
+// PHASE 2: Critical Security Routes (Command Injection Prevention)
+// ============================================================================
+
+/** Shell command validation - strict allowlist approach */
+export const shellCommandSchema = z
+  .string()
+  .min(1)
+  .max(1000)
+  .refine(
+    (cmd) => !cmd.match(/[;&|`$()<>]/),
+    'Command contains shell metacharacters - potential injection detected'
+  )
+  .refine(
+    (cmd) => !cmd.includes('..'),
+    'Command contains directory traversal sequences'
+  )
+
+/** Absolute file path validation for workspace operations */
+export const absolutePathSchema = z
+  .string()
+  .min(1)
+  .max(500)
+  .refine(
+    (path) => path.startsWith('/workspaces/') || path.startsWith('/tmp/workspaces/'),
+    'Path must be within allowed workspace directories'
+  )
+  .refine(
+    (path) => !path.includes('..'),
+    'Path must not contain directory traversal sequences'
+  )
+  .refine(
+    (path) => !path.match(/[;&|`$()<>]/),
+    'Path contains shell metacharacters'
+  )
+
+/** Safe provider name validation (SAML, OAuth, etc.) */
+export const providerNameSchema = z
+  .string()
+  .min(1)
+  .max(50)
+  .regex(/^[a-z0-9-]+$/, 'Provider name must contain only lowercase letters, numbers, and hyphens')
+  .refine(
+    (name) => ['okta', 'azure', 'google', 'onelogin', 'auth0'].includes(name),
+    'Provider must be one of: okta, azure, google, onelogin, auth0'
+  )
+
+// ============================================================================
+// Goose Initialization Schema (Command Injection Prevention)
+// ============================================================================
+
+export const initGooseSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  migrationName: z
+    .string()
+    .min(1)
+    .max(100)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Migration name must contain only alphanumeric characters, hyphens, and underscores')
+    .optional()
+    .default('init'),
+  workspacePath: absolutePathSchema.optional()
+})
+
+export const initGooseParamSchema = z.object({
+  id: workspaceIdSchema
+})
+
+// ============================================================================
+// Terminal Session Schemas (Command Injection & Path Traversal Prevention)
+// ============================================================================
+
+export const terminalMessageSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('create-terminal'),
+    cols: z.number().int().positive().max(500).optional().default(80),
+    rows: z.number().int().positive().max(100).optional().default(24),
+    cwd: absolutePathSchema.optional()
+  }),
+  z.object({
+    type: z.literal('terminal-input'),
+    data: z.string().min(1).max(10_000) // 10KB limit per input
+  }),
+  z.object({
+    type: z.literal('terminal-resize'),
+    cols: z.number().int().positive().max(500),
+    rows: z.number().int().positive().max(100)
+  }),
+  z.object({
+    type: z.literal('ai-command'),
+    command: z.string().min(1).max(10_000),
+    type: z.enum(['chat', 'explain', 'generate', 'analyze']).optional().default('chat')
+  }),
+  z.object({
+    type: z.literal('close-terminal')
+  })
+])
+
+export const terminalWebSocketQuerySchema = z.object({
+  workspaceId: workspaceIdSchema,
+  userId: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'User ID must contain only alphanumeric characters, hyphens, and underscores')
+    .optional()
+    .default('anonymous')
+})
+
+// ============================================================================
+// File Sync Schema (Path Traversal & Injection Prevention)
+// ============================================================================
+
+export const fileSyncQuerySchema = z.object({
+  workspaceId: workspaceIdSchema,
+  userId: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'User ID must contain only alphanumeric characters, hyphens, and underscores')
+})
+
+export const fileSyncFileSchema = z.object({
+  path: filePathSchema,
+  content: z.string().max(10_000_000), // 10MB limit per file
+  type: z.enum(['file', 'directory'])
+})
+
+export const fileSyncBulkSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  files: z
+    .array(fileSyncFileSchema)
+    .min(1)
+    .max(100) // Limit to 100 files per bulk operation
+})
+
+export const fileSyncWebSocketMessageSchema = z.discriminatedUnion('type', [
+  z.object({
+    type: z.literal('file-update'),
+    payload: z.object({
+      path: filePathSchema,
+      content: z.string().max(10_000_000),
+      version: z.string().optional()
+    })
+  }),
+  z.object({
+    type: z.literal('ping')
+  }),
+  z.object({
+    type: z.literal('subscribe-file'),
+    payload: z.object({
+      path: filePathSchema
+    })
+  })
+])
+
+// ============================================================================
+// SAML Metadata Schema (Provider Injection Prevention)
+// ============================================================================
+
+export const samlMetadataQuerySchema = z.object({
+  provider: providerNameSchema.optional().default('okta')
+})
