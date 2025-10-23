@@ -195,7 +195,7 @@
     "isomorphic-dompurify": "^2.16.0",
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
-    "langchain": "0.3.34",
+    "langchain": "1.0.1",
     "lightningcss": "1.19.0",
     "lucide-react": "^0.546.0",
     "marked": "^16.1.1",
