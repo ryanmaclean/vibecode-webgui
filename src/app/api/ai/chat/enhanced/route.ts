@@ -7,7 +7,8 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import OpenAI from 'openai'
-// import { z } from '@/lib/zod-compat' // TODO: Add request validation schema
+import { z } from '@/lib/zod-compat'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -45,6 +46,21 @@ interface EnhancedChatRequest {
   }
   enableTools?: boolean
 }
+
+// Zod validation schema for enhanced chat requests
+const enhancedChatRequestSchema = z.object({
+  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  model: z.enum(['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-pro', 'gemini-1.5-pro', 'llama-3.1-70b', 'mistral-large']),
+  context: z.object({
+    workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
+    files: z.array(z.string().max(500)).max(20),
+    previousMessages: z.array(z.object({
+      role: z.enum(['user', 'assistant']),
+      content: z.string().max(4000)
+    })).max(50)
+  }),
+  enableTools: z.boolean().optional().default(false)
+})
 
 // Enhanced RAG context builder
 async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, userId: string) {
@@ -106,8 +122,16 @@ export async function POST(request: NextRequest) {
       return Response.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body: EnhancedChatRequest = await request.json()
-    const { message, model, context, enableTools = true } = body
+    // Validate request body
+    const validation = await validateRequestBody(request, enhancedChatRequestSchema)
+    if (!validation.success) {
+      return Response.json(
+        { error: 'Invalid request data', details: validation.error },
+        { status: 400 }
+      )
+    }
+
+    const { message, model, context, enableTools = true } = validation.data
 
     // Validate model
     if (!SUPPORTED_MODELS[model]) {
