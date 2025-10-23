@@ -30,7 +30,7 @@ jobs:
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm ci
+        run: bash scripts/install-ci.sh
 
       - name: Lint check
         run: npm run lint || echo "Linting issues found (non-blocking)"

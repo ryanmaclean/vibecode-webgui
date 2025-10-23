@@ -112,6 +112,10 @@
 }
 
 @layer utilities {
+  .border-border {
+    border-color: hsl(var(--border));
+  }
+
   .bg-gradient-primary {
     background: var(--gradient-primary);
   }
