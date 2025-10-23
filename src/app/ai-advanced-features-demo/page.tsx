@@ -9,23 +9,6 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-<<<<<<< HEAD
-import {
-  Loader2,
-  Code,
-  TestTube,
-  Lightbulb,
-  FileText,
-  Zap,
-  Shield,
-  Gauge,
-  Database,
-  CheckCircle,
-  AlertTriangle,
-  XCircle
-} from 'lucide-react';
-import { logger } from '@/lib/logger';
-=======
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import { logger } from '@/lib/logger';
@@ -169,7 +152,6 @@ const DatabaseIcon = resolveIcon('Database');
 const CheckCircleIcon = resolveIcon('CheckCircle');
 const AlertTriangleIcon = resolveIcon('AlertTriangle', 'TriangleAlert');
 const XCircleIcon = resolveIcon('XCircle');
->>>>>>> 9b55785e8 (chore: type ai advanced features demo results)
 export default function AIAdvancedFeaturesDemo() {
   const [activeTab, setActiveTab] = useState('overview');
   const [isLoading, setIsLoading] = useState(false);

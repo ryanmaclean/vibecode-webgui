@@ -55,8 +55,7 @@ jobs:
 
       - name: Install Astro dependencies
         if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
-        run: npm ci --legacy-peer-deps
-        working-directory: docs
+        run: bash scripts/install-ci.sh --prefix docs
 
       - name: Build Astro site
         if: ${{ github.event_name == 'push' || github.event.inputs.docs_system == 'astro' }}
@@ -82,7 +81,7 @@ jobs:
 
       - name: Install Next.js dependencies
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
-        run: npm ci --legacy-peer-deps
+        run: bash scripts/install-ci.sh
 
       - name: Build Next.js site
         if: ${{ github.event.inputs.docs_system == 'nextjs' }}
