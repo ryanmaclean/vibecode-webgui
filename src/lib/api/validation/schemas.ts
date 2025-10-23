@@ -431,7 +431,7 @@ export const terminalMessageSchema = z.discriminatedUnion('type', [
   z.object({
     type: z.literal('ai-command'),
     command: z.string().min(1).max(10_000),
-    type: z.enum(['chat', 'explain', 'generate', 'analyze']).optional().default('chat')
+    commandType: z.enum(['chat', 'explain', 'generate', 'analyze']).optional().default('chat')
   }),
   z.object({
     type: z.literal('close-terminal')
@@ -502,4 +502,149 @@ export const fileSyncWebSocketMessageSchema = z.discriminatedUnion('type', [
 
 export const samlMetadataQuerySchema = z.object({
   provider: providerNameSchema.optional().default('okta')
+})
+
+// ============================================================================
+// PHASE 3: AI Operations & Code Execution (Function Calls, Project Generation)
+// ============================================================================
+
+/** Function name validation - allowlist of safe functions */
+export const functionNameSchema = z
+  .string()
+  .min(1)
+  .max(100)
+  .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Function name must be a valid identifier')
+  .refine(
+    (name) => [
+      'web_search',
+      'create_file',
+      'list_files',
+      'read_file',
+      'execute_code',
+      'install_package',
+      'search_documentation'
+    ].includes(name),
+    'Function name must be in the allowlist of safe functions'
+  )
+
+/** AI Function Call Schema (Command Injection Prevention) */
+export const aiFunctionCallSchema = z.object({
+  function_call: z.object({
+    name: functionNameSchema,
+    arguments: z.record(z.unknown()).refine(
+      (args) => JSON.stringify(args).length <= 100_000, // 100KB limit
+      'Function arguments too large'
+    )
+  }),
+  workspaceId: workspaceIdSchema.optional()
+})
+
+/** Programming language validation */
+export const programmingLanguageSchema = z.enum([
+  'javascript',
+  'typescript',
+  'python',
+  'react',
+  'nextjs',
+  'vue',
+  'node',
+  'go',
+  'rust',
+  'java'
+])
+
+/** Project generation schema with safe constraints */
+export const generateProjectSchema = z.object({
+  prompt: z.string().min(1).max(10_000), // 10KB max prompt
+  projectName: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Project name must contain only alphanumeric characters, hyphens, and underscores')
+    .optional(),
+  language: programmingLanguageSchema.optional(),
+  framework: z.string().min(1).max(50).optional(),
+  features: z.array(z.string().min(1).max(100)).max(20).optional()
+})
+
+/** Code execution schema (session management) */
+export const codeServerSessionSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  projectPath: z
+    .string()
+    .min(1)
+    .max(500)
+    .refine((path) => path.startsWith('/workspace'), 'Project path must be within /workspace directory')
+    .refine((path) => !path.includes('..'), 'Path must not contain directory traversal')
+    .default('/workspace'),
+  userId: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-zA-Z0-9_-]+$/, 'User ID must contain only alphanumeric characters, hyphens, and underscores')
+    .optional()
+})
+
+/** Gradio application run schema */
+export const gradioRunSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  scriptPath: filePathSchema,
+  port: z.number().int().min(3000).max(9999).optional().default(7860),
+  share: z.boolean().optional().default(false)
+})
+
+/** Web search query schema (Injection Prevention) */
+export const webSearchSchema = z.object({
+  query: z.string().min(1).max(500), // Reasonable search query length
+  maxResults: z.number().int().positive().max(50).optional().default(10),
+  safeSearch: z.boolean().optional().default(true),
+  language: z.string().min(2).max(10).optional(),
+  region: z.string().min(2).max(10).optional()
+})
+
+/** Vector store/embedding schema (DoS Prevention) */
+export const vectorStoreSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  content: z.string().min(1).max(1_000_000), // 1MB max content
+  metadata: z.record(z.unknown()).optional(),
+  chunkSize: z.number().int().positive().max(10_000).optional().default(1000),
+  overlap: z.number().int().nonnegative().max(500).optional().default(200)
+})
+
+/** Vector search schema (Query Injection Prevention) */
+export const vectorSearchSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  query: z.string().min(1).max(5_000), // 5KB max query
+  maxResults: z.number().int().positive().max(100).optional().default(5),
+  threshold: z.number().min(0).max(1).optional().default(0.7),
+  filter: z.record(z.unknown()).optional()
+})
+
+/** Sequential thinking/reasoning schema */
+export const sequentialThinkingSchema = z.object({
+  problem: z.string().min(1).max(50_000), // 50KB max problem description
+  context: z.array(z.string().max(10_000)).max(10).optional(), // Max 10 context items
+  maxSteps: z.number().int().positive().max(50).optional().default(10),
+  temperature: z.number().min(0).max(2).optional().default(0.7)
+})
+
+/** LiteLLM proxy schema */
+export const liteLLMSchema = z.object({
+  model: z.string().min(1).max(100),
+  messages: z.array(chatMessageSchema).min(1).max(100),
+  temperature: z.number().min(0).max(2).optional().default(0.7),
+  max_tokens: z.number().int().positive().max(32000).optional(),
+  stream: z.boolean().optional().default(false)
+})
+
+/** HuggingFace chat schema */
+export const huggingfaceChatSchema = z.object({
+  model: z.string().min(1).max(200),
+  messages: z.array(chatMessageSchema).min(1).max(100),
+  parameters: z.object({
+    temperature: z.number().min(0).max(2).optional(),
+    max_new_tokens: z.number().int().positive().max(8000).optional(),
+    top_p: z.number().min(0).max(1).optional(),
+    repetition_penalty: z.number().min(0).max(2).optional()
+  }).optional()
 })

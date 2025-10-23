@@ -9,19 +9,13 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { z } from '@/lib/zod-compat';
 import { llmObservability } from '@/lib/datadog-llm';
+import { generateProjectSchema } from '@/lib/api/validation/schemas';
 
 import type { Span } from 'dd-trace';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
 import { logger } from '@/lib/logger';
-const generateProjectSchema = z.object({
-  prompt: z.string().min(1, 'Project prompt is required'),
-  projectName: z.string().optional(),
-  language: z.enum(['javascript', 'typescript', 'python', 'react', 'nextjs', 'vue', 'node']).optional(),
-  framework: z.string().optional(),
-  features: z.array(z.string()).optional(),
-})
 
 interface GeneratedFile {
   path: string

@@ -7,15 +7,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
+import { codeServerSessionSchema } from '@/lib/api/validation/schemas'
+import { logger } from '@/lib/logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-const createSessionSchema = z.object({
-  workspaceId: z.string().min(1),
-  projectPath: z.string().default('/workspace'),
-  userId: z.string().min(1).optional(),
-})
 
 interface CodeServerInstance {
   id: string
@@ -114,7 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json()
-    const { workspaceId, userId } = createSessionSchema.parse(body)
+    const { workspaceId, userId } = codeServerSessionSchema.parse(body)
 
     // Verify user owns the workspace - use session user ID if no userId provided
     const effectiveUserId = userId || session.user.id

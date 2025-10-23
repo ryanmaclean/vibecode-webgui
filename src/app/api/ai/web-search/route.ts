@@ -1,5 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
+import { z } from '@/lib/zod-compat'
+import { webSearchSchema } from '@/lib/api/validation/schemas'
+import { logger } from '@/lib/logger'
+
+// Extended schema with additional fields
+const extendedWebSearchSchema = webSearchSchema.extend({
+  timeFilter: z.enum(['day', 'week', 'month', 'year']).optional(),
+  includeContent: z.boolean().optional().default(false)
+});
 
 interface WebSearchRequest {
   query: string
@@ -13,23 +22,38 @@ interface WebSearchRequest {
 
 export async function POST(request: NextRequest) {
   try {
-    const body: WebSearchRequest = await request.json()
-    const { 
-      query, 
-      maxResults = 5, 
+    // Validate request body
+    let validatedData;
+    try {
+      const body = await request.json();
+      validatedData = extendedWebSearchSchema.parse(body);
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        logger.warn('Web search validation failed', { errors: error.errors });
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        );
+      }
+      throw error;
+    }
+
+    const {
+      query,
+      maxResults = 5,
       timeFilter,
       safeSearch = true,
       language = 'en',
       region = 'us',
       includeContent = false
-    } = body
-
-    if (!query?.trim()) {
-      return NextResponse.json({
-        success: false,
-        error: 'Query is required'
-      }, { status: 400 })
-    }
+    } = validatedData;
 
     const startTime = Date.now()
     
