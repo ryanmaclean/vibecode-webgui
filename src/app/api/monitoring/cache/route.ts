@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
 import { queryCache } from '../../../../lib/cache/query-cache'
 import { vectorCacheAdapter } from '../../../../lib/cache/vector-cache-adapter'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
@@ -111,7 +111,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Cache monitoring error:', error)
+    console.error('Cache monitoring error:', error)
     
     return NextResponse.json(
       {
@@ -205,7 +205,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Cache operation error:', error)
+    console.error('Cache operation error:', error)
     
     return NextResponse.json(
       {

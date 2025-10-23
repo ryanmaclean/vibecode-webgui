@@ -37,7 +37,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { createSSEClient, type SSEClient, type SSEConnectionState } from '@/lib/streaming/sse-client'
 import type { AgentType, AgentResponse } from '@/types/agent-api'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions

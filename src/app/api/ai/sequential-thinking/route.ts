@@ -6,6 +6,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
+import { z } from '@/lib/zod-compat'
+
+// Zod validation schema for sequential thinking requests
+const sequentialThinkingSchema = z.object({
+  prompt: z.string()
+    .min(1, 'Prompt is required')
+    .max(5000, 'Prompt too long')
+    .regex(/^[^\x00-\x1F\x7F]*$/, 'Prompt contains invalid characters'),
+  numSteps: z.number()
+    .int('Number of steps must be an integer')
+    .min(1, 'At least 1 step required')
+    .max(20, 'Maximum 20 steps allowed')
+    .optional()
+    .default(5)
+}).strict()
 // Add type augmentation for NextRequest
 declare module 'next/server' {
   interface NextRequest {
@@ -44,42 +59,30 @@ async function handlePOST(request: NextRequest) {
   const startTime = Date.now();
   
   try {
-    // Parse request body
+    // Parse and validate request body with Zod
     const body = await request.json();
-    const { prompt, numSteps = 5 } = body;
-
-    // Validate input using security validator
-    try {
-      validateAIQuery({
-        query: prompt || '',
-        context: '',
-        metadata: { numSteps, userId: request.user?.id || 'test-user' }
-      });
-    } catch (validationError) {
+    const validation = sequentialThinkingSchema.safeParse(body);
+    
+    if (!validation.success) {
       logSequentialThinking(request, 'thinking_error', {
-        error: 'Input validation failed',
-        validationError: validationError instanceof Error ? validationError.message : 'Unknown validation error',
-        userId: request.user?.id || 'test-user',
+        error: 'Request validation failed',
+        validationErrors: validation.error.errors,
+        userId: request.user?.id,
       });
 
       return NextResponse.json(
-        { error: 'Invalid input format or content' },
+        { 
+          error: 'Invalid request format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
         { status: 400 }
       );
     }
 
-    // Validate prompt
-    if (!prompt || typeof prompt !== 'string' || prompt.trim() === '') {
-      logSequentialThinking(request, 'thinking_error', {
-        error: 'Invalid prompt format',
-        userId: 'test-user',
-      });
-
-      return NextResponse.json(
-        { error: 'Prompt is required and cannot be empty' },
-        { status: 400 }
-      );
-    }
+    const { prompt, numSteps } = validation.data;
 
     // Log the sequential thinking request
     logSequentialThinking(request, 'thinking_request', {

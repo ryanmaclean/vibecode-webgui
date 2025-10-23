@@ -6,7 +6,7 @@
 
 import { useEffect } from 'react'
 import Link from 'next/link'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface ErrorProps {
   error: Error & { digest?: string }
   reset: () => void

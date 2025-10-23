@@ -71,6 +71,9 @@ model Workspace {
 
   @@index([user_id])
   @@index([workspace_id])
+  @@index([status, user_id]) // Composite index for active workspace queries
+  @@index([user_id, status, updated_at]) // For sorting active workspaces by recent activity
+  @@index([workspace_id, status]) // For external workspace lookups with status filter
   @@map("workspaces")
 }
 
@@ -97,6 +100,11 @@ model Project {
 
   @@index([user_id])
   @@index([workspace_id])
+  @@index([status, user_id]) // Composite index for active project queries
+  @@index([workspace_id, status, updated_at]) // For sorting workspace projects by recent activity
+  @@index([language, status]) // For filtering projects by language and status
+  @@index([framework, status]) // For filtering projects by framework and status
+  @@index([user_id, status, created_at]) // For sorting user projects by creation date
   @@map("projects")
 }
 
@@ -126,6 +134,12 @@ model File {
   @@index([workspace_id])
   @@index([project_id])
   @@index([path])
+  @@index([workspace_id, project_id]) // Composite index for workspace-project file queries
+  @@index([mime_type, workspace_id]) // For filtering files by type within workspace
+  @@index([language, project_id]) // For filtering files by programming language
+  @@index([user_id, updated_at]) // For sorting user files by modification date
+  @@index([checksum]) // For duplicate file detection
+  @@index([size, mime_type]) // For file size analysis queries
   @@map("files")
 }
 
@@ -158,6 +172,12 @@ model RAGChunk {
   @@index([file_id])
   @@index([workspace_id])
   @@index([project_id])
+  @@index([workspace_id, project_id]) // Composite index for workspace-project chunk queries
+  @@index([file_id, chunk_index]) // For ordered chunk retrieval
+  @@index([user_id, workspace_id, created_at]) // For user workspace chunk queries with time sorting
+  @@index([token_count, workspace_id]) // For token analysis within workspace
+  @@index([chunk_id]) // For external chunk identifier lookups
+  @@index([start_line, end_line, file_id]) // For line-based chunk queries
   @@map("rag_chunks")
 }
 
@@ -238,6 +258,12 @@ model AIRequest {
   @@index([project_id])
   @@index([created_at])
   @@index([request_type])
+  @@index([status, user_id]) // Composite index for filtering requests by status
+  @@index([user_id, created_at]) // For sorting user requests by creation date
+  @@index([provider, model, created_at]) // For provider/model usage analysis
+  @@index([request_type, status, created_at]) // For request type performance monitoring
+  @@index([project_id, status, created_at]) // For project-specific request tracking
+  @@index([duration_ms, created_at]) // For performance analysis queries
   @@map("ai_requests")
 }
 
@@ -256,6 +282,9 @@ model Event {
   @@index([user_id])
   @@index([event_type])
   @@index([created_at])
+  @@index([event_type, created_at]) // Composite index for event type time series queries
+  @@index([user_id, event_type, created_at]) // For user-specific event tracking
+  @@index([session_id, created_at]) // For session-based event analysis
   @@map("events")
 }
 
@@ -269,6 +298,8 @@ model SystemMetric {
 
   @@index([metric_name])
   @@index([created_at])
+  @@index([metric_name, created_at]) // Composite index for metric time series queries
+  @@index([metric_name, value, created_at]) // For metric threshold analysis
   @@map("system_metrics")
 }
 

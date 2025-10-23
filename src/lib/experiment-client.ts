@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface ExperimentResult {
   flagKey: string
   variant: string
@@ -77,7 +77,7 @@ export function useFeatureFlag(
         })
       }
     } catch (error) {
-      logger.error('Failed to evaluate feature flag:', error)
+      console.error('Failed to evaluate feature flag:', error)
       setResult({
         flagKey,
         variant: 'control',
@@ -106,7 +106,7 @@ export function useFeatureFlag(
         })
       })
     } catch (error) {
-      logger.error('Failed to track metric:', error)
+      console.error('Failed to track metric:', error)
     }
   }, [flagKey, session?.user, options.context])
 
@@ -178,7 +178,7 @@ export function useFeatureFlags(
         setResults(fallbackResults)
       }
     } catch (error) {
-      logger.error('Failed to evaluate feature flags:', error)
+      console.error('Failed to evaluate feature flags:', error)
       // Fallback to defaults
       const fallbackResults: Record<string, ExperimentResult> = {}
       flags.forEach(flag => {
@@ -212,7 +212,7 @@ export function useFeatureFlags(
         })
       })
     } catch (error) {
-      logger.error('Failed to track metric:', error)
+      console.error('Failed to track metric:', error)
     }
   }, [session?.user, context])
 
@@ -323,7 +323,7 @@ export const ExperimentTracker = {
         })
       })
     } catch (error) {
-      logger.error('Failed to track conversion:', error)
+      console.error('Failed to track conversion:', error)
     }
   },
 
@@ -351,7 +351,7 @@ export const ExperimentTracker = {
         })
       })
     } catch (error) {
-      logger.error('Failed to track event:', error)
+      console.error('Failed to track event:', error)
     }
   },
 

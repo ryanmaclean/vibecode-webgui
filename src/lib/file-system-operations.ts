@@ -13,7 +13,7 @@ import path from 'path'
 import * as fs from 'fs/promises'
 import crypto from 'crypto'
 import { Mutex } from 'async-mutex'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Global file locks manager - shared across all instances within a workspace
 const globalFileLocks = new Map<string, Map<string, { userId: string; timestamp: Date; lockId: string }>>()
 // Security constants
@@ -228,7 +228,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       .on('change', (filePath: string) => this.handleFileEvent('changed', filePath))
       .on('unlink', (filePath: string) => this.handleFileEvent('deleted', filePath))
       .on('error', (err: unknown) => {
-        logger.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
+        console.error('Error handling file event:', err instanceof Error ? err.message : 'Unknown error')
         this.emit('error', err)
       })
   }

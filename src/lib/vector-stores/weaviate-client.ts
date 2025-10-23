@@ -4,7 +4,7 @@
  */
 
 import { VectorChunk, SearchResult, SearchOptions } from '../vector-db/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface WeaviateConfig {
   host: string;
   port?: number;
@@ -71,10 +71,10 @@ export class WeaviateClient {
       await this.client.misc.readyChecker().do();
 
       this.isConnected = true;
-      logger.info('Weaviate client initialized successfully');
+      console.info('Weaviate client initialized successfully');
 
     } catch (error) {
-      logger.error('Failed to initialize Weaviate client:', error);
+      console.error('Failed to initialize Weaviate client:', error);
       throw error;
     }
   }
@@ -100,7 +100,7 @@ export class WeaviateClient {
       await this.client.misc.readyChecker().do();
       return true;
     } catch (error) {
-      logger.error('Weaviate ping failed:', error);
+      console.error('Weaviate ping failed:', error);
       return false;
     }
   }
@@ -126,10 +126,10 @@ export class WeaviateClient {
 
       if (!existingClass) {
         await this.client.schema.classCreator().withClass(classDefinition).do();
-        logger.info(`Created Weaviate class: ${classDefinition.class}`);
+        console.info(`Created Weaviate class: ${classDefinition.class}`);
       }
     } catch (error) {
-      logger.error(`Failed to create Weaviate class ${classDefinition.class}:`, error);
+      console.error(`Failed to create Weaviate class ${classDefinition.class}:`, error);
       throw error;
     }
   }
@@ -172,7 +172,7 @@ export class WeaviateClient {
 
       return storedCount;
     } catch (error) {
-      logger.error('Failed to store chunks in Weaviate:', error);
+      console.error('Failed to store chunks in Weaviate:', error);
       throw error;
     }
   }
@@ -218,7 +218,7 @@ export class WeaviateClient {
         similarity: item._additional.certainty || 0
       }));
     } catch (error) {
-      logger.error('Failed to search in Weaviate:', error);
+      console.error('Failed to search in Weaviate:', error);
       throw error;
     }
   }
@@ -264,7 +264,7 @@ export class WeaviateClient {
         similarity: item._additional.certainty || 0
       }));
     } catch (error) {
-      logger.error('Failed to search with text in Weaviate:', error);
+      console.error('Failed to search with text in Weaviate:', error);
       throw error;
     }
   }
@@ -294,7 +294,7 @@ export class WeaviateClient {
 
       return deletedCount;
     } catch (error) {
-      logger.error('Failed to delete from Weaviate:', error);
+      console.error('Failed to delete from Weaviate:', error);
       throw error;
     }
   }
@@ -327,7 +327,7 @@ export class WeaviateClient {
         lastUpdated: new Date()
       };
     } catch (error) {
-      logger.error('Failed to get Weaviate stats:', error);
+      console.error('Failed to get Weaviate stats:', error);
       throw error;
     }
   }
@@ -380,7 +380,7 @@ export class WeaviateClient {
         }
       }
     } catch (error) {
-      logger.error('Failed to clear Weaviate data:', error);
+      console.error('Failed to clear Weaviate data:', error);
       throw error;
     }
   }
@@ -390,7 +390,7 @@ export class WeaviateClient {
    */
   async createIndex(field: string, options?: any): Promise<void> {
     // Weaviate handles indexing automatically through schema configuration
-    logger.info(`Index for ${field} is handled by Weaviate schema configuration`);
+    console.info(`Index for ${field} is handled by Weaviate schema configuration`);
   }
 
   /**
@@ -398,7 +398,7 @@ export class WeaviateClient {
    */
   async deleteIndex(field: string): Promise<void> {
     // Weaviate index management is handled at the class level
-    logger.info(`Index deletion for ${field} is handled by Weaviate class management`);
+    console.info(`Index deletion for ${field} is handled by Weaviate class management`);
   }
 
   /**
@@ -444,7 +444,7 @@ export class WeaviateClient {
         return null; // Item not found
       }
 
-      logger.error('Failed to get vector by ID:', error);
+      console.error('Failed to get vector by ID:', error);
       throw error;
     }
   }
@@ -478,7 +478,7 @@ export class WeaviateClient {
 
       return true;
     } catch (error) {
-      logger.error('Failed to update vector:', error);
+      console.error('Failed to update vector:', error);
       return false;
     }
   }
@@ -525,7 +525,7 @@ export class WeaviateClient {
 
       return processedCount;
     } catch (error) {
-      logger.error('Failed to execute batch operation:', error);
+      console.error('Failed to execute batch operation:', error);
       throw error;
     }
   }
@@ -577,7 +577,7 @@ export class WeaviateClient {
         similarity: item._additional.certainty || 0
       }));
     } catch (error) {
-      logger.error('Failed to search by workspace in Weaviate:', error);
+      console.error('Failed to search by workspace in Weaviate:', error);
       throw error;
     }
   }
@@ -619,7 +619,7 @@ export class WeaviateClient {
 
       return chunks;
     } catch (error) {
-      logger.error('Failed to get vectors by file IDs:', error);
+      console.error('Failed to get vectors by file IDs:', error);
       throw error;
     }
   }
@@ -672,7 +672,7 @@ export class WeaviateClient {
         similarity: item._additional.certainty || 0
       }));
     } catch (error) {
-      logger.error('Failed to perform hybrid search in Weaviate:', error);
+      console.error('Failed to perform hybrid search in Weaviate:', error);
       throw error;
     }
   }
@@ -734,7 +734,7 @@ export class WeaviateClient {
         metadata: JSON.parse(item.metadata || '{}')
       }));
     } catch (error) {
-      logger.error('Failed to get trending content from Weaviate:', error);
+      console.error('Failed to get trending content from Weaviate:', error);
       throw error;
     }
   }
@@ -823,7 +823,7 @@ export class WeaviateClient {
         similarity: item._additional.certainty || 0
       }));
     } catch (error) {
-      logger.error('Failed to search with filters in Weaviate:', error);
+      console.error('Failed to search with filters in Weaviate:', error);
       throw error;
     }
   }
@@ -910,7 +910,7 @@ export class WeaviateClient {
         ]
       };
     } catch (error) {
-      logger.error('Failed to get Weaviate analytics:', error);
+      console.error('Failed to get Weaviate analytics:', error);
       throw error;
     }
   }

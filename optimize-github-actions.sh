@@ -310,8 +310,8 @@ ls -la .github/workflows/release-branch-ci.yml 2>/dev/null && echo "  ✅ releas
 
 echo ""
 echo "💰 Expected cost impact:"
-echo "  Before: ~$100/month (19 workflows × frequent runs)"
-echo "  After:  ~$20-30/month (lightweight main + selective comprehensive)"
+  echo "  Before: ~\$100/month (19 workflows × frequent runs)"
+  echo "  After:  ~\$20-30/month (lightweight main + selective comprehensive)"
 echo "  Savings: 70-80% reduction"
 
 echo ""
@@ -336,7 +336,7 @@ main() {
   echo "  - Create lightweight main branch CI"
   echo "  - Create comprehensive release branch CI"
   echo "  - Modify expensive workflows"
-  echo "  - Expected savings: 70-80% ($100 → $20-30/month)"
+  echo "  - Expected savings: 70-80% (\$100 → \$20-30/month)"
   echo ""
   read -p "Continue? (y/N): " -n 1 -r
   echo

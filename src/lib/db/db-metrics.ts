@@ -5,7 +5,7 @@
  * and connection pool health for monitoring and alerting systems.
  */
 
-import { logger } from '../logger';
+// import { logger } from '../logger';
 import { getConnectionPoolStatus } from './robust-db-connection';
 
 // Query metrics interface
@@ -87,7 +87,7 @@ class DatabaseMetricsCollector {
     
     // Log slow queries
     if (duration > 1000) { // Queries taking more than 1 second
-      logger.warn('Slow database query detected', {
+      console.warn('Slow database query detected', {
         query: timing.query,
         duration: timing.duration,
         type: timing.type,
@@ -274,7 +274,7 @@ class DatabaseMetricsCollector {
       poolUtilization: 0
     };
     
-    logger.info('Database metrics collector reset');
+    console.info('Database metrics collector reset');
   }
 
   /**
@@ -336,7 +336,7 @@ let metricsCollector: DatabaseMetricsCollector | null = null;
 export function getDatabaseMetricsCollector(): DatabaseMetricsCollector {
   if (!metricsCollector) {
     metricsCollector = new DatabaseMetricsCollector();
-    logger.info('Database metrics collector initialized');
+    console.info('Database metrics collector initialized');
   }
   return metricsCollector;
 }

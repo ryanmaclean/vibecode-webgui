@@ -2,7 +2,7 @@
 // Provides structured logging for database operations
 
 import { PrismaClient } from '@prisma/client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface Logger {
   debug: (...args: any[]) => void;
   info: (...args: any[]) => void;
@@ -12,10 +12,10 @@ interface Logger {
 
 // Create a default logger
 const defaultLogger: Logger = {
-  debug: (...args: any[]) => logger.debug('[DB]', ...args),
-  info: (...args: any[]) => logger.info('[DB]', ...args),
-  warn: (...args: any[]) => logger.warn('[DB]', ...args),
-  error: (...args: any[]) => logger.error('[DB]', ...args),
+  debug: (...args: any[]) => console.debug('[DB]', ...args),
+  info: (...args: any[]) => console.info('[DB]', ...args),
+  warn: (...args: any[]) => console.warn('[DB]', ...args),
+  error: (...args: any[]) => console.error('[DB]', ...args),
 };
 
 // Use default logger
@@ -47,7 +47,7 @@ function setupExternalLogger() {
       }
     })
     .catch((err) => {
-      logger.warn('[DB] Could not load external logger:', err.message);
+      console.warn('[DB] Could not load external logger:', err.message);
     });
 }
 
@@ -110,7 +110,7 @@ let globalOptions: DbLoggingOptions = { ...defaultOptions };
  */
 export function configureDbLogging(options: Partial<DbLoggingOptions>) {
   globalOptions = { ...globalOptions, ...options };
-  logger.info('Database logging configured', { options: globalOptions });
+  console.info('Database logging configured', { options: globalOptions });
 }
 
 // Define Prisma event types
@@ -150,11 +150,11 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
       
       // Determine log level based on query duration
       let logLevel = LogLevel.DEBUG;
-      let logMethod = logger.debug;
+      let logMethod = console.debug;
       
       if (durationMs > loggingOptions.slowQueryThreshold!) {
         logLevel = LogLevel.WARN;
-        logMethod = logger.warn;
+        logMethod = console.warn;
       }
       
       // Only log if the level is enabled
@@ -175,7 +175,7 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
   // Error logging
   if (loggingOptions.level! >= LogLevel.ERROR) {
     prisma.$on('error', (e: PrismaLogEvent) => {
-      logger.error('Database error', {
+      console.error('Database error', {
         operation: DbOperationType.QUERY,
         error: e.message,
         target: e.target,
@@ -186,7 +186,7 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
   // Info logging
   if (loggingOptions.level! >= LogLevel.INFO) {
     prisma.$on('info', (e: PrismaLogEvent) => {
-      logger.info('Database info', {
+      console.info('Database info', {
         operation: DbOperationType.QUERY,
         message: e.message,
         target: e.target,
@@ -197,7 +197,7 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
   // Warning logging
   if (loggingOptions.level! >= LogLevel.WARN) {
     prisma.$on('warn', (e: PrismaLogEvent) => {
-      logger.warn('Database warning', {
+      console.warn('Database warning', {
         operation: DbOperationType.QUERY,
         message: e.message,
         target: e.target,
@@ -228,16 +228,16 @@ export function logDbOperation(
   
   switch (level) {
     case LogLevel.ERROR:
-      logger.error(message, logData);
+      console.error(message, logData);
       break;
     case LogLevel.WARN:
-      logger.warn(message, logData);
+      console.warn(message, logData);
       break;
     case LogLevel.INFO:
-      logger.info(message, logData);
+      console.info(message, logData);
       break;
     case LogLevel.DEBUG:
-      logger.debug(message, logData);
+      console.debug(message, logData);
       break;
   }
 }
@@ -420,11 +420,11 @@ export function enhancePrismaWithLogging(
         
         // Determine log level based on query duration
         let logLevel = LogLevel.DEBUG;
-        let logMethod = logger.debug;
+        let logMethod = console.debug;
         
         if (durationMs > loggingOptions.slowQueryThreshold!) {
           logLevel = LogLevel.WARN;
-          logMethod = logger.warn;
+          logMethod = console.warn;
         }
         
         // Only log if the level is enabled
@@ -442,7 +442,7 @@ export function enhancePrismaWithLogging(
       });
     }
   } catch (error) {
-    logger.warn('Could not add query logging to existing Prisma client', {
+    console.warn('Could not add query logging to existing Prisma client', {
       error: (error as Error).message,
     });
   }

@@ -4,7 +4,7 @@
  * Provides statistical analysis and data warehouse integration capabilities
  */
 
-import { logger, appLogger } from './server-monitoring'
+// import { logger, appLogger } from './server-monitoring'
 
 interface FeatureFlag {
   key: string
@@ -167,7 +167,7 @@ class FeatureFlagEngine {
       }
 
     } catch (error) {
-      logger.error('Feature flag evaluation failed', {
+      console.error('Feature flag evaluation failed', {
         flagKey,
         userId: context.userId,
         error: (error as Error).message

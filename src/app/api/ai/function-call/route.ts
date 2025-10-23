@@ -1,22 +1,43 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { functionCallingService, FunctionCall } from '@/lib/services/function-calling'
-import { logger } from '@/lib/logger';
-interface FunctionCallRequest {
-  function_call: FunctionCall
-  workspaceId?: string
-}
+// import { logger } from '@/lib/logger'
+import { z } from '@/lib/zod-compat'
+
+// Zod validation schema for function call requests
+const functionCallRequestSchema = z.object({
+  function_call: z.object({
+    name: z.string()
+      .min(1, 'Function name is required')
+      .max(100, 'Function name too long')
+      .regex(/^[a-zA-Z_][a-zA-Z0-9_]*$/, 'Invalid function name format'),
+    arguments: z.record(z.any()).optional().default({})
+  }),
+  workspaceId: z.string()
+    .min(1, 'Workspace ID is required')
+    .max(100, 'Workspace ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format')
+    .optional()
+}).strict()
 
 export async function POST(request: NextRequest) {
   try {
-    const body: FunctionCallRequest = await request.json()
-    const { function_call, workspaceId } = body
-
-    if (!function_call?.name) {
+    const body = await request.json()
+    
+    // Validate request body with Zod
+    const validation = functionCallRequestSchema.safeParse(body)
+    
+    if (!validation.success) {
       return NextResponse.json({
         success: false,
-        error: 'function_call.name is required'
+        error: 'Invalid request format',
+        details: validation.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
       }, { status: 400 })
     }
+
+    const { function_call, workspaceId } = validation.data
 
     // Add workspaceId to function arguments if provided and not already present
     const functionArgs = {
@@ -35,7 +56,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log function execution for monitoring
-    logger.info(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
+    console.info(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
 
     return NextResponse.json({
       success: result.success,
@@ -50,7 +71,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error: unknown) {
-    logger.error('Function calling API error:', error)
+    console.error('Function calling API error:', error)
     
     return NextResponse.json({
       success: false,

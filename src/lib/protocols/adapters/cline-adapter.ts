@@ -7,7 +7,7 @@
 import { BaseAgentAdapter, AgentCapabilities, AgentSession, AgentResult } from './base-adapter';
 import { createAgentAPIClient } from '../agentapi-client';
 import type { AgentConfig } from './base-adapter';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class ClineAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;
@@ -111,7 +111,7 @@ export class ClineAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          logger.info(`[Cline] ${data.line}`);
+          console.info(`[Cline] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {
@@ -119,7 +119,7 @@ export class ClineAdapter extends BaseAgentAdapter {
           }
         },
         onError: (data) => {
-          logger.error(`[Cline Error] ${data.error}`);
+          console.error(`[Cline Error] ${data.error}`);
           if (this.session) {
             this.session.status = 'failed';
           }

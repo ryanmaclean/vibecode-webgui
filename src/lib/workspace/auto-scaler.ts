@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -247,7 +247,7 @@ export class WorkspaceAutoScaler {
         }
       }
     } catch (error) {
-      logger.error('Auto-scaling evaluation error:', error)
+      console.error('Auto-scaling evaluation error:', error)
     } finally {
       this.isEvaluating = false
     }
@@ -356,7 +356,7 @@ export class WorkspaceAutoScaler {
       scalingAction.status = 'failed'
       scalingAction.error = error instanceof Error ? error.message : 'Unknown error'
       
-      logger.error(`❌ Scaling action failed for workspace ${workspaceId}:`, error)
+      console.error(`❌ Scaling action failed for workspace ${workspaceId}:`, error)
     } finally {
       // Remove completed/failed action and mark as not scaling
       resources.scaling.pendingActions = resources.scaling.pendingActions.filter(

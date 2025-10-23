@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from '@/components/ui/resizable';
 import { Play } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface GradioEditorProps {
   initialCode: string;
 }

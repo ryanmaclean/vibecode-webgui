@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../../lib/monitoring/auth'
 import { connectionPoolMonitor } from '../../../../../lib/monitoring/connection-pool-monitor'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
@@ -84,7 +84,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json(dashboardData)
 
   } catch (error) {
-    logger.error('Connection pool dashboard error:', error)
+    console.error('Connection pool dashboard error:', error)
     
     return NextResponse.json(
       {
@@ -222,7 +222,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Failed to update pool metrics:', error)
+    console.error('Failed to update pool metrics:', error)
     
     return NextResponse.json(
       {

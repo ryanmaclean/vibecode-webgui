@@ -10,6 +10,7 @@ import { useEffect } from 'react'
 import type { ReactNode } from 'react'
 import { datadogLogs } from '@datadog/browser-logs'
 import { ConsoleProvider } from '@/providers/ConsoleProvider'
+import { UserPreferencesProvider } from '@/providers/UserPreferencesProvider'
 import RUMMonitoring from '@/lib/monitoring/rum-client'
 import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
@@ -74,9 +75,11 @@ export default function Providers({ children }: ProvidersProps) {
 
   return (
     <SessionProvider>
-      <ConsoleProvider>
-        {children}
-      </ConsoleProvider>
+      <UserPreferencesProvider>
+        <ConsoleProvider>
+          {children}
+        </ConsoleProvider>
+      </UserPreferencesProvider>
     </SessionProvider>
   )
 }

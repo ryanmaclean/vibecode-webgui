@@ -3,7 +3,7 @@
  * In-memory implementation of the vector cache adapter interface
  */
 
-import { logger } from '../../logger';
+// import { logger } from '../../logger';
 import { SearchResult } from '../vector-types';
 import { IVectorCacheAdapter, VectorCacheConfig } from './vector-cache-interface';
 
@@ -72,7 +72,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
     this.isInitialized = true;
     
     if (this.config.enableLogging) {
-      logger.info('Memory vector cache adapter initialized', {
+      console.info('Memory vector cache adapter initialized', {
         ttl: this.config.ttl,
         maxSize: this.config.maxSize,
         autoPrune: this.config.autoPrune,
@@ -117,7 +117,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.debug(`Cache set: ${key}`, {
+        console.debug(`Cache set: ${key}`, {
           namespace,
           resultCount: results.length,
           duration: Date.now() - startTime
@@ -127,7 +127,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return true;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error storing in memory cache', { error, key, namespace });
+        console.error('Error storing in memory cache', { error, key, namespace });
       }
       
       return false;
@@ -154,7 +154,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
         this.hits++;
         
         if (this.config.enableLogging) {
-          logger.debug(`Cache hit: ${key}`, {
+          console.debug(`Cache hit: ${key}`, {
             namespace,
             accessCount: entry.accessCount,
             duration: Date.now() - startTime
@@ -179,7 +179,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       this.misses++;
       
       if (this.config.enableLogging) {
-        logger.debug(`Cache miss: ${key}`, {
+        console.debug(`Cache miss: ${key}`, {
           namespace,
           expired: !!entry,
           duration: Date.now() - startTime
@@ -190,7 +190,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return null;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error retrieving from memory cache', { error, key, namespace });
+        console.error('Error retrieving from memory cache', { error, key, namespace });
       }
       
       this.updateResponseMetrics(startTime);
@@ -211,7 +211,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       const exists = !!entry && entry.expires > Date.now();
       
       if (this.config.enableLogging) {
-        logger.debug(`Cache check: ${key}`, {
+        console.debug(`Cache check: ${key}`, {
           namespace,
           exists,
           duration: Date.now() - startTime
@@ -221,7 +221,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return exists;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error checking memory cache', { error, key, namespace });
+        console.error('Error checking memory cache', { error, key, namespace });
       }
       
       return false;
@@ -246,7 +246,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       }
       
       if (this.config.enableLogging) {
-        logger.debug(`Cache delete: ${key}`, {
+        console.debug(`Cache delete: ${key}`, {
           namespace,
           existed,
           duration: Date.now() - startTime
@@ -256,7 +256,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return existed;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error deleting from memory cache', { error, key, namespace });
+        console.error('Error deleting from memory cache', { error, key, namespace });
       }
       
       return false;
@@ -289,7 +289,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       this.namespaces.delete(namespace);
       
       if (this.config.enableLogging && count > 0) {
-        logger.info(`Invalidated ${count} entries in namespace: ${namespace}`, {
+        console.info(`Invalidated ${count} entries in namespace: ${namespace}`, {
           duration: Date.now() - startTime
         });
       }
@@ -297,7 +297,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return count;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error invalidating namespace', { error, namespace });
+        console.error('Error invalidating namespace', { error, namespace });
       }
       
       return 0;
@@ -317,7 +317,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       this.namespaces.clear();
       
       if (this.config.enableLogging) {
-        logger.info(`Cleared ${count} entries from memory cache`, {
+        console.info(`Cleared ${count} entries from memory cache`, {
           duration: Date.now() - startTime
         });
       }
@@ -325,7 +325,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
       return count;
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error clearing memory cache', { error });
+        console.error('Error clearing memory cache', { error });
       }
       
       return 0;
@@ -371,7 +371,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
     this.isInitialized = false;
     
     if (this.config.enableLogging) {
-      logger.info('Memory vector cache adapter closed');
+      console.info('Memory vector cache adapter closed');
     }
   }
 
@@ -421,7 +421,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
     });
     
     if (prunedCount > 0 && this.config.enableLogging) {
-      logger.debug(`Pruned ${prunedCount} expired entries from memory cache`, {
+      console.debug(`Pruned ${prunedCount} expired entries from memory cache`, {
         duration: Date.now() - startTime
       });
     }
@@ -463,7 +463,7 @@ export class MemoryVectorCacheAdapter implements IVectorCacheAdapter {
     }
     
     if (this.config.enableLogging) {
-      logger.debug(`Removed ${removeCount} LRU entries from memory cache to enforce size limit`);
+      console.debug(`Removed ${removeCount} LRU entries from memory cache to enforce size limit`);
     }
   }
 

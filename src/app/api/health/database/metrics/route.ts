@@ -5,7 +5,7 @@ import {
   getDetailedConnectionPoolInfo,
   createRobustConnection
 } from '../../../../../lib/db/robust-db-connection';
-import { logger } from '../../../../../lib/logger';
+// import { logger } from '../../../../../lib/logger';
 
 
 export const dynamic = 'force-dynamic';
@@ -313,7 +313,7 @@ export async function GET(_request: NextRequest) {
             vectorIndexes
           };
         } catch (err) {
-          logger.error('Error fetching vector-specific metrics:', { error: err });
+          console.error('Error fetching vector-specific metrics:', { error: err });
         }
       }
       
@@ -323,7 +323,7 @@ export async function GET(_request: NextRequest) {
       }
     }
   } catch (err) {
-    logger.error('Error creating database connection for vector metrics:', { error: err });
+    console.error('Error creating database connection for vector metrics:', { error: err });
   }
   
   return NextResponse.json({

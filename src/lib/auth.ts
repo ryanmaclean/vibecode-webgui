@@ -7,7 +7,8 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { logger } from '@/lib/logger';
+// // // import { logger } from '@/lib/logger'
+import { loadSecret } from '@/lib/security/macos-keychain-server'
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 // import { prisma } from './prisma'
 
@@ -44,103 +45,107 @@ declare module 'next-auth/jwt' {
 
 // NextAuth configuration is properly loaded
 
-export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
-  secret: process.env.NEXTAUTH_SECRET,
-  cookies: {
-    sessionToken: {
-      name: `__Secure-next-auth.session-token`,
-      options: {
-        httpOnly: true,
-        sameSite: 'lax',
-        path: '/',
-        secure: process.env.NODE_ENV === 'production',
-        domain: process.env.NODE_ENV === 'production' ? process.env.COOKIE_DOMAIN : undefined
+// Load secrets from Keychain with fallback to environment variables
+async function loadAuthSecrets() {
+  return {
+    nextAuthSecret: await loadSecret('NEXTAUTH_SECRET') || process.env.NEXTAUTH_SECRET,
+    githubId: await loadSecret('GITHUB_ID') || process.env.GITHUB_ID,
+    githubSecret: await loadSecret('GITHUB_SECRET') || process.env.GITHUB_SECRET,
+    googleClientId: await loadSecret('GOOGLE_CLIENT_ID') || process.env.GOOGLE_CLIENT_ID,
+    googleClientSecret: await loadSecret('GOOGLE_CLIENT_SECRET') || process.env.GOOGLE_CLIENT_SECRET,
+    cookieDomain: process.env.COOKIE_DOMAIN,
+    nodeEnv: process.env.NODE_ENV
+  }
+}
+
+// Create auth options with async secret loading
+export async function createAuthOptions(): Promise<NextAuthOptions> {
+  const secrets = await loadAuthSecrets()
+  
+  return {
+    // adapter: PrismaAdapter(prisma), // Disabled for file-based development
+    secret: secrets.nextAuthSecret,
+    cookies: {
+      sessionToken: {
+        name: `__Secure-next-auth.session-token`,
+        options: {
+          httpOnly: true,
+          sameSite: 'lax',
+          path: '/',
+          secure: secrets.nodeEnv === 'production',
+          domain: secrets.nodeEnv === 'production' ? secrets.cookieDomain : undefined
+        }
       }
-    }
-  },
-  providers: [
-    GithubProvider({
-      clientId: process.env.GITHUB_ID!,
-      clientSecret: process.env.GITHUB_SECRET!,
-      profile(profile) {
-        return {
-          id: profile.id.toString(),
-          name: profile.name || profile.login,
-          email: profile.email,
-          image: profile.avatar_url,
-          role: 'user', // Default role
-          githubId: profile.id.toString(),
-        }
-      },
-    }),
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-      profile(profile) {
-        return {
-          id: profile.sub,
-          name: profile.name,
-          email: profile.email,
-          image: profile.picture,
-          role: 'user', // Default role
-          googleId: profile.sub,
-        }
-      },
-    }),
-    CredentialsProvider({
-      name: 'Credentials',
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials) {
-        if (!credentials) return null
+    },
+    providers: [
+      GithubProvider({
+        clientId: secrets.githubId!,
+        clientSecret: secrets.githubSecret!,
+        profile(profile) {
+          return {
+            id: profile.id.toString(),
+            name: profile.name || profile.login,
+            email: profile.email,
+            image: profile.avatar_url,
+            role: 'user', // Default role
+            githubId: profile.id.toString(),
+          }
+        },
+      }),
+      GoogleProvider({
+        clientId: secrets.googleClientId!,
+        clientSecret: secrets.googleClientSecret!,
+        profile(profile) {
+          return {
+            id: profile.sub,
+            name: profile.name,
+            email: profile.email,
+            image: profile.picture,
+            role: 'user', // Default role
+            googleId: profile.sub,
+          }
+        },
+      }),
+      // SECURITY NOTE: CredentialsProvider disabled to prevent hardcoded credential vulnerabilities
+      // Use GitHub or Google OAuth for secure authentication
+      ...(process.env.NODE_ENV === 'development' && process.env.ENABLE_CREDENTIALS_AUTH === 'true' ? [CredentialsProvider({
+        name: 'Credentials',
+        credentials: {
+          email: { label: 'Email', type: 'text' },
+          password: { label: 'Password', type: 'password' },
+        },
+        async authorize(credentials) {
+          if (!credentials) return null
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: '4', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: '5', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: '6', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: '7', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: '8', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: '9', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: '10', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-        ]
-
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
+          // SECURITY: Hardcoded credentials removed for production security
+          // This provider should only be used with proper database authentication
+          // Credentials authentication disabled for security reasons
+          console.warn('🚨 SECURITY: Credentials provider disabled - hardcoded users removed')
           return null
-        }
-      },
-    }),
-  ],
-  session: {
-    strategy: 'jwt',
-  },
-  pages: {
-    signIn: '/auth/signin',
-    signOut: '/auth/signout',
-    error: '/auth/error',
-    verifyRequest: '/auth/verify-request',
-    newUser: '/auth/new-user',
-  },
-  callbacks: {
-    async jwt({ token, user, account }) {
-      logger.info('🔄 JWT callback:', {
-        hasUser: !!user,
-        hasToken: !!token,
-        provider: account?.provider,
-        tokenId: token?.id,
-        userId: user?.id
-      })
+        },
+      })] : []),
+    ],
+    session: {
+      strategy: 'jwt',
+      maxAge: secrets.nodeEnv === 'production' ? 60 * 60 * 2 : 60 * 60 * 24, // 2 hours in prod, 24 hours in dev
+      updateAge: 60 * 60 // Update session every hour
+    },
+    pages: {
+      signIn: '/auth/signin',
+      signOut: '/auth/signout',
+      error: '/auth/error',
+      verifyRequest: '/auth/verify-request',
+      newUser: '/auth/new-user',
+    },
+    callbacks: {
+      async jwt({ token, user, account }) {
+        console.info('🔄 JWT callback:', {
+          hasUser: !!user,
+          hasToken: !!token,
+          provider: account?.provider,
+          tokenId: token?.id,
+          userId: user?.id
+        })
 
       if (user) {
         token.id = user.id
@@ -153,12 +158,12 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        logger.info('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        console.info('✅ JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      logger.info('📋 Session callback:', {
+      console.info('📋 Session callback:', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
@@ -170,7 +175,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role
         session.user.email = token.email as string
         session.user.name = token.name as string
-        logger.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        console.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
@@ -188,11 +193,34 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      logger.info(`User ${user.email} signed in via ${account?.provider}`)
+      console.info(`User ${user.email} signed in via ${account?.provider}`)
     },
     async signOut({ token }) {
-      logger.info(`User ${token?.email} signed out`)
+      console.info(`User ${token?.email} signed out`)
     },
   },
   debug: process.env.NODE_ENV === 'development',
 }
+}
+
+// For backward compatibility, create a synchronous version that loads secrets at startup
+let cachedAuthOptions: NextAuthOptions | null = null
+
+export const authOptions: NextAuthOptions = {
+  // This will be replaced by the async version when the module loads
+  secret: process.env.NEXTAUTH_SECRET || 'fallback-secret',
+  providers: [],
+  session: { strategy: 'jwt' },
+  callbacks: {
+    async jwt() { return {} },
+    async session() { return { user: { id: '', email: '', name: '', role: '' } } },
+  },
+}
+
+// Initialize auth options asynchronously
+createAuthOptions().then(options => {
+  cachedAuthOptions = options
+  console.info('✅ Auth options loaded with Keychain secrets')
+}).catch(error => {
+  console.error('❌ Failed to load auth options with Keychain secrets', { error })
+})

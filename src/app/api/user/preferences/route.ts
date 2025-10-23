@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 
 import { authOptions } from '@/lib/auth'
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       preferences: saved,
     })
   } catch (error) {
-    logger.error('Error saving preferences:', { error: error })
+    console.error('Error saving preferences:', { error: error })
     return NextResponse.json(
       { error: 'Failed to save preferences' },
       { status: 500 },
@@ -64,7 +64,7 @@ export async function GET(request: NextRequest) {
     const preferences = await loadUserPreferences(user.id)
     return NextResponse.json(preferences)
   } catch (error) {
-    logger.error('Error fetching preferences:', { error: error })
+    console.error('Error fetching preferences:', { error: error })
     return NextResponse.json(
       { error: 'Failed to fetch preferences' },
       { status: 500 },

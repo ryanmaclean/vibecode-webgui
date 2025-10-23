@@ -14,7 +14,7 @@ ContainerOptions,
   ContainerListResult,
   ContainerLogsResult,
 } from './types'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface AppleContainerConfig {
   /** Path to Swift runtime executable */
@@ -299,7 +299,7 @@ try {
 
       proc.stderr.on('data', (data) => {
         if (this.debug) {
-          logger.error('Container logs stderr:', data.toString())
+          console.error('Container logs stderr:', data.toString())
         }
       })
 
@@ -407,7 +407,7 @@ try {
   ): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
     return new Promise((resolve) => {
       if (this.debug) {
-        logger.info('Executing:', this.runtimePath, args.join(' '))
+        console.info('Executing:', this.runtimePath, args.join(' '))
       }
 
       const proc = spawn(this.runtimePath, args)
@@ -425,9 +425,9 @@ try {
 
       proc.on('close', (code) => {
         if (this.debug) {
-          logger.info('Exit code:', code)
-          logger.info('Stdout:', stdout)
-          logger.info('Stderr:', stderr)
+          console.info('Exit code:', code)
+          console.info('Stdout:', stdout)
+          console.info('Stderr:', stderr)
         }
 
         if (code === 0) {

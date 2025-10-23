@@ -9,7 +9,8 @@
   }
 
   body {
-    @apply bg-gray-50 text-gray-900;
+    background-color: theme('colors.gray.50');
+    color: theme('colors.gray.900');
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
   }
@@ -25,15 +26,49 @@
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500;
+    @apply btn;
+    background-color: theme('colors.primary.600');
+    color: white;
+  }
+
+  .btn-primary:hover {
+    background-color: theme('colors.primary.700');
+  }
+
+  .btn-primary:focus,
+  .btn-primary:focus-visible {
+    --tw-ring-color: theme('colors.primary.500');
   }
 
   .btn-secondary {
-    @apply btn border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 focus:ring-primary-500;
+    @apply btn border;
+    border-color: theme('colors.gray.300');
+    background-color: white;
+    color: theme('colors.gray.700');
+  }
+
+  .btn-secondary:hover {
+    background-color: theme('colors.gray.50');
+  }
+
+  .btn-secondary:focus,
+  .btn-secondary:focus-visible {
+    --tw-ring-color: theme('colors.primary.500');
   }
 
   .btn-danger {
-    @apply btn bg-red-600 text-white hover:bg-red-700 focus:ring-red-500;
+    @apply btn;
+    background-color: theme('colors.red.600');
+    color: white;
+  }
+
+  .btn-danger:hover {
+    background-color: theme('colors.red.700');
+  }
+
+  .btn-danger:focus,
+  .btn-danger:focus-visible {
+    --tw-ring-color: theme('colors.red.500');
   }
 
   .btn-sm {
@@ -45,11 +80,24 @@
   }
 
   .card {
-    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply rounded-lg shadow-sm border;
+    background-color: white;
+    border-color: theme('colors.gray.200');
   }
 
   .input {
-    @apply block w-full rounded-md border border-gray-300 px-3 py-2 text-sm placeholder-gray-400 focus:border-primary-500 focus:outline-none focus:ring-1 focus:ring-primary-500;
+    @apply block w-full rounded-md border px-3 py-2 text-sm focus:outline-none focus:ring-1;
+    border-color: theme('colors.gray.300');
+  }
+
+  .input::placeholder {
+    color: theme('colors.gray.400');
+  }
+
+  .input:focus,
+  .input:focus-visible {
+    border-color: theme('colors.primary.500');
+    --tw-ring-color: theme('colors.primary.500');
   }
 
   .label {
@@ -61,23 +109,33 @@
   }
 
   .badge-success {
-    @apply badge bg-green-100 text-green-800;
+    @apply badge;
+    background-color: theme('colors.green.100');
+    color: theme('colors.green.800');
   }
 
   .badge-warning {
-    @apply badge bg-yellow-100 text-yellow-800;
+    @apply badge;
+    background-color: theme('colors.yellow.100');
+    color: theme('colors.yellow.800');
   }
 
   .badge-error {
-    @apply badge bg-red-100 text-red-800;
+    @apply badge;
+    background-color: theme('colors.red.100');
+    color: theme('colors.red.800');
   }
 
   .badge-info {
-    @apply badge bg-blue-100 text-blue-800;
+    @apply badge;
+    background-color: theme('colors.blue.100');
+    color: theme('colors.blue.800');
   }
 
   .loading-spinner {
-    @apply inline-block animate-spin rounded-full border-2 border-solid border-current border-r-transparent;
+    @apply inline-block animate-spin rounded-full border-2 border-solid;
+    border-color: currentColor;
+    border-right-color: transparent;
   }
 }
 

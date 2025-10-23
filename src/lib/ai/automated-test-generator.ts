@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -181,7 +181,7 @@ export class AutomatedTestGenerator {
 
       return this.parseTestGenerationResponse(response.content, options);
     } catch (error) {
-      logger.warn('AI test generation failed:', error);
+      console.warn('AI test generation failed:', error);
       return this.generateTestsWithoutAI(sourceCode, analysis, options, testType);
     }
   }
@@ -517,7 +517,7 @@ Return the test code in the appropriate format for ${options.framework}.
         estimatedLines: content.split('\n').length
       }));
     } catch (error) {
-      logger.warn('Failed to parse AI test generation response:', error);
+      console.warn('Failed to parse AI test generation response:', error);
       return [];
     }
   }

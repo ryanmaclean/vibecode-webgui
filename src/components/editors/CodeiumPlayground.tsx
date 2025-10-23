@@ -7,7 +7,7 @@ import { setupMonacopilot } from '@/lib/monaco/monacopilot-integration'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Label } from '@/components/ui/label'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const MonacoEditor = dynamic(() => import('@monaco-editor/react'), {
   ssr: false,
   loading: () => (

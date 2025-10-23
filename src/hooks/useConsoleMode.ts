@@ -1,6 +1,6 @@
 import { useState, useCallback } from 'react';
 import { api } from '@/lib/api';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export function useConsoleMode() {
   const [isConsoleOpen, setIsConsoleOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -21,7 +21,7 @@ export function useConsoleMode() {
       try {
         await api.post(`/api/workspace/${workspaceId}/init-goose`);
       } catch (err) {
-        logger.warn('Failed to initialize Goose, continuing without it', err);
+        console.warn('Failed to initialize Goose, continuing without it', err);
       }
       
       setIsConsoleOpen(true);

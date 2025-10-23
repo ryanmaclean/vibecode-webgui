@@ -13,8 +13,13 @@ detectDockerRuntime,
   startColima,
   DockerType,
 } from '@/lib/docker/detection';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
+import { z } from '@/lib/zod-compat';
 export const dynamic = 'force-dynamic';
+
+const dockerActionSchema = z.object({
+  action: z.enum(['start-colima']),
+}).strict();
 
 /**
  * GET /api/docker/status
@@ -28,7 +33,7 @@ export async function GET(request: Request) {
     if (detailed) {
       const report = await getDockerStatusReport();
 
-      logger.info('Docker status report generated', {
+      console.info('Docker status report generated', {
         runtime: report.runtime.dockerType,
         running: report.runtime.running,
         version: report.runtime.version,
@@ -42,7 +47,7 @@ export async function GET(request: Request) {
 
     const status = await detectDockerRuntime();
 
-    logger.info('Docker runtime detected', {
+    console.info('Docker runtime detected', {
       type: status.dockerType,
       running: status.running,
       version: status.version,
@@ -53,7 +58,7 @@ export async function GET(request: Request) {
       data: status,
     });
   } catch (error) {
-    logger.error('Error detecting Docker runtime', {
+    console.error('Error detecting Docker runtime', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
@@ -73,40 +78,42 @@ export async function GET(request: Request) {
  */
 export async function POST(request: Request) {
   try {
-    const { action } = await request.json();
+    const body = await request.json();
+    const { action } = dockerActionSchema.parse(body);
 
-    if (action === 'start-colima') {
-      const result = await startColima();
+    const result = await startColima();
 
-      if (result.success) {
-        logger.info('Colima started successfully');
+    if (result.success) {
+      console.info('Colima started successfully');
 
-        return NextResponse.json({
-          success: true,
-          message: result.message,
-        });
-      }
-
-      logger.error('Failed to start Colima', { message: result.message });
-
-      return NextResponse.json(
-        {
-          success: false,
-          error: result.message,
-        },
-        { status: 500 }
-      );
+      return NextResponse.json({
+        success: true,
+        message: result.message,
+      });
     }
+
+    console.error('Failed to start Colima', { message: result.message });
 
     return NextResponse.json(
       {
         success: false,
-        error: 'Invalid action',
+        error: result.message,
       },
-      { status: 400 }
+      { status: 500 }
     );
   } catch (error) {
-    logger.error('Error processing Docker action', {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: 'Invalid request parameters',
+          details: error.errors
+        },
+        { status: 400 }
+      );
+    }
+
+    console.error('Error processing Docker action', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
