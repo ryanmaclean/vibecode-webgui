@@ -18,14 +18,6 @@ import { logger } from '@/lib/logger';
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
-  datasources: {
-    db: {
-import { loadSecret } from '@/lib/security/macos-keychain'
-
-// Load database URL from Keychain
-const databaseUrl = await loadSecret('DATABASE_URL')
-    },
-  },
 });
 
 // Connection pool configuration (via DATABASE_URL connection string)
