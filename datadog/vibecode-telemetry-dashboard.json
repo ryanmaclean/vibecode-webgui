@@ -1,0 +1,40 @@
+{
+  "title": "Vibecode Telemetry Overview",
+  "description": "Dashboard scaffold imported from the ZFS Datadog integration and adapted for Vibecode WebGUI events.",
+  "widgets": [
+    {
+      "definition": {
+        "title": "HTTP Request Rate",
+        "type": "timeseries",
+        "requests": [
+          {
+            "display_type": "line",
+            "q": "sum:http.requests{service:vibecode-webgui} by {env}"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Playwright Smoke Success",
+        "type": "query_value",
+        "requests": [
+          {
+            "aggregator": "last",
+            "q": "max:synthetics.test.success{test_name:vibecode-smoke}"
+          }
+        ],
+        "autoscale": true
+      }
+    },
+    {
+      "definition": {
+        "title": "Telemetry Events Captured",
+        "type": "note",
+        "content": "Use scripts/mock-services/mock-telemetry-server.py during local workflows to validate payload structure before shipping to Datadog."
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false
+}

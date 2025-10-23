@@ -155,7 +155,7 @@ export class VectorCache {
     this.revalidationEnabled = options.revalidationEnabled !== false;
     this.revalidationInterval = options.revalidationInterval || 300000; // 5 minutes
     
-    this.logger.info(`Initialized vector cache with namespace ${this.namespace}`);
+    this.console.info(`Initialized vector cache with namespace ${this.namespace}`);
     
     if (this.revalidationEnabled) {
       this.startRevalidation();
@@ -266,7 +266,7 @@ export class VectorCache {
         );
       }
     } catch (error) {
-      this.logger.error(`Error caching vector ${id}: ${(error as Error).message}`);
+      this.console.error(`Error caching vector ${id}: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -326,7 +326,7 @@ export class VectorCache {
       
       // Update metadata asynchronously
       this.updateVectorMetadata(id, updatedMetadata).catch(error => {
-        this.logger.error(`Error updating vector metadata ${id}: ${error.message}`);
+        this.console.error(`Error updating vector metadata ${id}: ${error.message}`);
       });
       
       // Record metrics
@@ -346,7 +346,7 @@ export class VectorCache {
         fromCache: true
       };
     } catch (error) {
-      this.logger.error(`Error getting vector ${id}: ${(error as Error).message}`);
+      this.console.error(`Error getting vector ${id}: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -394,7 +394,7 @@ export class VectorCache {
       const key = this.buildCacheKey(id);
       await this.cache.expire(key, ttl);
     } catch (error) {
-      this.logger.error(`Error updating vector metadata ${id}: ${(error as Error).message}`);
+      this.console.error(`Error updating vector metadata ${id}: ${(error as Error).message}`);
     }
   }
   
@@ -426,7 +426,7 @@ export class VectorCache {
       
       return deleted;
     } catch (error) {
-      this.logger.error(`Error invalidating vector ${id}: ${(error as Error).message}`);
+      this.console.error(`Error invalidating vector ${id}: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -473,11 +473,11 @@ export class VectorCache {
         );
       }
       
-      this.logger.info(`Invalidated ${deleted} vectors for collection ${collectionId}`);
+      this.console.info(`Invalidated ${deleted} vectors for collection ${collectionId}`);
       
       return deleted;
     } catch (error) {
-      this.logger.error(`Error invalidating collection ${collectionId}: ${(error as Error).message}`);
+      this.console.error(`Error invalidating collection ${collectionId}: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -503,11 +503,11 @@ export class VectorCache {
     
     this.revalidationTimer = setInterval(() => {
       this.revalidateCache().catch(error => {
-        this.logger.error(`Error during cache revalidation: ${error.message}`);
+        this.console.error(`Error during cache revalidation: ${error.message}`);
       });
     }, this.revalidationInterval);
     
-    this.logger.info(`Started cache revalidation with interval ${this.revalidationInterval}ms`);
+    this.console.info(`Started cache revalidation with interval ${this.revalidationInterval}ms`);
   }
   
   /**
@@ -517,7 +517,7 @@ export class VectorCache {
     if (this.revalidationTimer) {
       clearInterval(this.revalidationTimer);
       this.revalidationTimer = null;
-      this.logger.info('Stopped cache revalidation');
+      this.console.info('Stopped cache revalidation');
     }
   }
   
@@ -526,7 +526,7 @@ export class VectorCache {
    */
   private async revalidateCache(): Promise<void> {
     try {
-      this.logger.debug('Starting cache revalidation');
+      this.console.debug('Starting cache revalidation');
       
       let cursor = '0';
       let keysProcessed = 0;
@@ -587,7 +587,7 @@ export class VectorCache {
               );
             }
           } catch (error) {
-            this.logger.error(`Error processing metadata key ${metaKey}: ${(error as Error).message}`);
+            this.console.error(`Error processing metadata key ${metaKey}: ${(error as Error).message}`);
             // Try to delete the problematic key
             await this.cache.del(metaKey);
             keysInvalidated++;
@@ -595,7 +595,7 @@ export class VectorCache {
         }
       } while (cursor !== '0');
       
-      this.logger.info(`Cache revalidation complete: processed ${keysProcessed} keys, invalidated ${keysInvalidated} keys`);
+      this.console.info(`Cache revalidation complete: processed ${keysProcessed} keys, invalidated ${keysInvalidated} keys`);
       
       // Record metrics
       if (this.metricsEnabled) {
@@ -607,7 +607,7 @@ export class VectorCache {
         );
       }
     } catch (error) {
-      this.logger.error(`Error during cache revalidation: ${(error as Error).message}`);
+      this.console.error(`Error during cache revalidation: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -675,7 +675,7 @@ export class VectorCache {
         collections: Array.from(collections)
       };
     } catch (error) {
-      this.logger.error(`Error getting cache stats: ${(error as Error).message}`);
+      this.console.error(`Error getting cache stats: ${(error as Error).message}`);
       
       return {
         totalKeys: 0,
@@ -702,7 +702,7 @@ export class VectorCache {
       // Delete all keys
       const deleted = await this.cache.del(...keys);
       
-      this.logger.info(`Cleared cache: deleted ${deleted} keys`);
+      this.console.info(`Cleared cache: deleted ${deleted} keys`);
       
       // Record metrics
       if (this.metricsEnabled) {
@@ -716,7 +716,7 @@ export class VectorCache {
       
       return deleted;
     } catch (error) {
-      this.logger.error(`Error clearing cache: ${(error as Error).message}`);
+      this.console.error(`Error clearing cache: ${(error as Error).message}`);
       
       // Record error
       if (this.metricsEnabled) {
@@ -737,6 +737,6 @@ export class VectorCache {
    */
   public dispose(): void {
     this.stopRevalidation();
-    this.logger.info('Vector cache disposed');
+    this.console.info('Vector cache disposed');
   }
 }

@@ -5,7 +5,7 @@
 
 import { prisma } from './prisma'
 import { monitoring } from './monitoring'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface UserQuotas {
   maxWorkspaces: number
   maxFilesPerWorkspace: number
@@ -78,7 +78,7 @@ export class ResourceManager {
       
       return quotas
     } catch (error) {
-      logger.error('Error fetching user quotas:', error)
+      console.error('Error fetching user quotas:', error)
       return DEFAULT_QUOTAS
     }
   }
@@ -139,7 +139,7 @@ export class ResourceManager {
       this.usageCache.set(userId, { usage, timestamp: Date.now() })
       return usage
     } catch (error) {
-      logger.error('Error fetching resource usage:', error)
+      console.error('Error fetching resource usage:', error)
       throw new Error('Failed to get resource usage')
     }
   }
@@ -224,7 +224,7 @@ const [quotas, usage] = await Promise.all([
       // Invalidate usage cache
       this.usageCache.delete(userId)
     } catch (error) {
-      logger.error('Error recording API call:', error)
+      console.error('Error recording API call:', error)
     }
   }
 
@@ -241,7 +241,7 @@ const [quotas, usage] = await Promise.all([
 
       // Debug log removed
     } catch (error) {
-      logger.error('Error cleaning up API records:', error)
+      console.error('Error cleaning up API records:', error)
     }
   }
 
@@ -290,7 +290,7 @@ const [quotas, usage] = await Promise.all([
         averageFilesPerUser: userCount > 0 ? fileStats._count / userCount : 0
       }
     } catch (error) {
-      logger.error('Error getting global usage stats:', error)
+      console.error('Error getting global usage stats:', error)
       throw error
     }
   }

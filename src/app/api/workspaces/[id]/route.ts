@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Zod validation schemas for workspace ID parameter
 const WorkspaceIdParamSchema = z.object({
   id: z.string()
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     // Validate workspace ID
     const validation = validateWorkspaceId(workspaceId)
     if (!validation.valid) {
-      logger.warn('Invalid workspace ID in GET request', {
+      console.warn('Invalid workspace ID in GET request', {
         workspaceId,
         error: validation.error,
         ip: request.headers.get('x-forwarded-for') || 'unknown'
@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    logger.info('Getting workspace status', { workspaceId })
+    console.info('Getting workspace status', { workspaceId })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -108,7 +108,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    logger.error('Failed to get workspace', { error })
+    console.error('Failed to get workspace', { error })
     return NextResponse.json(
       { 
         error: 'Failed to get workspace',
@@ -127,7 +127,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     // Validate workspace ID with enhanced logging for destructive operations
     const validation = validateWorkspaceId(workspaceId)
     if (!validation.valid) {
-      logger.warn('Invalid workspace ID in DELETE request', {
+      console.warn('Invalid workspace ID in DELETE request', {
         workspaceId,
         error: validation.error,
         ip: request.headers.get('x-forwarded-for') || 'unknown',
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    logger.info('Deleting workspace', { workspaceId })
+    console.info('Deleting workspace', { workspaceId })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -152,7 +152,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const workspaceService = new WorkspaceProvisioningService()
     await workspaceService.deleteWorkspace(workspaceId)
 
-    logger.info(`✅ Workspace deleted: ${workspaceId}`)
+    console.info(`✅ Workspace deleted: ${workspaceId}`)
 
     return NextResponse.json({
       success: true,
@@ -160,7 +160,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    logger.error('Failed to delete workspace', { error })
+    console.error('Failed to delete workspace', { error })
     return NextResponse.json(
       { 
         error: 'Failed to delete workspace',
@@ -179,7 +179,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Validate workspace ID
     const validation = validateWorkspaceId(workspaceId)
     if (!validation.valid) {
-      logger.warn('Invalid workspace ID in PATCH request', {
+      console.warn('Invalid workspace ID in PATCH request', {
         workspaceId,
         error: validation.error,
         ip: request.headers.get('x-forwarded-for') || 'unknown'
@@ -204,7 +204,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     // Validate update payload
     const updateValidation = WorkspaceUpdateSchema.safeParse(body)
     if (!updateValidation.success) {
-      logger.warn('Invalid workspace update payload', {
+      console.warn('Invalid workspace update payload', {
         workspaceId,
         errors: updateValidation.error.errors,
         ip: request.headers.get('x-forwarded-for') || 'unknown'
@@ -218,7 +218,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    logger.info('Updating workspace', { workspaceId, updates: updateValidation.data })
+    console.info('Updating workspace', { workspaceId, updates: updateValidation.data })
 
     // For now, we'll just return the current status
     // TODO: Implement workspace updates (scaling, configuration changes)
@@ -241,7 +241,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     })
 
   } catch (error) {
-    logger.error('Failed to update workspace', { error })
+    console.error('Failed to update workspace', { error })
     return NextResponse.json(
       { 
         error: 'Failed to update workspace',

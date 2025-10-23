@@ -6,7 +6,29 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
+import { z } from '@/lib/zod-compat';
+
+// Zod validation schemas
+const workspaceIdSchema = z.object({
+  workspaceId: z.string()
+    .min(1, 'Workspace ID is required')
+    .max(100, 'Workspace ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format')
+})
+
+const conversationMessageSchema = z.object({
+  message: z.string()
+    .min(1, 'Message is required')
+    .max(5000, 'Message too long')
+    .regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  context: z.record(z.any()).optional(),
+  model: z.string()
+    .min(1, 'Model name is required')
+    .max(100, 'Model name too long')
+    .optional()
+    .default('gpt-4')
+}).strict()
 // GET - Retrieve conversation history for a workspace
 export async function GET(
   request: NextRequest,
@@ -19,6 +41,21 @@ export async function GET(
     }
 
     const { workspaceId } = await params;
+    
+    // Validate workspace ID with Zod
+    const validation = workspaceIdSchema.safeParse({ workspaceId });
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid workspace ID format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
 
     // Validate workspace access
     if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
@@ -35,7 +72,7 @@ export async function GET(
     });
 
   } catch (error) {
-    logger.error('Failed to retrieve conversations:', error);
+    console.error('Failed to retrieve conversations:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -56,14 +93,38 @@ export async function POST(
 
     const { workspaceId } = await params;
     const body = await request.json();
-    const { message, context, model } = body;
-
-    if (!message || typeof message !== 'string') {
+    
+    // Validate workspace ID with Zod
+    const workspaceValidation = workspaceIdSchema.safeParse({ workspaceId });
+    if (!workspaceValidation.success) {
       return NextResponse.json(
-        { error: 'Message is required' },
+        { 
+          error: 'Invalid workspace ID format',
+          details: workspaceValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
         { status: 400 }
       );
     }
+    
+    // Validate request body with Zod
+    const messageValidation = conversationMessageSchema.safeParse(body);
+    if (!messageValidation.success) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid request format',
+          details: messageValidation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
+
+    const { message, context, model } = messageValidation.data;
 
     // Validate workspace access
     if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
@@ -118,7 +179,7 @@ export async function POST(
     });
 
   } catch (error) {
-    logger.error('Failed to process conversation message:', error);
+    console.error('Failed to process conversation message:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -138,6 +199,21 @@ export async function DELETE(
     }
 
     const { workspaceId } = await params;
+    
+    // Validate workspace ID with Zod
+    const validation = workspaceIdSchema.safeParse({ workspaceId });
+    if (!validation.success) {
+      return NextResponse.json(
+        { 
+          error: 'Invalid workspace ID format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      );
+    }
 
     // Validate workspace access
     if (!await validateWorkspaceAccess(session.user.id, workspaceId)) {
@@ -154,7 +230,7 @@ export async function DELETE(
     });
 
   } catch (error) {
-    logger.error('Failed to clear conversations:', error);
+    console.error('Failed to clear conversations:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -171,7 +247,7 @@ async function validateWorkspaceAccess(userId: string, workspaceId: string): Pro
     // For now, return true as a placeholder
     return true;
   } catch (error) {
-    logger.error('Failed to validate workspace access:', error);
+    console.error('Failed to validate workspace access:', error);
     return false;
   }
 }
@@ -185,7 +261,7 @@ async function getWorkspaceConversations(workspaceId: string): Promise<any[]> {
     // For now, return empty array as a placeholder
     return [];
   } catch (error) {
-    logger.error('Failed to get workspace conversations:', error);
+    console.error('Failed to get workspace conversations:', error);
     return [];
   }
 }
@@ -206,7 +282,7 @@ async function saveMessage(message: {
     // For now, return a mock ID
     return `msg_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
   } catch (error) {
-    logger.error('Failed to save message:', error);
+    console.error('Failed to save message:', error);
     throw error;
   }
 }
@@ -236,7 +312,7 @@ async function generateAIResponse(options: {
       confidence: 0.85
     };
   } catch (error) {
-    logger.error('Failed to generate AI response:', error);
+    console.error('Failed to generate AI response:', error);
     throw error;
   }
 }
@@ -250,7 +326,7 @@ async function clearWorkspaceConversations(workspaceId: string): Promise<number>
     // For now, return 0 as a placeholder
     return 0;
   } catch (error) {
-    logger.error('Failed to clear workspace conversations:', error);
+    console.error('Failed to clear workspace conversations:', error);
     throw error;
   }
 }

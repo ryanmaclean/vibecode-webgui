@@ -13,7 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Sparkles, Code, Rocket, Download, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string
   name: string

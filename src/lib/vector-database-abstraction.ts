@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 // Vector Database Abstraction Layer
@@ -482,7 +482,7 @@ export class UnifiedVectorStore {
       try {
         return await primary.search(query, options)
       } catch (error) {
-        logger.warn(`Primary provider ${this.primaryProvider} failed:`, error)
+        console.warn(`Primary provider ${this.primaryProvider} failed:`, error)
       }
     }
 
@@ -494,7 +494,7 @@ export class UnifiedVectorStore {
           // Debug log removed
           return await provider.search(query, options)
         } catch (error) {
-          logger.warn(`Fallback provider ${fallbackProvider} failed:`, error)
+          console.warn(`Fallback provider ${fallbackProvider} failed:`, error)
         }
       }
     }

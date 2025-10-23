@@ -12,7 +12,7 @@ SearchResult,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
   private client: any = null;
   private database: any = null;
@@ -51,11 +51,11 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       // this.database = this.client.database(this.connectionConfig.databaseId);
       // this.container = this.database.container(this.connectionConfig.containerId);
       
-      logger.info('Mock Cosmos DB connection established');
+      console.info('Mock Cosmos DB connection established');
       this.isConnectionActive = true;
       return true;
     } catch (error) {
-      logger.error('Failed to connect to Cosmos DB:', error);
+      console.error('Failed to connect to Cosmos DB:', error);
       this.isConnectionActive = false;
       return false;
     }
@@ -75,10 +75,10 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       //   this.container = null;
       // }
       
-      logger.info('Mock Cosmos DB connection closed');
+      console.info('Mock Cosmos DB connection closed');
       this.isConnectionActive = false;
     } catch (error) {
-      logger.error('Error disconnecting from Cosmos DB:', error);
+      console.error('Error disconnecting from Cosmos DB:', error);
     }
   }
 
@@ -97,7 +97,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock storing ${chunks.length} vectors for file ${fileId} in Cosmos DB`);
+      console.info(`Mock storing ${chunks.length} vectors for file ${fileId} in Cosmos DB`);
       
       // Process chunks in batches to avoid rate limits
       const batchSize = 5;
@@ -126,14 +126,14 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
           //   partitionKey: fileId.toString()
           // });
           
-          logger.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Cosmos DB`);
+          console.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Cosmos DB`);
         }
         
         // Small delay to respect rate limits
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      logger.error('Error storing vector chunks in Cosmos DB:', error);
+      console.error('Error storing vector chunks in Cosmos DB:', error);
       throw error;
     }
   }
@@ -180,14 +180,14 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
             }));
           }
         } catch (cacheError) {
-          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
         }
       }
 
-      logger.info(`Mock searching for similar vectors with ${embedding.length} dimensions in Cosmos DB`);
-      logger.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
+      console.info(`Mock searching for similar vectors with ${embedding.length} dimensions in Cosmos DB`);
+      console.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
       if (fileIds?.length) {
-        logger.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
+        console.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
       }
       
       // In a real implementation, we would use a Cosmos DB query like this:
@@ -262,15 +262,15 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
             },
             cacheResults,
             workspaceId?.toString()
-          ).catch(err => logger.warn('Background cache storage failed:', err));
+          ).catch(err => console.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          logger.warn('Failed to cache results:', cacheError);
+          console.warn('Failed to cache results:', cacheError);
         }
       }
       
       return mockResults;
     } catch (error) {
-      logger.error('Error in Cosmos DB vector search:', error);
+      console.error('Error in Cosmos DB vector search:', error);
       return [];
     }
   }
@@ -285,7 +285,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock deleting vectors for file ${fileId} from Cosmos DB`);
+      console.info(`Mock deleting vectors for file ${fileId} from Cosmos DB`);
       
       // In a real implementation, we would delete items like this:
       // const querySpec = {
@@ -299,7 +299,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       //   await this.container.item(item.id, fileId.toString()).delete();
       // }
     } catch (error) {
-      logger.error('Error deleting file chunks from Cosmos DB:', error);
+      console.error('Error deleting file chunks from Cosmos DB:', error);
       throw error;
     }
   }
@@ -314,7 +314,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock updating vector ${id} with ${embedding.length} dimensions in Cosmos DB`);
+      console.info(`Mock updating vector ${id} with ${embedding.length} dimensions in Cosmos DB`);
       
       // In a real implementation, we would read the item, update it, and replace it
       // const { resource: item } = await this.container.item(id.toString()).read();
@@ -331,7 +331,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       
       return true;
     } catch (error) {
-      logger.error('Error updating vector embedding in Cosmos DB:', error);
+      console.error('Error updating vector embedding in Cosmos DB:', error);
       return false;
     }
   }
@@ -384,7 +384,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
         cacheStats
       };
     } catch (error) {
-      logger.error('Error getting vector store stats from Cosmos DB:', error);
+      console.error('Error getting vector store stats from Cosmos DB:', error);
       return {
         totalChunks: 0,
         totalFiles: 0,

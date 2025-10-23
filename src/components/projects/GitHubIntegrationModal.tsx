@@ -16,7 +16,7 @@ XMarkIcon,
   EyeIcon,
   EyeSlashIcon
 } from '@heroicons/react/24/outline'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface GitHubIntegrationModalProps {
   isOpen: boolean

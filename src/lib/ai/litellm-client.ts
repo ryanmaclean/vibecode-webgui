@@ -6,7 +6,7 @@
 import { cache, CacheKeys, CacheTTL } from '../cache/unified-cache-client';
 import { trackAIOperation } from '../performance/metrics-collector';
 import { logAIRequest } from '../prisma';
-import { logger } from '../logger';
+// // // import { logger } from '../logger';
 
 
 export interface LiteLLMConfig {
@@ -318,7 +318,7 @@ export class LiteLLMClient {
         quality: this.assessModelQuality(model.id)
       }));
     } catch (error) {
-      logger.error('Failed to fetch models:', { error: error });
+      console.error('Failed to fetch models:', { error: error });
       return this.getFallbackModels();
     }
   }
@@ -424,7 +424,7 @@ export class LiteLLMClient {
                   totalTokens = chunk.usage.total_tokens;
                 }
               } catch (parseError) {
-                logger.warn('Failed to parse SSE chunk:', { data: parseError });
+                console.warn('Failed to parse SSE chunk:', { data: parseError });
               }
             }
           }
@@ -495,7 +495,7 @@ export class LiteLLMClient {
       const response = await this.makeRequest<any>(`/usage?${params}`);
       return response;
     } catch (error) {
-      logger.error('Failed to get usage stats:', { error: error });
+      console.error('Failed to get usage stats:', { error: error });
       return {
         requests: 0,
         tokens: { input: 0, output: 0, total: 0 },
@@ -661,7 +661,7 @@ export class LiteLLMClient {
         error: data.error
       });
     } catch (error) {
-      logger.error('Failed to log AI request:', { error: error });
+      console.error('Failed to log AI request:', { error: error });
     }
   }
 

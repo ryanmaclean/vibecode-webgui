@@ -1,81 +1,115 @@
 /**
- * Structured Logger with Winston
- *
- * Production-ready logger that:
- * - Eliminates console.log data leakage in production
- * - Provides structured JSON logging
- * - Supports log levels (error, warn, info, debug)
- * - Includes metadata for monitoring/debugging
+ * Runtime-aware structured console.
+ * Uses Winston when running in a Node.js runtime, and a lightweight console-only shim
+ * when executing in Edge environments where Node primitives are unavailable.
  */
 
-import winston from 'winston';
-
+const isEdgeRuntime = typeof (globalThis as any).EdgeRuntime !== 'undefined';
 const isProduction = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
 
-// Winston logger configuration
-const winstonLogger = winston.createLogger({
-  level: logLevel,
-  format: winston.format.combine(
-    winston.format.timestamp(),
-    winston.format.errors({ stack: true }),
-    winston.format.json()
-  ),
-  defaultMeta: { service: 'vibecode-webgui' },
-  transports: [
-    // Write all logs to console in structured JSON format
-    new winston.transports.Console({
-      format: winston.format.combine(
-        winston.format.colorize(),
-        winston.format.timestamp(),
-        winston.format.printf(({ timestamp, level, message, ...metadata }) => {
-          let msg = `${timestamp} [${level}]: ${message}`;
-          if (Object.keys(metadata).length > 0) {
-            msg += ` ${JSON.stringify(metadata)}`;
-          }
-          return msg;
-        })
-      ),
-    }),
-  ],
-});
+type LogMethod = (message: unknown, metadata?: Record<string, unknown>) => void;
 
-// If we're in production, don't allow console.log
-if (isProduction) {
-  console.log = () => {};
-  console.debug = () => {};
-  console.info = () => {};
+interface StructuredLogger {
+  error: LogMethod;
+  warn: LogMethod;
+  info: LogMethod;
+  debug: LogMethod;
 }
 
-export const logger = {
-  error: (message: any, metadata?: Record<string, unknown>) => {
-    winstonLogger.error(message, metadata || {});
-  },
-  warn: (message: any, metadata?: Record<string, unknown>) => {
-    winstonLogger.warn(message, metadata || {});
-  },
-  info: (message: any, metadata?: Record<string, unknown>) => {
-    winstonLogger.info(message, metadata || {});
-  },
-  debug: (message: any, metadata?: Record<string, unknown>) => {
-    winstonLogger.debug(message, metadata || {});
-  },
-};
+let baseLogger: StructuredLogger;
+let consoleImpl: (metadata: Record<string, unknown>) => StructuredLogger;
 
-// Create a child logger with additional metadata
-export function createChildLogger(metadata: Record<string, unknown>) {
-  return {
-    error: (message: any, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.error(message, { ...metadata, ...additionalMeta });
-    },
-    warn: (message: any, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.warn(message, { ...metadata, ...additionalMeta });
-    },
-    info: (message: any, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.info(message, { ...metadata, ...additionalMeta });
-    },
-    debug: (message: any, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.debug(message, { ...metadata, ...additionalMeta });
-    },
+if (!isEdgeRuntime) {
+  const { default: winston } = await import('winston');
+
+  const winstonLogger = winston.createLogger({
+    level: logLevel,
+    format: winston.format.combine(
+      winston.format.timestamp(),
+      winston.format.errors({ stack: true }),
+      winston.format.json()
+    ),
+    defaultMeta: { service: 'vibecode-webgui' },
+    transports: [
+      new winston.transports.Console({
+        format: winston.format.combine(
+          winston.format.colorize(),
+          winston.format.timestamp(),
+          winston.format.printf(({ timestamp, level, message, ...metadata }) => {
+            let msg = `${timestamp} [${level}]: ${message}`;
+            if (Object.keys(metadata).length > 0) {
+              msg += ` ${JSON.stringify(metadata)}`;
+            }
+            return msg;
+          })
+        ),
+      }),
+    ],
+  });
+
+  if (isProduction) {
+    console.log = () => {};
+    console.debug = () => {};
+    console.info = () => {};
+  }
+
+  baseLogger = {
+    error: (message, metadata) => winstonLogger.error(message, metadata || {}),
+    warn: (message, metadata) => winstonLogger.warn(message, metadata || {}),
+    info: (message, metadata) => winstonLogger.info(message, metadata || {}),
+    debug: (message, metadata) => winstonLogger.debug(message, metadata || {}),
   };
+
+  consoleImpl = (metadata: Record<string, unknown>) => ({
+    error: (message: unknown, additional?: Record<string, unknown>) => {
+      winstonLogger.error(message, { ...metadata, ...additional });
+    },
+    warn: (message: unknown, additional?: Record<string, unknown>) => {
+      winstonLogger.warn(message, { ...metadata, ...additional });
+    },
+    info: (message: unknown, additional?: Record<string, unknown>) => {
+      winstonLogger.info(message, { ...metadata, ...additional });
+    },
+    debug: (message: unknown, additional?: Record<string, unknown>) => {
+      winstonLogger.debug(message, { ...metadata, ...additional });
+    },
+  });
+} else {
+  const edgeLog = (
+    level: 'error' | 'warn' | 'info' | 'debug',
+    message: unknown,
+    metadata?: Record<string, unknown>
+  ) => {
+    const payload = metadata && Object.keys(metadata).length > 0 ? metadata : undefined;
+    (console[level] ?? console.log).call(console, message, payload);
+  };
+
+  baseLogger = {
+    error: (message, metadata) => edgeLog('error', message, metadata),
+    warn: (message, metadata) => edgeLog('warn', message, metadata),
+    info: (message, metadata) => edgeLog('info', message, metadata),
+    debug: (message, metadata) => edgeLog('debug', message, metadata),
+  };
+
+  consoleImpl = (metadata: Record<string, unknown>) => ({
+    error: (message: unknown, additional?: Record<string, unknown>) => {
+      edgeLog('error', message, { ...metadata, ...additional });
+    },
+    warn: (message: unknown, additional?: Record<string, unknown>) => {
+      edgeLog('warn', message, { ...metadata, ...additional });
+    },
+    info: (message: unknown, additional?: Record<string, unknown>) => {
+      edgeLog('info', message, { ...metadata, ...additional });
+    },
+    debug: (message: unknown, additional?: Record<string, unknown>) => {
+      edgeLog('debug', message, { ...metadata, ...additional });
+    },
+  });
+}
+
+export const logger: StructuredLogger = baseLogger;
+
+export function console(metadata: Record<string, unknown>): StructuredLogger {
+  return consoleImpl(metadata);
 }

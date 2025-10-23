@@ -26,7 +26,7 @@ import {
   TrendingUp,
   Dollar
 } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Types
 interface ModelInfo {
   id: string;

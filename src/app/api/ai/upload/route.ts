@@ -7,9 +7,27 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { EmbeddingServiceFactory } from '@/lib/ai/embeddingServiceFactory'
 import { PrismaClient } from '@prisma/client'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger'
+import { z } from '@/lib/zod-compat'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Zod validation schema for upload requests
+const uploadRequestSchema = z.object({
+  workspaceId: z.string()
+    .min(1, 'Workspace ID is required')
+    .max(100, 'Workspace ID too long')
+    .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
+  files: z.array(z.instanceof(File))
+    .min(1, 'At least one file is required')
+    .max(10, 'Too many files uploaded at once')
+    .refine(files => files.every(file => file.size <= 10 * 1024 * 1024), {
+      message: 'File size must be less than 10MB'
+    })
+    .refine(files => files.every(file => file.name.length <= 255), {
+      message: 'File name too long'
+    })
+}).strict()
 
 interface UploadedFile {
   id: string
@@ -93,7 +111,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
         if ('generateEmbedding' in service && typeof service.generateEmbedding === 'function') {
           embedding = await service.generateEmbedding(chunk.content);
         } else {
-          logger.warn('Service does not have generateEmbedding method, skipping embedding generation');
+          console.warn('Service does not have generateEmbedding method, skipping embedding generation');
           continue;
         }
         
@@ -102,7 +120,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
           embedding
         });
       } catch (error) {
-        logger.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
+        console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
         // Skip this chunk or add without embedding
         chunksWithEmbeddings.push({
           ...chunk,
@@ -117,7 +135,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
     
     return chunksWithEmbeddings;
   } catch (error) {
-    logger.error('Failed to initialize embedding service:', error);
+    console.error('Failed to initialize embedding service:', error);
     // Return chunks without embeddings if service fails
     return chunks.map(chunk => ({
       ...chunk,
@@ -234,26 +252,33 @@ export async function POST(request: NextRequest) {
     const files = formData.getAll('files') as File[]
     const workspaceId = formData.get('workspaceId') as string
 
-    if (!workspaceId) {
+    // Validate request data with Zod
+    const validation = uploadRequestSchema.safeParse({
+      workspaceId,
+      files
+    })
+
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'Workspace ID is required' },
+        { 
+          error: 'Invalid request format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
         { status: 400 }
       )
     }
 
-    if (!files || files.length === 0) {
-      return NextResponse.json(
-        { error: 'No files provided' },
-        { status: 400 }
-      )
-    }
+    const { workspaceId: validatedWorkspaceId, files: validatedFiles } = validation.data
 
-    await ensureDirectories(workspaceId)
+    await ensureDirectories(validatedWorkspaceId)
 
     const uploadedFiles: UploadedFile[] = []
     const ragIndexes: RAGIndex[] = []
 
-    for (const file of files) {
+    for (const file of validatedFiles) {
       try {
         // Read file content
         const bytes = await file.arrayBuffer()
@@ -268,7 +293,7 @@ export async function POST(request: NextRequest) {
 
         // Save file
         const fileName = `${fileId}-${file.name}`
-        const filePath = path.join(getUploadsDir(workspaceId), fileName)
+        const filePath = path.join(getUploadsDir(validatedWorkspaceId), fileName)
         await writeFile(filePath, buffer)
 
         // Create uploaded file record
@@ -278,7 +303,7 @@ export async function POST(request: NextRequest) {
           size: file.size,
           type: file.type,
           path: filePath,
-          workspaceId,
+          workspaceId: validatedWorkspaceId,
           uploadedAt: new Date().toISOString(),
           metadata: {
             language,
@@ -305,7 +330,7 @@ export async function POST(request: NextRequest) {
           }));
           
           // Generate embeddings for all chunks
-          logger.info(`Generating embeddings for ${chunksForEmbedding.length} chunks from file ${file.name}...`);
+          console.info(`Generating embeddings for ${chunksForEmbedding.length} chunks from file ${file.name}...`);
           const chunksWithEmbeddings = await generateEmbeddingsForChunks(chunksForEmbedding);
           
           const ragIndex: RAGIndex = {
@@ -314,7 +339,7 @@ export async function POST(request: NextRequest) {
           }
 
           ragIndexes.push(ragIndex)
-          logger.info(`✅ Generated embeddings for ${chunksWithEmbeddings.filter(c => c.embedding.length > 0).length}/${chunksWithEmbeddings.length} chunks`);
+          console.info(`✅ Generated embeddings for ${chunksWithEmbeddings.filter(c => c.embedding.length > 0).length}/${chunksWithEmbeddings.length} chunks`);
         }
 
       } catch (error) {
@@ -326,7 +351,7 @@ export async function POST(request: NextRequest) {
     // Save RAG indexes
     if (ragIndexes.length > 0) {
       try {
-        const ragIndexPath = getRAGIndexPath(workspaceId)
+        const ragIndexPath = getRAGIndexPath(validatedWorkspaceId)
 
         // Load existing index or create new one
         let existingIndex: RAGIndex[] = []

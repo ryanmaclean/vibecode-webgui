@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -123,7 +123,7 @@ export class FunctionCallingService {
         }
 
         if (options.enableLogging) {
-          logger.info(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
+          console.info(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
         }
 
         return result;
@@ -132,7 +132,7 @@ export class FunctionCallingService {
         lastError = error instanceof Error ? error.message : String(error);
 
         if (options.enableLogging) {
-          logger.warn(`Function ${call.name} attempt ${attempts} failed:`, lastError);
+          console.warn(`Function ${call.name} attempt ${attempts} failed:`, lastError);
         }
 
         // Wait before retry (exponential backoff)

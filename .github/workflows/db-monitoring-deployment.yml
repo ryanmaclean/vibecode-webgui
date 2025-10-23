@@ -2,7 +2,8 @@ name: PostgreSQL Vector Monitoring Deployment
 
 on:
   push:
-    branches: [ main ]
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches: [ main ]
     paths:
       - 'src/lib/vector-db/**'
       - 'src/lib/datadog-database.ts'
@@ -10,7 +11,8 @@ on:
       - 'database/**'
       - '.github/workflows/db-monitoring-deployment.yml'
   pull_request:
-    branches: [ main ]
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches: [ main ]
     paths:
       - 'src/lib/vector-db/**'
       - 'src/lib/datadog-database.ts'

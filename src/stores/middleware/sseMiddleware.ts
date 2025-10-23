@@ -8,7 +8,7 @@
 
 import type { StateCreator, StoreMutatorIdentifier } from 'zustand';
 import type { SSEEvent } from '@/types/agent-api';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -103,7 +103,7 @@ class SSEConnectionManager {
           connection.lastEventId = data.id;
           this.options.onEvent(data);
         } catch (error) {
-          logger.error('Failed to parse SSE event:', error);
+          console.error('Failed to parse SSE event:', error);
         }
       };
 
@@ -131,7 +131,7 @@ class SSEConnectionManager {
 
       this.connections.set(key, connection);
     } catch (error) {
-      logger.error('Failed to create SSE connection:', error);
+      console.error('Failed to create SSE connection:', error);
     }
   }
 
@@ -261,7 +261,7 @@ export function parseSSEEvent(data: string): SSEEvent | null {
   try {
     return JSON.parse(data) as SSEEvent;
   } catch (error) {
-    logger.error('Failed to parse SSE event:', error);
+    console.error('Failed to parse SSE event:', error);
     return null;
   }
 }

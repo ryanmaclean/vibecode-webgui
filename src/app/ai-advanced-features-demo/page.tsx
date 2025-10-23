@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface TestSuggestion {
   name: string;

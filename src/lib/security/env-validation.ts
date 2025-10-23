@@ -4,7 +4,7 @@
  */
 
 import { z } from '@/lib/zod-compat';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Define required environment variables with validation rules
 const envSchema = z.object({
   // Core Application
@@ -45,13 +45,13 @@ export type ValidatedEnv = z.infer<typeof envSchema>;
 export function validateEnvironment(): ValidatedEnv {
   try {
     const env = envSchema.parse(process.env);
-    logger.info('✅ Environment validation successful');
+    console.info('✅ Environment validation successful');
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.error('❌ Environment validation failed:');
+      console.error('❌ Environment validation failed:');
       error.errors.forEach(err => {
-        logger.error(`  - ${err.path.join('.')}: ${err.message}`);
+        console.error(`  - ${err.path.join('.')}: ${err.message}`);
       });
       throw new Error('Invalid environment configuration. Check console for details.');
     }
@@ -130,12 +130,12 @@ if (process.env.NODE_ENV !== 'test' && typeof window === 'undefined') {
       validateEnvironment();
       const warnings = checkInsecureDefaults();
       if (warnings.length > 0) {
-        logger.warn('⚠️  Security warnings:');
-        warnings.forEach(warning => logger.warn(`  - ${warning}`));
+        console.warn('⚠️  Security warnings:');
+        warnings.forEach(warning => console.warn(`  - ${warning}`));
       }
     } catch (error) {
       // Log error but don't crash during import
-      logger.error('Environment validation error:', error);
+      console.error('Environment validation error:', error);
       if (process.env.NODE_ENV === 'production') {
         process.exit(1);
       }

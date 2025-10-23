@@ -34,7 +34,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions

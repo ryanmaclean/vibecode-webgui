@@ -24,7 +24,7 @@ CollaborationManager,
   CollaborationUser,
   collaborationManager
 } from '@/lib/collaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface CollaborativeEditorProps {
   documentId: string

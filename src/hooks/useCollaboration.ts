@@ -4,7 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface User {
   id: string;
   name: string;
@@ -200,7 +200,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       cleanup();
 
     } catch (error) {
-      logger.error('Error leaving workspace:', error);
+      console.error('Error leaving workspace:', error);
     }
   }, [currentUser, enableActivityTracking, onUserLeave]);
 
@@ -210,7 +210,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const inviteUser = useCallback(async (email: string, role: User['role']) => {
     try {
       // This would integrate with your invitation service
-      logger.info(`Inviting ${email} as ${role}`);
+      console.info(`Inviting ${email} as ${role}`);
 
       // Simulate invitation
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -249,7 +249,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       setCurrentUser(updatedUser);
 
       // This would broadcast to other users
-      logger.info('Updating user presence:', presence);
+      console.info('Updating user presence:', presence);
     }
   }, [currentUser]);
 
@@ -348,7 +348,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
    */
   const closeFile = useCallback((filePath: string) => {
     // File closing activity would go here if needed
-    logger.info('File closed:', filePath);
+    console.info('File closed:', filePath);
   }, []);
 
   /**
@@ -418,7 +418,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     setConnectionError(undefined);
 
     // This would disconnect from your collaboration service
-    logger.info('Disconnected from workspace');
+    console.info('Disconnected from workspace');
   }, []);
 
   /**

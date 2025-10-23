@@ -15,7 +15,7 @@ TemporalContext,
   Context7StorageProvider,
   Context7AIService
 } from './interfaces';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Context7Manager class - Manages all seven dimensions of context
  */
@@ -346,7 +346,7 @@ export class Context7Manager implements IContext7Manager {
       
       return true;
     } catch (error) {
-      logger.error('Failed to deserialize context:', error);
+      console.error('Failed to deserialize context:', error);
       return false;
     }
   }
@@ -361,7 +361,7 @@ export class Context7Manager implements IContext7Manager {
       const parsed = JSON.parse(serialized) as Context7InitOptions;
       return new Context7Manager(parsed);
     } catch (error) {
-      logger.error('Failed to deserialize context:', error);
+      console.error('Failed to deserialize context:', error);
       return new Context7Manager();
     }
   }
