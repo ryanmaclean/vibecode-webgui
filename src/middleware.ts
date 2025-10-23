@@ -2,7 +2,6 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
-import { logger } from '@/lib/logger';
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
     /bot/i, /crawler/i, /spider/i, /scraper/i, /automated/i,
@@ -38,7 +37,7 @@ function logToDatadog(
   eventType: 'bot_detected' | 'rate_limited' | 'suspicious_activity' | 'user_access',
   metadata: Record<string, any>
 ) {
-  logger.info(JSON.stringify({ ddsource: 'next-js', eventType, ...metadata }));
+  console.info(JSON.stringify({ ddsource: 'next-js', eventType, ...metadata }));
 }
 
 function detectBot(request: NextRequest): {

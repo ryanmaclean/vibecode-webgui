@@ -1,0 +1,58 @@
+name: Fast OpenVSCode Packaging (Draft)
+
+on:
+  workflow_dispatch:
+    inputs:
+      build-type:
+        description: "stable or insiders"
+        required: true
+        default: "stable"
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install deps
+        run: npm ci
+
+      - name: Package microVM
+        run: |
+          scripts/release/package-fast-openvscode-vm.sh "${{ github.event.inputs.build-type }}"
+
+      - name: Compute checksums
+        run: |
+          cd dist/
+          shasum -a 256 *.tar.gz > SHA256SUMS.txt
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: fast-openvscode-${{ github.event.inputs.build-type }}
+          path: dist/
+
+  draft-release:
+    needs: package
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: fast-openvscode-${{ github.event.inputs.build-type }}
+          path: dist/
+
+      - name: Create release draft
+        uses: softprops/action-gh-release@v1
+        with:
+          draft: true
+          tag_name: fast-openvscode-${{ github.event.inputs.build-type }}-${{ github.run_number }}
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
