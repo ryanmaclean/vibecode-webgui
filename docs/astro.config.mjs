@@ -51,6 +51,7 @@ export default defineConfig({
         {
           label: 'Database & Storage',
           items: [
+            { label: 'Database Consolidation Phase 2', link: '/database-consolidation-phase2/', badge: 'New' },
             { label: 'PostgreSQL + pgvector', link: '/prisma-pgvector/' },
             { label: 'PostgreSQL Test Results', link: '/PRISMA_PGVECTOR_TEST_RESULTS/' },
             { label: 'PostgreSQL GenAI Demo', link: '/postgresql-genai-demo-guide/' },
