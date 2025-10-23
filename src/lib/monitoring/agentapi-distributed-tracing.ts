@@ -5,7 +5,7 @@
 
 import { trace, context, propagation, type Span, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const TRACER_NAME = 'agentapi-distributed-tracing';
 
 interface TraceContext {
@@ -56,7 +56,7 @@ class AgentAPIDistributedTracing {
 
       return null;
     } catch (error) {
-      logger.error('Failed to extract trace context:', error);
+      console.error('Failed to extract trace context:', error);
       return null;
     }
   }
@@ -70,7 +70,7 @@ class AgentAPIDistributedTracing {
     try {
       propagation.inject(context.active(), carrier);
     } catch (error) {
-      logger.error('Failed to inject trace context:', error);
+      console.error('Failed to inject trace context:', error);
     }
 
     return carrier;
@@ -259,7 +259,7 @@ class AgentAPIDistributedTracing {
       }
       return null;
     } catch (error) {
-      logger.error('Failed to get current trace context:', error);
+      console.error('Failed to get current trace context:', error);
       return null;
     }
   }

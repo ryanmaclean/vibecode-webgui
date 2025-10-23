@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface DeploymentProvider {
     id: string;
     name: string;
@@ -136,7 +136,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
                             message: `Deploying... (${attempts * 10}s)` 
                         });
                     } catch (error) {
-                        logger.error('Status check failed:', error);
+                        console.error('Status check failed:', error);
                     }
                     
                     attempts++;
@@ -147,7 +147,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
             vscode.window.showInformationMessage(`Successfully deployed to ${providerId}!`);
 
         } catch (error) {
-            logger.error('Deployment failed:', error);
+            console.error('Deployment failed:', error);
             vscode.window.showErrorMessage(
                 `Deployment failed: ${error instanceof Error ? error.message : 'Unknown error'}`
             );
@@ -166,7 +166,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
                 });
             }
         } catch (error) {
-            logger.error('Failed to refresh deployments:', error);
+            console.error('Failed to refresh deployments:', error);
         }
     }
 

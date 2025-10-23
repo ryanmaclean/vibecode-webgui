@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 interface TraceSpan {
@@ -128,7 +128,7 @@ export class DatabaseTracing {
 
         // Log slow queries
         if (span.tags.slow_query) {
-            logger.warn('Slow database query detected:', {
+            console.warn('Slow database query detected:', {
                 traceId: span.traceId,
                 duration: span.duration,
                 operation: span.operationName,
@@ -156,7 +156,7 @@ export class DatabaseTracing {
         };
 
         // Send to Datadog (would use actual Datadog client)
-        logger.info('Sending trace to Datadog:', datadogSpan.trace_id);
+        console.info('Sending trace to Datadog:', datadogSpan.trace_id);
     }
 
     private exportToOpenTelemetry(span: TraceSpan): void {
@@ -172,7 +172,7 @@ export class DatabaseTracing {
             status: span.status
         };
 
-        logger.info('Sending trace to OpenTelemetry:', otelSpan.traceId);
+        console.info('Sending trace to OpenTelemetry:', otelSpan.traceId);
     }
 
     getActiveTraces(): TraceSpan[] {

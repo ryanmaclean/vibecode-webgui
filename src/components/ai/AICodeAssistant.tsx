@@ -32,7 +32,7 @@ import type {
   CodeAnalysisResponse,
   CodeContext
 } from '@/lib/claude-code-sdk'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface AICodeAssistantProps {
   className?: string

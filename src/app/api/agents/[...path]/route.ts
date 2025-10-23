@@ -31,10 +31,10 @@ import {
   getThreadManager,
   initializeThreadManager,
 } from '@/lib/agents/thread-manager'
-import { createChildLogger } from '@/lib/logger'
+// import { console } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 
-const logger = createChildLogger({ module: 'api', scope: 'agents' })
+const logger = console({ module: 'api', scope: 'agents' })
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -51,7 +51,7 @@ function getClient() {
     try {
       initializeThreadManager({ client })
     } catch (error) {
-      logger.warn('Thread manager already initialized', { error })
+      console.warn('Thread manager already initialized', { error })
     }
 
     threadManager = getThreadManager()
@@ -146,7 +146,7 @@ async function handleRequest(
     const path = params.path || []
     const [resource, id, subResource, subId] = path
 
-    logger.debug('Handling agent API request', {
+    console.debug('Handling agent API request', {
       method,
       resource,
       id,
@@ -186,7 +186,7 @@ async function handleRequest(
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   } catch (error) {
-    logger.error('API request failed', { error, path: params.path })
+    console.error('API request failed', { error, path: params.path })
 
     return NextResponse.json(
       {
@@ -214,7 +214,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
     },
   })
 
-  logger.info('Agent created', { agentId: agent.id, userId })
+  console.info('Agent created', { agentId: agent.id, userId })
 
   return NextResponse.json(agent, { status: 201 })
 }
@@ -232,7 +232,7 @@ async function handleListAgents(request: NextRequest, userId: string) {
     (agent) => agent.metadata.userId === userId
   )
 
-  logger.debug('Listed agents', { userId, count: userAgents.length })
+  console.debug('Listed agents', { userId, count: userAgents.length })
 
   return NextResponse.json({
     ...response,
@@ -300,7 +300,7 @@ async function handleThreadRoutes(
         }
       )
 
-      logger.info('Thread created', { threadId: session.threadId, userId })
+      console.info('Thread created', { threadId: session.threadId, userId })
 
       return NextResponse.json(session, { status: 201 })
     }
@@ -439,7 +439,7 @@ async function handleFileRoutes(
 
     const fileObject = await client.uploadFile(file, file.name, purpose)
 
-    logger.info('File uploaded', { fileId: fileObject.id, userId })
+    console.info('File uploaded', { fileId: fileObject.id, userId })
 
     return NextResponse.json(fileObject, { status: 201 })
   }

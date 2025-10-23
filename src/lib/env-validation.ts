@@ -4,7 +4,7 @@
  */
 
 import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Define environment variable schemas
 const envSchema = z.object({
   // Node environment
@@ -135,35 +135,35 @@ export function validateEnv(): Env {
     }
     
     if (warnings.length > 0) {
-      logger.warn('⚠️  Environment variable warnings:')
-      warnings.forEach(warning => logger.warn(`  - ${warning}`))
+      console.warn('⚠️  Environment variable warnings:')
+      warnings.forEach(warning => console.warn(`  - ${warning}`))
     }
     
     return validatedEnv
     
   } catch (error) {
     if (error instanceof z.ZodError) {
-      logger.error('❌ Environment variable validation failed:')
+      console.error('❌ Environment variable validation failed:')
       error.errors.forEach(err => {
-        logger.error(`  - ${err.path.join('.')}: ${err.message}`)
+        console.error(`  - ${err.path.join('.')}: ${err.message}`)
       })
       
       // In development, provide helpful suggestions
       if (process.env.NODE_ENV === 'development') {
-        logger.error('\n💡 To fix these issues:')
-        logger.error('  1. Copy .env.example to .env')
-        logger.error('  2. Fill in the required values')
-        logger.error('  3. Restart the development server')
+        console.error('\n💡 To fix these issues:')
+        console.error('  1. Copy .env.example to .env')
+        console.error('  2. Fill in the required values')
+        console.error('  3. Restart the development server')
       }
     } else {
-      logger.error('❌ Unexpected error validating environment variables:', error)
+      console.error('❌ Unexpected error validating environment variables:', error)
     }
     
     // Exit in production, continue with warnings in development
     if (process.env.NODE_ENV === 'production') {
       process.exit(1)
     } else {
-      logger.warn('⚠️  Continuing with invalid environment in development mode')
+      console.warn('⚠️  Continuing with invalid environment in development mode')
       return envSchema.parse({}) // Use defaults
     }
   }

@@ -1,5 +1,5 @@
 import { MongoClient, Db } from 'mongodb'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const MONGODB_URL = process.env.MONGODB_URL || 'mongodb://localhost:27017/vibecode_chat'
 
 if (!MONGODB_URL) {
@@ -31,7 +31,7 @@ export async function connectToMongoDB(): Promise<MongoConnection> {
     
     return cachedConnection
   } catch (error) {
-    logger.error('Failed to connect to MongoDB:', error)
+    console.error('Failed to connect to MongoDB:', error)
     throw error
   }
 }

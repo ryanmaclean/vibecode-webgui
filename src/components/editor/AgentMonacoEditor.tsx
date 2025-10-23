@@ -14,7 +14,7 @@ import Editor, { Monaco } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================

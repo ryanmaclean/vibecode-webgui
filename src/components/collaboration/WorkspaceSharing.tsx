@@ -34,7 +34,7 @@ Share2,
   CheckCircle,
   ExternalLink
 } from 'lucide-react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface WorkspacePermission {
   id: string

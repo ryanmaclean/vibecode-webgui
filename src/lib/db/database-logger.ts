@@ -10,7 +10,7 @@ LogLevel,
   DbOperationTimer, 
   LoggerOptions
 } from './db-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Class for logging database operations
  */
@@ -138,7 +138,7 @@ export class DatabaseLogger implements DbLogger {
       
       // Log additional details at debug level
       if (this.shouldLog(LogLevel.DEBUG) && (options.sql || options.params || options.metadata)) {
-        logger.debug('Details:', {
+        console.debug('Details:', {
           sql: options.sql,
           params: options.params,
           metadata: options.metadata
@@ -280,7 +280,7 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
   
   // Log queries
   prisma.$on('query', (e) => {
-    logger.log(e.query, {
+    console.log(e.query, {
       level: LogLevel.DEBUG,
       category: LogCategory.QUERY,
       operation: 'query',
@@ -292,21 +292,21 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
   
   // Log errors
   prisma.$on('error', (e) => {
-    logger.error(`Database error: ${e.message}`, new Error(e.message), {
+    console.error(`Database error: ${e.message}`, new Error(e.message), {
       target: e.target,
     });
   });
   
   // Log info messages
   prisma.$on('info', (e) => {
-    logger.info(e.message, {
+    console.info(e.message, {
       target: e.target,
     });
   });
   
   // Log warnings
   prisma.$on('warn', (e) => {
-    logger.warn(e.message, {
+    console.warn(e.message, {
       target: e.target,
     });
   });

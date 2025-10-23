@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Temporarily disabled to fix build issues - TODO: Fix LangChain compatibility
 // import AICodeReview from '@/components/ai/AICodeReview';
 

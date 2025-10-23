@@ -5,7 +5,7 @@
 
 import { NextResponse } from 'next/server'
 import { createErrorResponse } from '@/lib/api-utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string
   name: string
@@ -398,7 +398,7 @@ app.use('/api/users', userRoutes);
 app.use(errorHandler);
 
 app.listen(PORT, () => {
-  logger.info(\`🚀 Server is running on port \${PORT}\`);
+  console.info(\`🚀 Server is running on port \${PORT}\`);
 });`,
       'tsconfig.json': JSON.stringify({
         compilerOptions: {
@@ -606,7 +606,7 @@ export async function GET() {
       }
     })
   } catch (error) {
-    logger.error('Templates API error:', error)
+    console.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
   }
 }

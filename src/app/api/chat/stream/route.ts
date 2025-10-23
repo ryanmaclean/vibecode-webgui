@@ -3,7 +3,22 @@ import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/monitoring'
+// import { logger } from '@/lib/monitoring'
+import { z } from '@/lib/zod-compat'
+import { loadSecret } from '@/lib/security/macos-keychain'
+
+const chatStreamSchema = z.object({
+  conversationId: z.string().min(1).max(100),
+  message: z.string().min(1).max(10000),
+  model: z.string().min(1).max(100).optional().default('anthropic/claude-3.5-sonnet'),
+  workspaceId: z.string().min(1).max(100).optional().default('default'),
+  files: z.array(z.object({
+    name: z.string().max(255),
+    content: z.string().max(100000)
+  })).max(10).optional().default([]),
+  enableWebSearch: z.boolean().optional().default(false),
+  enableRAG: z.boolean().optional().default(true)
+}).strict()
 
 // Streaming chat endpoint with MongoDB persistence
 export async function POST(request: NextRequest) {
@@ -26,22 +41,16 @@ export async function POST(request: NextRequest) {
     userId = token?.sub || testUserId || 'anonymous'
 
     const body = await request.json()
+    const validatedData = chatStreamSchema.parse(body)
     const { 
       conversationId, 
       message, 
-      model = 'anthropic/claude-3.5-sonnet',
-      workspaceId = 'default',
-      files = [],
-      enableWebSearch = false,
-      enableRAG = true
-    } = body
-
-    if (!conversationId || !message) {
-      return NextResponse.json(
-        { error: 'conversationId and message are required' },
-        { status: 400 }
-      )
-    }
+      model,
+      workspaceId,
+      files,
+      enableWebSearch,
+      enableRAG
+    } = validatedData
 
     // Validate session and conversation
     let conversation = await mongodbChatService.getConversation(conversationId)
@@ -88,7 +97,7 @@ export async function POST(request: NextRequest) {
             { tags: { user_id: userId, workspace_id: workspaceId } }
           )
           
-          logger.info('RAG context built', {
+          console.info('RAG context built', {
             service: 'enhanced-rag',
             sourcesCount: ragContext.sources.length,
             webResultsCount: ragContext.webResults?.length || 0,
@@ -98,7 +107,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         datadogMetrics.recordError('rag_context_failed', 'rag', '/api/chat/stream')
-        logger.warn('RAG context building failed, continuing without context', {
+        console.warn('RAG context building failed, continuing without context', {
           service: 'enhanced-rag',
           error: error instanceof Error ? error.message : String(error),
           conversationId
@@ -119,7 +128,7 @@ export async function POST(request: NextRequest) {
           const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Authorization': `Bearer ${loadSecret('OPENROUTER_API_KEY') || process.env.OPENROUTER_API_KEY}`,
               'Content-Type': 'application/json',
               'X-Title': 'VibeCode WebGUI',
               'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
@@ -237,7 +246,7 @@ export async function POST(request: NextRequest) {
           statusCode = 500
           datadogMetrics.recordError('chat_stream_error', 'chat', '/api/chat/stream')
           
-          logger.error('Streaming chat error', {
+          console.error('Streaming chat error', {
             service: 'mongodb-chat-stream',
             error: error instanceof Error ? error.message : String(error),
             conversationId,
@@ -271,10 +280,20 @@ export async function POST(request: NextRequest) {
     statusCode = 500
     const responseTime = Date.now() - startTime
     
+    if (error instanceof z.ZodError) {
+      statusCode = 400
+      datadogMetrics.recordError('chat_stream_validation_error', 'validation', '/api/chat/stream')
+      
+      return NextResponse.json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      }, { status: 400 })
+    }
+    
     datadogMetrics.recordError('chat_stream_api_error', 'api', '/api/chat/stream')
     datadogMetrics.recordResponseTime(responseTime, '/api/chat/stream', 'POST', statusCode)
     
-    logger.error('Chat Stream API Error', {
+    console.error('Chat Stream API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
       userId: userId

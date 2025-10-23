@@ -211,7 +211,7 @@ export class VectorShardingManager {
       this.addShard(shard);
     }
     
-    this.logger.info(`Initialized sharding manager with ${defaultShards.length} shards`);
+    this.console.info(`Initialized sharding manager with ${defaultShards.length} shards`);
   }
   
   /**
@@ -220,7 +220,7 @@ export class VectorShardingManager {
   public addShard(shard: ShardInfo): void {
     this.shardMap.set(shard.id, shard);
     this.consistentHashRing.addShard(shard);
-    this.logger.info(`Added shard ${shard.id} to sharding manager`);
+    this.console.info(`Added shard ${shard.id} to sharding manager`);
   }
   
   /**
@@ -231,7 +231,7 @@ export class VectorShardingManager {
     if (shard) {
       this.shardMap.delete(shardId);
       this.consistentHashRing.removeShard(shardId);
-      this.logger.info(`Removed shard ${shardId} from sharding manager`);
+      this.console.info(`Removed shard ${shardId} from sharding manager`);
     }
   }
   
@@ -392,7 +392,7 @@ export class VectorShardingManager {
       const endTime = Date.now();
       const latency = endTime - startTime;
       
-      this.logger.error(`Error executing query on shard ${shard.id}: ${(error as Error).message}`);
+      this.console.error(`Error executing query on shard ${shard.id}: ${(error as Error).message}`);
       
       return { 
         results: [], 
@@ -460,7 +460,7 @@ export class VectorShardingManager {
       const targetShards = this.determineTargetShards(query);
       
       if (targetShards.length === 0) {
-        this.logger.warn('No active shards available for query');
+        this.console.warn('No active shards available for query');
         return {
           results: [],
           stats: {
@@ -509,7 +509,7 @@ export class VectorShardingManager {
       
       return result;
     } catch (error) {
-      this.logger.error(`Error executing sharded query: ${(error as Error).message}`);
+      this.console.error(`Error executing sharded query: ${(error as Error).message}`);
       
       const endTime = Date.now();
       const totalTime = endTime - startTime;

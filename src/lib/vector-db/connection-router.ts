@@ -198,7 +198,7 @@ export class QueryAnalyzer {
     }
     
     // If not recognized, default to sending to primary for safety
-    this.logger.warn(`Unrecognized query type, routing to primary: ${normalizedQuery.substring(0, 100)}...`);
+    this.console.warn(`Unrecognized query type, routing to primary: ${normalizedQuery.substring(0, 100)}...`);
     return QueryType.UNKNOWN;
   }
 }
@@ -276,7 +276,7 @@ export class VectorDBConnectionRouter {
       });
     }
     
-    this.logger.info(`Initialized VectorDBConnectionRouter with ${this.replicaPools.length} replicas`);
+    this.console.info(`Initialized VectorDBConnectionRouter with ${this.replicaPools.length} replicas`);
     
     // Set up health check interval
     setInterval(() => this.checkReplicaHealth(), 30000);
@@ -335,7 +335,7 @@ export class VectorDBConnectionRouter {
       const result = await this.primaryPool.query<T>(query, params);
       
       const duration = Date.now() - startTime;
-      this.logger.debug(`Primary query completed in ${duration}ms`, {
+      this.console.debug(`Primary query completed in ${duration}ms`, {
         queryText: query.substring(0, 100),
         paramsCount: params.length,
         rowCount: result.rowCount
@@ -344,7 +344,7 @@ export class VectorDBConnectionRouter {
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.error(`Primary query failed after ${duration}ms: ${(error as Error).message}`, {
+      this.console.error(`Primary query failed after ${duration}ms: ${(error as Error).message}`, {
         queryText: query.substring(0, 100),
         paramsCount: params.length,
         errorMessage: (error as Error).message
@@ -368,7 +368,7 @@ export class VectorDBConnectionRouter {
   ): Promise<QueryResult<T>> {
     // If no replicas available, fall back to primary
     if (this.replicaPools.length === 0) {
-      this.logger.debug('No replicas available, routing read query to primary');
+      this.console.debug('No replicas available, routing read query to primary');
       return this.routeToPrimary<T>(query, params);
     }
     
@@ -385,7 +385,7 @@ export class VectorDBConnectionRouter {
     
     // If no healthy replicas, route to primary
     if (healthyReplicas.length === 0) {
-      this.logger.warn('No healthy replicas available, routing read query to primary');
+      this.console.warn('No healthy replicas available, routing read query to primary');
       return this.routeToPrimary<T>(query, params);
     }
     
@@ -398,7 +398,7 @@ export class VectorDBConnectionRouter {
       const result = await selectedPool.query<T>(query, params);
       
       const duration = Date.now() - startTime;
-      this.logger.debug(`Replica query completed in ${duration}ms`, {
+      this.console.debug(`Replica query completed in ${duration}ms`, {
         replicaKey,
         queryText: query.substring(0, 100),
         paramsCount: params.length,
@@ -414,7 +414,7 @@ export class VectorDBConnectionRouter {
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      this.logger.error(`Replica query failed after ${duration}ms: ${(error as Error).message}`, {
+      this.console.error(`Replica query failed after ${duration}ms: ${(error as Error).message}`, {
         replicaKey,
         queryText: query.substring(0, 100),
         paramsCount: params.length,
@@ -430,12 +430,12 @@ export class VectorDBConnectionRouter {
         // Mark as unhealthy if too many errors
         if (health.errorCount >= 5) {
           health.isHealthy = false;
-          this.logger.warn(`Marking replica ${replicaKey} as unhealthy due to too many errors`);
+          this.console.warn(`Marking replica ${replicaKey} as unhealthy due to too many errors`);
         }
       }
       
       // Fall back to primary
-      this.logger.info(`Falling back to primary after replica query failure`);
+      this.console.info(`Falling back to primary after replica query failure`);
       return this.routeToPrimary<T>(query, params);
     }
   }
@@ -452,13 +452,13 @@ export class VectorDBConnectionRouter {
       this.transactionClient = await this.primaryPool.connect();
       await this.transactionClient.query('BEGIN');
       this.inTransaction = true;
-      this.logger.debug('Transaction started');
+      this.console.debug('Transaction started');
     } catch (error) {
       if (this.transactionClient) {
         this.transactionClient.release();
         this.transactionClient = null;
       }
-      this.logger.error(`Failed to begin transaction: ${(error as Error).message}`);
+      this.console.error(`Failed to begin transaction: ${(error as Error).message}`);
       throw error;
     }
   }
@@ -473,9 +473,9 @@ export class VectorDBConnectionRouter {
     
     try {
       await this.transactionClient.query('COMMIT');
-      this.logger.debug('Transaction committed');
+      this.console.debug('Transaction committed');
     } catch (error) {
-      this.logger.error(`Failed to commit transaction: ${(error as Error).message}`);
+      this.console.error(`Failed to commit transaction: ${(error as Error).message}`);
       throw error;
     } finally {
       if (this.transactionClient) {
@@ -496,9 +496,9 @@ export class VectorDBConnectionRouter {
     
     try {
       await this.transactionClient.query('ROLLBACK');
-      this.logger.debug('Transaction rolled back');
+      this.console.debug('Transaction rolled back');
     } catch (error) {
-      this.logger.error(`Failed to rollback transaction: ${(error as Error).message}`);
+      this.console.error(`Failed to rollback transaction: ${(error as Error).message}`);
       throw error;
     } finally {
       if (this.transactionClient) {
@@ -543,7 +543,7 @@ export class VectorDBConnectionRouter {
             
             // Check if lag is acceptable
             if (lagMs > maxLagMs) {
-              this.logger.warn(`Replica ${key} has high replication lag: ${lagMs}ms`);
+              this.console.warn(`Replica ${key} has high replication lag: ${lagMs}ms`);
               health.isHealthy = false;
             } else {
               // Reset error count and mark as healthy
@@ -553,11 +553,11 @@ export class VectorDBConnectionRouter {
             
             this.replicaHealth.set(key, health);
           } catch (error) {
-            this.logger.warn(`Failed to check replication lag for ${key}: ${(error as Error).message}`);
+            this.console.warn(`Failed to check replication lag for ${key}: ${(error as Error).message}`);
           }
         }
       } catch (error) {
-        this.logger.error(`Health check failed for replica ${key}: ${(error as Error).message}`);
+        this.console.error(`Health check failed for replica ${key}: ${(error as Error).message}`);
         
         const health = this.replicaHealth.get(key);
         if (health) {
@@ -575,7 +575,7 @@ export class VectorDBConnectionRouter {
       .map(([key, status]) => `${key}: ${status.isHealthy ? 'healthy' : 'unhealthy'}${status.replicationLagMs ? ` (lag: ${status.replicationLagMs}ms)` : ''}`)
       .join(', ');
     
-    this.logger.info(`Replica health check completed: ${healthySummary}`);
+    this.console.info(`Replica health check completed: ${healthySummary}`);
   }
   
   /**
@@ -586,7 +586,7 @@ export class VectorDBConnectionRouter {
       try {
         await this.transactionClient.query('ROLLBACK');
       } catch (error) {
-        this.logger.error(`Failed to rollback transaction during close: ${(error as Error).message}`);
+        this.console.error(`Failed to rollback transaction during close: ${(error as Error).message}`);
       } finally {
         this.transactionClient.release();
         this.transactionClient = null;
@@ -599,7 +599,7 @@ export class VectorDBConnectionRouter {
       try {
         await this.replicaPools[i].end();
       } catch (error) {
-        this.logger.error(`Failed to close replica pool ${i}: ${(error as Error).message}`);
+        this.console.error(`Failed to close replica pool ${i}: ${(error as Error).message}`);
       }
     }
     
@@ -607,10 +607,10 @@ export class VectorDBConnectionRouter {
     try {
       await this.primaryPool.end();
     } catch (error) {
-      this.logger.error(`Failed to close primary pool: ${(error as Error).message}`);
+      this.console.error(`Failed to close primary pool: ${(error as Error).message}`);
     }
     
-    this.logger.info('VectorDBConnectionRouter closed all connections');
+    this.console.info('VectorDBConnectionRouter closed all connections');
   }
   
   /**

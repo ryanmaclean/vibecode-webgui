@@ -10,7 +10,7 @@ import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * PostgreSQL-specific configuration options
  */
@@ -67,7 +67,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
 
       this.isInitialized = true;
-      logger.info('PostgreSQL vector database adapter initialized successfully');
+      console.info('PostgreSQL vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -96,7 +96,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.prisma.$queryRaw`SELECT 1`;
       return true;
     } catch (error) {
-      logger.error('PostgreSQL ping failed:', error);
+      console.error('PostgreSQL ping failed:', error);
       return false;
     }
   }
@@ -404,7 +404,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     try {
       return await this.cacheInvalidator.invalidateByContentType(contentType || table);
     } catch (error) {
-      logger.warn('Cache invalidation failed:', error);
+      console.warn('Cache invalidation failed:', error);
       return 0;
     }
   }

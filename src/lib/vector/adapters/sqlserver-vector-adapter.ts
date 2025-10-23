@@ -12,7 +12,7 @@ SearchResult,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
   private pool: any = null;
   private connectionConfig: any;
@@ -59,11 +59,11 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
     try {
       // This would use the mssql package in a real implementation
       // this.pool = await new sql.ConnectionPool(this.connectionConfig).connect();
-      logger.info('Mock SQL Server connection established');
+      console.info('Mock SQL Server connection established');
       this.isConnectionActive = true;
       return true;
     } catch (error) {
-      logger.error('Failed to connect to SQL Server:', error);
+      console.error('Failed to connect to SQL Server:', error);
       this.isConnectionActive = false;
       return false;
     }
@@ -79,10 +79,10 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
       //   await this.pool.close();
       //   this.pool = null;
       // }
-      logger.info('Mock SQL Server connection closed');
+      console.info('Mock SQL Server connection closed');
       this.isConnectionActive = false;
     } catch (error) {
-      logger.error('Error disconnecting from SQL Server:', error);
+      console.error('Error disconnecting from SQL Server:', error);
     }
   }
 
@@ -101,7 +101,7 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock storing ${chunks.length} vectors for file ${fileId}`);
+      console.info(`Mock storing ${chunks.length} vectors for file ${fileId}`);
       
       // Process chunks in batches to avoid rate limits
       const batchSize = 5;
@@ -114,14 +114,14 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
           const chunkId = `${fileId}-chunk-${i + j}`;
           const embedding = await this.embeddingProvider.generateEmbedding(chunk.content);
           
-          logger.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions`);
+          console.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions`);
         }
         
         // Small delay to respect rate limits
         await new Promise(resolve => setTimeout(resolve, 100));
       }
     } catch (error) {
-      logger.error('Error storing vector chunks in SQL Server:', error);
+      console.error('Error storing vector chunks in SQL Server:', error);
       throw error;
     }
   }
@@ -168,14 +168,14 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
             }));
           }
         } catch (cacheError) {
-          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
         }
       }
 
-      logger.info(`Mock searching for similar vectors with ${embedding.length} dimensions`);
-      logger.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
+      console.info(`Mock searching for similar vectors with ${embedding.length} dimensions`);
+      console.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
       if (fileIds?.length) {
-        logger.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
+        console.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
       }
       
       // Return mock results
@@ -201,7 +201,7 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
       
       return mockResults;
     } catch (error) {
-      logger.error('Error in SQL Server vector search:', error);
+      console.error('Error in SQL Server vector search:', error);
       return [];
     }
   }
@@ -216,9 +216,9 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock deleting vectors for file ${fileId}`);
+      console.info(`Mock deleting vectors for file ${fileId}`);
     } catch (error) {
-      logger.error('Error deleting file chunks from SQL Server:', error);
+      console.error('Error deleting file chunks from SQL Server:', error);
       throw error;
     }
   }
@@ -233,10 +233,10 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock updating vector ${id} with ${embedding.length} dimensions`);
+      console.info(`Mock updating vector ${id} with ${embedding.length} dimensions`);
       return true;
     } catch (error) {
-      logger.error('Error updating vector embedding in SQL Server:', error);
+      console.error('Error updating vector embedding in SQL Server:', error);
       return false;
     }
   }
@@ -266,7 +266,7 @@ export class SQLServerVectorAdapter extends BaseVectorDatabaseAdapter {
         cacheStats
       };
     } catch (error) {
-      logger.error('Error getting vector store stats from SQL Server:', error);
+      console.error('Error getting vector store stats from SQL Server:', error);
       return {
         totalChunks: 0,
         totalFiles: 0,

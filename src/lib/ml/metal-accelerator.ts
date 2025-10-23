@@ -14,7 +14,7 @@
  */
 
 import { invoke } from '@tauri-apps/api/core';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // MARK: - Types
 
 export interface InferenceOptions {
@@ -97,16 +97,16 @@ export class MetalAccelerator {
     try {
       const available = await invoke<boolean>('ml_is_available');
       if (!available) {
-        logger.warn('[MetalAccelerator] Metal/Core ML not available on this system');
+        console.warn('[MetalAccelerator] Metal/Core ML not available on this system');
         return false;
       }
 
       await invoke('ml_init');
       this.isInitialized = true;
-      logger.info('[MetalAccelerator] Initialized successfully');
+      console.info('[MetalAccelerator] Initialized successfully');
       return true;
     } catch (error) {
-      logger.error('[MetalAccelerator] Initialization failed:', error);
+      console.error('[MetalAccelerator] Initialization failed:', error);
       return false;
     }
   }
@@ -138,7 +138,7 @@ export class MetalAccelerator {
    * Example:
    * ```typescript
    * for await (const token of accelerator.generateText("Hello")) {
-   *   logger.info(token);
+   *   console.info(token);
    * }
    * ```
    */

@@ -9,7 +9,7 @@ import { createAgentAPIClient } from '../agentapi-client';
 import { createMCPClient } from '../mcp-client';
 import type { AgentConfig } from './base-adapter';
 import type { MCPClient } from '../mcp-client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class GooseAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;
@@ -121,7 +121,7 @@ export class GooseAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          logger.info(`[Goose] ${data.line}`);
+          console.info(`[Goose] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {
@@ -129,7 +129,7 @@ export class GooseAdapter extends BaseAgentAdapter {
           }
         },
         onError: (data) => {
-          logger.error(`[Goose Error] ${data.error}`);
+          console.error(`[Goose Error] ${data.error}`);
           if (this.session) {
             this.session.status = 'failed';
           }
@@ -152,7 +152,7 @@ export class GooseAdapter extends BaseAgentAdapter {
 
       await this.mcpClient.connect();
     } catch (error) {
-      logger.warn('[Goose] MCP connection failed, continuing with AgentAPI only:', error);
+      console.warn('[Goose] MCP connection failed, continuing with AgentAPI only:', error);
     }
   }
 

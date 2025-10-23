@@ -11,7 +11,7 @@ import { Pool, PoolClient, PoolConfig } from 'pg';
 import { DefaultAzureCredential } from '@azure/identity';
 import { metrics } from '../server-monitoring';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Re-export for convenience
 export type { PoolClient };
 
@@ -101,7 +101,7 @@ export class AzurePostgresConnection {
       // Set up event handlers
       this.pool.on('error', (err) => {
         if (this.config.enableLogging) {
-          logger.error('Unexpected PostgreSQL pool error:', err);
+          console.error('Unexpected PostgreSQL pool error:', err);
         }
         if (this.config.enableMetrics) {
           metrics.increment('azure_postgres.pool.error');
@@ -110,7 +110,7 @@ export class AzurePostgresConnection {
       
       this.pool.on('connect', (client) => {
         if (this.config.enableLogging) {
-          logger.info('New PostgreSQL client connected');
+          console.info('New PostgreSQL client connected');
         }
         
         // Set application_name for all connections
@@ -139,7 +139,7 @@ export class AzurePostgresConnection {
       }
       
       if (this.config.enableLogging) {
-        logger.info('Azure PostgreSQL connection initialized successfully');
+        console.info('Azure PostgreSQL connection initialized successfully');
       }
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -147,7 +147,7 @@ export class AzurePostgresConnection {
       }
       
       if (this.config.enableLogging) {
-        logger.error('Failed to initialize Azure PostgreSQL connection:', error);
+        console.error('Failed to initialize Azure PostgreSQL connection:', error);
       }
       
       throw this.errorHandler.handleError(
@@ -291,7 +291,7 @@ export class AzurePostgresConnection {
             await client.query('ROLLBACK');
           } catch (rollbackError) {
             if (this.config.enableLogging) {
-              logger.error('Error during transaction rollback:', rollbackError);
+              console.error('Error during transaction rollback:', rollbackError);
             }
           }
         }
@@ -308,7 +308,7 @@ export class AzurePostgresConnection {
         }
         
         if (this.config.enableLogging) {
-          logger.warn(`Retrying query after error (attempt ${attempt}/${retryCount}):`, error);
+          console.warn(`Retrying query after error (attempt ${attempt}/${retryCount}):`, error);
         }
         
         // Exponential backoff before retry
@@ -371,8 +371,8 @@ export class AzurePostgresConnection {
       
       if (availableExtResult.rowCount === 0) {
         if (this.config.enableLogging) {
-          logger.error('⚠️ pgvector extension is not available on this Azure PostgreSQL server');
-          logger.error('⚠️ Please contact Azure support to enable the pgvector extension for your server');
+          console.error('⚠️ pgvector extension is not available on this Azure PostgreSQL server');
+          console.error('⚠️ Please contact Azure support to enable the pgvector extension for your server');
         }
         throw new Error('pgvector extension is not available in pg_available_extensions. Contact Azure support to enable it.');
       }
@@ -386,14 +386,14 @@ export class AzurePostgresConnection {
         
         if (installedExtResult.rowCount === 0) {
           if (this.config.enableLogging) {
-            logger.info('pgvector extension is available but not installed. Attempting to create extension...');
+            console.info('pgvector extension is available but not installed. Attempting to create extension...');
           }
           
           // Try to create the extension directly (without using shared_preload_libraries)
           await client.query('CREATE EXTENSION IF NOT EXISTS vector');
           
           if (this.config.enableLogging) {
-            logger.info('Successfully created pgvector extension');
+            console.info('Successfully created pgvector extension');
           }
         }
       } catch (extError) {
@@ -405,9 +405,9 @@ export class AzurePostgresConnection {
             errorMsg.toLowerCase().includes('value \'vector\' is invalid for server parameter')) {
           
           if (this.config.enableLogging) {
-            logger.error('⚠️ Azure PostgreSQL does not allow adding vector to shared_preload_libraries');
-            logger.error('⚠️ However, you can still use pgvector directly. Please see our documentation:');
-            logger.error('⚠️ docs/azure-postgres-pgvector-guide.md');
+            console.error('⚠️ Azure PostgreSQL does not allow adding vector to shared_preload_libraries');
+            console.error('⚠️ However, you can still use pgvector directly. Please see our documentation:');
+            console.error('⚠️ docs/azure-postgres-pgvector-guide.md');
           }
           
           throw new Error('Azure PostgreSQL does not allow adding vector to shared_preload_libraries. See docs/azure-postgres-pgvector-guide.md');
@@ -423,7 +423,7 @@ export class AzurePostgresConnection {
         await client.query(`SELECT '[1,2,3]'::vector`);
         
         if (this.config.enableLogging) {
-          logger.info('✅ PostgreSQL connection verified with pgvector extension working properly');
+          console.info('✅ PostgreSQL connection verified with pgvector extension working properly');
         }
       } catch (vectorTypeError) {
         throw new Error(`pgvector extension is installed but vector type is not working: ${vectorTypeError instanceof Error ? vectorTypeError.message : String(vectorTypeError)}`);
@@ -469,7 +469,7 @@ export class AzurePostgresConnection {
     // Azure Managed Identity authentication
     if (this.config.useManagedIdentity) {
       if (this.config.enableLogging) {
-        logger.info('Using Azure Managed Identity for PostgreSQL authentication');
+        console.info('Using Azure Managed Identity for PostgreSQL authentication');
       }
       
       try {
@@ -487,7 +487,7 @@ export class AzurePostgresConnection {
         };
       } catch (error) {
         if (this.config.enableLogging) {
-          logger.error('Failed to get token from Azure Managed Identity:', error);
+          console.error('Failed to get token from Azure Managed Identity:', error);
         }
         throw error;
       }
@@ -506,7 +506,7 @@ export class AzurePostgresConnection {
       this.isInitialized = false;
       
       if (this.config.enableLogging) {
-        logger.info('Azure PostgreSQL connection pool closed');
+        console.info('Azure PostgreSQL connection pool closed');
       }
     }
   }
@@ -677,7 +677,7 @@ export class AzurePostgresConnection {
       };
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Error getting database stats:', error);
+        console.error('Error getting database stats:', error);
       }
       
       if (this.config.enableMetrics) {

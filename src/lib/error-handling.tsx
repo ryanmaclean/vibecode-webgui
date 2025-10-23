@@ -1,6 +1,6 @@
 // Global error handling utilities
 import Link from 'next/link';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class AppError extends Error {
   public readonly statusCode: number;
   public readonly isOperational: boolean;

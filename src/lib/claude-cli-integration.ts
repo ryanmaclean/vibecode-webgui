@@ -11,7 +11,7 @@ import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import path from 'path'
 import fs from 'fs/promises'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface ClaudeCliConfig {
   apiKey?: string
   model?: string
@@ -415,7 +415,7 @@ export class ClaudeCliIntegration extends EventEmitter {
       const content = await fs.readFile(path.resolve(this.config.workingDirectory, filePath), 'utf-8')
       return `File: ${filePath}\n\n${content}`
     } catch (error) {
-      logger.warn(`Failed to read file context: ${filePath}`, error)
+      console.warn(`Failed to read file context: ${filePath}`, error)
       return undefined
     }
   }
@@ -462,7 +462,7 @@ export class ClaudeCliIntegration extends EventEmitter {
     try {
       await fs.unlink(filePath)
     } catch (error) {
-      logger.warn(`Failed to cleanup temp file: ${filePath}`, error)
+      console.warn(`Failed to cleanup temp file: ${filePath}`, error)
     }
   }
 
@@ -512,7 +512,7 @@ export class ClaudeCliIntegration extends EventEmitter {
       const tempDir = path.join(this.config.workingDirectory, '.claude')
       await fs.rm(tempDir, { recursive: true, force: true })
     } catch (error) {
-      logger.warn('Failed to cleanup Claude temp directory', error)
+      console.warn('Failed to cleanup Claude temp directory', error)
     }
 
     this.removeAllListeners()

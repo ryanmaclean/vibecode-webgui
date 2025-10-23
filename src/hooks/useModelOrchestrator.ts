@@ -11,7 +11,7 @@ modelOrchestrator,
   RequestContext,
   TaskDetector 
 } from '@/lib/ai/model-orchestration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface UseModelOrchestratorOptions {
   autoDetectTaskType?: boolean
@@ -114,7 +114,7 @@ export function useModelOrchestrator(options: UseModelOrchestratorOptions = {}) 
     try {
       modelOrchestrator.updateUsageStats(modelId, tokens, latency, success)
     } catch (error) {
-      logger.error('Failed to report model usage:', error)
+      console.error('Failed to report model usage:', error)
     }
   }, [])
 
@@ -272,7 +272,7 @@ export function useModelPerformance() {
       const modelStats = modelOrchestrator.getModelStats()
       setStats(modelStats)
     } catch (error) {
-      logger.error('Failed to load model stats:', error)
+      console.error('Failed to load model stats:', error)
     } finally {
       setIsLoading(false)
     }

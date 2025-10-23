@@ -13,7 +13,7 @@ SearchResult,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export abstract class BaseVectorDatabaseAdapter implements IVectorDatabaseAdapter {
   protected config: VectorDatabaseConfig;
   protected embeddingProvider: IVectorEmbeddingProvider;
@@ -66,7 +66,7 @@ export abstract class BaseVectorDatabaseAdapter implements IVectorDatabaseAdapte
     try {
       return await this.embeddingProvider.generateEmbedding(text);
     } catch (error) {
-      logger.error('Error generating embedding:', error);
+      console.error('Error generating embedding:', error);
       // Return zero vector of appropriate dimension as fallback
       const dimension = this.embeddingProvider.getDimension();
       return new Array(dimension).fill(0);
@@ -134,7 +134,7 @@ export abstract class BaseVectorDatabaseAdapter implements IVectorDatabaseAdapte
 
       return context;
     } catch (error) {
-      logger.error('Error getting context:', error);
+      console.error('Error getting context:', error);
       return '';
     }
   }
@@ -171,7 +171,7 @@ export abstract class BaseVectorDatabaseAdapter implements IVectorDatabaseAdapte
         return await operation();
       } catch (error) {
         lastError = error as Error;
-        logger.warn(`Operation failed (attempt ${attempt + 1}/${this.maxRetries + 1}):`, error);
+        console.warn(`Operation failed (attempt ${attempt + 1}/${this.maxRetries + 1}):`, error);
         
         if (attempt === this.maxRetries) {
           break;

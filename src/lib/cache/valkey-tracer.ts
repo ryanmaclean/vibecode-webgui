@@ -4,7 +4,7 @@
  */
 
 import tracer from 'dd-trace';
-import { logger } from '../server-monitoring';
+// import { logger } from '../server-monitoring';
 
 // Interface for the ValKey operation details
 interface ValKeyOperation {
@@ -34,7 +34,7 @@ class ValKeyTracer {
     this.tracingEnabled = Boolean(process.env.DD_API_KEY && process.env.DD_APM_ENABLED !== 'false');
     
     if (this.tracingEnabled) {
-      logger.info('ValKey APM tracing enabled');
+      console.info('ValKey APM tracing enabled');
     }
   }
 
@@ -108,7 +108,7 @@ class ValKeyTracer {
     // Log successful operations
     if (operation.duration > 50) {
       // Only log slower operations
-      logger.debug('ValKey operation completed', {
+      console.debug('ValKey operation completed', {
         command: operation.command,
         duration: operation.duration,
         key: operation.key,
@@ -150,7 +150,7 @@ class ValKeyTracer {
     operation.error = error;
     
     // Log failed operations
-    logger.error('ValKey operation failed', {
+    console.error('ValKey operation failed', {
       command: operation.command,
       duration: operation.duration,
       key: operation.key,

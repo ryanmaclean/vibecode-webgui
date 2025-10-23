@@ -19,9 +19,9 @@ import {
   ThreadSession,
 } from '@/types/openai-agents'
 import { OpenAIAgentsClient } from './openai-client'
-import { createChildLogger } from '@/lib/logger'
+// import { console } from '@/lib/logger'
 
-const logger = createChildLogger({ module: 'agents', scope: 'thread-manager' })
+const logger = console({ module: 'agents', scope: 'thread-manager' })
 
 export interface ThreadManagerConfig {
   client: OpenAIAgentsClient
@@ -50,7 +50,7 @@ export class ThreadManager {
       this.startAutoCleanup()
     }
 
-    logger.info('Thread manager initialized', {
+    console.info('Thread manager initialized', {
       sessionTTL: this.sessionTTL,
       maxMessagesPerThread: this.maxMessagesPerThread,
       cleanupInterval: this.cleanupInterval,
@@ -67,7 +67,7 @@ export class ThreadManager {
       metadata?: Record<string, string>
     }
   ): Promise<ThreadSession> {
-    logger.info('Creating thread', { userId, assistantId })
+    console.info('Creating thread', { userId, assistantId })
 
     const threadMetadata = {
       userId,
@@ -92,7 +92,7 @@ export class ThreadManager {
 
     this.sessions.set(thread.id, session)
 
-    logger.info('Thread created', {
+    console.info('Thread created', {
       threadId: thread.id,
       userId,
       assistantId,
@@ -116,7 +116,7 @@ export class ThreadManager {
       // Try to find an existing active thread
       const existing = this.findActiveThread(userId, assistantId, options?.maxAge)
       if (existing) {
-        logger.debug('Reusing existing thread', {
+        console.debug('Reusing existing thread', {
           threadId: existing.threadId,
           userId,
           assistantId,
@@ -137,7 +137,7 @@ export class ThreadManager {
     const session = this.sessions.get(threadId)
 
     if (session && this.isSessionExpired(session)) {
-      logger.info('Session expired', { threadId })
+      console.info('Session expired', { threadId })
       this.sessions.delete(threadId)
       this.threadContextCache.delete(threadId)
       return undefined
@@ -165,7 +165,7 @@ export class ThreadManager {
     content: string,
     attachments?: ThreadMessage['attachments']
   ): Promise<ThreadMessage> {
-    logger.info('Adding message to thread', { threadId, role })
+    console.info('Adding message to thread', { threadId, role })
 
     const message = await this.client.createMessage(threadId, {
       role,
@@ -196,12 +196,12 @@ export class ThreadManager {
     if (options?.fromCache !== false) {
       const cached = this.threadContextCache.get(threadId)
       if (cached) {
-        logger.debug('Using cached context', { threadId })
+        console.debug('Using cached context', { threadId })
         return cached
       }
     }
 
-    logger.debug('Fetching thread context', { threadId })
+    console.debug('Fetching thread context', { threadId })
 
     const [thread, messagesResponse] = await Promise.all([
       this.client.getThread(threadId),
@@ -235,7 +235,7 @@ export class ThreadManager {
       after?: string
     }
   ): Promise<ThreadMessage[]> {
-    logger.debug('Fetching message history', { threadId, ...options })
+    console.debug('Fetching message history', { threadId, ...options })
 
     const response = await this.client.listMessages(threadId, {
       limit: options?.limit || 50,
@@ -251,12 +251,12 @@ export class ThreadManager {
    * Delete a thread and clean up session
    */
   async deleteThread(threadId: string): Promise<void> {
-    logger.info('Deleting thread', { threadId })
+    console.info('Deleting thread', { threadId })
 
     try {
       await this.client.deleteThread(threadId)
     } catch (error) {
-      logger.error('Failed to delete thread', { threadId, error })
+      console.error('Failed to delete thread', { threadId, error })
       throw error
     } finally {
       this.sessions.delete(threadId)
@@ -272,7 +272,7 @@ export class ThreadManager {
       (session) => session.userId === userId && !this.isSessionExpired(session)
     )
 
-    logger.debug('Retrieved user sessions', { userId, count: sessions.length })
+    console.debug('Retrieved user sessions', { userId, count: sessions.length })
 
     return sessions
   }
@@ -286,7 +286,7 @@ export class ThreadManager {
         session.assistantId === assistantId && !this.isSessionExpired(session)
     )
 
-    logger.debug('Retrieved assistant sessions', {
+    console.debug('Retrieved assistant sessions', {
       assistantId,
       count: sessions.length,
     })
@@ -310,7 +310,7 @@ export class ThreadManager {
     }
 
     if (cleared > 0) {
-      logger.info('Cleared expired sessions', { count: cleared })
+      console.info('Cleared expired sessions', { count: cleared })
     }
 
     return cleared
@@ -349,7 +349,7 @@ export class ThreadManager {
       this.cleanupTimer = undefined
     }
 
-    logger.info('Thread manager stopped')
+    console.info('Thread manager stopped')
   }
 
   // Private Helper Methods
@@ -411,11 +411,11 @@ export class ThreadManager {
    */
   private startAutoCleanup(): void {
     this.cleanupTimer = setInterval(() => {
-      logger.debug('Running automatic session cleanup')
+      console.debug('Running automatic session cleanup')
       this.clearExpiredSessions()
     }, this.cleanupInterval)
 
-    logger.info('Auto cleanup started', {
+    console.info('Auto cleanup started', {
       interval: this.cleanupInterval,
     })
   }
@@ -432,7 +432,7 @@ export function getThreadManager(
 ): ThreadManager {
   if (!globalThreadManager && config) {
     globalThreadManager = new ThreadManager(config)
-    logger.info('Global thread manager created')
+    console.info('Global thread manager created')
   }
 
   if (!globalThreadManager) {

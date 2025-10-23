@@ -7,7 +7,7 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -80,7 +80,7 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
       totalLength: combinedContext.length
     }
   } catch (error) {
-    logger.error('Advanced RAG context error:', error)
+    console.error('Advanced RAG context error:', error)
     return null
   }
 }
@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
     
-    logger.info('Provider health check:', providerHealth)
+    console.info('Provider health check:', providerHealth)
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -253,10 +253,10 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
-          logger.info(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          console.info(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
 
         } catch (error) {
-          logger.error('Unified streaming error:', error)
+          console.error('Unified streaming error:', error)
           
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
@@ -295,7 +295,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
-    logger.error('Unified chat API error:', error)
+    console.error('Unified chat API error:', error)
 
     return NextResponse.json(
       {

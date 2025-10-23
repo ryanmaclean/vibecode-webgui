@@ -3,7 +3,7 @@
  * Provides detailed logging for ValKey/Redis operations with context
  */
 
-import { logger } from '../server-monitoring';
+// import { logger } from '../server-monitoring';
 
 // Log levels for ValKey operations
 export enum ValKeyLogLevel {
@@ -228,16 +228,16 @@ export class ValKeyLogger {
     // Log based on level
     switch (level) {
       case ValKeyLogLevel.DEBUG:
-        logger.debug(message, logContext);
+        console.debug(message, logContext);
         break;
       case ValKeyLogLevel.INFO:
-        logger.info(message, logContext);
+        console.info(message, logContext);
         break;
       case ValKeyLogLevel.WARN:
-        logger.warn(message, logContext);
+        console.warn(message, logContext);
         break;
       case ValKeyLogLevel.ERROR:
-        logger.error(message, logContext);
+        console.error(message, logContext);
         break;
     }
   }

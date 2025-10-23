@@ -1,0 +1,76 @@
+# Lima VM configuration for Vibecode WebGUI development
+
+vmType: "vz"
+os: "Linux"
+arch: "aarch64"
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/24.04/release/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+# Right-sized resources for development workload
+cpus: 2
+memory: "4GiB"
+disk: "20GiB"
+
+mounts:
+  - location: "~"
+    writable: false
+  - location: "{{.Home}}/Documents/vibecode-webgui"
+    writable: true
+
+containerd:
+  system: false
+  user: false
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      export DEBIAN_FRONTEND=noninteractive
+      
+      # Use parallel package installation for faster provisioning
+      apt-get update -qq
+      apt-get install -y -qq --no-install-recommends \
+        ca-certificates curl git unzip build-essential \
+        python3 python3-pip jq make apt-transport-https \
+        software-properties-common &
+      
+      # Install Node.js 20 LTS in parallel
+      {
+        if ! command -v node >/dev/null 2>&1; then
+          curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+          apt-get install -y -qq nodejs
+        fi
+      } &
+      
+      # Install Docker in parallel (optional for local compose workflows)
+      {
+        curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add -
+        add-apt-repository "deb [arch=amd64] https://download.docker.com/linux/ubuntu $(lsb_release -cs) stable"
+        apt-get update -qq
+        apt-get install -y -qq docker-ce docker-ce-cli containerd.io docker-compose-plugin
+        systemctl enable docker || true
+        usermod -aG docker ubuntu
+      } &
+      
+      # Wait for all background processes
+      wait
+      
+      # Create workspace for vibecode
+      mkdir -p /workspace/vibecode
+      chown -R ubuntu:ubuntu /workspace
+      
+      # Pre-cache npm packages for faster project setup
+      npm config set cache /home/ubuntu/.npm-cache
+      npm config set prefer-offline true
+
+message: |
+  Vibecode dev VM ready.
+
+  Useful commands:
+    limactl shell vibecode-dev
+    cd /workspace/vibecode && npm install
+    npm run dev -- --hostname 0.0.0.0

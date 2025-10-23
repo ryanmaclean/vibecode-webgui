@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 // Defer heavy or circular-prone imports to runtime to avoid build-time evaluation cycles
 // that caused "Cannot access 't' before initialization" during route module evaluation.
@@ -167,7 +167,7 @@ export async function GET(request: NextRequest) {
         };
       }
     } catch (extError) {
-      logger.error('Error checking pgvector extension:', { data: extError });
+      console.error('Error checking pgvector extension:', { data: extError });
     }
     
     // Get database statistics
@@ -204,7 +204,7 @@ export async function GET(request: NextRequest) {
           rows_deleted: Number(rawStats.rows_deleted)
         };
       } catch (statsError) {
-        logger.error('Error getting database statistics:', { data: statsError });
+        console.error('Error getting database statistics:', { data: statsError });
       }
     }
     
@@ -326,7 +326,7 @@ Database Metrics:
     return NextResponse.json(response);
     
   } catch (error) {
-    logger.error('Database health check failed:', { error: error });
+    console.error('Database health check failed:', { error: error });
     
     const errorResponse = {
       status: 'error',
