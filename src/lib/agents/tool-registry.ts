@@ -20,7 +20,7 @@ import {
 } from '@/types/openai-agents'
 // import { console } from '@/lib/logger'
 
-const logger = createChildLogger({ module: 'agents', scope: 'tool-registry' })
+const logger = console
 
 interface RateLimitState {
   calls: number[]

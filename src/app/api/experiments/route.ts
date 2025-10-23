@@ -8,7 +8,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { featureFlagEngine, type ExperimentContext } from '@/lib/feature-flags'
-import { appLogger } from '@/lib/server-monitoring'
+import { console } from '@/lib/server-monitoring'
 import { z } from '@/lib/zod-compat'
 
 // Force dynamic rendering to prevent static analysis during build
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
           validatedData.defaultValue
         )
 
-        appLogger?.logBusiness?.('flag_evaluated_api', {
+        console?.logBusiness?.('flag_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
           experimentContext
         )
 
-        appLogger?.logBusiness?.('metric_tracked_api', {
+        console?.logBusiness?.('metric_tracked_api', {
           userId: session.user.id,
           feature: 'experimentation',
           value: validatedData.value,
@@ -130,7 +130,7 @@ export async function POST(request: NextRequest) {
           })
         )
 
-        appLogger?.logBusiness?.('multiple_flags_evaluated_api', {
+        console?.logBusiness?.('multiple_flags_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    appLogger?.logSecurity?.('experiment_api_error', {
+    console?.logSecurity?.('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })
@@ -185,7 +185,7 @@ export async function GET(request: NextRequest) {
 
         const experimentResults = await featureFlagEngine.getExperimentResults(flagKey)
 
-        appLogger?.logBusiness?.('experiment_results_viewed', {
+        console?.logBusiness?.('experiment_results_viewed', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -228,7 +228,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    appLogger?.logSecurity?.('experiment_api_error', {
+    console?.logSecurity?.('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })
