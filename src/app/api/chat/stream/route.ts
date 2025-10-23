@@ -3,7 +3,7 @@ import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/monitoring'
+// import { logger } from '@/lib/monitoring'
 import { chatStreamSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
 
@@ -103,7 +103,7 @@ export async function POST(request: NextRequest) {
             { tags: { user_id: userId, workspace_id: workspaceId } }
           )
           
-          logger.info('RAG context built', {
+          console.log('RAG context built', {
             service: 'enhanced-rag',
             sourcesCount: ragContext.sources.length,
             webResultsCount: ragContext.webResults?.length || 0,
@@ -113,7 +113,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         datadogMetrics.recordError('rag_context_failed', 'rag', '/api/chat/stream')
-        logger.warn('RAG context building failed, continuing without context', {
+        console.warn('RAG context building failed, continuing without context', {
           service: 'enhanced-rag',
           error: error instanceof Error ? error.message : String(error),
           conversationId
@@ -252,7 +252,7 @@ export async function POST(request: NextRequest) {
           statusCode = 500
           datadogMetrics.recordError('chat_stream_error', 'chat', '/api/chat/stream')
           
-          logger.error('Streaming chat error', {
+          console.error('Streaming chat error', {
             service: 'mongodb-chat-stream',
             error: error instanceof Error ? error.message : String(error),
             conversationId,
@@ -289,7 +289,7 @@ export async function POST(request: NextRequest) {
     datadogMetrics.recordError('chat_stream_api_error', 'api', '/api/chat/stream')
     datadogMetrics.recordResponseTime(responseTime, '/api/chat/stream', 'POST', statusCode)
     
-    logger.error('Chat Stream API Error', {
+    console.error('Chat Stream API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
       userId: userId

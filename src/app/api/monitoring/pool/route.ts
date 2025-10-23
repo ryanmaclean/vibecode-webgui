@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
 import { ConnectionPoolMonitor, AlertLevel } from '@/lib/db/connection-pool-monitor';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Create a singleton monitor instance
 let monitor: ConnectionPoolMonitor | null = null;
 
@@ -27,7 +27,7 @@ function getMonitor(): ConnectionPoolMonitor {
 
     // Start the monitor
     monitor.start();
-    logger.info('Connection pool monitor started');
+    console.log('Connection pool monitor started');
   }
   return monitor;
 }
@@ -137,7 +137,7 @@ Implemented: ${rec.implemented ? 'Yes' : 'No'}
     // Return as JSON
     return NextResponse.json(responseData);
   } catch (error) {
-    logger.error('Error getting connection pool monitoring data:', error);
+    console.error('Error getting connection pool monitoring data:', error);
     
     return NextResponse.json({
       error: 'Failed to get connection pool monitoring data',
@@ -214,7 +214,7 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     }, { status: 400 });
   } catch (error) {
-    logger.error('Error processing connection pool monitoring action:', error);
+    console.error('Error processing connection pool monitoring action:', error);
     
     return NextResponse.json({
       error: 'Failed to process connection pool monitoring action',

@@ -3,7 +3,7 @@
  * Factory for creating and managing vector cache adapter instances
  */
 
-import { logger } from '../../logger';
+// import { logger } from '../../logger';
 import { IVectorCacheAdapter, VectorCacheConfig } from './vector-cache-interface';
 import { MemoryVectorCacheAdapter } from './memory-vector-cache-adapter';
 import { CacheInvalidationIntegration } from '../../cache/cache-invalidation-integration';
@@ -49,7 +49,7 @@ export class VectorCacheFactory {
     try {
       // If explicitly set to NONE, return null (no caching)
       if (config.type === CacheAdapterType.NONE) {
-        logger.info('Vector cache disabled (NONE)');
+        console.log('Vector cache disabled (NONE)');
         return null;
       }
 
@@ -72,14 +72,14 @@ export class VectorCacheFactory {
       // Initialize the adapter
       await adapter.initialize();
 
-      logger.info(`Vector cache adapter (${config.type}) initialized successfully`);
+      console.log(`Vector cache adapter (${config.type}) initialized successfully`);
       return adapter;
     } catch (error) {
-      logger.error(`Failed to create vector cache adapter: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to create vector cache adapter: ${error instanceof Error ? error.message : String(error)}`);
       
       // Fall back to in-memory cache if the requested adapter fails
       if (config.type !== CacheAdapterType.MEMORY) {
-        logger.warn(`Falling back to memory cache adapter due to error`);
+        console.warn(`Falling back to memory cache adapter due to error`);
         try {
           const fallbackAdapter = new MemoryVectorCacheAdapter({
             ttl: config.ttl,
@@ -89,7 +89,7 @@ export class VectorCacheFactory {
           await fallbackAdapter.initialize();
           return fallbackAdapter;
         } catch (fallbackError) {
-          logger.error(`Failed to create fallback memory cache adapter: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
+          console.error(`Failed to create fallback memory cache adapter: ${fallbackError instanceof Error ? fallbackError.message : String(fallbackError)}`);
         }
       }
       
@@ -151,7 +151,7 @@ export class VectorCacheFactory {
 
       // Add Redis-specific configuration if needed
       if (type === CacheAdapterType.REDIS && !config.redisConnectionString) {
-        logger.warn('Redis cache adapter selected but no connection string provided, falling back to memory cache');
+        console.warn('Redis cache adapter selected but no connection string provided, falling back to memory cache');
         config.type = CacheAdapterType.MEMORY;
       }
 
@@ -161,7 +161,7 @@ export class VectorCacheFactory {
       return VectorCacheFactory.instance;
     } catch (error) {
       VectorCacheFactory.isInitializing = false;
-      logger.error(`Failed to initialize vector cache adapter: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to initialize vector cache adapter: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     } finally {
       VectorCacheFactory.isInitializing = false;
@@ -196,7 +196,7 @@ export class VectorCacheFactory {
     try {
       return await VectorCacheFactory.instance.getStats();
     } catch (error) {
-      logger.error(`Failed to get cache stats: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to get cache stats: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }
@@ -213,7 +213,7 @@ export class VectorCacheFactory {
     try {
       return await VectorCacheFactory.instance.clear();
     } catch (error) {
-      logger.error(`Failed to clear cache: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to clear cache: ${error instanceof Error ? error.message : String(error)}`);
       return null;
     }
   }
@@ -248,7 +248,7 @@ export class VectorCacheFactory {
       const invalidator = VectorCacheFactory.getCacheInvalidator();
       await invalidator.invalidate(keys, options);
     } catch (error) {
-      logger.error(`Failed to invalidate cache keys: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to invalidate cache keys: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -266,7 +266,7 @@ export class VectorCacheFactory {
       const invalidator = VectorCacheFactory.getCacheInvalidator();
       await invalidator.invalidateByContentType(contentType, workspaceId, options);
     } catch (error) {
-      logger.error(`Failed to invalidate cache by content type: ${error instanceof Error ? error.message : String(error)}`);
+      console.error(`Failed to invalidate cache by content type: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 

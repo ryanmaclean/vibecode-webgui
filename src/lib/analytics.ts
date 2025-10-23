@@ -4,7 +4,7 @@
  * Can be extended to support multiple analytics providers
  */
 
-import { logger } from './logger';
+// import { logger } from './logger';
 
 type Primitive = string | number | boolean | null | undefined;
 type NestedObject = { [key: string]: Primitive | Primitive[] | NestedObject | NestedObject[] };
@@ -54,12 +54,12 @@ export function logEvent<T extends NestedObject = NestedObject>(
   // In production, send to your analytics service
   if (config.enabled) {
     // Example: sendToAnalyticsService(event);
-    logger.info('[Analytics]', { data: event });
+    console.log('[Analytics]', { data: event });
   }
 
   // In development, log to console and buffer
   if (config.debug) {
-    logger.info(`[Analytics] ${name}`, { data: properties });
+    console.log(`[Analytics] ${name}`, { data: properties });
     
     // Add to buffer (useful for debugging)
     eventBuffer.push(event);
@@ -157,7 +157,7 @@ export function initAnalytics(options: {
   }
   
   if (config.enabled || config.debug) {
-    logger.info('[Analytics] Initialized', { config });
+    console.log('[Analytics] Initialized', { config });
   }
 }
 

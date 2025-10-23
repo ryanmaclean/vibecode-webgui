@@ -7,7 +7,7 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * SQL Server-specific configuration options
  */
@@ -66,7 +66,7 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.createVectorTable();
 
       this.isInitialized = true;
-      logger.info('SQL Server vector database adapter initialized successfully');
+      console.log('SQL Server vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -96,7 +96,7 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await request.query('SELECT 1 as test');
       return true;
     } catch (error) {
-      logger.error('SQL Server ping failed:', error);
+      console.error('SQL Server ping failed:', error);
       return false;
     }
   }
@@ -146,7 +146,7 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       `);
 
     } catch (error) {
-      logger.error('Failed to create vector table:', error);
+      console.error('Failed to create vector table:', error);
       // Don't throw here as the table might already exist
     }
   }

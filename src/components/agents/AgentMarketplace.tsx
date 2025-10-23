@@ -37,7 +37,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -111,7 +111,7 @@ function AgentCard({ agent, onInstall, onPreview }: AgentCardProps) {
     try {
       await onInstall(agent.id)
     } catch (error) {
-      logger.error('Failed to install agent:', error)
+      console.error('Failed to install agent:', error)
     } finally {
       setIsInstalling(false)
     }

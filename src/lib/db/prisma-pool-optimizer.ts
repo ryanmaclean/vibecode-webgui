@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -156,7 +156,7 @@ export class PrismaPoolOptimizer {
    */
   applyConfig(newConfig: Partial<PoolConfig>): void {
     this.currentConfig = { ...this.currentConfig, ...newConfig }
-    logger.info('Applied new connection pool configuration:', newConfig)
+    console.log('Applied new connection pool configuration:', newConfig)
   }
 
   /**

@@ -2,7 +2,7 @@
 // Provides OpenRouter-like functionality using Azure AI Services
 
 import OpenAI from 'openai';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface AzureAIConfig {
   // Azure OpenAI configuration
   openai: {
@@ -157,7 +157,7 @@ export class AzureAIClient {
         },
       };
     } catch (error) {
-      logger.error('Azure OpenAI chat completion error:', error);
+      console.error('Azure OpenAI chat completion error:', error);
       throw new Error(`Azure OpenAI request failed: ${error}`);
     }
   }
@@ -189,7 +189,7 @@ export class AzureAIClient {
         },
       };
     } catch (error) {
-      logger.error('Azure OpenAI embedding error:', error);
+      console.error('Azure OpenAI embedding error:', error);
       throw new Error(`Azure OpenAI embedding request failed: ${error}`);
     }
   }

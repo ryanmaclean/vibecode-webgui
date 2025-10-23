@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 // Ollama Client - Local AI model integration for VibeCode
@@ -130,7 +130,7 @@ export class OllamaClient {
       })
       return response.ok
     } catch (error) {
-      logger.warn('Ollama not available:', error)
+      console.warn('Ollama not available:', error)
       return false
     }
   }
@@ -149,7 +149,7 @@ export class OllamaClient {
       const data = await response.json()
       return data.models || []
     } catch (error) {
-      logger.error('Failed to list Ollama models:', error)
+      console.error('Failed to list Ollama models:', error)
       throw error
     }
   }
@@ -203,7 +203,7 @@ export class OllamaClient {
         reader.releaseLock()
       }
     } catch (error) {
-      logger.error('Failed to pull Ollama model:', error)
+      console.error('Failed to pull Ollama model:', error)
       throw error
     }
   }
@@ -223,7 +223,7 @@ export class OllamaClient {
 
       return await response.json()
     } catch (error) {
-      logger.error('Ollama chat error:', error)
+      console.error('Ollama chat error:', error)
       throw error
     }
   }
@@ -271,7 +271,7 @@ export class OllamaClient {
         reader.releaseLock()
       }
     } catch (error) {
-      logger.error('Ollama chat stream error:', error)
+      console.error('Ollama chat stream error:', error)
       throw error
     }
   }
@@ -291,7 +291,7 @@ export class OllamaClient {
 
       return await response.json()
     } catch (error) {
-      logger.error('Ollama generate error:', error)
+      console.error('Ollama generate error:', error)
       throw error
     }
   }
@@ -339,7 +339,7 @@ export class OllamaClient {
         reader.releaseLock()
       }
     } catch (error) {
-      logger.error('Ollama generate stream error:', error)
+      console.error('Ollama generate stream error:', error)
       throw error
     }
   }
@@ -359,7 +359,7 @@ export class OllamaClient {
 
       return await response.json()
     } catch (error) {
-      logger.error('Failed to get Ollama model info:', error)
+      console.error('Failed to get Ollama model info:', error)
       throw error
     }
   }
@@ -375,7 +375,7 @@ export class OllamaClient {
 
       return response.ok
     } catch (error) {
-      logger.error('Failed to delete Ollama model:', error)
+      console.error('Failed to delete Ollama model:', error)
       throw error
     }
   }

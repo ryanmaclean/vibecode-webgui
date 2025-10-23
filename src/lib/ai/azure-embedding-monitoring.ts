@@ -8,7 +8,7 @@
 import { VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
 import { type AzureEmbeddingService } from './azureEmbeddingService';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Registers monitoring hooks on the Azure Embedding Service
  * @param service The Azure Embedding Service instance to monitor
@@ -162,7 +162,7 @@ function startConnectionPoolMonitoring(): void {
         metrics.waitingClients
       );
     } catch (error) {
-      logger.error('Error recording connection pool metrics:', error);
+      console.error('Error recording connection pool metrics:', error);
     }
   }, 30000);
 }
@@ -243,6 +243,6 @@ export function parseRateLimitHeaders(headers: Record<string, string>): void {
     // Record rate limit info
     azureEmbeddingMetrics.recordRateLimitInfo(remaining, max, resetDate);
   } catch (error) {
-    logger.error('Error parsing rate limit headers:', error);
+    console.error('Error parsing rate limit headers:', error);
   }
 }

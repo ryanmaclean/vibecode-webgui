@@ -9,7 +9,7 @@ import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertTriangle, Database, Activity, TrendingUp, Clock, Users } from 'lucide-react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface PoolMetrics {
   pool_name: string
   total_connections: number
@@ -100,7 +100,7 @@ export default function ConnectionPoolDashboard() {
       setData(dashboardData)
       setError(null)
     } catch (err) {
-      logger.error('Failed to fetch dashboard data:', err)
+      console.error('Failed to fetch dashboard data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {
       setLoading(false)

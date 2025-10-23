@@ -7,7 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z, ZodSchema, isZodError } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface ValidationOptions {
   /** Transform successful validation results */
   transform?: (data: unknown) => unknown
@@ -256,7 +256,7 @@ export function createValidatedHandler<T extends ZodSchema>(
     try {
       return await handler(validation.data, req)
     } catch (error) {
-      logger.error('Handler error:', error)
+      console.error('Handler error:', error)
       return NextResponse.json(
         {
           error: 'Internal server error',

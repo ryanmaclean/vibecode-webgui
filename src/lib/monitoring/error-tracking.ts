@@ -7,7 +7,7 @@
 
 import { datadogRum } from '@datadog/browser-rum';
 import { datadogLogs } from '@datadog/browser-logs';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface ErrorTrackingConfig {
   service: string;
   environment: string;
@@ -54,10 +54,10 @@ class DatadogErrorTracker {
     try {
       // Error tracking is automatically enabled with RUM
       // We just need to ensure proper configuration
-      logger.info('🐕 Datadog Error Tracking initialized for service:', this.config.service);
+      console.log('🐕 Datadog Error Tracking initialized for service:', this.config.service);
       this.initialized = true;
     } catch (error) {
-      logger.error('Failed to initialize Datadog Error Tracking:', error);
+      console.error('Failed to initialize Datadog Error Tracking:', error);
     }
   }
 
@@ -66,7 +66,7 @@ class DatadogErrorTracker {
    */
   trackError(trackedError: TrackedError): void {
     if (!this.initialized || !this.config.enabled) {
-      logger.warn('Error tracking not initialized or disabled');
+      console.warn('Error tracking not initialized or disabled');
       return;
     }
 
@@ -84,7 +84,7 @@ class DatadogErrorTracker {
       });
 
       // Also log the error for additional context
-      datadogLogs.logger.error(error.message, {
+      datadogLogs.console.error(error.message, {
         error: {
           name: error.name,
           message: error.message,
@@ -98,9 +98,9 @@ class DatadogErrorTracker {
         ...tags
       });
 
-      logger.info(`🐕 Error tracked: ${error.name} - ${error.message}`);
+      console.log(`🐕 Error tracked: ${error.name} - ${error.message}`);
     } catch (trackingError) {
-      logger.error('Failed to track error:', trackingError);
+      console.error('Failed to track error:', trackingError);
     }
   }
 
@@ -131,7 +131,7 @@ class DatadogErrorTracker {
         version: this.config.version
       });
     } catch (error) {
-      logger.error('Failed to track user action:', error);
+      console.error('Failed to track user action:', error);
     }
   }
 
@@ -147,7 +147,7 @@ class DatadogErrorTracker {
       datadogRum.setUser(user);
       datadogLogs.setUser(user);
     } catch (error) {
-      logger.error('Failed to set user context:', error);
+      console.error('Failed to set user context:', error);
     }
   }
 
@@ -163,7 +163,7 @@ class DatadogErrorTracker {
       datadogRum.setGlobalContextProperty(key, value);
       datadogLogs.setGlobalContextProperty(key, value);
     } catch (error) {
-      logger.error('Failed to add global context:', error);
+      console.error('Failed to add global context:', error);
     }
   }
 

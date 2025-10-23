@@ -11,7 +11,7 @@
  */
 
 import * as monaco from 'monaco-editor';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Dynamic import for optional monacopilot dependency
 type RegisterCompletionOptions = {
   language: string;
@@ -64,7 +64,7 @@ export async function setupMonacopilot(
     registerCompletion(monacoInstance, editor, options);
 
     if (config.debug) {
-      logger.info('[Monacopilot] AI completion registered', {
+      console.log('[Monacopilot] AI completion registered', {
         language: config.language,
         endpoint: config.endpoint,
       });

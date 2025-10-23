@@ -1,7 +1,7 @@
 import { ChromaClient, type GetResult, type Metadata } from 'chromadb';
 import { OpenAIEmbeddings } from '@langchain/openai';
 import { Document } from 'langchain/document';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Extended type for ChromaDB get result with distances
 interface ChromaGetResult extends GetResult<Metadata> {
   distances?: number[][];
@@ -50,7 +50,7 @@ export class VectorSearch {
         });
       }
     } catch (error) {
-      logger.error('Error creating collection:', error);
+      console.error('Error creating collection:', error);
       throw error instanceof Error ? error : new Error('Failed to create collection');
     }
   }
@@ -88,7 +88,7 @@ export class VectorSearch {
                 metadata[key] = JSON.stringify(value);
               } catch {
                 // If JSON.stringify fails, use String() as fallback
-                logger.warn(`Could not stringify metadata value for key ${key}`, value);
+                console.warn(`Could not stringify metadata value for key ${key}`, value);
                 metadata[key] = String(value);
               }
             } else {
@@ -108,7 +108,7 @@ export class VectorSearch {
         metadatas
       });
     } catch (error) {
-      logger.error('Error adding documents:', error);
+      console.error('Error adding documents:', error);
       throw new Error('Failed to add documents to vector store');
     }
   }
@@ -150,7 +150,7 @@ export class VectorSearch {
         };
       });
     } catch (error) {
-      logger.error('Error in semantic search:', error);
+      console.error('Error in semantic search:', error);
       throw new Error('Failed to perform semantic search');
     }
   }
@@ -198,7 +198,7 @@ export class VectorSearch {
         .sort((a: SearchResult, b: SearchResult) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
-      logger.error('Error in keyword search:', error);
+      console.error('Error in keyword search:', error);
       throw new Error('Failed to perform keyword search');
     }
   }
@@ -245,7 +245,7 @@ export class VectorSearch {
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
-      logger.error('Error in hybrid search:', error);
+      console.error('Error in hybrid search:', error);
       throw new Error('Failed to perform hybrid search');
     }
   }
@@ -264,7 +264,7 @@ export class VectorSearch {
       });
       return true;
     } catch (error) {
-      logger.error(`Error creating collection ${name}:`, error);
+      console.error(`Error creating collection ${name}:`, error);
       throw error instanceof Error ? error : new Error('Failed to create collection');
     }
   }
@@ -273,7 +273,7 @@ export class VectorSearch {
     try {
       await this.chroma.deleteCollection({ name: collectionName });
     } catch (error) {
-      logger.error('Error deleting collection:', error);
+      console.error('Error deleting collection:', error);
       throw new Error('Failed to delete collection');
     }
   }

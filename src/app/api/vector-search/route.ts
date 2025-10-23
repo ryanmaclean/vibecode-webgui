@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
 import { z } from '@/lib/zod-compat';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']).optional(),
@@ -52,7 +52,7 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    logger.error('Vector search API error:', error);
+    console.error('Vector search API error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }

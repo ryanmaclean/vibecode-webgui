@@ -40,7 +40,7 @@ import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -149,7 +149,7 @@ function FileTreeItem({
     try {
       await onDelete(file.id)
     } catch (error) {
-      logger.error('Failed to delete file:', error)
+      console.error('Failed to delete file:', error)
     } finally {
       setIsDeleting(false)
     }
@@ -294,7 +294,7 @@ export function AgentFileBrowser({
       await onUploadFile(file)
       event.target.value = '' // Reset input
     } catch (error) {
-      logger.error('Failed to upload file:', error)
+      console.error('Failed to upload file:', error)
     } finally {
       setIsUploading(false)
     }

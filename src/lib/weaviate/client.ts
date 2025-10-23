@@ -1,5 +1,5 @@
 import axios from "axios";
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const WEAVIATE_URL = process.env.WEAVIATE_URL || "http://localhost:8080";
 
 /**
@@ -12,7 +12,7 @@ export default {
       // The API returns { healthy: true } when alive
       return resp.data?.healthy ?? false;
     } catch (e) {
-      logger.error("Weaviate health check failed", e);
+      console.error("Weaviate health check failed", e);
       return false;
     }
   },

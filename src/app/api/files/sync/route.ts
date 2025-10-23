@@ -15,7 +15,7 @@ import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware'
 import { fileSyncQuerySchema, fileSyncBulkSchema, fileSyncFileSchema } from '@/lib/api/validation/schemas'
 import path from 'path'
@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('File sync status error:', error)
+    console.error('File sync status error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
       await createFilesInWorkspace(workspaceId, files)
       return NextResponse.json({ success: true, message: 'Sync initiated', fileCount: files.length })
     } catch (error) {
-      logger.error('File creation error:', error)
+      console.error('File creation error:', error)
       return NextResponse.json(
         { error: 'Failed to create files in workspace' },
         { status: 500 }
@@ -128,7 +128,7 @@ export async function POST(request: NextRequest) {
     }
 
   } catch (error) {
-    logger.error('File sync POST error:', error)
+    console.error('File sync POST error:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -218,26 +218,26 @@ async function createFilesInWorkspace(
 
     kubectl.stdout.on('data', (data: Buffer) => {
       stdout += data.toString()
-      logger.info(`kubectl stdout: ${data}`)
+      console.log(`kubectl stdout: ${data}`)
     })
 
     kubectl.stderr.on('data', (data: Buffer) => {
       stderr += data.toString()
-      logger.error(`kubectl stderr: ${data}`)
+      console.error(`kubectl stderr: ${data}`)
     })
 
     kubectl.on('close', (code: number) => {
       if (code !== 0) {
-        logger.error(`kubectl process exited with code ${code}: ${stderr}`)
+        console.error(`kubectl process exited with code ${code}: ${stderr}`)
         reject(new Error(`kubectl failed with code ${code}`))
       } else {
-        logger.info('File creation pod applied successfully')
+        console.log('File creation pod applied successfully')
         resolve()
       }
     })
 
     kubectl.on('error', (error: Error) => {
-      logger.error('kubectl spawn error:', error)
+      console.error('kubectl spawn error:', error)
       reject(error)
     })
   })
@@ -251,7 +251,7 @@ declare global {
 // Initialize WebSocket server if it doesn't exist
 if (!global.wss) {
   global.wss = new WebSocketServer({ noServer: true })
-  logger.info('WebSocket server initialized')
+  console.log('WebSocket server initialized')
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
@@ -317,10 +317,10 @@ if (!global.wss) {
               break
 
             default:
-              logger.warn('Unknown WebSocket message type:', message.type)
+              console.warn('Unknown WebSocket message type:', message.type)
           }
         } catch (error) {
-          logger.error('Failed to process WebSocket message:', error)
+          console.error('Failed to process WebSocket message:', error)
         }
       })
 
@@ -347,7 +347,7 @@ if (!global.wss) {
       }))
 
     } catch (error) {
-      logger.error('WebSocket connection error:', error)
+      console.error('WebSocket connection error:', error)
       ws.close(1011, 'Internal server error')
     }
   })

@@ -9,7 +9,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { MultiAgentWorkspace } from './MultiAgentWorkspace'
 import type { AgentResponse } from '@/types/agent-api'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const mockAgents: AgentResponse[] = [
   {
     agent_id: 'aider-abc123',
@@ -94,7 +94,7 @@ export const SingleAgent: Story = {
   args: {
     agents: [mockAgents[0]],
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
       alert(`Sent to ${agentId}: ${message}`)
     }
   }
@@ -107,7 +107,7 @@ export const TwoAgents: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -119,7 +119,7 @@ export const ThreeAgents: Story = {
   args: {
     agents: mockAgents,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -141,7 +141,7 @@ export const FourAgents: Story = {
       }
     ],
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -154,7 +154,7 @@ export const WithContextSync: Story = {
     agents: mockAgents.slice(0, 2),
     enableContextSync: true,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -174,7 +174,7 @@ export const WithMetrics: Story = {
     agents: mockAgents,
     showMetrics: true,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -196,7 +196,7 @@ export const FullyConfigured: Story = {
     showMetrics: true,
     maxAgents: 4,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -208,7 +208,7 @@ export const Tablet: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -225,7 +225,7 @@ export const Mobile: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -243,7 +243,7 @@ export const DarkMode: Story = {
     agents: mockAgents,
     showMetrics: true,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -262,7 +262,7 @@ export const Playground: Story = {
     enableContextSync: false,
     showMetrics: false,
     onMessageSend: (agentId, message) => {
-      logger.info(`Message to ${agentId}:`, message)
+      console.log(`Message to ${agentId}:`, message)
     }
   },
   parameters: {

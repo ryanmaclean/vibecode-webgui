@@ -8,7 +8,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
 import { Separator } from '@/components/ui/separator'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface Message {
   id: string
   from: 'user' | 'assistant'
@@ -116,7 +116,7 @@ export const EnhancedChatInterface = ({
         })))
       }
     } catch (error) {
-      logger.error('Failed to load conversation:', error)
+      console.error('Failed to load conversation:', error)
     }
   }
 
@@ -271,7 +271,7 @@ export const EnhancedChatInterface = ({
         }
       }
     } catch (error) {
-      logger.error('Failed to send message:', error)
+      console.error('Failed to send message:', error)
       // Add error message
       const errorMessage: Message = {
         id: `error-${Date.now()}`,

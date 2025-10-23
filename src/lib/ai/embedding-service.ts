@@ -2,7 +2,7 @@
  * Interface for embedding service implementations
  */
 
-import { logger } from '../logger';
+// import { logger } from '../logger';
 
 export interface EmbeddingService {
   /**
@@ -175,7 +175,7 @@ export abstract class BaseEmbeddingService implements EmbeddingService {
       // Check if the embedding has the expected dimensions
       return Array.isArray(embedding) && embedding.length === this.dimensions;
     } catch (error) {
-      logger.error("Embedding service health check failed:", { error: error });
+      console.error("Embedding service health check failed:", { error: error });
       return false;
     }
   }

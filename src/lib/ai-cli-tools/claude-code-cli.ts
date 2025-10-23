@@ -9,7 +9,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { access } from 'fs/promises'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const execAsync = promisify(exec)
 
 export interface ClaudeCodeConfig {
@@ -411,7 +411,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      logger.info('Claude Code CLI installed successfully')
+      console.log('Claude Code CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Claude Code CLI: ${error}`)
     }
@@ -430,7 +430,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      logger.info('Claude Code CLI uninstalled successfully')
+      console.log('Claude Code CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Claude Code CLI: ${error}`)
     }

@@ -9,7 +9,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { access } from 'fs/promises'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const execAsync = promisify(exec)
 
 export interface CodexConfig {
@@ -411,7 +411,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      logger.info('Codex CLI installed successfully')
+      console.log('Codex CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Codex CLI: ${error}`)
     }
@@ -430,7 +430,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      logger.info('Codex CLI uninstalled successfully')
+      console.log('Codex CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Codex CLI: ${error}`)
     }

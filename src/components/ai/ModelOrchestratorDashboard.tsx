@@ -16,7 +16,7 @@ ChartBarIcon,
   ExclamationTriangleIcon,
   InformationCircleIcon
 } from '@heroicons/react/24/outline'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface ModelStats {
   name: string
@@ -55,7 +55,7 @@ export function ModelOrchestratorDashboard() {
       setModels(availableModels)
       setModelStats(stats)
     } catch (error) {
-      logger.error('Failed to load dashboard data:', error)
+      console.error('Failed to load dashboard data:', error)
     } finally {
       setIsLoading(false)
     }
@@ -76,7 +76,7 @@ export function ModelOrchestratorDashboard() {
       const recs = modelOrchestrator.recommendModels(context, 5)
       setRecommendations(recs)
     } catch (error) {
-      logger.error('Failed to generate recommendations:', error)
+      console.error('Failed to generate recommendations:', error)
       setRecommendations([])
     }
   }

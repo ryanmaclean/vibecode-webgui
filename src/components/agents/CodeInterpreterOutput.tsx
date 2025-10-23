@@ -37,7 +37,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -96,7 +96,7 @@ function OutputItem({ output, enableDownload }: OutputItemProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      logger.error('Failed to copy output:', error)
+      console.error('Failed to copy output:', error)
     }
   }, [output.content])
 
@@ -212,7 +212,7 @@ export function CodeInterpreterOutput({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      logger.error('Failed to copy code:', error)
+      console.error('Failed to copy code:', error)
     }
   }, [execution.code])
 

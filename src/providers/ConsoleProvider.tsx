@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import type { ReactNode } from 'react';
 import { ConsoleModal } from '@/components/console/ConsoleModal';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 type ConsoleContextType = {
   openConsole: (workspaceId: string) => void;
   closeConsole: () => void;
@@ -25,7 +25,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
       setIsOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to open console');
-      logger.error('Error opening console:', err);
+      console.error('Error opening console:', err);
     } finally {
       setIsLoading(false);
     }

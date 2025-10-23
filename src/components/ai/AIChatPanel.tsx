@@ -13,7 +13,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Code, FileText, AlertCircle, Loader } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
 import type { ChatRequest, ChatResponse, CodeContext } from '@/lib/claude-code-sdk'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface Message {
   id: string
   role: 'user' | 'assistant'
@@ -103,7 +103,7 @@ export default function AIChatPanel({
       setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get AI response')
-      logger.error('AI Chat error:', err)
+      console.error('AI Chat error:', err)
     } finally {
       setIsLoading(false)
     }

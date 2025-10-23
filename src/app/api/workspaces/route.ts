@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
 import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
   projectName: z.string(),
@@ -20,17 +20,17 @@ const CreateWorkspaceRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    logger.info('🚀 Workspace creation API called')
+    console.log('🚀 Workspace creation API called')
 
     // Parse and validate request
     const body = await request.json()
     const validatedRequest = CreateWorkspaceRequestSchema.parse(body)
 
-    logger.info(`📝 Creating workspace for project: "${validatedRequest.projectName}"`)
+    console.log(`📝 Creating workspace for project: "${validatedRequest.projectName}"`)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      logger.error('❌ Kubernetes not configured')
+      console.error('❌ Kubernetes not configured')
       return NextResponse.json(
         { 
           error: 'Workspace service not available',
@@ -48,9 +48,9 @@ export async function POST(request: NextRequest) {
     const workspace = await workspaceService.createWorkspace(validatedRequest)
     const creationTime = Date.now() - startTime
 
-    logger.info(`✅ Workspace created successfully in ${creationTime}ms`)
-    logger.info(`🌐 Workspace URL: ${workspace.url}`)
-    logger.info(`📊 Resources: ${JSON.stringify(workspace.resources)}`)
+    console.log(`✅ Workspace created successfully in ${creationTime}ms`)
+    console.log(`🌐 Workspace URL: ${workspace.url}`)
+    console.log(`📊 Resources: ${JSON.stringify(workspace.resources)}`)
 
     // Return workspace details
     return NextResponse.json({
@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('❌ Workspace creation failed:', error)
+    console.error('❌ Workspace creation failed:', error)
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -138,7 +138,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    logger.error('❌ Failed to get workspace info:', error)
+    console.error('❌ Failed to get workspace info:', error)
     return createErrorResponse('Service error', 500, {
       available: false,
       reason: 'Service error',
