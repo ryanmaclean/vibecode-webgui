@@ -5,9 +5,27 @@
 
 'use client'
 
-import { useAuth } from '@/hooks/useAuth'
-import PromptInterface from '@/components/PromptInterface'
+import { Suspense } from 'react'
+import dynamic from 'next/dynamic'
 import Link from 'next/link'
+
+import { useAuth } from '@/hooks/useAuth'
+
+const PromptInterface = dynamic(
+  () => import('@/components/PromptInterface'),
+  {
+    // Keep SSR output but let hydration happen once the bundle loads.
+    ssr: true,
+    loading: () => (
+      <div className="h-full w-full flex items-center justify-center bg-background">
+        <div className="space-y-4 text-center">
+          <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-muted border-t-primary" />
+          <p className="text-sm text-muted-foreground">Loading workspace…</p>
+        </div>
+      </div>
+    ),
+  }
+)
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth()
@@ -112,7 +130,18 @@ export default function Home() {
 
         {/* Main Interface */}
         <div className="h-[calc(100vh-73px)]">
-          <PromptInterface />
+          <Suspense
+            fallback={
+              <div className="h-full w-full flex items-center justify-center bg-background">
+                <div className="space-y-4 text-center">
+                  <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-muted border-t-primary" />
+                  <p className="text-sm text-muted-foreground">Preparing the AI workspace…</p>
+                </div>
+              </div>
+            }
+          >
+            <PromptInterface />
+          </Suspense>
         </div>
       </div>
     </div>
