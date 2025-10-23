@@ -26,7 +26,7 @@ cd vibecode-webgui
 
 ```bash
 # Copy environment template
-cp claude-prompt.md .env.local
+cp .env.example .env.local
 
 # Edit with your API keys
 nano .env.local
@@ -140,7 +140,7 @@ curl -X GET "https://api.datadoghq.com/api/v1/validate" \
 
 ## Next Steps
 
-- [Architecture Overview](/architecture/overview/) - Understand the system design
-- [Monitoring Setup](/monitoring/overview/) - Configure observability
-- [Azure Deployment](/deployment/azure/) - Deploy to production
-- [Contributing](/development/contributing/) - Join the development
+- [Architecture Overview](https://github.com/ryanmaclean/vibecode-webgui/blob/main/ARCHITECTURE.md) - Understand the system design
+- [Monitoring Setup](../monitoring/overview/) - Configure observability
+- [Azure Deployment](../azure-infrastructure/) - Deploy to production
+- [Contributing](../contributing/) - Join the development

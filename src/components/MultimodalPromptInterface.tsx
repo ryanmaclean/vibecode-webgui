@@ -554,3 +554,5 @@ export function MultimodalPromptInterface({
     </div>
   );
 }
+
+export default MultimodalPromptInterface;
