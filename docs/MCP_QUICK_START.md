@@ -36,42 +36,44 @@ Or manually update `~/.codeium/windsurf/mcp_config.json`:
 {
   "mcpServers": {
     "puppeteer": {
-      "command": "node",
+      "command": "/bin/bash",
       "args": [
-        "/Users/ryan.maclean/vibecode-webgui/scripts/mcp-wrapper.js",
-        "puppeteer",
-        "@modelcontextprotocol/server-puppeteer"
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && node scripts/mcp-wrapper.js puppeteer @modelcontextprotocol/server-puppeteer"
       ],
       "env": {
         "DD_AGENT_HOST": "localhost",
         "DD_TRACE_AGENT_PORT": "8126",
-        "DD_ENV": "development"
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0"
       }
     },
     "sequential-thinking": {
-      "command": "node",
+      "command": "/bin/bash",
       "args": [
-        "/Users/ryan.maclean/vibecode-webgui/scripts/mcp-wrapper.js",
-        "sequential-thinking",
-        "@modelcontextprotocol/server-sequential-thinking"
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && node scripts/mcp-wrapper.js sequential-thinking @modelcontextprotocol/server-sequential-thinking"
       ],
       "env": {
         "DD_AGENT_HOST": "localhost",
         "DD_TRACE_AGENT_PORT": "8126",
-        "DD_ENV": "development"
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0"
       }
     },
     "roundtable-ai": {
-      "command": "/opt/homebrew/opt/python@3.13/bin/python3.13",
+      "command": "/bin/bash",
       "args": [
-        "/Users/ryan.maclean/vibecode-webgui/scripts/roundtable-mcp-wrapper.py"
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && \"${PYTHON_CMD:-python3.13}\" scripts/roundtable-mcp-wrapper.py"
       ],
       "env": {
         "CLI_MCP_SUBAGENTS": "codex,cursor,gemini",
-        "CLI_MCP_WORKING_DIR": "/Users/ryan.maclean/vibecode-webgui",
         "DD_AGENT_HOST": "localhost",
         "DD_TRACE_AGENT_PORT": "8126",
-        "DD_ENV": "development"
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0",
+        "PYTHON_CMD": "/opt/homebrew/opt/python@3.13/bin/python3.13"
       }
     },
     "zen": {
