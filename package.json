@@ -15,7 +15,7 @@
     "build": "next build",
     "start": "next start",
     "start:dd": "node --require ./src/instrument.ts node_modules/.bin/next start",
-    "lint": "eslint --ext .ts,.tsx src",
+    "lint": "eslint --ext .ts,.tsx src --ignore-pattern '**/*.js' --ignore-pattern '**/*.cjs'",
     "type-check": "tsc --noEmit",
     "test": "jest",
     "test:watch": "jest --watch",
