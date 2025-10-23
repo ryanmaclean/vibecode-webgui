@@ -48,16 +48,66 @@ used for Lima vi launch benchmarks.
 - Lima/native comparisons remain ~2.0 s vs. 2.05 s (`python3
   scripts/benchmarks/vim_hypervisor_bench.py --runs 3`).
 
+## Build & Boot Performance Matrix
+
+### Kernel 6.17.x Builds
+
+| Architecture | Hardware | Kernel | Build Time (clean) | Build Time (incr) | Boot Time | Image Size | Status |
+|--------------|----------|--------|-------------------|-------------------|-----------|------------|--------|
+| x86_64 | Intel i7-9750H (12 cores, 32GB) | 6.17.14 | ~20 min | ~8 min | 4.4s | ~5.2 MB | ✅ Complete |
+| arm64 | Apple M3/M4 (8+ cores) | 6.17.14 | TBD | TBD | TBD | TBD | ⏳ Issue #574 |
+| armv7 | GitHub Actions (16 cores) | 6.17.14 | ~20-25 min | ~10-12 min | ~4.5s* | ~3.6 MB | ⏳ Issue #576 |
+
+\* Expected boot time in QEMU (Cortex-A15); target <5s
+
+**Notes:**
+- x86_64 baseline from 2019 MacBook Pro, using \`gmake\` ≥ 4.4
+- arm64 pending execution on faster Apple Silicon hardware
+- armv7 estimated from GitHub Actions 16-core runners with ccache + clang
+- Incremental builds use \`SKIP_MRPROPER=1\`
+- All builds use \`MINIVIM_JOBS=$(nproc)\` and \`CC="ccache clang"\` when available
+
+### ARMv7 6.17.x Implementation (Issue #576)
+
+**Status:** ✅ Ready for execution
+
+**Deliverables:**
+- Updated kernel config: \`scripts/benchmarks/kernel-configs/minivim-armv7.config\`
+- Validation script: \`scripts/benchmarks/validate-armv7-kernel.sh\`
+- Complete automation: \`scripts/benchmarks/build-armv7-6.17-complete.sh\`
+- Documentation: \`claudedocs/minivim-armv7-*.md\` (88 KB total)
+
+**Quick Start:**
+\`\`\`bash
+# One-command workflow
+./scripts/benchmarks/build-armv7-6.17-complete.sh
+
+# Or step-by-step
+CROSS_COMPILE=arm-linux-gnueabihf- \\
+  ./scripts/benchmarks/build-minivim-kernel.sh armv7 6.17.14
+./scripts/benchmarks/validate-armv7-kernel.sh 6.17.14
+\`\`\`
+
+**Key Optimizations:**
+- Removed DRM, SATA, HID drivers (not needed in virtualization)
+- Enabled virtio MMIO (primary transport for QEMU)
+- LZ4 compression for fast boot
+- Security hardening (FORTIFY_SOURCE, STACKPROTECTOR_STRONG)
+- Performance tuning (PREEMPT_VOLUNTARY, HZ_250)
+
+**CI/CD:** Already integrated in \`.github/workflows/minivim-build.yml\` with cross-compilation support
 ## Next steps
 
-1. Strip more subsystems from the x86_64 config (e.g., drop DRM/i915, fold
+1. **Execute ARMv7 build (Issue #576):** Run complete workflow and capture timing data
+2. **Execute arm64 build (Issue #574):** Build on Apple Silicon hardware and benchmark
+3. Strip more subsystems from the x86_64 config (e.g., drop DRM/i915, fold
    virtio drivers built-in, experiment with `CONFIG_INITRAMFS_SOURCE`) to push
    the BusyBox guest below 3 s.
-2. Repeat the build for `arm64` (Apple virtualization) and `armv7` (Pi) once the
+4. Repeat the build for `arm64` (Apple virtualization) and `armv7` (Pi) once the
    x86_64 baseline improves, and attach artifacts to the release/issue tracker.
-3. Wire the script into CI (issue #560) so nightly runs publish fresh artifacts
+5. Wire the script into nightly CI (issue #555) so nightly runs publish fresh artifacts
    alongside benchmark JSON.
-4. Extend the script to accept an `--initramfs` flag that inlines the BusyBox
+6. Extend the script to accept an `--initramfs` flag that inlines the BusyBox
    payload (`CONFIG_INITRAMFS_SOURCE`) for truly single-file guests.
 
 ## GitHub follow-ups for 6.17.x
