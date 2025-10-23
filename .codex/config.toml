@@ -1,5 +1,6 @@
 # Project-specific Codex CLI configuration for sequential thinking MCP support.
 log_level = "info"
+experimental_use_rmcp_client = true
 
 [mcp_servers."sequential-thinking"]
 command = "npx"
@@ -7,3 +8,6 @@ args = ["-y", "@modelcontextprotocol/server-sequential-thinking"]
 # Run the MCP server from the repository root so project files stay in scope.
 working_directory = "."
 timeout = 60
+transport = "stdio"
+[features]
+rmcp_client = true
