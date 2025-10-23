@@ -75,7 +75,7 @@ if command -v qemu-system-arm &> /dev/null; then
         -nographic \
         -serial mon:stdio \
         -append "console=ttyAMA0" \
-        > "${QEMU_LOG}" 2>&1 || BOOT_RESULT=$?
+        > "${QEMU_LOG}" 2>&1 || true
     
     if [ -f "${QEMU_LOG}" ]; then
         if grep -q "Linux version" "${QEMU_LOG}"; then
@@ -109,7 +109,7 @@ cat > "${REPORT_FILE}" << EOF
   "image_size_bytes": ${KERNEL_SIZE},
   "image_size_mb": ${KERNEL_SIZE_MB},
   "target_size_mb": ${TARGET_SIZE_MB},
-  "size_compliant": $([ $(echo "${KERNEL_SIZE_MB} <= ${TARGET_SIZE_MB}" | bc -l) -eq 1 ] && echo "true" || echo "false"),
+  "size_compliant": $([ "$(echo "${KERNEL_SIZE_MB} <= ${TARGET_SIZE_MB}" | bc -l)" -eq 1 ] && echo "true" || echo "false"),
   "qemu_available": $(command -v qemu-system-arm &> /dev/null && echo "true" || echo "false"),
   "validation_passed": true
 }
