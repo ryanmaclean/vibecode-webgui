@@ -2,6 +2,10 @@
 
 Thanks for your interest in contributing! This project demonstrates **pgvector + PostgreSQL + Kubernetes + Datadog DBM** monitoring.
 
+## 📋 Code of Conduct
+
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code. Please report any violations to conduct@vibecode.dev.
+
 ## 🚀 Quick Start for Contributors
 
 1. **Try the demo first**: `./DEMO.sh`
