@@ -112,6 +112,7 @@ DD_SITE=datadoghq.com            # falls back to DATADOG_SITE if set
 # LLM Observability (NEW)
 DD_LLMOBS_ENABLED=1
 DD_LLMOBS_AGENTLESS_ENABLED=1
+DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli
 DD_LLMOBS_ML_APP=vibecode-ai
 DD_SERVICE=vibecode-webgui
 DD_ENV=production

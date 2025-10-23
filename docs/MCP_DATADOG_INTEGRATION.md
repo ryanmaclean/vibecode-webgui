@@ -184,6 +184,12 @@ Several MCP flows shell out to AI CLIs (Codex, Claude Code, Gemini, Just-Every/C
 | Google Gemini CLI (`gemini`) | Node.js ESM script | `NODE_OPTIONS='--require dd-trace/register' node /usr/local/bin/gemini …` | **Fails today** – `dd-trace` conflicts with the CLI’s ESM loader (`ERR_INVALID_RETURN_PROPERTY_VALUE`) |
 | Just-Every/Code (`just-every-code`) | Node.js CLI | `DD_TRACE_ENABLED=true NODE_OPTIONS='--require dd-trace/register' node ⟨path⟩/just-every-code …` | **Pending verification** – requires a local install of the CLI and a Node version compatible with `dd-trace` |
 
+### Wrapper checklist
+
+- ✅ Every CLI wrapper should export `DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli` (keep `DD_LLMOBS_ML_APP` only if older services still expect it).
+- ✅ Set `DD_AGENT_HOST`, `DD_TRACE_AGENT_PORT`, and the appropriate OpenRouter endpoint before invoking the underlying CLI.
+- 🔄 Record latency/token usage in a Datadog Experiment once real API calls run through the wrapper.
+
 > ℹ️ Only Python-based tooling (for example, Roundtable’s sub-agents) successfully emit spans with `ddtrace-run`. The other CLIs listed above either provide compiled binaries or use Node loaders that do not yet cooperate with Datadog’s dynamic instrumentation.
 
 ### Recommended next steps

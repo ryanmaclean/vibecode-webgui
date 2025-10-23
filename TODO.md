@@ -1139,6 +1139,48 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [ ] Implement advanced threat detection
 - [ ] Add compliance reporting features
 
+---
+
+## 📅 Up Next — Datadog CLI Instrumentation (Day 1 & Day 2)
+
+> **Project**: `vibecode-code-server-ai-cli`  
+> **Owner**: platform-observability  
+> Use the OpenRouter API key in `.env` for all AI calls. Replace legacy `DD_LLMOBS_ML_APP` with `DD_LLMOBS_PROJECT`.
+
+- 🔥 **Agent 1 – Anthropic Champion**
+  - [ ] Review Claude Code release docs; add multi-arch installer to `docker/code-server/Dockerfile`.
+  - [ ] Ship `/usr/local/bin/claude-ddtrace` wrapper (exports Datadog vars + OpenRouter endpoint).
+  - [ ] Update docs with new project tag & installation notes.
+- 🔥 **Agent 2 – OpenAI Champion**
+  - [ ] `pip install codex-cli` for amd64/arm64 in the Dockerfile.
+  - [ ] Add `codex-ddtrace` wrapper and run sample completion via OpenRouter; capture latency/token usage in Datadog.
+  - [ ] Document verification commands in `docs/experiments/`.
+- 🔥 **Agent 3 – Google Tools Champion**
+  - [ ] Install `@google/gemini-cli`; ensure Node 18 shim works (`NODE_OPTIONS='-r dd-trace/init'`).
+  - [ ] Execute real Gemini prompt through OpenRouter; record spans in Datadog (latency, tokens, errors).
+  - [ ] Update dashboards for `service:gemini-cli`.
+- 🔥 **Agent 4 – Open Source Champion (Just-Every/Code)**
+  - [ ] Install `@just-every/code` (`npm install -g`), add `coder-ddtrace` wrapper.
+  - [ ] Run sample generation via OpenRouter and confirm Datadog spans.
+- 🔄 **Agent 5 – Documentation Specialist**
+  - [ ] Update `docker/code-server/DATADOG_INTEGRATION.md`, `docs/MCP_DATADOG_INTEGRATION.md`, and env examples with new wrappers & `DD_LLMOBS_PROJECT`.
+  - [ ] Cross-link experiment reports and OpenRouter setup steps.
+- 🔄 **Agent 6 – Experiment Reporter**
+  - [ ] For each CLI, write a Datadog Experiment entry (API call log, latency, tokens).
+  - [ ] Summarize Day 1 & Day 2 findings and conclusions.
+- 📅 **Agent 7 – Observability Engineer**
+  - [ ] Create Datadog monitors + dashboards keyed on `service:*` and `project:vibecode-code-server-ai-cli`.
+  - [ ] Verify LLM Observability ingest shows latency/token charts per CLI.
+- 📅 **Agent 8 – Build & Release Engineer**
+  - [ ] Update Buildx pipelines to produce signed multi-arch images with the new CLIs.
+  - [ ] Coordinate QA, PR, and GitHub issue tracking once instrumentation is validated.
+- 🎯 **Agent 9 – Security & Compliance**
+  - [ ] Add checksum/signature verification for all downloaded binaries.
+  - [ ] Ensure OpenRouter API key sourcing follows secrets policy (no baked credentials).
+- 🎯 **Agent 10 – QA Automation**
+  - [ ] Extend CI to run each CLI inside the container, hit OpenRouter, assert Datadog spans.
+  - [ ] Gate releases on successful instrumentation tests (Day 2 validation).
+
 ### Dependabot Alerts Remediation (2025-09-16)
 
 - [x] services/ai-gateway: Fix Axios DoS (GHSA-4hjh-wcwx-xvwj)

@@ -175,7 +175,7 @@ Tracks AI model usage across all extensions:
 ```yaml
 llm_obs:
   enabled: true
-  ml_app: "vibecode-ai-extensions"
+  project: "vibecode-code-server-ai-cli"
   integrations:
     - openai      # ChatGPT, Codex
     - anthropic   # Claude Code
@@ -191,7 +191,22 @@ llm_obs:
 
 **View in Datadog:**
 - Navigate to **APM → LLM Observability**
-- Filter by `ml_app:vibecode-ai-extensions`
+- Filter by `project:vibecode-code-server-ai-cli`
+
+> For backward compatibility, you may continue exporting `DD_LLMOBS_ML_APP`, but new deployments should prefer `DD_LLMOBS_PROJECT`.
+
+#### Datadog-aware AI CLI wrappers
+
+Install each CLI alongside a tracing wrapper so that OpenRouter traffic is observable:
+
+| CLI | Wrapper | Instrumentation |
+| --- | ------- | --------------- |
+| Claude Code | `/usr/local/bin/claude-ddtrace` | Export `DD_*` vars, call Anthropic via OpenRouter |
+| Codex CLI | `/usr/local/bin/codex-ddtrace` | Launch with `ddtrace-run codex …` and OpenRouter OpenAI endpoint |
+| Google Gemini | `/usr/local/bin/gemini-ddtrace` | Use `NODE_OPTIONS='-r dd-trace/init'` + OpenRouter Gemini endpoint |
+| Just-Every/Code | `/usr/local/bin/coder-ddtrace` | Node wrapper with Datadog env + OpenRouter |
+
+Each wrapper should set `DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli` (and optionally `DD_LLMOBS_ML_APP` until older services are retired) before executing the underlying CLI.
 
 ### 2. Process Monitoring
 

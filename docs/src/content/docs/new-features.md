@@ -162,6 +162,8 @@ OPENROUTER_API_KEY=your_openrouter_key_here
 # LLM Observability
 DD_LLMOBS_ENABLED=1
 DD_LLMOBS_AGENTLESS_ENABLED=1
+DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli
+# Optional for legacy agents
 DD_LLMOBS_ML_APP=vibecode-ai
 
 # Database Monitoring
