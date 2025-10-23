@@ -15,8 +15,17 @@ CONFIG_DIR="${SCRIPT_DIR}/kernel-configs"
 
 # Build configuration
 SKIP_MRPROPER="${SKIP_MRPROPER:-0}"
-MINIVIM_JOBS="${MINIVIM_JOBS:-$(nproc 2>/dev/null || echo 4)}"
+# On macOS use sysctl, on Linux use nproc
+if command -v sysctl &> /dev/null && sysctl -n hw.logicalcpu &> /dev/null; then
+    DEFAULT_JOBS=$(sysctl -n hw.logicalcpu)
+else
+    DEFAULT_JOBS=$(nproc 2>/dev/null || echo 4)
+fi
+MINIVIM_JOBS="${MINIVIM_JOBS:-${DEFAULT_JOBS}}"
 CROSS_COMPILE="${CROSS_COMPILE:-}"
+# Support ccache and custom compiler flags
+BUILD_CC="${CC:-clang}"
+BUILD_KCFLAGS="${KCFLAGS:-}"
 
 # Kernel download URL
 KERNEL_MAJOR="${KERNEL_VERSION%%.*}"
@@ -26,6 +35,8 @@ echo "=== MiniVim Kernel Build ==="
 echo "Architecture: ${ARCH}"
 echo "Kernel Version: ${KERNEL_VERSION}"
 echo "Jobs: ${MINIVIM_JOBS}"
+echo "Compiler: ${BUILD_CC}"
+echo "KCFLAGS: ${BUILD_KCFLAGS:-none}"
 echo "Cross Compile: ${CROSS_COMPILE:-native}"
 echo "Skip mrproper: ${SKIP_MRPROPER}"
 echo ""
@@ -113,17 +124,21 @@ esac
 
 # Build with clang if available, otherwise gcc
 if command -v clang &> /dev/null; then
-    echo "Building with clang..."
+    echo "Building with ${BUILD_CC}..."
+    echo "KCFLAGS: ${BUILD_KCFLAGS:-none}"
     make ARCH="${BUILD_ARCH}" \
          CROSS_COMPILE="${CROSS_COMPILE}" \
          LLVM=1 \
-         CC="clang" \
+         CC="${BUILD_CC}" \
+         KCFLAGS="${BUILD_KCFLAGS}" \
          -j"${MINIVIM_JOBS}" \
          "${IMAGE_NAME}"
 else
     echo "Building with gcc..."
     make ARCH="${BUILD_ARCH}" \
          CROSS_COMPILE="${CROSS_COMPILE}" \
+         CC="${BUILD_CC}" \
+         KCFLAGS="${BUILD_KCFLAGS}" \
          -j"${MINIVIM_JOBS}" \
          "${IMAGE_NAME}"
 fi
