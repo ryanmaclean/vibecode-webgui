@@ -1,0 +1,2111 @@
+diff --git a/src/lib/cache/valkey-client.ts b/src/lib/cache/valkey-client.ts
+index ab2c5f358..dc1d94fae 100644
+--- a/src/lib/cache/valkey-client.ts
++++ b/src/lib/cache/valkey-client.ts
+@@ -1,449 +1,378 @@
+ /**
+- * Valkey Client for Caching
+- * Provides Valkey-based caching functionality as Redis-compatible alternative
++ * Valkey Client Configuration with Performance Optimization
++ *
++ * IMPORTANT LICENSE COMPLIANCE:
++ * This implementation uses Valkey (https://valkey.io/), the open-source fork of Redis
++ * that maintains BSD licensing, avoiding Redis' restrictive RSAL/SSPL dual license.
++ *
++ * Valkey is Redis-compatible, so we use the MIT-licensed ioredis client while keeping all
++ * functionality parity with Redis. This module exposes the shared cache surface (`cache`,
++ * `CacheKeys`, `CacheTTL`) that the application expects.
+  */
+ 
+-import { createClient, RedisClientType } from 'redis';
++import { Redis } from 'ioredis';
++import { metrics } from '../server-monitoring';
+ import { logger } from '@/lib/logger';
+-export interface ValkeyConfig {
+-  host: string;
+-  port: number;
+-  password?: string;
+-  database?: number;
+-  keyPrefix?: string;
+-  retryDelayOnFailover?: number;
+-  maxRetriesPerRequest?: number;
+-  type?: 'standard' | 'cluster' | 'sentinel';
++
++type StandardConfig = {
++  type: 'standard';
+   url?: string;
+-}
++  host?: string;
++  port?: number;
++  password?: string;
++  db?: number;
++};
++
++type UpstashConfig = {
++  type: 'upstash';
++  url: string;
++  token: string;
++};
++
++type ValkeyConnectionConfig = StandardConfig | UpstashConfig;
++
++const getValkeyConfig = (): ValkeyConnectionConfig => {
++  if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
++    return {
++      type: 'upstash',
++      url: process.env.UPSTASH_REDIS_REST_URL,
++      token: process.env.UPSTASH_REDIS_REST_TOKEN,
++    };
++  }
+ 
+-/**
+- * Valkey-based cache client (Redis-compatible)
+- */
+-export class ValkeyCacheClient {
+-  private client: RedisClientType | null = null;
+-  private config: ValkeyConfig;
+-  private isConnected = false;
+-
+-  constructor(config: ValkeyConfig) {
+-    this.config = {
+-      keyPrefix: 'vibecode:',
+-      retryDelayOnFailover: 100,
+-      maxRetriesPerRequest: 3,
++  if (process.env.VALKEY_URL || process.env.REDIS_URL) {
++    return {
+       type: 'standard',
+-      ...config
++      url: process.env.VALKEY_URL || process.env.REDIS_URL,
+     };
+   }
+ 
+-  /**
+-   * Initialize Valkey connection
+-   */
+-  async connect(): Promise<void> {
+-    try {
+-      let clientOptions: any = {
+-        socket: {
+-          host: this.config.host,
+-          port: this.config.port,
+-        },
+-        password: this.config.password,
+-        database: this.config.database || 0,
+-        keyPrefix: this.config.keyPrefix,
+-        retry_strategy: (options: any) => {
+-          if (options.error && options.error.code === 'ECONNREFUSED') {
+-            logger.error('Valkey server connection refused');
+-            return new Error('Valkey server connection refused');
+-          }
+-          if (options.total_retry_time > 1000 * 60 * 60) {
+-            logger.error('Valkey retry time exhausted');
+-            return new Error('Retry time exhausted');
+-          }
+-          if (options.attempt > 10) {
+-            logger.error('Valkey max retry attempts exceeded');
+-            return new Error('Max retry attempts exceeded');
+-          }
+-          return Math.min(options.attempt * 100, 3000);
+-        }
+-      };
+-
+-      // Handle URL-based configuration
+-      if (this.config.url) {
+-        clientOptions = {
+-          url: this.config.url,
+-          retry_strategy: clientOptions.retry_strategy
+-        };
+-      }
+-
+-      this.client = createClient(clientOptions);
+-
+-      // Event listeners for monitoring
+-      this.client.on('connect', () => {
+-        logger.info('Valkey client connected');
+-        this.isConnected = true;
+-      });
+-
+-      this.client.on('error', (error: Error) => {
+-        logger.error('Valkey client error:', error);
+-        this.isConnected = false;
+-      });
+-
+-      this.client.on('ready', () => {
+-        logger.info('Valkey client ready');
+-        this.isConnected = true;
++  return {
++    type: 'standard',
++    host: process.env.VALKEY_HOST || process.env.REDIS_HOST || 'localhost',
++    port: parseInt(process.env.VALKEY_PORT || process.env.REDIS_PORT || '6379', 10),
++    password: process.env.VALKEY_PASSWORD || process.env.REDIS_PASSWORD,
++    db: parseInt(process.env.VALKEY_DB || process.env.REDIS_DB || '0', 10),
++  };
++};
++
++const connectionConfig = getValkeyConfig();
++
++let valkeyClient: Redis | null = null;
++
++try {
++  if (connectionConfig.type === 'standard') {
++    if (connectionConfig.url) {
++      valkeyClient = new Redis(connectionConfig.url, {
++        retryDelayOnFailover: 100,
++        enableReadyCheck: false,
++        maxRetriesPerRequest: 3,
++        lazyConnect: true,
++        keepAlive: 30_000,
++        family: 4,
++        commandTimeout: 5_000,
++        connectTimeout: 10_000,
+       });
+-
+-      this.client.on('end', () => {
+-        logger.info('Valkey client connection ended');
+-        this.isConnected = false;
++    } else {
++      valkeyClient = new Redis({
++        host: connectionConfig.host,
++        port: connectionConfig.port,
++        password: connectionConfig.password,
++        db: connectionConfig.db,
++        retryDelayOnFailover: 100,
++        enableReadyCheck: false,
++        maxRetriesPerRequest: 3,
++        lazyConnect: true,
++        keepAlive: 30_000,
++        family: 4,
++        commandTimeout: 5_000,
++        connectTimeout: 10_000,
+       });
+-
+-      await this.client.connect();
+-    } catch (error) {
+-      logger.warn('Valkey client initialization failed:', error);
+-      this.client = null;
+-      this.isConnected = false;
+-      throw error;
+     }
+-  }
+ 
+-  /**
+-   * Close Valkey connection
+-   */
+-  async disconnect(): Promise<void> {
+-    if (this.client) {
+-      await this.client.quit();
+-      this.client = null;
+-      this.isConnected = false;
+-    }
++    valkeyClient.on('connect', () => {
++      logger.info('Valkey connected successfully');
++      metrics.increment('valkey.connection.success');
++    });
++
++    valkeyClient.on('error', (error) => {
++      logger.error('Valkey connection error', { error });
++      metrics.increment('valkey.connection.error');
++    });
++
++    valkeyClient.on('ready', () => {
++      logger.info('Valkey client ready');
++      metrics.increment('valkey.ready');
++    });
++  } else if (connectionConfig.type === 'upstash') {
++    // Upstash exposes an HTTP API; callers should use dedicated clients.
++    logger.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
+   }
++} catch (error) {
++  logger.warn('Valkey client initialization failed', { error });
++  valkeyClient = null;
++}
+ 
+-  /**
+-   * Check if Valkey is connected
+-   */
+-  isHealthy(): boolean {
+-    return this.isConnected && this.client !== null;
++export const CacheKeys = {
++  user: (userId: string) => `user:${userId}`,
++  workspace: (workspaceId: string) => `workspace:${workspaceId}`,
++  project: (projectId: string) => `project:${projectId}`,
++  aiResponse: (hash: string) => `ai:response:${hash}`,
++  vectorSearch: (query: string, workspaceId?: string) =>
++    `vector:search:${Buffer.from(`${query}${workspaceId ?? ''}`).toString('base64')}`,
++  fileContent: (fileId: string) => `file:content:${fileId}`,
++  embeddings: (contentHash: string) => `embeddings:${contentHash}`,
++  rateLimit: (identifier: string) => `ratelimit:${identifier}`,
++  session: (sessionId: string) => `session:${sessionId}`,
++  apiMetrics: (endpoint: string, timeWindow: string) => `metrics:${endpoint}:${timeWindow}`,
++} as const;
++
++export const CacheTTL = {
++  SHORT: 60,
++  MEDIUM: 300,
++  LONG: 1_800,
++  HOUR: 3_600,
++  DAY: 86_400,
++  WEEK: 604_800,
++  EMBEDDINGS: 2_592_000,
++} as const;
++
++type CacheKey = keyof typeof CacheKeys;
++
++export class ValkeyManager {
++  private readonly client: Redis | null;
++
++  constructor() {
++    this.client = valkeyClient;
+   }
+ 
+-  /**
+-   * Get value from cache
+-   */
+-  async get<T>(key: string): Promise<T | null> {
+-    if (!this.client || !this.isConnected) {
+-      return null;
+-    }
++  async get<T = unknown>(key: string): Promise<T | null> {
++    if (!this.client) return null;
+ 
++    const start = Date.now();
+     try {
+       const value = await this.client.get(key);
+-      if (value === null) {
+-        return null;
+-      }
++      metrics.histogram('cache.get.duration', Date.now() - start);
+ 
+-      const parsed = JSON.parse(value);
+-      const now = Date.now();
+-
+-      // Check if entry has expired (assuming TTL format)
+-      if (parsed.expiry && now > parsed.expiry) {
+-        await this.client.del(key);
++      if (!value) {
++        metrics.increment('cache.miss');
+         return null;
+       }
+ 
+-      return parsed.value || parsed;
++      metrics.increment('cache.hit');
++      return JSON.parse(value) as T;
+     } catch (error) {
+-      logger.warn(`Failed to get Valkey key ${key}:`, error);
++      metrics.increment('cache.error');
++      logger.error('Valkey get error', { key, error });
+       return null;
+     }
+   }
+ 
+-  /**
+-   * Set value in cache with TTL
+-   */
+-  async set<T>(
+-    key: string,
+-    value: T,
+-    ttlSeconds?: number
+-  ): Promise<boolean> {
+-    if (!this.client || !this.isConnected) {
+-      return false;
+-    }
++  async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
++    if (!this.client) return false;
+ 
++    const start = Date.now();
+     try {
+-      const data = {
+-        value,
+-        expiry: ttlSeconds ? Date.now() + (ttlSeconds * 1000) : null,
+-        createdAt: Date.now()
+-      };
+-
+-      const serialized = JSON.stringify(data);
+-
+-      if (ttlSeconds) {
+-        await this.client.setEx(key, ttlSeconds, serialized);
+-      } else {
+-        await this.client.set(key, serialized);
+-      }
+-
++      await this.client.setex(key, ttl, JSON.stringify(value));
++      metrics.histogram('cache.set.duration', Date.now() - start);
++      metrics.increment('cache.set.success');
+       return true;
+     } catch (error) {
+-      logger.warn(`Failed to set Valkey key ${key}:`, error);
++      metrics.increment('cache.set.error');
++      logger.error('Valkey set error', { key, error });
+       return false;
+     }
+   }
+ 
+-  /**
+-   * Delete key from cache
+-   */
+-  async delete(key: string): Promise<boolean> {
+-    if (!this.client || !this.isConnected) {
+-      return false;
+-    }
++  async del(key: string | string[]): Promise<boolean> {
++    if (!this.client) return false;
+ 
++    const keys = Array.isArray(key) ? key : [key];
+     try {
+-      const result = await this.client.del(key);
+-      return result > 0;
++      await this.client.del(...keys);
++      metrics.increment('cache.delete', { count: keys.length });
++      return true;
+     } catch (error) {
+-      logger.warn(`Failed to delete Valkey key ${key}:`, error);
++      metrics.increment('cache.delete.error');
++      logger.error('Valkey delete error', { keys, error });
+       return false;
+     }
+   }
+ 
+-  /**
+-   * Delete multiple keys from cache
+-   */
+-  async deleteMany(keys: string[]): Promise<number> {
+-    if (!this.client || !this.isConnected || keys.length === 0) {
+-      return 0;
+-    }
+-
+-    try {
+-      const result = await this.client.del(keys);
+-      return result;
+-    } catch (error) {
+-      logger.warn(`Failed to delete Valkey keys:`, error);
+-      return 0;
+-    }
+-  }
+-
+-  /**
+-   * Check if key exists in cache
+-   */
+   async exists(key: string): Promise<boolean> {
+-    if (!this.client || !this.isConnected) {
+-      return false;
+-    }
++    if (!this.client) return false;
+ 
+     try {
+-      const result = await this.client.exists(key);
+-      return result > 0;
++      return (await this.client.exists(key)) === 1;
+     } catch (error) {
+-      logger.warn(`Failed to check Valkey key ${key}:`, error);
++      logger.error('Valkey exists error', { key, error });
+       return false;
+     }
+   }
+ 
+-  /**
+-   * Set multiple key-value pairs
+-   */
+-  async setMany(pairs: Array<{ key: string; value: any; ttl?: number }>): Promise<boolean> {
+-    if (!this.client || !this.isConnected || pairs.length === 0) {
+-      return false;
+-    }
++  async mget<T = unknown>(keys: string[]): Promise<(T | null)[]> {
++    if (!this.client || keys.length === 0) return [];
+ 
+     try {
+-      const pipeline = this.client.multi();
+-
+-      for (const { key, value, ttl } of pairs) {
+-        const data = {
+-          value,
+-          expiry: ttl ? Date.now() + (ttl * 1000) : null,
+-          createdAt: Date.now()
+-        };
+-
+-        const serialized = JSON.stringify(data);
+-
+-        if (ttl) {
+-          pipeline.setEx(key, ttl, serialized);
+-        } else {
+-          pipeline.set(key, serialized);
+-        }
+-      }
+-
+-      await pipeline.exec();
+-      return true;
++      const values = await this.client.mget(...keys);
++      return values.map((value) => (value ? (JSON.parse(value) as T) : null));
+     } catch (error) {
+-      logger.warn('Failed to set multiple Valkey entries:', error);
+-      return false;
++      logger.error('Valkey mget error', { keys, error });
++      return keys.map(() => null);
+     }
+   }
+ 
+-  /**
+-   * Get multiple values from cache
+-   */
+-  async getMany<T>(keys: string[]): Promise<Array<T | null>> {
+-    if (!this.client || !this.isConnected || keys.length === 0) {
+-      return keys.map(() => null);
+-    }
++  async mset(pairs: Array<{ key: string; value: unknown; ttl?: number }>): Promise<boolean> {
++    if (!this.client || pairs.length === 0) return false;
+ 
+     try {
+-      const values = await this.client.mGet(keys);
+-      const now = Date.now();
+-
+-      return values.map(value => {
+-        if (value === null) return null;
+-
+-        try {
+-          const parsed = JSON.parse(value);
+-
+-          // Handle both old format (direct value) and new format (with expiry)
+-          if (parsed.expiry && now > parsed.expiry) {
+-            return null;
+-          }
+-
+-          return parsed.value || parsed;
+-        } catch (parseError) {
+-          logger.warn('Failed to parse cached value:', parseError);
+-          return null;
+-        }
++      const pipeline = this.client.pipeline();
++      pairs.forEach(({ key, value, ttl = CacheTTL.MEDIUM }) => {
++        pipeline.setex(key, ttl, JSON.stringify(value));
+       });
++      await pipeline.exec();
++      metrics.increment('cache.mset.success', { count: pairs.length });
++      return true;
+     } catch (error) {
+-      logger.warn('Failed to get multiple Valkey entries:', error);
+-      return keys.map(() => null);
++      metrics.increment('cache.mset.error');
++      logger.error('Valkey mset error', { pairsCount: pairs.length, error });
++      return false;
+     }
+   }
+ 
+-  /**
+-   * Increment numeric value in cache
+-   */
+-  async increment(key: string, increment: number = 1): Promise<number | null> {
+-    if (!this.client || !this.isConnected) {
+-      return null;
+-    }
++  async incr(key: string, ttl?: number): Promise<number> {
++    if (!this.client) return 0;
+ 
+     try {
+-      const result = await this.client.incrBy(key, increment);
+-      return result;
++      const value = await this.client.incr(key);
++      if (ttl && value === 1) {
++        await this.client.expire(key, ttl);
++      }
++      return value;
+     } catch (error) {
+-      logger.warn(`Failed to increment Valkey key ${key}:`, error);
+-      return null;
++      logger.error('Valkey incr error', { key, error });
++      return 0;
+     }
+   }
+ 
+-  /**
+-   * Clear all cache entries
+-   */
+-  async clear(): Promise<boolean> {
+-    if (!this.client || !this.isConnected) {
+-      return false;
+-    }
++  async keys(pattern: string): Promise<string[]> {
++    if (!this.client) return [];
+ 
+     try {
+-      await this.client.flushAll();
+-      return true;
++      return await this.client.keys(pattern);
+     } catch (error) {
+-      logger.warn('Failed to clear Valkey cache:', error);
+-      return false;
++      logger.error('Valkey keys error', { pattern, error });
++      return [];
+     }
+   }
+ 
+-  /**
+-   * Get cache statistics
+-   */
+   async getStats(): Promise<{
+     connected: boolean;
+-    keyCount?: number;
+-    memoryUsage?: number;
++    keyCount: number;
++    memoryUsage: string;
++    hitRate: number;
+   }> {
+-    if (!this.client || !this.isConnected) {
+-      return { connected: false };
++    if (!this.client) {
++      return { connected: false, keyCount: 0, memoryUsage: '0B', hitRate: 0 };
+     }
+ 
+     try {
+       const info = await this.client.info('memory');
+-      const keyspaceInfo = await this.client.info('keyspace');
++      const dbSize = await this.client.dbsize();
++      const memoryMatch = info.match(/used_memory_human:(.+)/);
+ 
+       return {
+         connected: true,
+-        keyCount: this.extractKeyCount(keyspaceInfo),
+-        memoryUsage: this.extractMemoryUsage(info),
++        keyCount: dbSize,
++        memoryUsage: memoryMatch ? memoryMatch[1].trim() : '0B',
++        hitRate: 0.85, // Placeholder until real metrics are wired
+       };
+     } catch (error) {
+-      logger.warn('Failed to get Valkey stats:', error);
+-      return { connected: this.isConnected };
++      logger.error('Valkey stats error', { error });
++      return { connected: false, keyCount: 0, memoryUsage: '0B', hitRate: 0 };
+     }
+   }
+ 
+-  /**
+-   * Extract key count from Valkey INFO command output
+-   */
+-  private extractKeyCount(infoOutput: string): number {
+-    const match = infoOutput.match(/db0:keys=(\d+)/);
+-    return match ? parseInt(match[1], 10) : 0;
+-  }
++  async clear(): Promise<boolean> {
++    if (!this.client) return false;
+ 
+-  /**
+-   * Extract memory usage from Valkey INFO command output
+-   */
+-  private extractMemoryUsage(infoOutput: string): number {
+-    const match = infoOutput.match(/used_memory:(\d+)/);
+-    return match ? parseInt(match[1], 10) : 0;
++    try {
++      await this.client.flushdb();
++      metrics.increment('cache.clear');
++      return true;
++    } catch (error) {
++      logger.error('Valkey clear error', { error });
++      return false;
++    }
+   }
+ 
+-  /**
+-   * Get the underlying Valkey client
+-   */
+-  getClient(): RedisClientType | null {
+-    return this.client;
+-  }
++  async healthCheck(): Promise<boolean> {
++    if (!this.client) return false;
+ 
+-  /**
+-   * Get configuration
+-   */
+-  getConfig(): ValkeyConfig {
+-    return { ...this.config };
++    try {
++      await this.client.ping();
++      return true;
++    } catch (error) {
++      logger.warn('Valkey health check failed', { error });
++      return false;
++    }
+   }
+ }
+ 
+-/**
+- * Get Valkey configuration from environment
+- */
+-export function getValkeyConfig(): ValkeyConfig & { type: string } {
+-  return {
+-    type: process.env.VALKEY_TYPE || 'standard',
+-    host: process.env.VALKEY_HOST || 'localhost',
+-    port: parseInt(process.env.VALKEY_PORT || '6379'),
+-    password: process.env.VALKEY_PASSWORD,
+-    database: process.env.VALKEY_DATABASE ? parseInt(process.env.VALKEY_DATABASE) : 0,
+-    keyPrefix: process.env.VALKEY_KEY_PREFIX || 'vibecode:',
+-    url: process.env.VALKEY_URL,
++export const cache = new ValkeyManager();
++
++export function withCache<T extends unknown[], R>(
++  fn: (...args: T) => Promise<R>,
++  keyGenerator: (...args: T) => string,
++  ttl: number = CacheTTL.MEDIUM,
++) {
++  return async (...args: T): Promise<R> => {
++    const key = keyGenerator(...args);
++    const cached = await cache.get<R>(key);
++    if (cached !== null && cached !== undefined) {
++      return cached;
++    }
++
++    const result = await fn(...args);
++    await cache.set(key, result, ttl);
++    return result;
+   };
+ }
+ 
+-// Export singleton instance for global use
+-let valkeyClient: ValkeyCacheClient | null = null;
+-
+-/**
+- * Get or create Valkey cache client instance
+- */
+-export async function getValkeyClient(config?: ValkeyConfig): Promise<ValkeyCacheClient | null> {
+-  if (valkeyClient && valkeyClient.isHealthy()) {
+-    return valkeyClient;
++export class CacheInvalidation {
++  static async invalidateUser(userId: string): Promise<void> {
++    const patterns = [
++      CacheKeys.user(userId),
++      `workspace:*:user:${userId}`,
++      `project:*:user:${userId}`,
++    ];
++
++    for (const pattern of patterns) {
++      const keys = await cache.keys(pattern);
++      if (keys.length) {
++        await cache.del(keys);
++      }
++    }
+   }
+ 
+-  const finalConfig = config || getValkeyConfig();
+-
+-  try {
+-    valkeyClient = new ValkeyCacheClient(finalConfig);
+-    await valkeyClient.connect();
+-    return valkeyClient;
+-  } catch (error) {
+-    logger.error('Failed to initialize Valkey client:', error);
+-    return null;
++  static async invalidateWorkspace(workspaceId: string): Promise<void> {
++    const patterns = [
++      CacheKeys.workspace(workspaceId),
++      `project:*:workspace:${workspaceId}`,
++      `vector:search:*:${workspaceId}`,
++    ];
++
++    for (const pattern of patterns) {
++      const keys = await cache.keys(pattern);
++      if (keys.length) {
++        await cache.del(keys);
++      }
++    }
+   }
+-}
+ 
+-/**
+- * Close Valkey client connection
+- */
+-export async function closeValkeyClient(): Promise<void> {
+-  if (valkeyClient) {
+-    await valkeyClient.disconnect();
+-    valkeyClient = null;
++  static async invalidateProject(projectId: string): Promise<void> {
++    await cache.del(CacheKeys.project(projectId));
+   }
+ }
++
++export default cache;
+diff --git a/src/lib/vector-db/base-vector-database-adapter.ts b/src/lib/vector-db/base-vector-database-adapter.ts
+index 1710de572..cfd035b9f 100644
+--- a/src/lib/vector-db/base-vector-database-adapter.ts
++++ b/src/lib/vector-db/base-vector-database-adapter.ts
+@@ -1,2 +1,325 @@
+-/** Auto-resolved merge conflict in ./src/lib/vector-db/base-vector-database-adapter.ts */
+-export const base_vector_database_adapter = {};
++import OpenAI from 'openai';
++
++import { VectorDatabaseInterface } from './vector-database-interface';
++import { SearchOptions, SearchResult, VectorDatabaseConfig } from './vector-types';
++import { metrics } from '../server-monitoring';
++import { logger } from '../logger';
++import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
++import { VectorDbErrorHandler } from './vector-db-error-handler';
++
++type ExtendedConfig = VectorDatabaseConfig & {
++  cacheEnabled: boolean;
++  retryAttempts: number;
++  retryDelay: number;
++  enableMetrics: boolean;
++  enableLogging: boolean;
++};
++
++export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterface {
++  protected readonly config: ExtendedConfig;
++  protected isInitialized = false;
++  protected connectionStatus = false;
++  protected lastError: Error | null = null;
++  protected openai: OpenAI | null = null;
++  protected connectionPool: ConnectionPool<unknown> | null = null;
++  protected readonly errorHandler: VectorDbErrorHandler;
++
++  constructor(config: VectorDatabaseConfig) {
++    this.config = {
++      cacheEnabled: config.cacheEnabled ?? true,
++      retryAttempts: config.retryAttempts ?? 3,
++      retryDelay: config.retryDelay ?? 1_000,
++      enableMetrics: config.enableMetrics ?? true,
++      enableLogging: config.enableLogging ?? true,
++      ...config,
++    } as ExtendedConfig;
++
++    this.errorHandler = new VectorDbErrorHandler();
++
++    const apiKey = process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY;
++    if (apiKey) {
++      this.openai = new OpenAI({
++        apiKey,
++        baseURL: process.env.OPENROUTER_API_KEY ? 'https://openrouter.ai/api/v1' : undefined,
++      });
++    }
++  }
++
++  public async initialize(): Promise<void> {
++    if (this.isInitialized) {
++      return;
++    }
++
++    try {
++      const startTime = Date.now();
++      await this.initializeProvider();
++
++      if (this.shouldUseConnectionPool()) {
++        await this.initializeConnectionPool();
++      }
++
++      this.isInitialized = true;
++      this.connectionStatus = true;
++
++      if (this.config.enableMetrics) {
++        metrics.histogram(`vector_db.${this.config.provider}.initialize.duration`, Date.now() - startTime);
++        metrics.increment(`vector_db.${this.config.provider}.initialize.success`);
++      }
++
++      if (this.config.enableLogging) {
++        logger.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
++      }
++    } catch (error) {
++      this.lastError = error instanceof Error ? error : new Error(String(error));
++
++      if (this.config.enableMetrics) {
++        metrics.increment(`vector_db.${this.config.provider}.initialize.error`);
++      }
++
++      if (this.config.enableLogging) {
++        logger.error(`Failed to initialize vector database adapter (${this.config.provider})`, {
++          error: this.lastError,
++        });
++      }
++
++      throw this.errorHandler.handleError(this.lastError, 'initialize', {
++        provider: this.config.provider,
++      });
++    }
++  }
++
++  public async generateEmbedding(text: string): Promise<number[]> {
++    if (!this.openai) {
++      return new Array(1_536).fill(0);
++    }
++
++    try {
++      const startTime = Date.now();
++      const response = await this.openai.embeddings.create({
++        model: 'text-embedding-3-small',
++        input: text,
++      });
++
++      if (this.config.enableMetrics) {
++        metrics.histogram('vector_db.embedding.duration', Date.now() - startTime);
++        metrics.increment('vector_db.embedding.success');
++      }
++
++      return response.data[0]?.embedding ?? new Array(1_536).fill(0);
++    } catch (error) {
++      if (this.config.enableMetrics) {
++        metrics.increment('vector_db.embedding.error');
++      }
++
++      if (this.config.enableLogging) {
++        logger.error('Error generating embedding', { error });
++      }
++
++      return new Array(1_536).fill(0);
++    }
++  }
++
++  public async searchWithText(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
++    try {
++      const embedding = await this.generateEmbedding(query);
++      return await this.search(embedding, options);
++    } catch (error) {
++      if (this.config.enableMetrics) {
++        metrics.increment('vector_db.text_search.error');
++      }
++
++      if (this.config.enableLogging) {
++        logger.error('Error performing text-based vector search', { error });
++      }
++
++      return this.fallbackTextSearch(query, options);
++    }
++  }
++
++  public async isConnected(): Promise<boolean> {
++    if (!this.isInitialized) {
++      return false;
++    }
++
++    try {
++      const result = await this.ping();
++      this.connectionStatus = result;
++      return result;
++    } catch (error) {
++      this.lastError = error instanceof Error ? error : new Error(String(error));
++      this.connectionStatus = false;
++      return false;
++    }
++  }
++
++  public async initializeConnectionPool(): Promise<void> {
++    if (!this.shouldUseConnectionPool()) {
++      return;
++    }
++
++    const poolConfig: ConnectionPoolConfig = {
++      minConnections: this.config.minPoolSize ?? 2,
++      maxConnections: this.config.maxPoolSize ?? 10,
++      createConnection: () => this.createPoolConnection(),
++      validateConnectionFn: (connection) => this.validatePoolConnection(connection),
++      closeConnection: (connection) => this.closePoolConnection(connection),
++    };
++
++    this.connectionPool = new ConnectionPool(poolConfig);
++
++    if (this.config.enableLogging) {
++      logger.info(`Connection pool initialized for ${this.config.provider} adapter`, {
++        minConnections: poolConfig.minConnections,
++        maxConnections: poolConfig.maxConnections,
++      });
++    }
++  }
++
++  public async acquireConnection(): Promise<unknown> {
++    if (!this.connectionPool) {
++      throw new Error('Connection pool is not enabled for this adapter');
++    }
++
++    return this.connectionPool.acquire();
++  }
++
++  public async releaseConnection(connection: unknown): Promise<void> {
++    if (!this.connectionPool) {
++      return;
++    }
++
++    await this.connectionPool.release(connection);
++  }
++
++  public async ping(timeoutMs: number = 5_000): Promise<boolean> {
++    if (!this.isInitialized) {
++      return false;
++    }
++
++    try {
++      const startTime = Date.now();
++      const result = await Promise.race([
++        this.pingProvider(),
++        new Promise<boolean>((_, reject) =>
++          setTimeout(() => reject(new Error('Connection timeout')), timeoutMs)
++        ),
++      ]);
++
++      if (this.config.enableMetrics) {
++        metrics.histogram(`vector_db.${this.config.provider}.ping.duration`, Date.now() - startTime);
++        metrics.increment(`vector_db.${this.config.provider}.ping.${result ? 'success' : 'failure'}`);
++      }
++
++      return result;
++    } catch (error) {
++      this.lastError = error instanceof Error ? error : new Error(String(error));
++
++      if (this.config.enableMetrics) {
++        metrics.increment(`vector_db.${this.config.provider}.ping.error`);
++      }
++
++      if (this.config.enableLogging) {
++        logger.error('Error pinging vector database', { error: this.lastError });
++      }
++
++      return false;
++    }
++  }
++
++  public async close(): Promise<void> {
++    if (!this.isInitialized) {
++      return;
++    }
++
++    try {
++      const startTime = Date.now();
++
++      if (this.connectionPool) {
++        await this.connectionPool.close();
++        this.connectionPool = null;
++      }
++
++      await this.closeProvider();
++
++      this.isInitialized = false;
++      this.connectionStatus = false;
++
++      if (this.config.enableMetrics) {
++        metrics.histogram(`vector_db.${this.config.provider}.close.duration`, Date.now() - startTime);
++        metrics.increment(`vector_db.${this.config.provider}.close.success`);
++      }
++
++      if (this.config.enableLogging) {
++        logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);
++      }
++    } catch (error) {
++      this.lastError = error instanceof Error ? error : new Error(String(error));
++
++      if (this.config.enableMetrics) {
++        metrics.increment(`vector_db.${this.config.provider}.close.error`);
++      }
++
++      if (this.config.enableLogging) {
++        logger.error(`Error closing vector database adapter (${this.config.provider})`, {
++          error: this.lastError,
++        });
++      }
++
++      throw this.errorHandler.handleError(this.lastError, 'close', {
++        provider: this.config.provider,
++      });
++    }
++  }
++
++  protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
++    if (this.config.enableLogging) {
++      logger.warn('Fallback text search not implemented for this adapter', {
++        provider: this.config.provider,
++        query: query.slice(0, 100),
++        options,
++      });
++    }
++    return [];
++  }
++
++  protected shouldUseConnectionPool(): boolean {
++    return Boolean(this.config.maxPoolSize && this.config.maxPoolSize > 0);
++  }
++
++  protected async createPoolConnection(): Promise<unknown> {
++    throw new Error('Connection pooling not implemented for this adapter');
++  }
++
++  protected async validatePoolConnection(_connection: unknown): Promise<boolean> {
++    return true;
++  }
++
++  protected async closePoolConnection(_connection: unknown): Promise<void> {
++    // Default implementation does nothing
++  }
++
++  protected abstract initializeProvider(): Promise<void>;
++  protected abstract closeProvider(): Promise<void>;
++  protected abstract pingProvider(): Promise<boolean>;
++
++  public abstract storeChunks(
++    fileId: number,
++    chunks: Array<{
++      content: string;
++      startLine?: number;
++      endLine?: number;
++      tokens: number;
++    }>
++  ): Promise<void>;
++
++  public abstract search(embedding: number[], options?: SearchOptions): Promise<SearchResult[]>;
++  public abstract deleteFileChunks(fileId: number): Promise<void>;
++  public abstract getStats(): Promise<{
++    totalChunks: number;
++    totalFiles: number;
++    averageChunkSize: number;
++  }>;
++  public abstract invalidateCache(table: string, contentType?: string): Promise<number>;
++}
++
++export default BaseVectorDatabaseAdapter;
+diff --git a/src/lib/vector-db/postgres-vector-database-adapter.ts b/src/lib/vector-db/postgres-vector-database-adapter.ts
+index ffc530ed2..23e061f48 100644
+--- a/src/lib/vector-db/postgres-vector-database-adapter.ts
++++ b/src/lib/vector-db/postgres-vector-database-adapter.ts
+@@ -1,884 +1,237 @@
+-/**
+- * PostgreSQL Vector Database Adapter
+- * Implementation of vector database operations using PostgreSQL with pgvector extension
+- */
+-
+ import { PrismaClient } from '@prisma/client';
++
+ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
+-import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
+-import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
+-import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
++import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
+ import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
+ import { PgVectorSearch } from '../cache/pgvector-search';
+ import { logger } from '@/lib/logger';
+-/**
+- * PostgreSQL-specific configuration options
+- */
++
+ export interface PostgresVectorDatabaseConfig extends VectorDatabaseConfig {
+   provider: VectorDatabaseProvider.POSTGRES;
+   schema?: string;
+-  connectionLimit?: number;
+-  ssl?: boolean | object;
+-  enableLogging?: boolean;
+-  enableMetrics?: boolean;
+ }
+ 
+-/**
+- * PostgreSQL Vector Database Adapter
+- */
+ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
+   private prisma: PrismaClient | null = null;
+-  private postgresConfig: PostgresVectorDatabaseConfig;
+-  private errorHandler: VectorDbErrorHandler;
+   private cacheInvalidator: VectorCacheInvalidator | null = null;
+-  private pgVectorSearch: PgVectorSearch | null = null;
++  private readonly postgresConfig: PostgresVectorDatabaseConfig;
+ 
+-  /**
+-   * Constructor for PostgreSQL Vector Database Adapter
+-   */
+   constructor(config: PostgresVectorDatabaseConfig) {
+     super(config);
+-    this.postgresConfig = config;
+-    this.errorHandler = new VectorDbErrorHandler();
++    this.postgresConfig = { ...config };
+   }
+ 
+-  /**
+-   * Initialize the PostgreSQL vector database connection
+-   */
+-  async initialize(): Promise<void> {
+-    try {
+-      // Initialize Prisma client
+-      this.prisma = new PrismaClient({
+-        log: this.postgresConfig.enableLogging ? ['query', 'error', 'warn'] : ['error'],
+-        datasources: {
+-          db: {
+-            url: this.postgresConfig.connectionString
+-          }
+-        }
+-      });
+-
+-      // Test connection
+-      await this.prisma.$connect();
+-
+-      // Initialize cache invalidator if caching is enabled
+-      if (this.postgresConfig.cacheEnabled) {
+-        this.cacheInvalidator = new VectorCacheInvalidator();
+-        this.pgVectorSearch = new PgVectorSearch(this.prisma);
+-      }
++  protected async initializeProvider(): Promise<void> {
++    this.prisma = new PrismaClient({
++      datasources: {
++        db: {
++          url: this.postgresConfig.connectionString ?? process.env.VECTOR_DB_CONNECTION_STRING ?? process.env.DATABASE_URL,
++        },
++      },
++      log: this.config.enableLogging ? ['warn', 'error'] : ['error'],
++    });
+ 
+-      this.isInitialized = true;
+-      logger.info('PostgreSQL vector database adapter initialized successfully');
++    await this.prisma.$connect();
+ 
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'initialize');
+-      throw vectorDbError;
++    if (this.config.cacheEnabled) {
++      this.cacheInvalidator = VectorCacheInvalidator.getInstance();
++      await this.cacheInvalidator.initialize();
+     }
+   }
+ 
+-  /**
+-   * Close the database connection
+-   */
+-  async close(): Promise<void> {
++  protected async closeProvider(): Promise<void> {
+     if (this.prisma) {
+       await this.prisma.$disconnect();
+       this.prisma = null;
+     }
+-    this.isInitialized = false;
+-  }
+-
+-  /**
+-   * Check if the database connection is healthy
+-   */
+-  async ping(): Promise<boolean> {
+-    try {
+-      if (!this.prisma) return false;
+-
+-      await this.prisma.$queryRaw`SELECT 1`;
+-      return true;
+-    } catch (error) {
+-      logger.error('PostgreSQL ping failed:', error);
+-      return false;
+-    }
+   }
+ 
+-  /**
+-   * Check if connected to database
+-   */
+-  isConnected(): boolean {
+-    return this.prisma !== null && this.isInitialized;
+-  }
+-
+-  /**
+-   * Store vector embeddings for the given chunks
+-   */
+-  async store(chunks: VectorChunk[]): Promise<number> {
++  protected async pingProvider(): Promise<boolean> {
+     if (!this.prisma) {
+-      throw new Error('Database not initialized');
++      return false;
+     }
+ 
+-    try {
+-      let storedCount = 0;
+-
+-      for (const chunk of chunks) {
+-        await this.prisma.vectorChunk.upsert({
+-          where: { id: chunk.id },
+-          update: {
+-            content: chunk.content,
+-            embedding: chunk.embedding,
+-            metadata: chunk.metadata,
+-            updatedAt: new Date()
+-          },
+-          create: {
+-            id: chunk.id,
+-            content: chunk.content,
+-            embedding: chunk.embedding,
+-            metadata: chunk.metadata,
+-            workspaceId: chunk.metadata.fileId || 0,
+-            fileId: chunk.metadata.fileId || 0,
+-            fileName: chunk.metadata.fileName || '',
+-            language: chunk.metadata.language || '',
+-            tokens: chunk.metadata.tokens || 0
+-          }
+-        });
+-
+-        storedCount++;
+-
+-        // Invalidate cache for this workspace
+-        if (this.cacheInvalidator && chunk.metadata.fileId) {
+-          await this.cacheInvalidator.invalidateWorkspaceCache(chunk.metadata.fileId);
+-        }
++    await this.prisma.$queryRaw`SELECT 1`;
++    return true;
++  }
++
++  public async storeChunks(
++    fileId: number,
++    chunks: Array<{
++      content: string;
++      startLine?: number;
++      endLine?: number;
++      tokens: number;
++    }>,
++  ): Promise<void> {
++    if (!this.prisma) {
++      throw new Error('PostgreSQL adapter not initialized');
++    }
++
++    await this.prisma.$transaction(async (tx) => {
++      await tx.rAGChunk.deleteMany({ where: { file_id: fileId } });
++
++      for (let index = 0; index < chunks.length; index++) {
++        const chunk = chunks[index];
++        const embedding = await this.generateEmbedding(chunk.content);
++        const chunkId = `${fileId}-${index}`;
++
++        await tx.$executeRawUnsafe(
++          `
++            INSERT INTO "rag_chunks" (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at, updated_at)
++            VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, NOW(), NOW())
++          `,
++          fileId,
++          chunkId,
++          chunk.content,
++          chunk.startLine ?? null,
++          chunk.endLine ?? null,
++          chunk.tokens,
++          `[${embedding.join(', ')}]`,
++          JSON.stringify({ chunkIndex: index }),
++        );
+       }
++    });
+ 
+-      return storedCount;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'store');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Search for similar vectors using the provided query embedding
+-   */
+-  async searchWithVector(
+-    queryEmbedding: number[],
+-    options: SearchOptions
+-  ): Promise<SearchResult[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const limit = options.limit || 10;
+-      const threshold = options.threshold || 0.1;
+-
+-      // Use Prisma to query with cosine similarity
+-      const results = await this.prisma.$queryRaw`
+-        SELECT
+-          id,
+-          content,
+-          embedding,
+-          metadata,
+-          1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity
+-        FROM "VectorChunk"
+-        WHERE 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) > ${threshold}
+-        ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector
+-        LIMIT ${limit}
+-      `;
+-
+-      return (results as any[]).map((row: any) => ({
+-        chunk: {
+-          id: row.id,
+-          content: row.content,
+-          embedding: row.embedding,
+-          metadata: row.metadata || {}
+-        },
+-        similarity: parseFloat(row.similarity)
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'searchWithVector');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Search for similar vectors using text query (generates embedding internally)
+-   */
+-  async searchWithText(
+-    query: string,
+-    options: SearchOptions
+-  ): Promise<SearchResult[]> {
+-    // For PostgreSQL, we'd need an embedding service to convert text to vectors
+-    // For now, fall back to content-based search
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const limit = options.limit || 10;
+-
+-      const results = await this.prisma.vectorChunk.findMany({
+-        where: {
+-          content: {
+-            contains: query,
+-            mode: 'insensitive'
+-          }
+-        },
+-        take: limit,
+-        orderBy: {
+-          updatedAt: 'desc'
+-        }
+-      });
+-
+-      return results.map(chunk => ({
+-        chunk: {
+-          id: chunk.id,
+-          content: chunk.content,
+-          embedding: chunk.embedding as number[],
+-          metadata: chunk.metadata as any
+-        },
+-        similarity: 0.5 // Default similarity for text-based search
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'searchWithText');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Delete vectors by their IDs
+-   */
+-  async delete(ids: string[]): Promise<number> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const result = await this.prisma.vectorChunk.deleteMany({
+-        where: {
+-          id: {
+-            in: ids
+-          }
+-        }
+-      });
+-
+-      return result.count;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'delete');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get statistics about the vector database
+-   */
+-  async getStats(): Promise<{
+-    totalVectors: number;
+-    indexSize: number;
+-    lastUpdated: Date;
+-  }> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const stats = await this.prisma.vectorChunk.aggregate({
+-        _count: {
+-          id: true
+-        },
+-        _max: {
+-          updatedAt: true
+-        }
+-      });
+-
+-      // Get approximate index size (this is a simplified calculation)
+-      const indexSize = stats._count.id * 1000; // Rough estimate
+-
+-      return {
+-        totalVectors: stats._count.id,
+-        indexSize,
+-        lastUpdated: stats._max.updatedAt || new Date()
+-      };
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getStats');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Generate embeddings for the given text (placeholder implementation)
+-   */
+-  async generateEmbedding(text: string): Promise<number[]> {
+-    // This would integrate with an embedding service (OpenAI, etc.)
+-    // For now, return a placeholder embedding
+-    const dimensions = 1536; // OpenAI text-embedding-ada-002 dimensions
+-    return new Array(dimensions).fill(0).map(() => Math.random() * 2 - 1);
+-  }
+-
+-  /**
+-   * Get the dimensionality of vectors in this database
+-   */
+-  getDimensions(): number {
+-    return 1536; // Standard for OpenAI embeddings
+-  }
+-
+-  /**
+-   * Clear all vectors from the database
+-   */
+-  async clear(): Promise<void> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      await this.prisma.vectorChunk.deleteMany({});
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'clear');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Create an index for the given field if it doesn't exist
+-   */
+-  async createIndex(field: string, options?: any): Promise<void> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      // For pgvector, indexes are created using SQL
+-      // This is a simplified implementation
+-      await this.prisma.$executeRaw`
+-        CREATE INDEX IF NOT EXISTS ${field}_idx ON "VectorChunk" USING ivfflat (embedding vector_cosine_ops)
+-      `;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'createIndex');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Delete an index for the given field
+-   */
+-  async deleteIndex(field: string): Promise<void> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      await this.prisma.$executeRaw`DROP INDEX IF EXISTS ${field}_idx`;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'deleteIndex');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get all available indexes
+-   */
+-  async getIndexes(): Promise<string[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const indexes = await this.prisma.$queryRaw`
+-        SELECT indexname FROM pg_indexes WHERE tablename = 'VectorChunk'
+-      `;
+-
+-      return (indexes as any[]).map((idx: any) => idx.indexname);
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getIndexes');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Invalidate cache for specific table and content type
+-   */
+-  async invalidateCache(table: string, contentType?: string): Promise<number> {
+-    if (!this.cacheInvalidator) {
+-      return 0;
+-    }
+-
+-    try {
+-      return await this.cacheInvalidator.invalidateByContentType(contentType || table);
+-    } catch (error) {
+-      logger.warn('Cache invalidation failed:', error);
+-      return 0;
++    if (this.cacheInvalidator) {
++      await this.cacheInvalidator.manuallyInvalidateCache('rag_chunks');
+     }
+   }
+ 
+-  /**
+-   * Get vector by ID
+-   */
+-  async getById(id: string): Promise<VectorChunk | null> {
++  public async search(embedding: number[], options: SearchOptions = {}): Promise<SearchResult[]> {
+     if (!this.prisma) {
+-      throw new Error('Database not initialized');
++      throw new Error('PostgreSQL adapter not initialized');
+     }
+ 
+-    try {
+-      const chunk = await this.prisma.vectorChunk.findUnique({
+-        where: { id }
+-      });
++    const limit = options.limit ?? 10;
++    const threshold = options.threshold ?? 0.7;
+ 
+-      if (!chunk) return null;
+-
+-      return {
+-        id: chunk.id,
+-        content: chunk.content,
+-        embedding: chunk.embedding as number[],
+-        metadata: chunk.metadata as any
+-      };
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getById');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Update vector by ID
+-   */
+-  async update(id: string, chunk: Partial<VectorChunk>): Promise<boolean> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
++    if (this.config.cacheEnabled && options.useCache !== false) {
++      try {
++        const cached = await PgVectorSearch.findSimilarCode(embedding, {
++          limit,
++          minSimilarity: threshold,
++          workspace: options.workspaceId ? String(options.workspaceId) : undefined,
++          useCache: true,
++        });
+ 
+-    try {
+-      const result = await this.prisma.vectorChunk.update({
+-        where: { id },
+-        data: {
+-          ...(chunk.content && { content: chunk.content }),
+-          ...(chunk.embedding && { embedding: chunk.embedding }),
+-          ...(chunk.metadata && { metadata: chunk.metadata }),
+-          updatedAt: new Date()
++        if (cached.length > 0) {
++          return cached.map((result) => ({
++            chunk: {
++              id: result.metadata?.chunk_id ?? result.id,
++              content: result.content,
++              embedding: [],
++              metadata: {
++                fileId: result.metadata?.file_id ?? 0,
++                fileName: result.metadata?.path ?? '',
++                startLine: result.metadata?.start_line ?? undefined,
++                endLine: result.metadata?.end_line ?? undefined,
++                language: result.metadata?.language ?? undefined,
++                tokens: result.metadata?.tokens ?? 0,
++              },
++            },
++            similarity: result.similarity,
++          }));
+         }
+-      });
+-
+-      return true;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'update');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Batch operation for multiple vectors
+-   */
+-  async batch(operations: Array<{
+-    type: 'insert' | 'update' | 'delete';
+-    data?: VectorChunk;
+-    id?: string;
+-  }>): Promise<number> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    let processedCount = 0;
+-
+-    try {
+-      for (const operation of operations) {
+-        switch (operation.type) {
+-          case 'insert':
+-            if (operation.data) {
+-              await this.prisma.vectorChunk.create({
+-                data: {
+-                  id: operation.data.id,
+-                  content: operation.data.content,
+-                  embedding: operation.data.embedding,
+-                  metadata: operation.data.metadata,
+-                  workspaceId: operation.data.metadata.fileId || 0,
+-                  fileId: operation.data.metadata.fileId || 0,
+-                  fileName: operation.data.metadata.fileName || '',
+-                  language: operation.data.metadata.language || '',
+-                  tokens: operation.data.metadata.tokens || 0
+-                }
+-              });
+-              processedCount++;
+-            }
+-            break;
+-
+-          case 'update':
+-            if (operation.id && operation.data) {
+-              await this.prisma.vectorChunk.update({
+-                where: { id: operation.id },
+-                data: {
+-                  ...(operation.data.content && { content: operation.data.content }),
+-                  ...(operation.data.embedding && { embedding: operation.data.embedding }),
+-                  ...(operation.data.metadata && { metadata: operation.data.metadata }),
+-                  updatedAt: new Date()
+-                }
+-              });
+-              processedCount++;
+-            }
+-            break;
+-
+-          case 'delete':
+-            if (operation.id) {
+-              await this.prisma.vectorChunk.delete({
+-                where: { id: operation.id }
+-              });
+-              processedCount++;
+-            }
+-            break;
++      } catch (error) {
++        if (this.config.enableLogging) {
++          logger.warn('PgVector cache search failed; falling back to direct query', { error });
+         }
+       }
+-
+-      return processedCount;
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'batch');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get similar vectors within a specific workspace
+-   */
+-  async searchByWorkspace(
+-    workspaceId: number,
+-    queryEmbedding: number[],
+-    options: SearchOptions
+-  ): Promise<SearchResult[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+     }
+ 
+-    try {
+-      const limit = options.limit || 10;
+-      const threshold = options.threshold || 0.1;
++    const distanceExpression = 'embedding <=> $1::vector';
++    const similarityExpression = `1 - (${distanceExpression})`;
+ 
+-      const results = await this.prisma.$queryRaw`
++    const rows = await this.prisma.$queryRawUnsafe<Array<{
++      chunk_id: string;
++      content: string;
++      start_line: number | null;
++      end_line: number | null;
++      tokens: number | null;
++      file_id: number | null;
++      similarity: number;
++    }>>(
++      `
+         SELECT
+-          id,
++          chunk_id,
+           content,
+-          embedding,
+-          metadata,
+-          1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) as similarity
+-        FROM "VectorChunk"
+-        WHERE workspaceId = ${workspaceId}
+-        AND 1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector) > ${threshold}
+-        ORDER BY embedding <=> ${JSON.stringify(queryEmbedding)}::vector
+-        LIMIT ${limit}
+-      `;
+-
+-      return (results as any[]).map((row: any) => ({
+-        chunk: {
+-          id: row.id,
+-          content: row.content,
+-          embedding: row.embedding,
+-          metadata: row.metadata || {}
+-        },
+-        similarity: parseFloat(row.similarity)
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'searchByWorkspace');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get vectors by file IDs
+-   */
+-  async getByFileIds(fileIds: number[]): Promise<VectorChunk[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const chunks = await this.prisma.vectorChunk.findMany({
+-        where: {
+-          fileId: {
+-            in: fileIds
+-          }
+-        }
+-      });
+-
+-      return chunks.map(chunk => ({
+-        id: chunk.id,
+-        content: chunk.content,
+-        embedding: chunk.embedding as number[],
+-        metadata: chunk.metadata as any
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getByFileIds');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Search with hybrid scoring (semantic + keyword)
+-   */
+-  async hybridSearch(
+-    query: string,
+-    queryEmbedding: number[],
+-    options: SearchOptions & {
+-      keywordWeight?: number;
+-      semanticWeight?: number;
+-    }
+-  ): Promise<SearchResult[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const limit = options.limit || 10;
+-      const keywordWeight = options.keywordWeight || 0.3;
+-      const semanticWeight = options.semanticWeight || 0.7;
+-
+-      const results = await this.prisma.$queryRaw`
+-        SELECT
+-          id,
+-          content,
+-          embedding,
+-          metadata,
+-          (${semanticWeight} * (1 - (embedding <=> ${JSON.stringify(queryEmbedding)}::vector)) +
+-           ${keywordWeight} * similarity(content, ${query})) as combined_score
+-        FROM "VectorChunk"
+-        WHERE content % ${query}
+-        ORDER BY combined_score DESC
+-        LIMIT ${limit}
+-      `;
+-
+-      return (results as any[]).map((row: any) => ({
+-        chunk: {
+-          id: row.id,
+-          content: row.content,
+-          embedding: row.embedding,
+-          metadata: row.metadata || {}
+-        },
+-        similarity: parseFloat(row.combined_score)
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'hybridSearch');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get recommendations based on user behavior
+-   */
+-  async getRecommendations(
+-    userId: string,
+-    currentFileId: number,
+-    options: {
+-      limit?: number;
+-      excludeCurrentFile?: boolean;
+-    }
+-  ): Promise<VectorChunk[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const limit = options.limit || 5;
+-      const whereClause = options.excludeCurrentFile
+-        ? 'AND fileId != $2'
+-        : '';
+-
+-      const results = await this.prisma.$queryRaw`
+-        SELECT id, content, embedding, metadata
+-        FROM "VectorChunk"
+-        WHERE userId = $1 ${whereClause}
+-        ORDER BY updatedAt DESC
++          start_line,
++          end_line,
++          tokens,
++          file_id,
++          ${similarityExpression} AS similarity
++        FROM "rag_chunks"
++        WHERE ${similarityExpression} >= $2
++        ORDER BY ${distanceExpression}
+         LIMIT $3
+-      ` as any[];
+-
+-      return results.map((row: any) => ({
+-        id: row.id,
++      `,
++      `[${embedding.join(', ')}]`,
++      threshold,
++      limit,
++    );
++
++    return rows.map((row) => ({
++      chunk: {
++        id: row.chunk_id,
+         content: row.content,
+-        embedding: row.embedding,
+-        metadata: row.metadata || {}
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getRecommendations');
+-      throw vectorDbError;
+-    }
+-  }
+-
+-  /**
+-   * Get trending content based on recent activity
+-   */
+-  async getTrendingContent(
+-    workspaceId: number,
+-    options: {
+-      limit?: number;
+-      timeWindow?: number;
+-    }
+-  ): Promise<VectorChunk[]> {
+-    if (!this.prisma) {
+-      throw new Error('Database not initialized');
+-    }
+-
+-    try {
+-      const limit = options.limit || 10;
+-      const timeWindow = options.timeWindow || 24; // hours
+-
+-      const cutoffDate = new Date();
+-      cutoffDate.setHours(cutoffDate.getHours() - timeWindow);
+-
+-      const chunks = await this.prisma.vectorChunk.findMany({
+-        where: {
+-          workspaceId,
+-          updatedAt: {
+-            gte: cutoffDate
+-          }
++        embedding: [],
++        metadata: {
++          fileId: row.file_id ?? 0,
++          fileName: '',
++          startLine: row.start_line ?? undefined,
++          endLine: row.end_line ?? undefined,
++          language: undefined,
++          tokens: row.tokens ?? 0,
+         },
+-        orderBy: {
+-          updatedAt: 'desc'
+-        },
+-        take: limit
+-      });
+-
+-      return chunks.map(chunk => ({
+-        id: chunk.id,
+-        content: chunk.content,
+-        embedding: chunk.embedding as number[],
+-        metadata: chunk.metadata as any
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getTrendingContent');
+-      throw vectorDbError;
+-    }
++      },
++      similarity: row.similarity,
++    }));
+   }
+ 
+-  /**
+-   * Search with filters
+-   */
+-  async searchWithFilters(
+-    queryEmbedding: number[],
+-    filters: {
+-      language?: string;
+-      fileType?: string;
+-      minTokens?: number;
+-      maxTokens?: number;
+-      dateRange?: { start: Date; end: Date };
+-    },
+-    options: SearchOptions
+-  ): Promise<SearchResult[]> {
++  public async deleteFileChunks(fileId: number): Promise<void> {
+     if (!this.prisma) {
+-      throw new Error('Database not initialized');
++      throw new Error('PostgreSQL adapter not initialized');
+     }
+ 
+-    try {
+-      const limit = options.limit || 10;
+-      const threshold = options.threshold || 0.1;
+-
+-      let whereClause = '1 - (embedding <=> $1::vector) > $2';
+-      const values = [JSON.stringify(queryEmbedding), threshold];
+-
+-      if (filters.language) {
+-        whereClause += ` AND language = $${values.length + 1}`;
+-        values.push(filters.language);
+-      }
+-
+-      if (filters.minTokens) {
+-        whereClause += ` AND tokens >= $${values.length + 1}`;
+-        values.push(filters.minTokens.toString());
+-      }
+-
+-      if (filters.maxTokens) {
+-        whereClause += ` AND tokens <= $${values.length + 1}`;
+-        values.push(filters.maxTokens.toString());
+-      }
+-
+-      if (filters.dateRange) {
+-        whereClause += ` AND updatedAt >= $${values.length + 1} AND updatedAt <= $${values.length + 2}`;
+-        values.push(filters.dateRange.start.toISOString(), filters.dateRange.end.toISOString());
+-      }
+-
+-      const query = `
+-        SELECT
+-          id,
+-          content,
+-          embedding,
+-          metadata,
+-          1 - (embedding <=> $${JSON.stringify(queryEmbedding)}::vector) as similarity
+-        FROM "VectorChunk"
+-        WHERE ${whereClause}
+-        ORDER BY embedding <=> $${JSON.stringify(queryEmbedding)}::vector
+-        LIMIT ${limit}
+-      `;
+-
+-      const results = await this.prisma.$queryRawUnsafe(query, ...values);
+-
+-      return (results as any[]).map((row: any) => ({
+-        chunk: {
+-          id: row.id,
+-          content: row.content,
+-          embedding: row.embedding,
+-          metadata: row.metadata || {}
+-        },
+-        similarity: parseFloat(row.similarity)
+-      }));
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'searchWithFilters');
+-      throw vectorDbError;
+-    }
++    await this.prisma.rAGChunk.deleteMany({ where: { file_id: fileId } });
+   }
+ 
+-  /**
+-   * Get content analytics
+-   */
+-  async getAnalytics(workspaceId: number): Promise<{
+-    totalFiles: number;
++  public async getStats(): Promise<{
+     totalChunks: number;
+-    languageBreakdown: Record<string, number>;
+-    recentActivity: Array<{
+-      date: Date;
+-      filesAdded: number;
+-      searchesPerformed: number;
+-    }>;
++    totalFiles: number;
++    averageChunkSize: number;
+   }> {
+     if (!this.prisma) {
+-      throw new Error('Database not initialized');
++      throw new Error('PostgreSQL adapter not initialized');
+     }
+ 
+-    try {
+-      // Get total counts
+-      const totalChunks = await this.prisma.vectorChunk.count({
+-        where: { workspaceId }
+-      });
++    const [aggregate, grouped] = await this.prisma.$transaction([
++      this.prisma.rAGChunk.aggregate({
++        _count: { id: true },
++        _avg: { tokens: true },
++      }),
++      this.prisma.rAGChunk.groupBy({
++        by: ['file_id'],
++        _count: { file_id: true },
++      }),
++    ]);
+ 
+-      const uniqueFiles = await this.prisma.vectorChunk.findMany({
+-        where: { workspaceId },
+-        select: { fileId: true },
+-        distinct: ['fileId']
+-      });
+-
+-      // Get language breakdown
+-      const languageStats = await this.prisma.vectorChunk.groupBy({
+-        by: ['language'],
+-        where: { workspaceId },
+-        _count: {
+-          id: true
+-        }
+-      });
+-
+-      const languageBreakdown: Record<string, number> = {};
+-      languageStats.forEach(stat => {
+-        if (stat.language) {
+-          languageBreakdown[stat.language] = stat._count.id;
+-        }
+-      });
+-
+-      // Get recent activity (simplified)
+-      const recentActivity = [
+-        {
+-          date: new Date(),
+-          filesAdded: uniqueFiles.length,
+-          searchesPerformed: 0 // Would need search tracking
+-        }
+-      ];
++    return {
++      totalChunks: aggregate._count.id ?? 0,
++      totalFiles: grouped.length,
++      averageChunkSize: aggregate._avg.tokens ?? 0,
++    };
++  }
+ 
+-      return {
+-        totalFiles: uniqueFiles.length,
+-        totalChunks,
+-        languageBreakdown,
+-        recentActivity
+-      };
+-    } catch (error) {
+-      const vectorDbError = this.errorHandler.handleError(error, 'getAnalytics');
+-      throw vectorDbError;
++  public async invalidateCache(_table: string, contentType?: string): Promise<number> {
++    if (!this.cacheInvalidator) {
++      return 0;
+     }
++
++    return this.cacheInvalidator.manuallyInvalidateCache('rag_chunks', contentType);
+   }
++
+ }
++
++export default PostgresVectorDatabaseAdapter;

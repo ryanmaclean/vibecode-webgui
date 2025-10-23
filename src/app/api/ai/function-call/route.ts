@@ -61,26 +61,32 @@ export async function POST(request: NextRequest) {
       result: result.result,
       error: result.error,
       metadata: {
-        ...result.metadata,
+        executionTime: result.executionTime,
         responseTime,
         timestamp: new Date().toISOString()
       }
     })
 
   } catch (error: unknown) {
-    logger.error('Function calling API error:', error)
-    
+    const errorMessage = error instanceof Error ? error.message : 'Function execution failed';
+    const errorDetails = process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined;
+    const errorInfo = error instanceof Error
+      ? { message: error.message, stack: error.stack }
+      : { error: String(error) };
+
+    logger.error('Function calling API error:', errorInfo)
+
     return NextResponse.json({
       success: false,
-      error: error instanceof Error ? error.message : 'Function execution failed',
-      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
+      error: errorMessage,
+      details: errorDetails
     }, { status: 500 })
   }
 }
 
 export async function GET() {
   try {
-    const definitions = functionCallingService.getFunctionDefinitions()
+    const definitions = functionCallingService.getRegisteredFunctions()
     
     return NextResponse.json({
       success: true,
