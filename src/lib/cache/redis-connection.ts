@@ -6,7 +6,7 @@
 import Redis from 'ioredis';
 import { metrics } from '../server-monitoring';
 import { RedisError } from './redis-error';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Type for the Redis client
 export type RedisClientType = Redis;
 
@@ -87,11 +87,11 @@ export class RedisConnectionManager {
               // Exponential backoff with a maximum delay of 10 seconds
               const delay = Math.min(times * 1000, 10000);
               this.connectionAttempts = times;
-              logger.info(`Redis connection attempt ${times}, retrying in ${delay}ms`);
+              console.log(`Redis connection attempt ${times}, retrying in ${delay}ms`);
               
               // Stop retrying after MAX_CONNECTION_ATTEMPTS
               if (times >= MAX_CONNECTION_ATTEMPTS) {
-                logger.error(`Max Redis connection attempts (${MAX_CONNECTION_ATTEMPTS}) reached. Giving up.`);
+                console.error(`Max Redis connection attempts (${MAX_CONNECTION_ATTEMPTS}) reached. Giving up.`);
                 return null; // Stop retrying
               }
               
@@ -110,7 +110,7 @@ export class RedisConnectionManager {
         this.setupEventListeners();
       }
     } catch (error) {
-      logger.error('Redis client initialization failed:', error);
+      console.error('Redis client initialization failed:', error);
       metrics.increment('redis.initialization.failed');
       this.redis = null;
       throw new RedisError(
@@ -128,30 +128,30 @@ export class RedisConnectionManager {
     if (!this.redis) return;
 
     this.redis.on('connect', () => {
-      logger.info('Redis connection established successfully');
+      console.log('Redis connection established successfully');
       this.connectionAttempts = 0; // Reset counter on successful connection
       this.reconnecting = false;
       metrics.increment('redis.connection.success');
     });
 
     this.redis.on('error', (error: Error) => {
-      logger.error('Redis connection error:', error);
+      console.error('Redis connection error:', error);
       metrics.increment('redis.connection.error');
     });
 
     this.redis.on('ready', () => {
-      logger.info('Redis client ready');
+      console.log('Redis client ready');
       metrics.increment('redis.ready');
     });
     
     this.redis.on('reconnecting', () => {
-      logger.info('Redis client reconnecting...');
+      console.log('Redis client reconnecting...');
       this.reconnecting = true;
       metrics.increment('redis.reconnect.attempt');
     });
     
     this.redis.on('end', () => {
-      logger.warn('Redis connection closed');
+      console.warn('Redis connection closed');
       metrics.increment('redis.connection.closed');
     });
   }
@@ -183,7 +183,7 @@ export class RedisConnectionManager {
    */
   async reconnect(): Promise<boolean> {
     if (this.reconnecting) {
-      logger.info('Already attempting to reconnect to Redis...');
+      console.log('Already attempting to reconnect to Redis...');
       return false;
     }
     
@@ -196,13 +196,13 @@ export class RedisConnectionManager {
         }
       } catch (error) {
         // Existing connection failed, try to reinitialize
-        logger.info('Existing Redis connection failed, attempting to reconnect...');
+        console.log('Existing Redis connection failed, attempting to reconnect...');
         
         // Close the existing connection
         try {
           await this.redis.quit();
         } catch (quitError) {
-          logger.warn('Error closing existing Redis connection:', quitError);
+          console.warn('Error closing existing Redis connection:', quitError);
         }
         
         this.redis = null;
@@ -217,13 +217,13 @@ export class RedisConnectionManager {
       if (this.redis) {
         const result = await this.redis.ping();
         if (result === 'PONG') {
-          logger.info('Redis reconnection successful');
+          console.log('Redis reconnection successful');
           this.reconnecting = false;
           return true;
         }
       }
     } catch (error) {
-      logger.error('Redis reconnection failed:', error);
+      console.error('Redis reconnection failed:', error);
       this.reconnecting = false;
     }
     
@@ -237,9 +237,9 @@ export class RedisConnectionManager {
     if (this.redis) {
       try {
         await this.redis.quit();
-        logger.info('Redis connection closed successfully');
+        console.log('Redis connection closed successfully');
       } catch (error) {
-        logger.error('Error closing Redis connection:', error);
+        console.error('Error closing Redis connection:', error);
       } finally {
         this.redis = null;
       }
@@ -254,6 +254,6 @@ export const redisConnection = new RedisConnectionManager();
 try {
   redisConnection.initialize();
 } catch (error) {
-  logger.error('Redis initialization error:', error);
+  console.error('Redis initialization error:', error);
   // We'll continue without Redis and handle failures gracefully in the CacheManager
 }

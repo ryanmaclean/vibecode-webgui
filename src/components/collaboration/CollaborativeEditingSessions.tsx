@@ -26,7 +26,7 @@ Users,
   RefreshCw
 } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface CollaborativeSession {
   sessionId: string
@@ -164,7 +164,7 @@ export default function CollaborativeEditingSessions({
       await navigator.clipboard.writeText(inviteLink)
       // TODO: Show success toast
     } catch (error) {
-      logger.error('Failed to copy invite link:', error)
+      console.error('Failed to copy invite link:', error)
       // TODO: Show error toast
     }
   }, [inviteLink])

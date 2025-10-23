@@ -5,7 +5,7 @@
 
 import OpenAI from 'openai';
 import { BaseVectorEmbeddingProvider } from './base-vector-embedding-provider';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class OpenAIEmbeddingProvider extends BaseVectorEmbeddingProvider {
   private openai: OpenAI | null = null;
   private useOpenRouter: boolean;
@@ -67,7 +67,7 @@ export class OpenAIEmbeddingProvider extends BaseVectorEmbeddingProvider {
 
       return response.data[0].embedding;
     } catch (error) {
-      logger.error('Error generating OpenAI embedding:', error);
+      console.error('Error generating OpenAI embedding:', error);
       // Return zero vector as fallback
       return this.generateZeroVector();
     }

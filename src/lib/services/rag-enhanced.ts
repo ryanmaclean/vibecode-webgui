@@ -1,5 +1,5 @@
 import { webSearchService, WebSearchResult } from './web-search'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface RAGContext {
   sources: RAGSource[]
   webResults?: WebSearchResult[]
@@ -75,7 +75,7 @@ export class EnhancedRAGService {
       }
 
     } catch (error) {
-      logger.error('RAG context building failed:', error)
+      console.error('RAG context building failed:', error)
       return {
         sources: [],
         webResults: [],
@@ -140,7 +140,7 @@ export class EnhancedRAGService {
         .slice(0, maxResults)
 
     } catch (error) {
-      logger.warn('File content search failed:', error)
+      console.warn('File content search failed:', error)
       return []
     }
   }

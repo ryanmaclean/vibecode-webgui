@@ -7,7 +7,7 @@
 import Redis from 'ioredis';
 import { BaseVectorCacheAdapter } from './base-vector-cache-adapter';
 import { VectorSimilarityQuery, VectorSimilarityResults } from '../interfaces/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
   private client: Redis | null = null;
   private keyPrefix: string;
@@ -45,10 +45,10 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
       }
 
       this.client.on('error', (err: Error) => {
-        logger.error('Redis cache connection error:', err);
+        console.error('Redis cache connection error:', err);
       });
     } catch (error) {
-      logger.error('Failed to initialize Redis cache:', error);
+      console.error('Failed to initialize Redis cache:', error);
       this.client = null;
     }
   }
@@ -74,7 +74,7 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
           this.updateStats('hit');
           return results;
         } catch (parseError) {
-          logger.warn('Error parsing cached results:', parseError);
+          console.warn('Error parsing cached results:', parseError);
           this.updateStats('miss');
           return null;
         }
@@ -83,7 +83,7 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
         return null;
       }
     } catch (error) {
-      logger.error('Error getting cached results:', error);
+      console.error('Error getting cached results:', error);
       this.updateStats('skip');
       return null;
     }
@@ -115,7 +115,7 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
       
       return true;
     } catch (error) {
-      logger.error('Error caching results:', error);
+      console.error('Error caching results:', error);
       return false;
     }
   }
@@ -161,7 +161,7 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
       
       return deletedCount;
     } catch (error) {
-      logger.error('Error invalidating cache:', error);
+      console.error('Error invalidating cache:', error);
       return 0;
     }
   }
@@ -174,7 +174,7 @@ export class RedisVectorCacheAdapter extends BaseVectorCacheAdapter {
       try {
         await this.client.quit();
       } catch (error) {
-        logger.error('Error closing Redis connection:', error);
+        console.error('Error closing Redis connection:', error);
       }
       this.client = null;
     }

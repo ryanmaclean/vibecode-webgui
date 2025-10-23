@@ -6,7 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { getToken } from 'next-auth/jwt';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
 import { terminalWebSocketQuerySchema } from '@/lib/api/validation/schemas';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 import path from 'path';
 
 // Store active PTY processes
@@ -35,7 +35,7 @@ function ensureWebSocketServer() {
 
       const validation = validateQueryParams(mockReq, terminalWebSocketQuerySchema);
       if (!validation.success) {
-        logger.error('Terminal WebSocket validation failed');
+        console.error('Terminal WebSocket validation failed');
         ws.close(4000, 'Invalid query parameters');
         return;
       }
@@ -48,7 +48,7 @@ function ensureWebSocketServer() {
 
         // SECURITY: Validate workspace path is within allowed directory
         if (!workspacePath.startsWith('/workspaces/')) {
-          logger.error(`Invalid workspace path attempted: ${workspacePath}`);
+          console.error(`Invalid workspace path attempted: ${workspacePath}`);
           ws.close(4001, 'Invalid workspace path');
           return;
         }
@@ -84,7 +84,7 @@ function ensureWebSocketServer() {
         ws.on('message', (message: string) => {
           // SECURITY: Limit message size to prevent DoS
           if (message.length > 10_000) {
-            logger.warn(`Terminal input too large: ${message.length} bytes`);
+            console.warn(`Terminal input too large: ${message.length} bytes`);
             ws.close(4002, 'Message too large');
             return;
           }
@@ -100,7 +100,7 @@ function ensureWebSocketServer() {
           }
         });
       } catch (error) {
-        logger.error('Terminal session creation error:', error);
+        console.error('Terminal session creation error:', error);
         ws.close(4003, 'Failed to create terminal session');
       }
     });

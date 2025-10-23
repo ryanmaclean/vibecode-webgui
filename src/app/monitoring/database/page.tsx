@@ -16,7 +16,7 @@ import {
   Server,
   Zap
 } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface PoolStatus {
   pools: Array<{
     key: string;
@@ -119,7 +119,7 @@ export default function DatabaseHealthDashboard() {
       const response = await fetch('/api/monitoring/pool-alerts');
       if (!response.ok) {
         if (response.status === 401) {
-          logger.warn('Not authenticated for pool alerts');
+          console.warn('Not authenticated for pool alerts');
           return;
         }
         throw new Error('Failed to fetch pool alerts');
@@ -127,7 +127,7 @@ export default function DatabaseHealthDashboard() {
       const data = await response.json();
       setPoolAlerts(data.alerts || []);
     } catch (err) {
-      logger.error('Error fetching pool alerts:', err);
+      console.error('Error fetching pool alerts:', err);
       // Don't set error state for alerts, just log it
     } finally {
       setAlertsLoading(false);

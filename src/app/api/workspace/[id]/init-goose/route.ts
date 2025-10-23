@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
 import path from 'path';
@@ -50,7 +50,7 @@ export async function POST(
 
     // SECURITY: Validate workspace path exists and is within allowed directory
     if (!workspacePath.startsWith('/workspaces/')) {
-      logger.error(`Invalid workspace path attempted: ${workspacePath}`);
+      console.error(`Invalid workspace path attempted: ${workspacePath}`);
       return NextResponse.json(
         { error: 'Invalid workspace path' },
         { status: 400 }
@@ -82,7 +82,7 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 -- SQL in this section is executed when the migration is rolled back
 DROP TABLE IF EXISTS schema_migrations;`;
 
-    logger.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
+    console.log(`Migration file content for ${workspaceId}:\n${migrationContent}`);
 
     return NextResponse.json({
       success: true,
@@ -92,7 +92,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     });
 
   } catch (error) {
-    logger.error('Error initializing Goose:', error);
+    console.error('Error initializing Goose:', error);
     return NextResponse.json(
       { error: 'Failed to initialize Goose' },
       { status: 500 }

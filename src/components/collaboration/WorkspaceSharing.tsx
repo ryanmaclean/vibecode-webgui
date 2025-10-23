@@ -34,7 +34,7 @@ Share2,
   CheckCircle,
   ExternalLink
 } from 'lucide-react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface WorkspacePermission {
   id: string
@@ -184,7 +184,7 @@ export default function WorkspaceSharing({
       await navigator.clipboard.writeText(shareLink)
       // TODO: Show success toast
     } catch (error) {
-      logger.error('Failed to copy share link:', error)
+      console.error('Failed to copy share link:', error)
       // TODO: Show error toast
     }
   }, [shareLink])

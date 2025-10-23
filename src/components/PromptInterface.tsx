@@ -45,7 +45,7 @@ Send,
 import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
 import MessageList from './MessageList';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;
@@ -371,7 +371,7 @@ export default function PromptInterface() {
       try {
         setApiKeys(JSON.parse(savedKeys));
       } catch (error) {
-        logger.error('Error loading saved API keys:', error);
+        console.error('Error loading saved API keys:', error);
       }
     }
   }, []);
@@ -388,7 +388,7 @@ export default function PromptInterface() {
         // Pre-populate the input with template context
         setInput(`Generate a project using the "${template.name}" template. This template is described as: ${template.description}`);
       } catch (error) {
-        logger.error('Error loading selected template:', error);
+        console.error('Error loading selected template:', error);
       }
     }
   }, []);
@@ -433,7 +433,7 @@ export default function PromptInterface() {
         };
         
         recognitionRef.current.onerror = (event) => {
-          logger.error('Speech recognition error:', event.error);
+          console.error('Speech recognition error:', event.error);
           setIsListening(false);
           setInterimTranscript("");
         };
@@ -551,7 +551,7 @@ export default function PromptInterface() {
       mediaRecorder.start();
       setIsRecording(true);
     } catch (error) {
-      logger.error('Error starting audio recording:', error);
+      console.error('Error starting audio recording:', error);
     }
   }, [isRecording]);
 
@@ -764,7 +764,7 @@ Would you like to set up your API keys now?`,
       setMessages(welcomeMessages);
       
     } catch (error) {
-      logger.error('Auth error:', error);
+      console.error('Auth error:', error);
       
       // Track failed login
       await fetch('/api/auth/login-tracking', {

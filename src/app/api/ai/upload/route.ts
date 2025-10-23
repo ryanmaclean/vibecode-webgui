@@ -7,7 +7,7 @@ import { existsSync } from 'fs'
 import path from 'path'
 import { EmbeddingServiceFactory } from '@/lib/ai/embeddingServiceFactory'
 import { PrismaClient } from '@prisma/client'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -93,7 +93,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
         if ('generateEmbedding' in service && typeof service.generateEmbedding === 'function') {
           embedding = await service.generateEmbedding(chunk.content);
         } else {
-          logger.warn('Service does not have generateEmbedding method, skipping embedding generation');
+          console.warn('Service does not have generateEmbedding method, skipping embedding generation');
           continue;
         }
         
@@ -102,7 +102,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
           embedding
         });
       } catch (error) {
-        logger.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
+        console.error(`Failed to generate embedding for chunk ${chunk.id}:`, error);
         // Skip this chunk or add without embedding
         chunksWithEmbeddings.push({
           ...chunk,
@@ -117,7 +117,7 @@ async function generateEmbeddingsForChunks(chunks: Array<{
     
     return chunksWithEmbeddings;
   } catch (error) {
-    logger.error('Failed to initialize embedding service:', error);
+    console.error('Failed to initialize embedding service:', error);
     // Return chunks without embeddings if service fails
     return chunks.map(chunk => ({
       ...chunk,
@@ -362,7 +362,7 @@ export async function POST(request: NextRequest) {
           }));
           
           // Generate embeddings for all chunks
-          logger.info(`Generating embeddings for ${chunksForEmbedding.length} chunks from file ${file.name}...`);
+          console.log(`Generating embeddings for ${chunksForEmbedding.length} chunks from file ${file.name}...`);
           const chunksWithEmbeddings = await generateEmbeddingsForChunks(chunksForEmbedding);
           
           const ragIndex: RAGIndex = {
@@ -371,7 +371,7 @@ export async function POST(request: NextRequest) {
           }
 
           ragIndexes.push(ragIndex)
-          logger.info(`✅ Generated embeddings for ${chunksWithEmbeddings.filter(c => c.embedding.length > 0).length}/${chunksWithEmbeddings.length} chunks`);
+          console.log(`✅ Generated embeddings for ${chunksWithEmbeddings.filter(c => c.embedding.length > 0).length}/${chunksWithEmbeddings.length} chunks`);
         }
 
       } catch (error) {

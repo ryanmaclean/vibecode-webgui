@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import { validatePathParams } from '@/lib/api/validation/middleware'
 import { containerIdSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * GET /api/containers/[id]
  * Get container details or logs
@@ -68,7 +68,7 @@ export async function GET(
 
     return NextResponse.json(containerInfo)
   } catch (error) {
-    logger.error('Error getting container:', error)
+    console.error('Error getting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -104,7 +104,7 @@ export async function DELETE(
 
     if (!stopResult.success) {
       // Container might already be stopped, continue to remove
-      logger.warn('Failed to stop container:', stopResult.error)
+      console.warn('Failed to stop container:', stopResult.error)
     }
 
     // Remove container
@@ -122,7 +122,7 @@ export async function DELETE(
       message: 'Container stopped and removed',
     })
   } catch (error) {
-    logger.error('Error deleting container:', error)
+    console.error('Error deleting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

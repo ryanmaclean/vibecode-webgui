@@ -8,10 +8,10 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getAgentBuilderClient } from '@/lib/agents/agent-builder-client';
 import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
-import { createChildLogger } from '@/lib/logger';
+// import { createChildLogger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
 
-const logger = createChildLogger({ module: 'api', scope: 'agent-builder-session' });
+const logger = console;
 
 const stateValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const agentBuilder = getAgentBuilderClient();
     const chatkitSession = await agentBuilder.createSession(userIdentifier, payload);
 
-    logger.info('Agent Builder session created', {
+    console.log('Agent Builder session created', {
       userId: userIdentifier,
       workflowId: payload.workflowId,
       sessionId: chatkitSession.sessionId,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(chatkitSession, { status: 201 });
   } catch (error) {
-    logger.error('Failed to create Agent Builder session', { error });
+    console.error('Failed to create Agent Builder session', { error });
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

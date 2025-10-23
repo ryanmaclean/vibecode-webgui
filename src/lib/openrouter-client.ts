@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -76,7 +76,7 @@ export class OpenRouter {
 
       return await response.json();
     } catch (error) {
-      logger.error('OpenRouter API call failed:', error);
+      console.error('OpenRouter API call failed:', error);
       throw error;
     }
   }
@@ -276,7 +276,7 @@ class ErrorBoundary extends React.Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    logger.error('Uncaught error:', error, errorInfo);
+    console.error('Uncaught error:', error, errorInfo);
   }
 
   render() {
@@ -395,7 +395,7 @@ I can help implement any of these improvements or answer specific questions abou
       const data = await response.json();
       return data.data.map((model: any) => model.id);
     } catch (error) {
-      logger.error('Failed to fetch models:', error);
+      console.error('Failed to fetch models:', error);
       return [];
     }
   }

@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient, ChatMessage } from './openrouter-client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class ChatWebviewProvider implements vscode.WebviewViewProvider {
     public static readonly viewType = 'vibeCodeChat';
     private _view?: vscode.WebviewView;
@@ -190,7 +190,7 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
     }
 
     private handleChatError(error: any): void {
-        logger.error('Chat error:', error);
+        console.error('Chat error:', error);
         if (this._view) {
             this._view.webview.postMessage({
                 type: 'chatError',

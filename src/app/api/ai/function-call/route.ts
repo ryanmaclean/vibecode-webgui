@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { functionCallingService, FunctionCall } from '@/lib/services/function-calling'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 import { aiFunctionCallSchema } from '@/lib/api/validation/schemas'
 
@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
       validatedData = aiFunctionCallSchema.parse(body)
     } catch (error) {
       if (error instanceof z.ZodError) {
-        logger.warn('Function call validation failed', { errors: error.errors })
+        console.warn('Function call validation failed', { errors: error.errors })
         return NextResponse.json(
           {
             success: false,
@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
     const responseTime = Date.now() - startTime
 
     // Log function execution for monitoring
-    logger.info(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
+    console.log(`Function call: ${function_call.name} -> ${result.success ? 'success' : 'failed'} (${responseTime}ms)`)
 
     return NextResponse.json({
       success: result.success,
@@ -74,7 +74,7 @@ export async function POST(request: NextRequest) {
       ? { message: error.message, stack: error.stack }
       : { error: String(error) };
 
-    logger.error('Function calling API error:', errorInfo)
+    console.error('Function calling API error:', errorInfo)
 
     return NextResponse.json({
       success: false,

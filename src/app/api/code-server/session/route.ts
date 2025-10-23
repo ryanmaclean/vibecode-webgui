@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
 import { codeServerSessionSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'

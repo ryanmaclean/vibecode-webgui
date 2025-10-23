@@ -6,7 +6,7 @@ import { EmbeddingService } from '@/lib/ai/embeddingService';
 import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddingServiceFactory';
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
 import { PrismaClient } from '@prisma/client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Global service instance for monitoring
 let embeddingService: EmbeddingServiceType | null = null;
 let serviceReleaseFunction: (() => Promise<void>) | null = null;
@@ -18,7 +18,7 @@ async function getEmbeddingService(): Promise<EmbeddingServiceType> {
       embeddingService = service;
       serviceReleaseFunction = releaseConnection;
     } catch (error) {
-      logger.error('Failed to create embedding service:', error);
+      console.error('Failed to create embedding service:', error);
       throw new Error('Embedding service not available');
     }
   }
@@ -115,7 +115,7 @@ export async function GET(request: NextRequest) {
       });
     }
   } catch (error: any) {
-    logger.error('Error fetching embedding metrics:', error);
+    console.error('Error fetching embedding metrics:', error);
     return NextResponse.json(
       { 
         error: 'Failed to fetch embedding metrics',
@@ -171,7 +171,7 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error: any) {
-    logger.error('Error updating alert thresholds:', error);
+    console.error('Error updating alert thresholds:', error);
     return NextResponse.json(
       { 
         error: 'Failed to update alert thresholds',
@@ -216,7 +216,7 @@ export async function DELETE() {
       );
     }
   } catch (error: any) {
-    logger.error('Error resetting embedding metrics:', error);
+    console.error('Error resetting embedding metrics:', error);
     return NextResponse.json(
       { 
         error: 'Failed to reset embedding metrics',

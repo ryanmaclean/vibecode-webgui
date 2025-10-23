@@ -9,7 +9,7 @@
 import { exec } from 'child_process'
 import { promisify } from 'util'
 import { access } from 'fs/promises'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const execAsync = promisify(exec)
 
 export interface OpenCodeConfig {
@@ -403,7 +403,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      logger.info('OpenCode CLI installed successfully')
+      console.log('OpenCode CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install OpenCode CLI: ${error}`)
     }
@@ -422,7 +422,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      logger.info('OpenCode CLI uninstalled successfully')
+      console.log('OpenCode CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall OpenCode CLI: ${error}`)
     }

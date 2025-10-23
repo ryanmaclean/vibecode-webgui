@@ -9,7 +9,7 @@ import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { aiChatUnifiedSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -192,7 +192,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           });
         }
       } catch (streamError) {
-        logger.error('Streaming error:', streamError);
+        console.error('Streaming error:', streamError);
         // Fall back to mock streaming for errors
       }
       
@@ -261,7 +261,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
   } catch (error) {
-    logger.error('Chat API error:', error);
+    console.error('Chat API error:', error);
     
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',

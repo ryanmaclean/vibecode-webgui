@@ -7,7 +7,7 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 // import { prisma } from './prisma'
 
@@ -134,7 +134,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      logger.info('🔄 JWT callback:', {
+      console.log('🔄 JWT callback:', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -153,12 +153,12 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        logger.info('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        console.log('✅ JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      logger.info('📋 Session callback:', {
+      console.log('📋 Session callback:', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
@@ -170,7 +170,7 @@ export const authOptions: NextAuthOptions = {
         session.user.role = token.role
         session.user.email = token.email as string
         session.user.name = token.name as string
-        logger.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        console.log('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
@@ -188,10 +188,10 @@ export const authOptions: NextAuthOptions = {
   },
   events: {
     async signIn({ user, account }) {
-      logger.info(`User ${user.email} signed in via ${account?.provider}`)
+      console.log(`User ${user.email} signed in via ${account?.provider}`)
     },
     async signOut({ token }) {
-      logger.info(`User ${token?.email} signed out`)
+      console.log(`User ${token?.email} signed out`)
     },
   },
   debug: process.env.NODE_ENV === 'development',

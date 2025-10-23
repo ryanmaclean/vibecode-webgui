@@ -14,13 +14,13 @@ ShardInfo,
 import { ConsistentHashRing } from './consistent-hash-ring';
 import { QueryAnalyzer } from './query-analyzer';
 import { DatabasePool, DatabasePoolClient, DatabasePoolFactory, DefaultDatabasePoolFactory } from './connection-router';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Use a simple logger implementation as fallback
 const createLogger = (name: string) => ({
-  info: (message: string, ...args: any[]) => logger.info(`[${name}] INFO: ${message}`, ...args),
-  error: (message: string, ...args: any[]) => logger.error(`[${name}] ERROR: ${message}`, ...args),
-  warn: (message: string, ...args: any[]) => logger.warn(`[${name}] WARN: ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => logger.debug(`[${name}] DEBUG: ${message}`, ...args),
+  info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
+  error: (message: string, ...args: any[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
+  warn: (message: string, ...args: any[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
+  debug: (message: string, ...args: any[]) => console.log(`[${name}] DEBUG: ${message}`, ...args),
 });
 
 const DEFAULT_CONFIG: ShardingConfig = {
@@ -77,7 +77,7 @@ export class VectorShardingManager {
    */
   private async initialize(poolFactory: DatabasePoolFactory): Promise<void> {
     try {
-      this.logger.info(`Initializing VectorShardingManager with ${this.config.shards.length} shards`);
+      this.console.log(`Initializing VectorShardingManager with ${this.config.shards.length} shards`);
       
       // Create connection pools for each shard
       for (const shard of this.config.shards) {
@@ -99,9 +99,9 @@ export class VectorShardingManager {
       }
       
       this.initialized = true;
-      this.logger.info('VectorShardingManager initialized successfully');
+      this.console.log('VectorShardingManager initialized successfully');
     } catch (error) {
-      this.logger.error('Failed to initialize VectorShardingManager', error);
+      this.console.error('Failed to initialize VectorShardingManager', error);
       throw error;
     }
   }
@@ -113,7 +113,7 @@ export class VectorShardingManager {
    */
   private async initializeShard(shard: ShardInfo, poolFactory: DatabasePoolFactory): Promise<void> {
     try {
-      this.logger.info(`Initializing shard ${shard.id}`);
+      this.console.log(`Initializing shard ${shard.id}`);
       
       // Create a connection pool for this shard using the factory
       const pool = poolFactory.createPool({
@@ -131,7 +131,7 @@ export class VectorShardingManager {
       const client = await pool.connect();
       try {
         await client.query('SELECT 1');
-        this.logger.info(`Successfully connected to shard ${shard.id}`);
+        this.console.log(`Successfully connected to shard ${shard.id}`);
         
         // Update shard status to ACTIVE
         shard.status = ShardStatus.ACTIVE;
@@ -143,7 +143,7 @@ export class VectorShardingManager {
       this.shardPools.set(shard.id, pool);
       shard.connectionPool = pool;
     } catch (error) {
-      this.logger.error(`Failed to initialize shard ${shard.id}`, error);
+      this.console.error(`Failed to initialize shard ${shard.id}`, error);
       shard.status = ShardStatus.OFFLINE;
       throw error;
     }
@@ -181,7 +181,7 @@ export class VectorShardingManager {
   public async addShard(shard: ShardInfo): Promise<void> {
     await this.ensureInitialized();
     
-    this.logger.info(`Adding shard ${shard.id}`);
+    this.console.log(`Adding shard ${shard.id}`);
     
     // Initialize the new shard
     await this.initializeShard(shard, this.poolFactory);
@@ -204,7 +204,7 @@ export class VectorShardingManager {
       lastUpdated: new Date()
     });
     
-    this.logger.info(`Shard ${shard.id} added successfully`);
+    this.console.log(`Shard ${shard.id} added successfully`);
   }
 
   /**
@@ -214,7 +214,7 @@ export class VectorShardingManager {
   public async removeShard(shardId: string): Promise<void> {
     await this.ensureInitialized();
     
-    this.logger.info(`Removing shard ${shardId}`);
+    this.console.log(`Removing shard ${shardId}`);
     
     // Remove from the hash ring
     this.consistentHashRing.removeShard(shardId);
@@ -235,7 +235,7 @@ export class VectorShardingManager {
     // Remove stats
     this.shardStats.delete(shardId);
     
-    this.logger.info(`Shard ${shardId} removed successfully`);
+    this.console.log(`Shard ${shardId} removed successfully`);
   }
 
   /**
@@ -304,7 +304,7 @@ export class VectorShardingManager {
       // Update stats
       this.updateShardStats(shardId, Date.now() - startTime, false);
       
-      this.logger.error(`Query failed on shard ${shardId}`, error);
+      this.console.error(`Query failed on shard ${shardId}`, error);
       throw error;
     } finally {
       client.release();
@@ -387,7 +387,7 @@ export class VectorShardingManager {
       activeShards.map(shard => 
         this.executeOnShard(query, params, shard.id)
           .catch(error => {
-            this.logger.error(`Query failed on shard ${shard.id}`, error);
+            this.console.error(`Query failed on shard ${shard.id}`, error);
             return null;
           })
       )
@@ -492,7 +492,7 @@ export class VectorShardingManager {
       targetShards.map(shard => 
         this.executeOnShard(query, params, shard.id)
           .catch(error => {
-            this.logger.error(`Write failed on shard ${shard.id}`, error);
+            this.console.error(`Write failed on shard ${shard.id}`, error);
             return null;
           })
       )
@@ -634,7 +634,7 @@ export class VectorShardingManager {
       targetShards.map(shard => 
         this.executeOnShard(query, params, shard.id)
           .catch(error => {
-            this.logger.error(`Read failed on shard ${shard.id}`, error);
+            this.console.error(`Read failed on shard ${shard.id}`, error);
             return null;
           })
       )
@@ -741,7 +741,7 @@ export class VectorShardingManager {
             shardId: shard.id
           }));
         } catch (error) {
-          this.logger.error(`Vector search failed on shard ${shard.id}`, error);
+          this.console.error(`Vector search failed on shard ${shard.id}`, error);
           return [];
         }
       });
@@ -769,7 +769,7 @@ export class VectorShardingManager {
       
       return queryResult;
     } catch (error) {
-      this.logger.error('Sharded vector query failed', error);
+      this.console.error('Sharded vector query failed', error);
       throw error;
     }
   }
@@ -812,22 +812,22 @@ export class VectorShardingManager {
    * Shuts down the sharding manager and all connections
    */
   public async shutdown(): Promise<void> {
-    this.logger.info('Shutting down VectorShardingManager');
+    this.console.log('Shutting down VectorShardingManager');
     
     // Close all connection pools
     const closePromises = Array.from(this.shardPools.entries()).map(
       async ([shardId, pool]) => {
         try {
           await pool.end();
-          this.logger.info(`Closed connection pool for shard ${shardId}`);
+          this.console.log(`Closed connection pool for shard ${shardId}`);
         } catch (error) {
-          this.logger.error(`Error closing connection pool for shard ${shardId}`, error);
+          this.console.error(`Error closing connection pool for shard ${shardId}`, error);
         }
       }
     );
     
     await Promise.all(closePromises);
     
-    this.logger.info('VectorShardingManager shutdown complete');
+    this.console.log('VectorShardingManager shutdown complete');
   }
 }

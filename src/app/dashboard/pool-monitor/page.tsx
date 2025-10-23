@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { AlertLevel } from '@/lib/db/connection-pool-monitor';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface PoolStatus {
   size: number;
   available: number;
@@ -106,7 +106,7 @@ export default function PoolMonitorDashboard() {
         setLastRefresh(new Date());
         setError(null);
       } catch (err) {
-        logger.error('Error fetching monitoring data:', err);
+        console.error('Error fetching monitoring data:', err);
         setError(`Failed to fetch monitoring data: ${err instanceof Error ? err.message : String(err)}`);
       } finally {
         setLoading(false);
@@ -148,7 +148,7 @@ export default function PoolMonitorDashboard() {
         });
       }
     } catch (err) {
-      logger.error('Error acknowledging alert:', err);
+      console.error('Error acknowledging alert:', err);
       setError(`Failed to acknowledge alert: ${err instanceof Error ? err.message : String(err)}`);
     }
   };
@@ -178,7 +178,7 @@ export default function PoolMonitorDashboard() {
         });
       }
     } catch (err) {
-      logger.error('Error implementing recommendation:', err);
+      console.error('Error implementing recommendation:', err);
       setError(`Failed to implement recommendation: ${err instanceof Error ? err.message : String(err)}`);
     }
   };

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
@@ -11,7 +11,7 @@ export async function GET(_request: NextRequest) {
       message: 'Connection pool optimizer not available'
     })
   } catch (error) {
-    logger.error('Connection pool metrics error:', { error: error })
+    console.error('Connection pool metrics error:', { error: error })
     return NextResponse.json(
       { 
         status: 'error', 
@@ -31,7 +31,7 @@ export async function POST(_request: NextRequest) {
       { status: 503 }
     )
   } catch (error) {
-    logger.error('Connection pool configuration error:', { error: error })
+    console.error('Connection pool configuration error:', { error: error })
     return NextResponse.json(
       { 
         status: 'error', 

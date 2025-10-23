@@ -16,7 +16,7 @@ WebSocketConnectionPool,
   getPooledWebSocket,
   releasePooledWebSocket
 } from '@/lib/websocket-connection-pooling'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Message Protocol Types
@@ -545,7 +545,7 @@ export class WebSocketStreamingClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      logger.info('[WebSocketStreamingClient]', ...args)
+      console.log('[WebSocketStreamingClient]', ...args)
     }
   }
 }

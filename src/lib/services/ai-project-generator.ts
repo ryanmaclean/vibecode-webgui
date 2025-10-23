@@ -5,7 +5,7 @@
 
 import OpenAI from 'openai'
 import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Project template schema
 const ProjectTemplateSchema = z.object({
   id: z.string(),
@@ -52,7 +52,7 @@ export class AIProjectGenerator {
   async generateProject(request: ProjectGenerationRequest): Promise<ProjectTemplate> {
     const validatedRequest = ProjectGenerationRequestSchema.parse(request)
     
-    logger.info(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
+    console.log(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
 
     try {
       // Step 1: Analyze prompt and determine project type
@@ -72,7 +72,7 @@ export class AIProjectGenerator {
       return ProjectTemplateSchema.parse(generatedProject)
       
     } catch (error) {
-      logger.error('❌ AI project generation failed:', error)
+      console.error('❌ AI project generation failed:', error)
       throw new Error(`Project generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -117,7 +117,7 @@ Focus on understanding the core functionality and technical requirements.
     try {
       return JSON.parse(analysisText)
     } catch (error) {
-      logger.error('Failed to parse project analysis:', analysisText)
+      console.error('Failed to parse project analysis:', analysisText)
       throw new Error('Invalid project analysis response')
     }
   }
@@ -226,7 +226,7 @@ Make sure all code is production-ready and follows best practices.
         }
       }
     } catch (error) {
-      logger.error('Failed to parse generated project:', projectText)
+      console.error('Failed to parse generated project:', projectText)
       throw new Error('Invalid project generation response')
     }
   }
@@ -337,13 +337,13 @@ app.get('/api/health', (req, res) => {
 })
 
 app.listen(port, () => {
-  logger.info(\`🚀 Server running on port \${port}\`)
+  console.log(\`🚀 Server running on port \${port}\`)
 })`
       },
       readme: '# Node.js API Project\n\nGenerated with VibeCode AI Project Generator'
     })
 
-    logger.info(`📚 Initialized ${this.templates.size} project templates`)
+    console.log(`📚 Initialized ${this.templates.size} project templates`)
   }
 
   /**

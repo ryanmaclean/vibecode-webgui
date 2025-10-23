@@ -4,7 +4,7 @@
  */
 
 import { litellmClient } from '../../lib/ai/litellm-client.js';
-import { logger } from '../../lib/logger.js';
+// import { logger } from '../../lib/logger.js';
 import type { GenerateCodeArgs } from '../types.js';
 
 /**
@@ -77,7 +77,7 @@ Focus on clarity, maintainability, and correctness.`;
       userPrompt += `\n\nAdditional context:\n${JSON.stringify(context, null, 2)}`;
     }
 
-    logger.info('Code generation request', {
+    console.log('Code generation request', {
       language,
       promptLength: prompt.length,
       hasContext: !!context,
@@ -112,7 +112,7 @@ Focus on clarity, maintainability, and correctness.`;
     // Separate explanation from code
     const explanation = generatedCode.replace(/```[\w]*\n[\s\S]*?```/g, '').trim();
 
-    logger.info('Code generation completed', {
+    console.log('Code generation completed', {
       language,
       durationMs: duration,
       inputTokens: response.usage.prompt_tokens,
@@ -158,7 +158,7 @@ Focus on clarity, maintainability, and correctness.`;
     const duration = Date.now() - startTime;
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
 
-    logger.error('Code generation failed', {
+    console.error('Code generation failed', {
       error: errorMessage,
       language,
       promptLength: prompt.length,

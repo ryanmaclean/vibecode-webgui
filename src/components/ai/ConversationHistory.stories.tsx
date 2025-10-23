@@ -8,7 +8,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react'
 import { ConversationHistory } from './ConversationHistory'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const mockConversations = [
   {
     id: 'conv-1',
@@ -153,15 +153,15 @@ export const Default: Story = {
   args: {
     conversations: mockConversations,
     onConversationSelect: (id: string) => {
-      logger.info('Selected conversation:', id)
+      console.log('Selected conversation:', id)
       alert(`Selected: ${id}`)
     },
     onConversationDelete: (id: string) => {
-      logger.info('Deleted conversation:', id)
+      console.log('Deleted conversation:', id)
       alert(`Deleted: ${id}`)
     },
     onConversationExport: (id: string) => {
-      logger.info('Exported conversation:', id)
+      console.log('Exported conversation:', id)
       alert(`Exported: ${id}`)
     }
   }
@@ -184,7 +184,7 @@ export const Empty: Story = {
   args: {
     conversations: [],
     onConversationSelect: (id: string) => {
-      logger.info('Selected conversation:', id)
+      console.log('Selected conversation:', id)
     }
   },
   parameters: {
