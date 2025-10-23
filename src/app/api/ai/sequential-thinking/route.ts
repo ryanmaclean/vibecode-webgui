@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
-import { logger } from '@/lib/logger';
 // Add type augmentation for NextRequest
 declare module 'next/server' {
   interface NextRequest {
@@ -21,14 +20,24 @@ declare module 'next/server' {
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-// Log sequential thinking interactions to Datadog (stub for future implementation)
 function logSequentialThinking(
   _request: NextRequest,
   _event: 'thinking_request' | 'thinking_response' | 'thinking_error',
   _metadata: Record<string, any>
 ) {
-  // Implementation will be added in the future
-  // logger.info(`Sequential thinking ${_event}:`, _metadata);
+  const logEntry = {
+    ddsource: 'vibecode-nextjs',
+    service: 'sequential-thinking-api',
+    event: _event,
+    timestamp: new Date().toISOString(),
+    ..._metadata,
+  };
+
+  try {
+    console.info(JSON.stringify(logEntry));
+  } catch (error) {
+    console.warn('Failed to stringify sequential thinking log entry', error);
+  }
 }
 
 async function handlePOST(request: NextRequest) {
