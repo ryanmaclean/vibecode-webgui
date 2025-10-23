@@ -7,26 +7,40 @@ import { NextRequest, NextResponse } from 'next/server'
 
 export async function POST(request: NextRequest) {
   try {
+    // Security: Limit request body size to prevent DoS
+    const contentLength = request.headers.get('content-length')
+    if (contentLength && parseInt(contentLength) > 10_000) {
+      return NextResponse.json({ error: 'Request body too large' }, { status: 413 })
+    }
+
     const violation = await request.json()
-    
-    // Log CSP violation
+
+    // Security: Validate CSP report structure
+    if (!violation || typeof violation !== 'object') {
+      return NextResponse.json({ error: 'Invalid CSP report format' }, { status: 400 })
+    }
+
+    // Security: Sanitize and validate each field
+    const sanitizedViolation = {
+      'document-uri': String(violation['document-uri'] || '').slice(0, 500),
+      referrer: String(violation.referrer || '').slice(0, 500),
+      'violated-directive': String(violation['violated-directive'] || '').slice(0, 200),
+      'effective-directive': String(violation['effective-directive'] || '').slice(0, 200),
+      'original-policy': String(violation['original-policy'] || '').slice(0, 2000),
+      'blocked-uri': String(violation['blocked-uri'] || '').slice(0, 500),
+      'line-number': Number.isInteger(violation['line-number']) ? violation['line-number'] : undefined,
+      'column-number': Number.isInteger(violation['column-number']) ? violation['column-number'] : undefined,
+      'source-file': String(violation['source-file'] || '').slice(0, 500),
+      'status-code': Number.isInteger(violation['status-code']) ? violation['status-code'] : undefined
+    }
+
+    // Log CSP violation with sanitized data
     const logData = {
       timestamp: new Date().toISOString(),
       service: 'vibecode-webgui',
       source: 'csp-violation',
       level: 'warning',
-      violation: {
-        documentURI: violation['document-uri'],
-        referrer: violation.referrer,
-        violatedDirective: violation['violated-directive'],
-        effectiveDirective: violation['effective-directive'],
-        originalPolicy: violation['original-policy'],
-        blockedURI: violation['blocked-uri'],
-        lineNumber: violation['line-number'],
-        columnNumber: violation['column-number'],
-        sourceFile: violation['source-file'],
-        statusCode: violation['status-code'],
-      },
+      violation: sanitizedViolation,
       userAgent: request.headers.get('user-agent'),
       ip: getClientIP(request),
     }

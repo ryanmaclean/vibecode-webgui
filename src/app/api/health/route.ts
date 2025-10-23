@@ -1,13 +1,34 @@
 /**
  * Health Check API Endpoint
  * Provides application health status for monitoring and deployment
+ *
+ * SECURITY: Phase 4 - Batch 3 validation added
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
-import { logger } from '@/lib/logger';
-export async function GET(_request: NextRequest) {
+import { logger } from '@/lib/logger'
+import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
+import { validateQueryParams, checkRateLimit } from '@/lib/api/validation/helpers'
+
+export async function GET(request: NextRequest) {
   const startTime = Date.now()
+
+  // Rate limiting: 100 requests per minute
+  const clientIp = request.headers.get('x-forwarded-for') ||
+                   request.headers.get('x-real-ip') ||
+                   'unknown'
+  const rateLimit = checkRateLimit(`health:${clientIp}`, 100, 60000)
+  if (!rateLimit.allowed) {
+    return rateLimit.response
+  }
+
+  // Validate query parameters
+  const validation = validateQueryParams(request, healthCheckQuerySchema)
+  if (!validation.success) {
+    return validation.response
+  }
+  const { filter, format, verbose } = validation.data
 
   try {
     // Basic health checks

@@ -7,6 +7,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { enhancedAI, AIProvider } from '@/lib/ai/enhanced-model-client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
+import { validateRequestBody } from '@/lib/api/validation/middleware';
+import { providerHealthCheckSchema } from '@/lib/api/validation/schemas-phase4-batch2';
 
 export async function POST(request: NextRequest) {
   try {
@@ -16,17 +18,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    const { provider } = await request.json();
-
-    if (!provider) {
-      return NextResponse.json({ error: 'Provider is required' }, { status: 400 });
+    // Validate request body
+    const validation = await validateRequestBody(request, providerHealthCheckSchema);
+    if (!validation.success) {
+      return validation.error as NextResponse;
     }
 
-    // Validate provider
-    const validProviders: AIProvider[] = ['openrouter', 'azure-openai', 'anthropic', 'ollama', 'gemini', 'bedrock'];
-    if (!validProviders.includes(provider)) {
-      return NextResponse.json({ error: 'Invalid provider' }, { status: 400 });
-    }
+    const { provider } = validation.data;
 
     // Check provider health
     const healthCheck = await enhancedAI.checkProviderHealth(provider);
