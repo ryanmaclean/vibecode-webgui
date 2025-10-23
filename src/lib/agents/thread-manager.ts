@@ -21,7 +21,7 @@ import {
 import { OpenAIAgentsClient } from './openai-client'
 // import { console } from '@/lib/logger'
 
-const logger = createChildLogger({ module: 'agents', scope: 'thread-manager' })
+const logger = console
 
 export interface ThreadManagerConfig {
   client: OpenAIAgentsClient

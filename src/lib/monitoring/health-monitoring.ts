@@ -184,7 +184,7 @@ class ApplicationLogger {
   }
 }
 
-const appLogger = new ApplicationLogger()
+const console = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -195,7 +195,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      appLogger.logPerformance({
+      console.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -240,7 +240,7 @@ export {
   logger,
   tracer,
   metrics,
-  appLogger,
+  console,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,
