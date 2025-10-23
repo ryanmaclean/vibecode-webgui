@@ -120,18 +120,22 @@ Agent 24 (Staff Security Engineer from Google's macOS Security Team) has complet
 **Effort**: 12 hours
 
 **Tasks**:
-1. Test Keychain implementation on macOS development machine
-2. Run migration script: `./scripts/security/migrate-secrets-to-keychain.sh`
-3. Update `src/lib/auth.ts` to use `loadSecret()` instead of `process.env`
-4. Verify secret retrieval works correctly
-5. Test Secure Enclave integration on Apple Silicon Mac
-6. Update deployment documentation
+1. Install/update security pre-commit hooks: `npm run security:install-hook`
+2. Test Keychain implementation on macOS development machine
+3. Run migration script: `./scripts/security/migrate-secrets-to-keychain.sh`
+4. Update `src/lib/auth.ts` to use `loadSecret()` instead of `process.env`
+5. Verify secret retrieval works correctly
+6. Test Secure Enclave integration on Apple Silicon Mac
+7. Update deployment documentation
 
 **Blockers**: None
 **Dependencies**: macOS development machine
 
 **Testing Steps**:
 ```bash
+# 0. Ensure pre-commit security hook is configured
+npm run security:install-hook
+
 # 1. Test Keychain availability
 node -e "const { isKeychainAvailable } = require('./src/lib/security/macos-keychain'); console.log(isKeychainAvailable())"
 
