@@ -25,7 +25,7 @@ export function ConsoleProvider({ children }: { children: ReactNode }) {
       setIsOpen(true);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to open console');
-      logger.error('Error opening console:', err);
+      console.error('Error opening console:', err);
     } finally {
       setIsLoading(false);
     }

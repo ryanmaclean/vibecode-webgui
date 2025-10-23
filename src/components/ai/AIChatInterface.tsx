@@ -79,7 +79,7 @@ export const AIChatInterface = ({
           setMessages(history.messages || [])
         }
       } catch (error) {
-        logger.error('Failed to load conversation history:', error)
+        console.error('Failed to load conversation history:', error)
       }
     }
     load()
@@ -152,7 +152,7 @@ export const AIChatInterface = ({
       saveConversation(finalMessages)
 
     } catch (error) {
-      logger.error('Error streaming AI response:', error)
+      console.error('Error streaming AI response:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         type: 'assistant',
@@ -174,7 +174,7 @@ export const AIChatInterface = ({
         body: JSON.stringify({ messages: messagesToSave }),
       })
     } catch (error) {
-      logger.error('Failed to save conversation:', error)
+      console.error('Failed to save conversation:', error)
     }
   }
 

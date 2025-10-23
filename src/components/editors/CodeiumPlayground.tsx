@@ -29,7 +29,7 @@ const LANGUAGE_OPTIONS: LanguageOption[] = [
     value: 'typescript',
     sample: `function greet(name: string) {
   const message = ` + '`Hello, ${name}!`' + `
-  logger.info(message)
+  console.info(message)
   return message
 }
 

@@ -103,7 +103,7 @@ function CodeBlock({ code, language = 'plaintext' }: CodeBlockProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      logger.error('Failed to copy code:', error)
+      console.error('Failed to copy code:', error)
     }
   }, [code])
 
@@ -398,7 +398,7 @@ export function UnifiedAgentChat({
           })
         },
         onError: (error) => {
-          logger.error('SSE error:', error)
+          console.error('SSE error:', error)
           setConnectionState('failed')
         },
         onStateChange: (state) => {
@@ -489,7 +489,7 @@ export function UnifiedAgentChat({
         )
       )
     } catch (error) {
-      logger.error('Failed to send message:', error)
+      console.error('Failed to send message:', error)
 
       // Update message status to error
       setMessages(prev =>
@@ -511,7 +511,7 @@ export function UnifiedAgentChat({
     try {
       await navigator.clipboard.writeText(content)
     } catch (error) {
-      logger.error('Failed to copy message:', error)
+      console.error('Failed to copy message:', error)
     }
   }, [])
 

@@ -324,7 +324,7 @@ export function AgentConversationThread({
     try {
       await navigator.clipboard.writeText(content)
     } catch (error) {
-      logger.error('Failed to copy message:', error)
+      console.error('Failed to copy message:', error)
     }
   }, [])
 

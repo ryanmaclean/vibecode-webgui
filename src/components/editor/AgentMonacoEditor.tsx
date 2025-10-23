@@ -116,7 +116,7 @@ export function AgentMonacoEditor({
       setupKeybindings(editor, monaco)
     }
 
-    logger.info('Monaco Editor mounted with Agent API integration')
+    console.info('Monaco Editor mounted with Agent API integration')
   }
 
   // ==========================================================================
@@ -158,9 +158,9 @@ export function AgentMonacoEditor({
         latency: 0,
       })
 
-      logger.info('Agent API initialized successfully')
+      console.info('Agent API initialized successfully')
     } catch (error) {
-      logger.error('Failed to initialize Agent API:', error)
+      console.error('Failed to initialize Agent API:', error)
       setStatus((prev) => ({
         ...prev,
         agentConnected: false,
@@ -215,7 +215,7 @@ export function AgentMonacoEditor({
       providersRef.current.forEach((provider) => provider.dispose())
       providersRef.current = []
 
-      logger.info('Monaco Editor cleanup complete')
+      console.info('Monaco Editor cleanup complete')
     }
   }, [])
 

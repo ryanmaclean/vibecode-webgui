@@ -149,7 +149,7 @@ function FileTreeItem({
     try {
       await onDelete(file.id)
     } catch (error) {
-      logger.error('Failed to delete file:', error)
+      console.error('Failed to delete file:', error)
     } finally {
       setIsDeleting(false)
     }
@@ -294,7 +294,7 @@ export function AgentFileBrowser({
       await onUploadFile(file)
       event.target.value = '' // Reset input
     } catch (error) {
-      logger.error('Failed to upload file:', error)
+      console.error('Failed to upload file:', error)
     } finally {
       setIsUploading(false)
     }
