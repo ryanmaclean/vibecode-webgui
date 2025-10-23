@@ -470,6 +470,25 @@ Agent 24 has identified **critical security gaps** in the VibeCode WebGUI projec
 3. Password generation fix - **2 hours, critical**
 4. Rate limiting - **8 hours, high priority**
 
+## Sequential Thinking API Hardening (NEW)
+
+**Issue**: create #559
+
+**Owner**: Security + AI Platform (Codex-Security-2 persona)
+
+**Why**: The `/api/ai/sequential-thinking` endpoint powers MCP workflows and must be resilient against unauthenticated access, abuse, and silent fallback loops.
+
+**Tasks**:
+1. Verify `withAIAuth` guard in edge runtime; add regression test ensuring anonymous requests receive 401/403.
+2. Align middleware rate limiting thresholds (100 requests/hour baseline) and document override procedure.
+3. Feed structured Datadog logs (`logSequentialThinking`) into security dashboards and define alert thresholds for fallback/error spikes.
+4. Implement automated check that flags fallback ratio >25% over 5 minutes and notify on-call.
+5. Update incident response runbook with remediation steps (flush queue, restart MCP server, notify platform).
+
+**Effort**: 6 hours
+
+**Dependencies**: #558 (middleware regression fix), #550 (Datadog dashboards)
+
 **Estimated total effort**: 172 hours (~4.3 weeks for 1 engineer, or 1.2 weeks for 3 engineers in parallel)
 
 **Agent 24 handoff complete**. Standing by for questions and ready to assist with implementation.
