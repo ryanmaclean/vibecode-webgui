@@ -65,10 +65,16 @@ export interface PasswordRequirements {
  * // Returns: $2a$12$... (bcrypt hash)
  * ```
  */
-export async function hashPassword(password: string): Promise<string> {
+export async function hashPassword(password: string, saltRounds?: number): Promise<string> {
   // Input validation
   if (!password || typeof password !== 'string') {
     throw new Error('Password must be a non-empty string');
+  }
+
+  // Validate salt rounds
+  const rounds = saltRounds ?? PASSWORD_CONFIG.SALT_ROUNDS;
+  if (typeof rounds !== 'number' || rounds < 4 || rounds > 31) {
+    throw new Error('Salt rounds must be an integer between 4 and 31');
   }
 
   // Validate password strength before hashing
@@ -79,7 +85,7 @@ export async function hashPassword(password: string): Promise<string> {
 
   try {
     // Generate salt and hash password
-    const salt = await bcrypt.genSalt(PASSWORD_CONFIG.SALT_ROUNDS);
+    const salt = await bcrypt.genSalt(rounds);
     const hash = await bcrypt.hash(password, salt);
     return hash;
   } catch (error) {
@@ -116,8 +122,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
   }
 
   // Validate hash format (bcrypt hashes start with $2a$, $2b$, or $2y$)
-  if (!hash.match(/^\$2[aby]\$\d{2}\$/)) {
-    return false;
+  if (!isValidBcryptHash(hash)) {
+    throw new Error('Invalid bcrypt hash format');
   }
 
   try {
@@ -267,6 +273,33 @@ export function needsRehash(hash: string): boolean {
 
   const hashRounds = parseInt(match[1], 10);
   return hashRounds < PASSWORD_CONFIG.SALT_ROUNDS;
+}
+
+/**
+ * Validate if a string is a properly formatted bcrypt hash
+ *
+ * @param hash - String to validate
+ * @returns True if valid bcrypt hash format
+ */
+export function isValidBcryptHash(hash: string): boolean {
+  if (!hash || typeof hash !== 'string') {
+    return false;
+  }
+
+  // bcrypt hash format: $2[a|b|y]$rounds$salt+hash (total 60 chars)
+  const bcryptPattern = /^\$2[aby]\$\d{2}\$.{53}$/;
+  if (!bcryptPattern.test(hash)) {
+    return false;
+  }
+
+  // Extract and validate rounds
+  const roundsMatch = hash.match(/^\$2[aby]\$(\d{2})\$/);
+  if (!roundsMatch) {
+    return false;
+  }
+
+  const rounds = parseInt(roundsMatch[1], 10);
+  return rounds >= 4 && rounds <= 31;
 }
 
 /**

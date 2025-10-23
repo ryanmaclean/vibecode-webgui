@@ -7,9 +7,9 @@ import { NextAuthOptions } from 'next-auth'
 import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
+import { verifyPassword } from '@/lib/auth/password'
+import { prisma } from '@/lib/prisma'
 // import { logger } from '@/lib/logger';
-// import { PrismaAdapter } from '@next-auth/prisma-adapter'
-// import { prisma } from './prisma'
 
 declare module 'next-auth' {
   interface Session {
@@ -45,7 +45,6 @@ declare module 'next-auth/jwt' {
 // NextAuth configuration is properly loaded
 
 export const authOptions: NextAuthOptions = {
-  // adapter: PrismaAdapter(prisma), // Disabled for file-based development
   secret: process.env.NEXTAUTH_SECRET,
   cookies: {
     sessionToken: {
@@ -95,28 +94,49 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials) return null
+        if (!credentials?.email || !credentials?.password) {
+          return null
+        }
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: '4', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: '5', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: '6', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: '7', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: '8', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: '9', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: '10', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-        ]
+        try {
+          // Look up user from database
+          const user = await prisma.user.findUnique({
+            where: { email: credentials.email },
+            select: {
+              id: true,
+              email: true,
+              name: true,
+              role: true,
+              passwordHash: true,
+              isActive: true,
+              emailVerified: true
+            }
+          })
 
-        const user = users.find(u => u.email === credentials.email)
+          if (!user) {
+            return null
+          }
 
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
+          // Check if user account is active and verified
+          if (!user.isActive || !user.emailVerified) {
+            return null
+          }
+
+          // Verify password using secure bcrypt comparison
+          const isValidPassword = await verifyPassword(credentials.password, user.passwordHash)
+          
+          if (!isValidPassword) {
+            return null
+          }
+
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.name,
+            role: user.role
+          }
+        } catch (error) {
+          console.error('Authentication error:', error)
           return null
         }
       },
