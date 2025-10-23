@@ -12,7 +12,7 @@ import { marked } from 'marked';
 //       slug: filename.replace('.md', ''),
 //     }));
 //   } catch (error) {
-//     logger.warn('Wiki directory not found, disabling static generation');
+//     console.warn('Wiki directory not found, disabling static generation');
 //     return [];
 //   }
 // }

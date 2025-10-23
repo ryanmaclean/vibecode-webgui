@@ -42,7 +42,7 @@ export function GradioEditor({ initialCode }: GradioEditorProps) {
 
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred.';
-      logger.error('Failed to run Gradio code:', error);
+      console.error('Failed to run Gradio code:', error);
       toast({
         variant: 'destructive',
         title: 'Error',

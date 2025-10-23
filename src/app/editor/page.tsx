@@ -47,7 +47,7 @@ export function UserList() {
       const data = await response.json()
       setUsers(data)
     } catch (error) {
-      logger.error('Failed to fetch users:', error)
+      console.error('Failed to fetch users:', error)
     } finally {
       setLoading(false)
     }
@@ -151,7 +151,7 @@ cart
   .addItem({ id: 2, name: 'Mouse', price: 29.99 }, 2)
   .applyDiscount(10)
 
-logger.info('Total:', cart.getTotal())`,
+console.info('Total:', cart.getTotal())`,
 }
 
 export default function EditorPage() {

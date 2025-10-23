@@ -141,7 +141,7 @@ export const HuggingFaceChatInterface = ({
           setHfClient({ initialized: true } as any)
         }
       } catch (error) {
-        logger.error('Failed to initialize Hugging Face client:', error)
+        console.error('Failed to initialize Hugging Face client:', error)
       }
     }
     
@@ -175,7 +175,7 @@ export const HuggingFaceChatInterface = ({
         })))
       }
     } catch (error) {
-      logger.error('Failed to load conversation:', error)
+      console.error('Failed to load conversation:', error)
     }
   }
 
@@ -215,7 +215,7 @@ export const HuggingFaceChatInterface = ({
         throw new Error(data.error || 'HuggingFace API error')
       }
     } catch (error) {
-      logger.error('HuggingFace API error:', error)
+      console.error('HuggingFace API error:', error)
       throw error
     }
   }
@@ -257,7 +257,7 @@ export const HuggingFaceChatInterface = ({
         }
       }
     } catch (error) {
-      logger.error('Failed to get model suggestion:', error)
+      console.error('Failed to get model suggestion:', error)
     }
     return null
   }
@@ -426,7 +426,7 @@ export const HuggingFaceChatInterface = ({
       }
 
     } catch (error) {
-      logger.error('Failed to send message:', error)
+      console.error('Failed to send message:', error)
       const errorMessage: Message = {
         id: `error-${Date.now()}`,
         from: 'assistant',

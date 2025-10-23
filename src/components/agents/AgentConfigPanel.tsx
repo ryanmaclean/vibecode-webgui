@@ -210,7 +210,7 @@ export function AgentConfigPanel({
       setSaveStatus('success')
       setTimeout(() => setSaveStatus('idle'), 3000)
     } catch (error) {
-      logger.error('Failed to save configuration:', error)
+      console.error('Failed to save configuration:', error)
       setSaveStatus('error')
     } finally {
       setIsSaving(false)

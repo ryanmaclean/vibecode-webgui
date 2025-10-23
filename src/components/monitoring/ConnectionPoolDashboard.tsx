@@ -100,7 +100,7 @@ export default function ConnectionPoolDashboard() {
       setData(dashboardData)
       setError(null)
     } catch (err) {
-      logger.error('Failed to fetch dashboard data:', err)
+      console.error('Failed to fetch dashboard data:', err)
       setError(err instanceof Error ? err.message : 'Failed to fetch data')
     } finally {
       setLoading(false)
