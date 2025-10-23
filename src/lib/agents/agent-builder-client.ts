@@ -8,7 +8,7 @@ import OpenAI from 'openai';
 import type { AgentBuilderSessionRequest, AgentBuilderSession } from '@/types/agent-builder';
 // import { console } from '@/lib/logger';
 
-const logger = console({ module: 'agents', scope: 'agent-builder-client' });
+const logger = createChildLogger({ module: 'agents', scope: 'agent-builder-client' });
 
 interface AgentBuilderClientOptions {
   apiKey?: string;

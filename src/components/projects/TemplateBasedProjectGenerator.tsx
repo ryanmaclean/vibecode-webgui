@@ -115,7 +115,7 @@ export function TemplateBasedProjectGenerator({
       onComplete?.(result)
 
     } catch (error) {
-      logger.error('Template generation error:', error)
+      console.error('Template generation error:', error)
       setGenerationResult({
         workspaceId: '',
         projectName: '',

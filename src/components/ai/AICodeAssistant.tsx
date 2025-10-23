@@ -138,7 +138,7 @@ export default function AICodeAssistant({
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred')
-      logger.error('AI Assistant error:', err)
+      console.error('AI Assistant error:', err)
     } finally {
       setIsLoading(false)
     }
@@ -173,7 +173,7 @@ export default function AICodeAssistant({
         })
       }, 2000)
     } catch (err) {
-      logger.error('Failed to copy to clipboard:', err)
+      console.error('Failed to copy to clipboard:', err)
     }
   }
 

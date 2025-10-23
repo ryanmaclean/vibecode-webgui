@@ -34,7 +34,7 @@ import {
 // import { console } from '@/lib/logger'
 import { loadSecret } from '@/lib/security/macos-keychain-server'
 
-const logger = console({ module: 'agents', scope: 'openai-client' })
+const logger = createChildLogger({ module: 'agents', scope: 'openai-client' })
 
 export class OpenAIAgentsClient {
   private apiKey: string

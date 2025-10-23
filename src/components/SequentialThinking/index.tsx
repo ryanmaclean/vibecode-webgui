@@ -31,7 +31,7 @@ export function SequentialThinking() {
       await think({ prompt, numSteps });
     } catch (err) {
       // Error is handled by the hook
-      logger.error('Failed to process thinking:', err);
+      console.error('Failed to process thinking:', err);
     }
   };
 

@@ -71,7 +71,7 @@ export default function EmbeddingMonitoringDashboard() {
       const data = await response.json();
       setUsageReport(data);
     } catch (err) {
-      logger.error('Error fetching usage report:', err);
+      console.error('Error fetching usage report:', err);
     }
   };
 

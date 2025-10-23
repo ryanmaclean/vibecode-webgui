@@ -391,7 +391,7 @@ export function CreateAgentWizard({
     try {
       await onCreate(wizardData)
     } catch (error) {
-      logger.error('Failed to create agent:', error)
+      console.error('Failed to create agent:', error)
     } finally {
       setIsCreating(false)
     }

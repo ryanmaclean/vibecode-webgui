@@ -222,18 +222,18 @@ export default function WebGLTerminal({
               const data = typeof ev.data === 'string' ? ev.data : ''
               if (data && terminal.current) terminal.current.write(data)
             } catch (e) {
-              logger.error('Failed to write websocket data to terminal:', e)
+              console.error('Failed to write websocket data to terminal:', e)
             }
           }
 
           websocket.onopen = () => setIsConnected(true)
           websocket.onclose = () => setIsConnected(false)
           websocket.onerror = (error) => {
-            logger.error('WebSocket error:', error)
+            console.error('WebSocket error:', error)
             setIsConnected(false)
           }
         } catch (error) {
-          logger.error('Failed to create WebSocket connection:', error)
+          console.error('Failed to create WebSocket connection:', error)
         }
       }
 
@@ -242,7 +242,7 @@ export default function WebGLTerminal({
       terminal.current.loadAddon(addons.current.webLinks)
 
     } catch (error) {
-      logger.error('Failed to initialize terminal addons:', error)
+      console.error('Failed to initialize terminal addons:', error)
     }
   }, [enableWebGL, websocketUrl])
 
@@ -335,7 +335,7 @@ export default function WebGLTerminal({
       try {
         addons.current.fit.fit()
       } catch (error) {
-        logger.error('Failed to fit terminal:', error)
+        console.error('Failed to fit terminal:', error)
       }
     }
   }, [])
@@ -379,7 +379,7 @@ export default function WebGLTerminal({
         try {
           addon?.dispose?.()
         } catch (error) {
-          logger.error('Failed to dispose addon:', error)
+          console.error('Failed to dispose addon:', error)
         }
       })
       addons.current = {}

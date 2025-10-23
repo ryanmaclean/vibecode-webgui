@@ -153,15 +153,15 @@ export const Default: Story = {
   args: {
     conversations: mockConversations,
     onConversationSelect: (id: string) => {
-      logger.info('Selected conversation:', id)
+      console.info('Selected conversation:', id)
       alert(`Selected: ${id}`)
     },
     onConversationDelete: (id: string) => {
-      logger.info('Deleted conversation:', id)
+      console.info('Deleted conversation:', id)
       alert(`Deleted: ${id}`)
     },
     onConversationExport: (id: string) => {
-      logger.info('Exported conversation:', id)
+      console.info('Exported conversation:', id)
       alert(`Exported: ${id}`)
     }
   }
@@ -184,7 +184,7 @@ export const Empty: Story = {
   args: {
     conversations: [],
     onConversationSelect: (id: string) => {
-      logger.info('Selected conversation:', id)
+      console.info('Selected conversation:', id)
     }
   },
   parameters: {
