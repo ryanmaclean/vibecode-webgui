@@ -470,18 +470,18 @@ export type WSServerMessageType =
 /**
  * Base WebSocket message structure
  */
-export interface WSMessage<T = unknown> {
+export interface WSMessage {
   /** Message type */
   type: string;
 
-  /** Message payload */
-  [key: string]: T;
+  /** Additional properties */
+  [key: string]: unknown;
 }
 
 /**
  * Client message to send to agent
  */
-export interface WSClientMessage extends WSMessage<string> {
+export interface WSClientMessage extends WSMessage {
   type: 'message';
   content: string;
 }
@@ -496,7 +496,7 @@ export interface WSClientPing extends WSMessage {
 /**
  * Server output message
  */
-export interface WSServerOutput extends WSMessage<string> {
+export interface WSServerOutput extends WSMessage {
   type: 'output';
   content: string;
   timestamp: string;
@@ -505,7 +505,7 @@ export interface WSServerOutput extends WSMessage<string> {
 /**
  * Server status update message
  */
-export interface WSServerStatus extends WSMessage<AgentStatus> {
+export interface WSServerStatus extends WSMessage {
   type: 'status';
   status: AgentStatus;
   progress?: number;
@@ -514,7 +514,7 @@ export interface WSServerStatus extends WSMessage<AgentStatus> {
 /**
  * Server error message
  */
-export interface WSServerError extends WSMessage<string> {
+export interface WSServerError extends WSMessage {
   type: 'error';
   error: string;
 }
@@ -522,7 +522,7 @@ export interface WSServerError extends WSMessage<string> {
 /**
  * Server completion message
  */
-export interface WSServerComplete extends WSMessage<number> {
+export interface WSServerComplete extends WSMessage {
   type: 'complete';
   exit_code: number;
 }

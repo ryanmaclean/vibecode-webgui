@@ -2,8 +2,8 @@ import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { tools } from '../../lib/tools';
 import { logger } from '@/lib/logger';
-// IMPORTANT! Set the runtime to edge
-export const runtime = 'edge';
+// Use Node.js runtime for Winston logger compatibility
+export const runtime = 'nodejs';
 
 export default async function handler(req: Request) {
   try {
