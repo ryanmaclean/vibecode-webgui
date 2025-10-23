@@ -34,7 +34,7 @@ import {
 // import { console } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 
-const logger = createChildLogger({ module: 'api', scope: 'agents' })
+const logger = console
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
