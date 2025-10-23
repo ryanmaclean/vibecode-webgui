@@ -66,7 +66,7 @@ export function ConsoleMode({ workspaceId, onClose }: ConsoleModeProps) {
               }
             } catch (error) {
               if (!mounted) return;
-              logger.error('Error checking session status:', error);
+              console.error('Error checking session status:', error);
               setStatus({ 
                 status: 'error', 
                 error: 'Failed to check session status' 
@@ -79,7 +79,7 @@ export function ConsoleMode({ workspaceId, onClose }: ConsoleModeProps) {
           setTimeout(checkStatus, 2000);
         }
       } catch (error) {
-        logger.error('Failed to initialize code-server:', error);
+        console.error('Failed to initialize code-server:', error);
         if (!mounted) return;
         setStatus({ 
           status: 'error', 

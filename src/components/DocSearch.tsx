@@ -65,7 +65,7 @@ export default function DocSearch() {
       setCategories(data.categories);
       setTotal(data.total);
     } catch (error) {
-      logger.error('Search error:', error);
+      console.error('Search error:', error);
       setResults([]);
       setTotal(0);
     } finally {

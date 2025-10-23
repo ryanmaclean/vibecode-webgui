@@ -310,7 +310,7 @@ export function AgentMonitoringDashboard({
       await onRefresh()
       setLastRefresh(new Date())
     } catch (error) {
-      logger.error('Failed to refresh metrics:', error)
+      console.error('Failed to refresh metrics:', error)
     } finally {
       setIsRefreshing(false)
     }

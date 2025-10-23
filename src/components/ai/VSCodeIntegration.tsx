@@ -47,7 +47,7 @@ export default function VSCodeIntegration({
             setSelectedText(message.data.selectedText || '')
             break
           case 'error':
-            logger.error('Code-server error:', message.data)
+            console.error('Code-server error:', message.data)
             break
         }
       } catch (error) {

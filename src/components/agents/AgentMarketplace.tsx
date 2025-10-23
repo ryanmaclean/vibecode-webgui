@@ -111,7 +111,7 @@ function AgentCard({ agent, onInstall, onPreview }: AgentCardProps) {
     try {
       await onInstall(agent.id)
     } catch (error) {
-      logger.error('Failed to install agent:', error)
+      console.error('Failed to install agent:', error)
     } finally {
       setIsInstalling(false)
     }

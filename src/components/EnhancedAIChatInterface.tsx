@@ -174,7 +174,7 @@ export function EnhancedAIChatInterface({
         }
       }
     } catch (error) {
-      logger.error('Chat error:', error)
+      console.error('Chat error:', error)
       setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',

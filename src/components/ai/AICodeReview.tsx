@@ -90,7 +90,7 @@ export default function AICodeReview({
       }]);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during code review');
-      logger.error('Code review error:', err);
+      console.error('Code review error:', err);
     } finally {
       setIsReviewing(false);
     }

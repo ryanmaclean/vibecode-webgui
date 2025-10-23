@@ -30,7 +30,7 @@ export function OnboardingCheck({ children }: { children: React.ReactNode }) {
           }
         }
       } catch (error) {
-        logger.error('Error checking onboarding status:', error)
+        console.error('Error checking onboarding status:', error)
       }
       
       setChecked(true)

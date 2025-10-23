@@ -137,7 +137,7 @@ export function CollaborativeWorkspace({
   const loadWorkspaceData = async () => {
     // This would integrate with your workspace service
     // For now, simulate loading
-    logger.info('Loading workspace data for:', workspaceId);
+    console.info('Loading workspace data for:', workspaceId);
   };
 
   const handleTemplateSelect = async (template: any) => {
@@ -182,7 +182,7 @@ export function CollaborativeWorkspace({
 
       onProjectCreate?.(workspaceProject);
     } catch (error) {
-      logger.error('Failed to create project:', error);
+      console.error('Failed to create project:', error);
     }
   };
 

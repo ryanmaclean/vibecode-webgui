@@ -96,7 +96,7 @@ function OutputItem({ output, enableDownload }: OutputItemProps) {
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      logger.error('Failed to copy output:', error)
+      console.error('Failed to copy output:', error)
     }
   }, [output.content])
 
@@ -212,7 +212,7 @@ export function CodeInterpreterOutput({
       setCopied(true)
       setTimeout(() => setCopied(false), 2000)
     } catch (error) {
-      logger.error('Failed to copy code:', error)
+      console.error('Failed to copy code:', error)
     }
   }, [execution.code])
 

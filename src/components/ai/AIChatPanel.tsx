@@ -103,7 +103,7 @@ export default function AIChatPanel({
       setMessages(prev => [...prev, assistantMessage])
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to get AI response')
-      logger.error('AI Chat error:', err)
+      console.error('AI Chat error:', err)
     } finally {
       setIsLoading(false)
     }
