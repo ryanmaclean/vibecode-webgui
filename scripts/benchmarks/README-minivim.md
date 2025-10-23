@@ -12,15 +12,19 @@ The MiniVim kernel build system creates highly optimized, minimal Linux kernels 
 ## Quick Start
 
 ```bash
-# Build x86_64 kernel (version 6.17)
-./scripts/benchmarks/build-minivim-kernel.sh x86_64 6.17
+# Build x86_64 kernel (pinned to 6.17.14)
+./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64
 
 # Build ARM64 kernel
-./scripts/benchmarks/build-minivim-kernel.sh arm64 6.17
+./scripts/benchmarks/build-minivim-kernel-6.17.sh arm64
 
 # Build ARMv7 kernel
-./scripts/benchmarks/build-minivim-kernel.sh armv7 6.17
+./scripts/benchmarks/build-minivim-kernel-6.17.sh armv7
 ```
+
+> Need a different kernel revision? Pass it as the second argument or call
+> `build-minivim-kernel.sh` directly. The wrapper defaults to Linux 6.17.14 but
+> keeps override support for pre-release testing.
 
 ## Files
 
@@ -83,6 +87,38 @@ After building, you'll find in `bench-images/minivim/`:
 - `MINIVIM_JOBS` - Number of parallel build jobs (default: `nproc`)
 - `CROSS_COMPILE` - Cross-compiler prefix (e.g., `aarch64-linux-gnu-`)
 
+## 6.17.14 Build & Logging Workflow
+
+```bash
+mkdir -p reports/benchmarks/minivim-6.17.14
+
+# Clean build (downloads sources on first run)
+SKIP_MRPROPER=0 \
+MINIVIM_JOBS=${MINIVIM_JOBS:-$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)} \
+./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64 \
+  2>&1 | tee reports/benchmarks/minivim-6.17.14/build-clean.log
+
+# Incremental rebuild after tweaking configs
+SKIP_MRPROPER=1 \
+MINIVIM_JOBS=${MINIVIM_JOBS:-$(sysctl -n hw.logicalcpu 2>/dev/null || nproc)} \
+./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64 \
+  2>&1 | tee -a reports/benchmarks/minivim-6.17.14/build-incremental.log
+
+# Capture boot-latency metrics for the new image
+python3 scripts/benchmarks/boot_latency_bench.py \
+  --kernel bench-images/minivim/bzImage-x86_64-6.17.14 \
+  --report reports/benchmarks/minivim-6.17.14/boot-latency.json
+
+# Optional: push metrics to Datadog
+python3 scripts/benchmarks/firecracker_bench.py \
+  --kernel bench-images/minivim/bzImage-x86_64-6.17.14 \
+  --report reports/benchmarks/minivim-6.17.14/firecracker.json \
+  --dogstatsd localhost:8125
+```
+
+Artifacts land in `bench-images/minivim/` (`bzImage-x86_64-6.17.14`, etc.) while
+the structured logs above keep a reproducible record of build performance.
+
 ## CI/CD Integration
 
 The GitHub Actions workflow `.github/workflows/minivim-build.yml` automatically builds all three architectures on:
@@ -137,19 +173,19 @@ See `bench-images/busybox/README.md` for details on creating custom initramfs im
 ### Incremental Builds
 ```bash
 # Skip mrproper for faster rebuilds
-SKIP_MRPROPER=1 ./scripts/benchmarks/build-minivim-kernel.sh x86_64 6.17
+SKIP_MRPROPER=1 ./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64
 ```
 
 ### Custom Job Count
 ```bash
 # Limit to 4 cores
-MINIVIM_JOBS=4 ./scripts/benchmarks/build-minivim-kernel.sh x86_64 6.17
+MINIVIM_JOBS=4 ./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64
 ```
 
 ### Cross-Compilation
 ```bash
 # Build ARM64 on x86_64 host
-CROSS_COMPILE=aarch64-linux-gnu- ./scripts/benchmarks/build-minivim-kernel.sh arm64 6.17
+CROSS_COMPILE=aarch64-linux-gnu- ./scripts/benchmarks/build-minivim-kernel-6.17.sh arm64
 ```
 
 ### Using ccache
@@ -157,7 +193,7 @@ CROSS_COMPILE=aarch64-linux-gnu- ./scripts/benchmarks/build-minivim-kernel.sh ar
 # Speed up rebuilds with ccache
 export CC="ccache clang"
 export KCFLAGS="-pipe"
-./scripts/benchmarks/build-minivim-kernel.sh x86_64 6.17
+./scripts/benchmarks/build-minivim-kernel-6.17.sh x86_64
 ```
 
 ## References

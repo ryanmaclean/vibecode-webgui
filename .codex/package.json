@@ -1,0 +1,10 @@
+{
+  "name": "vibecode-codex-config",
+  "private": true,
+  "description": "Codex CLI project-scoped dependencies for MCP servers",
+  "license": "MIT",
+  "type": "module",
+  "dependencies": {
+    "@modelcontextprotocol/server-sequential-thinking": "^2025.7.1"
+  }
+}
