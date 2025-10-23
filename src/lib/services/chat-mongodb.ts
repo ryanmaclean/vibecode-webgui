@@ -30,6 +30,31 @@ export interface ChatConversation {
   createdAt: Date;
   updatedAt: Date;
   isActive: boolean;
+  sessionId?: string;
+  model?: string;
+}
+
+export interface ChatSession {
+  _id?: ObjectId;
+  sessionId: string;
+  userId: string;
+  userAgent?: string;
+  ipAddress?: string;
+  createdAt: Date;
+  expiresAt: Date;
+}
+
+export interface ChatAssistant {
+  _id?: ObjectId;
+  name: string;
+  description?: string;
+  instructions?: string;
+  model: string;
+  userId: string;
+  tools?: any[];
+  files?: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface ChatStats {
@@ -62,16 +87,22 @@ export interface ChatSearchOptions {
 export class ChatMongoDBService {
   private messagesCollection: Collection<ChatMessage> | null = null;
   private conversationsCollection: Collection<ChatConversation> | null = null;
+  private sessionsCollection: Collection<ChatSession> | null = null;
+  private assistantsCollection: Collection<ChatAssistant> | null = null;
 
   /**
    * Initialize the chat service with MongoDB collections
    */
   initialize(
     messagesCollection: Collection<ChatMessage>,
-    conversationsCollection: Collection<ChatConversation>
+    conversationsCollection: Collection<ChatConversation>,
+    sessionsCollection?: Collection<ChatSession>,
+    assistantsCollection?: Collection<ChatAssistant>
   ): void {
     this.messagesCollection = messagesCollection;
     this.conversationsCollection = conversationsCollection;
+    this.sessionsCollection = sessionsCollection || null;
+    this.assistantsCollection = assistantsCollection || null;
   }
 
   /**
@@ -241,25 +272,57 @@ export class ChatMongoDBService {
    * Create a new conversation
    */
   async createConversation(
-    workspaceId: string,
-    userId: string,
-    title?: string
-  ): Promise<ObjectId> {
+    titleOrWorkspaceId: string,
+    sessionIdOrUserId: string,
+    modelOrTitle?: string,
+    userId?: string,
+    workspaceId?: string
+  ): Promise<ObjectId | (ChatConversation & { id: string })> {
     if (!this.conversationsCollection) {
       throw new Error('Chat service not initialized');
     }
 
-    const conversation: Omit<ChatConversation, '_id'> = {
-      workspaceId,
-      userId,
-      title,
-      messages: [],
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      isActive: true
-    };
+    // Support both old (3 args) and new (5 args) signatures
+    let conversationData: Omit<ChatConversation, '_id'>;
 
-    const result = await this.conversationsCollection.insertOne(conversation);
+    if (userId !== undefined && workspaceId !== undefined) {
+      // New signature: (title, sessionId, model, userId, workspaceId)
+      conversationData = {
+        title: titleOrWorkspaceId,
+        sessionId: sessionIdOrUserId,
+        model: modelOrTitle,
+        userId,
+        workspaceId,
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true
+      };
+    } else {
+      // Old signature: (workspaceId, userId, title?)
+      conversationData = {
+        workspaceId: titleOrWorkspaceId,
+        userId: sessionIdOrUserId,
+        title: modelOrTitle,
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        isActive: true
+      };
+    }
+
+    const result = await this.conversationsCollection.insertOne(conversationData);
+
+    // If called with new signature, return full conversation with id
+    if (userId !== undefined && workspaceId !== undefined) {
+      return {
+        ...conversationData,
+        _id: result.insertedId,
+        id: result.insertedId.toString()
+      };
+    }
+
+    // Old signature returns just ObjectId
     return result.insertedId;
   }
 
@@ -545,12 +608,336 @@ export class ChatMongoDBService {
   }
 
   /**
+   * Create a new session
+   */
+  async createSession(
+    userId: string,
+    userAgent?: string,
+    ipAddress?: string
+  ): Promise<ChatSession> {
+    if (!this.sessionsCollection) {
+      // If sessions collection is not initialized, return a temporary session
+      return {
+        sessionId: `session-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+        userId,
+        userAgent,
+        ipAddress,
+        createdAt: new Date(),
+        expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+      };
+    }
+
+    const session: Omit<ChatSession, '_id'> = {
+      sessionId: `session-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+      userId,
+      userAgent,
+      ipAddress,
+      createdAt: new Date(),
+      expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
+    };
+
+    const result = await this.sessionsCollection.insertOne(session);
+    return { ...session, _id: result.insertedId };
+  }
+
+  /**
+   * Add a message to a conversation
+   */
+  async addMessage(
+    conversationId: string,
+    message: {
+      content: string;
+      from: 'user' | 'assistant';
+      files?: string[];
+    }
+  ): Promise<{ id: string; content: string; from: string; timestamp: Date }> {
+    if (!this.messagesCollection || !this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    // Convert conversationId string to ObjectId
+    const convObjectId = new ObjectId(conversationId);
+
+    // Get the conversation to extract workspaceId and userId
+    const conversation = await this.conversationsCollection.findOne({ _id: convObjectId });
+    if (!conversation) {
+      throw new Error('Conversation not found');
+    }
+
+    // Create the message document
+    const messageDoc: Omit<ChatMessage, '_id'> = {
+      workspaceId: conversation.workspaceId,
+      userId: conversation.userId,
+      role: message.from === 'user' ? 'user' : 'assistant',
+      content: message.content,
+      timestamp: new Date(),
+      metadata: message.files ? { files: message.files } : undefined
+    };
+
+    const result = await this.messagesCollection.insertOne(messageDoc);
+
+    // Add message reference to conversation
+    await this.conversationsCollection.updateOne(
+      { _id: convObjectId },
+      {
+        $push: { messages: result.insertedId },
+        $set: { updatedAt: new Date() }
+      }
+    );
+
+    return {
+      id: result.insertedId.toString(),
+      content: message.content,
+      from: message.from,
+      timestamp: new Date()
+    };
+  }
+
+  /**
+   * Get conversations by workspace
+   */
+  async getConversationsByWorkspace(
+    workspaceId: string,
+    limit: number = 50
+  ): Promise<Array<ChatConversation & { id: string }>> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const conversations = await this.conversationsCollection
+      .find({ workspaceId })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    return conversations.map(conv => ({
+      ...conv,
+      id: conv._id?.toString() || ''
+    }));
+  }
+
+  /**
+   * Get conversations by user
+   */
+  async getConversationsByUser(
+    userId: string,
+    limit: number = 50
+  ): Promise<Array<ChatConversation & { id: string }>> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const conversations = await this.conversationsCollection
+      .find({ userId })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    return conversations.map(conv => ({
+      ...conv,
+      id: conv._id?.toString() || ''
+    }));
+  }
+
+  /**
+   * Search conversations
+   */
+  async searchConversations(
+    query: string,
+    userId: string,
+    workspaceId?: string,
+    limit: number = 20
+  ): Promise<Array<ChatConversation & { id: string }>> {
+    if (!this.conversationsCollection || !this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    // Search in messages first
+    const searchCriteria: any = {
+      userId,
+      content: { $regex: query, $options: 'i' }
+    };
+
+    if (workspaceId) {
+      searchCriteria.workspaceId = workspaceId;
+    }
+
+    const matchingMessages = await this.messagesCollection
+      .find(searchCriteria)
+      .limit(100)
+      .toArray();
+
+    // Get unique conversation IDs from matching messages
+    const conversationIds = new Set<string>();
+
+    // Find conversations that contain these messages
+    const conversations = await this.conversationsCollection
+      .find({
+        userId,
+        ...(workspaceId ? { workspaceId } : {}),
+        $or: [
+          { title: { $regex: query, $options: 'i' } },
+          { messages: { $in: matchingMessages.map(m => m._id!) } }
+        ]
+      })
+      .sort({ updatedAt: -1 })
+      .limit(limit)
+      .toArray();
+
+    return conversations.map(conv => ({
+      ...conv,
+      id: conv._id?.toString() || ''
+    }));
+  }
+
+  /**
+   * Get conversation statistics
+   */
+  async getConversationStats(
+    userId: string,
+    workspaceId?: string
+  ): Promise<{
+    totalConversations: number;
+    totalMessages: number;
+    activeConversations: number;
+    averageMessagesPerConversation: number;
+  }> {
+    if (!this.conversationsCollection || !this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const matchCriteria: any = { userId };
+    if (workspaceId) matchCriteria.workspaceId = workspaceId;
+
+    const totalConversations = await this.conversationsCollection.countDocuments(matchCriteria);
+    const activeConversations = await this.conversationsCollection.countDocuments({
+      ...matchCriteria,
+      isActive: true
+    });
+
+    const totalMessages = await this.messagesCollection.countDocuments(matchCriteria);
+
+    return {
+      totalConversations,
+      totalMessages,
+      activeConversations,
+      averageMessagesPerConversation: totalConversations > 0 ? totalMessages / totalConversations : 0
+    };
+  }
+
+  /**
+   * Create an assistant
+   */
+  async createAssistant(
+    name: string,
+    description: string,
+    instructions: string,
+    model: string,
+    userId: string,
+    tools?: any[],
+    files?: string[]
+  ): Promise<ChatAssistant & { id: string }> {
+    if (!this.assistantsCollection) {
+      throw new Error('Assistants collection not initialized');
+    }
+
+    const assistant: Omit<ChatAssistant, '_id'> = {
+      name,
+      description,
+      instructions,
+      model,
+      userId,
+      tools,
+      files,
+      createdAt: new Date(),
+      updatedAt: new Date()
+    };
+
+    const result = await this.assistantsCollection.insertOne(assistant);
+    return {
+      ...assistant,
+      _id: result.insertedId,
+      id: result.insertedId.toString()
+    };
+  }
+
+  /**
+   * Get assistants by user
+   */
+  async getAssistantsByUser(userId: string): Promise<Array<ChatAssistant & { id: string }>> {
+    if (!this.assistantsCollection) {
+      throw new Error('Assistants collection not initialized');
+    }
+
+    const assistants = await this.assistantsCollection
+      .find({ userId })
+      .sort({ updatedAt: -1 })
+      .toArray();
+
+    return assistants.map(asst => ({
+      ...asst,
+      id: asst._id?.toString() || ''
+    }));
+  }
+
+  /**
+   * Clean up expired sessions
+   */
+  async cleanupExpiredSessions(): Promise<number> {
+    if (!this.sessionsCollection) {
+      return 0;
+    }
+
+    const result = await this.sessionsCollection.deleteMany({
+      expiresAt: { $lt: new Date() }
+    });
+
+    return result.deletedCount || 0;
+  }
+
+  /**
+   * Get conversation by ID (with string support)
+   */
+  async getConversationById(
+    conversationId: string
+  ): Promise<(ChatConversation & { id: string; messages: Array<{ content: string; from: string }> }) | null> {
+    if (!this.conversationsCollection || !this.messagesCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    const conversation = await this.conversationsCollection.findOne({
+      _id: new ObjectId(conversationId)
+    });
+
+    if (!conversation) {
+      return null;
+    }
+
+    // Fetch the actual message documents
+    const messages = await this.messagesCollection
+      .find({ _id: { $in: conversation.messages } })
+      .sort({ timestamp: 1 })
+      .toArray();
+
+    return {
+      ...conversation,
+      id: conversation._id?.toString() || '',
+      messages: messages.map(msg => ({
+        content: msg.content,
+        from: msg.role === 'user' ? 'user' : 'assistant'
+      }))
+    };
+  }
+
+  /**
    * Get collections for external access
    */
   getCollections() {
     return {
       messages: this.messagesCollection,
-      conversations: this.conversationsCollection
+      conversations: this.conversationsCollection,
+      sessions: this.sessionsCollection,
+      assistants: this.assistantsCollection
     };
   }
 }

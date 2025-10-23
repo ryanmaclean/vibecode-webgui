@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mongodbChatService } from '@/lib/services/chat-mongodb'
+import { mongodbChatService, ChatConversation } from '@/lib/services/chat-mongodb'
 import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
@@ -59,21 +59,32 @@ export async function POST(request: NextRequest) {
     } = validatedData
 
     // Validate session and conversation
-    let conversation = await mongodbChatService.getConversation(conversationId)
-    
+    let conversation = await mongodbChatService.getConversationById(conversationId)
+
     if (!conversation) {
       // Create new conversation if it doesn't exist
-      conversation = await mongodbChatService.createConversation(
+      const newConv = await mongodbChatService.createConversation(
         message.slice(0, 100) + (message.length > 100 ? '...' : ''),
         `session-${Date.now()}`,
         model,
         userId,
         workspaceId
       )
+
+      // Type guard: check if it's the new format with id
+      if (typeof newConv === 'object' && 'id' in newConv) {
+        conversation = newConv as ChatConversation & { id: string; messages: Array<{ content: string; from: string }> }
+      } else {
+        // Fetch the conversation we just created
+        conversation = await mongodbChatService.getConversationById(newConv.toString())
+        if (!conversation) {
+          throw new Error('Failed to create conversation')
+        }
+      }
     }
 
     // Add user message to MongoDB
-    const userMessage = await mongodbChatService.addMessage(conversationId, {
+    const userMessage = await mongodbChatService.addMessage(conversation.id, {
       content: message,
       from: 'user',
       files: files.length > 0 ? files : undefined
@@ -197,7 +208,7 @@ export async function POST(request: NextRequest) {
                     )
                     
                     // Save assistant response to MongoDB
-                    await mongodbChatService.addMessage(conversationId, {
+                    await mongodbChatService.addMessage(conversation.id, {
                       content: assistantResponse,
                       from: 'assistant'
                     })
