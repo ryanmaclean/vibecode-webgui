@@ -5,7 +5,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export async function GET(_request: NextRequest) {
   const startTime = Date.now()
 
@@ -51,7 +51,7 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(healthCheckResponse, { status: 200 })
 
   } catch (error) {
-    logger.error('Health check error:', error)
+    console.error('Health check error:', error)
 
     return NextResponse.json({
       status: 'unhealthy',

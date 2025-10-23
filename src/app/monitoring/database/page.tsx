@@ -16,7 +16,7 @@ import {
   Server,
   Zap
 } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface PoolStatus {
   pools: Array<{
     key: string;

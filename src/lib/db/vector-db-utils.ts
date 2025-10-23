@@ -4,7 +4,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface VectorDatabaseOptions {
   connectionUrl?: string;
   createExtensions?: boolean;
@@ -166,7 +166,7 @@ $$;
   `;
   
   fs.writeFileSync(filePath, schema, 'utf8');
-  logger.info(`Schema file written to ${filePath}`);
+  console.info(`Schema file written to ${filePath}`);
   return filePath;
 }
 

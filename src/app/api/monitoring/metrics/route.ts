@@ -5,7 +5,26 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
+import { z } from '@/lib/zod-compat';
+
+// Zod validation schemas
+const performanceMetricsSchema = z.object({
+  type: z.literal('performance'),
+  duration: z.number().min(0).max(300000), // Max 5 minutes
+  metrics: z.record(z.any()).optional()
+}).strict()
+
+const errorMetricsSchema = z.object({
+  type: z.literal('error'),
+  metrics: z.record(z.any())
+}).strict()
+
+const historicalMetricsSchema = z.object({
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  metricTypes: z.array(z.string()).optional()
+}).strict()
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
   try {
@@ -19,7 +38,7 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.error('Failed to collect metrics:', error);
+    console.error('Failed to collect metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -169,7 +188,7 @@ async function getDiskUsage(): Promise<{
       usagePercentage: Math.round((used / total) * 100)
     };
   } catch (error) {
-    logger.warn('Failed to get disk usage:', error);
+    console.warn('Failed to get disk usage:', error);
     return {
       total: 0,
       used: 0,
@@ -193,7 +212,7 @@ export async function HEAD(request: NextRequest) {
       return new NextResponse(null, { status: 503 });
     }
   } catch (error) {
-    logger.error('Health check failed:', error);
+    console.error('Health check failed:', error);
     return new NextResponse(null, { status: 503 });
   }
 }
@@ -214,7 +233,7 @@ async function performHealthChecks(): Promise<boolean> {
     const memoryUsagePercentage = (memUsage.heapUsed + memUsage.external) / totalMemory;
 
     if (memoryUsagePercentage > 0.9) {
-      logger.warn('High memory usage detected:', memoryUsagePercentage);
+      console.warn('High memory usage detected:', memoryUsagePercentage);
       return false;
     }
 
@@ -226,7 +245,7 @@ async function performHealthChecks(): Promise<boolean> {
 
     return true;
   } catch (error) {
-    logger.error('Health check failed:', error);
+    console.error('Health check failed:', error);
     return false;
   }
 }
@@ -237,9 +256,13 @@ async function performHealthChecks(): Promise<boolean> {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, duration, metrics } = body;
-
-    if (type === 'performance') {
+    
+    // Validate request body with Zod
+    const performanceValidation = performanceMetricsSchema.safeParse(body);
+    const errorValidation = errorMetricsSchema.safeParse(body);
+    
+    if (performanceValidation.success) {
+      const { duration, metrics } = performanceValidation.data;
       // Store performance metrics
       await storePerformanceMetrics(duration, metrics);
 
@@ -248,8 +271,9 @@ export async function POST(request: NextRequest) {
         message: 'Performance metrics stored'
       });
     }
-
-    if (type === 'error') {
+    
+    if (errorValidation.success) {
+      const { metrics } = errorValidation.data;
       // Log error metrics
       await logErrorMetrics(metrics);
 
@@ -260,12 +284,16 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Invalid metrics type' },
+      { 
+        error: 'Invalid metrics type or format',
+        details: performanceValidation.success ? [] : performanceValidation.error.errors,
+        details2: errorValidation.success ? [] : errorValidation.error.errors
+      },
       { status: 400 }
     );
 
   } catch (error) {
-    logger.error('Failed to process metrics:', error);
+    console.error('Failed to process metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -278,7 +306,7 @@ export async function POST(request: NextRequest) {
  */
 async function storePerformanceMetrics(duration: number, metrics: any): Promise<void> {
   // This would integrate with your metrics storage system (Datadog, Prometheus, etc.)
-  logger.info('Performance metrics:', { duration, metrics, timestamp: new Date() });
+  console.info('Performance metrics:', { duration, metrics, timestamp: new Date() });
 }
 
 /**
@@ -286,7 +314,7 @@ async function storePerformanceMetrics(duration: number, metrics: any): Promise<
  */
 async function logErrorMetrics(metrics: any): Promise<void> {
   // This would integrate with your error tracking system
-  logger.error('Error metrics:', { metrics, timestamp: new Date() });
+  console.error('Error metrics:', { metrics, timestamp: new Date() });
 }
 
 /**
@@ -295,14 +323,24 @@ async function logErrorMetrics(metrics: any): Promise<void> {
 export async function PUT(request: NextRequest) {
   try {
     const body = await request.json();
-    const { startTime, endTime, metricTypes } = body;
-
-    if (!startTime || !endTime) {
+    
+    // Validate request body with Zod
+    const validation = historicalMetricsSchema.safeParse(body);
+    
+    if (!validation.success) {
       return NextResponse.json(
-        { error: 'startTime and endTime are required' },
+        { 
+          error: 'Invalid request format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
         { status: 400 }
       );
     }
+
+    const { startTime, endTime, metricTypes } = validation.data;
 
     // Get historical metrics from storage
     const historicalMetrics = await getHistoricalMetrics(startTime, endTime, metricTypes);
@@ -314,7 +352,7 @@ export async function PUT(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.error('Failed to retrieve historical metrics:', error);
+    console.error('Failed to retrieve historical metrics:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

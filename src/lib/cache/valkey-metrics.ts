@@ -51,7 +51,7 @@ export class ValKeyMetricsCollector {
   initialize(client: RedisClientType): void {
     this.client = client;
     this.collectionEnabled = true;
-    logger.info('ValKey metrics collection initialized');
+    console.info('ValKey metrics collection initialized');
     
     // Start collection interval
     this.startCollection();
@@ -65,7 +65,7 @@ export class ValKeyMetricsCollector {
       return;
     }
 
-    logger.info('Starting ValKey metrics collection');
+    console.info('Starting ValKey metrics collection');
     
     // Collect metrics immediately
     this.collectMetrics();
@@ -83,7 +83,7 @@ export class ValKeyMetricsCollector {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      logger.info('ValKey metrics collection stopped');
+      console.info('ValKey metrics collection stopped');
     }
   }
 
@@ -115,7 +115,7 @@ export class ValKeyMetricsCollector {
         const slowlog = await (this.client as any).call('SLOWLOG', 'LEN');
         parsedMetrics.slowlog_length = typeof slowlog === 'number' ? slowlog : parseInt(slowlog.toString(), 10);
       } catch (error) {
-        logger.warn('Error getting ValKey slowlog length', { error });
+        console.warn('Error getting ValKey slowlog length', { error });
       }
       
       // Get database size
@@ -135,7 +135,7 @@ export class ValKeyMetricsCollector {
       this.lastMetrics = parsedMetrics;
       
     } catch (error) {
-      logger.error('Error collecting ValKey metrics', { error });
+      console.error('Error collecting ValKey metrics', { error });
       this.reportConnectionStatus(false);
     }
   }
@@ -298,7 +298,7 @@ export class ValKeyMetricsCollector {
     }
     
     // Log summary of metrics
-    logger.debug('ValKey metrics collected', {
+    console.debug('ValKey metrics collected', {
       clients: metricsData.connected_clients,
       memory_used_mb: metricsData.used_memory ? Math.round(metricsData.used_memory / (1024 * 1024) * 100) / 100 : undefined,
       ops_per_sec: metricsData.instantaneous_ops_per_sec,

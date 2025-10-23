@@ -3,7 +3,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const execAsync = promisify(exec);
 
 export async function POST(
@@ -48,7 +48,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     
     // In a real implementation, you would write this to the migration file
     // For now, we'll just log it
-    logger.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
+    console.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
     
     return NextResponse.json({ 
       success: true, 
@@ -56,7 +56,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     });
     
   } catch (error) {
-    logger.error('Error initializing Goose:', error);
+    console.error('Error initializing Goose:', error);
     return NextResponse.json(
       { error: 'Failed to initialize Goose' },
       { status: 500 }

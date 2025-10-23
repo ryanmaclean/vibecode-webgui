@@ -4,7 +4,7 @@
  */
 
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface DashboardWidget {
   id: string
   definition: any
@@ -34,7 +34,7 @@ export class DatadogDashboardManager {
    */
   async createAIFeaturesDashboard(): Promise<string | null> {
     if (!this.apiKey || !this.appKey) {
-      logger.warn('Datadog API keys not configured')
+      console.warn('Datadog API keys not configured')
       return null
     }
 
@@ -227,7 +227,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      logger.error('Failed to create AI features dashboard:', error)
+      console.error('Failed to create AI features dashboard:', error)
       return null
     }
   }
@@ -340,7 +340,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      logger.error('Failed to create user experience dashboard:', error)
+      console.error('Failed to create user experience dashboard:', error)
       return null
     }
   }
@@ -447,7 +447,7 @@ export class DatadogDashboardManager {
       return result.id
 
     } catch (error) {
-      logger.error('Failed to create infrastructure dashboard:', error)
+      console.error('Failed to create infrastructure dashboard:', error)
       return null
     }
   }
@@ -509,7 +509,7 @@ export class DatadogDashboardManager {
       ) || []
 
     } catch (error) {
-      logger.error('Failed to list dashboards:', error)
+      console.error('Failed to list dashboards:', error)
       return []
     }
   }

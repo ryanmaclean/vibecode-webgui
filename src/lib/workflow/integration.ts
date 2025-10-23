@@ -5,7 +5,7 @@
 
 import type { AgentTaskConfig, WorkflowContext } from './types';
 import type { StartAgentRequest, AgentResponse } from '@/types/agent-api';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Agent API client interface
  */
@@ -114,7 +114,7 @@ export async function saveWorkflowExecution(
   };
 
   // await databaseClient.insertWorkflowExecution(record);
-  logger.info('Workflow execution saved:', record.id);
+  console.info('Workflow execution saved:', record.id);
 }
 
 /**

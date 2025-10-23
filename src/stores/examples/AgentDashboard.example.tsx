@@ -22,7 +22,7 @@ import {
   selectPanel,
   useBreakpointDetector,
 } from '@/stores';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // ============================================================================
 // Agent Dashboard
 // ============================================================================

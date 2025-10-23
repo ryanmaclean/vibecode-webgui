@@ -11,7 +11,7 @@ import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { createContainerSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * GET /api/containers
  * List all containers
@@ -48,7 +48,7 @@ export async function GET() {
       count: result.containers.length,
     })
   } catch (error) {
-    logger.error('Error listing containers:', error)
+    console.error('Error listing containers:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -104,7 +104,7 @@ export async function POST(req: NextRequest) {
       info: containerInfo,
     })
   } catch (error) {
-    logger.error('Error starting container:', error)
+    console.error('Error starting container:', error)
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

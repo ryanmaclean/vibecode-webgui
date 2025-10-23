@@ -45,7 +45,7 @@ Send,
 import { cn } from '../lib/utils';
 import { DEMO_PROMPTS } from '@/data/demo-prompts';
 import MessageList from './MessageList';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Voice recognition interfaces
 interface SpeechRecognitionEvent extends Event {
   readonly resultIndex: number;

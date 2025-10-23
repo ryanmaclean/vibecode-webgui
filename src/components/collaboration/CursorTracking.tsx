@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { useCollaboration } from '../../hooks/useCollaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface CursorPosition {
   line: number
   column: number

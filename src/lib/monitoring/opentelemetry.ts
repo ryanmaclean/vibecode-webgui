@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -145,7 +145,7 @@ export function initializeOpenTelemetry() {
     return otelSDK
 
   } catch (error) {
-    logger.error('❌ Failed to initialize OpenTelemetry:', error)
+    console.error('❌ Failed to initialize OpenTelemetry:', error)
     return null
   }
 }
@@ -159,7 +159,7 @@ export async function shutdownOpenTelemetry() {
       await otelSDK.shutdown()
       // Debug log removed
     } catch (error) {
-      logger.error('❌ Error shutting down OpenTelemetry:', error)
+      console.error('❌ Error shutting down OpenTelemetry:', error)
     }
   }
 }

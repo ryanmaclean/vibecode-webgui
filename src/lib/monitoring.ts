@@ -4,7 +4,7 @@
  */
 
 import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface MetricData {
   metric: string
   value: number
@@ -41,7 +41,7 @@ class MonitoringService {
    */
   async submitMetric(metric: MetricData): Promise<boolean> {
     if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
-      logger.warn('Datadog API key not configured - metric submission skipped')
+      console.warn('Datadog API key not configured - metric submission skipped')
       return false
     }
 
@@ -69,7 +69,7 @@ class MonitoringService {
 
       return true
     } catch (error) {
-      logger.error('Failed to submit metric to Datadog:', error)
+      console.error('Failed to submit metric to Datadog:', error)
       return false
     }
   }
@@ -79,7 +79,7 @@ class MonitoringService {
    */
   async submitEvent(title: string, text: string, tags?: string[]): Promise<boolean> {
     if (!this.datadogApiKey || this.datadogApiKey === 'placeholder-set-real-key') {
-      logger.warn('Datadog API key not configured - event submission skipped')
+      console.warn('Datadog API key not configured - event submission skipped')
       return false
     }
 
@@ -105,7 +105,7 @@ class MonitoringService {
 
       return true
     } catch (error) {
-      logger.error('Failed to submit event to Datadog:', error)
+      console.error('Failed to submit event to Datadog:', error)
       return false
     }
   }
@@ -346,7 +346,7 @@ class MonitoringService {
         `env:${process.env.NODE_ENV || 'development'}`
       ]
     }).catch(error => {
-      logger.warn('Failed to track page load:', error)
+      console.warn('Failed to track page load:', error)
     })
   }
 
@@ -365,7 +365,7 @@ class MonitoringService {
         ...Object.entries(properties).map(([key, value]) => `${key}:${value}`)
       ]
     ).catch(error => {
-      logger.warn('Failed to track user action:', error)
+      console.warn('Failed to track user action:', error)
     })
   }
 
@@ -384,7 +384,7 @@ class MonitoringService {
         ...Object.entries(context).map(([key, value]) => `${key}:${value}`)
       ]
     ).catch(submitError => {
-      logger.warn('Failed to track error:', submitError)
+      console.warn('Failed to track error:', submitError)
     })
 
     // Also submit error count metric
@@ -397,7 +397,7 @@ class MonitoringService {
         `env:${process.env.NODE_ENV || 'development'}`
       ]
     }).catch(metricError => {
-      logger.warn('Failed to submit error metric:', metricError)
+      console.warn('Failed to submit error metric:', metricError)
     })
   }
 
@@ -415,7 +415,7 @@ class MonitoringService {
         'event:monitoring_init'
       ]
     ).catch(error => {
-      logger.warn('Failed to track monitoring init:', error)
+      console.warn('Failed to track monitoring init:', error)
     })
   }
 
@@ -433,16 +433,16 @@ class MonitoringService {
     // Convert properties to tags for Datadog
     const tags = Object.entries(properties).map(([key, value]) => `${key}:${value}`)
     this.submitEvent(title, JSON.stringify(properties), tags).catch(error => {
-      logger.warn('Failed to track event:', error)
+      console.warn('Failed to track event:', error)
     })
   }
 
   logInfo(message: string, context?: Record<string, any>): void {
-    logger.info(message, context)
+    console.info(message, context)
   }
 
   logError(message: string, context?: Record<string, any>): void {
-    logger.error(message, context)
+    console.error(message, context)
   }
 
   trackPerformance(operation: string, duration: number, context?: Record<string, any>): void {
@@ -453,7 +453,7 @@ class MonitoringService {
       tags: [`operation:${operation}`, ...tags],
       timestamp: Math.floor(Date.now() / 1000)
     }).catch(error => {
-      logger.warn('Failed to track performance:', error)
+      console.warn('Failed to track performance:', error)
     })
   }
 }
@@ -463,9 +463,9 @@ export const logger = {
   info: (message: string, ...args: any[]) => {
     // Info logged
   },
-  warn: (message: string, ...args: any[]) => logger.warn(`[WARN] ${message}`, ...args),
-  error: (message: string, ...args: any[]) => logger.error(`[ERROR] ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => logger.debug(`[DEBUG] ${message}`, ...args)
+  warn: (message: string, ...args: any[]) => console.warn(`[WARN] ${message}`, ...args),
+  error: (message: string, ...args: any[]) => console.error(`[ERROR] ${message}`, ...args),
+  debug: (message: string, ...args: any[]) => console.debug(`[DEBUG] ${message}`, ...args)
 }
 
 // Export singleton instance

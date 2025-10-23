@@ -13,7 +13,7 @@
 
 import * as vscode from 'vscode'
 import axios, { AxiosInstance } from 'axios'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -206,7 +206,7 @@ export class AgentAPIClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      logger.info('[AgentAPIClient]', ...args)
+      console.info('[AgentAPIClient]', ...args)
     }
   }
 }
@@ -625,7 +625,7 @@ export class AgentAPIExtension {
   }
 
   private log(...args: unknown[]): void {
-    logger.info('[AgentAPIExtension]', ...args)
+    console.info('[AgentAPIExtension]', ...args)
   }
 }
 

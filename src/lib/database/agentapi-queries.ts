@@ -11,19 +11,21 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { agentSessionCache, agentHealthCache, conversationContextCache } from '../cache/agentapi-redis-strategy';
 import { metrics } from '../server-monitoring';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
+import { loadSecret } from '@/lib/security/macos-keychain';
+
 // =====================================================
 // Database Client Configuration
 // =====================================================
+
+// Load database URL from Keychain with fallback to environment variable
+const databaseUrl = loadSecret('DATABASE_URL') || process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder';
 
 const prisma = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   datasources: {
     db: {
-import { loadSecret } from '@/lib/security/macos-keychain'
-
-// Load database URL from Keychain
-const databaseUrl = await loadSecret('DATABASE_URL')
+      url: databaseUrl
     },
   },
 });
@@ -572,7 +574,7 @@ export class AgentEventQueries {
         severity: data.eventSeverity || 'info',
       });
     } catch (error) {
-      logger.error('Event logging error:', error);
+      console.error('Event logging error:', error);
       // Don't throw - event logging is non-critical
     }
   }
@@ -660,6 +662,291 @@ export class AgentBatchQueries {
       await Promise.all(agentIds.map(id => agentSessionCache.invalidateSession(id)));
     } catch (error) {
       metrics.increment('agent.batch.update.error');
+      throw error;
+    }
+  }
+
+  /**
+   * Batch create RAG chunks (optimized for bulk ingestion)
+   */
+  static async batchCreateRAGChunks(chunks: Array<{
+    content: string;
+    metadata?: object;
+    file_id?: number;
+    user_id: number;
+    workspace_id?: number;
+    project_id?: number;
+    chunk_index?: number;
+    token_count?: number;
+    start_line?: number;
+    end_line?: number;
+    chunk_id?: string;
+  }>) {
+    const startTime = Date.now();
+
+    try {
+      // Process in batches of 1000 to avoid memory issues
+      const batchSize = 1000;
+      const results = [];
+
+      for (let i = 0; i < chunks.length; i += batchSize) {
+        const batch = chunks.slice(i, i + batchSize);
+        
+        const batchResult = await prisma.rAGChunk.createMany({
+          data: batch.map(chunk => ({
+            content: chunk.content,
+            metadata: (chunk.metadata || {}) as Prisma.InputJsonValue,
+            file_id: chunk.file_id,
+            user_id: chunk.user_id,
+            workspace_id: chunk.workspace_id,
+            project_id: chunk.project_id,
+            chunk_index: chunk.chunk_index,
+            token_count: chunk.token_count,
+            start_line: chunk.start_line,
+            end_line: chunk.end_line,
+            chunk_id: chunk.chunk_id,
+          })),
+          skipDuplicates: true, // Skip duplicates for resilience
+        });
+
+        results.push(batchResult);
+      }
+
+      const totalCreated = results.reduce((sum, result) => sum + result.count, 0);
+      const latency = Date.now() - startTime;
+      
+      metrics.histogram('agent.batch.create_rag_chunks', latency, {
+        batch_size: chunks.length.toString(),
+        total_created: totalCreated.toString(),
+      });
+
+      return { created: totalCreated, batches: results.length };
+    } catch (error) {
+      metrics.increment('agent.batch.create_rag.error');
+      throw error;
+    }
+  }
+
+  /**
+   * Batch update workspace metadata
+   */
+  static async batchUpdateWorkspaces(updates: Array<{
+    id: number;
+    name?: string;
+    description?: string;
+    status?: string;
+    url?: string;
+  }>) {
+    const startTime = Date.now();
+
+    try {
+      const results = await Promise.all(
+        updates.map(update => 
+          prisma.workspace.update({
+            where: { id: update.id },
+            data: {
+              ...(update.name && { name: update.name }),
+              ...(update.description && { description: update.description }),
+              ...(update.status && { status: update.status }),
+              ...(update.url && { url: update.url }),
+              updated_at: new Date(),
+            },
+          })
+        )
+      );
+
+      const latency = Date.now() - startTime;
+      metrics.histogram('agent.batch.update_workspaces', latency, {
+        batch_size: updates.length.toString(),
+      });
+
+      return results;
+    } catch (error) {
+      metrics.increment('agent.batch.update_workspaces.error');
+      throw error;
+    }
+  }
+
+  /**
+   * Batch create files (optimized for bulk file import)
+   */
+  static async batchCreateFiles(files: Array<{
+    name: string;
+    path: string;
+    content?: string;
+    size?: number;
+    mime_type?: string;
+    language?: string;
+    lines?: number;
+    checksum?: string;
+    user_id: number;
+    workspace_id?: number;
+    project_id?: number;
+  }>) {
+    const startTime = Date.now();
+
+    try {
+      // Process in batches to avoid connection limits
+      const batchSize = 500;
+      const results = [];
+
+      for (let i = 0; i < files.length; i += batchSize) {
+        const batch = files.slice(i, i + batchSize);
+        
+        const batchResult = await prisma.file.createMany({
+          data: batch,
+          skipDuplicates: true,
+        });
+
+        results.push(batchResult);
+      }
+
+      const totalCreated = results.reduce((sum, result) => sum + result.count, 0);
+      const latency = Date.now() - startTime;
+      
+      metrics.histogram('agent.batch.create_files', latency, {
+        batch_size: files.length.toString(),
+        total_created: totalCreated.toString(),
+      });
+
+      return { created: totalCreated, batches: results.length };
+    } catch (error) {
+      metrics.increment('agent.batch.create_files.error');
+      throw error;
+    }
+  }
+
+  /**
+   * Batch delete operations (soft delete for workspaces and projects)
+   */
+  static async batchSoftDelete(operations: Array<{
+    table: 'workspace' | 'project' | 'file';
+    ids: number[];
+    userId: number; // For authorization
+  }>) {
+    const startTime = Date.now();
+
+    try {
+      const results = await Promise.all(
+        operations.map(async op => {
+          switch (op.table) {
+            case 'workspace':
+              return await prisma.workspace.updateMany({
+                where: { 
+                  id: { in: op.ids },
+                  user_id: op.userId, // Security: only delete own workspaces
+                },
+                data: { 
+                  status: 'archived',
+                  updated_at: new Date(),
+                },
+              });
+
+            case 'project':
+              return await prisma.project.updateMany({
+                where: { 
+                  id: { in: op.ids },
+                  user_id: op.userId, // Security: only delete own projects
+                },
+                data: { 
+                  status: 'archived',
+                  updated_at: new Date(),
+                },
+              });
+
+            case 'file':
+              // For files, we do hard delete as they're content
+              return await prisma.file.deleteMany({
+                where: { 
+                  id: { in: op.ids },
+                  user_id: op.userId, // Security: only delete own files
+                },
+              });
+
+            default:
+              throw new Error(`Unsupported table for batch delete: ${op.table}`);
+          }
+        })
+      );
+
+      const latency = Date.now() - startTime;
+      const totalAffected = results.reduce((sum, result) => sum + result.count, 0);
+      
+      metrics.histogram('agent.batch.soft_delete', latency, {
+        operations_count: operations.length.toString(),
+        total_affected: totalAffected.toString(),
+      });
+
+      return { affected: totalAffected, operations: results };
+    } catch (error) {
+      metrics.increment('agent.batch.soft_delete.error');
+      throw error;
+    }
+  }
+
+  /**
+   * Batch cleanup old records (for maintenance)
+   */
+  static async batchCleanupOldRecords(days: number = 90) {
+    const startTime = Date.now();
+    const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+
+    try {
+      const results = await Promise.all([
+        // Archive old conversations
+        prisma.agentConversation.deleteMany({
+          where: {
+            createdAt: { lt: cutoffDate },
+            // Keep important conversations (e.g., those with high token usage)
+            totalTokens: { lt: 10000 },
+          },
+        }),
+
+        // Archive old health metrics
+        prisma.agentHealthMetric.deleteMany({
+          where: {
+            metricTimestamp: { lt: cutoffDate },
+          },
+        }),
+
+        // Archive old events (except errors)
+        prisma.agentEvent.deleteMany({
+          where: {
+            createdAt: { lt: cutoffDate },
+            eventSeverity: { notIn: ['error', 'critical'] },
+          },
+        }),
+
+        // Update old archived workspaces to deleted status
+        prisma.workspace.updateMany({
+          where: {
+            status: 'archived',
+            updated_at: { lt: cutoffDate },
+          },
+          data: {
+            status: 'deleted',
+            updated_at: new Date(),
+          },
+        }),
+      ]);
+
+      const latency = Date.now() - startTime;
+      const totalCleaned = results.reduce((sum, result) => sum + result.count, 0);
+      
+      metrics.histogram('agent.batch.cleanup', latency, {
+        days: days.toString(),
+        total_cleaned: totalCleaned.toString(),
+      });
+
+      return { 
+        cleaned: totalCleaned,
+        conversations: results[0].count,
+        healthMetrics: results[1].count,
+        events: results[2].count,
+        workspaces: results[3].count,
+      };
+    } catch (error) {
+      metrics.increment('agent.batch.cleanup.error');
       throw error;
     }
   }

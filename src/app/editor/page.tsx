@@ -22,7 +22,7 @@ Select,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 const SAMPLE_CODE = {
   typescript: `import React, { useState, useEffect } from 'react'

@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -141,7 +141,7 @@ export function initializeClientOpenTelemetry() {
     return webTracerProvider
 
   } catch (error) {
-    logger.error('❌ Failed to initialize client-side OpenTelemetry:', error)
+    console.error('❌ Failed to initialize client-side OpenTelemetry:', error)
     return null
   }
 }

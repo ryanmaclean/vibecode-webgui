@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface ConnectionPoolMetrics {
   pool_name: string
   total_connections: number
@@ -101,7 +101,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     this.pools.set(poolName, metrics)
     this.initializeHistory(poolName)
     
-    logger.info(`📊 Registered pool '${poolName}' for monitoring`)
+    console.info(`📊 Registered pool '${poolName}' for monitoring`)
   }
 
   /**
@@ -110,7 +110,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
   public updatePoolMetrics(poolName: string, metrics: Partial<ConnectionPoolMetrics>) {
     const existingMetrics = this.pools.get(poolName)
     if (!existingMetrics) {
-      logger.warn(`Pool '${poolName}' not registered for monitoring`)
+      console.warn(`Pool '${poolName}' not registered for monitoring`)
       return
     }
 
@@ -227,7 +227,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       this.updatePoolHealth()
     }, 5000)
 
-    logger.info('🔍 Connection pool monitoring started')
+    console.info('🔍 Connection pool monitoring started')
   }
 
   /**
@@ -240,7 +240,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval)
     }
-    logger.info('🛑 Connection pool monitoring stopped')
+    console.info('🛑 Connection pool monitoring stopped')
   }
 
   /**
@@ -367,7 +367,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
   private createAlert(alert: PoolAlert) {
     this.alerts.set(alert.id, alert)
     this.emit('alertCreated', alert)
-    logger.warn(`🚨 ALERT: ${alert.message} (Pool: ${alert.pool_name})`)
+    console.warn(`🚨 ALERT: ${alert.message} (Pool: ${alert.pool_name})`)
   }
 
   /**
@@ -380,7 +380,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       alert.resolution_timestamp = new Date().toISOString()
       this.alerts.set(alertId, alert)
       this.emit('alertResolved', alert)
-      logger.info(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
+      console.info(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
     }
   }
 

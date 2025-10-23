@@ -7,7 +7,7 @@ import OpenAI from 'openai'
 import { prisma } from './prisma'
 import { Prisma } from '@prisma/client'
 import { PgVectorSearch } from './cache/pgvector-search'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Check if we're in build mode
 const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
                   process.argv.includes('build') ||
@@ -61,7 +61,7 @@ class VectorStore {
           }
         }
       } catch (error) {
-        logger.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
+        console.warn('Embedding service initialization failed; falling back to OpenRouter/local', error)
 this.embeddingService = null
       }
     }
@@ -90,14 +90,14 @@ this.embeddingService = null
       if (this.useLocalEmbeddings) {
         const embedding = generateLocalEmbedding(text, this.localEmbeddingDimensions)
         const duration = Date.now() - startTime
-        logger.info(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
+        console.info(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
       if (this.embeddingService) {
         const embedding = await this.embeddingService.generateEmbedding(text)
         const duration = Date.now() - startTime
-        logger.info(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
+        console.info(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
@@ -111,12 +111,12 @@ this.embeddingService = null
       })
 
       const duration = Date.now() - startTime
-      logger.info(`Embedding generation took ${duration}ms for ${text.length} chars`)
+      console.info(`Embedding generation took ${duration}ms for ${text.length} chars`)
 
       return response.data[0].embedding
     } catch (error) {
       const duration = Date.now() - startTime
-      logger.error(`Error generating embedding after ${duration}ms:`, error)
+      console.error(`Error generating embedding after ${duration}ms:`, error)
       // Fallback: return zero vector
       return new Array(1536).fill(0) // text-embedding-3-small returns 1536-dimensional vectors
     }
@@ -132,7 +132,7 @@ this.embeddingService = null
     tokens: number
   }>): Promise<void> {
     if (isBuilding || !prisma) {
-      logger.info('Skipping vector storage during build')
+      console.info('Skipping vector storage during build')
       return
     }
     
@@ -241,7 +241,7 @@ this.embeddingService = null
 
       // Debug log removed
     } catch (error) {
-      logger.error('Error storing vector chunks:', error)
+      console.error('Error storing vector chunks:', error)
       throw error
     }
   }
@@ -260,7 +260,7 @@ this.embeddingService = null
     } = {}
   ): Promise<SearchResult[]> {
     if (isBuilding || !prisma) {
-      logger.info('Skipping vector search during build')
+      console.info('Skipping vector search during build')
       return []
     }
     
@@ -303,7 +303,7 @@ this.embeddingService = null
             }));
           }
         } catch (cacheError) {
-          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
           // Continue with direct query if cache fails
         }
       }
@@ -405,16 +405,16 @@ this.embeddingService = null
             minSimilarity: threshold,
             workspace,
             useCache: true
-          }).catch(err => logger.warn('Background cache storage failed:', err));
+          }).catch(err => console.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          logger.warn('Failed to cache results:', cacheError);
+          console.warn('Failed to cache results:', cacheError);
           // Continue without caching if it fails
         }
       }
       
       return results;
     } catch (error) {
-      logger.error('Error in vector search:', error)
+      console.error('Error in vector search:', error)
       // Fallback to simple text search if vector search fails
       return this.fallbackTextSearch(query, options)
     }
@@ -488,7 +488,7 @@ this.embeddingService = null
         similarity: 0.5 // Default similarity for text search
       }))
     } catch (error) {
-      logger.error('Error in fallback text search:', error)
+      console.error('Error in fallback text search:', error)
       return []
     }
   }
@@ -531,7 +531,7 @@ this.embeddingService = null
 
       return context;
     } catch (error) {
-      logger.error('Error getting context:', error);
+      console.error('Error getting context:', error);
       return '';
     }
   }
@@ -541,7 +541,7 @@ this.embeddingService = null
    */
   async deleteFileChunks(fileId: number): Promise<void> {
     if (isBuilding || !prisma) {
-      logger.info('Skipping delete during build')
+      console.info('Skipping delete during build')
       return
     }
     
@@ -551,7 +551,7 @@ this.embeddingService = null
       })
       // Debug log removed
     } catch (error) {
-      logger.error('Error deleting file chunks:', error)
+      console.error('Error deleting file chunks:', error)
       throw error
     }
   }
@@ -565,7 +565,7 @@ this.embeddingService = null
     averageChunkSize: number
   }> {
     if (isBuilding || !prisma) {
-      logger.info('Skipping stats during build')
+      console.info('Skipping stats during build')
       return {
         totalChunks: 0,
         totalFiles: 0,
@@ -592,7 +592,7 @@ this.embeddingService = null
         averageChunkSize: avgTokens._avg.tokens || 0
       }
     } catch (error) {
-      logger.error('Error getting vector store stats:', error)
+      console.error('Error getting vector store stats:', error)
       return {
         totalChunks: 0,
         totalFiles: 0,

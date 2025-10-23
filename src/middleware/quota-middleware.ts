@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { resourceManager } from '@/lib/resource-management'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface QuotaCheckResult {
   allowed: boolean
   reason?: string
@@ -47,7 +47,7 @@ export async function withQuotaCheck(
     
     if (!result.allowed) {
       // Log quota violation
-      logger.warn(`Quota exceeded for user ${userId}: ${result.reason}`)
+      console.warn(`Quota exceeded for user ${userId}: ${result.reason}`)
       
       return {
         allowed: false,
@@ -66,7 +66,7 @@ export async function withQuotaCheck(
     return { allowed: true }
 
   } catch (error) {
-    logger.error('Quota check error:', error)
+    console.error('Quota check error:', error)
     return { allowed: false, reason: 'Internal server error' }
   }
 }

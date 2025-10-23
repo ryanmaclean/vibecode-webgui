@@ -7,7 +7,7 @@
 import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
-import { logger } from '@/lib/logger';
+// // // import { logger } from '@/lib/logger';
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
   tracer.init({
@@ -19,9 +19,9 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  logger.info('🔍 Datadog APM tracer initialized')
+  console.info('🔍 Datadog APM tracer initialized')
 } else {
-  logger.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -95,7 +95,7 @@ class MetricsCollector {
     current.count += 1
     this.metrics.set(key, current)
 
-    logger.info('Metric incremented', {
+    console.info('Metric incremented', {
       metric: metricName,
       count: current.count,
       tags
@@ -111,7 +111,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    logger.info('Gauge metric set', {
+    console.info('Gauge metric set', {
       metric: metricName,
       value,
       tags
@@ -129,7 +129,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    logger.info('Histogram metric recorded', {
+    console.info('Histogram metric recorded', {
       metric: metricName,
       value,
       average: current.sum / current.count,
@@ -176,7 +176,7 @@ class ApplicationLogger {
     userAgent?: string
   }): void {
     const level = context.success === false ? 'warn' : 'info'
-    logger.log(level, `Authentication: ${event}`, {
+    console.log(level, `Authentication: ${event}`, {
       category: 'auth',
       ...context
     })
@@ -201,7 +201,7 @@ class ApplicationLogger {
     terminalSessions?: number
   }): void {
     const level = context.error ? 'error' : 'info'
-    logger.log(level, `Workspace: ${event}`, {
+    console.log(level, `Workspace: ${event}`, {
       category: 'workspace',
       ...context
     })
@@ -229,7 +229,7 @@ class ApplicationLogger {
     codeContext?: boolean
   }): void {
     const level = context.error ? 'error' : 'info'
-    logger.log(level, `AI: ${event}`, {
+    console.log(level, `AI: ${event}`, {
       category: 'ai',
       ...context
     })
@@ -266,7 +266,7 @@ class ApplicationLogger {
     activeConnections?: number
     error?: string
   }): void {
-    logger.info('Performance metrics', {
+    console.info('Performance metrics', {
       category: 'performance',
       ...context
     })
@@ -306,7 +306,7 @@ class ApplicationLogger {
     const level = context.severity === 'critical' ? 'error' :
                   context.severity === 'high' ? 'warn' : 'info'
 
-    logger.log(level, `Security: ${event}`, {
+    console.log(level, `Security: ${event}`, {
       category: 'security',
       ...context
     })
@@ -328,7 +328,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    logger.info(`Business: ${event}`, {
+    console.info(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -368,7 +368,7 @@ function performanceMiddleware() {
 
       // Log slow requests
       if (responseTime > 1000) {
-        logger.warn('Slow request detected', {
+        console.warn('Slow request detected', {
           endpoint: req.path,
           method: req.method,
           responseTime,

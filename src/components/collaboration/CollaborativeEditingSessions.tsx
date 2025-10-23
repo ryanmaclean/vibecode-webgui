@@ -26,7 +26,7 @@ Users,
   RefreshCw
 } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface CollaborativeSession {
   sessionId: string

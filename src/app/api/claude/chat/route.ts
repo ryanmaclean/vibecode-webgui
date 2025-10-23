@@ -10,7 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 // import type { ClaudeCliRequest } from '@/lib/claude-cli-integration'
 
@@ -65,7 +65,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    logger.error('Claude chat API error:', { error: error })
+    console.error('Claude chat API error:', { error: error })
 
     return NextResponse.json(
       {

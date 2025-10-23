@@ -25,7 +25,7 @@ AgentType,
   CompleteEventData,
   StartAgentRequest,
 } from '@/types/agent-api';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // ============================================================================
 // Types
 // ============================================================================
@@ -667,7 +667,7 @@ export const useAgentStore = create<AgentStore>()(
             const data = await response.json();
             get().loadAgents(data.agents || []);
           } catch (error) {
-            logger.error('Failed to sync agents:', error);
+            console.error('Failed to sync agents:', error);
           }
         },
       })),

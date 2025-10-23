@@ -1,4 +1,5 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
+import { loadSecret } from '@/lib/security/macos-keychain-server';
 
 
 interface DatadogTags {
@@ -29,7 +30,7 @@ class DatadogMetricsService {
       component: 'api' // Default component, can be overridden
     }
     
-    this.isEnabled = process.env.NODE_ENV === 'production' && !!(process.env.DD_API_KEY || process.env.DATADOG_API_KEY)
+    this.isEnabled = process.env.NODE_ENV === 'production' && !!(loadSecret('DD_API_KEY') || loadSecret('DATADOG_API_KEY') || process.env.DD_API_KEY || process.env.DATADOG_API_KEY)
   }
 
   private formatMetricName(component: string, metricName: string): string {
@@ -257,11 +258,11 @@ class DatadogMetricsService {
       }
 
       if (process.env.NODE_ENV === 'development') {
-        logger.info('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
+        console.info('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
       }
 
       // In production, send to Datadog (prefer DD_API_KEY with DATADOG_API_KEY fallback)
-      const apiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+      const apiKey = loadSecret('DD_API_KEY') || loadSecret('DATADOG_API_KEY') || process.env.DD_API_KEY || process.env.DATADOG_API_KEY
       if (apiKey && process.env.NODE_ENV === 'production') {
         const response = await fetch('https://api.datadoghq.com/api/v1/series', {
           method: 'POST',
@@ -275,11 +276,11 @@ class DatadogMetricsService {
         })
 
         if (!response.ok) {
-          logger.error('Failed to send metric to Datadog:', response.statusText)
+          console.error('Failed to send metric to Datadog:', response.statusText)
         }
       }
     } catch (error) {
-      logger.error('Error sending metric to Datadog:', error)
+      console.error('Error sending metric to Datadog:', error)
     }
   }
 
@@ -299,11 +300,11 @@ class DatadogMetricsService {
     }))
 
     if (process.env.NODE_ENV === 'development') {
-      logger.info('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
+      console.info('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
       return
     }
 
-    const apiKey = process.env.DD_API_KEY || process.env.DATADOG_API_KEY
+    const apiKey = loadSecret('DD_API_KEY') || loadSecret('DATADOG_API_KEY') || process.env.DD_API_KEY || process.env.DATADOG_API_KEY
     if (apiKey && process.env.NODE_ENV === 'production') {
       try {
         const response = await fetch('https://api.datadoghq.com/api/v1/series', {
@@ -318,10 +319,10 @@ class DatadogMetricsService {
         })
 
         if (!response.ok) {
-          logger.error('Failed to send batch metrics to Datadog:', response.statusText)
+          console.error('Failed to send batch metrics to Datadog:', response.statusText)
         }
       } catch (error) {
-        logger.error('Error sending batch metrics to Datadog:', error)
+        console.error('Error sending batch metrics to Datadog:', error)
       }
     }
   }

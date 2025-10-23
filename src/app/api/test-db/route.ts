@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export async function GET(_request: NextRequest) {
   try {
     // Simple test endpoint for E2E tests - no actual database dependency
@@ -27,7 +27,7 @@ export async function GET(_request: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('Database test error:', error)
+    console.error('Database test error:', error)
     
     return NextResponse.json({
       status: 'error',

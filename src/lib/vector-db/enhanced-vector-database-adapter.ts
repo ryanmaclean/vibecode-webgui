@@ -7,7 +7,7 @@ import { VectorDatabaseInterface } from './vector-database-interface';
 import { VectorDatabaseConfig, SearchOptions, SearchResult } from './vector-types';
 import { RetryHandler, RetryConfig } from './vector-retry-handler';
 import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
-import { logger } from '../logger';
+// import { logger } from '../logger';
 
 /**
  * Enhanced vector database adapter with retry mechanism
@@ -71,7 +71,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
       
       // Log detailed search context
-      logger.error('Vector search failed after retries', {
+      console.error('Vector search failed after retries', {
         provider: this.adapterName,
         embeddingSize: embedding.length,
         options: {
@@ -103,7 +103,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'searchWithText'
       );
       
-      logger.error('Vector text search failed after retries', {
+      console.error('Vector text search failed after retries', {
         provider: this.adapterName,
         query: query.substring(0, 100), // Truncate long queries
         options: {
@@ -153,7 +153,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
       
       // Log detailed context
-      logger.error('Failed to store vector chunks after retries', {
+      console.error('Failed to store vector chunks after retries', {
         provider: this.adapterName,
         fileId,
         chunkCount: chunks.length,
@@ -188,7 +188,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'deleteFileChunks'
       );
       
-      logger.error('Failed to delete vector chunks after retries', {
+      console.error('Failed to delete vector chunks after retries', {
         provider: this.adapterName,
         fileId,
         error: enhancedError
@@ -212,7 +212,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'getStats'
       );
     } catch (error) {
-      logger.error('Failed to get vector database stats after retries', {
+      console.error('Failed to get vector database stats after retries', {
         provider: this.adapterName,
         error
       });
@@ -236,7 +236,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'invalidateCache'
       );
     } catch (error) {
-      logger.error('Failed to invalidate cache after retries', {
+      console.error('Failed to invalidate cache after retries', {
         provider: this.adapterName,
         table,
         contentType,
@@ -263,7 +263,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'generateEmbedding'
       );
       
-      logger.error('Failed to generate embedding after retries', {
+      console.error('Failed to generate embedding after retries', {
         provider: this.adapterName,
         textLength: text.length,
         error: enhancedError
@@ -280,7 +280,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
     try {
       return await this.adapter.isConnected();
     } catch (error) {
-      logger.warn('Error checking connection status', {
+      console.warn('Error checking connection status', {
         provider: this.adapterName,
         error
       });
@@ -298,7 +298,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
         'ping'
       );
     } catch (error) {
-      logger.warn('Ping failed after retries', {
+      console.warn('Ping failed after retries', {
         provider: this.adapterName,
         error
       });
@@ -313,7 +313,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
     try {
       await this.adapter.close();
     } catch (error) {
-      logger.warn('Error closing database connection', {
+      console.warn('Error closing database connection', {
         provider: this.adapterName,
         error
       });
@@ -336,6 +336,6 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
    */
   public resetCircuitBreaker(): void {
     this.retryHandler.resetCircuit();
-    logger.info(`Circuit breaker reset for ${this.adapterName}`);
+    console.info(`Circuit breaker reset for ${this.adapterName}`);
   }
 }

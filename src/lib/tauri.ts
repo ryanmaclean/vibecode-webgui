@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -49,7 +49,7 @@ async function invokeTauri<T>(
  * import { tauriCommands } from '@/lib/tauri';
  *
  * const result = await tauriCommands.greet('World');
- * logger.info(result); // "Hello, World! Welcome to VibeCode."
+ * console.info(result); // "Hello, World! Welcome to VibeCode."
  * ```
  */
 export const tauriCommands: TauriCommands = {

@@ -19,7 +19,7 @@ createSSEDecoder,
   StreamMetadataChunk,
   StreamChunk
 } from '@/lib/ai/utils/sse-decoder'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Configuration Types
@@ -605,7 +605,7 @@ export class SSEClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      logger.info('[SSEClient]', ...args)
+      console.info('[SSEClient]', ...args)
     }
   }
 }

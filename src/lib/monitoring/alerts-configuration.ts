@@ -4,7 +4,7 @@
  */
 
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface AlertConfig {
   name: string
   type: 'metric alert' | 'service check' | 'event alert' | 'log alert'
@@ -276,7 +276,7 @@ Token usage is {{value}} tokens in the last hour.
    */
   async createMonitor(alert: AlertConfig): Promise<string | null> {
     if (!this.apiKey || !this.appKey) {
-      logger.warn('Datadog API keys not configured')
+      console.warn('Datadog API keys not configured')
       return null
     }
 
@@ -322,7 +322,7 @@ Token usage is {{value}} tokens in the last hour.
       return result.id
 
     } catch (error) {
-      logger.error(`Failed to create monitor "${alert.name}":`, error)
+      console.error(`Failed to create monitor "${alert.name}":`, error)
       return null
     }
   }
@@ -379,7 +379,7 @@ Token usage is {{value}} tokens in the last hour.
       )
 
     } catch (error) {
-      logger.error('Failed to list monitors:', error)
+      console.error('Failed to list monitors:', error)
       return []
     }
   }
@@ -406,7 +406,7 @@ Token usage is {{value}} tokens in the last hour.
 
       return response.ok
     } catch (error) {
-      logger.error('Failed to send test alert:', error)
+      console.error('Failed to send test alert:', error)
       return false
     }
   }

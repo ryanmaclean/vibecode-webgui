@@ -1,35 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
+import { z } from '@/lib/zod-compat'
 
-interface WebSearchRequest {
-  query: string
-  maxResults?: number
-  timeFilter?: 'day' | 'week' | 'month' | 'year'
-  safeSearch?: boolean
-  language?: string
-  region?: string
-  includeContent?: boolean
-}
+// Zod validation schema for web search requests
+const webSearchRequestSchema = z.object({
+  query: z.string()
+    .min(1, 'Query is required')
+    .max(500, 'Query too long')
+    .regex(/^[^\x00-\x1F\x7F]*$/, 'Query contains invalid characters'),
+  maxResults: z.number().int().min(1).max(20).optional().default(5),
+  timeFilter: z.enum(['day', 'week', 'month', 'year']).optional(),
+  safeSearch: z.boolean().optional().default(true),
+  language: z.string().length(2).optional().default('en'),
+  region: z.string().length(2).optional().default('us'),
+  includeContent: z.boolean().optional().default(false)
+}).strict()
 
 export async function POST(request: NextRequest) {
   try {
-    const body: WebSearchRequest = await request.json()
-    const { 
-      query, 
-      maxResults = 5, 
-      timeFilter,
-      safeSearch = true,
-      language = 'en',
-      region = 'us',
-      includeContent = false
-    } = body
-
-    if (!query?.trim()) {
+    const body = await request.json()
+    
+    // Validate request body with Zod
+    const validation = webSearchRequestSchema.safeParse(body)
+    
+    if (!validation.success) {
       return NextResponse.json({
         success: false,
-        error: 'Query is required'
+        error: 'Invalid request format',
+        details: validation.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
       }, { status: 400 })
     }
+
+    const { 
+      query, 
+      maxResults, 
+      timeFilter,
+      safeSearch,
+      language,
+      region,
+      includeContent
+    } = validation.data
 
     const startTime = Date.now()
     
@@ -112,10 +125,19 @@ export async function GET(request: NextRequest) {
   const maxResults = parseInt(searchParams.get('maxResults') || '5')
   const includeContent = searchParams.get('includeContent') === 'true'
 
-  if (!query) {
+  // Validate query parameter
+  if (!query || query.trim().length === 0) {
     return NextResponse.json({
       success: false,
       error: 'Query parameter (q or query) is required'
+    }, { status: 400 })
+  }
+
+  // Validate maxResults
+  if (isNaN(maxResults) || maxResults < 1 || maxResults > 20) {
+    return NextResponse.json({
+      success: false,
+      error: 'maxResults must be a number between 1 and 20'
     }, { status: 400 })
   }
 
