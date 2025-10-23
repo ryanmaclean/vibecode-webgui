@@ -10,7 +10,7 @@ import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { createContainerSchema } from '@/lib/api/validation/schemas'
+import { createEnhancedContainerSchema } from '@/lib/api/validation/schemas-phase4-batch2'
 import { logger } from '@/lib/logger';
 /**
  * GET /api/containers
@@ -69,12 +69,20 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate request body
-    const validation = await validateRequestBody(req, createContainerSchema)
+    const validation = await validateRequestBody(req, createEnhancedContainerSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
 
     const { image, options } = validation.data
+
+    // Additional security check: log container creation attempts
+    logger.info('Container creation attempt', {
+      userId: session.user?.id,
+      image,
+      hasOptions: !!options,
+      timestamp: new Date().toISOString()
+    })
 
     // Check if Apple Container is available
     const isAvailable = await appleContainer.isAvailable()

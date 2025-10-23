@@ -9,15 +9,36 @@ import { z } from '@/lib/zod-compat'
 
 export const dynamic = 'force-dynamic'
 
+// Security: Provider name validation (prevent injection)
+const providerNameSchema = z
+  .string()
+  .min(1)
+  .max(50)
+  .regex(/^[a-z0-9-]+$/, 'Provider name must contain only lowercase letters, numbers, and hyphens')
+  .refine(
+    (name) => ['okta', 'azure', 'google', 'onelogin', 'auth0'].includes(name),
+    'Provider must be one of: okta, azure, google, onelogin, auth0'
+  )
+
 const authRequestSchema = z.object({
-  provider: z.string().default('okta'),
-  relayState: z.string().optional(),
-  forceAuthn: z.boolean().default(false)
+  provider: providerNameSchema.optional().default('okta'),
+  relayState: z.string().max(500).optional(),
+  forceAuthn: z.boolean().optional().default(false)
 })
 
 const authResponseSchema = z.object({
-  SAMLResponse: z.string(),
-  RelayState: z.string().optional()
+  SAMLResponse: z
+    .string()
+    .min(1)
+    .max(50_000) // 50KB max SAML response
+    .refine(
+      (response) => {
+        // Basic XML format validation
+        return response.includes('<saml') || response.includes('<samlp')
+      },
+      'Invalid SAML response format'
+    ),
+  RelayState: z.string().max(500).optional()
 })
 
 /**

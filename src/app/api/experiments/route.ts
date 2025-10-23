@@ -2,6 +2,8 @@
  * Experiments API endpoint
  * Provides feature flag evaluation and experiment tracking
  * Inspired by Datadog's Eppo acquisition capabilities
+ *
+ * SECURITY: Phase 4 - Batch 3 validation added
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -9,6 +11,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { featureFlagEngine, type ExperimentContext } from '@/lib/feature-flags'
 import { appLogger } from '@/lib/server-monitoring'
+import { experimentsBodySchema } from '@/lib/api/validation/schemas'
+import { validateBody, checkRateLimit } from '@/lib/api/validation/helpers'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -21,8 +25,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const { action, flagKey, context, metricName, value } = body
+    // Rate limiting: 100 requests per minute per user
+    const rateLimit = checkRateLimit(`experiments-post:${session.user.id}`, 100, 60000)
+    if (!rateLimit.allowed) {
+      return rateLimit.response
+    }
+
+    // Validate request body
+    const validation = await validateBody(request, experimentsBodySchema)
+    if (!validation.success) {
+      return validation.response
+    }
+    const body = validation.data
+    const action = body.action
+    const flagKey = 'flagKey' in body ? body.flagKey : undefined
+    const context = body.context
+    const metricName = 'metricName' in body ? body.metricName : undefined
+    const value = 'value' in body ? body.value : undefined
 
     // Build experiment context
     const experimentContext: ExperimentContext = {
@@ -146,17 +165,25 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const { searchParams } = new URL(request.url)
-    const flagKey = searchParams.get('flagKey')
-    const action = searchParams.get('action') || 'results'
+    // Rate limiting: 100 requests per minute per user
+    const rateLimit = checkRateLimit(`experiments-get:${session.user.id}`, 100, 60000)
+    if (!rateLimit.allowed) {
+      return rateLimit.response
+    }
+
+    // Validate query parameters
+    const { experimentsQuerySchema } = await import('@/lib/api/validation/schemas')
+    const { validateQueryParams } = await import('@/lib/api/validation/helpers')
+    const validation = validateQueryParams(request, experimentsQuerySchema)
+    if (!validation.success) {
+      return validation.response
+    }
+    const { flagKey, action } = validation.data
 
     switch (action) {
       case 'results':
-        if (!flagKey) {
-          return NextResponse.json({ error: 'flagKey parameter is required' }, { status: 400 })
-        }
-
-        const experimentResults = await featureFlagEngine.getExperimentResults(flagKey)
+        // flagKey validation already handled by schema
+        const experimentResults = await featureFlagEngine.getExperimentResults(flagKey!)
 
         appLogger?.logBusiness?.('experiment_results_viewed', {
           userId: session.user.id,

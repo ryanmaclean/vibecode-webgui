@@ -6,6 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware'
+import { codeServerSessionIdSchema, codeServerSessionUpdateSchema } from '@/lib/api/validation/schemas-phase4-batch2'
 // Local implementation of container stopping
 async function stopCodeServerContainer(containerId: string): Promise<void> {
   // Debug log removed
@@ -37,7 +39,15 @@ export async function GET(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { sessionId } = await params
+    const resolvedParams = await params
+
+    // Validate path parameters
+    const validation = validatePathParams(resolvedParams, codeServerSessionIdSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const { sessionId } = validation.data
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -71,7 +81,15 @@ export async function DELETE(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { sessionId } = await params
+    const resolvedParams = await params
+
+    // Validate path parameters
+    const validation = validatePathParams(resolvedParams, codeServerSessionIdSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const { sessionId } = validation.data
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -119,7 +137,15 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { sessionId } = await params
+    const resolvedParams = await params
+
+    // Validate path parameters
+    const paramValidation = validatePathParams(resolvedParams, codeServerSessionIdSchema)
+    if (!paramValidation.success) {
+      return paramValidation.error as NextResponse
+    }
+
+    const { sessionId } = paramValidation.data
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -130,10 +156,16 @@ export async function PATCH(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
 
-    const body = await request.json()
+    // Validate request body
+    const bodyValidation = await validateRequestBody(request, codeServerSessionUpdateSchema)
+    if (!bodyValidation.success) {
+      return bodyValidation.error as NextResponse
+    }
+
+    const body = bodyValidation.data
 
     // Update session properties
-    if (body.status && ['starting', 'ready', 'error', 'stopped'].includes(body.status)) {
+    if (body.status) {
       codeServerSession.status = body.status
     }
 

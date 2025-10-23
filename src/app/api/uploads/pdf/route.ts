@@ -27,8 +27,19 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing PDF file in form-data "file" field.' }, { status: 400 })
   }
 
+  // Security validation: Strict MIME type check
   if (file.type !== 'application/pdf') {
     return NextResponse.json({ error: 'Only application/pdf uploads are supported.' }, { status: 415 })
+  }
+
+  // Security validation: Filename sanitization (prevent directory traversal)
+  if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+    return NextResponse.json({ error: 'Invalid filename format' }, { status: 400 })
+  }
+
+  // Security validation: File extension check
+  if (!file.name.toLowerCase().endsWith('.pdf')) {
+    return NextResponse.json({ error: 'File must have .pdf extension' }, { status: 400 })
   }
 
   if (file.size === 0 || file.size > MAX_UPLOAD_BYTES) {
