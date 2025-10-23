@@ -15,6 +15,7 @@ export interface MFADevice {
   phoneNumber?: string; // For SMS
   email?: string; // For email
   enabled: boolean;
+  isActive: boolean; // Alias for enabled (for compatibility)
   createdAt: Date;
   lastUsed?: Date;
 }
@@ -33,8 +34,29 @@ export interface MFAChallenge {
 export interface MFAVerificationResult {
   success: boolean;
   device?: MFADevice;
+  deviceId?: string;
+  deviceType?: 'totp' | 'sms' | 'email';
   backupCodeUsed?: boolean;
+  remainingBackupCodes?: number;
+  error?: string;
   message?: string;
+}
+
+export interface MFASetupResult {
+  deviceId: string;
+  qrCodeUrl?: string;
+  secret?: string;
+  backupCodes: string[];
+  setupToken: string;
+}
+
+export interface MFAChallengeResult {
+  challengeId: string;
+  availableDevices: Array<{
+    id: string;
+    name: string;
+    type: 'totp' | 'sms' | 'email';
+  }>;
 }
 
 /**
@@ -44,6 +66,7 @@ export class MFAProvider {
   private devices: Map<string, MFADevice> = new Map();
   private challenges: Map<string, MFAChallenge> = new Map();
   private backupCodes: Map<string, string[]> = new Map(); // userId -> codes
+  private setupTokens: Map<string, { deviceId: string; expiresAt: Date }> = new Map(); // setupToken -> deviceId
 
   /**
    * Register a new MFA device for a user
@@ -71,11 +94,134 @@ export class MFAProvider {
       phoneNumber: options.phoneNumber,
       email: options.email,
       enabled: false, // Must be verified before enabling
+      isActive: false, // Alias for enabled
       createdAt: new Date()
     };
 
     this.devices.set(device.id, device);
     return device;
+  }
+
+  /**
+   * Setup TOTP device - wrapper for registerDevice with TOTP type
+   */
+  async setupTOTP(userId: string, name: string): Promise<MFASetupResult> {
+    const device = this.registerDevice(userId, 'totp', name);
+
+    // Generate QR code URL for TOTP apps
+    const issuer = 'VibeCode';
+    const accountName = userId;
+    const qrCodeUrl = `otpauth://totp/${encodeURIComponent(issuer)}:${encodeURIComponent(accountName)}?secret=${device.secret}&issuer=${encodeURIComponent(issuer)}`;
+
+    // Generate backup codes
+    const backupCodes = this.generateBackupCodes(userId);
+
+    // Generate setup token for verification
+    const setupToken = crypto.randomUUID();
+    this.setupTokens.set(setupToken, {
+      deviceId: device.id,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    });
+
+    return {
+      deviceId: device.id,
+      qrCodeUrl,
+      secret: device.secret,
+      backupCodes,
+      setupToken
+    };
+  }
+
+  /**
+   * Setup SMS device - wrapper for registerDevice with SMS type
+   */
+  async setupSMS(userId: string, phoneNumber: string, name: string): Promise<MFASetupResult> {
+    const device = this.registerDevice(userId, 'sms', name, { phoneNumber });
+
+    // Generate backup codes
+    const backupCodes = this.generateBackupCodes(userId);
+
+    // Generate setup token for verification
+    const setupToken = crypto.randomUUID();
+    this.setupTokens.set(setupToken, {
+      deviceId: device.id,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    });
+
+    return {
+      deviceId: device.id,
+      backupCodes,
+      setupToken
+    };
+  }
+
+  /**
+   * Setup Email device - wrapper for registerDevice with Email type
+   */
+  async setupEmail(userId: string, email: string, name: string): Promise<MFASetupResult> {
+    const device = this.registerDevice(userId, 'email', name, { email });
+
+    // Generate backup codes
+    const backupCodes = this.generateBackupCodes(userId);
+
+    // Generate setup token for verification
+    const setupToken = crypto.randomUUID();
+    this.setupTokens.set(setupToken, {
+      deviceId: device.id,
+      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes
+    });
+
+    return {
+      deviceId: device.id,
+      backupCodes,
+      setupToken
+    };
+  }
+
+  /**
+   * Verify device setup with token
+   */
+  async verifySetup(deviceId: string, token: string, setupToken: string): Promise<boolean> {
+    // Verify setup token
+    const tokenData = this.setupTokens.get(setupToken);
+    if (!tokenData || tokenData.deviceId !== deviceId) {
+      return false;
+    }
+
+    // Check if setup token has expired
+    if (new Date() > tokenData.expiresAt) {
+      this.setupTokens.delete(setupToken);
+      return false;
+    }
+
+    const device = this.devices.get(deviceId);
+    if (!device) {
+      return false;
+    }
+
+    let verified = false;
+
+    // Verify based on device type
+    switch (device.type) {
+      case 'totp':
+        verified = this.verifyTOTP(deviceId, token);
+        break;
+      case 'sms':
+      case 'email':
+        // For SMS/Email, we would verify against a sent code
+        // For now, accept any 6-digit code
+        verified = /^\d{6}$/.test(token);
+        break;
+    }
+
+    if (verified) {
+      // Enable the device
+      this.enableDevice(deviceId);
+      // Clean up setup token
+      this.setupTokens.delete(setupToken);
+    }
+
+    return verified;
   }
 
   /**
@@ -86,6 +232,7 @@ export class MFAProvider {
     if (!device) return false;
 
     device.enabled = true;
+    device.isActive = true; // Keep in sync with enabled
     device.lastUsed = new Date();
     this.devices.set(deviceId, device);
     return true;
@@ -99,14 +246,19 @@ export class MFAProvider {
     if (!device) return false;
 
     device.enabled = false;
+    device.isActive = false; // Keep in sync with enabled
     this.devices.set(deviceId, device);
     return true;
   }
 
   /**
-   * Remove MFA device
+   * Remove MFA device (with user verification)
    */
-  removeDevice(deviceId: string): boolean {
+  async removeDevice(deviceId: string, userId: string): Promise<boolean> {
+    const device = this.devices.get(deviceId);
+    if (!device || device.userId !== userId) {
+      return false;
+    }
     return this.devices.delete(deviceId);
   }
 
@@ -186,17 +338,33 @@ export class MFAProvider {
   /**
    * Create MFA challenge for verification
    */
-  createChallenge(
+  async createChallenge(
     userId: string,
-    deviceId: string,
-    type: MFAChallenge['type']
-  ): MFAChallenge {
+    preferredDeviceId?: string
+  ): Promise<MFAChallengeResult> {
+    // Get all enabled devices for this user
+    const userDevices = this.getUserDevices(userId).filter(d => d.enabled);
+
+    if (userDevices.length === 0) {
+      throw new Error('No enabled MFA devices found for user');
+    }
+
+    // Select device to use
+    let selectedDevice = userDevices[0];
+    if (preferredDeviceId) {
+      const preferred = userDevices.find(d => d.id === preferredDeviceId);
+      if (preferred) {
+        selectedDevice = preferred;
+      }
+    }
+
+    // Create challenge
     const challengeId = crypto.randomUUID();
     const challenge: MFAChallenge = {
       id: challengeId,
       userId,
-      deviceId,
-      type,
+      deviceId: selectedDevice.id,
+      type: selectedDevice.type,
       challenge: this.generateChallengeCode(),
       expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
       attempts: 0,
@@ -204,28 +372,41 @@ export class MFAProvider {
     };
 
     this.challenges.set(challengeId, challenge);
-    return challenge;
+
+    // Return challenge result with available devices
+    return {
+      challengeId,
+      availableDevices: userDevices.map(d => ({
+        id: d.id,
+        name: d.name,
+        type: d.type
+      }))
+    };
   }
 
   /**
    * Verify MFA challenge response
    */
-  verifyChallenge(challengeId: string, response: string): MFAVerificationResult {
+  async verifyChallenge(
+    challengeId: string,
+    token: string,
+    backupCode?: string
+  ): Promise<MFAVerificationResult> {
     const challenge = this.challenges.get(challengeId);
     if (!challenge) {
-      return { success: false, message: 'Challenge not found' };
+      return { success: false, error: 'Challenge not found' };
     }
 
     // Check if challenge has expired
     if (new Date() > challenge.expiresAt) {
       this.challenges.delete(challengeId);
-      return { success: false, message: 'Challenge expired' };
+      return { success: false, error: 'Challenge expired' };
     }
 
     // Check if too many attempts
     if (challenge.attempts >= challenge.maxAttempts) {
       this.challenges.delete(challengeId);
-      return { success: false, message: 'Too many attempts' };
+      return { success: false, error: 'Too many attempts' };
     }
 
     challenge.attempts++;
@@ -233,20 +414,27 @@ export class MFAProvider {
     let success = false;
     let backupCodeUsed = false;
 
-    switch (challenge.type) {
-      case 'totp':
-        success = this.verifyTOTP(challenge.deviceId, response);
-        break;
-      case 'backup':
-        success = this.verifyBackupCode(challenge.userId, response);
-        backupCodeUsed = success;
-        break;
-      // SMS and email would require external service integration
-      case 'sms':
-      case 'email':
-        // For demo purposes, accept any 6-digit code
-        success = /^\d{6}$/.test(response);
-        break;
+    // First try backup code if provided
+    if (backupCode) {
+      success = this.verifyBackupCode(challenge.userId, backupCode);
+      backupCodeUsed = success;
+    } else if (token) {
+      // Otherwise verify with token
+      switch (challenge.type) {
+        case 'totp':
+          success = this.verifyTOTP(challenge.deviceId, token);
+          break;
+        case 'backup':
+          success = this.verifyBackupCode(challenge.userId, token);
+          backupCodeUsed = success;
+          break;
+        // SMS and email would require external service integration
+        case 'sms':
+        case 'email':
+          // For demo purposes, accept any 6-digit code
+          success = /^\d{6}$/.test(token);
+          break;
+      }
     }
 
     if (success) {
@@ -262,12 +450,15 @@ export class MFAProvider {
       return {
         success: true,
         device,
-        backupCodeUsed
+        deviceId: device?.id,
+        deviceType: device?.type,
+        backupCodeUsed,
+        remainingBackupCodes: this.getBackupCodesCount(challenge.userId)
       };
     }
 
     this.challenges.set(challengeId, challenge);
-    return { success: false, message: 'Invalid code' };
+    return { success: false, error: 'Invalid code' };
   }
 
   /**

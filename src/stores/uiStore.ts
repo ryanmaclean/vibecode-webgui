@@ -11,8 +11,9 @@
  * @module stores/uiStore
  */
 
-import { create } from 'zustand';
+import { create, StateCreator } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
+import type { PersistOptions } from 'zustand/middleware';
 
 // ============================================================================
 // Types
@@ -369,7 +370,7 @@ function applyTheme(theme: ThemeMode) {
 export const useUIStore = create<UIStore>()(
   devtools(
     persist(
-      subscribeWithSelector((set, get) => ({
+      subscribeWithSelector<UIStore>((set: (partial: Partial<UIStore> | ((state: UIStore) => Partial<UIStore>)) => void, get: () => UIStore) => ({
         ...initialState,
 
         // ============================================================================
@@ -381,7 +382,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         toggleLayout: () => {
-          set((state) => ({ layout: cycleLayout(state.layout) }));
+          set((state: UIStore) => ({ layout: cycleLayout(state.layout) }));
         },
 
         // ============================================================================
@@ -403,7 +404,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         togglePanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -415,7 +416,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         showPanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -428,7 +429,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         hidePanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -440,7 +441,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         minimizePanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -452,7 +453,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         maximizePanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -464,7 +465,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         resizePanel: (panel: PanelType, width?: number, height?: number) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: {
@@ -477,7 +478,7 @@ export const useUIStore = create<UIStore>()(
         },
 
         resetPanel: (panel: PanelType) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             panels: {
               ...state.panels,
               [panel]: defaultPanels[panel],
@@ -494,7 +495,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         toggleSidebar: () => {
-          set((state) => ({ sidebarCollapsed: !state.sidebarCollapsed }));
+          set((state: UIStore) => ({ sidebarCollapsed: !state.sidebarCollapsed }));
         },
 
         collapseSidebar: () => {
@@ -510,7 +511,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         setShortcut: (action: string, shortcut: KeyboardShortcut) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             shortcuts: {
               ...state.shortcuts,
               [action]: shortcut,
@@ -519,14 +520,14 @@ export const useUIStore = create<UIStore>()(
         },
 
         removeShortcut: (action: string) => {
-          set((state) => {
+          set((state: UIStore) => {
             const { [action]: _, ...rest } = state.shortcuts;
             return { shortcuts: rest };
           });
         },
 
         toggleShortcut: (action: string) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             shortcuts: {
               ...state.shortcuts,
               [action]: {
@@ -566,7 +567,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         toggleCommandPalette: () => {
-          set((state) => ({ commandPaletteOpen: !state.commandPaletteOpen }));
+          set((state: UIStore) => ({ commandPaletteOpen: !state.commandPaletteOpen }));
         },
 
         openCommandPalette: () => {
@@ -582,7 +583,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         updateNotifications: (settings: Partial<NotificationSettings>) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             notifications: { ...state.notifications, ...settings },
           }));
         },
@@ -596,7 +597,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         updateAccessibility: (settings: Partial<AccessibilitySettings>) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             accessibility: { ...state.accessibility, ...settings },
           }));
         },
@@ -610,7 +611,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         addRecentSearch: (query: string) => {
-          set((state) => {
+          set((state: UIStore) => {
             const searches = [query, ...state.recentSearches.filter((s) => s !== query)];
             return { recentSearches: searches.slice(0, 10) }; // Keep last 10
           });
@@ -625,7 +626,7 @@ export const useUIStore = create<UIStore>()(
         // ============================================================================
 
         pinItem: (item: string) => {
-          set((state) => {
+          set((state: UIStore) => {
             if (!state.pinnedItems.includes(item)) {
               return { pinnedItems: [...state.pinnedItems, item] };
             }
@@ -634,13 +635,13 @@ export const useUIStore = create<UIStore>()(
         },
 
         unpinItem: (item: string) => {
-          set((state) => ({
+          set((state: UIStore) => ({
             pinnedItems: state.pinnedItems.filter((i) => i !== item),
           }));
         },
 
         togglePinItem: (item: string) => {
-          set((state) => {
+          set((state: UIStore) => {
             if (state.pinnedItems.includes(item)) {
               return { pinnedItems: state.pinnedItems.filter((i) => i !== item) };
             }
@@ -659,7 +660,7 @@ export const useUIStore = create<UIStore>()(
       })),
       {
         name: 'ui-store',
-        partialize: (state) => ({
+        partialize: (state: UIStore) => ({
           layout: state.layout,
           theme: state.theme,
           panels: state.panels,
@@ -670,7 +671,7 @@ export const useUIStore = create<UIStore>()(
           recentSearches: state.recentSearches,
           pinnedItems: state.pinnedItems,
         }),
-        onRehydrateStorage: () => (state) => {
+        onRehydrateStorage: () => (state: UIStore | undefined) => {
           if (state) {
             applyTheme(state.theme);
           }

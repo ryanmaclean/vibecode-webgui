@@ -198,7 +198,7 @@ type SSEMiddlewareImpl = <
 export const sseMiddleware: (
   options?: SSEMiddlewareOptions
 ) => SSEMiddlewareImpl = (options = {}) => {
-  return (initializer) => (set, get, store) => {
+  return (initializer) => (set: any, get: any, store: any) => {
     const manager = new SSEConnectionManager(options);
 
     // Add SSE methods to store

@@ -305,7 +305,7 @@ export async function POST(request: NextRequest) {
 /**
  * Store performance metrics
  */
-async function storePerformanceMetrics(duration: number, metrics: any): Promise<void> {
+async function storePerformanceMetrics(duration: number, metrics: Record<string, unknown>): Promise<void> {
   // This would integrate with your metrics storage system (Datadog, Prometheus, etc.)
   console.log('Performance metrics:', { duration, metrics, timestamp: new Date() });
 }
@@ -313,7 +313,7 @@ async function storePerformanceMetrics(duration: number, metrics: any): Promise<
 /**
  * Log error metrics
  */
-async function logErrorMetrics(metrics: any): Promise<void> {
+async function logErrorMetrics(metrics: Record<string, unknown>): Promise<void> {
   // This would integrate with your error tracking system
   console.error('Error metrics:', { metrics, timestamp: new Date() });
 }
