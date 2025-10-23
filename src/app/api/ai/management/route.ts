@@ -13,6 +13,79 @@ import { aiManagementActionSchema } from '@/lib/api/validation/schemas-phase4-ba
 
 export const runtime = 'nodejs';
 
+// Type Definitions
+interface AIRequestData {
+  id: number;
+  user_id: number;
+  project_id: number | null;
+  request_type: string;
+  model: string;
+  provider: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cost: number | null;
+  duration_ms: number | null;
+  status: string;
+  created_at: Date;
+  user?: {
+    id: number;
+    name: string | null;
+    email: string;
+  } | null;
+  project?: {
+    id: number;
+    name: string;
+  } | null;
+}
+
+interface ModelData {
+  name: string;
+  provider: string;
+  category: string;
+  quality: string;
+  costPerInputToken: number;
+  costPerOutputToken: number;
+  status?: string;
+}
+
+interface FieldAggregation {
+  requests: number;
+  tokens: {
+    input: number;
+    output: number;
+  };
+  cost: number;
+}
+
+interface UserAnalysisData {
+  userId: number;
+  userName: string | null | undefined;
+  userEmail: string | null | undefined;
+  requests: number;
+  tokens: {
+    input: number;
+    output: number;
+    total: number;
+  };
+  cost: number;
+  averageLatency: number;
+}
+
+interface LatencyStats {
+  average: number;
+  p95: number;
+  count: number;
+}
+
+interface PerformanceRequest {
+  model: string;
+  provider: string;
+  duration_ms: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  status: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Validate query parameters
@@ -141,7 +214,7 @@ async function handleOverview(userId?: string, timeframe = '24h') {
     timeframe,
     summary: {
       totalModels: models.length,
-      healthyModels: Object.values(health.models).filter(status => status === 'healthy').length,
+      healthyModels: Object.values(health.models).filter((status: string) => status === 'healthy').length,
       totalRequests: usage.requests,
       totalTokens: usage.tokens.total,
       totalCost: usage.cost,
@@ -158,11 +231,11 @@ async function handleOverview(userId?: string, timeframe = '24h') {
       tokens: usage.tokens,
       cost: usage.cost,
       topModels: Object.entries(usage.models)
-        .sort(([,a], [,b]) => b.requests - a.requests)
+        .sort(([,a]: [string, FieldAggregation], [,b]: [string, FieldAggregation]) => b.requests - a.requests)
         .slice(0, 5)
-        .map(([model, stats]) => ({ model, ...stats }))
+        .map(([model, stats]: [string, FieldAggregation]) => ({ model, ...stats }))
     },
-    recentActivity: recentRequests.map(req => ({
+    recentActivity: recentRequests.map((req: AIRequestData) => ({
       id: req.id,
       timestamp: req.created_at,
       user: req.user?.name || req.user?.email,
@@ -198,7 +271,7 @@ async function handleModels() {
     litellmClient.healthCheck()
   ]);
 
-  const modelsWithHealth = models.map(model => ({
+  const modelsWithHealth = models.map((model: ModelData) => ({
     ...model,
     status: health.models[model.name] || 'unknown',
     lastChecked: new Date().toISOString()
@@ -212,7 +285,7 @@ async function handleModels() {
       byProvider: groupModelsByProvider(modelsWithHealth),
       byCategory: groupModelsByCategory(modelsWithHealth),
       byStatus: groupModelsByStatus(modelsWithHealth),
-      healthyCount: modelsWithHealth.filter(m => m.status === 'healthy').length,
+      healthyCount: modelsWithHealth.filter((m: ModelData & { status: string }) => m.status === 'healthy').length,
       averageCostPerToken: calculateAverageCost(modelsWithHealth)
     }
   };
@@ -256,15 +329,15 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
   // Aggregate database statistics
   const dbStats = {
     totalRequests: dbRequests.length,
-    successfulRequests: dbRequests.filter(r => r.status === 'completed').length,
-    failedRequests: dbRequests.filter(r => r.status === 'failed').length,
+    successfulRequests: dbRequests.filter((r: AIRequestData) => r.status === 'completed').length,
+    failedRequests: dbRequests.filter((r: AIRequestData) => r.status === 'failed').length,
     totalTokens: {
-      input: dbRequests.reduce((sum, r) => sum + (r.input_tokens || 0), 0),
-      output: dbRequests.reduce((sum, r) => sum + (r.output_tokens || 0), 0)
+      input: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0), 0),
+      output: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.output_tokens || 0), 0)
     },
-    totalCost: dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0),
-    averageLatency: dbRequests.length > 0 
-      ? dbRequests.reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
+    totalCost: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0),
+    averageLatency: dbRequests.length > 0
+      ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
       : 0,
     byModel: aggregateByField(dbRequests, 'model'),
     byProvider: aggregateByField(dbRequests, 'provider'),
@@ -320,20 +393,20 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
     timestamp: new Date().toISOString(),
     timeframe,
     total: {
-      cost: dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0),
+      cost: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0),
       requests: dbRequests.length,
-      tokens: dbRequests.reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      tokens: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
     },
     byModel: aggregateCostByField(dbRequests, 'model'),
     byProvider: aggregateCostByField(dbRequests, 'provider'),
     timeline: generateCostTimeline(dbRequests, timeframe),
     efficiency: {
-      costPerToken: dbRequests.length > 0 
-        ? dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0) / 
-          dbRequests.reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      costPerToken: dbRequests.length > 0
+        ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0) /
+          dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
         : 0,
-      costPerRequest: dbRequests.length > 0 
-        ? dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0) / dbRequests.length
+      costPerRequest: dbRequests.length > 0
+        ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0) / dbRequests.length
         : 0
     }
   };
@@ -351,14 +424,14 @@ async function handleHealthCheck() {
   const response = {
     timestamp: new Date().toISOString(),
     proxy: health,
-    models: Object.entries(health.models).map(([model, status]) => ({
+    models: Object.entries(health.models).map(([model, status]: [string, string]) => ({
       model,
       status,
       lastChecked: new Date().toISOString()
     })),
     summary: {
       overallStatus: health.status,
-      healthyModels: Object.values(health.models).filter(s => s === 'healthy').length,
+      healthyModels: Object.values(health.models).filter((s: string) => s === 'healthy').length,
       totalModels: Object.keys(health.models).length,
       latency: health.latency
     }
@@ -391,24 +464,24 @@ async function handlePerformanceMetrics(timeframe = '24h') {
     timestamp: new Date().toISOString(),
     timeframe,
     latency: {
-      average: requests.length > 0 
-        ? requests.reduce((sum, r) => sum + (r.duration_ms || 0), 0) / requests.length
+      average: requests.length > 0
+        ? requests.reduce((sum: number, r: any) => sum + (r.duration_ms || 0), 0) / requests.length
         : 0,
-      p95: calculatePercentile(requests.map(r => r.duration_ms || 0), 95),
-      p99: calculatePercentile(requests.map(r => r.duration_ms || 0), 99),
+      p95: calculatePercentile(requests.map((r: any) => r.duration_ms || 0), 95),
+      p99: calculatePercentile(requests.map((r: any) => r.duration_ms || 0), 99),
       byModel: aggregateLatencyByField(requests, 'model'),
       byProvider: aggregateLatencyByField(requests, 'provider')
     },
     throughput: {
       requestsPerSecond: requests.length / getTimeframeSeconds(timeframe),
-      tokensPerSecond: requests.reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0) / getTimeframeSeconds(timeframe)
+      tokensPerSecond: requests.reduce((sum: number, r: any) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0) / getTimeframeSeconds(timeframe)
     },
     reliability: {
-      successRate: requests.length > 0 
-        ? (requests.filter(r => r.status === 'completed').length / requests.length) * 100
+      successRate: requests.length > 0
+        ? (requests.filter((r: any) => r.status === 'completed').length / requests.length) * 100
         : 100,
-      errorRate: requests.length > 0 
-        ? (requests.filter(r => r.status === 'failed').length / requests.length) * 100
+      errorRate: requests.length > 0
+        ? (requests.filter((r: any) => r.status === 'failed').length / requests.length) * 100
         : 0
     }
   };
@@ -438,7 +511,7 @@ async function handleUserAnalysis(timeframe = '24h') {
   const userDetails = await prisma.user.findMany({
     where: {
       id: {
-        in: userStats.map(s => s.user_id)
+        in: userStats.map((s: any) => s.user_id)
       }
     },
     select: {
@@ -448,8 +521,8 @@ async function handleUserAnalysis(timeframe = '24h') {
     }
   });
 
-  const analysis = userStats.map(stats => {
-    const user = userDetails.find(u => u.id === stats.user_id);
+  const analysis = userStats.map((stats: any) => {
+    const user = userDetails.find((u: any) => u.id === stats.user_id);
     return {
       userId: stats.user_id,
       userName: user?.name,
@@ -463,7 +536,7 @@ async function handleUserAnalysis(timeframe = '24h') {
       cost: stats._sum.cost || 0,
       averageLatency: stats._count.id > 0 ? (stats._sum.duration_ms || 0) / stats._count.id : 0
     };
-  }).sort((a, b) => b.cost - a.cost);
+  }).sort((a: any, b: any) => b.cost - a.cost);
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
@@ -471,9 +544,9 @@ async function handleUserAnalysis(timeframe = '24h') {
     totalUsers: analysis.length,
     users: analysis,
     aggregates: {
-      totalRequests: analysis.reduce((sum, u) => sum + u.requests, 0),
-      totalTokens: analysis.reduce((sum, u) => sum + u.tokens.total, 0),
-      totalCost: analysis.reduce((sum, u) => sum + u.cost, 0),
+      totalRequests: analysis.reduce((sum: number, u: any) => sum + u.requests, 0),
+      totalTokens: analysis.reduce((sum: number, u: any) => sum + u.tokens.total, 0),
+      totalCost: analysis.reduce((sum: number, u: any) => sum + u.cost, 0),
       topUsers: analysis.slice(0, 10)
     }
   });
@@ -493,28 +566,28 @@ function getTimeframeSeconds(timeframe: string): number {
 }
 
 function groupModelsByProvider(models: any[]) {
-  return models.reduce((acc, model) => {
+  return models.reduce((acc: Record<string, number>, model: any) => {
     acc[model.provider] = (acc[model.provider] || 0) + 1;
     return acc;
   }, {});
 }
 
 function groupModelsByCategory(models: any[]) {
-  return models.reduce((acc, model) => {
+  return models.reduce((acc: Record<string, number>, model: any) => {
     acc[model.category] = (acc[model.category] || 0) + 1;
     return acc;
   }, {});
 }
 
 function groupModelsByQuality(models: any[]) {
-  return models.reduce((acc, model) => {
+  return models.reduce((acc: Record<string, number>, model: any) => {
     acc[model.quality] = (acc[model.quality] || 0) + 1;
     return acc;
   }, {});
 }
 
 function groupModelsByStatus(models: any[]) {
-  return models.reduce((acc, model) => {
+  return models.reduce((acc: Record<string, number>, model: any) => {
     acc[model.status] = (acc[model.status] || 0) + 1;
     return acc;
   }, {});
@@ -522,12 +595,12 @@ function groupModelsByStatus(models: any[]) {
 
 function calculateAverageCost(models: any[]) {
   if (models.length === 0) return 0;
-  const totalCost = models.reduce((sum, m) => sum + m.costPerInputToken + m.costPerOutputToken, 0);
+  const totalCost = models.reduce((sum: number, m: any) => sum + m.costPerInputToken + m.costPerOutputToken, 0);
   return totalCost / models.length;
 }
 
 function aggregateByField(requests: any[], field: string) {
-  return requests.reduce((acc, req) => {
+  return requests.reduce((acc: Record<string, any>, req: any) => {
     const key = req[field] || 'unknown';
     if (!acc[key]) {
       acc[key] = { requests: 0, tokens: { input: 0, output: 0 }, cost: 0 };
@@ -541,7 +614,7 @@ function aggregateByField(requests: any[], field: string) {
 }
 
 function aggregateCostByField(requests: any[], field: string) {
-  return requests.reduce((acc, req) => {
+  return requests.reduce((acc: Record<string, number>, req: any) => {
     const key = req[field]?.toString() || 'unknown';
     acc[key] = (acc[key] || 0) + (req.cost || 0);
     return acc;
@@ -549,7 +622,7 @@ function aggregateCostByField(requests: any[], field: string) {
 }
 
 function aggregateLatencyByField(requests: any[], field: string) {
-  const grouped = requests.reduce((acc, req) => {
+  const grouped = requests.reduce((acc: Record<string, number[]>, req: any) => {
     const key = req[field] || 'unknown';
     if (!acc[key]) acc[key] = [];
     acc[key].push(req.duration_ms || 0);
@@ -558,7 +631,7 @@ function aggregateLatencyByField(requests: any[], field: string) {
 
   return Object.entries(grouped).reduce((acc: Record<string, any>, [key, latencies]: [string, number[]]) => {
     acc[key] = {
-      average: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
+      average: latencies.reduce((sum: number, l: number) => sum + l, 0) / latencies.length,
       p95: calculatePercentile(latencies, 95),
       count: latencies.length
     };
@@ -568,7 +641,7 @@ function aggregateLatencyByField(requests: any[], field: string) {
 
 function calculatePercentile(values: number[], percentile: number): number {
   if (values.length === 0) return 0;
-  const sorted = [...values].sort((a, b) => a - b);
+  const sorted = [...values].sort((a: number, b: number) => a - b);
   const index = Math.ceil((percentile / 100) * sorted.length) - 1;
   return sorted[index] || 0;
 }
