@@ -15,21 +15,31 @@ const BOT_PROTECTION_CONFIG = {
   ],
 };
 
+// Edge Runtime compatible initialization
 let redis: Redis | null = null;
 let ratelimit: Ratelimit | null = null;
 
-if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-  redis = new Redis({
-    url: process.env.UPSTASH_REDIS_REST_URL,
-    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-  });
+// Initialize Redis and rate limiting outside of middleware function
+// to avoid Edge Runtime compatibility issues
+try {
+  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  if (redisUrl && redisToken) {
+    redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
 
-  ratelimit = new Ratelimit({
-    redis: redis,
-    limiter: Ratelimit.slidingWindow(10, '10 s'),
-    analytics: true,
-    prefix: '@upstash/ratelimit',
-  });
+    ratelimit = new Ratelimit({
+      redis: redis,
+      limiter: Ratelimit.slidingWindow(10, '10 s'),
+      analytics: true,
+      prefix: '@upstash/ratelimit',
+    });
+  }
+} catch (error) {
+  console.warn('Failed to initialize Redis for rate limiting:', error);
 }
 
 function logToDatadog(
