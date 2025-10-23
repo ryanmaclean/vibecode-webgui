@@ -102,9 +102,10 @@ PostgreSQL is monitored with:
 VibeCode's AKS deployment now enables Datadog LLM Observability so every OpenAI chat/completion request is traced end-to-end.
 
 - Application pods export the following environment variables via Terraform/Helm:
-  - `DD_LLMOBS_ENABLED=1`
-  - `DD_LLMOBS_AGENTLESS_ENABLED=1`
-  - `DD_LLMOBS_ML_APP=vibecode-ai`
+- `DD_LLMOBS_ENABLED=1`
+- `DD_LLMOBS_AGENTLESS_ENABLED=1`
+- `DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli`
+- `DD_LLMOBS_ML_APP=vibecode-ai` *(legacy fallback until all services move to project tags)*
   - `DD_SITE=datadoghq.com`
 - The `src/instrument.ts` bootstrap configures the Datadog OpenAI plugin so spans appear in APM with service name `vibecode-webgui-openai` and are tagged with `ml.app=vibecode-ai`.
 - To validate in cluster, tail the application logs and confirm the startup banner `Datadog LLM Observability enabled for OpenAI spans` appears, then exercise `/api/ai/chat` to generate traces.

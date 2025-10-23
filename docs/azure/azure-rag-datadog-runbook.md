@@ -90,7 +90,7 @@ curl -X POST https://<your-app-host>/api/vector-store \
 ### Datadog dashboards to watch
 
 - **Database Monitoring → Postgres**: see pgvector extensions, query latency, index size (`postgresql.pgvector.*`).
-- **APM → Services → vibecode-webgui**: LLM spans (`llm.workflow.*`, `llm.task.*`, `llm.completion`) tagged with model, workspace, latency. Make sure the web app has `DD_LLMOBS_ENABLED=1`, `DD_LLMOBS_AGENTLESS_ENABLED=1`, `DD_LLMOBS_ML_APP=vibecode-ai`, and the standard Datadog keys set before testing.
+- **APM → Services → vibecode-webgui**: LLM spans (`llm.workflow.*`, `llm.task.*`, `llm.completion`) tagged with model, workspace, latency. Make sure the web app has `DD_LLMOBS_ENABLED=1`, `DD_LLMOBS_AGENTLESS_ENABLED=1`, `DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli` (and optionally `DD_LLMOBS_ML_APP` for legacy agents) plus the standard Datadog keys set before testing.
 - **Logs → Query `service:vibecode-webgui`** for structured RAG + LLM events.
 - **Dashboards → VibeCode RAG Overview** (Terraform import): validates DBM + LLM panels after running the seed scripts above.
 
