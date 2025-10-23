@@ -7,6 +7,8 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
+import { z } from '@/lib/zod-compat'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -31,6 +33,20 @@ interface ChatRequest {
     previousMessages: RawMessage[]
   }
 }
+
+// Zod validation schema for streaming chat requests
+const streamingChatRequestSchema = z.object({
+  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  model: z.string().min(1).max(100),
+  context: z.object({
+    workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
+    files: z.array(z.string().max(500)).max(20),
+    previousMessages: z.array(z.object({
+      type: z.enum(['user', 'assistant']),
+      content: z.string().max(4000)
+    })).max(50)
+  })
+})
 
 // Helper to build RAG context from workspace using vector search
 async function buildRAGContext(workspaceId: string, userQuery: string, userId: string) {
@@ -95,7 +111,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { message, model, context }: ChatRequest = await req.json()
+    // Validate request body
+    const validation = await validateRequestBody(req, streamingChatRequestSchema)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: validation.error },
+        { status: 400 }
+      )
+    }
+
+    const { message, model, context } = validation.data
 
     // Initialize OpenRouter client
     const openrouter = new OpenAI({
