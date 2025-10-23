@@ -3,8 +3,8 @@
  * Enhanced error handling for vector database operations with retry mechanism
  */
 
-// import { logger } from '../logger';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
+import { logger } from '../logger';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 
 /**
  * Retry configuration interface
@@ -159,7 +159,7 @@ export class RetryHandler {
           this.isErrorRetryable(err);
         
         if (!retryable) {
-          console.warn(`Non-retryable error in operation "${operationName}":`, { 
+          logger.warn(`Non-retryable error in operation "${operationName}":`, { 
             error: err.message, 
             stack: err.stack 
           });
@@ -182,7 +182,7 @@ export class RetryHandler {
         // Calculate delay for next retry
         const delay = this.calculateBackoff(attempt);
         
-        console.log(`Retrying operation "${operationName}" after ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, { 
+        logger.info(`Retrying operation "${operationName}" after ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, { 
           error: err.message
         });
         
@@ -195,7 +195,7 @@ export class RetryHandler {
     }
     
     // If we got here, all retries failed
-    console.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, { 
+    logger.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, { 
       error: lastError?.message, 
       stack: lastError?.stack 
     });
@@ -281,7 +281,7 @@ export class RetryHandler {
     this.circuitBroken = true;
     this.circuitBrokenUntil = Date.now() + this.config.circuitResetTimeMs;
     
-    console.warn('Circuit breaker triggered due to excessive failures', {
+    logger.warn('Circuit breaker triggered due to excessive failures', {
       failureCount: this.failures.length,
       resetAfterMs: this.config.circuitResetTimeMs,
       recentErrors: this.failures.slice(-3).map(f => f.error.message)
@@ -302,7 +302,7 @@ export class RetryHandler {
       this.circuitBroken = false;
       this.failures = [];
       
-      console.log('Circuit breaker reset after timeout period');
+      logger.info('Circuit breaker reset after timeout period');
       return false;
     }
     
@@ -316,7 +316,7 @@ export class RetryHandler {
     this.circuitBroken = false;
     this.failures = [];
     
-    console.log('Circuit breaker manually reset');
+    logger.info('Circuit breaker manually reset');
   }
 
   /**
