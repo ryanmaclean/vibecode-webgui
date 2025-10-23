@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface CacheEntry<T = any> {
   key: string
   value: T
@@ -82,7 +82,7 @@ export class QueryCache extends EventEmitter {
     }
 
     this.startCleanupTimer()
-    logger.info('🚀 Query cache initialized with config:', {
+    console.log('🚀 Query cache initialized with config:', {
       maxSize: `${this.config.maxSize / 1024 / 1024}MB`,
       maxEntries: this.config.maxEntries,
       defaultTTL: `${this.config.defaultTTL / 1000}s`
@@ -129,7 +129,7 @@ export class QueryCache extends EventEmitter {
       return value as T
 
     } catch (error) {
-      logger.error('Cache get error:', error)
+      console.error('Cache get error:', error)
       this.recordMiss()
       return null
     }
@@ -188,7 +188,7 @@ export class QueryCache extends EventEmitter {
       this.emit('set', key, entry)
       
     } catch (error) {
-      logger.error('Cache set error:', error)
+      console.error('Cache set error:', error)
       throw error
     }
   }
@@ -286,13 +286,13 @@ export class QueryCache extends EventEmitter {
     value: any
     options?: any
   }>): Promise<void> {
-    logger.info(`🔥 Warming up cache with ${warmUpData.length} entries...`)
+    console.log(`🔥 Warming up cache with ${warmUpData.length} entries...`)
     
     for (const item of warmUpData) {
       await this.set(item.key, item.value, item.options)
     }
     
-    logger.info(`✅ Cache warmed up successfully`)
+    console.log(`✅ Cache warmed up successfully`)
   }
 
   /**
@@ -354,7 +354,7 @@ export class QueryCache extends EventEmitter {
     }
 
     if (cleanedCount > 0) {
-      logger.info(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
+      console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
       this.updateMetrics()
     }
   }
@@ -376,7 +376,7 @@ export class QueryCache extends EventEmitter {
       clearInterval(this.cleanupTimer)
     }
     this.clear()
-    logger.info('🛑 Query cache destroyed')
+    console.log('🛑 Query cache destroyed')
   }
 
   /**

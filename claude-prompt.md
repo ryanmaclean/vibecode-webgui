@@ -1,5 +1,28 @@
 # Claude AI Prompt for Vector Cache Optimization
 
+## 🚨 CRITICAL: Logger Circular Dependency Prevention
+
+**NEVER import the logger module directly!** This causes circular dependencies that break the build.
+
+### ✅ CORRECT APPROACH
+```typescript
+console.log('Info message')
+console.error('Error message')
+console.warn('Warning message')
+```
+
+### ❌ FORBIDDEN APPROACH
+```typescript
+import { logger } from '@/lib/logger' // ❌ BREAKS BUILD
+logger.info('message')
+```
+
+### 🔧 EMERGENCY FIX
+If logger imports are accidentally added:
+```bash
+./scripts/fix-logger-circular-dependency.sh
+```
+
 ## Project Context
 
 This prompt is designed for Claude to assist with implementing and optimizing the ValKey caching system for pgVector similarity searches in the VibeCode WebGUI project.

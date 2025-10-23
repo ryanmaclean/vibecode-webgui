@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
 import { z } from '@/lib/zod-compat'
 import { webSearchSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 
 // Extended schema with additional fields
 const extendedWebSearchSchema = webSearchSchema.extend({
@@ -29,7 +29,7 @@ export async function POST(request: NextRequest) {
       validatedData = extendedWebSearchSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        logger.warn('Web search validation failed', { errors: error.errors });
+        console.warn('Web search validation failed', { errors: error.errors });
         return NextResponse.json(
           {
             success: false,

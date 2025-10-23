@@ -8,7 +8,7 @@ import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
 import rateLimit from '@/lib/rate-limiting';
 import { z } from '@/lib/zod-compat';
 import { liteLLMSchema } from '@/lib/api/validation/schemas';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // Create rate limiter for AI endpoints
 const aiRateLimit = rateLimit({
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
         liteLLMSchema.parse(requestData);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          logger.warn('LiteLLM validation failed', { errors: error.errors });
+          console.warn('LiteLLM validation failed', { errors: error.errors });
           return NextResponse.json(
             {
               error: 'Invalid request parameters',

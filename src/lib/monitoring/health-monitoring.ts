@@ -5,7 +5,7 @@
 
 import { createLogger, format, transports } from 'winston';
 import tracer from '@/instrument';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
   tracer.init({
@@ -17,9 +17,9 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  logger.info('🔍 Datadog APM tracer initialized')
+  console.log('🔍 Datadog APM tracer initialized')
 } else {
-  logger.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -66,7 +66,7 @@ const logger = createLogger({
   ]
 })
 
-logger.info('Winston logger initialized')
+console.log('Winston logger initialized')
 
 /**
  * Custom metrics collector (compatible with Datadog)
@@ -75,20 +75,20 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    logger.info(`📊 Metric increment: ${name}`, tags)
+    console.log(`📊 Metric increment: ${name}`, tags)
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    logger.info(`📊 Metric gauge: ${name} = ${value}`, tags)
+    console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    logger.info(`📊 Metric histogram: ${name} = ${value}`, tags)
+    console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []
@@ -117,7 +117,7 @@ class ApplicationLogger {
     responseTime: number
     memoryUsage: number
   }): void {
-    logger.info(`Performance: ${context.method} ${context.endpoint}`, {
+    console.log(`Performance: ${context.method} ${context.endpoint}`, {
       category: 'performance',
       ...context
     })
@@ -143,7 +143,7 @@ class ApplicationLogger {
     blocked?: boolean
     metadata?: Record<string, any>
   }): void {
-    logger.warn(`Security: ${event}`, {
+    console.warn(`Security: ${event}`, {
       category: 'security',
       ...context
     })
@@ -165,7 +165,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    logger.info(`Business: ${event}`, {
+    console.log(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -195,7 +195,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      appLogger.logPerformance({
+      console.log({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -205,7 +205,7 @@ function performanceMiddleware() {
 
       // Log slow requests
       if (responseTime > 1000) {
-        logger.warn('Slow request detected', {
+        console.warn('Slow request detected', {
           endpoint: req.path,
           method: req.method,
           responseTime,

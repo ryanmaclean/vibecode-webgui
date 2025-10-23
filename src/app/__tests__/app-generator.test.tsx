@@ -4,7 +4,7 @@ import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ProjectGenerator } from '@/components/ProjectGenerator';
 import { logEvent } from '@/lib/analytics';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // Mock next-auth and next/navigation
 jest.mock('next-auth/react');

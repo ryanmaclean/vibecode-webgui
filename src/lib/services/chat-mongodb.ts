@@ -4,7 +4,7 @@
  */
 
 import { Collection, ObjectId } from 'mongodb';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface ChatMessage {
   _id?: ObjectId;
   workspaceId: string;
@@ -534,7 +534,7 @@ export class ChatMongoDBService {
         lastActivity: lastMessage?.timestamp || null
       };
     } catch (error) {
-      logger.error('Failed to get chat service health:', error);
+      console.error('Failed to get chat service health:', error);
       return {
         isHealthy: false,
         messageCount: 0,

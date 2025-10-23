@@ -20,7 +20,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { MicrophoneIcon as MicrophoneIconSolid } from '@heroicons/react/24/solid';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface MultimodalMessage {
   id: string;
   type: 'text' | 'voice' | 'image' | 'file';
@@ -115,7 +115,7 @@ export function MultimodalPromptInterface({
       };
 
       recognition.onerror = (event: any) => {
-        logger.error('Speech recognition error:', event.error);
+        console.error('Speech recognition error:', event.error);
         setError(`Speech recognition error: ${event.error}`);
         setIsListening(false);
       };
@@ -227,7 +227,7 @@ export function MultimodalPromptInterface({
 
         setMessages(prev => [...prev, message]);
       } catch (error) {
-        logger.error('Error processing file:', error);
+        console.error('Error processing file:', error);
         setError(`Failed to process ${file.name}`);
       }
     }

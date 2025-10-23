@@ -14,7 +14,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { EditorView } from '@codemirror/view'
 import { EditorState } from '@codemirror/state'
 import { useCollaboration } from '../../hooks/useCollaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface CursorPosition {
   line: number
   column: number
@@ -92,7 +92,7 @@ if (!editorView || !editorRect) return null
         y: coords.top - editorRect.top
       }
     } catch (error) {
-      logger.warn('Failed to get screen position:', error)
+      console.warn('Failed to get screen position:', error)
       return null
     }
   }, [editorView, editorRect])
@@ -120,7 +120,7 @@ if (!editorView || !editorRect) return null
         offset: pos
       }
     } catch (error) {
-      logger.warn('Failed to get editor position:', error)
+      console.warn('Failed to get editor position:', error)
       return null
     }
   }, [editorView, editorRect])
@@ -177,7 +177,7 @@ if (!editorView || !editorRect) return null
 
       return { position, selection: selectionRange }
     } catch (error) {
-      logger.warn('Failed to get current position:', error)
+      console.warn('Failed to get current position:', error)
       return null
     }
   }, [editorView])

@@ -10,7 +10,7 @@
  */
 
 import { MultimodalAgent, MultimodalInput, AgentContext } from '../lib/multimodal-agent';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface SampleScenario {
   id: string;
   title: string;
@@ -564,7 +564,7 @@ Expected AI Response:
       };
       
     } catch (error) {
-      logger.error(`❌ Sample failed: ${error.message}`);
+      console.error(`❌ Sample failed: ${error.message}`);
       throw error;
     }
   }
@@ -760,7 +760,7 @@ export function TodoList() {
       const todosData = await response.json();
       setTodos(todosData);
     } catch (error) {
-      logger.error('Failed to load todos:', error);
+      console.error('Failed to load todos:', error);
     }
   };
 
@@ -786,7 +786,7 @@ export function TodoList() {
         setNewTodo('');
       }
     } catch (error) {
-      logger.error('Failed to add todo:', error);
+      console.error('Failed to add todo:', error);
     }
   };
 
@@ -804,7 +804,7 @@ export function TodoList() {
         body: JSON.stringify(todo)
       });
     } catch (error) {
-      logger.error('Failed to update todo:', error);
+      console.error('Failed to update todo:', error);
     }
   };
 
@@ -814,7 +814,7 @@ export function TodoList() {
     try {
       await fetch(\`/api/todos/\${id}\`, { method: 'DELETE' });
     } catch (error) {
-      logger.error('Failed to delete todo:', error);
+      console.error('Failed to delete todo:', error);
     }
   };
 

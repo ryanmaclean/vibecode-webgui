@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -68,7 +68,7 @@ export class CircuitBreaker {
     }
 
     this.startMonitoring()
-    logger.info(`🔧 Circuit breaker initialized for service: ${serviceName}`)
+    console.log(`🔧 Circuit breaker initialized for service: ${serviceName}`)
   }
 
   /**
@@ -83,7 +83,7 @@ export class CircuitBreaker {
       if (this.shouldAttemptRecovery()) {
         this.transitionTo(CircuitState.HALF_OPEN)
       } else {
-        logger.warn(`⚡ Circuit breaker OPEN for ${this.serviceName} - failing fast`)
+        console.warn(`⚡ Circuit breaker OPEN for ${this.serviceName} - failing fast`)
         if (fallback) {
           return await fallback()
         }
@@ -105,7 +105,7 @@ export class CircuitBreaker {
       this.recordFailure(Date.now() - startTime, error)
       
       if (fallback) {
-        logger.warn(`🔄 Circuit breaker executing fallback for ${this.serviceName}:`, error)
+        console.warn(`🔄 Circuit breaker executing fallback for ${this.serviceName}:`, error)
         return await fallback()
       }
       
@@ -134,7 +134,7 @@ export class CircuitBreaker {
         
         // Calculate exponential backoff with jitter
         const backoffTime = this.calculateBackoff(attempt)
-        logger.warn(`⏰ Retry attempt ${attempt + 1}/${this.config.maxRetries} for ${this.serviceName} in ${backoffTime}ms`)
+        console.warn(`⏰ Retry attempt ${attempt + 1}/${this.config.maxRetries} for ${this.serviceName} in ${backoffTime}ms`)
         
         await this.delay(backoffTime)
       }
@@ -197,7 +197,7 @@ export class CircuitBreaker {
     
     this.addToRecentRequests(false, duration)
     
-    logger.warn(`❌ Circuit breaker recorded failure for ${this.serviceName}:`, {
+    console.warn(`❌ Circuit breaker recorded failure for ${this.serviceName}:`, {
       error: error.message,
       failureCount: this.metrics.failureCount,
       threshold: this.config.failureThreshold
@@ -264,7 +264,7 @@ export class CircuitBreaker {
       this.metrics.successCount = 0
     }
     
-    logger.info(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
+    console.log(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
   }
 
   /**
@@ -325,7 +325,7 @@ export class CircuitBreaker {
    * Force circuit state (for testing/emergency)
    */
   forceState(state: CircuitState): void {
-    logger.warn(`🔧 Forcing circuit breaker ${this.serviceName} to ${state}`)
+    console.warn(`🔧 Forcing circuit breaker ${this.serviceName} to ${state}`)
     this.transitionTo(state)
   }
 
@@ -333,7 +333,7 @@ export class CircuitBreaker {
    * Reset circuit breaker
    */
   reset(): void {
-    logger.info(`🔄 Resetting circuit breaker for ${this.serviceName}`)
+    console.log(`🔄 Resetting circuit breaker for ${this.serviceName}`)
     this.metrics = {
       state: CircuitState.CLOSED,
       failureCount: 0,
@@ -352,7 +352,7 @@ export class CircuitBreaker {
   destroy(): void {
     this.timers.forEach(timer => clearInterval(timer))
     this.timers.clear()
-    logger.info(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
+    console.log(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
   }
 
   /**

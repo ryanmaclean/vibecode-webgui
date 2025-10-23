@@ -29,7 +29,7 @@ import {
   MODEL_REGISTRY,
   type SupportedModel 
 } from '@/lib/ai-providers'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface Message {
   id: string
@@ -174,7 +174,7 @@ export function EnhancedAIChatInterface({
         }
       }
     } catch (error) {
-      logger.error('Chat error:', error)
+      console.error('Chat error:', error)
       setMessages(prev => [...prev, {
         id: (Date.now() + 2).toString(),
         role: 'assistant',

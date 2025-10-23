@@ -16,7 +16,7 @@
 
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Enhanced Redis interfaces for type safety
 interface RedisCommands {
   get(key: string): Promise<string | null>;
@@ -120,21 +120,21 @@ try {
 
   // Event listeners for monitoring
   cacheClient.on('connect', () => {
-    logger.info(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} connected successfully`);
+    console.log(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} connected successfully`);
     metrics.increment(`${clientType}.connection.success`);
   });
 
   cacheClient.on('error', (error) => {
-    logger.error(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} connection error:`, error);
+    console.error(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} connection error:`, error);
     metrics.increment(`${clientType}.connection.error`);
   });
 
   cacheClient.on('ready', () => {
-    logger.info(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} client ready`);
+    console.log(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} client ready`);
     metrics.increment(`${clientType}.ready`);
   });
 } catch (error) {
-  logger.warn(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} client initialization failed:`, error);
+  console.warn(`${clientType.charAt(0).toUpperCase() + clientType.slice(1)} client initialization failed:`, error);
   cacheClient = null;
 }
 
@@ -200,7 +200,7 @@ export class CacheManager {
       }
     } catch (error) {
       metrics.increment('cache.error');
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} get error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} get error:`, error);
       return null;
     }
   }
@@ -224,7 +224,7 @@ export class CacheManager {
       return true;
     } catch (error) {
       metrics.increment('cache.set.error');
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} set error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} set error:`, error);
       return false;
     }
   }
@@ -243,7 +243,7 @@ export class CacheManager {
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} delete error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} delete error:`, error);
       return false;
     }
   }
@@ -258,7 +258,7 @@ export class CacheManager {
       const result = await this.client.exists(key);
       return result === 1;
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} exists error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} exists error:`, error);
       return false;
     }
   }
@@ -273,7 +273,7 @@ export class CacheManager {
       const values = await this.client.mget(...keys);
       return values.map(value => value ? JSON.parse(value) : null);
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mget error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mget error:`, error);
       return keys.map(() => null);
     }
   }
@@ -297,7 +297,7 @@ export class CacheManager {
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mset error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mset error:`, error);
       return false;
     }
   }
@@ -318,7 +318,7 @@ export class CacheManager {
 
       return value;
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} incr error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} incr error:`, error);
       return 0;
     }
   }
@@ -332,7 +332,7 @@ export class CacheManager {
     try {
       return await this.client.keys(pattern);
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} keys error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} keys error:`, error);
       return [];
     }
   }
@@ -373,7 +373,7 @@ export class CacheManager {
         hitRate
       };
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} stats error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} stats error:`, error);
       return {
         connected: false,
         keyCount: 0,
@@ -394,7 +394,7 @@ export class CacheManager {
       metrics.increment('cache.clear');
       return true;
     } catch (error) {
-      logger.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} clear error:`, error);
+      console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} clear error:`, error);
       return false;
     }
   }

@@ -6,7 +6,7 @@
 import { existsSync, readFileSync } from 'node:fs';
 import { LiteLLMClient } from './litellm-client';
 import type { ChatCompletionRequest, ChatCompletionResponse } from './litellm-client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 type Provider = 'openrouter' | 'openai';
 
 interface FallbackEntry {
@@ -91,7 +91,7 @@ function loadModelsFromFile(): string[] {
     }
     cachedFileModelsExpiresAt = now + FREE_LLM_MODELS_FILE_CACHE_MS;
   } catch (error) {
-    logger.warn('[LiteLLM] Failed to read FREE_LLM_MODELS_FILE', FREE_LLM_MODELS_FILE, error);
+    console.warn('[LiteLLM] Failed to read FREE_LLM_MODELS_FILE', FREE_LLM_MODELS_FILE, error);
     cachedFileModels = [];
     cachedFileModelsExpiresAt = now + FREE_LLM_MODELS_FILE_CACHE_MS;
   }
@@ -131,7 +131,7 @@ async function fetchOpenRouterFreeModels(): Promise<string[]> {
 
     const res = await fetchImpl('https://openrouter.ai/api/v1/models', { headers });
     if (!res.ok) {
-      logger.warn('[LiteLLM] Failed to fetch OpenRouter models', res.status, await res.text());
+      console.warn('[LiteLLM] Failed to fetch OpenRouter models', res.status, await res.text());
       return [];
     }
 
@@ -143,7 +143,7 @@ async function fetchOpenRouterFreeModels(): Promise<string[]> {
 
     return freeModels;
   } catch (error) {
-    logger.warn('[LiteLLM] Unable to load OpenRouter free models', error);
+    console.warn('[LiteLLM] Unable to load OpenRouter free models', error);
     return [];
   }
 }
@@ -156,7 +156,7 @@ function ensureOpenRouterFreeModelFetch(): void {
         dynamicOpenRouterFreeModels = models;
       }
     }).catch((error) => {
-      logger.warn('[LiteLLM] Error fetching OpenRouter free models', error);
+      console.warn('[LiteLLM] Error fetching OpenRouter free models', error);
     });
   }
 }
@@ -340,7 +340,7 @@ export async function createChatCompletionWithFallback(
       const response = await client.createChatCompletion(payloadForProvider);
 
       if (attempts.length > 0) {
-        logger.warn(`[LLM Fallback] Switched to ${entry.provider}:${entry.model} after ${attempts.length} failure(s).`);
+        console.warn(`[LLM Fallback] Switched to ${entry.provider}:${entry.model} after ${attempts.length} failure(s).`);
       }
 
       return {

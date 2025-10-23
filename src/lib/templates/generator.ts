@@ -1,5 +1,5 @@
 import { randomUUID } from 'crypto';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -170,7 +170,7 @@ export class TemplateGenerator {
 
       return project;
     } catch (error) {
-      logger.error(`Failed to generate project from template ${templateId}:`, error);
+      console.error(`Failed to generate project from template ${templateId}:`, error);
       throw new Error(`Project generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }

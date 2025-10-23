@@ -1,7 +1,7 @@
 import { createHmac, createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
-import { logger } from '../../../lib/logger'
+// import { logger } from '../../../lib/logger'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 
@@ -878,7 +878,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(completion)
   } catch (error) {
-    logger.error('[Code Completion] Error:', { error: error })
+    console.error('[Code Completion] Error:', { error: error })
 
     return NextResponse.json(
       {

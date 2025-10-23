@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import axios from 'axios';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface Template {
     id: string;
     name: string;
@@ -144,7 +144,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
             this._onDidChangeTreeData.fire();
 
         } catch (error) {
-            logger.error('Failed to load templates:', error);
+            console.error('Failed to load templates:', error);
             this.loading = false;
             this._onDidChangeTreeData.fire();
             
@@ -234,7 +234,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
             });
 
         } catch (error) {
-            logger.error('Failed to create project from template:', error);
+            console.error('Failed to create project from template:', error);
             vscode.window.showErrorMessage(
                 `Failed to create project from template: ${error instanceof Error ? error.message : 'Unknown error'}`
             );

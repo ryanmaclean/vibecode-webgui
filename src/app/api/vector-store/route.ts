@@ -9,7 +9,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export const dynamic = 'force-dynamic'
 
 // Request schemas
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Vector store API error:', error)
+    console.error('Vector store API error:', error)
     return NextResponse.json(
       {
         status: 'error',
@@ -134,7 +134,7 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('Vector store search error:', error)
+    console.error('Vector store search error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -191,7 +191,7 @@ export async function PUT(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('Vector store storage error:', error)
+    console.error('Vector store storage error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -244,7 +244,7 @@ export async function DELETE(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
   } catch (error) {
-    logger.error('Vector store deletion error:', error)
+    console.error('Vector store deletion error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(

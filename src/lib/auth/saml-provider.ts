@@ -6,7 +6,7 @@
 
 import { z } from '@/lib/zod-compat'
 import { randomBytes } from 'crypto'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface SAMLConfig {
   entityId: string
   singleSignOnUrl: string
@@ -159,10 +159,10 @@ export class SAMLProvider {
       // Extract user information
       const user = this.extractUserFromAssertion(assertion)
 
-      logger.info('✅ SAML authentication successful for user:', user.email)
+      console.log('✅ SAML authentication successful for user:', user.email)
       return user
     } catch (error) {
-      logger.error('SAML response processing failed:', error)
+      console.error('SAML response processing failed:', error)
       throw new Error(`SAML authentication failed: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }
@@ -520,7 +520,7 @@ export function createSAMLProvider(providerId: string): SAMLProvider | null {
 
   const config = providers[providerId as keyof typeof providers]
   if (!config || !config.entityId || !config.singleSignOnUrl || !config.x509Certificate) {
-    logger.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
+    console.warn(`SAML provider ${providerId} not configured or missing required environment variables`)
     return null
   }
 

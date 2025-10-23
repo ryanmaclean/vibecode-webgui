@@ -46,6 +46,43 @@ Keep this section current so new agents can execute the workflow with minimal ra
 
 These guidelines apply when contributing to the Next.js/TypeScript application.
 
+### 🚨 CRITICAL: Logger Circular Dependency Prevention
+
+**NEVER import the logger module directly in application code!**
+
+The logger module (`src/lib/logger.ts`) uses top-level `await` which creates circular dependencies that break the build. This issue affected **335 files** and caused builds to fail for extended periods.
+
+#### ✅ CORRECT APPROACH
+```typescript
+// ✅ Use console directly for logging
+console.log('Info message')
+console.error('Error message')
+console.warn('Warning message')
+```
+
+#### ❌ FORBIDDEN APPROACH
+```typescript
+// ❌ NEVER do this - causes circular dependencies
+import { logger } from '@/lib/logger'
+logger.info('message')
+```
+
+#### 🔧 EMERGENCY FIX SCRIPT
+If logger imports are accidentally added, run:
+```bash
+./scripts/fix-logger-circular-dependency.sh
+```
+
+This script automatically fixes all logger imports across the codebase.
+
+#### 📋 PREVENTION CHECKLIST
+- [ ] Never import `logger` from `@/lib/logger`
+- [ ] Never import `appLogger` from `@/lib/server-monitoring`
+- [ ] Never import `createChildLogger` from any logger module
+- [ ] Use `console.log`, `console.error`, `console.warn` instead
+- [ ] Test build with `npm run build` after any changes
+- [ ] If build fails with logger errors, run the fix script immediately
+
 ### Build, Lint, and Test
 
 - **Lint:** `npm run lint`
@@ -81,3 +118,9 @@ Document any deviations or new conventions here so the next agent inherits a con
 - Run availability check: `./scripts/roundtable/run-roundtable.sh`.
 - Override subagents: `./scripts/roundtable/run-roundtable.sh --agents codex`.
 - Results stored at `~/.roundtable/availability_check.json`; share in daily status if agents change.
+
+### Emergency Build Fix Scripts
+- **Logger Circular Dependency Fix**: `./scripts/fix-logger-circular-dependency.sh`
+  - Automatically fixes all logger imports across 335+ files
+  - Run immediately if build fails with logger circular dependency errors
+  - Prevents extended build failures

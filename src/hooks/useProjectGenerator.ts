@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { fetchWithRetry, streamResponse } from '@/lib/utils/fetch';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export type GenerationStatus = 'idle' | 'initializing' | 'generating' | 'seeding' | 'installing' | 'finalizing' | 'completed' | 'error';
 
 export interface ProgressData {
@@ -96,13 +96,13 @@ export function useProjectGenerator({ onProgress, onComplete, onError }: UseProj
             });
           }
         } catch (e) {
-          logger.error('Error parsing progress update:', e);
+          console.error('Error parsing progress update:', e);
         }
       }
     } catch (error) {
       if (error instanceof Error) {
         if (error.name !== 'AbortError') {
-          logger.error('Generation error:', error);
+          console.error('Generation error:', error);
           updateProgress({
             status: 'error',
             message: error.message || 'Failed to generate project',

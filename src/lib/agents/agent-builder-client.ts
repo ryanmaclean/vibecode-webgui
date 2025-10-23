@@ -6,9 +6,9 @@
 
 import OpenAI from 'openai';
 import type { AgentBuilderSessionRequest, AgentBuilderSession } from '@/types/agent-builder';
-import { createChildLogger } from '@/lib/logger';
+// import { createChildLogger } from '@/lib/logger';
 
-const logger = createChildLogger({ module: 'agents', scope: 'agent-builder-client' });
+const logger = console;
 
 interface AgentBuilderClientOptions {
   apiKey?: string;
@@ -36,7 +36,7 @@ export class AgentBuilderClient {
    * Create a ChatKit session for a published Agent Builder workflow.
    */
   async createSession(userId: string, request: AgentBuilderSessionRequest): Promise<AgentBuilderSession> {
-    logger.info('Creating Agent Builder session', {
+    console.log('Creating Agent Builder session', {
       userId,
       workflowId: request.workflowId,
       version: request.version,
@@ -97,7 +97,7 @@ export class AgentBuilderClient {
         maxRequestsPerMinute: session.max_requests_per_1_minute,
       };
     } catch (error) {
-      logger.error('Failed to create Agent Builder session', {
+      console.error('Failed to create Agent Builder session', {
         userId,
         workflowId: request.workflowId,
         error,

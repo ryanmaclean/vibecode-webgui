@@ -13,7 +13,7 @@ import path from 'path'
 import fs from 'fs/promises'
 import crypto from 'crypto'
 import { promisify } from 'util'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Security constants
 const MAX_PROCESS_COUNT = 10
 const MAX_FILE_SIZE = 1024 * 1024 // 1MB
@@ -622,7 +622,7 @@ export class SecureClaudeCliIntegration extends EventEmitter {
 
     } catch (error) {
       // Log cleanup errors but don't throw
-      logger.warn('Cleanup error:', error)
+      console.warn('Cleanup error:', error)
     }
   }
 

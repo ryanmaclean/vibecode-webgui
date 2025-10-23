@@ -40,7 +40,7 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -310,7 +310,7 @@ export function AgentMonitoringDashboard({
       await onRefresh()
       setLastRefresh(new Date())
     } catch (error) {
-      logger.error('Failed to refresh metrics:', error)
+      console.error('Failed to refresh metrics:', error)
     } finally {
       setIsRefreshing(false)
     }

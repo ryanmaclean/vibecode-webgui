@@ -12,7 +12,7 @@ SearchResult,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
   private connectionConfig: any;
   private redisClient: any = null;
@@ -55,11 +55,11 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       // 
       // await this.ensureIndex();
       
-      logger.info('Mock Redis connection established');
+      console.log('Mock Redis connection established');
       this.isConnectionActive = true;
       return true;
     } catch (error) {
-      logger.error('Failed to connect to Redis:', error);
+      console.error('Failed to connect to Redis:', error);
       this.isConnectionActive = false;
       return false;
     }
@@ -77,10 +77,10 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       //   this.redisClient = null;
       // }
       
-      logger.info('Mock Redis connection closed');
+      console.log('Mock Redis connection closed');
       this.isConnectionActive = false;
     } catch (error) {
-      logger.error('Error disconnecting from Redis:', error);
+      console.error('Error disconnecting from Redis:', error);
     }
   }
 
@@ -114,14 +114,14 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       //       PREFIX: this.keyPrefix
       //     }
       //   );
-      //   logger.info(`Created Redis vector index ${this.indexName}`);
+      //   console.log(`Created Redis vector index ${this.indexName}`);
       // } else {
-      //   logger.info(`Redis vector index ${this.indexName} already exists`);
+      //   console.log(`Redis vector index ${this.indexName} already exists`);
       // }
       
-      logger.info('Mock Redis vector index creation check');
+      console.log('Mock Redis vector index creation check');
     } catch (error) {
-      logger.error('Error creating Redis vector index:', error);
+      console.error('Error creating Redis vector index:', error);
       throw error;
     }
   }
@@ -141,7 +141,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock storing ${chunks.length} vectors for file ${fileId} in Redis`);
+      console.log(`Mock storing ${chunks.length} vectors for file ${fileId} in Redis`);
       
       // Process chunks in batches to avoid rate limits
       const batchSize = 10;
@@ -172,7 +172,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
           //   }
           // });
           
-          logger.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Redis`);
+          console.log(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Redis`);
         }
         
         // Execute the batch
@@ -182,7 +182,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
         await new Promise(resolve => setTimeout(resolve, 50));
       }
     } catch (error) {
-      logger.error('Error storing vector chunks in Redis:', error);
+      console.error('Error storing vector chunks in Redis:', error);
       throw error;
     }
   }
@@ -229,14 +229,14 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
             }));
           }
         } catch (cacheError) {
-          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
         }
       }
 
-      logger.info(`Mock searching for similar vectors with ${embedding.length} dimensions in Redis`);
-      logger.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
+      console.log(`Mock searching for similar vectors with ${embedding.length} dimensions in Redis`);
+      console.log(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
       if (fileIds?.length) {
-        logger.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
+        console.log(`Filtering by file IDs: ${fileIds.join(', ')}`);
       }
       
       // In a real implementation, we would use a Redis vector search query:
@@ -322,15 +322,15 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
             },
             cacheResults,
             workspaceId?.toString()
-          ).catch(err => logger.warn('Background cache storage failed:', err));
+          ).catch(err => console.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          logger.warn('Failed to cache results:', cacheError);
+          console.warn('Failed to cache results:', cacheError);
         }
       }
       
       return filteredResults;
     } catch (error) {
-      logger.error('Error in Redis vector search:', error);
+      console.error('Error in Redis vector search:', error);
       return [];
     }
   }
@@ -345,7 +345,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock deleting vectors for file ${fileId} from Redis`);
+      console.log(`Mock deleting vectors for file ${fileId} from Redis`);
       
       // In a real implementation, we would:
       // 1. Find all keys for this file
@@ -367,7 +367,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       //   await multi.exec();
       // }
     } catch (error) {
-      logger.error('Error deleting file chunks from Redis:', error);
+      console.error('Error deleting file chunks from Redis:', error);
       throw error;
     }
   }
@@ -382,7 +382,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      logger.info(`Mock updating vector ${id} with ${embedding.length} dimensions in Redis`);
+      console.log(`Mock updating vector ${id} with ${embedding.length} dimensions in Redis`);
       
       // In a real implementation, we would update just the embedding field
       // const key = `${this.keyPrefix}${id.toString()}`;
@@ -391,7 +391,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       
       return true;
     } catch (error) {
-      logger.error('Error updating vector embedding in Redis:', error);
+      console.error('Error updating vector embedding in Redis:', error);
       return false;
     }
   }
@@ -448,7 +448,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
         cacheStats
       };
     } catch (error) {
-      logger.error('Error getting vector store stats from Redis:', error);
+      console.error('Error getting vector store stats from Redis:', error);
       return {
         totalChunks: 0,
         totalFiles: 0,

@@ -4,7 +4,7 @@
  */
 
 import { metrics } from '../server-monitoring';
-import { logger } from '../logger';
+// import { logger } from '../logger';
 
 /**
  * Configuration for connection pool
@@ -144,7 +144,7 @@ export class ConnectionPool<T> {
       // Create initial connections
       const initialConnections = Math.min(this.config.minConnections, this.config.maxConnections);
       
-      logger.info(`Initializing connection pool with ${initialConnections} connections`);
+      console.log(`Initializing connection pool with ${initialConnections} connections`);
       
       const connectionPromises = Array(initialConnections)
         .fill(0)
@@ -153,11 +153,11 @@ export class ConnectionPool<T> {
       // Wait for all connections to be created
       await Promise.all(connectionPromises);
       
-      logger.info(`Connection pool initialized with ${this.pool.length} connections`, {
+      console.log(`Connection pool initialized with ${this.pool.length} connections`, {
         duration: Date.now() - startTime
       });
     } catch (error) {
-      logger.error('Failed to initialize minimum connections in pool', { error });
+      console.error('Failed to initialize minimum connections in pool', { error });
     }
   }
 
@@ -226,7 +226,7 @@ export class ConnectionPool<T> {
         // Update metrics
         metrics.gauge('vector_db.pool.connections', this.pool.length);
       } catch (error) {
-        logger.error('Error closing pruned connection', { 
+        console.error('Error closing pruned connection', { 
           connectionId: conn.id,
           error 
         });
@@ -234,7 +234,7 @@ export class ConnectionPool<T> {
     }
     
     if (prunedCount > 0) {
-      logger.debug(`Pruned ${prunedCount} connections from pool`, {
+      console.log(`Pruned ${prunedCount} connections from pool`, {
         remaining: this.pool.length,
         minRequired: this.config.minConnections
       });
@@ -281,7 +281,7 @@ export class ConnectionPool<T> {
         metrics.increment('vector_db.pool.connections');
         metrics.histogram('vector_db.pool.connection_create_time', Date.now() - startTime);
         
-        logger.debug('Created new connection in pool', { 
+        console.log('Created new connection in pool', { 
           connectionId: pooledConnection.id,
           poolSize: this.pool.length 
         });
@@ -294,7 +294,7 @@ export class ConnectionPool<T> {
         metrics.increment('vector_db.pool.connection_errors');
         
         // Log the error
-        logger.warn('Failed to create connection, retrying...', { 
+        console.warn('Failed to create connection, retrying...', { 
           attempt: attempts + 1,
           maxAttempts: this.config.maxConnectionAttempts,
           error: lastError
@@ -336,7 +336,7 @@ export class ConnectionPool<T> {
           return await this.validateAndAcquire(newConn);
         } catch (error) {
           // If creation fails, we'll wait for an existing connection
-          logger.warn('Failed to create new connection, waiting for existing one', { error });
+          console.warn('Failed to create new connection, waiting for existing one', { error });
         }
       }
       
@@ -347,7 +347,7 @@ export class ConnectionPool<T> {
       this.acquireErrors++;
       metrics.increment('vector_db.pool.acquire_errors');
       
-      logger.error('Error acquiring connection from pool', { error });
+      console.error('Error acquiring connection from pool', { error });
       throw error;
     }
   }
@@ -372,7 +372,7 @@ export class ConnectionPool<T> {
         
         if (!isValid) {
           // Connection is invalid, remove it and create a new one
-          logger.warn('Connection validation failed, replacing connection', { 
+          console.warn('Connection validation failed, replacing connection', { 
             connectionId: pooledConnection.id
           });
           
@@ -387,7 +387,7 @@ export class ConnectionPool<T> {
           try {
             await this.config.closeConnection(pooledConnection.connection);
           } catch (error) {
-            logger.error('Error closing invalid connection', { error });
+            console.error('Error closing invalid connection', { error });
           }
           
           // Create a new connection
@@ -400,7 +400,7 @@ export class ConnectionPool<T> {
       }
       
       // Connection is valid
-      logger.debug('Acquired connection from pool', { 
+      console.log('Acquired connection from pool', { 
         connectionId: pooledConnection.id,
         activeConnections: this.activeConnections,
         poolSize: this.pool.length
@@ -446,7 +446,7 @@ export class ConnectionPool<T> {
         startTime
       });
       
-      logger.debug('Waiting for connection', { 
+      console.log('Waiting for connection', { 
         waitingCount: this.waiting.length,
         poolSize: this.pool.length,
         activeConnections: this.activeConnections
@@ -463,7 +463,7 @@ export class ConnectionPool<T> {
       try {
         await this.config.closeConnection(connection);
       } catch (error) {
-        logger.error('Error closing connection after pool closed', { error });
+        console.error('Error closing connection after pool closed', { error });
       }
       return;
     }
@@ -472,7 +472,7 @@ export class ConnectionPool<T> {
     const pooledConnection = this.pool.find(conn => conn.connection === connection);
     
     if (!pooledConnection) {
-      logger.warn('Attempted to release a connection not managed by this pool');
+      console.warn('Attempted to release a connection not managed by this pool');
       return;
     }
     
@@ -484,7 +484,7 @@ export class ConnectionPool<T> {
     this.activeConnections--;
     metrics.gauge('vector_db.pool.active_connections', this.activeConnections);
     
-    logger.debug('Released connection back to pool', { 
+    console.log('Released connection back to pool', { 
       connectionId: pooledConnection.id,
       activeConnections: this.activeConnections,
       poolSize: this.pool.length
@@ -505,7 +505,7 @@ export class ConnectionPool<T> {
           // Resolve the waiting promise
           waiter.resolve(conn);
           
-          logger.debug('Provided released connection to waiting request', { 
+          console.log('Provided released connection to waiting request', { 
             connectionId: pooledConnection.id,
             waitTime
           });
@@ -570,7 +570,7 @@ export class ConnectionPool<T> {
       try {
         await this.config.closeConnection(conn.connection);
       } catch (error) {
-        logger.error('Error closing connection during pool shutdown', { 
+        console.error('Error closing connection during pool shutdown', { 
           connectionId: conn.id,
           error 
         });
@@ -584,7 +584,7 @@ export class ConnectionPool<T> {
     this.pool = [];
     this.activeConnections = 0;
     
-    logger.info(`Connection pool closed, ${closedCount} connections terminated`);
+    console.log(`Connection pool closed, ${closedCount} connections terminated`);
     
     // Update metrics
     metrics.gauge('vector_db.pool.connections', 0);

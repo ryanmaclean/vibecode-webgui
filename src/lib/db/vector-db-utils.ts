@@ -4,7 +4,7 @@
 
 import { PrismaClient } from '@prisma/client';
 import fs from 'fs';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface VectorDatabaseOptions {
   connectionUrl?: string;
   createExtensions?: boolean;
@@ -29,7 +29,7 @@ export async function initializeVectorDatabase(options: VectorDatabaseOptions = 
 
   // Use Winston logger instead of console.log for production safety
   const log = verbose
-    ? (message: string) => logger.info(message)
+    ? (message: string) => console.log(message)
     : () => {};
   
   // Create PrismaClient with connection URL
@@ -169,7 +169,7 @@ $$;
   `;
   
   fs.writeFileSync(filePath, schema, 'utf8');
-  logger.info(`Schema file written to ${filePath}`);
+  console.log(`Schema file written to ${filePath}`);
   return filePath;
 }
 

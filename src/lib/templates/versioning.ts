@@ -4,7 +4,7 @@
 
 import { z } from '@/lib/zod-compat'
 import type { ProjectTemplate } from './index'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface TemplateVersion {
   version: string
   releaseDate: string
@@ -435,7 +435,7 @@ const version = metadata.versions[i]
           update.breaking || false
         )
       } catch (error) {
-        logger.error(`Failed to update template ${update.templateId}:`, error)
+        console.error(`Failed to update template ${update.templateId}:`, error)
       }
     }
   }

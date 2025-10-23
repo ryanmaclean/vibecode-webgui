@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /*
@@ -14,7 +14,7 @@ function safeWarn(message: string) {
   // Avoid noisy logs in production if not needed
   if (process.env.NODE_ENV !== 'test') {
     // Intentionally do not include actual values for security
-    logger.warn(`[DatadogEnv] ${message}`)
+    console.warn(`[DatadogEnv] ${message}`)
   }
 }
 

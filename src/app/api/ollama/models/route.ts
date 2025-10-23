@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { ollamaClient, RECOMMENDED_MODELS } from '@/lib/ollama-client'
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 
 // Force dynamic rendering to prevent static analysis during build
@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
         return handleListModels()
     }
   } catch (error) {
-    logger.error('Ollama models API error:', { error: error })
+    console.error('Ollama models API error:', { error: error })
     return NextResponse.json(
       {
         error: 'Failed to process Ollama request',
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    logger.error('Ollama models POST error:', { error: error })
+    console.error('Ollama models POST error:', { error: error })
     return NextResponse.json(
       {
         error: 'Failed to process Ollama request',

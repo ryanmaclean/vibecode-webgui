@@ -24,7 +24,7 @@ CollaborationManager,
   CollaborationUser,
   collaborationManager
 } from '@/lib/collaboration'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface CollaborativeEditorProps {
   documentId: string
@@ -210,7 +210,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       setIsConnected(true)
 
     } catch (error) {
-      logger.error('Failed to initialize collaboration:', error)
+      console.error('Failed to initialize collaboration:', error)
       setConnectionError(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }, [documentId, projectId, filePath, currentUser, initialContent, getLanguageExtension, onContentChange, readOnly])

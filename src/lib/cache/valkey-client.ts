@@ -12,7 +12,7 @@
 
 import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 type StandardConfig = {
   type: 'standard';
@@ -91,25 +91,25 @@ try {
     }
 
     valkeyClient.on('connect', () => {
-      logger.info('Valkey connected successfully');
+      console.log('Valkey connected successfully');
       metrics.increment('valkey.connection.success');
     });
 
     valkeyClient.on('error', (error) => {
-      logger.error('Valkey connection error', { error });
+      console.error('Valkey connection error', { error });
       metrics.increment('valkey.connection.error');
     });
 
     valkeyClient.on('ready', () => {
-      logger.info('Valkey client ready');
+      console.log('Valkey client ready');
       metrics.increment('valkey.ready');
     });
   } else if (connectionConfig.type === 'upstash') {
     // Upstash exposes an HTTP API; callers should use dedicated clients.
-    logger.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
+    console.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
   }
 } catch (error) {
-  logger.warn('Valkey client initialization failed', { error });
+  console.warn('Valkey client initialization failed', { error });
   valkeyClient = null;
 }
 
@@ -161,7 +161,7 @@ export class ValkeyManager {
       return JSON.parse(value) as T;
     } catch (error) {
       metrics.increment('cache.error');
-      logger.error('Valkey get error', { key, error });
+      console.error('Valkey get error', { key, error });
       return null;
     }
   }
@@ -177,7 +177,7 @@ export class ValkeyManager {
       return true;
     } catch (error) {
       metrics.increment('cache.set.error');
-      logger.error('Valkey set error', { key, error });
+      console.error('Valkey set error', { key, error });
       return false;
     }
   }
@@ -192,7 +192,7 @@ export class ValkeyManager {
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
-      logger.error('Valkey delete error', { keys, error });
+      console.error('Valkey delete error', { keys, error });
       return false;
     }
   }
@@ -203,7 +203,7 @@ export class ValkeyManager {
     try {
       return (await this.client.exists(key)) === 1;
     } catch (error) {
-      logger.error('Valkey exists error', { key, error });
+      console.error('Valkey exists error', { key, error });
       return false;
     }
   }
@@ -215,7 +215,7 @@ export class ValkeyManager {
       const values = await this.client.mget(...keys);
       return values.map((value) => (value ? (JSON.parse(value) as T) : null));
     } catch (error) {
-      logger.error('Valkey mget error', { keys, error });
+      console.error('Valkey mget error', { keys, error });
       return keys.map(() => null);
     }
   }
@@ -233,7 +233,7 @@ export class ValkeyManager {
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
-      logger.error('Valkey mset error', { pairsCount: pairs.length, error });
+      console.error('Valkey mset error', { pairsCount: pairs.length, error });
       return false;
     }
   }
@@ -248,7 +248,7 @@ export class ValkeyManager {
       }
       return value;
     } catch (error) {
-      logger.error('Valkey incr error', { key, error });
+      console.error('Valkey incr error', { key, error });
       return 0;
     }
   }
@@ -259,7 +259,7 @@ export class ValkeyManager {
     try {
       return await this.client.keys(pattern);
     } catch (error) {
-      logger.error('Valkey keys error', { pattern, error });
+      console.error('Valkey keys error', { pattern, error });
       return [];
     }
   }
@@ -286,7 +286,7 @@ export class ValkeyManager {
         hitRate: 0.85, // Placeholder until real metrics are wired
       };
     } catch (error) {
-      logger.error('Valkey stats error', { error });
+      console.error('Valkey stats error', { error });
       return { connected: false, keyCount: 0, memoryUsage: '0B', hitRate: 0 };
     }
   }
@@ -299,7 +299,7 @@ export class ValkeyManager {
       metrics.increment('cache.clear');
       return true;
     } catch (error) {
-      logger.error('Valkey clear error', { error });
+      console.error('Valkey clear error', { error });
       return false;
     }
   }
@@ -311,7 +311,7 @@ export class ValkeyManager {
       await this.client.ping();
       return true;
     } catch (error) {
-      logger.warn('Valkey health check failed', { error });
+      console.warn('Valkey health check failed', { error });
       return false;
     }
   }

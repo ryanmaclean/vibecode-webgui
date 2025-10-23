@@ -7,7 +7,7 @@
 
 import { useParams } from 'next/navigation'
 import { useState, useEffect, useRef } from 'react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export default function WorkspacePage() {
   const params = useParams()
   const workspaceId = params.id as string
@@ -284,7 +284,7 @@ export default function WorkspacePage() {
               <div className="mb-2">{/* VibeCode E2E Test Environment */}</div>
               <div className="mb-2">{/* Workspace: {workspace.name} */}</div>
               <div className="mb-2">{/* Files: {files.length} */}</div>
-              <div className="mb-4">logger.info(&apos;E2E testing workspace ready&apos;);</div>
+              <div className="mb-4">console.log(&apos;E2E testing workspace ready&apos;);</div>
 {selectedFile && (
                 <div>
                   <div className="text-blue-400">{/* {selectedFile} */}</div>

@@ -5,7 +5,7 @@
 
 import { Server as SocketIOServer } from 'socket.io';
 import { DefaultEventsMap } from 'socket.io/dist/typed-events';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface WorkspaceUser {
   userId: string;
   username: string;
@@ -67,7 +67,7 @@ export class CollaborationService {
     if (!this.io) return;
 
     this.io.on('connection', (socket) => {
-      logger.info('User connected:', socket.id);
+      console.log('User connected:', socket.id);
 
       // Handle user joining workspace
       socket.on('join_workspace', async (data: { workspaceId: string; userId: string; username: string }) => {
@@ -160,7 +160,7 @@ export class CollaborationService {
       timestamp: new Date()
     });
 
-    logger.info(`User ${username} joined workspace ${workspaceId}`);
+    console.log(`User ${username} joined workspace ${workspaceId}`);
   }
 
   /**
@@ -296,7 +296,7 @@ export class CollaborationService {
           this.sessions.delete(workspaceId);
         }
 
-        logger.info(`User ${user.username} left workspace ${workspaceId}`);
+        console.log(`User ${user.username} left workspace ${workspaceId}`);
       }
     }
 
@@ -337,7 +337,7 @@ export class CollaborationService {
     this.userSockets.delete(userId);
     this.socketUsers.delete(socket.id);
 
-    logger.info('User disconnected:', socket.id);
+    console.log('User disconnected:', socket.id);
   }
 
   /**
@@ -426,7 +426,7 @@ export class CollaborationService {
    */
   private logCollaborationEvent(event: CollaborationEvent): void {
     // This would integrate with your logging/monitoring system
-    logger.info('Collaboration event:', {
+    console.log('Collaboration event:', {
       type: event.type,
       workspaceId: event.workspaceId,
       userId: event.userId,
@@ -452,7 +452,7 @@ export class CollaborationService {
       if (inactiveUsers.length === session.users.size && session.users.size > 0) {
         // All users inactive, clean up session
         this.sessions.delete(workspaceId);
-        logger.info(`Cleaned up inactive workspace session: ${workspaceId}`);
+        console.log(`Cleaned up inactive workspace session: ${workspaceId}`);
       }
     }
   }

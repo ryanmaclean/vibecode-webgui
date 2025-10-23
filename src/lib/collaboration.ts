@@ -9,7 +9,7 @@
 
 import * as Y from 'yjs'
 import { WebsocketProvider } from 'y-websocket'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // IndexeddbPersistence not available in this project - using alternative storage
 
 export interface CollaborationUser {
@@ -137,13 +137,13 @@ export class CollaborationManager {
     try {
       session.provider?.destroy()
     } catch (error) {
-      logger.warn('Error destroying provider:', error)
+      console.warn('Error destroying provider:', error)
     }
     
     try {
       session.persistence?.destroy?.()
     } catch (error) {
-      logger.warn('Error destroying persistence:', error)
+      console.warn('Error destroying persistence:', error)
     }
 
     // Remove session

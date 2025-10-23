@@ -4,7 +4,7 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { SearchOptions, SearchResult, VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export interface PostgresVectorDatabaseConfig extends VectorDatabaseConfig {
   provider: VectorDatabaseProvider.POSTGRES;
@@ -135,7 +135,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         }
       } catch (error) {
         if (this.config.enableLogging) {
-          logger.warn('PgVector cache search failed; falling back to direct query', { error });
+          console.warn('PgVector cache search failed; falling back to direct query', { error });
         }
       }
     }

@@ -8,7 +8,7 @@
  */
 
 import { NextRequest } from 'next/server'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
   max: number // Maximum requests per window
@@ -205,7 +205,7 @@ export class RedisRateLimiter {
       }
 
     } catch (error) {
-      logger.error('Redis rate limiting error:', error)
+      console.error('Redis rate limiting error:', error)
 
       // Fallback to allowing request if Redis fails
       return {
