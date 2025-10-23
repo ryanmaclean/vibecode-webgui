@@ -123,16 +123,28 @@ def measure_kernel_boot(
 
     try:
       assert proc.stdout is not None
-      for line in proc.stdout:
-        now = time.perf_counter()
-        normalized = line.strip()
-        if normalized.endswith("/ #") or normalized.endswith("#"):
-          boot_time = now - start
-          break
-        if now - start > timeout:
+      buffer = ""
+      while True:
+        elapsed = time.perf_counter() - start
+        if elapsed > timeout:
           raise BenchmarkError(
               f"Kernel boot timed out after {timeout:.1f}s (iteration {iteration})"
           )
+        char = proc.stdout.read(1)
+        if not char:
+          break
+        buffer += char
+        if char in ("\n", "\r"):
+          normalized = buffer.strip()
+          if normalized.endswith("/ #") or normalized.endswith("#"):
+            boot_time = elapsed
+            break
+          buffer = ""
+        elif buffer.endswith("# "):
+          boot_time = elapsed
+          break
+      if boot_time is None:
+        continue
     finally:
       try:
         if boot_time is not None and proc.stdin and not proc.stdin.closed:

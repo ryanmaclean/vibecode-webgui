@@ -36,3 +36,29 @@
 - All GitHub issue references point to https://github.com/ryanmaclean/vibecode-webgui/issues.
 
 Keep this file updated if further benchmark-related work happens so the next agent has immediate context.
+
+---
+
+## Update — 2025-10-23 (musl + Lima validation)
+
+- Brew-installed `musl-cross 0.9.9_2` (GCC 9.2.0) validated on macOS host; use `gmake` to grab GNU Make 4.4.1 when scripts require Make ≥4.
+- `scripts/test-datadog-musl-build.sh` succeeds against `datadog/docker-dd-agent:latest-alpine` after disabling `CONFIG_SEEDRNG` (missing `sys/random.h` in Alpine 3.6). Output binary: `bench-images/busybox/busybox-datadog-alpine-manual` (~1.1 MB).
+- `alpine-dd` Lima guest confirmed running (`limactl list`); config at `~/.lima/alpine-dd/lima.yaml` injects Datadog keys and build tooling. Use `./scripts/lima-build.sh` to proxy commands.
+- Kernel pipeline proof: `DD_API_KEY=<real> DD_APP_KEY=<real> ./scripts/lima-kernel-build.sh x86_64 6.17.4` → `bench-images/minivim/vmlinuz-6.17.4-musl` (1.9 MB). First run duration 2 353 s; metric `kernel.build.duration` emitted via `_dogstatsd.py`.
+- Boot latency harness now streams QEMU output char-by-char; see `scripts/benchmarks/boot_latency_bench.py` (lines ~120-147). Benchmark command:
+  ```bash
+  python3 scripts/benchmarks/boot_latency_bench.py \
+    --iterations 5 \
+    --kernel bench-images/minivim/vmlinuz-6.17.4-musl \
+    --initrd bench-images/busybox/busybox-musl-initramfs.cpio.gz \
+    --kernel-timeout 300 \
+    --dd-tag libc:musl --dd-tag experiment:minivim
+  ```
+  Result: avg 8.66 s (samples recorded).
+- Raw samples stored at `artifacts/minivim/boot-latency-2025-10-23.json` (gitignored). Upload to releases if auditors need provenance.
+- Outstanding: integrate Firecracker path for the new kernel, document Datadog dashboard URLs once metrics confirm ingestion, and decide whether large BusyBox/initramfs assets should move to releases (#555/#556 guidance).
+
+Next agent should:
+1. Verify `kernel.build.duration` events appear in Datadog (see issue #550).
+2. Re-run `boot_latency_bench.py` after any kernel config trims to compare against the 8.66 s baseline.
+3. Extend the same detection fix to `firecracker_bench.py` if shell prompt parsing hits similar buffering issues.

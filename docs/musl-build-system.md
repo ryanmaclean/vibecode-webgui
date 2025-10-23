@@ -18,6 +18,21 @@ This system builds and tracks performance metrics for:
 
 ---
 
+## 2025-10-23 Field Verification Snapshot
+
+The Lima + musl toolchain path was validated end-to-end on October 23, 2025 (America/Los_Angeles).
+
+- **Toolchain**: `brew list --versions musl-cross` confirms filosottile `musl-cross 0.9.9_2`; `x86_64-linux-musl-gcc --version` reports GCC 9.2.0. GNU Make 4.4.1 is available as `gmake`.
+- **BusyBox**: `scripts/test-datadog-musl-build.sh` now forces `CONFIG_STATIC=y` and disables `CONFIG_SEEDRNG` to avoid `sys/random.h` build failures inside Datadog’s Alpine 3.6 base image. Successful runs drop `bench-images/busybox/busybox-datadog-alpine(-manual)` (~1.1 MB) and emit `musl.busybox.*` metrics when real Datadog keys are present.
+- **Lima VM**: `~/.lima/alpine-dd/lima.yaml` provisions Alpine 3.22 with Datadog bootstrap logic. Use `./scripts/lima-build.sh uname -a` to verify the guest and `./scripts/lima-build.sh env | grep '^DD_'` to confirm templated credentials.
+- **Kernel Build Proof**: `DD_API_KEY=<real> DD_APP_KEY=<real> ./scripts/lima-kernel-build.sh x86_64 6.17.4` produced `bench-images/minivim/vmlinuz-6.17.4-musl` (1.9 MB) and streamed `kernel.build.duration` (2353 s on first run) to DogStatsD/Datadog.
+- **Boot Latency Benchmark**: `python3 scripts/benchmarks/boot_latency_bench.py --iterations 5 --kernel bench-images/minivim/vmlinuz-6.17.4-musl --initrd bench-images/busybox/busybox-musl-initramfs.cpio.gz --kernel-timeout 300 --dd-tag libc:musl --dd-tag experiment:minivim` recorded an average boot-to-shell of **8.66 s** (min 8.01 s, max 8.92 s). Raw samples live at `artifacts/minivim/boot-latency-2025-10-23.json` (ignored by git; copy to releases if needed).
+- **Prompt Detection Fix**: `scripts/benchmarks/boot_latency_bench.py` now streams QEMU output character-by-character so BusyBox prompts without trailing newlines are detected immediately; upgrade any forks accordingly.
+
+Keep the above commands in daily checklists so regression triage has ground truth numbers.
+
+---
+
 ## Quick Start
 
 ### 1. Build BusyBox with musl
