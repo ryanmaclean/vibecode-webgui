@@ -13,7 +13,7 @@ detectDockerRuntime,
   startColima,
   DockerType,
 } from '@/lib/docker/detection';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 import { validateRequestBody } from '@/lib/api/validation/middleware';
 import { dockerActionSchema } from '@/lib/api/validation/schemas-phase4-batch2';
 export const dynamic = 'force-dynamic';
@@ -30,7 +30,7 @@ export async function GET(request: Request) {
     if (detailed) {
       const report = await getDockerStatusReport();
 
-      logger.info('Docker status report generated', {
+      console.log('Docker status report generated', {
         runtime: report.runtime.dockerType,
         running: report.runtime.running,
         version: report.runtime.version,
@@ -44,7 +44,7 @@ export async function GET(request: Request) {
 
     const status = await detectDockerRuntime();
 
-    logger.info('Docker runtime detected', {
+    console.log('Docker runtime detected', {
       type: status.dockerType,
       running: status.running,
       version: status.version,
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
       data: status,
     });
   } catch (error) {
-    logger.error('Error detecting Docker runtime', {
+    console.error('Error detecting Docker runtime', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
@@ -84,7 +84,7 @@ export async function POST(request: NextRequest) {
     const { action } = validation.data;
 
     // Log action attempt
-    logger.info('Docker action requested', {
+    console.log('Docker action requested', {
       action,
       timestamp: new Date().toISOString()
     });
@@ -93,7 +93,7 @@ export async function POST(request: NextRequest) {
       const result = await startColima();
 
       if (result.success) {
-        logger.info('Colima started successfully');
+        console.log('Colima started successfully');
 
         return NextResponse.json({
           success: true,
@@ -101,7 +101,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      logger.error('Failed to start Colima', { message: result.message });
+      console.error('Failed to start Colima', { message: result.message });
 
       return NextResponse.json(
         {
@@ -121,7 +121,7 @@ export async function POST(request: NextRequest) {
     });
 
   } catch (error) {
-    logger.error('Error processing Docker action', {
+    console.error('Error processing Docker action', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 

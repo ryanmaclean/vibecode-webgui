@@ -8,7 +8,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface LazyLoadConfig {
   chunkSize: number
   preloadChunks: number
@@ -206,7 +206,7 @@ if (!this.fileMetadata) {
         })
 
       } catch (error) {
-        logger.warn(`Failed to search in chunk ${chunkIndex}:`, error)
+        console.warn(`Failed to search in chunk ${chunkIndex}:`, error)
       }
     }
 
@@ -367,7 +367,7 @@ if (!this.fileMetadata) {
       // Use setTimeout to avoid blocking main operations
       setTimeout(() => {
         this.loadChunk(chunkId, 'low').catch(error => {
-          logger.warn(`Prefetch failed for chunk ${chunkId}:`, error)
+          console.warn(`Prefetch failed for chunk ${chunkId}:`, error)
         })
       }, 0)
     })
@@ -508,7 +508,7 @@ if (!this.fileMetadata) {
       // Create compression worker (placeholder)
       // this.compressionWorker = new Worker('/workers/compression-worker.js')
     } catch (error) {
-      logger.warn('Failed to initialize compression worker:', error)
+      console.warn('Failed to initialize compression worker:', error)
       this.config.compressionEnabled = false
     }
   }

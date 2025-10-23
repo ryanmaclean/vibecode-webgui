@@ -5,7 +5,7 @@
 
 import { NextRequest } from 'next/server'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Roles that can access monitoring endpoints
 const AUTHORIZED_ROLES = ['admin', 'devops', 'lead', 'developer']
 
@@ -74,7 +74,7 @@ export async function checkMonitoringAuth(request: NextRequest): Promise<AuthRes
     }
 
   } catch (error) {
-    logger.error('Authentication error:', error)
+    console.error('Authentication error:', error)
     return {
       isAuthorized: false,
       error: 'Authentication failed'

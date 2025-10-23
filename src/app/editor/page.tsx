@@ -22,7 +22,7 @@ Select,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 const SAMPLE_CODE = {
   typescript: `import React, { useState, useEffect } from 'react'
@@ -47,7 +47,7 @@ export function UserList() {
       const data = await response.json()
       setUsers(data)
     } catch (error) {
-      logger.error('Failed to fetch users:', error)
+      console.error('Failed to fetch users:', error)
     } finally {
       setLoading(false)
     }
@@ -151,7 +151,7 @@ cart
   .addItem({ id: 2, name: 'Mouse', price: 29.99 }, 2)
   .applyDiscount(10)
 
-logger.info('Total:', cart.getTotal())`,
+console.log('Total:', cart.getTotal())`,
 }
 
 export default function EditorPage() {

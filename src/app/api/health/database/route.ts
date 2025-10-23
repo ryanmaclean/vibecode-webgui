@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDatabaseHealth, quickDatabaseHealthCheck } from '../../../../lib/db/health-check';
 import { getMetricsCollector } from '../../../../lib/db/database-metrics';
-import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger';
 
 
 export const dynamic = 'force-dynamic';
@@ -29,7 +29,7 @@ export async function GET(request: NextRequest) {
       return NextResponse.json(result);
     }
   } catch (error) {
-    logger.error('Database health check error:', { error: error });
+    console.error('Database health check error:', { error: error });
     return NextResponse.json(
       {
         status: 'error',

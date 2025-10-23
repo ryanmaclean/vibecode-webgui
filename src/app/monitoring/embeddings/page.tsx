@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Activity, DollarSign, Zap, AlertTriangle, Clock, TrendingUp } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface EmbeddingMetrics {
   timestamp: string;
   service: string;
@@ -71,7 +71,7 @@ export default function EmbeddingMonitoringDashboard() {
       const data = await response.json();
       setUsageReport(data);
     } catch (err) {
-      logger.error('Error fetching usage report:', err);
+      console.error('Error fetching usage report:', err);
     }
   };
 

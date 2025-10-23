@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import {
   workspaceMetricsSchema,
@@ -67,7 +67,7 @@ export async function GET(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Auto-scaling API error:', error)
+    console.error('Auto-scaling API error:', error)
     return NextResponse.json(
       {
         status: 'error',
@@ -115,7 +115,7 @@ export async function POST(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Metrics update error:', error)
+    console.error('Metrics update error:', error)
 
     return NextResponse.json(
       {
@@ -173,7 +173,7 @@ export async function PUT(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Workspace registration error:', error)
+    console.error('Workspace registration error:', error)
 
     return NextResponse.json(
       {
@@ -220,7 +220,7 @@ export async function PATCH(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Config update error:', error)
+    console.error('Config update error:', error)
 
     return NextResponse.json(
       {
@@ -258,7 +258,7 @@ export async function DELETE(req: NextRequest) {
 
     // In a real implementation, you would remove the workspace from tracking
     // For now, we'll just log it
-    logger.info(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
+    console.log(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
 
     return NextResponse.json({
       status: 'success',
@@ -269,7 +269,7 @@ export async function DELETE(req: NextRequest) {
       }
     })
   } catch (error) {
-    logger.error('Workspace unregistration error:', error)
+    console.error('Workspace unregistration error:', error)
     
     return NextResponse.json(
       {

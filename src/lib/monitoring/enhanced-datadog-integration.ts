@@ -6,7 +6,7 @@
 
 import { StatsD } from 'node-statsd'
 import tracer from 'dd-trace'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Initialize Datadog tracer with minimal configuration
 tracer.init({
   service: 'vibecode-enhanced-platform',
@@ -456,7 +456,7 @@ datadogMonitoring.startSystemMonitoring()
 export { tracer }
 
 // Log startup
-logger.info('🐕 Enhanced Datadog monitoring initialized for VibeCode Platform')
-logger.info(`📊 Service: ${process.env.DD_SERVICE || 'vibecode-enhanced'}`)
-logger.info(`🌍 Environment: ${process.env.DD_ENV || 'development'}`)
-logger.info(`📈 Version: ${process.env.DD_VERSION || '2.0.0'}`)
+console.log('🐕 Enhanced Datadog monitoring initialized for VibeCode Platform')
+console.log(`📊 Service: ${process.env.DD_SERVICE || 'vibecode-enhanced'}`)
+console.log(`🌍 Environment: ${process.env.DD_ENV || 'development'}`)
+console.log(`📈 Version: ${process.env.DD_VERSION || '2.0.0'}`)

@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { discoverSessions, type DiscoveredSession } from '@/lib/tauri/mdns';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface SessionBrowserProps {
   className?: string;
 }
@@ -21,7 +21,7 @@ export function SessionBrowser({ className = '' }: SessionBrowserProps) {
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : 'Failed to discover sessions';
       setError(errorMessage);
-      logger.error('Failed to discover sessions:', err);
+      console.error('Failed to discover sessions:', err);
     } finally {
       setLoading(false);
     }

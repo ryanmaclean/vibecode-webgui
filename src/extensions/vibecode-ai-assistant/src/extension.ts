@@ -8,13 +8,13 @@ import { TemplatesProvider } from './templates-provider';
 import { DeploymentWebviewProvider } from './deployment-provider';
 import { GitHubProvider } from './github-provider';
 import { activateAgentAPI, AgentAPIExtension } from './agentapi-integration';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export function activate(context: vscode.ExtensionContext) {
-    logger.info('VibeCode AI Assistant is now active!');
+    console.log('VibeCode AI Assistant is now active!');
 
     // Initialize Agent API integration
     const agentAPIExtension = activateAgentAPI(context);
-    logger.info('Agent API integration activated');
+    console.log('Agent API integration activated');
 
     // Initialize OpenRouter client
     const openRouterClient = new OpenRouterClient();
@@ -218,5 +218,5 @@ export function activate(context: vscode.ExtensionContext) {
 }
 
 export function deactivate() {
-    logger.info('VibeCode AI Assistant is now deactivated.');
+    console.log('VibeCode AI Assistant is now deactivated.');
 }

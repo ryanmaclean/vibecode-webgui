@@ -4,7 +4,7 @@ import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { z } from '@/lib/zod-compat';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 // Validation schema for security
 const gradioRunSchema = z.object({
@@ -25,7 +25,7 @@ export async function POST(request: Request) {
       validatedData = gradioRunSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        logger.warn('Gradio run validation failed', { errors: error.errors });
+        console.warn('Gradio run validation failed', { errors: error.errors });
         return NextResponse.json(
           {
             error: 'Invalid request parameters',

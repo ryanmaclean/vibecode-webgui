@@ -15,7 +15,7 @@ import type { Span } from 'dd-trace';
 import { writeFile, mkdir } from 'fs/promises';
 import path from 'path';
 import { spawn } from 'child_process';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface GeneratedFile {
   path: string
@@ -126,7 +126,7 @@ Generate a new project based on the following prompt.
 
         if (!response.ok) {
           const errorBody = await response.text();
-          logger.error('OpenRouter API Error:', { status: response.status, body: errorBody });
+          console.error('OpenRouter API Error:', { status: response.status, body: errorBody });
           span?.setTag('error', true);
           span?.setTag('error.message', `OpenRouter API failed with status ${response.status}`);
           span?.setTag('error.stack', errorBody);
@@ -188,7 +188,7 @@ Generate a new project based on the following prompt.
         const errorInfo = error instanceof Error
           ? { message: error.message, stack: error.stack }
           : { error: String(error) };
-        logger.error('Error during AI project generation:', errorInfo);
+        console.error('Error during AI project generation:', errorInfo);
         span?.setTag('error', true);
         if (error instanceof Error) {
             span?.setTag('error.message', error.message);
@@ -286,7 +286,7 @@ async function execInPod(namespace: string, workspaceId: string, command: string
 
 // Placeholder for the real implementation
 async function createCodeServerSession(workspaceId: string, userId: string): Promise<{ url: string }> {
-  logger.info(`Creating code-server session for workspace ${workspaceId} and user ${userId}`);
+  console.log(`Creating code-server session for workspace ${workspaceId} and user ${userId}`);
   // In a real implementation, this would call the code-server management service
   return Promise.resolve({ url: `https://code.vibecode.com/w/${workspaceId}` });
 }
@@ -441,7 +441,7 @@ export async function POST(request: NextRequest) {
       });
       
     } catch (error) {
-      logger.error('AI project generation error:', error);
+      console.error('AI project generation error:', error);
       
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       const errorDetails = error instanceof z.ZodError ? error.errors : undefined;

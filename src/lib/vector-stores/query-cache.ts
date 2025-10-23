@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -54,7 +54,7 @@ export class VectorQueryCache {
     this.accessFrequency.set(key, (this.accessFrequency.get(key) || 0) + 1)
     this.hitCount++
     
-    logger.info(`Cache hit for query: ${query.substring(0, 50)}...`)
+    console.log(`Cache hit for query: ${query.substring(0, 50)}...`)
     return cached.results
   }
 
@@ -82,7 +82,7 @@ export class VectorQueryCache {
     // Initialize access frequency
     this.accessFrequency.set(key, 1)
     
-    logger.info(`Cached ${results.length} results for query: ${query.substring(0, 50)}...`)
+    console.log(`Cached ${results.length} results for query: ${query.substring(0, 50)}...`)
   }
 
   /**

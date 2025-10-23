@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import * as LucideIcons from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 interface TestSuggestion {
   name: string;
@@ -215,7 +215,7 @@ function processUserInput(input: string) {
 
 function addEventListener() {
   document.addEventListener('click', function() {
-    logger.info('clicked');
+    console.log('clicked');
   });
 }`);
 
@@ -346,9 +346,9 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
 }
 
 // Usage examples
-logger.info(validateEmail('user@example.com')); // true
-logger.info(validateEmail('invalid-email')); // false
-logger.info(validateEmail('user@domain')); // false`,
+console.log(validateEmail('user@example.com')); // true
+console.log(validateEmail('invalid-email')); // false
+console.log(validateEmail('user@domain')); // false`,
         tests: `test('validateEmail should validate correct emails', () => {
   expect(validateEmail('user@example.com')).toBe(true);
   expect(validateEmail('test.user@domain.co.uk')).toBe(true);

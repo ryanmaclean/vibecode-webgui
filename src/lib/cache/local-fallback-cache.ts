@@ -4,7 +4,7 @@
  */
 
 import { metrics } from '../server-monitoring';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface CacheItem<T> {
   value: T;
   expiry: number;
@@ -127,7 +127,7 @@ export class LocalFallbackCache {
       
       return Array.from(this.cache.keys()).filter(key => regex.test(key));
     } catch (error) {
-      logger.error('Error matching pattern in local cache:', error);
+      console.error('Error matching pattern in local cache:', error);
       return [];
     }
   }

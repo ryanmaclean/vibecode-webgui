@@ -1,7 +1,7 @@
 import { openai } from '@ai-sdk/openai';
 import { streamText } from 'ai';
 import { tools } from '../../lib/tools';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Use Node.js runtime for Winston logger compatibility
 export const runtime = 'nodejs';
 
@@ -39,7 +39,7 @@ export default async function handler(req: Request) {
 
     return result.toTextStreamResponse();
   } catch (error) {
-    logger.error('Chat API error:', error);
+    console.error('Chat API error:', error);
     return new Response(JSON.stringify({ 
       error: 'Failed to process request',
       details: error.message 

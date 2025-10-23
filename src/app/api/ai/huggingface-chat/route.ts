@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
 import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 
 // Validation schema
 const huggingfaceChatSchema = z.object({
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
       validatedData = huggingfaceChatSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        logger.warn('HuggingFace chat validation failed', { errors: error.errors });
+        console.warn('HuggingFace chat validation failed', { errors: error.errors });
         return NextResponse.json(
           {
             success: false,

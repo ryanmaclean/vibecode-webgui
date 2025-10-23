@@ -3,7 +3,7 @@ import path from 'path';
 import { redirect } from 'next/navigation';
 import matter from 'gray-matter';
 import { marked } from 'marked';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 // Disable static generation due to dynamic nature of wiki pages
 // export async function generateStaticParams() {
 //   try {
@@ -12,7 +12,7 @@ import { logger } from '@/lib/logger';
 //       slug: filename.replace('.md', ''),
 //     }));
 //   } catch (error) {
-//     logger.warn('Wiki directory not found, disabling static generation');
+//     console.warn('Wiki directory not found, disabling static generation');
 //     return [];
 //   }
 // }

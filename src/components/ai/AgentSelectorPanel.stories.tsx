@@ -8,7 +8,7 @@
 
 import type { Meta, StoryObj } from '@storybook/react'
 import { AgentSelectorPanel } from './AgentSelectorPanel'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 const meta: Meta<typeof AgentSelectorPanel> = {
   title: 'AI/AgentSelectorPanel',
   component: AgentSelectorPanel,
@@ -58,11 +58,11 @@ type Story = StoryObj<typeof AgentSelectorPanel>
 export const Default: Story = {
   args: {
     onAgentSelect: (agentId: string) => {
-      logger.info('Selected agent:', agentId)
+      console.log('Selected agent:', agentId)
       alert(`Selected: ${agentId}`)
     },
     onAgentStop: (agentId: string) => {
-      logger.info('Stopped agent:', agentId)
+      console.log('Stopped agent:', agentId)
       alert(`Stopped: ${agentId}`)
     },
     activeAgents: [],

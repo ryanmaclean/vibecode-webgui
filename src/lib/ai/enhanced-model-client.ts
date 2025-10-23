@@ -12,7 +12,7 @@
  */
 
 import { OpenAI } from 'openai';
-import { logger } from '../logger';
+// import { logger } from '../logger';
 
 
 export type AIProvider = 'openrouter' | 'azure-openai' | 'anthropic' | 'ollama' | 'gemini' | 'bedrock';
@@ -212,18 +212,18 @@ export class EnhancedAIClient {
     try {
       return await this.createChatCompletionWithProvider(messages, finalConfig);
     } catch (error) {
-      logger.warn(`Primary provider ${finalConfig.provider} failed:`, { error: error });
+      console.warn(`Primary provider ${finalConfig.provider} failed:`, { error: error });
       
       // Fallback strategy
       const fallbackProviders = this.getFallbackProviders(finalConfig.provider);
       
       for (const fallbackProvider of fallbackProviders) {
         try {
-          logger.info(`Trying fallback provider: ${fallbackProvider}`);
+          console.log(`Trying fallback provider: ${fallbackProvider}`);
           const fallbackConfig = { ...finalConfig, provider: fallbackProvider };
           return await this.createChatCompletionWithProvider(messages, fallbackConfig);
         } catch (fallbackError) {
-          logger.warn(`Fallback provider ${fallbackProvider} failed:`, { data: fallbackError });
+          console.warn(`Fallback provider ${fallbackProvider} failed:`, { data: fallbackError });
           continue;
         }
       }

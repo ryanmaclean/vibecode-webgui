@@ -13,7 +13,7 @@ import {
   PostgresVectorDatabaseAdapter,
   PostgresVectorDatabaseConfig,
 } from './postgres-vector-database-adapter';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 export class VectorDatabaseFactory {
   private static instance: VectorDatabaseInterface | null = null;
@@ -28,7 +28,7 @@ export class VectorDatabaseFactory {
       case VectorDatabaseProvider.POSTGRES:
         return new PostgresVectorDatabaseAdapter(config as PostgresVectorDatabaseConfig);
       default:
-        logger.warn('Unsupported vector database provider requested', {
+        console.warn('Unsupported vector database provider requested', {
           provider: config.provider,
         });
         throw new Error(`Unsupported vector database provider: ${config.provider}`);
@@ -90,7 +90,7 @@ export class VectorDatabaseFactory {
       case 'postgresql':
         return VectorDatabaseProvider.POSTGRES;
       default:
-        logger.warn('Falling back to PostgreSQL vector provider', { provider: providerStr });
+        console.warn('Falling back to PostgreSQL vector provider', { provider: providerStr });
         return VectorDatabaseProvider.POSTGRES;
     }
   }

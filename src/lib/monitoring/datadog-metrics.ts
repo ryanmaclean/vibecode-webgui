@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 interface DatadogTags {
@@ -257,7 +257,7 @@ class DatadogMetricsService {
       }
 
       if (process.env.NODE_ENV === 'development') {
-        logger.info('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
+        console.log('📊 Datadog Metric:', JSON.stringify(metric, null, 2))
       }
 
       // In production, send to Datadog (prefer DD_API_KEY with DATADOG_API_KEY fallback)
@@ -275,11 +275,11 @@ class DatadogMetricsService {
         })
 
         if (!response.ok) {
-          logger.error('Failed to send metric to Datadog:', response.statusText)
+          console.error('Failed to send metric to Datadog:', response.statusText)
         }
       }
     } catch (error) {
-      logger.error('Error sending metric to Datadog:', error)
+      console.error('Error sending metric to Datadog:', error)
     }
   }
 
@@ -299,7 +299,7 @@ class DatadogMetricsService {
     }))
 
     if (process.env.NODE_ENV === 'development') {
-      logger.info('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
+      console.log('📊 Datadog Batch Metrics:', JSON.stringify(formattedMetrics, null, 2))
       return
     }
 
@@ -318,10 +318,10 @@ class DatadogMetricsService {
         })
 
         if (!response.ok) {
-          logger.error('Failed to send batch metrics to Datadog:', response.statusText)
+          console.error('Failed to send batch metrics to Datadog:', response.statusText)
         }
       } catch (error) {
-        logger.error('Error sending batch metrics to Datadog:', error)
+        console.error('Error sending batch metrics to Datadog:', error)
       }
     }
   }

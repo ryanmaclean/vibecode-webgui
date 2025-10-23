@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { OpenRouterClient, AIModel } from './openrouter-client';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export class AIAssistantManager {
     private openRouterClient: OpenRouterClient;
     private outputChannel: vscode.OutputChannel;
@@ -247,7 +247,7 @@ export class AIAssistantManager {
     }
 
     private handleError(message: string, error: any): void {
-        logger.error(message, error);
+        console.error(message, error);
         this.outputChannel.appendLine(`${message}: ${error.message}`);
         vscode.window.showErrorMessage(`${message}: ${error.message}`);
     }

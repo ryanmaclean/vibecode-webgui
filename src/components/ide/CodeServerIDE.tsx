@@ -7,7 +7,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface CodeServerIDEProps {
   workspaceId: string
   projectPath?: string
@@ -85,7 +85,7 @@ export default function CodeServerIDE({
       })
       setSession(null)
     } catch (err) {
-      logger.error('Failed to stop code-server session:', err)
+      console.error('Failed to stop code-server session:', err)
     }
   }, [session])
 
@@ -113,7 +113,7 @@ export default function CodeServerIDE({
         window.removeEventListener('message', handleMessage)
       }
     } catch (err) {
-      logger.error('Error setting up iframe communication:', err)
+      console.error('Error setting up iframe communication:', err)
       return () => {} // Return empty cleanup function on error
     }
   }, [session, onReady])

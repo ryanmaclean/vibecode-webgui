@@ -13,9 +13,9 @@
  */
 
 import { execSync } from 'child_process'
-import { createChildLogger } from './logger'
+// import { createChildLogger } from './logger'
 
-const logger = createChildLogger({ module: 'security', scope: 'keychain' })
+const logger = console
 
 // Keychain configuration
 const KEYCHAIN_SERVICE = 'com.vibecode.secrets'
@@ -79,12 +79,12 @@ export async function setSecret(
 
     execSync(commandParts.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
-    logger.info('Secret stored in Keychain', {
+    console.log('Secret stored in Keychain', {
       service: opts.service,
       account: opts.account,
     })
   } catch (error) {
-    logger.error('Failed to store secret in Keychain', {
+    console.error('Failed to store secret in Keychain', {
       error: error instanceof Error ? error.message : error,
       account: key,
     })
@@ -126,7 +126,7 @@ export async function getSecret(
       shell: '/bin/bash',
     })
 
-    logger.debug('Secret retrieved from Keychain', {
+    console.log('Secret retrieved from Keychain', {
       service: opts.service,
       account: opts.account,
     })
@@ -135,11 +135,11 @@ export async function getSecret(
   } catch (error) {
     // Secret not found is not an error, just return null
     if (error instanceof Error && error.message.includes('could not be found')) {
-      logger.debug('Secret not found in Keychain', { account: key })
+      console.log('Secret not found in Keychain', { account: key })
       return null
     }
 
-    logger.error('Failed to retrieve secret from Keychain', {
+    console.error('Failed to retrieve secret from Keychain', {
       error: error instanceof Error ? error.message : error,
       account: key,
     })
@@ -175,12 +175,12 @@ export async function deleteSecret(
 
     execSync(command.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
-    logger.info('Secret deleted from Keychain', {
+    console.log('Secret deleted from Keychain', {
       service: opts.service,
       account: opts.account,
     })
   } catch (error) {
-    logger.error('Failed to delete secret from Keychain', {
+    console.error('Failed to delete secret from Keychain', {
       error: error instanceof Error ? error.message : error,
       account: key,
     })
@@ -207,7 +207,7 @@ export function isKeychainAvailable(): boolean {
  */
 export async function migrateSecretsToKeychain(): Promise<void> {
   if (!isKeychainAvailable()) {
-    logger.warn('Keychain not available, skipping secret migration')
+    console.warn('Keychain not available, skipping secret migration')
     return
   }
 
@@ -235,14 +235,14 @@ export async function migrateSecretsToKeychain(): Promise<void> {
           accessibility: 'whenUnlockedThisDeviceOnly',
         })
         migratedCount++
-        logger.info(`Migrated ${secretKey} to Keychain`)
+        console.log(`Migrated ${secretKey} to Keychain`)
       } catch (error) {
-        logger.error(`Failed to migrate ${secretKey}`, { error })
+        console.error(`Failed to migrate ${secretKey}`, { error })
       }
     }
   }
 
-  logger.info(`Migrated ${migratedCount} secrets to Keychain`)
+  console.log(`Migrated ${migratedCount} secrets to Keychain`)
 }
 
 /**
@@ -257,11 +257,11 @@ export async function loadSecret(key: string): Promise<string | undefined> {
     try {
       const keychainValue = await getSecret(key)
       if (keychainValue) {
-        logger.debug(`Loaded ${key} from Keychain`)
+        console.log(`Loaded ${key} from Keychain`)
         return keychainValue
       }
     } catch (error) {
-      logger.warn(`Failed to load ${key} from Keychain, falling back to env`, {
+      console.warn(`Failed to load ${key} from Keychain, falling back to env`, {
         error,
       })
     }
@@ -270,7 +270,7 @@ export async function loadSecret(key: string): Promise<string | undefined> {
   // Fallback to environment variable
   const envValue = process.env[key]
   if (envValue) {
-    logger.debug(`Loaded ${key} from environment variable`)
+    console.log(`Loaded ${key} from environment variable`)
   }
 
   return envValue
@@ -293,9 +293,9 @@ export async function rotateSecret(
       accessibility: 'whenUnlockedThisDeviceOnly',
     })
 
-    logger.info(`Rotated secret: ${key}`)
+    console.log(`Rotated secret: ${key}`)
   } catch (error) {
-    logger.error(`Failed to rotate secret: ${key}`, { error })
+    console.error(`Failed to rotate secret: ${key}`, { error })
     throw error
   }
 }
@@ -337,11 +337,11 @@ export async function listSecrets(): Promise<string[]> {
       .split('\n')
       .filter((line) => line.trim().length > 0)
 
-    logger.debug(`Found ${secrets.length} secrets in Keychain`)
+    console.log(`Found ${secrets.length} secrets in Keychain`)
 
     return secrets
   } catch (error) {
-    logger.error('Failed to list secrets from Keychain', { error })
+    console.error('Failed to list secrets from Keychain', { error })
     return []
   }
 }

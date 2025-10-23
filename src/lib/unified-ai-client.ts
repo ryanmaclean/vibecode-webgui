@@ -2,7 +2,7 @@
 // Provides seamless switching between providers while maintaining compatibility
 
 import OpenAI from 'openai'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 export interface UnifiedAIProvider {
   id: string
   name: string
@@ -144,7 +144,7 @@ export class UnifiedAIClient {
         apiKey: 'ollama' // Ollama doesn't require real API key
       }))
     } catch (error) {
-      logger.warn('Ollama not available:', error)
+      console.warn('Ollama not available:', error)
     }
 
     try {
@@ -153,7 +153,7 @@ export class UnifiedAIClient {
         apiKey: 'localai' // LocalAI doesn't require real API key
       }))
     } catch (error) {
-      logger.warn('LocalAI not available:', error)
+      console.warn('LocalAI not available:', error)
     }
   }
 
@@ -189,7 +189,7 @@ export class UnifiedAIClient {
       await client.models.list()
       return true
     } catch (error) {
-      logger.warn(`Provider ${providerId} connection failed:`, error)
+      console.warn(`Provider ${providerId} connection failed:`, error)
       return false
     }
   }
@@ -218,7 +218,7 @@ export class UnifiedAIClient {
     if (!isConnected) {
       // Try fallback to OpenRouter if available
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        logger.warn(`Falling back to OpenRouter for model: ${model}`)
+        console.warn(`Falling back to OpenRouter for model: ${model}`)
         return this.chat(messages, `openai/gpt-3.5-turbo`, options)
       }
       throw new Error(`Provider ${providerId} is not available`)
@@ -261,11 +261,11 @@ export class UnifiedAIClient {
         finishReason: choice.finish_reason || undefined
       }
     } catch (error) {
-      logger.error(`Chat error with ${providerId}:`, error)
+      console.error(`Chat error with ${providerId}:`, error)
       
       // Try fallback to OpenRouter if not already using it
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        logger.warn(`Falling back to OpenRouter for failed request`)
+        console.warn(`Falling back to OpenRouter for failed request`)
         return this.chat(messages, 'openai/gpt-3.5-turbo', options)
       }
       
@@ -332,11 +332,11 @@ export class UnifiedAIClient {
         }
       }
     } catch (error) {
-      logger.error(`Stream error with ${providerId}:`, error)
+      console.error(`Stream error with ${providerId}:`, error)
       
       // Try fallback to OpenRouter if not already using it
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        logger.warn(`Falling back to OpenRouter for failed stream`)
+        console.warn(`Falling back to OpenRouter for failed stream`)
         yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
         return
       }

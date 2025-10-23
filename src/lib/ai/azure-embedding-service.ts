@@ -2,7 +2,7 @@ import axios, { AxiosRequestConfig, AxiosResponse } from 'axios';
 import { BaseEmbeddingService, EmbeddingServiceConfig } from './embedding-service';
 import { VectorConnectionPool, VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { PoolClient } from 'pg';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Configuration specific to Azure OpenAI embedding service
  */
@@ -81,7 +81,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
         max: 10
       }, 'azure-embedding-vector-pool');
       
-      logger.info(`Initialized vector connection pool for Azure embedding service`);
+      console.log(`Initialized vector connection pool for Azure embedding service`);
     }
   }
   
@@ -127,13 +127,13 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
       
       return embedding;
     } catch (error) {
-      logger.error('Error generating embedding:', error);
+      console.error('Error generating embedding:', error);
       
       // Try to retrieve from database as fallback
       if (this.vectorPool) {
         const cachedEmbedding = await this.retrieveEmbedding(text);
         if (cachedEmbedding) {
-          logger.info('Retrieved embedding from cache');
+          console.log('Retrieved embedding from cache');
           return cachedEmbedding;
         }
       }
@@ -165,7 +165,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
       
       return results;
     } catch (error) {
-      logger.error('Error generating embeddings in batch:', error);
+      console.error('Error generating embeddings in batch:', error);
       throw error;
     }
   }
@@ -264,7 +264,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
         client.release();
       }
     } catch (error) {
-      logger.error('Error storing embedding in database:', error);
+      console.error('Error storing embedding in database:', error);
       // Don't throw - this is a background operation
     }
   }
@@ -300,7 +300,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
         client.release();
       }
     } catch (error) {
-      logger.error('Error retrieving embedding from database:', error);
+      console.error('Error retrieving embedding from database:', error);
       return null;
     }
   }
@@ -323,7 +323,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
       
       return apiHealthy && dbHealthy;
     } catch (error) {
-      logger.error("Azure embedding service health check failed:", error);
+      console.error("Azure embedding service health check failed:", error);
       return false;
     }
   }
@@ -381,7 +381,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
         client.release();
       }
     } catch (error) {
-      logger.error('Error creating embedding table:', error);
+      console.error('Error creating embedding table:', error);
       return false;
     }
   }

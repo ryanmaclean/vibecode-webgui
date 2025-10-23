@@ -5,7 +5,7 @@
  */
 
 import { useState, useCallback } from 'react';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface Message {
   id: string;
   role: 'user' | 'assistant' | 'system';
@@ -80,7 +80,7 @@ export function useChat(options: UseChatOptions): UseChatResult {
 
         setMessages((msgs) => [...msgs, assistantMessage]);
       } catch (err) {
-        logger.error('Error calling AI API:', err);
+        console.error('Error calling AI API:', err);
         setError(err instanceof Error ? err : new Error('Failed to communicate with AI service'));
       } finally {
         setIsLoading(false);

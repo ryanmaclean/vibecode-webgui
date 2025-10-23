@@ -18,7 +18,7 @@ ArrowLeftIcon,
   ExclamationTriangleIcon,
   CheckCircleIcon
 } from '@heroicons/react/24/outline'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface TemplateBasedProjectGeneratorProps {
   onComplete?: (data: { workspaceId: string; projectName: string }) => void
   className?: string
@@ -115,7 +115,7 @@ export function TemplateBasedProjectGenerator({
       onComplete?.(result)
 
     } catch (error) {
-      logger.error('Template generation error:', error)
+      console.error('Template generation error:', error)
       setGenerationResult({
         workspaceId: '',
         projectName: '',

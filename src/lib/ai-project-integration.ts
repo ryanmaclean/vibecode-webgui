@@ -5,7 +5,7 @@
 
 import { VectorSearchService } from './vector-search';
 import { EmbeddingGenerator } from './embedding-generator';
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string;
   name: string;
@@ -227,7 +227,7 @@ export class AIProjectIntegration {
       files: [
         {
           path: 'src/index.ts',
-          content: '// Generated with semantic context\nlogger.info("Hello, World!");'
+          content: '// Generated with semantic context\nconsole.log("Hello, World!");'
         },
         {
           path: 'package.json',

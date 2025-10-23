@@ -3,7 +3,7 @@ import OpenAI from 'openai';
 import { VectorDatabaseInterface } from './vector-database-interface';
 import { SearchOptions, SearchResult, VectorDatabaseConfig } from './vector-types';
 import { metrics } from '../server-monitoring';
-import { logger } from '../logger';
+// import { logger } from '../logger';
 import { ConnectionPool, ConnectionPoolConfig } from './connection-pool';
 import { VectorDbErrorHandler } from './vector-db-error-handler';
 
@@ -67,7 +67,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.info(`Vector database adapter (${this.config.provider}) initialized successfully`);
+        console.log(`Vector database adapter (${this.config.provider}) initialized successfully`);
       }
     } catch (error) {
       this.lastError = error instanceof Error ? error : new Error(String(error));
@@ -77,7 +77,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.error(`Failed to initialize vector database adapter (${this.config.provider})`, {
+        console.error(`Failed to initialize vector database adapter (${this.config.provider})`, {
           error: this.lastError,
         });
       }
@@ -112,7 +112,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.error('Error generating embedding', { error });
+        console.error('Error generating embedding', { error });
       }
 
       return new Array(1_536).fill(0);
@@ -129,7 +129,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.error('Error performing text-based vector search', { error });
+        console.error('Error performing text-based vector search', { error });
       }
 
       return this.fallbackTextSearch(query, options);
@@ -168,7 +168,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
     this.connectionPool = new ConnectionPool(poolConfig);
 
     if (this.config.enableLogging) {
-      logger.info(`Connection pool initialized for ${this.config.provider} adapter`, {
+      console.log(`Connection pool initialized for ${this.config.provider} adapter`, {
         minConnections: poolConfig.minConnections,
         maxConnections: poolConfig.maxConnections,
       });
@@ -219,7 +219,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.error('Error pinging vector database', { error: this.lastError });
+        console.error('Error pinging vector database', { error: this.lastError });
       }
 
       return false;
@@ -250,7 +250,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.info(`Vector database adapter (${this.config.provider}) closed successfully`);
+        console.log(`Vector database adapter (${this.config.provider}) closed successfully`);
       }
     } catch (error) {
       this.lastError = error instanceof Error ? error : new Error(String(error));
@@ -260,7 +260,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       }
 
       if (this.config.enableLogging) {
-        logger.error(`Error closing vector database adapter (${this.config.provider})`, {
+        console.error(`Error closing vector database adapter (${this.config.provider})`, {
           error: this.lastError,
         });
       }
@@ -273,7 +273,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
 
   protected async fallbackTextSearch(query: string, options: SearchOptions = {}): Promise<SearchResult[]> {
     if (this.config.enableLogging) {
-      logger.warn('Fallback text search not implemented for this adapter', {
+      console.warn('Fallback text search not implemented for this adapter', {
         provider: this.config.provider,
         query: query.slice(0, 100),
         options,

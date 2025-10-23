@@ -13,7 +13,7 @@
  */
 
 import { EventEmitter } from 'events'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * VM instance information returned from orchestration layer
  */
@@ -155,7 +155,7 @@ export interface VMPoolConfig {
  *
  * // Allocate a VM
  * const vm = await orchestration.allocateVM();
- * logger.info(`VM ready at ${vm.agentApiUrl}`);
+ * console.log(`VM ready at ${vm.agentApiUrl}`);
  *
  * // Use VM...
  * const response = await fetch(`${vm.agentApiUrl}/api/health`);
@@ -402,7 +402,7 @@ export async function allocateVMWithRetry(
         throw error
       }
 
-      logger.warn(`VM allocation attempt ${attempt} failed, retrying in ${delay}ms...`)
+      console.warn(`VM allocation attempt ${attempt} failed, retrying in ${delay}ms...`)
       await new Promise(resolve => setTimeout(resolve, delay))
     }
   }
@@ -420,7 +420,7 @@ export async function releaseVMSafely(vmId: string): Promise<void> {
     const orchestration = getVMOrchestration()
     await orchestration.releaseVM(vmId)
   } catch (error) {
-    logger.error(`Failed to release VM ${vmId}:`, error)
+    console.error(`Failed to release VM ${vmId}:`, error)
     // Don't throw - allow graceful degradation
   }
 }

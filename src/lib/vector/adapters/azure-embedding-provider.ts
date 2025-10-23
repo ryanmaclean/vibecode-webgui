@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -64,7 +64,7 @@ export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
       const credential = new AzureKeyCredential(this.apiKey);
       this.client = new OpenAIClient(this.endpoint, credential, this.options.clientOptions);
     } catch (error) {
-      logger.error('Error initializing Azure OpenAI client:', error);
+      console.error('Error initializing Azure OpenAI client:', error);
       throw new Error('Failed to initialize Azure OpenAI client');
     }
   }
@@ -96,7 +96,7 @@ export class AzureEmbeddingProvider extends BaseVectorEmbeddingProvider {
 
       return response.data[0].embedding;
     } catch (error) {
-      logger.error('Error generating Azure embedding:', error);
+      console.error('Error generating Azure embedding:', error);
       // Return zero vector as fallback
       return this.generateZeroVector();
     }

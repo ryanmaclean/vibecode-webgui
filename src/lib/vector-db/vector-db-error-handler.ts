@@ -1,4 +1,4 @@
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 
 
 /**
@@ -280,17 +280,17 @@ export class VectorDbErrorHandler {
 
     switch (error.severity) {
       case 'critical':
-        logger.error('CRITICAL VectorDB Error:', logData);
+        console.error('CRITICAL VectorDB Error:', logData);
         // In production, this would trigger alerts
         break;
       case 'high':
-        logger.error('HIGH VectorDB Error:', logData);
+        console.error('HIGH VectorDB Error:', logData);
         break;
       case 'medium':
-        logger.warn('MEDIUM VectorDB Error:', logData);
+        console.warn('MEDIUM VectorDB Error:', logData);
         break;
       case 'low':
-        logger.info('LOW VectorDB Error:', logData);
+        console.log('LOW VectorDB Error:', logData);
         break;
     }
   }

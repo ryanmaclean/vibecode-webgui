@@ -1,5 +1,5 @@
 import { useCallback, useRef } from 'react'
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 /**
  * Throttles a callback function to execute at most once per specified delay
  *
@@ -20,7 +20,7 @@ import { logger } from '@/lib/logger';
  *
  * @example
  * const handleScroll = useThrottle(() => {
- *   logger.info('Scroll position:', window.scrollY)
+ *   console.log('Scroll position:', window.scrollY)
  *   updateScrollPosition()
  * }, 100)
  *
