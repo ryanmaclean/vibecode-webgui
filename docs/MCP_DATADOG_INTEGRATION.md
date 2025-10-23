@@ -192,6 +192,12 @@ Several MCP flows shell out to AI CLIs (Codex, Claude Code, Gemini, Just-Every/C
 
 > ℹ️ Only Python-based tooling (for example, Roundtable’s sub-agents) successfully emit spans with `ddtrace-run`. The other CLIs listed above either provide compiled binaries or use Node loaders that do not yet cooperate with Datadog’s dynamic instrumentation.
 
+### Wrapper checklist
+
+- ✅ Every CLI wrapper should export `DD_LLMOBS_PROJECT=vibecode-code-server-ai-cli` (keep `DD_LLMOBS_ML_APP` only if older services still expect it).
+- ✅ Set `DD_AGENT_HOST`, `DD_TRACE_AGENT_PORT`, and the appropriate OpenRouter endpoint before invoking the underlying CLI.
+- 🔄 Record latency/token usage in a Datadog Experiment once real API calls run through the wrapper.
+
 ### Recommended next steps
 
 1. Track upstream requests with each CLI vendor to expose Datadog-compatible hooks (environment variables, OTLP export, or plugin support).
