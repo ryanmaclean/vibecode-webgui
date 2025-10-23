@@ -7,60 +7,15 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
-import { z } from '@/lib/zod-compat'
-import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import {
+  workspaceMetricsSchema,
+  workspaceRegistrationSchema,
+  autoScalingConfigSchema
+} from '@/lib/api/validation/schemas-phase4-batch2'
+import { workspaceIdSchema } from '@/lib/api/validation/schemas'
 export const dynamic = 'force-dynamic'
-
-const metricsSchema = z.object({
-  workspaceId: z.string(),
-  cpuUsage: z.number().min(0).max(100).optional(),
-  memoryUsage: z.number().min(0).max(100).optional(),
-  diskUsage: z.number().min(0).max(100).optional(),
-  networkIO: z.number().min(0).optional(),
-  activeConnections: z.number().min(0).optional(),
-  resourceRequests: z.number().min(0).optional(),
-  queueLength: z.number().min(0).optional()
-})
-
-const registerSchema = z.object({
-  workspaceId: z.string(),
-  resources: z.object({
-    instances: z.array(z.object({
-      instanceId: z.string(),
-      status: z.enum(['starting', 'running', 'stopping', 'stopped', 'error']),
-      resources: z.object({
-        cpu: z.number(),
-        memory: z.number(),
-        disk: z.number()
-      }),
-      podName: z.string().optional(),
-      namespace: z.string().optional()
-    })).optional(),
-    limits: z.object({
-      maxCpu: z.number(),
-      maxMemory: z.number(),
-      maxDisk: z.number(),
-      maxInstances: z.number()
-    }).optional()
-  }).optional()
-})
-
-const configSchema = z.object({
-  enabled: z.boolean().optional(),
-  evaluationInterval: z.number().min(10).max(300).optional(),
-  resourceLimits: z.object({
-    maxCpuPerWorkspace: z.number().optional(),
-    maxMemoryPerWorkspace: z.number().optional(),
-    maxInstancesPerWorkspace: z.number().optional(),
-    maxInstancesPerUser: z.number().optional()
-  }).optional(),
-  costOptimization: z.object({
-    enabled: z.boolean().optional(),
-    idleTimeoutMinutes: z.number().min(5).max(240).optional(),
-    scaleDownDelay: z.number().min(60).max(3600).optional(),
-    prioritizeResourceUtilization: z.boolean().optional()
-  }).optional()
-})
 
 /**
  * GET /api/workspace/auto-scaling - Get scaling status and statistics
@@ -134,8 +89,13 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const metrics = metricsSchema.parse(body)
+    // Validate request body
+    const validation = await validateRequestBody(req, workspaceMetricsSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const metrics = validation.data
 
     // Add user ID to metrics
     const metricsWithUser = {
@@ -156,17 +116,6 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     logger.error('Metrics update error:', error)
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid metrics data',
-          errors: error.errors
-        },
-        { status: 400 }
-      )
-    }
 
     return NextResponse.json(
       {
@@ -189,8 +138,13 @@ export async function PUT(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const body = await req.json()
-    const registration = registerSchema.parse(body)
+    // Validate request body
+    const validation = await validateRequestBody(req, workspaceRegistrationSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const registration = validation.data
 
     await workspaceAutoScaler.registerWorkspace(
       registration.workspaceId, 
@@ -220,17 +174,6 @@ export async function PUT(req: NextRequest) {
     })
   } catch (error) {
     logger.error('Workspace registration error:', error)
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid registration data',
-          errors: error.errors
-        },
-        { status: 400 }
-      )
-    }
 
     return NextResponse.json(
       {
@@ -258,8 +201,13 @@ export async function PATCH(req: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    const body = await req.json()
-    const config = configSchema.parse(body)
+    // Validate request body
+    const validation = await validateRequestBody(req, autoScalingConfigSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
+    }
+
+    const config = validation.data
 
     workspaceAutoScaler.updateConfig(config)
 
@@ -273,17 +221,6 @@ export async function PATCH(req: NextRequest) {
     })
   } catch (error) {
     logger.error('Config update error:', error)
-    
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid configuration data',
-          errors: error.errors
-        },
-        { status: 400 }
-      )
-    }
 
     return NextResponse.json(
       {

@@ -6,7 +6,7 @@
  * POST /api/docker/status/start - Start Colima if available
  */
 
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import {
 detectDockerRuntime,
   getDockerStatusReport,
@@ -14,6 +14,8 @@ detectDockerRuntime,
   DockerType,
 } from '@/lib/docker/detection';
 import { logger } from '@/lib/logger';
+import { validateRequestBody } from '@/lib/api/validation/middleware';
+import { dockerActionSchema } from '@/lib/api/validation/schemas-phase4-batch2';
 export const dynamic = 'force-dynamic';
 
 /**
@@ -68,12 +70,24 @@ export async function GET(request: Request) {
 }
 
 /**
- * POST /api/docker/status/start
- * Attempts to start Colima if installed
+ * POST /api/docker/status
+ * Attempts to start Colima if installed or perform Docker actions
  */
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const { action } = await request.json();
+    // Validate request body
+    const validation = await validateRequestBody(request, dockerActionSchema);
+    if (!validation.success) {
+      return validation.error as NextResponse;
+    }
+
+    const { action } = validation.data;
+
+    // Log action attempt
+    logger.info('Docker action requested', {
+      action,
+      timestamp: new Date().toISOString()
+    });
 
     if (action === 'start-colima') {
       const result = await startColima();
@@ -98,13 +112,14 @@ export async function POST(request: Request) {
       );
     }
 
-    return NextResponse.json(
-      {
-        success: false,
-        error: 'Invalid action',
-      },
-      { status: 400 }
-    );
+    // action 'status' or 'info' - return current status
+    const status = await detectDockerRuntime();
+    return NextResponse.json({
+      success: true,
+      action,
+      data: status
+    });
+
   } catch (error) {
     logger.error('Error processing Docker action', {
       error: error instanceof Error ? error.message : 'Unknown error',

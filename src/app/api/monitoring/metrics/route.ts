@@ -1,14 +1,32 @@
 /**
  * Monitoring Metrics API Route
  * Provides system and application metrics for monitoring and observability
+ *
+ * SECURITY: Phase 4 - Batch 3 validation added
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
 import { logger } from '@/lib/logger';
+import { monitoringQuerySchema, monitoringMetricsBodySchema, monitoringHistoricalSchema } from '@/lib/api/validation/schemas';
+import { validateQueryParams, validateBody, checkRateLimit } from '@/lib/api/validation/helpers';
+
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting: 100 requests per minute
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit(`monitoring-metrics:${clientIp}`, 100, 60000);
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
+    // Validate query parameters
+    const validation = validateQueryParams(request, monitoringQuerySchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+
     const metrics = await collectMetrics();
 
     return NextResponse.json({
@@ -236,8 +254,19 @@ async function performHealthChecks(): Promise<boolean> {
  */
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { type, duration, metrics } = body;
+    // Rate limiting: 100 requests per minute
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit(`monitoring-metrics-post:${clientIp}`, 100, 60000);
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
+    }
+
+    // Validate request body
+    const validation = await validateBody(request, monitoringMetricsBodySchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+    const { type, duration, metrics } = validation.data;
 
     if (type === 'performance') {
       // Store performance metrics
@@ -294,15 +323,19 @@ async function logErrorMetrics(metrics: any): Promise<void> {
  */
 export async function PUT(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { startTime, endTime, metricTypes } = body;
-
-    if (!startTime || !endTime) {
-      return NextResponse.json(
-        { error: 'startTime and endTime are required' },
-        { status: 400 }
-      );
+    // Rate limiting: 100 requests per minute
+    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+    const rateLimit = checkRateLimit(`monitoring-metrics-put:${clientIp}`, 100, 60000);
+    if (!rateLimit.allowed) {
+      return rateLimit.response;
     }
+
+    // Validate request body
+    const validation = await validateBody(request, monitoringHistoricalSchema);
+    if (!validation.success) {
+      return validation.response;
+    }
+    const { startTime, endTime, metricTypes } = validation.data;
 
     // Get historical metrics from storage
     const historicalMetrics = await getHistoricalMetrics(startTime, endTime, metricTypes);

@@ -8,14 +8,20 @@ import { getToken } from 'next-auth/jwt';
 import { litellmClient } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
+import { validateQueryParams } from '@/lib/api/validation/middleware';
+import { aiManagementActionSchema } from '@/lib/api/validation/schemas-phase4-batch2';
 
 export const runtime = 'nodejs';
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url);
-    const action = searchParams.get('action') || 'overview';
-    const timeframe = searchParams.get('timeframe') || '24h';
+    // Validate query parameters
+    const queryValidation = validateQueryParams(request, aiManagementActionSchema);
+    if (!queryValidation.success) {
+      return queryValidation.error as NextResponse;
+    }
+
+    const { action, timeframe } = queryValidation.data;
 
     let token = await getToken({
       req: request,

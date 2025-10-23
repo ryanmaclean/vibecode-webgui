@@ -1,23 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { intelligentModelSelection } from '@/lib/services/intelligent-model-selection'
-
-interface ModelSelectionRequest {
-  prompt: string
-  metadata?: {
-    hasImages?: boolean
-    hasFiles?: boolean
-    fileTypes?: string[]
-    conversationHistory?: number
-    urgency?: 'low' | 'medium' | 'high'
-  }
-  preferences?: {
-    prioritizeCost?: boolean
-    prioritizeSpeed?: boolean
-    prioritizeQuality?: boolean
-    allowHuggingFace?: boolean
-    maxCostTier?: 'free' | 'low' | 'medium' | 'high'
-  }
-}
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { modelSelectionRequestSchema } from '@/lib/api/validation/schemas-phase4-batch2'
 
 export async function POST(request: NextRequest) {
   try {
@@ -27,15 +11,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const body: ModelSelectionRequest = await request.json()
-    const { prompt, metadata, preferences } = body
-
-    if (!prompt?.trim()) {
-      return NextResponse.json({
-        success: false,
-        error: 'Prompt is required'
-      }, { status: 400 })
+    // Validate request body
+    const validation = await validateRequestBody(request, modelSelectionRequestSchema)
+    if (!validation.success) {
+      return validation.error as NextResponse
     }
+
+    const { prompt, metadata, preferences } = validation.data
 
     const startTime = Date.now()
 
