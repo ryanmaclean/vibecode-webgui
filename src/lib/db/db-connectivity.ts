@@ -35,22 +35,22 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
   } = options;
 
   // Set up logging
-  const logger = enableLogging 
-    ? getDatabaseLogger({ 
+  const dbLogger = enableLogging
+    ? getDatabaseLogger({
         defaultCategory: LogCategory.CONNECTION
-      }) 
+      })
     : null;
-  
-  // Fallback to console.log if debug is true but logging is disabled
-  const log = logger 
-    ? (message: string, metadata?: Record<string, any>) => logger.debug(message, metadata)
-    : debug 
-      ? console.log 
+
+  // Use Winston logger instead of console.log for production safety
+  const log = dbLogger
+    ? (message: string, metadata?: Record<string, any>) => dbLogger.debug(message, metadata)
+    : debug
+      ? (message: string) => logger.debug(message)
       : () => {};
 
   if (!connectionUrl) {
     const error = new Error('Database connection URL is required. Set DATABASE_URL or provide connectionUrl.');
-    if (logger) logger.error(error.message);
+    if (dbLogger) dbLogger.error(error.message);
     throw error;
   }
   
@@ -60,7 +60,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
 
   // Check if we need to remove idle connections or validate existing connections
   if (enableConnectionValidation) {
-    await validatePoolConnections(logger);
+    await validatePoolConnections(dbLogger);
   }
 
   // Check if we already have an available client for this pool key
@@ -68,16 +68,16 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     const currentTime = Date.now();
     const lastUsedTime = connectionPool.lastUsed.get(poolKey) || 0;
     const idleTime = currentTime - lastUsedTime;
-    
+
     // Check if the connection has been idle too long
     if (idleTimeout > 0 && idleTime > idleTimeout) {
       // Connection is too old, remove it and create a new one
-      if (logger) logger.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
-      await removeConnection(poolKey, logger);
+      if (dbLogger) dbLogger.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
+      await removeConnection(poolKey, dbLogger);
     } else {
       // Use existing connection
       const message = `Using existing database connection from pool: ${poolKey}`;
-      if (logger) logger.info(message, { poolKey, idleTime });
+      if (dbLogger) dbLogger.info(message, { poolKey, idleTime });
       else log(message);
       
       connectionPool.inUse++;
@@ -89,11 +89,11 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
       connectionPool.usage.acquireTimeTotal += acquireTime;
       connectionPool.usage.acquireTimeAvg = connectionPool.usage.acquireTimeTotal / connectionPool.usage.acquireSuccesses;
       
-      return { 
+      return {
         prisma: connectionPool.clients.get(poolKey) || null,
         fromPool: true,
         success: true,
-        release: () => releaseConnection(poolKey, logger)
+        release: () => releaseConnection(poolKey, dbLogger)
       };
     }
   }
@@ -503,14 +503,15 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
     ...connectionOptions
   } = options;
   
-  const logger = enableLogging ? getDatabaseLogger({
+  const initLogger = enableLogging ? getDatabaseLogger({
     defaultCategory: LogCategory.INITIALIZATION
   }) : null;
-  
-  const log = logger 
-    ? (message: string, metadata?: Record<string, any>) => logger.info(message, metadata)
-    : debug 
-      ? console.log 
+
+  // Use Winston logger instead of console.log for production safety
+  const log = initLogger
+    ? (message: string, metadata?: Record<string, any>) => initLogger.info(message, metadata)
+    : debug
+      ? (message: string) => logger.debug(message)
       : () => {};
   
   // Create robust connection

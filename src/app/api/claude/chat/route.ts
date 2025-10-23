@@ -10,7 +10,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-import { logger } from '../../../../lib/logger';
+import { logger } from '../../../../lib/logger'
+import { claudeChatSchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
 
 // import type { ClaudeCliRequest } from '@/lib/claude-cli-integration'
 
@@ -25,23 +27,28 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Parse request body
-    const body = await request.json()
-    const { message, workspaceId, contextFiles } = body
-
-    if (!message || typeof message !== 'string') {
-      return NextResponse.json(
-        { error: 'Message is required' },
-        { status: 400 }
-      )
+    // Validate request body with Zod
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = claudeChatSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
 
-    if (!workspaceId || typeof workspaceId !== 'string') {
-      return NextResponse.json(
-        { error: 'Workspace ID is required' },
-        { status: 400 }
-      )
-    }
+    const { message, workspaceId, contextFiles } = validatedData
 
     // Get workspace directory
     const workspaceDir = `/workspaces/${workspaceId}`

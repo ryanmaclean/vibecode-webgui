@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
+import { loginTrackingSchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -109,16 +111,28 @@ function logUserAuth(
 // Track login attempts
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
-    const { event, userId, email, provider, sessionId, ...otherMetadata } = body;
-
-    // Validate required fields
-    if (!event || !['login_attempt', 'login_success', 'login_failure', 'logout'].includes(event)) {
-      return NextResponse.json(
-        { error: 'Invalid event type' },
-        { status: 400 }
-      );
+    // Validate request body with Zod
+    let validatedData
+    try {
+      const body = await request.json()
+      validatedData = loginTrackingSchema.parse(body)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          {
+            error: 'Invalid request parameters',
+            details: error.errors.map(e => ({
+              field: e.path.join('.'),
+              message: e.message
+            }))
+          },
+          { status: 400 }
+        )
+      }
+      throw error
     }
+
+    const { event, userId, email, provider, sessionId, loginMethod } = validatedData
 
     // Log the authentication event
     logUserAuth(request, event, {
@@ -126,10 +140,9 @@ export async function POST(request: NextRequest) {
       email,
       provider: provider || 'local',
       sessionId,
-      loginMethod: otherMetadata.loginMethod || 'password',
-      timestamp: new Date().toISOString(),
-      ...otherMetadata,
-    });
+      loginMethod: loginMethod || 'password',
+      timestamp: new Date().toISOString()
+    })
 
     return NextResponse.json({
       success: true,
