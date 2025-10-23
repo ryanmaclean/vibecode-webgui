@@ -25,11 +25,12 @@ You can enable LLM Observability (LLMObs) with or without a Datadog Agent. Choos
 
 2. **Start your application in agentless mode:**
    ```bash
-   DD_SITE=<YOUR_DATADOG_SITE> \
-   DD_API_KEY=<YOUR_API_KEY> \
-   DD_LLMOBS_ENABLED=1 \
-   DD_LLMOBS_AGENTLESS_ENABLED=1 \
- DD_LLMOBS_ML_APP=<YOUR_ML_APP_NAME> \
+DD_SITE=<YOUR_DATADOG_SITE> \
+DD_API_KEY=<YOUR_API_KEY> \
+DD_LLMOBS_ENABLED=1 \
+DD_LLMOBS_AGENTLESS_ENABLED=1 \
+DD_LLMOBS_PROJECT=<YOUR_PROJECT_NAME> \
+DD_LLMOBS_ML_APP=<LEGACY_VALUE_OPTIONAL> \
   node -r 'dd-trace/init' <your_app>.js
   ```
 
@@ -66,7 +67,8 @@ You can enable LLM Observability (LLMObs) with or without a Datadog Agent. Choos
    DD_SITE=<YOUR_DATADOG_SITE> \
    DD_API_KEY=<YOUR_API_KEY> \
    DD_LLMOBS_ENABLED=1 \
-   DD_LLMOBS_ML_APP=<YOUR_ML_APP_NAME> \
+   DD_LLMOBS_PROJECT=<YOUR_PROJECT_NAME> \
+   DD_LLMOBS_ML_APP=<LEGACY_VALUE_OPTIONAL> \
    node -r 'dd-trace/init' <your_app>.js
    ```
 
@@ -82,15 +84,17 @@ You can enable LLM Observability (LLMObs) with or without a Datadog Agent. Choos
    DD_SITE=<YOUR_DATADOG_SITE>
    DD_API_KEY=<YOUR_API_KEY>
    DD_LLMOBS_ENABLED=1
-   DD_LLMOBS_ML_APP=<YOUR_ML_APP_NAME>
+   DD_LLMOBS_PROJECT=<YOUR_PROJECT_NAME>
+   # Optional fallback until all services adopt the new project tag:
+   DD_LLMOBS_ML_APP=<LEGACY_VALUE_OPTIONAL>
    ```
 
 2. **Flush spans before exit:**
    ```js
    const llmobs = require('dd-trace').llmobs;
    // or, to initialize explicitly:
-   const llmobs = require('dd-trace').init({
-     llmobs: { mlApp: <YOUR_ML_APP> },
+    const llmobs = require('dd-trace').init({
+     llmobs: { project: '<YOUR_PROJECT_NAME>' },
    }).llmobs;
 
    exports.handler = async (event, context) => {
