@@ -6,6 +6,7 @@
 import { PrismaClient, Prisma } from '@prisma/client'
 import tracer from 'dd-trace'
 import { metrics } from './server-monitoring'
+import { loadSecret } from '@/lib/security/macos-keychain'
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined
@@ -18,12 +19,14 @@ const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
 
 let prismaClient: PrismaClient
 
-if (isBuilding) {
-  // Create a mock Prisma client for build time
-  prismaClient = {} as PrismaClient
-} else {
-  // Add DBM tags to the database URL
-  const dbUrl = new URL(process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder');
+async function initializePrismaClient() {
+  if (isBuilding) {
+    // Create a mock Prisma client for build time
+    return {} as PrismaClient
+  } else {
+    // Add DBM tags to the database URL
+    // Load database URL from Keychain
+    const dbUrl = new URL(await loadSecret('DATABASE_URL') || 'postgresql://localhost:5432/placeholder');
   if (!dbUrl.searchParams.has('application_name')) {
     dbUrl.searchParams.set('application_name', 'vibecode-webgui');
   }
