@@ -2,9 +2,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
 import { logger } from '@/lib/monitoring'
+import { z } from '@/lib/zod-compat'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+
+// Chat request validation schema
+const chatRequestSchema = z.object({
+  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  conversationId: z.string().optional(),
+  model: z.string().optional().default('gpt-4'),
+  temperature: z.number().min(0).max(2).optional().default(0.7),
+  maxTokens: z.number().min(1).max(4000).optional().default(1000),
+  stream: z.boolean().optional().default(false)
+})
 
 export async function POST(request: NextRequest) {
   try {
+    // Validate request body
+    const validation = await validateRequestBody(request, chatRequestSchema)
+    if (!validation.success) {
+      return NextResponse.json(
+        { error: 'Invalid request data', details: validation.error },
+        { status: 400 }
+      )
+    }
+
+    const { message, conversationId, model, temperature, maxTokens, stream } = validation.data
+
     // Get authentication token with development bypass support
     let token = await getToken({ req: request })
     
