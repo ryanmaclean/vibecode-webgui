@@ -88,27 +88,45 @@ interface DbStats {
 
 /**
  * Database health check endpoint
- * 
+ *
  * Returns:
  * - status: "ok" | "error"
  * - message: String message about database status
  * - details: Object with connection details
  * - poolStatus: Connection pool information
  * - latency: Connection latency in ms
+ *
+ * SECURITY: Phase 4 - Batch 3 validation added
  */
 export async function GET(request: NextRequest) {
   // Defer imports to runtime to avoid circular-init build issues
-  const [dbMod, metricsMod, poolMod] = await Promise.all([
+  const [dbMod, metricsMod, poolMod, validationMod] = await Promise.all([
     import('@/lib/db/robust-db-connection'),
     import('@/lib/db/db-metrics'),
     import('@/lib/db/pool-adapter'),
+    import('@/lib/api/validation/helpers'),
   ]);
   const { createRobustConnection, getConnectionPoolStatus } = dbMod as any;
   const { getDatabaseMetricsCollector } = metricsMod as any;
   const { adaptPoolStatus } = poolMod as any;
+  const { checkRateLimit, validateQueryParams } = validationMod as any;
+
+  // Rate limiting: 100 requests per minute
+  const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
+  const rateLimit = checkRateLimit(`health-db:${clientIp}`, 100, 60000);
+  if (!rateLimit.allowed) {
+    return rateLimit.response;
+  }
+
+  // Validate query parameters
+  const { healthCheckQuerySchema } = await import('@/lib/api/validation/schemas');
+  const validation = validateQueryParams(request, healthCheckQuerySchema);
+  if (!validation.success) {
+    return validation.response;
+  }
+  const { format, verbose } = validation.data;
+
   const startTime = Date.now();
-  const format = request.nextUrl.searchParams.get('format') || 'json';
-  const verbose = request.nextUrl.searchParams.get('verbose') === 'true';
   const includeMetrics = request.nextUrl.searchParams.get('metrics') === 'true';
   
   try {

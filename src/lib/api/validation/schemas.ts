@@ -648,3 +648,269 @@ export const huggingfaceChatSchema = z.object({
     repetition_penalty: z.number().min(0).max(2).optional()
   }).optional()
 })
+
+// ============================================================================
+// PHASE 4: File Upload & Authentication Security
+// ============================================================================
+
+/** Allowed MIME types for file uploads */
+const ALLOWED_MIME_TYPES = [
+  'application/pdf',
+  'text/plain',
+  'text/markdown',
+  'image/png',
+  'image/jpeg',
+  'image/jpg',
+  'image/gif',
+  'image/webp'
+] as const
+
+/** File upload validation with security constraints */
+export const fileUploadSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  files: z
+    .array(
+      z.object({
+        name: z
+          .string()
+          .min(1)
+          .max(255)
+          .regex(/^[a-zA-Z0-9_.-]+$/, 'Filename must contain only alphanumeric characters, dots, hyphens, and underscores')
+          .refine((name) => !name.includes('..'), 'Filename must not contain directory traversal'),
+        size: z.number().int().positive().max(10_000_000), // 10MB per file
+        type: z.enum(ALLOWED_MIME_TYPES, { errorMap: () => ({ message: 'Invalid file type' }) })
+      })
+    )
+    .min(1)
+    .max(10) // Max 10 files per upload
+    .refine(
+      (files) => files.reduce((sum, f) => sum + f.size, 0) <= 50_000_000,
+      'Total upload size must not exceed 50MB'
+    )
+})
+
+/** PDF upload validation */
+export const pdfUploadSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  projectId: z.number().int().positive().optional(),
+  uploader: z.string().min(1).max(100).optional(),
+  file: z.object({
+    name: z.string().min(1).max(255),
+    size: z.number().int().positive().max(25_000_000), // 25MB for PDFs
+    type: z.literal('application/pdf')
+  })
+})
+
+/** SAML SSO request schema with provider validation */
+export const samlSsoRequestSchema = z.object({
+  provider: providerNameSchema.optional().default('okta'),
+  relayState: z.string().max(500).optional(),
+  forceAuthn: z.boolean().optional().default(false)
+})
+
+/** SAML SSO response schema */
+export const samlSsoResponseSchema = z.object({
+  SAMLResponse: z
+    .string()
+    .min(1)
+    .max(50_000) // 50KB max SAML response
+    .refine(
+      (response) => {
+        // Basic XML format validation
+        return response.includes('<saml') || response.includes('<samlp')
+      },
+      'Invalid SAML response format'
+    ),
+  RelayState: z.string().max(500).optional()
+})
+
+/** CSP violation report schema */
+export const cspReportSchema = z.object({
+  'csp-report': z.object({
+    'document-uri': z.string().url().max(500).optional(),
+    referrer: z.string().max(500).optional(),
+    'violated-directive': z.string().max(200).optional(),
+    'effective-directive': z.string().max(200).optional(),
+    'original-policy': z.string().max(2000).optional(),
+    'blocked-uri': z.string().max(500).optional(),
+    'line-number': z.number().int().optional(),
+    'column-number': z.number().int().optional(),
+    'source-file': z.string().max(500).optional(),
+    'status-code': z.number().int().optional()
+  })
+})
+
+/** Rate limiting metadata schema */
+const rateLimitMetaSchema = z.object({
+  maxRequests: z.number().int().positive().max(100).optional().default(60),
+  windowSeconds: z.number().int().positive().max(3600).optional().default(60)
+})
+
+/** Unified AI chat schema (consolidated from /chat, /chat/enhanced, /chat/stream) */
+export const aiChatUnifiedSchema = z.object({
+  message: z
+    .string()
+    .min(1)
+    .max(100_000) // 100KB limit
+    .regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid control characters'),
+  messages: z
+    .array(chatMessageSchema)
+    .min(1)
+    .max(100) // Max 100 messages in context
+    .optional(),
+  model: z
+    .string()
+    .min(1)
+    .max(100)
+    .optional()
+    .default('anthropic/claude-3.5-sonnet'),
+  temperature: z.number().min(0).max(2).optional().default(0.7),
+  max_tokens: z.number().int().positive().max(32000).optional(),
+  stream: z.boolean().optional().default(false),
+  workspaceId: workspaceIdSchema.optional(),
+  context: z
+    .object({
+      workspaceId: workspaceIdSchema,
+      files: z.array(filePathSchema).max(20).optional().default([]),
+      previousMessages: z
+        .array(
+          z.object({
+            role: z.enum(['user', 'assistant']),
+            content: z.string().max(100_000)
+          })
+        )
+        .max(50)
+        .optional()
+        .default([])
+    })
+    .optional(),
+  enableTools: z.boolean().optional().default(false),
+  enableRAG: z.boolean().optional().default(true),
+  rateLimit: rateLimitMetaSchema.optional()
+})
+
+// ============================================================================
+// PHASE 4 - BATCH 3: Health, Monitoring & Remaining Routes
+// ============================================================================
+
+/** Health check query parameters */
+export const healthCheckQuerySchema = z.object({
+  filter: z.enum(['database', 'redis', 'ai', 'memory', 'disk', 'all']).optional().default('all'),
+  format: z.enum(['json', 'text', 'metrics']).optional().default('json'),
+  verbose: z.coerce.boolean().optional().default(false)
+})
+
+/** Monitoring query parameters with time range validation */
+export const monitoringQuerySchema = z.object({
+  timeframe: z.enum(['5m', '15m', '1h', '6h', '12h', '24h', '7d', '30d']).optional().default('1h'),
+  metricNames: z
+    .string()
+    .optional()
+    .transform((val) => val?.split(',').filter(Boolean))
+    .pipe(
+      z
+        .array(z.string().min(1).max(100))
+        .max(20)
+        .optional()
+    ),
+  dashboardId: z.string().min(1).max(100).optional(),
+  logs: z.coerce.boolean().optional().default(false),
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional()
+}).refine(
+  (data) => {
+    // If startTime is provided, endTime must also be provided
+    if (data.startTime && !data.endTime) return false
+    if (data.endTime && !data.startTime) return false
+
+    // If both provided, validate time range (max 30 days)
+    if (data.startTime && data.endTime) {
+      const start = new Date(data.startTime)
+      const end = new Date(data.endTime)
+      const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      return diffDays >= 0 && diffDays <= 30
+    }
+
+    return true
+  },
+  {
+    message: 'Invalid time range: both startTime and endTime required, max 30 days apart'
+  }
+)
+
+/** Monitoring metrics POST body validation */
+export const monitoringMetricsBodySchema = z.object({
+  type: z.enum(['performance', 'error']),
+  duration: z.number().int().nonnegative().max(300000).optional(), // max 5 minutes
+  metrics: z.record(z.unknown()).refine(
+    (metrics) => JSON.stringify(metrics).length <= 100_000, // 100KB limit
+    'Metrics payload too large'
+  )
+})
+
+/** Monitoring historical metrics validation */
+export const monitoringHistoricalSchema = z.object({
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  metricTypes: z.array(z.string().min(1).max(100)).max(20).optional()
+}).refine(
+  (data) => {
+    const start = new Date(data.startTime)
+    const end = new Date(data.endTime)
+    const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    return diffDays >= 0 && diffDays <= 30
+  },
+  {
+    message: 'Time range must be positive and max 30 days'
+  }
+)
+
+/** Experiments API validation */
+export const experimentsQuerySchema = z.object({
+  flagKey: z.string().min(1).max(100).optional(),
+  action: z.enum(['results', 'list']).optional().default('results')
+}).refine(
+  (data) => {
+    // If action is 'results', flagKey is required
+    if (data.action === 'results' && !data.flagKey) return false
+    return true
+  },
+  {
+    message: 'flagKey is required when action is "results"'
+  }
+)
+
+export const experimentsBodySchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('evaluate'),
+    flagKey: z.string().min(1).max(100),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      defaultValue: z.boolean().optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  }),
+  z.object({
+    action: z.literal('track'),
+    flagKey: z.string().min(1).max(100),
+    metricName: z.string().min(1).max(100),
+    value: z.number(),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  }),
+  z.object({
+    action: z.literal('evaluate_multiple'),
+    flags: z.array(
+      z.object({
+        key: z.string().min(1).max(100),
+        defaultValue: z.boolean().optional()
+      })
+    ).min(1).max(20),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  })
+])

@@ -7,6 +7,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { aiChatUnifiedSchema } from '@/lib/api/validation/schemas'
 import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -44,17 +46,25 @@ function logAIInteraction(
 
 async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> {
   const startTime = Date.now();
-  
+
   try {
-    // Parse request body
-    const body = await request.json();
-    const { messages, model = 'ai/smollm2:360M-Q4_K_M', stream = false } = body;
+    // Validate request body with unified schema
+    const validation = await validateRequestBody(request, aiChatUnifiedSchema)
+    if (!validation.success) {
+      logAIInteraction(request, 'chat_error', {
+        error: 'Schema validation failed',
+        userId: request.user?.id
+      })
+      return validation.error as NextResponse
+    }
+
+    const { messages, message, model = 'ai/smollm2:360M-Q4_K_M', stream = false } = validation.data;
 
     // Validate input using security validator
     try {
       validateAIQuery({
-        query: messages?.[messages.length - 1]?.content || '',
-        context: messages?.slice(0, -1).map((m: any) => m.content).join('\n'),
+        query: message || messages?.[messages.length - 1]?.content || '',
+        context: messages?.slice(0, -1).map((m: any) => m.content).join('\n') || '',
         metadata: { model, stream, userId: request.user?.id }
       });
     } catch (validationError) {

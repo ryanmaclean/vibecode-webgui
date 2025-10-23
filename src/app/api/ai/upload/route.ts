@@ -248,6 +248,63 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Security validation: Check file count
+    if (files.length > 10) {
+      return NextResponse.json(
+        { error: 'Maximum 10 files allowed per upload' },
+        { status: 400 }
+      )
+    }
+
+    // Security validation: Check file types and sizes
+    const ALLOWED_MIME_TYPES = [
+      'application/pdf',
+      'text/plain',
+      'text/markdown',
+      'image/png',
+      'image/jpeg',
+      'image/jpg',
+      'image/gif',
+      'image/webp'
+    ]
+
+    let totalSize = 0
+    for (const file of files) {
+      // Validate MIME type
+      if (!ALLOWED_MIME_TYPES.includes(file.type)) {
+        return NextResponse.json(
+          { error: `Invalid file type: ${file.type}. Allowed types: PDF, TXT, MD, PNG, JPG, GIF, WEBP` },
+          { status: 415 }
+        )
+      }
+
+      // Validate individual file size (10MB)
+      if (file.size > 10_000_000) {
+        return NextResponse.json(
+          { error: `File ${file.name} exceeds 10MB limit` },
+          { status: 413 }
+        )
+      }
+
+      // Validate filename (prevent directory traversal)
+      if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
+        return NextResponse.json(
+          { error: `Invalid filename: ${file.name}` },
+          { status: 400 }
+        )
+      }
+
+      totalSize += file.size
+    }
+
+    // Validate total upload size (50MB)
+    if (totalSize > 50_000_000) {
+      return NextResponse.json(
+        { error: 'Total upload size exceeds 50MB limit' },
+        { status: 413 }
+      )
+    }
+
     await ensureDirectories(workspaceId)
 
     const uploadedFiles: UploadedFile[] = []
