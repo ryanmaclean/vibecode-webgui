@@ -437,7 +437,7 @@ Before you begin, ensure you have:
 
 4. **Initialize the database**
    \`\`\`bash
-   npm run db:deploy
+   npm run db:migrate
    npm run db:generate
    \`\`\`
 
@@ -463,7 +463,7 @@ Before you begin, ensure you have:
 
 3. **Initialize the database**
    \`\`\`bash
-   docker-compose exec app npm run db:deploy
+   docker-compose exec app npm run db:migrate
    \`\`\`
 
 ## Your First AI Project
@@ -689,7 +689,7 @@ VibeCode is built as a modern, cloud-native application with the following archi
    docker-compose -f docker-compose.dev.yml up -d postgres redis
    
    # Run database migrations
-   npm run db:deploy
+   npm run db:migrate
    npm run db:generate
    \`\`\`
 

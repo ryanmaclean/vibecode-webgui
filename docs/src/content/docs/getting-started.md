@@ -57,7 +57,7 @@ Before you begin, ensure you have:
 
 4. **Initialize the database**
    ```bash
-   npm run db:deploy
+   npm run db:migrate
    npm run db:generate
    ```
 
@@ -83,7 +83,7 @@ Before you begin, ensure you have:
 
 3. **Initialize the database**
    ```bash
-   docker-compose exec app npm run db:deploy
+   docker-compose exec app npm run db:migrate
    ```
 
 ## Your First AI Project
@@ -172,10 +172,10 @@ Build production applications:
 
 Now that you have VibeCode running:
 
-1. **[Explore AI Features](/ai-integration/)** - Learn about advanced AI capabilities
-2. **[Read the Developer Guide](/development/)** - Understand the architecture and contribute
-3. **[Check the API Reference](/api-reference/)** - Integrate with external services
-4. **[Set up Monitoring](/monitoring/)** - Add observability to your deployment
+1. **[Explore AI Features](./genai-integration/)** - Learn about advanced AI capabilities
+2. **[Read the Developer Guide](./developer-guide/)** - Understand the architecture and contribute
+3. **[Check the API Reference](./api-reference/)** - Integrate with external services
+4. **[Set up Monitoring](./monitoring/overview/)** - Add observability to your deployment
 
 ## Troubleshooting
 

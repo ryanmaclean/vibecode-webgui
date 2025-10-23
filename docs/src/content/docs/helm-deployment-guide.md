@@ -440,7 +440,7 @@ kubectl get events -n vibecode-dev --sort-by='.lastTimestamp'
 - [KIND Troubleshooting Guide](./kind-troubleshooting) - Local cluster setup
 - [Comprehensive Test Report](./comprehensive-environment-test-report) - Validation results
 - [Enhanced AI Features](./enhanced-ai-features) - AI integration setup
-- [Production Status Report](./production-status-report) - Current deployment status
+- [Production Status Report](./production-status/) - Current deployment status
 
 ---
 

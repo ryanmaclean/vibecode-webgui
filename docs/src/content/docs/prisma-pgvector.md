@@ -283,4 +283,4 @@ model RAGChunk {
 - **[Helm Deployment Guide](./helm-deployment-guide/)** - Kubernetes deployment instructions
 - **[PostgreSQL Test Results](./PRISMA_PGVECTOR_TEST_RESULTS/)** - Detailed testing validation
 - **[PostgreSQL GenAI Demo](./postgresql-genai-demo-guide/)** - AI workflow examples
-- **[Environment Variables Guide](./ENV_VARIABLES/)** - Configuration reference 
+- **[Environment Variables Guide](./env-variables/)** - Configuration reference 

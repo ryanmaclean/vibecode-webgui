@@ -2,6 +2,22 @@
 
 This document describes the OpenTelemetry integration in VibeCode, providing vendor-neutral observability alongside our existing Datadog monitoring.
 
+> Last updated: October 23, 2025
+
+## Table of Contents
+
+- [Overview](#overview)
+- [Architecture](#architecture)
+- [Setup](#setup)
+- [Architecture Components](#architecture-components)
+- [Usage Examples](#usage-examples)
+- [Metrics and Dashboards](#metrics-and-dashboards)
+- [Configuration Commands](#configuration-commands)
+- [Integration with Existing Monitoring](#integration-with-existing-monitoring)
+- [Troubleshooting](#troubleshooting)
+- [Production Considerations](#production-considerations)
+- [Next Steps](#next-steps)
+
 ## Overview
 
 OpenTelemetry provides standardized observability through:
