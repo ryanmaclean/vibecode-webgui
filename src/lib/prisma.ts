@@ -112,19 +112,6 @@ if (isBuilding) {
   });
 }
 
-const prismaClient = isBuilding
-  ? ({} as PrismaClient)
-  : (globalForPrisma.prisma ?? new PrismaClient({
-      log: process.env.NODE_ENV === 'development'
-        ? ['query', 'info', 'warn', 'error']
-        : ['error'],
-      datasources: {
-        db: {
-          url: getDatabaseUrl(),
-        },
-      },
-    }))
-
 export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
