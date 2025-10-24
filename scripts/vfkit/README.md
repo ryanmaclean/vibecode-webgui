@@ -1,15 +1,31 @@
 # VibeCode Alpine VM with vfkit
 
-Run VibeCode in a lightweight Alpine Linux VM using vfkit on macOS with Apple Silicon.
+Run VibeCode in a lightweight Alpine Linux ARM64 VM using vfkit on macOS with Apple Silicon.
+
+## Status
+
+✅ **Working:**
+- Alpine Linux 3.19 ARM64 boots successfully
+- Node.js 20.11.1 installed and functional
+- Network connectivity (NAT)
+- 4 CPUs, 4GB RAM, 20GB disk
+- Package manager (apk) functional
+
+⚠️ **Limitations:**
+- **VirtioFS file sharing** - Requires full Alpine installation (not available in initramfs-only mode)
+- **Services** - PostgreSQL, Redis need manual installation via `vm-setup-services.sh`
+- **Port forwarding** - Not directly supported by vfkit (use SSH tunneling)
+
+📖 **See [QUICK_START.md](./QUICK_START.md) for detailed usage guide and workarounds**
 
 ## Overview
 
 This setup creates a minimal Alpine Linux ARM64 virtual machine optimized for:
 
-- **Development**: Node.js, npm, code-server
+- **Development**: Node.js 20.11.1, npm, package manager
 - **Performance**: Native Apple Silicon support via vfkit
 - **Efficiency**: Alpine Linux with musl libc (smaller, faster)
-- **Simplicity**: One-command installation
+- **Testing**: ARM64 compatibility testing for vibecode-webgui
 
 ## Requirements
 
