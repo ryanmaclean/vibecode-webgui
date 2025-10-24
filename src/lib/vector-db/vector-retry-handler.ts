@@ -86,7 +86,7 @@ export class RetryHandler {
    */
   constructor(config: Partial<RetryConfig> = {}, provider: string = 'retry-handler') {
     this.config = { ...this.DEFAULT_CONFIG, ...config };
-    this.errorHandler = new VectorDbErrorHandler(provider);
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
@@ -105,8 +105,6 @@ export class RetryHandler {
       throw this.errorHandler.handleError(
         new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
         operationName,
-        VectorDbErrorType.SERVICE,
-        false,
         {
           circuitBroken: true,
           failureCount: this.failures.length,

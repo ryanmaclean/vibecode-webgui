@@ -27,9 +27,13 @@ import { VectorSearch } from './search/vector-search';
 import { PromptManager } from './prompts/manager';
 import { DocumentationSources } from './documentation/sources';
 import { aiAnalytics } from './analytics';
-import { VectorStoreRetriever } from 'langchain/vectorstores/base';
-import { Document } from 'langchain/document';
+// import { VectorStoreRetriever } from 'langchain/vectorstores/base';
+// import { Document } from 'langchain/document';
 import { validateAIQuery, validatePrompt, aiRateLimiter, AISecurityLogger } from '../security/input-validator';
+
+// Stub types for removed langchain dependencies
+type VectorStoreRetriever = any;
+type Document = { pageContent: string; metadata: Record<string, unknown> };
 // import { logger } from '@/lib/logger';
 interface AIConfig {
   openAIApiKey?: string;

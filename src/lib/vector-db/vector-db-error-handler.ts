@@ -16,7 +16,16 @@ export enum VectorDbErrorType {
   TIMEOUT_ERROR = 'timeout_error',
   STORAGE_ERROR = 'storage_error',
   CONFIGURATION_ERROR = 'configuration_error',
-  UNKNOWN_ERROR = 'unknown_error'
+  UNKNOWN_ERROR = 'unknown_error',
+  // Additional error types for vector DB operations
+  INITIALIZATION = 'initialization_error',
+  CONNECTION_FAILED = 'connection_failed',
+  QUERY_FAILED = 'query_failed',
+  VECTOR_CREATION_FAILED = 'vector_creation_failed',
+  EMBEDDING_GENERATION_FAILED = 'embedding_generation_failed',
+  SEARCH = 'search_error',
+  SERVICE = 'service_error',
+  TIMEOUT = 'timeout'
 }
 
 export interface VectorDbErrorDetails {
@@ -45,6 +54,8 @@ export class VectorDbError extends Error {
   public readonly context?: Record<string, any>;
   public readonly retryable: boolean;
   public readonly severity: 'low' | 'medium' | 'high' | 'critical';
+  public readonly timestamp: Date;
+  public readonly details?: Record<string, any>;
 
   constructor(details: VectorDbErrorDetails) {
     super(details.message);
@@ -53,6 +64,8 @@ export class VectorDbError extends Error {
     this.context = details.context;
     this.retryable = details.retryable;
     this.severity = details.severity;
+    this.timestamp = details.timestamp;
+    this.details = details.context;
 
     if (details.stack) {
       this.stack = details.stack;
@@ -445,6 +458,47 @@ export class VectorDbErrorHandler {
     );
 
     return recentCriticalErrors.length === 0;
+  }
+
+  /**
+   * Check if an error is a network-related error
+   */
+  isNetworkError(error: Error | unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      message.includes('ECONNREFUSED') ||
+      message.includes('ENOTFOUND') ||
+      message.includes('EHOSTUNREACH') ||
+      message.includes('ENETUNREACH') ||
+      message.includes('Connection refused') ||
+      message.includes('network') ||
+      message.includes('Network')
+    );
+  }
+
+  /**
+   * Check if an error is a timeout error
+   */
+  isTimeoutError(error: Error | unknown): boolean {
+    const message = error instanceof Error ? error.message : String(error);
+    return (
+      message.includes('timeout') ||
+      message.includes('ETIMEDOUT') ||
+      message.includes('timed out') ||
+      message.includes('Timeout')
+    );
+  }
+
+  /**
+   * Check if an error is retryable
+   */
+  isRetryableError(error: Error | unknown): boolean {
+    if (error instanceof VectorDbError) {
+      return error.retryable;
+    }
+
+    // Check for network or timeout errors which are typically retryable
+    return this.isNetworkError(error) || this.isTimeoutError(error);
   }
 }
 

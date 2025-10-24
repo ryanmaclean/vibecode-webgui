@@ -132,7 +132,7 @@ export function AgentMonacoEditor({
       const agentAPI = new MonacoAgentAPI(editor, {
         baseUrl: agentConfig?.baseUrl || '/api/agents',
         wsUrl: agentConfig?.wsUrl || '/api/agents/ws',
-        model: agentConfig?.model || 'claude-3-5-sonnet-20241022',
+        model: (agentConfig?.model || 'claude-3-5-sonnet-20241022') as import('@/types/agent-api').ModelType,
         debug: process.env.NODE_ENV === 'development',
         enableInlineSuggestions: agentConfig?.enableInlineSuggestions ?? true,
         enableDiagnostics: agentConfig?.enableDiagnostics ?? true,
@@ -300,7 +300,7 @@ export function AgentMonacoEditor({
           },
           // Enable lightbulb for code actions
           lightbulb: {
-            enabled: true,
+            enabled: true as any,
           },
           ...options,
         }}

@@ -4,8 +4,11 @@
  */
 
 import { Server as SocketIOServer } from 'socket.io';
-import { DefaultEventsMap } from 'socket.io/dist/typed-events';
+// import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 // import { logger } from '@/lib/logger';
+
+// Stub type for socket.io typed events
+type DefaultEventsMap = Record<string, (...args: any[]) => void>;
 export interface WorkspaceUser {
   userId: string;
   username: string;
