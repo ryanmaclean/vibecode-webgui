@@ -4,10 +4,6 @@ import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
 import { promisify } from 'util';
 // import { logger } from '@/lib/logger';
-import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
-import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
-import path from 'path';
-
 const execAsync = promisify(exec);
 
 /**
@@ -81,14 +77,14 @@ CREATE TABLE IF NOT EXISTS schema_migrations (
 -- +goose Down
 -- SQL in this section is executed when the migration is rolled back
 DROP TABLE IF EXISTS schema_migrations;`;
-
-    console.log(`Migration file content for ${workspaceId}:\n${migrationContent}`);
-
-    return NextResponse.json({
-      success: true,
-      message: 'Goose initialized successfully',
-      workspaceId,
-      migrationName
+    
+    // In a real implementation, you would write this to the migration file
+    // For now, we'll just log it
+    console.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
+    
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Goose initialized successfully' 
     });
 
   } catch (error) {

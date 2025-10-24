@@ -605,7 +605,7 @@ export class SSEClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[SSEClient]', ...args)
+      console.info('[SSEClient]', ...args)
     }
   }
 }

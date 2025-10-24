@@ -82,7 +82,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.log('Getting workspace status', { workspaceId })
+    console.info('Getting workspace status', { workspaceId })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -139,7 +139,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.log('Deleting workspace', { workspaceId })
+    console.info('Deleting workspace', { workspaceId })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -152,7 +152,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
     const workspaceService = new WorkspaceProvisioningService()
     await workspaceService.deleteWorkspace(workspaceId)
 
-    console.log(`✅ Workspace deleted: ${workspaceId}`)
+    console.info(`✅ Workspace deleted: ${workspaceId}`)
 
     return NextResponse.json({
       success: true,
@@ -218,7 +218,7 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.log('Updating workspace', { workspaceId, updates: updateValidation.data })
+    console.info('Updating workspace', { workspaceId, updates: updateValidation.data })
 
     // For now, we'll just return the current status
     // TODO: Implement workspace updates (scaling, configuration changes)

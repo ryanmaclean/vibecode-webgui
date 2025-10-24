@@ -68,7 +68,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.ensureContainer();
 
       this.isInitialized = true;
-      console.log('CosmosDB vector database adapter initialized successfully');
+      console.info('CosmosDB vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -119,7 +119,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     } catch (error: any) {
       if (error.code === 404) {
         // Container doesn't exist, create it
-        console.log('Creating CosmosDB container for vectors...');
+        console.info('Creating CosmosDB container for vectors...');
 
         const partitionKey = this.cosmosConfig.partitionKey || '/workspaceId';
 
@@ -390,7 +390,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   async createIndex(field: string, options?: any): Promise<void> {
     // CosmosDB handles vector indexing through the vectorEmbeddingPolicy
     // This is configured when the container is created
-    console.log(`Vector index for ${field} is handled by CosmosDB container configuration`);
+    console.info(`Vector index for ${field} is handled by CosmosDB container configuration`);
   }
 
   /**
@@ -398,7 +398,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   async deleteIndex(field: string): Promise<void> {
     // Vector indexes in CosmosDB are managed at the container level
-    console.log(`Vector index deletion for ${field} is handled by CosmosDB container management`);
+    console.info(`Vector index deletion for ${field} is handled by CosmosDB container management`);
   }
 
   /**

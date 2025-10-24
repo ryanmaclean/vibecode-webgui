@@ -52,7 +52,7 @@ export class AIProjectGenerator {
   async generateProject(request: ProjectGenerationRequest): Promise<ProjectTemplate> {
     const validatedRequest = ProjectGenerationRequestSchema.parse(request)
     
-    console.log(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
+    console.info(`🤖 Generating project from prompt: "${validatedRequest.prompt}"`)
 
     try {
       // Step 1: Analyze prompt and determine project type
@@ -337,13 +337,13 @@ app.get('/api/health', (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(\`🚀 Server running on port \${port}\`)
+  console.info(\`🚀 Server running on port \${port}\`)
 })`
       },
       readme: '# Node.js API Project\n\nGenerated with VibeCode AI Project Generator'
     })
 
-    console.log(`📚 Initialized ${this.templates.size} project templates`)
+    console.info(`📚 Initialized ${this.templates.size} project templates`)
   }
 
   /**

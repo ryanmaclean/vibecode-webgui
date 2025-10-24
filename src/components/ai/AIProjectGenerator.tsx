@@ -56,7 +56,7 @@ export default function AIProjectGenerator() {
     setGenerationMetadata(null)
 
     try {
-      console.log('🚀 Starting AI project generation...')
+      console.info('🚀 Starting AI project generation...')
       
       const response = await fetch('/api/ai/generate-project', {
         method: 'POST',
@@ -79,7 +79,7 @@ export default function AIProjectGenerator() {
 
       const typedResult = result as GenerationResult
 
-      console.log('✅ Project generated successfully:', typedResult.project.name)
+      console.info('✅ Project generated successfully:', typedResult.project.name)
       
       setGeneratedProject(typedResult.project)
       setGenerationMetadata(typedResult.metadata)
@@ -135,7 +135,7 @@ export default function AIProjectGenerator() {
         description: 'This will provision a new development environment on AKS'
       })
 
-      console.log('🚀 Creating workspace for project:', generatedProject.name)
+      console.info('🚀 Creating workspace for project:', generatedProject.name)
 
       const response = await fetch('/api/workspaces', {
         method: 'POST',
@@ -162,7 +162,7 @@ export default function AIProjectGenerator() {
         throw new Error(result.error || 'Workspace creation failed')
       }
 
-      console.log('✅ Workspace created successfully:', result.workspace)
+      console.info('✅ Workspace created successfully:', result.workspace)
 
       toast.success('Live workspace created!', {
         description: `Your ${generatedProject.framework} project is now running at ${result.workspace.url}`,

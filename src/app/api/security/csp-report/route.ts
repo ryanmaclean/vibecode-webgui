@@ -4,37 +4,27 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { z } from '@/lib/zod-compat'
+
+const cspViolationSchema = z.object({
+  'document-uri': z.string().optional(),
+  'referrer': z.string().optional(),
+  'violated-directive': z.string().optional(),
+  'effective-directive': z.string().optional(),
+  'original-policy': z.string().optional(),
+  'blocked-uri': z.string().optional(),
+  'line-number': z.number().optional(),
+  'column-number': z.number().optional(),
+  'source-file': z.string().optional(),
+  'status-code': z.number().optional(),
+}).passthrough()
 
 export async function POST(request: NextRequest) {
   try {
-    // Security: Limit request body size to prevent DoS
-    const contentLength = request.headers.get('content-length')
-    if (contentLength && parseInt(contentLength) > 10_000) {
-      return NextResponse.json({ error: 'Request body too large' }, { status: 413 })
-    }
-
-    const violation = await request.json()
-
-    // Security: Validate CSP report structure
-    if (!violation || typeof violation !== 'object') {
-      return NextResponse.json({ error: 'Invalid CSP report format' }, { status: 400 })
-    }
-
-    // Security: Sanitize and validate each field
-    const sanitizedViolation = {
-      'document-uri': String(violation['document-uri'] || '').slice(0, 500),
-      referrer: String(violation.referrer || '').slice(0, 500),
-      'violated-directive': String(violation['violated-directive'] || '').slice(0, 200),
-      'effective-directive': String(violation['effective-directive'] || '').slice(0, 200),
-      'original-policy': String(violation['original-policy'] || '').slice(0, 2000),
-      'blocked-uri': String(violation['blocked-uri'] || '').slice(0, 500),
-      'line-number': Number.isInteger(violation['line-number']) ? violation['line-number'] : undefined,
-      'column-number': Number.isInteger(violation['column-number']) ? violation['column-number'] : undefined,
-      'source-file': String(violation['source-file'] || '').slice(0, 500),
-      'status-code': Number.isInteger(violation['status-code']) ? violation['status-code'] : undefined
-    }
-
-    // Log CSP violation with sanitized data
+    const body = await request.json()
+    const violation = cspViolationSchema.parse(body)
+    
+    // Log CSP violation
     const logData = {
       timestamp: new Date().toISOString(),
       service: 'vibecode-webgui',
@@ -55,6 +45,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({ status: 'recorded' }, { status: 200 })
   } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        error: 'Invalid CSP report format',
+        details: error.errors
+      }, { status: 400 })
+    }
+
     // Server error logged
     return NextResponse.json({ error: 'Failed to process report' }, { status: 400 })
   }

@@ -64,7 +64,7 @@ export async function setupMonacopilot(
     registerCompletion(monacoInstance, editor, options);
 
     if (config.debug) {
-      console.log('[Monacopilot] AI completion registered', {
+      console.info('[Monacopilot] AI completion registered', {
         language: config.language,
         endpoint: config.endpoint,
       });

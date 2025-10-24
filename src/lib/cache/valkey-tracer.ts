@@ -34,7 +34,7 @@ class ValKeyTracer {
     this.tracingEnabled = Boolean(process.env.DD_API_KEY && process.env.DD_APM_ENABLED !== 'false');
     
     if (this.tracingEnabled) {
-      console.log('ValKey APM tracing enabled');
+      console.info('ValKey APM tracing enabled');
     }
   }
 
@@ -108,7 +108,7 @@ class ValKeyTracer {
     // Log successful operations
     if (operation.duration > 50) {
       // Only log slower operations
-      console.log('ValKey operation completed', {
+      console.debug('ValKey operation completed', {
         command: operation.command,
         duration: operation.duration,
         key: operation.key,

@@ -7,6 +7,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { validateAIQuery, aiRateLimiter, AISecurityLogger } from '../lib/security/input-validator';
 // import { logger } from '@/lib/logger';
+import { 
+  needsCSRFProtection, 
+  validateCSRFToken, 
+  extractCSRFToken, 
+  getSessionId, 
+  validateOrigin 
+} from '../lib/security/csrf-protection';
 // Security configuration
 const SECURITY_CONFIG = {
   maxRequestSize: 10 * 1024 * 1024, // 10MB
@@ -195,36 +202,48 @@ async function validateRequestSecurity(
     };
   }
 
+  // CSRF Protection for state-changing operations
+  if (needsCSRFProtection(request)) {
+    // Validate Origin/Referer headers first
+    if (!validateOrigin(request)) {
+      AISecurityLogger.logSuspiciousActivity('unknown', 'csrf_origin_mismatch', {
+        pathname,
+        origin: request.headers.get('origin'),
+        referer: request.headers.get('referer'),
+        ip
+      });
+      return {
+        valid: false,
+        response: new NextResponse('Invalid origin', { status: 403 })
+      };
+    }
+
+    // Validate CSRF token
+    const sessionId = getSessionId(request);
+    const csrfToken = extractCSRFToken(request);
+    
+    if (!csrfToken || !validateCSRFToken(sessionId, csrfToken)) {
+      AISecurityLogger.logSuspiciousActivity('unknown', 'csrf_token_invalid', {
+        pathname,
+        hasToken: !!csrfToken,
+        sessionId: sessionId.substring(0, 8) + '...', // Log partial session ID
+        ip
+      });
+      return {
+        valid: false,
+        response: new NextResponse('Invalid CSRF token', { status: 403 })
+      };
+    }
+  }
+
   // High and critical security levels require authentication
   if (securityLevel === 'high' || securityLevel === 'critical') {
-    // Development mode bypass for testing (remove in production)
-    const isDevelopmentTesting = process.env.NODE_ENV === 'development' && 
-                                request.headers.get('x-test-user-id');
-    
-    let token: AuthToken | null = null;
-    
-    if (isDevelopmentTesting) {
-      // Create a mock token for testing purposes
-      const testUserId = request.headers.get('x-test-user-id');
-      const testUserRole = request.headers.get('x-test-user-role') || 'developer';
-      token = {
-        sub: testUserId,
-        id: testUserId,
-        role: testUserRole,
-        email: `test-${testUserId}@vibecode.dev`,
-        name: `Test User ${testUserId}`
-      };
-      console.log('🧪 Development testing mode: Using mock token', {
-        userId: token.id,
-        role: token.role,
-        endpoint: pathname
-      });
-    } else {
-      token = await getToken({
-        req: request,
-        secret: process.env.NEXTAUTH_SECRET
-      });
-    }
+    // SECURITY: Removed development authentication bypass to prevent production vulnerabilities
+    // All authentication must go through proper NextAuth channels
+    const token: AuthToken | null = await getToken({
+      req: request,
+      secret: process.env.NEXTAUTH_SECRET
+    });
 
     if (!token) {
       return {

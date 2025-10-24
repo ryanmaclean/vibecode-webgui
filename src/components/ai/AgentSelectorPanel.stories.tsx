@@ -58,11 +58,11 @@ type Story = StoryObj<typeof AgentSelectorPanel>
 export const Default: Story = {
   args: {
     onAgentSelect: (agentId: string) => {
-      console.log('Selected agent:', agentId)
+      console.info('Selected agent:', agentId)
       alert(`Selected: ${agentId}`)
     },
     onAgentStop: (agentId: string) => {
-      console.log('Stopped agent:', agentId)
+      console.info('Stopped agent:', agentId)
       alert(`Stopped: ${agentId}`)
     },
     activeAgents: [],

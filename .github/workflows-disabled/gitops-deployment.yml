@@ -2,7 +2,8 @@ name: GitOps Deployment Pipeline
 
 on:
   push:
-    branches: [main, develop]
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches: [main, develop]
     paths:
       - 'src/**'
       - 'package.json'
@@ -10,7 +11,8 @@ on:
       - 'infrastructure/**'
       - '.github/workflows/gitops-deployment.yml'
   pull_request:
-    branches: [main]
+    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+    # branches: [main]
     types: [opened, synchronize, reopened]
   workflow_dispatch:
     inputs:

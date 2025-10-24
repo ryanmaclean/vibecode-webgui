@@ -44,7 +44,7 @@ export class WorkspaceProvisioningService {
 
   constructor() {
     this.namespace = process.env.WORKSPACE_NAMESPACE || 'vibecode-workspaces'
-    console.log('🔧 WorkspaceProvisioningService initialized (simplified mode)')
+    console.info('🔧 WorkspaceProvisioningService initialized (simplified mode)')
   }
 
   /**
@@ -53,8 +53,8 @@ export class WorkspaceProvisioningService {
   async createWorkspace(request: WorkspaceRequest): Promise<WorkspaceStatus> {
     const validatedRequest = WorkspaceRequestSchema.parse(request)
     
-    console.log(`🚀 Creating workspace for project: ${validatedRequest.projectName}`)
-    console.log('⚠️ Using simplified workspace provisioning - full K8s integration pending')
+    console.info(`🚀 Creating workspace for project: ${validatedRequest.projectName}`)
+    console.info('⚠️ Using simplified workspace provisioning - full K8s integration pending')
 
     // Generate unique workspace ID
     const workspaceId = `ws-${validatedRequest.projectId}-${Date.now()}`
@@ -84,8 +84,8 @@ export class WorkspaceProvisioningService {
       expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000) // 24 hours
     }
 
-    console.log(`✅ Workspace created (simulated): ${workspaceId}`)
-    console.log(`🌐 Workspace URL: ${workspace.url}`)
+    console.info(`✅ Workspace created (simulated): ${workspaceId}`)
+    console.info(`🌐 Workspace URL: ${workspace.url}`)
     
     return workspace
   }
@@ -94,8 +94,8 @@ export class WorkspaceProvisioningService {
    * Get workspace status (simplified implementation)
    */
   async getWorkspaceStatus(workspaceId: string): Promise<WorkspaceStatus | null> {
-    console.log(`🔍 Getting workspace status: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace status - returning mock data')
+    console.info(`🔍 Getting workspace status: ${workspaceId}`)
+    console.info('⚠️ Using simplified workspace status - returning mock data')
 
     // Return mock status for now
     return {
@@ -124,21 +124,21 @@ export class WorkspaceProvisioningService {
    * Delete workspace (simplified implementation)
    */
   async deleteWorkspace(workspaceId: string): Promise<void> {
-    console.log(`🗑️ Deleting workspace: ${workspaceId}`)
-    console.log('⚠️ Using simplified workspace deletion - no actual resources deleted')
+    console.info(`🗑️ Deleting workspace: ${workspaceId}`)
+    console.info('⚠️ Using simplified workspace deletion - no actual resources deleted')
 
     // Simulate deletion delay
     await new Promise(resolve => setTimeout(resolve, 1000))
 
-    console.log(`✅ Workspace deleted (simulated): ${workspaceId}`)
+    console.info(`✅ Workspace deleted (simulated): ${workspaceId}`)
   }
 
   /**
    * List all workspaces (simplified implementation)
    */
   async listWorkspaces(): Promise<WorkspaceStatus[]> {
-    console.log('📋 Listing workspaces')
-    console.log('⚠️ Using simplified workspace listing - returning empty list')
+    console.info('📋 Listing workspaces')
+    console.info('⚠️ Using simplified workspace listing - returning empty list')
 
     return []
   }

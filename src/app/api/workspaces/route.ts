@@ -6,8 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { createProblemDetailsFromError, ErrorResponses } from '@/lib/api-utils'
-import { logger } from '@/lib/logger'
+import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
+// import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
   projectName: z.string(),
@@ -30,25 +30,23 @@ export async function POST(request: NextRequest) {
   }
 
   try {
-    logger.info('Workspace creation API called', logContext)
+    console.info('🚀 Workspace creation API called')
 
     // Parse and validate request
     const body = await request.json()
     const validatedRequest = CreateWorkspaceRequestSchema.parse(body)
 
-    logger.info('Creating workspace for project', { 
-      ...logContext, 
-      projectName: validatedRequest.projectName,
-      framework: validatedRequest.framework,
-      userId: validatedRequest.userId
-    })
+    console.info(`📝 Creating workspace for project: "${validatedRequest.projectName}"`)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      logger.error('Kubernetes not configured for workspace creation', logContext)
-      return ErrorResponses.serviceUnavailable(
-        'Kubernetes cluster not configured. Please deploy to AKS first.',
-        requestId
+      console.error('❌ Kubernetes not configured')
+      return NextResponse.json(
+        { 
+          error: 'Workspace service not available',
+          message: 'Kubernetes cluster not configured. Please deploy to AKS first.'
+        },
+        { status: 503 }
       )
     }
 
@@ -59,14 +57,9 @@ export async function POST(request: NextRequest) {
     const workspace = await workspaceService.createWorkspace(validatedRequest)
     const creationTime = Date.now() - startTime
 
-    logger.info('Workspace created successfully', { 
-      ...logContext,
-      creationTime,
-      workspaceUrl: workspace.url,
-      resources: workspace.resources
-    })
-
-    logger.performance('workspace-creation', creationTime, logContext)
+    console.info(`✅ Workspace created successfully in ${creationTime}ms`)
+    console.info(`🌐 Workspace URL: ${workspace.url}`)
+    console.info(`📊 Resources: ${JSON.stringify(workspace.resources)}`)
 
     // Return workspace details
     return NextResponse.json({
@@ -81,13 +74,7 @@ export async function POST(request: NextRequest) {
     })
 
   } catch (error) {
-    const creationTime = Date.now() - startTime
-    
-    logger.error('Workspace creation failed', { 
-      ...logContext, 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      creationTime
-    })
+    console.error('❌ Workspace creation failed:', error)
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
@@ -203,18 +190,11 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    const responseTime = Date.now() - startTime
-    
-    logger.error('Failed to get workspace info', { 
-      ...logContext, 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      responseTime
-    })
-    
-    return createProblemDetailsFromError(error, 500, {
-      instance: `/api/workspaces${workspaceId ? `?id=${workspaceId}` : ''}`,
-      traceId: requestId,
-      fallbackTitle: 'Workspace service error'
+    console.error('❌ Failed to get workspace info:', error)
+    return createErrorResponse('Service error', 500, {
+      available: false,
+      reason: 'Service error',
+      details: getErrorMessage(error)
     })
   }
 }

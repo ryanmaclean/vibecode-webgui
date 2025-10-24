@@ -103,7 +103,7 @@ class RUMMonitoring {
       }
 
       this.initialized = true;
-      console.log('[RUM] Datadog RUM initialized successfully', {
+      console.info('[RUM] Datadog RUM initialized successfully', {
         service: rumConfig.service,
         env: rumConfig.env,
         version: rumConfig.version

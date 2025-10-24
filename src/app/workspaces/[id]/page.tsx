@@ -284,7 +284,7 @@ export default function WorkspacePage() {
               <div className="mb-2">{/* VibeCode E2E Test Environment */}</div>
               <div className="mb-2">{/* Workspace: {workspace.name} */}</div>
               <div className="mb-2">{/* Files: {files.length} */}</div>
-              <div className="mb-4">console.log(&apos;E2E testing workspace ready&apos;);</div>
+              <div className="mb-4">console.info(&apos;E2E testing workspace ready&apos;);</div>
 {selectedFile && (
                 <div>
                   <div className="text-blue-400">{/* {selectedFile} */}</div>

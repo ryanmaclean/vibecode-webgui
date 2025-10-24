@@ -156,7 +156,7 @@ export class DatabaseTracing {
         };
 
         // Send to Datadog (would use actual Datadog client)
-        console.log('Sending trace to Datadog:', datadogSpan.trace_id);
+        console.info('Sending trace to Datadog:', datadogSpan.trace_id);
     }
 
     private exportToOpenTelemetry(span: TraceSpan): void {
@@ -172,7 +172,7 @@ export class DatabaseTracing {
             status: span.status
         };
 
-        console.log('Sending trace to OpenTelemetry:', otelSpan.traceId);
+        console.info('Sending trace to OpenTelemetry:', otelSpan.traceId);
     }
 
     getActiveTraces(): TraceSpan[] {

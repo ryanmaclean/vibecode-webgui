@@ -15,11 +15,7 @@ import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
-// import { logger } from '@/lib/logger'
-import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware'
-import { fileSyncQuerySchema, fileSyncBulkSchema, fileSyncFileSchema } from '@/lib/api/validation/schemas'
-import path from 'path'
-
+// import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -213,33 +209,20 @@ async function createFilesInWorkspace(
     kubectl.stdin.write(JSON.stringify(podSpec))
     kubectl.stdin.end()
 
-    let stdout = ''
-    let stderr = ''
+  kubectl.stdout.on('data', (data: Buffer) => {
+    console.info(`kubectl stdout: ${data}`)
+  })
 
-    kubectl.stdout.on('data', (data: Buffer) => {
-      stdout += data.toString()
-      console.log(`kubectl stdout: ${data}`)
-    })
+  kubectl.stderr.on('data', (data: Buffer) => {
+    console.error(`kubectl stderr: ${data}`)
+  })
 
-    kubectl.stderr.on('data', (data: Buffer) => {
-      stderr += data.toString()
-      console.error(`kubectl stderr: ${data}`)
-    })
-
-    kubectl.on('close', (code: number) => {
-      if (code !== 0) {
-        console.error(`kubectl process exited with code ${code}: ${stderr}`)
-        reject(new Error(`kubectl failed with code ${code}`))
-      } else {
-        console.log('File creation pod applied successfully')
-        resolve()
-      }
-    })
-
-    kubectl.on('error', (error: Error) => {
-      console.error('kubectl spawn error:', error)
-      reject(error)
-    })
+  kubectl.on('close', (code: number) => {
+    if (code !== 0) {
+      console.error(`kubectl process exited with code ${code}`)
+    } else {
+      console.info('File creation pod applied successfully')
+    }
   })
 }
 
@@ -251,7 +234,7 @@ declare global {
 // Initialize WebSocket server if it doesn't exist
 if (!global.wss) {
   global.wss = new WebSocketServer({ noServer: true })
-  console.log('WebSocket server initialized')
+  console.info('WebSocket server initialized')
 
   global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)

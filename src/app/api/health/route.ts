@@ -7,12 +7,8 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
-import { logger } from '@/lib/logger'
-import { ErrorResponses } from '@/lib/api-utils'
-import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
-import { validateQueryParams } from '@/lib/api/validation/middleware'
-
-export async function GET(request: NextRequest) {
+// import { logger } from '@/lib/logger';
+export async function GET(_request: NextRequest) {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
   const clientIp = request.headers.get('x-forwarded-for') ||
@@ -96,11 +92,10 @@ export async function GET(request: NextRequest) {
       }, { status: 503 })
     }
 
-    logger.info('Health check completed successfully', { 
-      ...logContext, 
-      healthStatus: 'healthy',
-      responseTime
-    })
+    return NextResponse.json(healthCheckResponse, { status: 200 })
+
+  } catch (error) {
+    console.error('Health check error:', error)
 
     return NextResponse.json({
       ...healthCheckResponse,

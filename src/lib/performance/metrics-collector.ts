@@ -5,7 +5,7 @@
 
 import { metrics } from '../server-monitoring';
 import { cache, CacheKeys, CacheTTL } from '../cache/valkey-client';
-// import { logger } from '../logger';
+// // // import { logger } from '../logger';
 
 
 export interface PerformanceMetric {
@@ -294,7 +294,7 @@ export class PerformanceCollector {
       const cacheKey = `metrics:recent:${Date.now()}`;
       await cache.set(cacheKey, metrics, CacheTTL.HOUR);
       
-      console.log(`Flushed ${metrics.length} performance metrics`);
+      console.info(`Flushed ${metrics.length} performance metrics`);
     } catch (error) {
       console.error('Failed to flush metrics:', { error: error });
     }
@@ -313,7 +313,7 @@ export class PerformanceCollector {
       const cacheKey = `webvitals:recent:${Date.now()}`;
       await cache.set(cacheKey, vitals, CacheTTL.HOUR);
       
-      console.log(`Flushed ${vitals.length} Web Vitals metrics`);
+      console.info(`Flushed ${vitals.length} Web Vitals metrics`);
     } catch (error) {
       console.error('Failed to flush Web Vitals:', { error: error });
     }
@@ -332,7 +332,7 @@ export class PerformanceCollector {
       const cacheKey = `api_metrics:recent:${Date.now()}`;
       await cache.set(cacheKey, apiMetrics, CacheTTL.HOUR);
       
-      console.log(`Flushed ${apiMetrics.length} API metrics`);
+      console.info(`Flushed ${apiMetrics.length} API metrics`);
     } catch (error) {
       console.error('Failed to flush API metrics:', { error: error });
     }
@@ -496,12 +496,12 @@ export function trackAIOperation(
 
 // Graceful shutdown
 process.on('SIGTERM', () => {
-  console.log('Shutting down performance collector...');
+  console.info('Shutting down performance collector...');
   performanceCollector.stopBufferFlush();
 });
 
 process.on('SIGINT', () => {
-  console.log('Shutting down performance collector...');
+  console.info('Shutting down performance collector...');
   performanceCollector.stopBufferFlush();
 });
 

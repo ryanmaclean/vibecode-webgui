@@ -82,7 +82,7 @@ export class QueryCache extends EventEmitter {
     }
 
     this.startCleanupTimer()
-    console.log('🚀 Query cache initialized with config:', {
+    console.info('🚀 Query cache initialized with config:', {
       maxSize: `${this.config.maxSize / 1024 / 1024}MB`,
       maxEntries: this.config.maxEntries,
       defaultTTL: `${this.config.defaultTTL / 1000}s`
@@ -286,13 +286,13 @@ export class QueryCache extends EventEmitter {
     value: any
     options?: any
   }>): Promise<void> {
-    console.log(`🔥 Warming up cache with ${warmUpData.length} entries...`)
+    console.info(`🔥 Warming up cache with ${warmUpData.length} entries...`)
     
     for (const item of warmUpData) {
       await this.set(item.key, item.value, item.options)
     }
     
-    console.log(`✅ Cache warmed up successfully`)
+    console.info(`✅ Cache warmed up successfully`)
   }
 
   /**
@@ -354,7 +354,7 @@ export class QueryCache extends EventEmitter {
     }
 
     if (cleanedCount > 0) {
-      console.log(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
+      console.info(`🧹 Cleaned up ${cleanedCount} expired cache entries`)
       this.updateMetrics()
     }
   }
@@ -376,7 +376,7 @@ export class QueryCache extends EventEmitter {
       clearInterval(this.cleanupTimer)
     }
     this.clear()
-    console.log('🛑 Query cache destroyed')
+    console.info('🛑 Query cache destroyed')
   }
 
   /**

@@ -78,7 +78,7 @@ export class MetaplaneDataObservability {
     this.pipelines.set(pipeline.name, pipeline)
 
     // Send pipeline registration to Datadog
-    datadogLogs.logger.info('Data pipeline registered', {
+    datadogLogs.console.info('Data pipeline registered', {
       pipeline: pipeline.name,
       source: pipeline.source,
       destination: pipeline.destination,
@@ -179,7 +179,7 @@ export class MetaplaneDataObservability {
         suggestedAction: anomaly.suggested_action || 'Review data pipeline configuration'
       }))
     } catch (error) {
-      datadogLogs.logger.error('AI anomaly detection failed', {
+      datadogLogs.console.error('AI anomaly detection failed', {
         error: error.message,
         pipeline: pipelineName,
         service: 'metaplane-integration'
@@ -452,7 +452,7 @@ export class MetaplaneDataObservability {
       }
 
       // Log metrics for debugging
-      datadogLogs.logger.info('Data observability metrics sent', {
+      datadogLogs.console.info('Data observability metrics sent', {
         pipeline: metrics.pipeline,
         quality_score: metrics.qualityScore,
         anomalies: metrics.anomalies.length,
@@ -460,7 +460,7 @@ export class MetaplaneDataObservability {
         service: 'metaplane-integration'
       })
     } catch (error) {
-      datadogLogs.logger.error('Failed to send metrics to Datadog', {
+      datadogLogs.console.error('Failed to send metrics to Datadog', {
         error: error.message,
         pipeline: metrics.pipeline,
         service: 'metaplane-integration'

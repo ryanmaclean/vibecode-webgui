@@ -127,10 +127,10 @@ class VectorDBConnectionPool {
         
         if (currentLoad > totalConnections * 0.8 && totalConnections < maxConnections) {
             // Scale up if load is high and we haven't reached max
-            console.log('High load detected, pool will auto-scale up');
+            console.info('High load detected, pool will auto-scale up');
         } else if (currentLoad === 0 && this.metrics.idleConnections > (this.config.pool?.min ?? 2)) {
             // Scale down if no waiting clients and many idle connections
-            console.log('Low load detected, pool will naturally scale down');
+            console.info('Low load detected, pool will naturally scale down');
         }
     }
 

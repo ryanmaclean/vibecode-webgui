@@ -4,7 +4,7 @@
  */
 
 import { litellmClient } from '../../lib/ai/litellm-client.js';
-// import { logger } from '../../lib/logger.js';
+// import { logger } from '../../lib/console.js';
 import type { GenerateCodeArgs } from '../types.js';
 
 /**
@@ -77,7 +77,7 @@ Focus on clarity, maintainability, and correctness.`;
       userPrompt += `\n\nAdditional context:\n${JSON.stringify(context, null, 2)}`;
     }
 
-    console.log('Code generation request', {
+    console.info('Code generation request', {
       language,
       promptLength: prompt.length,
       hasContext: !!context,
@@ -112,7 +112,7 @@ Focus on clarity, maintainability, and correctness.`;
     // Separate explanation from code
     const explanation = generatedCode.replace(/```[\w]*\n[\s\S]*?```/g, '').trim();
 
-    console.log('Code generation completed', {
+    console.info('Code generation completed', {
       language,
       durationMs: duration,
       inputTokens: response.usage.prompt_tokens,

@@ -27,22 +27,22 @@ export class WorkspaceServiceFactory {
     try {
       const isAppleContainerAvailable = await appleContainer.isAvailable()
       if (isAppleContainerAvailable) {
-        console.log('✅ Detected runtime: Apple Container')
+        console.info('✅ Detected runtime: Apple Container')
         this.cachedRuntime = 'apple-container'
         return 'apple-container'
       }
     } catch (error) {
-      console.log('⚠️  Apple Container not available:', error)
+      console.info('⚠️  Apple Container not available:', error)
     }
 
     // Check for Kubernetes
     if (process.env.KUBECONFIG || process.env.KUBERNETES_SERVICE_HOST) {
-      console.log('✅ Detected runtime: Kubernetes')
+      console.info('✅ Detected runtime: Kubernetes')
       this.cachedRuntime = 'kubernetes'
       return 'kubernetes'
     }
 
-    console.log('❌ No workspace runtime available')
+    console.info('❌ No workspace runtime available')
     this.cachedRuntime = 'none'
     return 'none'
   }

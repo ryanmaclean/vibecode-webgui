@@ -215,7 +215,7 @@ function processUserInput(input: string) {
 
 function addEventListener() {
   document.addEventListener('click', function() {
-    console.log('clicked');
+    console.info('clicked');
   });
 }`);
 
@@ -346,9 +346,9 @@ export function UserProfile({ user, onEdit }: UserProfileProps) {
 }
 
 // Usage examples
-console.log(validateEmail('user@example.com')); // true
-console.log(validateEmail('invalid-email')); // false
-console.log(validateEmail('user@domain')); // false`,
+console.info(validateEmail('user@example.com')); // true
+console.info(validateEmail('invalid-email')); // false
+console.info(validateEmail('user@domain')); // false`,
         tests: `test('validateEmail should validate correct emails', () => {
   expect(validateEmail('user@example.com')).toBe(true);
   expect(validateEmail('test.user@domain.co.uk')).toBe(true);

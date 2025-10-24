@@ -8,9 +8,25 @@
 import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
 // import { logger } from '@/lib/logger';
-import { monitoringQuerySchema, monitoringMetricsBodySchema, monitoringHistoricalSchema } from '@/lib/api/validation/schemas';
-import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware';
+import { z } from '@/lib/zod-compat';
 
+// Zod validation schemas
+const performanceMetricsSchema = z.object({
+  type: z.literal('performance'),
+  duration: z.number().min(0).max(300000), // Max 5 minutes
+  metrics: z.record(z.any()).optional()
+}).strict()
+
+const errorMetricsSchema = z.object({
+  type: z.literal('error'),
+  metrics: z.record(z.any())
+}).strict()
+
+const historicalMetricsSchema = z.object({
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  metricTypes: z.array(z.string()).optional()
+}).strict()
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
   try {
@@ -247,14 +263,14 @@ async function performHealthChecks(): Promise<boolean> {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body
-    const validation = await validateRequestBody(request, monitoringMetricsBodySchema);
-    if (!validation.success) {
-      return validation.error;
-    }
-    const { type, duration, metrics } = validation.data;
-
-    if (type === 'performance') {
+    const body = await request.json();
+    
+    // Validate request body with Zod
+    const performanceValidation = performanceMetricsSchema.safeParse(body);
+    const errorValidation = errorMetricsSchema.safeParse(body);
+    
+    if (performanceValidation.success) {
+      const { duration, metrics } = performanceValidation.data;
       // Store performance metrics
       await storePerformanceMetrics(duration, metrics);
 
@@ -263,8 +279,9 @@ export async function POST(request: NextRequest) {
         message: 'Performance metrics stored'
       });
     }
-
-    if (type === 'error') {
+    
+    if (errorValidation.success) {
+      const { metrics } = errorValidation.data;
       // Log error metrics
       await logErrorMetrics(metrics);
 
@@ -275,7 +292,11 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { error: 'Invalid metrics type' },
+      { 
+        error: 'Invalid metrics type or format',
+        details: performanceValidation.success ? [] : performanceValidation.error.errors,
+        details2: errorValidation.success ? [] : errorValidation.error.errors
+      },
       { status: 400 }
     );
 
@@ -293,7 +314,7 @@ export async function POST(request: NextRequest) {
  */
 async function storePerformanceMetrics(duration: number, metrics: Record<string, unknown>): Promise<void> {
   // This would integrate with your metrics storage system (Datadog, Prometheus, etc.)
-  console.log('Performance metrics:', { duration, metrics, timestamp: new Date() });
+  console.info('Performance metrics:', { duration, metrics, timestamp: new Date() });
 }
 
 /**
@@ -309,11 +330,25 @@ async function logErrorMetrics(metrics: Record<string, unknown>): Promise<void> 
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Validate request body
-    const validation = await validateRequestBody(request, monitoringHistoricalSchema);
+    const body = await request.json();
+    
+    // Validate request body with Zod
+    const validation = historicalMetricsSchema.safeParse(body);
+    
     if (!validation.success) {
-      return validation.error;
+      return NextResponse.json(
+        { 
+          error: 'Invalid request format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
+      );
     }
+    const { startTime, endTime, metricTypes } = validation.data;
+
     const { startTime, endTime, metricTypes } = validation.data;
 
     // Get historical metrics from storage

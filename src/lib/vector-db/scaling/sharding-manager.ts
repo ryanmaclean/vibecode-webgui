@@ -211,7 +211,7 @@ export class VectorShardingManager {
       this.addShard(shard);
     }
     
-    this.console.log(`Initialized sharding manager with ${defaultShards.length} shards`);
+    this.console.info(`Initialized sharding manager with ${defaultShards.length} shards`);
   }
   
   /**
@@ -220,7 +220,7 @@ export class VectorShardingManager {
   public addShard(shard: ShardInfo): void {
     this.shardMap.set(shard.id, shard);
     this.consistentHashRing.addShard(shard);
-    this.console.log(`Added shard ${shard.id} to sharding manager`);
+    this.console.info(`Added shard ${shard.id} to sharding manager`);
   }
   
   /**
@@ -231,7 +231,7 @@ export class VectorShardingManager {
     if (shard) {
       this.shardMap.delete(shardId);
       this.consistentHashRing.removeShard(shardId);
-      this.console.log(`Removed shard ${shardId} from sharding manager`);
+      this.console.info(`Removed shard ${shardId} from sharding manager`);
     }
   }
   

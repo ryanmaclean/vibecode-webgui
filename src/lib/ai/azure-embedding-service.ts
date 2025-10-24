@@ -81,7 +81,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
         max: 10
       }, 'azure-embedding-vector-pool');
       
-      console.log(`Initialized vector connection pool for Azure embedding service`);
+      console.info(`Initialized vector connection pool for Azure embedding service`);
     }
   }
   
@@ -133,7 +133,7 @@ export class AzureEmbeddingService extends BaseEmbeddingService {
       if (this.vectorPool) {
         const cachedEmbedding = await this.retrieveEmbedding(text);
         if (cachedEmbedding) {
-          console.log('Retrieved embedding from cache');
+          console.info('Retrieved embedding from cache');
           return cachedEmbedding;
         }
       }

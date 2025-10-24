@@ -517,7 +517,7 @@ export class OptimizedWebSocketClient {
       this.recordMetric('backpressure_start')
 
       if (this.config.debug) {
-        console.log('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
+        console.info('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
       }
     }
 
@@ -529,7 +529,7 @@ export class OptimizedWebSocketClient {
       this.flushSendBuffer()
 
       if (this.config.debug) {
-        console.log('[OptimizedWebSocketClient] Backpressure cleared')
+        console.info('[OptimizedWebSocketClient] Backpressure cleared')
       }
     }
   }

@@ -51,7 +51,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       // this.database = this.client.database(this.connectionConfig.databaseId);
       // this.container = this.database.container(this.connectionConfig.containerId);
       
-      console.log('Mock Cosmos DB connection established');
+      console.info('Mock Cosmos DB connection established');
       this.isConnectionActive = true;
       return true;
     } catch (error) {
@@ -75,7 +75,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
       //   this.container = null;
       // }
       
-      console.log('Mock Cosmos DB connection closed');
+      console.info('Mock Cosmos DB connection closed');
       this.isConnectionActive = false;
     } catch (error) {
       console.error('Error disconnecting from Cosmos DB:', error);
@@ -97,7 +97,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.log(`Mock storing ${chunks.length} vectors for file ${fileId} in Cosmos DB`);
+      console.info(`Mock storing ${chunks.length} vectors for file ${fileId} in Cosmos DB`);
       
       // Process chunks in batches to avoid rate limits
       const batchSize = 5;
@@ -126,7 +126,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
           //   partitionKey: fileId.toString()
           // });
           
-          console.log(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Cosmos DB`);
+          console.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Cosmos DB`);
         }
         
         // Small delay to respect rate limits
@@ -184,10 +184,10 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
         }
       }
 
-      console.log(`Mock searching for similar vectors with ${embedding.length} dimensions in Cosmos DB`);
-      console.log(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
+      console.info(`Mock searching for similar vectors with ${embedding.length} dimensions in Cosmos DB`);
+      console.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
       if (fileIds?.length) {
-        console.log(`Filtering by file IDs: ${fileIds.join(', ')}`);
+        console.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
       }
       
       // In a real implementation, we would use a Cosmos DB query like this:
@@ -285,7 +285,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.log(`Mock deleting vectors for file ${fileId} from Cosmos DB`);
+      console.info(`Mock deleting vectors for file ${fileId} from Cosmos DB`);
       
       // In a real implementation, we would delete items like this:
       // const querySpec = {
@@ -314,7 +314,7 @@ export class CosmosDBVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.log(`Mock updating vector ${id} with ${embedding.length} dimensions in Cosmos DB`);
+      console.info(`Mock updating vector ${id} with ${embedding.length} dimensions in Cosmos DB`);
       
       // In a real implementation, we would read the item, update it, and replace it
       // const { resource: item } = await this.container.item(id.toString()).read();

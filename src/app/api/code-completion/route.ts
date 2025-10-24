@@ -4,6 +4,7 @@ import OpenAI from 'openai'
 // import { logger } from '../../../lib/logger'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { loadSecret } from '@/lib/security/macos-keychain'
 
 // Code completion request validation schema
 const codeCompletionSchema = z.object({
@@ -348,9 +349,10 @@ async function callOpenCode(metadata: CompletionMetadata, modelOverride?: string
 }
 
 async function callClaude(metadata: CompletionMetadata, modelOverride?: string): Promise<CompletionResult> {
-  const apiKey = process.env.CLAUDE_CODE_API_KEY || process.env.ANTHROPIC_API_KEY
+  const apiKey = loadSecret('CLAUDE_CODE_API_KEY') || loadSecret('ANTHROPIC_API_KEY') || 
+                 process.env.CLAUDE_CODE_API_KEY || process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
-    throw new Error('CLAUDE_CODE_API_KEY (or ANTHROPIC_API_KEY) is required for Claude provider')
+    throw new Error('CLAUDE_CODE_API_KEY (or ANTHROPIC_API_KEY) is required for Claude provider. Set in keychain or environment variable.')
   }
 
   const model = modelOverride || process.env.CLAUDE_CODE_MODEL || 'claude-3.5-sonnet-20240620'
@@ -482,8 +484,10 @@ async function callAnthropicDirect(
   metadata: CompletionMetadata,
   modelOverride?: string,
 ): Promise<CompletionResult> {
-  if (!process.env.ANTHROPIC_API_KEY && !process.env.CLAUDE_CODE_API_KEY) {
-    throw new Error('ANTHROPIC_API_KEY (or CLAUDE_CODE_API_KEY) is required for anthropic provider')
+  const apiKey = loadSecret('ANTHROPIC_API_KEY') || loadSecret('CLAUDE_CODE_API_KEY') ||
+                 process.env.ANTHROPIC_API_KEY || process.env.CLAUDE_CODE_API_KEY
+  if (!apiKey) {
+    throw new Error('ANTHROPIC_API_KEY (or CLAUDE_CODE_API_KEY) is required for anthropic provider. Set in keychain or environment variable.')
   }
 
   return callClaude(metadata, modelOverride || process.env.ANTHROPIC_MODEL)

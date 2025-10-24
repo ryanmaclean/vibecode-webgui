@@ -22,7 +22,7 @@ setInterval(() => {
 
   for (const [sessionId, session] of terminalSessions.entries()) {
     if (session.lastActivity < thirtyMinutesAgo) {
-      console.log(`Cleaning up inactive terminal session: ${sessionId}`)
+      console.info(`Cleaning up inactive terminal session: ${sessionId}`)
       session.pty.kill()
       terminalSessions.delete(sessionId)
     }

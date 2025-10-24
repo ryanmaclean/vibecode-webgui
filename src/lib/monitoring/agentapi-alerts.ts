@@ -234,7 +234,7 @@ export async function deployAlertRules(
         console.error(`❌ Failed to create alert: ${rule.name}`, error);
       } else {
         results.created++;
-        console.log(`✅ Created alert: ${rule.name}`);
+        console.info(`✅ Created alert: ${rule.name}`);
       }
     } catch (error) {
       results.failed++;
