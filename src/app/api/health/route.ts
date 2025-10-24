@@ -71,7 +71,7 @@ export async function GET(request: NextRequest) {
     )
 
     // Log performance
-    logger.performance('health-check', responseTime, logContext)
+    // logger.performance('health-check', responseTime, logContext)
 
     // Determine overall health status
     const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
