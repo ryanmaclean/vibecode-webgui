@@ -31,10 +31,17 @@ import {
   getThreadManager,
   initializeThreadManager,
 } from '@/lib/agents/thread-manager'
-// import { console } from '@/lib/logger'
+// import { createLogger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 
-const logger = console
+// Use console directly for logging
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.debug,
+  log: console.log
+}
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'

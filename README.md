@@ -37,6 +37,37 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 🐳 **Docker Support** - Full containerization with development environment
 🔧 **TypeScript** - Full type safety with strict configuration
 
+## 🚀 GenAI Development VM
+
+We've set up a **dedicated GenAI VM** with all major AI coding tools for isolated development:
+
+### Quick Access
+```bash
+# Access the GenAI VM locally
+limactl shell vibecode-minimal
+
+# Remote access via Tailscale
+ssh studio@100.81.117.81
+```
+
+### Installed AI Tools
+- ✅ **Claude Code CLI** (`claude`) - v2.0.26
+- ✅ **OpenAI Codex CLI** (`codex`) - v0.48.0  
+- ✅ **just-every/code** (`coder`) - v0.2.188
+- ✅ **Google Gemini CLI** (`gemini`) - v0.10.0
+- ✅ **OpenCode** (`opencode`) - v0.15.16
+- ✅ **Aider** (`aider`) - Python AI assistant
+
+### Benefits
+- **Secure Isolation**: AI tools run in separate VM
+- **Cross-Platform Access**: Available via Tailscale from any device
+- **No Docker Desktop**: Uses native macOS virtualization (Lima)
+- **All Tools Ready**: Pre-installed and configured
+
+📖 **Full Documentation**: [GenAI VM Setup Guide](docs/genai-vm-setup.md)
+
+---
+
 ## Quick Start
 
 ### Prerequisites
