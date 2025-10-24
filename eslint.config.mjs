@@ -27,6 +27,7 @@ export default [
         Event: 'readonly',
         SVGSVGElement: 'readonly',
         SVGElement: 'readonly',
+        self: 'readonly',
         // Node.js globals
         process: 'readonly',
         Buffer: 'readonly',
@@ -57,7 +58,7 @@ export default [
       '@typescript-eslint/no-explicit-any': 'warn',
       'no-console': 'warn',
       'no-unused-vars': 'off',
-      'no-useless-escape': 'off', // Turn off to avoid regex escape issues
+      'no-useless-escape': 'off',
     },
   },
   {
