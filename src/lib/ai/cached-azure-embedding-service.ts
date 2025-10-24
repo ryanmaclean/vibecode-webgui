@@ -6,7 +6,7 @@
 import { AzureEmbeddingService } from './azureEmbeddingService'
 import { vectorCacheAdapter } from '../cache/vector-cache-adapter'
 import { PrismaClient } from '@prisma/client'
-// import { logger } from '@/lib/logger';
+
 interface CachedEmbeddingOptions {
   dimensions?: number
   user?: string
@@ -34,7 +34,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     this.cacheEnabled = enableCache
     
     if (enableCache) {
-      console.info('🚀 Cached Azure Embedding Service initialized with caching enabled')
+      console.log('🚀 Cached Azure Embedding Service initialized with caching enabled')
     }
   }
 
@@ -64,9 +64,9 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
 
       // Log cache performance for monitoring
       if (result.cached) {
-        console.info(`📦 Embedding cache hit - saved API call for "${text.substring(0, 30)}..."`)
+        console.log(`📦 Embedding cache hit - saved API call for "${text.substring(0, 30)}..."`)
       } else {
-        console.info(`🔥 Embedding generated and cached for "${text.substring(0, 30)}..."`)
+        console.log(`🔥 Embedding generated and cached for "${text.substring(0, 30)}..."`)
       }
 
       return result.embedding
@@ -75,7 +75,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
       console.error('Cached embedding generation error:', error)
       
       // Fallback to direct generation if cache fails
-      console.info('🔄 Falling back to direct embedding generation')
+      console.log('🔄 Falling back to direct embedding generation')
       return super.generateEmbedding(text, options)
     }
   }
@@ -87,7 +87,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     texts: string[], 
     options: CachedEmbeddingOptions = {}
   ): Promise<{ text: string; embedding: number[]; cached: boolean }[]> {
-// Process texts in parallel for better performance
+    // Process texts in parallel for better performance
     const promises = texts.map(async (text) => {
       try {
         if (!this.cacheEnabled || options.skipCache) {
@@ -124,7 +124,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     // Log batch statistics
     const cachedCount = batchResults.filter(r => r.cached).length
     const totalCount = batchResults.length
-    console.info(`📊 Batch embedding generation: ${cachedCount}/${totalCount} from cache (${Math.round((cachedCount/totalCount) * 100)}% hit rate)`)
+    console.log(`📊 Batch embedding generation: ${cachedCount}/${totalCount} from cache (${Math.round((cachedCount/totalCount) * 100)}% hit rate)`)
 
     return batchResults
   }
@@ -136,7 +136,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     commonTexts: string[], 
     options: CachedEmbeddingOptions = {}
   ): Promise<void> {
-    console.info(`🔥 Preloading ${commonTexts.length} common embeddings into cache...`)
+    console.log(`🔥 Preloading ${commonTexts.length} common embeddings into cache...`)
     
     const batchResults = await this.generateEmbeddingsBatch(commonTexts, {
       ...options,
@@ -144,14 +144,14 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
     })
     
     const newlyGenerated = batchResults.filter(r => !r.cached).length
-    console.info(`✅ Preload complete: ${newlyGenerated} new embeddings generated and cached`)
+    console.log(`✅ Preload complete: ${newlyGenerated} new embeddings generated and cached`)
   }
 
   /**
    * Clear embedding cache for this service
    */
   public async clearEmbeddingCache(): Promise<number> {
-    console.info('🗑️ Clearing embedding cache for Azure service...')
+    console.log('🗑️ Clearing embedding cache for Azure service...')
     return vectorCacheAdapter.invalidateByTag('azure-embedding')
   }
 
@@ -167,7 +167,7 @@ export class CachedAzureEmbeddingService extends AzureEmbeddingService {
    */
   public setCacheEnabled(enabled: boolean): void {
     this.cacheEnabled = enabled
-    console.info(`Cache ${enabled ? 'enabled' : 'disabled'} for Azure Embedding Service`)
+    console.log(`Cache ${enabled ? 'enabled' : 'disabled'} for Azure Embedding Service`)
   }
 
   /**

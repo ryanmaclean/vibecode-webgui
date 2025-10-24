@@ -5,7 +5,7 @@
 
 import { Pool, PoolClient } from 'pg';
 import { VectorChunk, SearchResult, SearchOptions } from '../../vector-db/vector-types';
-// import { logger } from '@/lib/logger';
+
 export interface PGVectorConfig {
   host: string;
   port: number;
@@ -60,7 +60,7 @@ export class PGVectorClient {
       // Create vector extension if it doesn't exist
       await this.ensureVectorExtension();
 
-      console.info('PGVector client initialized successfully');
+      console.log('PGVector client initialized successfully');
     } catch (error) {
       console.error('Failed to initialize PGVector client:', error);
       throw error;
@@ -102,7 +102,7 @@ export class PGVectorClient {
       `);
 
       if (result.rows.length === 0) {
-        console.info('Creating vector extension...');
+        console.log('Creating vector extension...');
         await client.query('CREATE EXTENSION IF NOT EXISTS vector;');
       }
     } catch (error) {
@@ -142,7 +142,7 @@ export class PGVectorClient {
 
       await client.query(indexQuery);
 
-      console.info(`Created collection: ${schema.name}`);
+      console.log(`Created collection: ${schema.name}`);
     } catch (error) {
       console.error(`Failed to create collection ${schema.name}:`, error);
       throw error;

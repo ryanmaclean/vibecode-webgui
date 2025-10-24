@@ -7,7 +7,7 @@
 import { BaseAgentAdapter, AgentCapabilities, AgentSession, AgentResult } from './base-adapter';
 import { createAgentAPIClient } from '../agentapi-client';
 import type { AgentConfig } from './base-adapter';
-// import { logger } from '@/lib/logger';
+
 export class AiderAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;
@@ -111,7 +111,7 @@ export class AiderAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.info(`[Aider] ${data.line}`);
+          console.log(`[Aider] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {
