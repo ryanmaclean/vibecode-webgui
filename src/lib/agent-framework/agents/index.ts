@@ -1,7 +1,6 @@
 // Specialized agent implementations
 
-import { Agent, type AgentOptions } from '..';
-import type { ToolDefinition } from '..';
+import { Agent, type AgentOptions, type ToolDefinition } from '../core';
 import { builtInTools } from '../tools';
 
 export interface CodeAgentOptions extends AgentOptions {
