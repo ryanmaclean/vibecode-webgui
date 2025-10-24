@@ -1,5 +1,6 @@
 # Dockerfile for development with Tailwind v4 support
 FROM node:20-slim
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Set working directory
 WORKDIR /app

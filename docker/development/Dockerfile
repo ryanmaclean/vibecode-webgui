@@ -1,5 +1,6 @@
 # Development container for Next.js application
 FROM node:18-alpine
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install dependencies for native modules
 RUN apk add --no-cache \

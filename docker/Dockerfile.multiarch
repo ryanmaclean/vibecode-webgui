@@ -11,6 +11,7 @@ ARG ALPINE_VERSION=3.19
 # Base Stage - Platform-agnostic
 # =====================================
 FROM node:${NODE_VERSION}-alpine${ALPINE_VERSION} AS base
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install essential build dependencies
 RUN apk add --no-cache \

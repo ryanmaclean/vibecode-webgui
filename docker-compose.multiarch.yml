@@ -57,6 +57,7 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER=true
+      - NEXT_TELEMETRY_DISABLED=1
     volumes:
       # Full source code mount for development
       - .:/app

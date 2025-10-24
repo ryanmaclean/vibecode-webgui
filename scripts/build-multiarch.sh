@@ -16,7 +16,8 @@ NC='\033[0m' # No Color
 REGISTRY=${REGISTRY:-""}
 IMAGE_NAME=${IMAGE_NAME:-"vibecode-webgui"}
 TAG=${TAG:-"latest"}
-DOCKERFILE=${DOCKERFILE:-"Dockerfile.multiarch"}
+DOCKERFILE=${DOCKERFILE:-"docker/Dockerfile"}
+DOCKERFILE_TARGET=${DOCKERFILE_TARGET:-"production"}
 PUSH=${PUSH:-"false"}
 BUILD_ARGS=${BUILD_ARGS:-""}
 
@@ -193,7 +194,7 @@ show_usage() {
     echo "  REGISTRY    Docker registry (optional)"
     echo "  IMAGE_NAME  Image name (default: vibecode-webgui)"
     echo "  TAG         Image tag (default: latest)"
-    echo "  DOCKERFILE  Dockerfile to use (default: Dockerfile.multiarch)"
+    echo "  DOCKERFILE  Dockerfile to use (default: docker/Dockerfile)"
     echo "  PUSH        Push to registry (default: false)"
     echo "  BUILD_ARGS  Additional build arguments"
     echo ""

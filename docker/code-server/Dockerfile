@@ -1,5 +1,6 @@
 # VibeCode Custom code-server with pre-installed extensions
 FROM codercom/code-server:4.104.2
+ENV NEXT_TELEMETRY_DISABLED=1
 
 ARG TARGETPLATFORM
 ARG TARGETARCH
