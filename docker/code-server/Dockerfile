@@ -114,9 +114,9 @@ RUN set -eux; \
     apt-get install -y --no-install-recommends /tmp/zoxide.deb; \
     rm -rf /tmp/zoxide.deb /var/lib/apt/lists/*
 
-# Install Node.js 18 LTS (verified download)
+# Install Node.js 20 LTS (verified download)
 RUN set -eux; \
-    NODE_VERSION="18.18.0"; \
+    NODE_VERSION="20.11.0"; \
     case "$TARGETPLATFORM" in \
       "linux/amd64") NODE_ARCH=x64 ;; \
       "linux/arm64") NODE_ARCH=arm64 ;; \

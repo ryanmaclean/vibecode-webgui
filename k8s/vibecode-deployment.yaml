@@ -81,6 +81,8 @@ spec:
             configMapKeyRef:
               name: vibecode-config
               key: NEXTAUTH_URL_INTERNAL
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
         - name: HOSTNAME
           valueFrom:
             configMapKeyRef:
