@@ -30,7 +30,7 @@ interface TokenCountResponse {
 let cachedEncoding: Tiktoken | null = null
 let cachedModel: string | null = null
 
-self.onmessage = (e: MessageEvent<TokenCountRequest>) => {
+self.onmessage = (e: globalThis.MessageEvent<TokenCountRequest>) => {
   const { text, model, id } = e.data
 
   try {

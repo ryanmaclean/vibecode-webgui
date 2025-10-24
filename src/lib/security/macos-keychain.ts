@@ -15,7 +15,7 @@
 import { execSync } from 'child_process'
 import { createChildLogger } from '@/lib/logger'
 
-const logger = createChildLogger({ module: 'security', scope: 'keychain' })
+const _logger = createChildLogger({ module: 'security', scope: 'keychain' })
 
 // Keychain configuration
 const KEYCHAIN_SERVICE = 'com.vibecode.secrets'
