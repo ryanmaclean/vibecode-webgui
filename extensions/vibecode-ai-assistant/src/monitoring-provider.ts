@@ -60,7 +60,7 @@ export class MonitoringProvider implements vscode.WebviewViewProvider {
     private _view?: vscode.WebviewView;
     private _context: vscode.ExtensionContext;
     private _apiBaseUrl: string;
-    private _refreshInterval: NodeJS.Timeout | null = null;
+    private metricsInterval: NodeJS.Timeout | null = null;
     private _isRefreshing = false;
 
     constructor(context: vscode.ExtensionContext) {
