@@ -8,13 +8,12 @@
 import { spawn, ChildProcess } from 'child_process'
 import * as path from 'path'
 import type {
-ContainerOptions,
+  ContainerOptions,
   ContainerInfo,
   ContainerStartResult,
   ContainerListResult,
   ContainerLogsResult,
 } from './types'
-// import { logger } from '@/lib/logger';
 
 export interface AppleContainerConfig {
   /** Path to Swift runtime executable */
@@ -147,7 +146,7 @@ export class AppleContainerRuntimeV2 {
    * Stop a running container
    */
   async stop(containerId: string, timeout = 10): Promise<{ success: boolean; error?: string }> {
-try {
+    try {
       const result = await this.executeCommand([
         'stop',
         containerId,
@@ -407,7 +406,7 @@ try {
   ): Promise<{ success: boolean; stdout: string; stderr: string; error?: string }> {
     return new Promise((resolve) => {
       if (this.debug) {
-        console.info('Executing:', this.runtimePath, args.join(' '))
+        console.log('Executing:', this.runtimePath, args.join(' '))
       }
 
       const proc = spawn(this.runtimePath, args)
@@ -425,9 +424,9 @@ try {
 
       proc.on('close', (code) => {
         if (this.debug) {
-          console.info('Exit code:', code)
-          console.info('Stdout:', stdout)
-          console.info('Stderr:', stderr)
+          console.log('Exit code:', code)
+          console.log('Stdout:', stdout)
+          console.log('Stderr:', stderr)
         }
 
         if (code === 0) {
