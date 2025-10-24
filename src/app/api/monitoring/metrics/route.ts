@@ -349,8 +349,6 @@ export async function PUT(request: NextRequest) {
     }
     const { startTime, endTime, metricTypes } = validation.data;
 
-    const { startTime, endTime, metricTypes } = validation.data;
-
     // Get historical metrics from storage
     const historicalMetrics = await getHistoricalMetrics(startTime, endTime, metricTypes);
 
