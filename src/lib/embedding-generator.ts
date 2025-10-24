@@ -6,7 +6,7 @@
 import OpenAI from 'openai';
 import crypto from 'crypto';
 import { VectorSearchService } from './vector-search';
-// import { logger } from '@/lib/logger';
+
 interface EmbeddingRequest {
   content: string;
   content_type: 'code' | 'documentation' | 'chat';

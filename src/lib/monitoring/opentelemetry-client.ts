@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 /**
  * OpenTelemetry Client-Side Integration
  * Provides browser-based observability for user experience monitoring

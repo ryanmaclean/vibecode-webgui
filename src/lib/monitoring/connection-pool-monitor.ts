@@ -4,7 +4,7 @@
  */
 
 import { EventEmitter } from 'events'
-// import { logger } from '@/lib/logger';
+
 export interface ConnectionPoolMetrics {
   pool_name: string
   total_connections: number
@@ -101,7 +101,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     this.pools.set(poolName, metrics)
     this.initializeHistory(poolName)
     
-    console.info(`📊 Registered pool '${poolName}' for monitoring`)
+    console.log(`📊 Registered pool '${poolName}' for monitoring`)
   }
 
   /**
@@ -227,7 +227,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       this.updatePoolHealth()
     }, 5000)
 
-    console.info('🔍 Connection pool monitoring started')
+    console.log('🔍 Connection pool monitoring started')
   }
 
   /**
@@ -240,7 +240,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval)
     }
-    console.info('🛑 Connection pool monitoring stopped')
+    console.log('🛑 Connection pool monitoring stopped')
   }
 
   /**
@@ -380,7 +380,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       alert.resolution_timestamp = new Date().toISOString()
       this.alerts.set(alertId, alert)
       this.emit('alertResolved', alert)
-      console.info(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
+      console.log(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
     }
   }
 
