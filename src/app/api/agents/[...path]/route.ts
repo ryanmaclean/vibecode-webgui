@@ -153,12 +153,12 @@ async function handleRequest(
     const [resource, id, subResource, subId] = path
 
     // console.debug('Handling agent API request', {
-      method,
-      resource,
-      id,
-      subResource,
-      userId,
-    })
+    //   method,
+    //   resource,
+    //   id,
+    //   subResource,
+    //   userId,
+    // })
 
     // Route to appropriate handler
     switch (resource) {
