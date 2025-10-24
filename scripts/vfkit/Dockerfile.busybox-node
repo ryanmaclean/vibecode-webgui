@@ -1,0 +1,98 @@
+# Multi-stage Dockerfile: BusyBox + Node.js + VSCode Server + Claude Code
+# Based on research of available ARM64 Docker images
+
+# Stage 1: Base Alpine with Node.js
+FROM node:22.21.0-alpine AS base
+
+# Install BusyBox utilities and essential tools
+RUN apk add --no-cache \
+    busybox-extras \
+    curl \
+    wget \
+    tar \
+    gzip \
+    unzip \
+    git \
+    python3 \
+    py3-pip \
+    make \
+    g++
+
+# Stage 2: Install AI Tools
+FROM base AS ai-tools
+
+# Set AI tools environment variables
+ENV ANTHROPIC_API_KEY="" \
+    OPENAI_API_KEY="" \
+    GOOGLE_API_KEY="" \
+    OPENCODE_API_KEY=""
+
+# Install Node.js AI tools globally
+RUN npm install -g @anthropic-ai/claude-code && \
+    npm install -g @openai/codex && \
+    npm install -g @just-every/code && \
+    npm install -g @google/gemini-cli
+
+# Install Python AI tools
+RUN python3 -m venv /opt/ai-tools && \
+    /opt/ai-tools/bin/pip install aider && \
+    ln -s /opt/ai-tools/bin/aider /usr/local/bin/aider
+
+# Install OpenCode
+RUN curl -fsSL https://opencode.ai/install | bash
+
+# Stage 3: Download OpenVSCode Server
+FROM ai-tools AS vscode-server
+
+# Download latest OpenVSCode Server
+RUN cd /opt && \
+    curl -L -o openvscode-server-linux-arm64.tar.gz \
+    https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.105.1/openvscode-server-linux-arm64.tar.gz && \
+    tar -xf openvscode-server-linux-arm64.tar.gz && \
+    mv openvscode-server-linux-arm64 openvscode-server && \
+    rm openvscode-server-linux-arm64.tar.gz
+
+# Stage 4: Final image
+FROM vscode-server AS final
+
+# Create non-root user
+RUN adduser -D -s /bin/sh vibecode
+
+# Set working directory
+WORKDIR /home/vibecode
+
+# Copy verification script
+COPY docker/verify-ai-tools.sh /usr/local/bin/verify-ai-tools
+RUN chmod +x /usr/local/bin/verify-ai-tools
+
+# Create startup script
+RUN cat > /usr/local/bin/start-vscode.sh << 'START_EOF'
+#!/bin/sh
+# Start VSCode Server with AI tools
+
+echo "🚀 Starting VSCode Server with AI Tools"
+echo "======================================"
+
+# Verify AI tools
+verify-ai-tools
+
+# Start OpenVSCode Server
+echo "🔧 Starting OpenVSCode Server..."
+cd /opt/openvscode-server
+exec ./bin/openvscode-server --host 0.0.0.0 --port 8080 --without-connection-token
+START_EOF
+
+RUN chmod +x /usr/local/bin/start-vscode.sh
+
+# Switch to non-root user
+USER vibecode
+
+# Expose port
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8080/ || exit 1
+
+# Default command
+CMD ["/usr/local/bin/start-vscode.sh"]
