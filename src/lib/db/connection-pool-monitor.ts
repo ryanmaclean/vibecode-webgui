@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
 import { VectorConnectionPool, PoolEvent } from './vector-connection-pool';
 import { PoolStatus } from '../vector-db/pool-status';
+import { PoolStatusInfo } from './connection-pool-types';
 
 /**
  * Alert levels for the connection pool monitor
@@ -269,8 +270,8 @@ export class ConnectionPoolMonitor extends EventEmitter {
    * Gets the status of all monitored pools
    * @returns Map of pool names to pool status
    */
-  public getPoolStatus(): Map<string, PoolStatus> {
-    const status = new Map<string, PoolStatus>();
+  public getPoolStatus(): Map<string, PoolStatusInfo> {
+    const status = new Map<string, PoolStatusInfo>();
     for (const [poolName, pool] of this.pools.entries()) {
       status.set(poolName, pool.getStatus());
     }
