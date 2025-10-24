@@ -1,46 +1,105 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import typescriptParser from '@typescript-eslint/parser';
+import typescriptPlugin from '@typescript-eslint/eslint-plugin';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default [
   {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "dist/**",
+      "build/**",
+      "coverage/**",
+      "*.config.js",
+      "*.config.mjs"
+    ]
+  },
+  {
+    files: ["**/*.{js,jsx}"],
+    languageOptions: {
+      ecmaVersion: 'latest',
+      sourceType: 'module',
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        globalThis: 'readonly',
+        crypto: 'readonly'
+      }
+    },
     rules: {
-      // Allow unused parameters prefixed with underscore
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-      // Allow any type for now (can be gradually improved)
-      "@typescript-eslint/no-explicit-any": "warn",
-      // Allow require imports where needed
-      "@typescript-eslint/no-require-imports": "warn",
-      // Allow React hooks dependencies to be handled manually
-      "react-hooks/exhaustive-deps": "warn",
-      // Allow unused imports temporarily (can be cleaned up later)
+      // General JavaScript rules
+      "prefer-const": "error",
+      "no-var": "error",
+      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn",
+      "no-debugger": "error",
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error",
+      "no-unused-vars": ["warn", { 
+        "argsIgnorePattern": "^_",
+        "varsIgnorePattern": "^_",
+        "ignoreRestSiblings": true
+      }]
+    }
+  },
+  {
+    files: ["**/*.{ts,tsx}"],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+        project: './tsconfig.json'
+      },
+      globals: {
+        console: 'readonly',
+        process: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        globalThis: 'readonly',
+        crypto: 'readonly'
+      }
+    },
+    plugins: {
+      '@typescript-eslint': typescriptPlugin
+    },
+    rules: {
+      // Disable base rules that are covered by TypeScript equivalents
+      "no-unused-vars": "off",
+      
+      // TypeScript rules
       "@typescript-eslint/no-unused-vars": ["warn", { 
         "argsIgnorePattern": "^_",
         "varsIgnorePattern": "^_",
         "ignoreRestSiblings": true
       }],
-      // Prefer const assertions for better type inference
-      "prefer-const": "error",
-      // Enforce explicit return types for functions (improves maintainability)
+      "@typescript-eslint/no-explicit-any": "warn",
+      "@typescript-eslint/no-require-imports": "warn",
       "@typescript-eslint/explicit-function-return-type": "off",
-      // Allow console.log in development
-      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn"
+      
+      // General rules
+      "prefer-const": "error",
+      "no-var": "error",
+      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn",
+      "no-debugger": "error",
+      "no-eval": "error",
+      "no-implied-eval": "error",
+      "no-new-func": "error"
     }
   },
   {
-    files: ["scripts/vector-db-migrations/**/*.js"],
+    files: ["scripts/**/*.{js,ts}", "**/*.config.{js,mjs,ts}"],
     rules: {
-      "@typescript-eslint/no-require-imports": "off"
+      "@typescript-eslint/no-require-imports": "off",
+      "no-console": "off" // Allow console in scripts and config files
+    }
+  },
+  {
+    files: ["**/*.test.{js,ts,tsx}", "**/*.spec.{js,ts,tsx}", "**/__tests__/**/*.{js,ts,tsx}"],
+    rules: {
+      "@typescript-eslint/no-explicit-any": "off",
+      "no-console": "off" // Allow console in tests
     }
   }
 ];
-
-export default eslintConfig;

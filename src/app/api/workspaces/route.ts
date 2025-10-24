@@ -6,8 +6,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
-// import { logger } from '@/lib/logger';
+import { createProblemDetailsFromError, ErrorResponses } from '@/lib/api-utils'
+import { logger } from '@/lib/logger'
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
   projectName: z.string(),
@@ -19,24 +19,36 @@ const CreateWorkspaceRequestSchema = z.object({
 })
 
 export async function POST(request: NextRequest) {
+  const requestId = crypto.randomUUID()
+  const startTime = Date.now()
+  
+  const logContext = {
+    service: 'vibecode-webgui',
+    component: 'workspace-creation',
+    requestId,
+    operation: 'create_workspace'
+  }
+
   try {
-    console.log('🚀 Workspace creation API called')
+    logger.info('Workspace creation API called', logContext)
 
     // Parse and validate request
     const body = await request.json()
     const validatedRequest = CreateWorkspaceRequestSchema.parse(body)
 
-    console.log(`📝 Creating workspace for project: "${validatedRequest.projectName}"`)
+    logger.info('Creating workspace for project', { 
+      ...logContext, 
+      projectName: validatedRequest.projectName,
+      framework: validatedRequest.framework,
+      userId: validatedRequest.userId
+    })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      console.error('❌ Kubernetes not configured')
-      return NextResponse.json(
-        { 
-          error: 'Workspace service not available',
-          message: 'Kubernetes cluster not configured. Please deploy to AKS first.'
-        },
-        { status: 503 }
+      logger.error('Kubernetes not configured for workspace creation', logContext)
+      return ErrorResponses.serviceUnavailable(
+        'Kubernetes cluster not configured. Please deploy to AKS first.',
+        requestId
       )
     }
 
@@ -44,13 +56,17 @@ export async function POST(request: NextRequest) {
     const workspaceService = new WorkspaceProvisioningService()
 
     // Create workspace
-    const startTime = Date.now()
     const workspace = await workspaceService.createWorkspace(validatedRequest)
     const creationTime = Date.now() - startTime
 
-    console.log(`✅ Workspace created successfully in ${creationTime}ms`)
-    console.log(`🌐 Workspace URL: ${workspace.url}`)
-    console.log(`📊 Resources: ${JSON.stringify(workspace.resources)}`)
+    logger.info('Workspace created successfully', { 
+      ...logContext,
+      creationTime,
+      workspaceUrl: workspace.url,
+      resources: workspace.resources
+    })
+
+    logger.performance('workspace-creation', creationTime, logContext)
 
     // Return workspace details
     return NextResponse.json({
@@ -59,54 +75,86 @@ export async function POST(request: NextRequest) {
       metadata: {
         creationTime,
         framework: validatedRequest.framework,
-        filesCount: Object.keys(validatedRequest.files).length
+        filesCount: Object.keys(validatedRequest.files).length,
+        requestId
       }
     })
 
   } catch (error) {
-    console.error('❌ Workspace creation failed:', error)
+    const creationTime = Date.now() - startTime
+    
+    logger.error('Workspace creation failed', { 
+      ...logContext, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      creationTime
+    })
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      return createErrorResponse(
-        'Invalid request format',
-        400,
-        { details: error.errors.map(e => `${e.path.join('.')}: ${e.message}`) }
+      return ErrorResponses.validationError(
+        'Invalid request format for workspace creation',
+        error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+        requestId
       )
     }
 
     // Handle Kubernetes errors
     if (error instanceof Error) {
       if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
-        return createErrorResponse('Insufficient permissions to create workspace', 403)
+        return ErrorResponses.forbidden(
+          'Insufficient permissions to create workspace',
+          requestId
+        )
       }
 
       if (error.message.includes('timeout')) {
-        return createErrorResponse('Workspace creation timed out. Please try again.', 408)
+        return ErrorResponses.badRequest(
+          'Workspace creation timed out. Please try again.',
+          requestId
+        )
       }
 
       if (error.message.includes('quota') || error.message.includes('resource')) {
-        return createErrorResponse('Insufficient cluster resources. Please try again later.', 507)
+        return ErrorResponses.serviceUnavailable(
+          'Insufficient cluster resources. Please try again later.',
+          requestId
+        )
       }
     }
 
     // Generic error response
-    return createErrorResponse('Workspace creation failed', 500, {
-      message: getErrorMessage(error)
+    return createProblemDetailsFromError(error, 500, {
+      instance: `/api/workspaces`,
+      traceId: requestId,
+      fallbackTitle: 'Workspace creation failed'
     })
   }
 }
 
 export async function GET(request: NextRequest) {
+  const requestId = crypto.randomUUID()
+  const startTime = Date.now()
+  const { searchParams } = new URL(request.url)
+  const workspaceId = searchParams.get('id')
+  
+  const logContext = {
+    service: 'vibecode-webgui',
+    component: 'workspace-management',
+    requestId,
+    operation: workspaceId ? 'get_workspace' : 'list_workspaces',
+    workspaceId
+  }
+
   try {
-    const { searchParams } = new URL(request.url)
-    const workspaceId = searchParams.get('id')
+    logger.info('Workspace management API called', logContext)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
+      logger.warn('Kubernetes not available for workspace management', logContext)
       return NextResponse.json({
         available: false,
-        reason: 'Kubernetes cluster not configured'
+        reason: 'Kubernetes cluster not configured',
+        requestId
       })
     }
 
@@ -114,35 +162,59 @@ export async function GET(request: NextRequest) {
 
     if (workspaceId) {
       // Get specific workspace
+      logger.debug('Fetching specific workspace', { ...logContext, workspaceId })
       const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
 
       if (!workspace) {
-        return createErrorResponse('Workspace not found', 404)
+        logger.warn('Workspace not found', { ...logContext, workspaceId })
+        return ErrorResponses.notFound(
+          `Workspace with ID ${workspaceId} not found`,
+          requestId
+        )
       }
+
+      const responseTime = Date.now() - startTime
+      logger.performance('get-workspace', responseTime, logContext)
 
       return NextResponse.json({
         success: true,
-        workspace
+        workspace,
+        requestId
       })
     } else {
       // List all workspaces
+      logger.debug('Listing all workspaces', logContext)
       const workspaces = await workspaceService.listWorkspaces()
+
+      const responseTime = Date.now() - startTime
+      logger.performance('list-workspaces', responseTime, { 
+        ...logContext, 
+        workspaceCount: workspaces.length 
+      })
 
       return NextResponse.json({
         success: true,
         workspaces,
         count: workspaces.length,
         service: 'Workspace Provisioning',
-        available: true
+        available: true,
+        requestId
       })
     }
 
   } catch (error) {
-    console.error('❌ Failed to get workspace info:', error)
-    return createErrorResponse('Service error', 500, {
-      available: false,
-      reason: 'Service error',
-      details: getErrorMessage(error)
+    const responseTime = Date.now() - startTime
+    
+    logger.error('Failed to get workspace info', { 
+      ...logContext, 
+      error: error instanceof Error ? error.message : 'Unknown error',
+      responseTime
+    })
+    
+    return createProblemDetailsFromError(error, 500, {
+      instance: `/api/workspaces${workspaceId ? `?id=${workspaceId}` : ''}`,
+      traceId: requestId,
+      fallbackTitle: 'Workspace service error'
     })
   }
 }
