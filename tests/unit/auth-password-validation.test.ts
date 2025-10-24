@@ -10,12 +10,12 @@
 // Mock bcryptjs to avoid actual crypto operations in tests
 jest.mock('bcryptjs', () => ({
   genSalt: jest.fn().mockResolvedValue('$2a$12$test.salt.value'),
-  hash: jest.fn().mockResolvedValue('$2a$12$abcdefghijklmnopqr.stuvwxyz0123456789ABCDEFGHIJKLMNO'),
+  hash: jest.fn().mockResolvedValue('$2a$12$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx012'),
   compare: jest.fn().mockImplementation((password, hash) => {
     // Mock successful comparison for valid test data
     return Promise.resolve(
       password === 'ValidP@ssw0rd123' && 
-      hash === '$2a$12$abcdefghijklmnopqr.stuvwxyz0123456789ABCDEFGHIJKLMNO'
+      hash === '$2a$12$ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwx012'
     );
   })
 }));

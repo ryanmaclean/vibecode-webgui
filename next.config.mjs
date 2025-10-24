@@ -2,6 +2,9 @@ import path from 'path'
 import { createRequire } from 'module'
 import { fileURLToPath } from 'url'
 
+// Disable Next.js telemetry globally for every runtime invocation
+process.env.NEXT_TELEMETRY_DISABLED = process.env.NEXT_TELEMETRY_DISABLED || '1'
+
 const require = createRequire(import.meta.url)
 const webpack = require('webpack')
 const __filename = fileURLToPath(import.meta.url)
