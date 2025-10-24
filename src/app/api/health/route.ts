@@ -92,11 +92,6 @@ export async function GET(_request: NextRequest) {
     return NextResponse.json(healthCheckResponse, { status: 200 })
 
   } catch (error) {
-    console.error('Health check error:', error)
-
-    return NextResponse.json(healthCheckResponse, { status: 200 })
-
-  } catch (error) {
     console.error('Health check failed with error:', error)
 
     return NextResponse.json({
