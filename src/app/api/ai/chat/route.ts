@@ -9,43 +9,41 @@ import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { aiChatUnifiedSchema } from '@/lib/api/validation/schemas'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger'
+import { ErrorResponses, createProblemDetailsFromError } from '@/lib/api-utils'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-// Log AI interaction events to Datadog
+// Log AI interaction events using structured logger
 function logAIInteraction(
   request: NextRequest,
   event: 'chat_request' | 'chat_response' | 'chat_error',
   metadata: Record<string, any>
 ) {
-  const logData = {
-    timestamp: new Date().toISOString(),
+  const logContext = {
     service: 'vibecode-webgui',
-    source: 'ai-chat-api',
-    level: event === 'chat_error' ? 'error' : 'info',
-    event_type: event,
+    component: 'ai-chat-api',
+    operation: event,
     http: {
       url: request.url,
       method: request.method,
-      user_agent: request.headers.get('user-agent') || 'unknown',
+      userAgent: request.headers.get('user-agent') || 'unknown',
     },
     ai: {
       event,
       ...metadata,
     },
-    // Add custom attributes for Datadog dashboards
-    dd: {
-      trace_id: request.headers.get('x-datadog-trace-id'),
-      span_id: request.headers.get('x-datadog-span-id'),
-    },
+    traceId: request.headers.get('x-datadog-trace-id') || metadata.requestId,
+    spanId: request.headers.get('x-datadog-span-id'),
   };
 
-  // Debug log removed);
+  const logLevel = event === 'chat_error' ? 'error' : 'info';
+  logger[logLevel](`AI Chat ${event.replace('_', ' ')}`, logContext);
 }
 
 async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> {
   const startTime = Date.now();
+  const requestId = crypto.randomUUID();
 
   try {
     // Validate request body with unified schema
@@ -53,7 +51,8 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     if (!validation.success) {
       logAIInteraction(request, 'chat_error', {
         error: 'Schema validation failed',
-        userId: request.user?.id
+        userId: request.user?.id,
+        requestId
       })
       return validation.error as NextResponse
     }
@@ -73,11 +72,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         validationError: validationError instanceof Error ? validationError.message : 'Unknown validation error',
         userId: request.user?.id,
         model,
+        requestId
       });
 
-      return NextResponse.json(
-        { error: 'Invalid input format or content' },
-        { status: 400 }
+      return ErrorResponses.badRequest(
+        'Invalid input format or content',
+        requestId
       );
     }
 
@@ -87,11 +87,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         error: 'Invalid messages format',
         userId: request.user?.id,
         model,
+        requestId
       });
 
-      return NextResponse.json(
-        { error: 'Messages array is required and cannot be empty' },
-        { status: 400 }
+      return ErrorResponses.badRequest(
+        'Messages array is required and cannot be empty',
+        requestId
       );
     }
 
@@ -103,6 +104,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       last_message_length: messages[messages.length - 1]?.content?.length || 0,
       userId: request.user?.id,
       userRole: request.user?.role,
+      requestId
     });
 
     // Real AI response using Vercel AI SDK
@@ -192,7 +194,14 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           });
         }
       } catch (streamError) {
-        console.error('Streaming error:', streamError);
+        logger.error('AI streaming error', {
+          service: 'vibecode-webgui',
+          component: 'ai-chat-api',
+          operation: 'streaming',
+          error: streamError instanceof Error ? streamError.message : 'Unknown streaming error',
+          requestId,
+          userId: request.user?.id
+        });
         // Fall back to mock streaming for errors
       }
       
@@ -261,22 +270,21 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
   } catch (error) {
-    console.error('Chat API error:', error);
+    const processingTime = Date.now() - startTime;
     
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',
       userId: request.user?.id,
       userRole: request.user?.role,
+      requestId,
+      processingTime
     });
 
-    return NextResponse.json(
-      { 
-        error: 'Internal server error',
-        message: 'Failed to process chat request',
-        timestamp: new Date().toISOString(),
-      },
-      { status: 500 }
-    );
+    return createProblemDetailsFromError(error, 500, {
+      instance: '/api/ai/chat',
+      traceId: requestId,
+      fallbackTitle: 'AI chat request failed'
+    });
   }
 }
 

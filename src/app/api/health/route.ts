@@ -7,28 +7,51 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
+import { ErrorResponses } from '@/lib/api-utils'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams, checkRateLimit } from '@/lib/api/validation/helpers'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-
-  // Rate limiting: 100 requests per minute
+  const requestId = crypto.randomUUID()
   const clientIp = request.headers.get('x-forwarded-for') ||
                    request.headers.get('x-real-ip') ||
                    'unknown'
+
+  const logContext = {
+    service: 'vibecode-webgui',
+    component: 'health-check',
+    requestId,
+    clientIp
+  }
+
+  logger.info('Health check requested', logContext)
+
+  // Rate limiting: 100 requests per minute
   const rateLimit = checkRateLimit(`health:${clientIp}`, 100, 60000)
   if (!rateLimit.allowed) {
-    return rateLimit.response
+    logger.warn('Health check rate limited', { ...logContext, rateLimitExceeded: true })
+    return ErrorResponses.tooManyRequests(
+      'Too many health check requests. Please slow down.',
+      undefined,
+      requestId
+    )
   }
 
   // Validate query parameters
   const validation = validateQueryParams(request, healthCheckQuerySchema)
   if (!validation.success) {
-    return validation.response
+    logger.warn('Invalid health check query parameters', { 
+      ...logContext, 
+      validationErrors: validation.response 
+    })
+    return ErrorResponses.badRequest(
+      'Invalid query parameters for health check',
+      requestId
+    )
   }
-  const { filter, format, verbose } = validation.data
+  const { filter: _filter, format: _format, verbose: _verbose } = validation.data
 
   try {
     // Basic health checks
@@ -62,24 +85,53 @@ export async function GET(request: NextRequest) {
       ['source:health-check', `env:${process.env.NODE_ENV}`]
     )
 
+    // Calculate response time and log performance
+    const responseTime = Date.now() - startTime
+    logger.performance('health-check', responseTime, logContext)
+
     // Determine overall health status
     const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
     if (hasFailures) {
       healthChecks.status = 'degraded'
-      return NextResponse.json(healthChecks, { status: 503 })
+      logger.warn('Health check shows degraded status', { 
+        ...logContext, 
+        healthStatus: 'degraded',
+        failedChecks: Object.entries(healthChecks.checks)
+          .filter(([, check]) => check.status !== 'healthy')
+          .map(([name]) => name)
+      })
+      
+      return NextResponse.json({
+        ...healthChecks,
+        responseTime: `${responseTime}ms`,
+        requestId
+      }, { status: 503 })
     }
 
-    return NextResponse.json(healthCheckResponse, { status: 200 })
-
-  } catch (error) {
-    console.error('Health check error:', error)
+    logger.info('Health check completed successfully', { 
+      ...logContext, 
+      healthStatus: 'healthy',
+      responseTime
+    })
 
     return NextResponse.json({
-      status: 'unhealthy',
-      timestamp: new Date().toISOString(),
+      ...healthCheckResponse,
+      requestId
+    }, { status: 200 })
+
+  } catch (error) {
+    const responseTime = Date.now() - startTime
+    
+    logger.error('Health check failed with error', { 
+      ...logContext, 
       error: error instanceof Error ? error.message : 'Unknown error',
-      responseTime: `${Date.now() - startTime}ms`
-    }, { status: 503 })
+      responseTime
+    })
+
+    return ErrorResponses.serviceUnavailable(
+      'Health check service temporarily unavailable',
+      requestId
+    )
   }
 }
 

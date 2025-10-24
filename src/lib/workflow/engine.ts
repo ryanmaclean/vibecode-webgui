@@ -28,6 +28,7 @@ WorkflowDefinition,
   ConditionConfig,
   ParallelConfig,
   LoopConfig,
+  MergeConfig,
   TransformConfig,
   DelayConfig,
   WebhookConfig,
@@ -392,6 +393,10 @@ export class WorkflowEngine extends EventEmitter {
           output = await this.executeParallel(node.config as ParallelConfig, execution);
           break;
 
+        case 'merge':
+          output = await this.executeMerge(node, execution);
+          break;
+
         case 'loop':
           output = await this.executeLoop(node, execution);
           break;
@@ -487,6 +492,46 @@ export class WorkflowEngine extends EventEmitter {
   ): Promise<unknown> {
     // Parallel execution handled by executeNodes
     return { parallel: true };
+  }
+
+  /**
+   * Execute merge node
+   */
+  private async executeMerge(
+    node: WorkflowNode,
+    execution: WorkflowExecution
+  ): Promise<unknown> {
+    const config = node.config as MergeConfig;
+    
+    // Get all input nodes' outputs
+    const inputs: unknown[] = [];
+    
+    // Find all nodes that feed into this merge node
+    for (const edge of execution.definition.edges) {
+      if (edge.target === node.id) {
+        const sourceOutput = execution.context.nodes[edge.source];
+        if (sourceOutput !== undefined) {
+          inputs.push(sourceOutput);
+        }
+      }
+    }
+
+    // Apply merge strategy
+    switch (config.strategy) {
+      case 'all':
+        return inputs;
+      case 'any':
+        return inputs.length > 0 ? inputs[0] : null;
+      case 'first':
+        return inputs[0] || null;
+      case 'custom':
+        if (config.mergeFunction) {
+          return evaluateExpression(config.mergeFunction, { ...execution.context, inputs });
+        }
+        return inputs;
+      default:
+        return inputs;
+    }
   }
 
   /**
