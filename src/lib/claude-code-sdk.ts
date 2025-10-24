@@ -8,7 +8,7 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk'
-// import { logger } from '@/lib/logger';
+
 export interface CodeContext {
   language: string
   filePath: string

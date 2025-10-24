@@ -13,7 +13,7 @@ import path from 'path'
 import fs from 'fs/promises'
 import crypto from 'crypto'
 import { promisify } from 'util'
-// import { logger } from '@/lib/logger';
+
 // Security constants
 const MAX_PROCESS_COUNT = 10
 const MAX_FILE_SIZE = 1024 * 1024 // 1MB
@@ -177,7 +177,8 @@ export class SecureClaudeCliIntegration extends EventEmitter {
     return args.map(arg => {
       // Remove dangerous characters
       const sanitized = arg.replace(/[;&|`$()[\]{}\\'"<>]/g, '')
-// Limit length
+
+      // Limit length
       return sanitized.substring(0, 1000)
     })
   }

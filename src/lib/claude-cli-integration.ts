@@ -11,7 +11,7 @@ import { spawn, ChildProcess } from 'child_process'
 import { EventEmitter } from 'events'
 import path from 'path'
 import fs from 'fs/promises'
-// import { logger } from '@/lib/logger';
+
 export interface ClaudeCliConfig {
   apiKey?: string
   model?: string

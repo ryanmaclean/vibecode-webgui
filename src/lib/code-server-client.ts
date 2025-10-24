@@ -1,5 +1,5 @@
 import { getSession } from 'next-auth/react';
-// import { logger } from '@/lib/logger';
+
 interface CodeServerSession {
   id: string;
   url: string;
