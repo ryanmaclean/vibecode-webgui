@@ -10,13 +10,31 @@ const isEdgeRuntime = typeof (globalThis as any).EdgeRuntime !== 'undefined';
 const isProduction = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
 
-type LogMethod = (message: unknown, metadata?: Record<string, unknown>) => void;
+type LogLevel = 'error' | 'warn' | 'info' | 'debug';
+
+interface LogContext {
+  service?: string;
+  component?: string;
+  userId?: string;
+  requestId?: string;
+  traceId?: string;
+  operation?: string;
+  [key: string]: unknown;
+}
+
+type LogMethod = (message: unknown, metadata?: LogContext) => void;
 
 interface StructuredLogger {
   error: LogMethod;
   warn: LogMethod;
   info: LogMethod;
   debug: LogMethod;
+  
+  // Convenience methods for common use cases
+  http: (method: string, url: string, status: number, duration?: number, metadata?: LogContext) => void;
+  security: (event: string, metadata?: LogContext) => void;
+  performance: (operation: string, duration: number, metadata?: LogContext) => void;
+  api: (endpoint: string, method: string, status: number, metadata?: LogContext) => void;
 }
 
 let baseLogger: StructuredLogger;
@@ -56,27 +74,64 @@ if (!isEdgeRuntime) {
     console.info = () => {};
   }
 
-  baseLogger = {
-    error: (message, metadata) => winstonLogger.error(message, metadata || {}),
-    warn: (message, metadata) => winstonLogger.warn(message, metadata || {}),
-    info: (message, metadata) => winstonLogger.info(message, metadata || {}),
-    debug: (message, metadata) => winstonLogger.debug(message, metadata || {}),
-  };
-
-  createChildLoggerImpl = (metadata: Record<string, unknown>) => ({
-    error: (message: unknown, additional?: Record<string, unknown>) => {
-      winstonLogger.error(message, { ...metadata, ...additional });
+  const createLoggerMethods = (winston: any) => ({
+    error: (message: unknown, metadata?: LogContext) => winston.error(message, metadata || {}),
+    warn: (message: unknown, metadata?: LogContext) => winston.warn(message, metadata || {}),
+    info: (message: unknown, metadata?: LogContext) => winston.info(message, metadata || {}),
+    debug: (message: unknown, metadata?: LogContext) => winston.debug(message, metadata || {}),
+    
+    http: (method: string, url: string, status: number, duration?: number, metadata?: LogContext) => {
+      const logLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+      winston[logLevel]('HTTP Request', {
+        http: { method, url, status, duration },
+        ...metadata
+      });
     },
-    warn: (message: unknown, additional?: Record<string, unknown>) => {
-      winstonLogger.warn(message, { ...metadata, ...additional });
+    
+    security: (event: string, metadata?: LogContext) => {
+      winston.warn('Security Event', {
+        security: { event },
+        ...metadata
+      });
     },
-    info: (message: unknown, additional?: Record<string, unknown>) => {
-      winstonLogger.info(message, { ...metadata, ...additional });
+    
+    performance: (operation: string, duration: number, metadata?: LogContext) => {
+      const logLevel = duration > 5000 ? 'warn' : 'info';
+      winston[logLevel]('Performance Metric', {
+        performance: { operation, duration, unit: 'ms' },
+        ...metadata
+      });
     },
-    debug: (message: unknown, additional?: Record<string, unknown>) => {
-      winstonLogger.debug(message, { ...metadata, ...additional });
-    },
+    
+    api: (endpoint: string, method: string, status: number, metadata?: LogContext) => {
+      const logLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+      winston[logLevel]('API Call', {
+        api: { endpoint, method, status },
+        ...metadata
+      });
+    }
   });
+
+  baseLogger = createLoggerMethods(winstonLogger);
+
+  createChildLoggerImpl = (metadata: Record<string, unknown>) => {
+    const childWinston = {
+      error: (message: unknown, additional?: Record<string, unknown>) => {
+        winstonLogger.error(message, { ...metadata, ...additional });
+      },
+      warn: (message: unknown, additional?: Record<string, unknown>) => {
+        winstonLogger.warn(message, { ...metadata, ...additional });
+      },
+      info: (message: unknown, additional?: Record<string, unknown>) => {
+        winstonLogger.info(message, { ...metadata, ...additional });
+      },
+      debug: (message: unknown, additional?: Record<string, unknown>) => {
+        winstonLogger.debug(message, { ...metadata, ...additional });
+      },
+    };
+    
+    return createLoggerMethods(childWinston);
+  };
 } else {
   const edgeLog = (
     level: 'error' | 'warn' | 'info' | 'debug',
@@ -87,27 +142,53 @@ if (!isEdgeRuntime) {
     (console[level] ?? console.log).call(console, message, payload);
   };
 
-  baseLogger = {
-    error: (message, metadata) => edgeLog('error', message, metadata),
-    warn: (message, metadata) => edgeLog('warn', message, metadata),
-    info: (message, metadata) => edgeLog('info', message, metadata),
-    debug: (message, metadata) => edgeLog('debug', message, metadata),
-  };
-
-  createChildLoggerImpl = (metadata: Record<string, unknown>) => ({
-    error: (message: unknown, additional?: Record<string, unknown>) => {
-      edgeLog('error', message, { ...metadata, ...additional });
+  const createEdgeLoggerMethods = (logFn: typeof edgeLog) => ({
+    error: (message: unknown, metadata?: LogContext) => logFn('error', message, metadata),
+    warn: (message: unknown, metadata?: LogContext) => logFn('warn', message, metadata),
+    info: (message: unknown, metadata?: LogContext) => logFn('info', message, metadata),
+    debug: (message: unknown, metadata?: LogContext) => logFn('debug', message, metadata),
+    
+    http: (method: string, url: string, status: number, duration?: number, metadata?: LogContext) => {
+      const logLevel: LogLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+      logFn(logLevel, 'HTTP Request', {
+        http: { method, url, status, duration },
+        ...metadata
+      });
     },
-    warn: (message: unknown, additional?: Record<string, unknown>) => {
-      edgeLog('warn', message, { ...metadata, ...additional });
+    
+    security: (event: string, metadata?: LogContext) => {
+      logFn('warn', 'Security Event', {
+        security: { event },
+        ...metadata
+      });
     },
-    info: (message: unknown, additional?: Record<string, unknown>) => {
-      edgeLog('info', message, { ...metadata, ...additional });
+    
+    performance: (operation: string, duration: number, metadata?: LogContext) => {
+      const logLevel: LogLevel = duration > 5000 ? 'warn' : 'info';
+      logFn(logLevel, 'Performance Metric', {
+        performance: { operation, duration, unit: 'ms' },
+        ...metadata
+      });
     },
-    debug: (message: unknown, additional?: Record<string, unknown>) => {
-      edgeLog('debug', message, { ...metadata, ...additional });
-    },
+    
+    api: (endpoint: string, method: string, status: number, metadata?: LogContext) => {
+      const logLevel: LogLevel = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+      logFn(logLevel, 'API Call', {
+        api: { endpoint, method, status },
+        ...metadata
+      });
+    }
   });
+
+  baseLogger = createEdgeLoggerMethods(edgeLog);
+
+  createChildLoggerImpl = (metadata: Record<string, unknown>) => {
+    const childEdgeLog = (level: LogLevel, message: unknown, additional?: Record<string, unknown>) => {
+      edgeLog(level, message, { ...metadata, ...additional });
+    };
+    
+    return createEdgeLoggerMethods(childEdgeLog);
+  };
 }
 
 export const logger: StructuredLogger = baseLogger;
