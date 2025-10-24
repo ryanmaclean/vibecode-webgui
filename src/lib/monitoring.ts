@@ -6,6 +6,7 @@
 import { logger } from '@/lib/logger';
 
 import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env'
+import { logger } from '@/lib/logger'
 
 interface MetricData {
   metric: string
