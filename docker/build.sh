@@ -103,23 +103,23 @@ done
 # Set build arguments based on target
 case $TARGET in
     dev)
-        BUILD_ARGS="--build-arg NODE_VERSION=20 --build-arg BASE_OS=alpine --build-arg INCLUDE_DEV_DEPS=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true"
+        BUILD_ARGS="--build-arg NODE_VERSION=24 --build-arg BASE_OS=alpine --build-arg INCLUDE_DEV_DEPS=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true"
         DOCKERFILE_TARGET="development"
         ;;
     prod)
-        BUILD_ARGS="--build-arg NODE_VERSION=20 --build-arg BASE_OS=alpine --build-arg BUILD_TARGET=production --build-arg INCLUDE_DEV_DEPS=false --build-arg ENABLE_SOURCE_MAPS=true --build-arg ENABLE_DATADOG=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true --build-arg ENABLE_HEALTH_CHECK=true"
+        BUILD_ARGS="--build-arg NODE_VERSION=24 --build-arg BASE_OS=alpine --build-arg BUILD_TARGET=production --build-arg INCLUDE_DEV_DEPS=false --build-arg ENABLE_SOURCE_MAPS=true --build-arg ENABLE_DATADOG=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true --build-arg ENABLE_HEALTH_CHECK=true"
         DOCKERFILE_TARGET="production"
         ;;
     test)
-        BUILD_ARGS="--build-arg NODE_VERSION=20 --build-arg BASE_OS=alpine --build-arg INCLUDE_DEV_DEPS=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true"
+        BUILD_ARGS="--build-arg NODE_VERSION=24 --build-arg BASE_OS=alpine --build-arg INCLUDE_DEV_DEPS=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true"
         DOCKERFILE_TARGET="testing"
         ;;
     aks)
-        BUILD_ARGS="--build-arg NODE_VERSION=20 --build-arg BASE_OS=alpine --build-arg BUILD_TARGET=production --build-arg INCLUDE_DEV_DEPS=false --build-arg ENABLE_SOURCE_MAPS=true --build-arg ENABLE_DATADOG=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true --build-arg ENABLE_HEALTH_CHECK=true"
+        BUILD_ARGS="--build-arg NODE_VERSION=24 --build-arg BASE_OS=alpine --build-arg BUILD_TARGET=production --build-arg INCLUDE_DEV_DEPS=false --build-arg ENABLE_SOURCE_MAPS=true --build-arg ENABLE_DATADOG=true --build-arg ENABLE_LIGHTNINGCSS=true --build-arg ENABLE_PRISMA=true --build-arg ENABLE_HEALTH_CHECK=true"
         DOCKERFILE_TARGET="production"
         ;;
     ingestion)
-        BUILD_ARGS="--build-arg NODE_VERSION=20 --build-arg BASE_OS=alpine"
+        BUILD_ARGS="--build-arg NODE_VERSION=24 --build-arg BASE_OS=alpine"
         DOCKERFILE_TARGET="ingestion"
         ;;
     *)

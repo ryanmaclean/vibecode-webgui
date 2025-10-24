@@ -43,7 +43,7 @@ permissions:
   security-events: write
 
 env:
-  NODE_VERSION: '20.18.0'
+  NODE_VERSION: '24.0.0'
 
 jobs:
   quick-validation:
@@ -122,7 +122,7 @@ permissions:
   deployments: write
 
 env:
-  NODE_VERSION: '20.18.0'
+  NODE_VERSION: '24.0.0'
 
 jobs:
   validate-ci-config:
