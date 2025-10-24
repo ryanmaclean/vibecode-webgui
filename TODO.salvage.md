@@ -5,88 +5,7 @@ description: Active project tasks and priorities
 
 # VibeCode Active Tasks
 
-## ⚡ CURRENT STATUS - Oct 23, 2025 (Session Handoff)
-
-### 📊 TypeScript Error Analysis Complete
-**Status**: ✅ **COMPREHENSIVE ANALYSIS COMPLETE** | 🔄 **READY FOR EXECUTION**
-
-**Current Error Count**: 780 TypeScript errors (main branch baseline)
-**With PR #648**: 451 errors (42% reduction available immediately)
-**Target**: 0 errors (achievable in 16-22 days)
-
-#### ✅ COMPLETED THIS SESSION:
-- ✅ **10 Specialized Agents Deployed** - Analyzed 600+ errors across all categories
-- ✅ **7 Strategy Documents Created** (3,878 lines)
-  - `MERGE_STRATEGY.md` - 6-phase consolidation plan
-  - `CONSOLIDATION_CHECKLIST.md` - Step-by-step execution guide
-  - `ERROR_REDUCTION_ROADMAP.md` - Progress tracking with milestones
-  - `TYPESCRIPT_PR_AND_ISSUES_ANALYSIS.md` - PR/Issue analysis
-  - `TYPESCRIPT_INTEGRATION_SUMMARY.md` - Executive summary
-  - `TYPESCRIPT_ANALYSIS_COMPLETE.md` - Analysis details
-  - `MERGE_SUMMARY.md` - Branch merge strategy
-- ✅ **Code Sources Cataloged**
-  - Branch: `fix/typescript-critical-errors` (451 errors)
-  - Stash@{0}: Database connection pool improvements (23 files)
-  - Stash@{1}: Type safety improvements (18 files, 884 additions)
-  - PR #648: READY TO MERGE (build passing)
-  - Issues: #645, #646, #647, #649 identified
-- ✅ **Fixed 2 Syntax Errors** - health route and files/sync route
-
-#### 🎯 IMMEDIATE NEXT ACTIONS (Priority Order):
-
-**ACTION 1**: Merge PR #648 (CRITICAL - 5 minutes)
-```bash
-gh pr merge 648 --merge
-```
-**Impact**: Reduces errors from 780 → 451 (42% reduction)
-**Risk**: LOW (build passing, comprehensive testing done)
-**URL**: https://github.com/ryanmaclean/vibecode-webgui/pull/648
-
-**ACTION 2**: Begin Phase 1 of Consolidation (2-3 days)
-- Follow `CONSOLIDATION_CHECKLIST.md` step-by-step
-- Expected: 451 → 325 errors (28% additional reduction)
-- Apply stash@{0} for database connection pools
-
-**ACTION 3**: Execute Remaining 5 Phases (2-3 weeks)
-- Phase 2-6 detailed in `MERGE_STRATEGY.md`
-- Daily progress tracking in `ERROR_REDUCTION_ROADMAP.md`
-- Expected: 325 → 0 errors
-
-#### 📋 Agent Analysis Summary:
-
-| Agent | Task | Errors Identified | Status |
-|-------|------|-------------------|---------|
-| 1 | Logger/Monitoring Imports | 58 | ✅ Documented |
-| 2 | Missing Declarations | 100+ | ✅ Documented |
-| 3 | Type Mismatches | 241+ | ✅ Documented |
-| 4 | Merge Fix Branch | 6 files, 691 lines | ✅ Documented |
-| 5 | Stashed Changes | 18 files | ✅ Analyzed |
-| 6 | Open PRs/Issues | 1 PR + 4 issues | ✅ Analyzed |
-| 7 | API Validation | 50+ | ✅ Documented |
-| 8 | Duplicate Declarations | All | ✅ Documented |
-| 9 | Cache/DB Errors | 50+ | ✅ Documented |
-| 10 | Merge Strategy | 3 docs | ✅ Created |
-
-**Total Errors Analyzed**: 600+ categorized and documented
-
-#### 🔗 Related GitHub Issues (To Be Created):
-- Issue: Merge PR #648 immediately (CRITICAL)
-- Issue: Phase 1 - Apply stashes and critical fixes
-- Issue: Phase 2-6 - Systematic error reduction
-- Issue: Update dependencies after error reduction
-
----
-
 ## 🚨 CRITICAL ISSUES REQUIRING IMMEDIATE ATTENTION
-
-### 🔧 **Build Blockers – Oct 23, 2025**
-**Status**: ❌ **BUILD FAILING**
-
-- [ ] **Restore Valkey cache module** (`src/lib/cache/valkey-client.ts`) so it exports `cache`, `CacheKeys`, and `CacheTTL` plus the unified cache manager. Use the full implementation from the last good commit and ensure downstream imports compile.
-- [ ] **Reinstate vector DB core files** (`base-vector-database-adapter.ts`, `vector-db-error-handler.ts`, and related adapters) to replace the merge-conflict stubs. Verify `VectorDatabaseFactory` can initialize PostgreSQL successfully.
-- [ ] **Harmonize MongoDB chat service exports** by keeping both `chatMongoDBService` and `mongodbChatService` aliases or updating all imports; prevent import errors in `/app/api/chat/*`.
-- [ ] **Resolve Tailwind v4 utility regressions** by replacing remaining `@apply bg-* / text-* / border-*` usages (e.g., in `globals*.css` and shared components) with raw CSS or Tailwind v4 `@utility` definitions.
-- [ ] **Fix Edge runtime logger incompatibility**: migrate affected API routes to `runtime = 'nodejs'` or provide an Edge-safe logger shim so Winston no longer triggers runtime errors during builds.
 
 ### 💰 **URGENT: GitHub Actions Cost Optimization ($100 Bill)**
 **Status**: ❌ **IMMEDIATE ACTION REQUIRED**
@@ -122,11 +41,20 @@ release/* branches:
 ## 🧩 TYPE-SAFETY / BUILD BLOCKERS
 - [x] (Codex) **Health metrics API** (`src/app/api/health/database/metrics/route.ts`) — typed connection snapshots to eliminate implicit `any` filters.
 - [x] (Codex) **AI advanced features demo** (`src/app/ai-advanced-features-demo/page.tsx`) — solidified result interfaces and state narrowing (ReactNode + `tests/testSuite` errors cleared).
-- [ ] **Health route test** (`src/app/api/health/__tests__/route.test.ts`) — stop deleting readonly helpers (copy instead of `delete`).
+- [x] **Health route test** (`src/app/api/health/__tests__/route.test.ts`) — stop deleting readonly helpers (copy instead of `delete`).
 - [ ] **Function-call controller** (`src/app/api/ai/function-call/route.ts`) — update types for `metadata`, config spreads, and `getFunctionDefinition` rename.
 - [ ] **Zustand stores & middleware** (`src/stores/uiStore.ts`, `middleware/optimisticMiddleware.ts`, `middleware/sseMiddleware.ts`) — add `zustand` types and refit middleware generics (coordinate before starting; >150 errors).
 - [ ] **Agent API discriminated unions** (`src/types/agent-api.ts`) — tighten event shapes so `type`/`progress` assignments satisfy index signatures.
 - [ ] Re-run `npm run type-check -- --pretty false` after each cluster lands and update this list.
+
+### 🧩 2025-10-24 TypeScript Follow-ups (Codex)
+- [ ] **Collaborative editing stack** — finish wiring real `awareness` object from the Yjs provider; current implementation assumes `WebsocketProvider.awareness` exposes `on/off/getStates` like prod `y-websocket`. Verify in runtime env and replace temporary casts.
+- [ ] **`CursorTracking` & presence typing** — replace the interim `as Map<number, Record<string, any>>` assertions with strongly typed adapters once the upstream awareness contract is confirmed.
+- [ ] **Template marketplace props** — align `TemplateMarketplace`/`TemplateSubmissionForm` public props with the new handlers (`onTemplateSelect`, `onSubmit`). Update any consumers outside `MarketplacePage` and add tests.
+- [ ] **Generated template metadata** — source `category` from real template records; current addition pulls from `template.category` via loose cast.
+- [ ] **Virtualized message list deps** — install `@types/react-window` and `@types/react-virtualized-auto-sizer` (or swap to built-in virtualization) so `MessageListVirtual.tsx` can be typed without inline `any` fallbacks.
+- [ ] **Monaco lightbulb & agent config** — audit `AgentMonacoEditor` options; `lightbulb.enabled` expects `'off' | 'on' | 'onCode'` and agent `model` must map to `ModelType`. Confirm runtime defaults and add a config validation helper.
+- [ ] **Zustand middleware generics** — create shared helpers for `sseMiddleware`/`optimisticMiddleware`; blocker for removing remaining `unknown` casts and satisfying `Mutate` constraints.
 
 #### **Expected Cost Reduction**: 70-80% (from $100 to ~$20-30/month)
 
@@ -142,6 +70,17 @@ release/* branches:
 3. ✅ **Cost-optimized workflows active** - `main-branch-ci.yml`, `release-branch-ci.yml`
 4. [ ] **Test**: Create release branch with `./create-release-branch.sh v1.0.0`
 5. [ ] **Monitor**: Check GitHub Actions usage after implementation
+
+### 📦 **HANDOFF BLOCKERS BEFORE MACHINE WIPE**
+**Status**: ❌ **ACTION REQUIRED (PUSH / BUNDLE CHANGES)**
+
+- [ ] **Preserve feature work** – Push `feature/typefix-ai-demo` or run `git bundle create vibecode-webgui.bundle feature/typefix-ai-demo` so sequential-thinking + AI gateway refactors aren’t lost when this laptop is wiped.
+- [ ] **Archive artifacts** – Move `artifacts/noisy-neighbor-results/experiment_20251017_*` and new docs (`docs/ISSUE_STATUS_CHECKLIST.md`, `src/types/*.d.ts`) into the bundle or a shared drive.
+- [ ] **Document merge plan** – `archive/agents/2025-10-24-vibecode-webgui-handoff.md` already summarizes current deltas; confirm it accompanies the bundle and is linked in the PR description once opened.
+- [ ] **Main branch TODO** – After the push, open/attach GitHub issues for:
+  1. Sequential thinking MCP API (tests, Datadog logging, MCP service deployment).
+  2. AI Gateway telemetry rewrite verification (dashboards, consumers, contract updates).
+  3. Docs ingestion schema change (Astro rebuild + downstream client audit).
 
 **STATUS**: ✅ **DEPLOYED AND ACTIVE** - Cost optimization implemented, 70-80% reduction expected
 
@@ -1038,7 +977,7 @@ The systematic E2E methodology has been successfully **validated across multiple
 - **Timeline**: 14-20 hours (2-3 days)
 - **Actions**:
   1. Review implementation plan
-  2. Update build script to 6.17.14 *(wrapper landed at `scripts/benchmarks/build-minivim-kernel-6.17.sh`)*
+  2. Update build script to 6.17.14
   3. Execute 5-phase workflow
 
 #### #574: arm64 Kernel 6.17.x
@@ -1220,48 +1159,6 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [ ] Implement advanced threat detection
 - [ ] Add compliance reporting features
 
----
-
-## 📅 Up Next — Datadog CLI Instrumentation (Day 1 & Day 2)
-
-> **Project**: `vibecode-code-server-ai-cli`  
-> **Owner**: platform-observability  
-> Use the OpenRouter API key in `.env` for all AI calls. Replace legacy `DD_LLMOBS_ML_APP` with `DD_LLMOBS_PROJECT`.
-
-- 🔥 **Agent 1 – Anthropic Champion**
-  - [ ] Review Claude Code release docs; add multi-arch installer to `docker/code-server/Dockerfile`.
-  - [ ] Ship `/usr/local/bin/claude-ddtrace` wrapper (exports Datadog vars + OpenRouter endpoint).
-  - [ ] Update docs with new project tag & installation notes.
-- 🔥 **Agent 2 – OpenAI Champion**
-  - [ ] `pip install codex-cli` for amd64/arm64 in the Dockerfile.
-  - [ ] Add `codex-ddtrace` wrapper and run sample completion via OpenRouter; capture latency/token usage in Datadog.
-  - [ ] Document verification commands in `docs/experiments/`.
-- 🔥 **Agent 3 – Google Tools Champion**
-  - [ ] Install `@google/gemini-cli`; ensure Node 18 shim works (`NODE_OPTIONS='-r dd-trace/init'`).
-  - [ ] Execute real Gemini prompt through OpenRouter; record spans in Datadog (latency, tokens, errors).
-  - [ ] Update dashboards for `service:gemini-cli`.
-- 🔥 **Agent 4 – Open Source Champion (Just-Every/Code)**
-  - [ ] Install `@just-every/code` (`npm install -g`), add `coder-ddtrace` wrapper.
-  - [ ] Run sample generation via OpenRouter and confirm Datadog spans.
-- 🔄 **Agent 5 – Documentation Specialist**
-  - [ ] Update `docker/code-server/DATADOG_INTEGRATION.md`, `docs/MCP_DATADOG_INTEGRATION.md`, and env examples with new wrappers & `DD_LLMOBS_PROJECT`.
-  - [ ] Cross-link experiment reports and OpenRouter setup steps.
-- 🔄 **Agent 6 – Experiment Reporter**
-  - [ ] For each CLI, write a Datadog Experiment entry (API call log, latency, tokens).
-  - [ ] Summarize Day 1 & Day 2 findings and conclusions.
-- 📅 **Agent 7 – Observability Engineer**
-  - [ ] Create Datadog monitors + dashboards keyed on `service:*` and `project:vibecode-code-server-ai-cli`.
-  - [ ] Verify LLM Observability ingest shows latency/token charts per CLI.
-- 📅 **Agent 8 – Build & Release Engineer**
-  - [ ] Update Buildx pipelines to produce signed multi-arch images with the new CLIs.
-  - [ ] Coordinate QA, PR, and GitHub issue tracking once instrumentation is validated.
-- 🎯 **Agent 9 – Security & Compliance**
-  - [ ] Add checksum/signature verification for all downloaded binaries.
-  - [ ] Ensure OpenRouter API key sourcing follows secrets policy (no baked credentials).
-- 🎯 **Agent 10 – QA Automation**
-  - [ ] Extend CI to run each CLI inside the container, hit OpenRouter, assert Datadog spans.
-  - [ ] Gate releases on successful instrumentation tests (Day 2 validation).
-
 ### Dependabot Alerts Remediation (2025-09-16)
 
 - [x] services/ai-gateway: Fix Axios DoS (GHSA-4hjh-wcwx-xvwj)
@@ -1305,49 +1202,6 @@ The systematic E2E methodology has been successfully **validated across multiple
 - 📅 **Up Next** - Planned for next iteration
 - 🎯 **Future** - Long-term enhancements
 
----
-
-## 📅 Up Next — Datadog CLI Instrumentation (Day 1 & Day 2)
-
-> **Project**: `vibecode-code-server-ai-cli`  
-> **Owner**: platform-observability  
-> Use the OpenRouter API key in `.env` for all AI calls. Replace legacy `DD_LLMOBS_ML_APP` with `DD_LLMOBS_PROJECT`.
-
-- 🔥 **Agent 1 – Anthropic Champion**
-  - [ ] Review Claude Code release docs; add multi-arch installer to `docker/code-server/Dockerfile`.
-  - [ ] Ship `/usr/local/bin/claude-ddtrace` wrapper (exports Datadog vars + OpenRouter endpoint).
-  - [ ] Update docs with new project tag & installation notes.
-- 🔥 **Agent 2 – OpenAI Champion**
-  - [ ] `pip install codex-cli` for amd64/arm64 in the Dockerfile.
-  - [ ] Add `codex-ddtrace` wrapper and run sample completion via OpenRouter; capture latency/token usage in Datadog.
-  - [ ] Document verification commands in `docs/experiments/`.
-- 🔥 **Agent 3 – Google Tools Champion**
-  - [ ] Install `@google/gemini-cli`; ensure Node 18 shim works (`NODE_OPTIONS='-r dd-trace/init'`).
-  - [ ] Execute real Gemini prompt through OpenRouter; record spans in Datadog (latency, tokens, errors).
-  - [ ] Update dashboards for `service:gemini-cli`.
-- 🔥 **Agent 4 – Open Source Champion (Just-Every/Code)**
-  - [ ] Install `@just-every/code` (`npm install -g`), add `coder-ddtrace` wrapper.
-  - [ ] Run sample generation via OpenRouter and confirm Datadog spans.
-- 🔄 **Agent 5 – Documentation Specialist**
-  - [ ] Update `docker/code-server/DATADOG_INTEGRATION.md`, `docs/MCP_DATADOG_INTEGRATION.md`, and env examples with new wrappers & `DD_LLMOBS_PROJECT`.
-  - [ ] Cross-link experiment reports and OpenRouter setup steps.
-- 🔄 **Agent 6 – Experiment Reporter**
-  - [ ] For each CLI, write a Datadog Experiment entry (API call log, latency, tokens).
-  - [ ] Summarize Day 1 & Day 2 findings and conclusions.
-- 📅 **Agent 7 – Observability Engineer**
-  - [ ] Create Datadog monitors + dashboards keyed on `service:*` and `project:vibecode-code-server-ai-cli`.
-  - [ ] Verify LLM Observability ingest shows latency/token charts per CLI.
-- 📅 **Agent 8 – Build & Release Engineer**
-  - [ ] Update Buildx pipelines to produce signed multi-arch images with the new CLIs.
-  - [ ] Coordinate QA, PR, and GitHub issue tracking once instrumentation is validated.
-- 🎯 **Agent 9 – Security & Compliance**
-  - [ ] Add checksum/signature verification for all downloaded binaries.
-  - [ ] Ensure OpenRouter API key sourcing follows secrets policy (no baked credentials).
-- 🎯 **Agent 10 – QA Automation**
-  - [ ] Extend CI to run each CLI inside the container, hit OpenRouter, assert Datadog spans.
-  - [ ] Gate releases on successful instrumentation tests (Day 2 validation).
-
-
 ## 📚 Related Documentation
 
 - [CHANGELOG.md](./CHANGELOG.md) - Complete project history and achievements
@@ -1358,40 +1212,3 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [MCP_Playwright.md](./MCP_Playwright.md) - UI testing automation
 - [MCP_Serena.md](./MCP_Serena.md) - Code-server integration
 - [MCP_IMPLEMENTATION.md](./MCP_IMPLEMENTATION.md) - Implementation roadmap for MCP components
-## 🚨 CRITICAL ISSUES REQUIRING IMMEDIATE ATTENTION
-
-### 💰 **URGENT: GitHub Actions Cost Optimization ($100 Bill)**
-**Status**: ❌ **IMMEDIATE ACTION REQUIRED**
-
-#### **Problem**: Expensive CI/CD runs on main branch
-- **Current Cost**: $100/month GitHub Actions bill
-- **Root Cause**: CI/CD pipelines running on every main branch commit
-- **Impact**: Unsustainable for development workflow
-
-#### **✅ SOLUTION IMPLEMENTED**: Release Branch Strategy
-- ✅ **Created release branch workflow** - `release-branch-ci.yml` with comprehensive testing
-- ✅ **Optimized main branch CI** - `main-branch-ci.yml` with minimal checks only
-- ✅ **Added cost monitoring** - Weekly cost reports and usage tracking
-- ✅ **Created optimization script** - `optimize-github-actions.sh` to disable expensive workflows
-- ✅ **Added helper tools** - `create-release-branch.sh` for easy release branch creation
-- [ ] **Implement branch protection** - Require release branch for production deployments
-- [ ] **Execute optimization** - Run `./optimize-github-actions.sh` to apply changes
-
-#### **Proposed Branch Strategy**:
-```
-main branch:
-  ✅ Fast linting and basic unit tests only
-
-
-### 🧩 2025-10-24 TypeScript Follow-ups (Codex)
-- [ ] **Collaborative editing stack** — finish wiring real `awareness` object from the Yjs provider; current implementation assumes `WebsocketProvider.awareness` exposes `on/off/getStates` like prod `y-websocket`. Verify in runtime env and replace temporary casts.
-- [ ] **`CursorTracking` & presence typing** — replace the interim `as Map<number, Record<string, any>>` assertions with strongly typed adapters once the upstream awareness contract is confirmed.
-- [ ] **Template marketplace props** — align `TemplateMarketplace`/`TemplateSubmissionForm` public props with the new handlers (`onTemplateSelect`, `onSubmit`). Update any consumers outside `MarketplacePage` and add tests.
-- [ ] **Generated template metadata** — source `category` from real template records; current addition pulls from `template.category` via loose cast.
-- [ ] **Virtualized message list deps** — install `@types/react-window` and `@types/react-virtualized-auto-sizer` (or swap to built-in virtualization) so `MessageListVirtual.tsx` can be typed without inline `any` fallbacks.
-- [ ] **Monaco lightbulb & agent config** — audit `AgentMonacoEditor` options; `lightbulb.enabled` expects `'off' | 'on' | 'onCode'` and agent `model` must map to `ModelType`. Confirm runtime defaults and add a config validation helper.
-- [ ] **Zustand middleware generics** — create shared helpers for `sseMiddleware`/`optimisticMiddleware`; blocker for removing remaining `unknown` casts and satisfying `Mutate` constraints.
-
-#### **Expected Cost Reduction**: 70-80% (from $100 to ~$20-30/month)
-
-
