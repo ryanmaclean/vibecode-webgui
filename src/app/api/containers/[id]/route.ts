@@ -20,7 +20,7 @@ import { containerIdSchema } from '@/lib/api/validation/schemas'
  */
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -30,7 +30,8 @@ export async function GET(
     }
 
     // Validate path parameters
-    const validation = validatePathParams(params, containerIdSchema)
+    const resolvedParams = await params
+    const validation = validatePathParams(resolvedParams, containerIdSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
@@ -82,7 +83,7 @@ export async function GET(
  */
 export async function DELETE(
   _req: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Check authentication
@@ -92,7 +93,8 @@ export async function DELETE(
     }
 
     // Validate path parameters
-    const validation = validatePathParams(params, containerIdSchema)
+    const resolvedParams = await params
+    const validation = validatePathParams(resolvedParams, containerIdSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }

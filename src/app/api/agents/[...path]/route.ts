@@ -108,21 +108,21 @@ const createRunSchema = z.object({
  */
 export async function GET(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   return handleRequest(request, params, 'GET')
 }
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   return handleRequest(request, params, 'POST')
 }
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { path: string[] } }
+  { params }: { params: Promise<{ path: string[] }> }
 ) {
   return handleRequest(request, params, 'DELETE')
 }
@@ -132,10 +132,11 @@ export async function DELETE(
  */
 async function handleRequest(
   request: NextRequest,
-  params: { path: string[] },
+  params: Promise<{ path: string[] }>,
   method: string
 ) {
   try {
+    const resolvedParams = await params
     // Authentication check
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -150,7 +151,7 @@ async function handleRequest(
       )
     }
 
-    const path = params.path || []
+    const path = resolvedParams.path || []
     const [resource, id, subResource, subId] = path
 
     console.debug('Handling agent API request', {
