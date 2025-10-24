@@ -33,7 +33,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
     this.adapter = adapter;
     this.retryHandler = new RetryHandler(retryConfig);
     this.adapterName = `${config.provider}-adapter`;
-    this.errorHandler = new VectorDbErrorHandler(this.adapterName);
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**

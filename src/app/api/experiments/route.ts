@@ -10,47 +10,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { featureFlagEngine, type ExperimentContext } from '@/lib/feature-flags'
-import { console } from '@/lib/server-monitoring'
-import { z } from '@/lib/zod-compat'
+// import { appLogger } from '@/lib/server-monitoring'
+import { experimentsBodySchema } from '@/lib/api/validation/schemas'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-// Zod validation schemas
-const experimentContextSchema = z.object({
-  workspaceId: z.string().optional(),
-  customAttributes: z.record(z.any()).optional()
-})
-
-const evaluateSchema = z.object({
-  action: z.literal('evaluate'),
-  flagKey: z.string().min(1).max(100),
-  context: experimentContextSchema.optional(),
-  defaultValue: z.boolean().optional()
-})
-
-const trackSchema = z.object({
-  action: z.literal('track'),
-  flagKey: z.string().min(1).max(100),
-  metricName: z.string().min(1).max(100),
-  value: z.number(),
-  context: experimentContextSchema.optional()
-})
-
-const evaluateMultipleSchema = z.object({
-  action: z.literal('evaluate_multiple'),
-  flags: z.array(z.object({
-    key: z.string().min(1).max(100),
-    defaultValue: z.boolean().optional()
-  })).min(1).max(20),
-  context: experimentContextSchema.optional()
-})
-
-const experimentRequestSchema = z.discriminatedUnion('action', [
-  evaluateSchema,
-  trackSchema,
-  evaluateMultipleSchema
-])
 
 export async function POST(request: NextRequest) {
   try {
@@ -60,33 +25,46 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    const body = await request.json()
-    const validatedData = experimentRequestSchema.parse(body)
+    // Validate request body
+    const validation = await validateRequestBody(request, experimentsBodySchema)
+    if (!validation.success) {
+      return validation.error
+    }
+    const body = validation.data
+    const action = body.action
+    const flagKey = 'flagKey' in body ? body.flagKey : undefined
+    const context = body.context
+    const metricName = 'metricName' in body ? body.metricName : undefined
+    const value = 'value' in body ? body.value : undefined
 
     // Build experiment context
     const experimentContext: ExperimentContext = {
       userId: session.user.id,
-      workspaceId: validatedData.context?.workspaceId,
+      workspaceId: context?.workspaceId,
       userAgent: request.headers.get('user-agent') || undefined,
       ipAddress: request.headers.get('x-forwarded-for') ||
                  request.headers.get('x-real-ip') ||
                  'unknown',
-      customAttributes: validatedData.context?.customAttributes
+      customAttributes: context?.customAttributes
     }
 
-    switch (validatedData.action) {
+    switch (action) {
       case 'evaluate':
+        if (!flagKey) {
+          return NextResponse.json({ error: 'flagKey is required for evaluation' }, { status: 400 })
+        }
+
         const result = await featureFlagEngine.evaluateFlag(
-          validatedData.flagKey,
+          flagKey,
           experimentContext,
-          validatedData.defaultValue
+          'defaultValue' in body && body.defaultValue !== undefined ? body.defaultValue : undefined
         )
 
-        console?.logBusiness?.('flag_evaluated_api', {
+        console.log('flag_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
-            flagKey: validatedData.flagKey,
+            flagKey,
             variant: result.variant,
             isExperiment: result.isExperiment
           }
@@ -98,20 +76,26 @@ export async function POST(request: NextRequest) {
         })
 
       case 'track':
+        if (!flagKey || !metricName || value === undefined) {
+          return NextResponse.json({
+            error: 'flagKey, metricName, and value are required for tracking'
+          }, { status: 400 })
+        }
+
         await featureFlagEngine.trackMetric(
-          validatedData.flagKey,
-          validatedData.metricName,
-          validatedData.value,
+          flagKey,
+          metricName,
+          value,
           experimentContext
         )
 
-        console?.logBusiness?.('metric_tracked_api', {
+        console.log('metric_tracked_api', {
           userId: session.user.id,
           feature: 'experimentation',
-          value: validatedData.value,
+          value,
           metadata: {
-            flagKey: validatedData.flagKey,
-            metricName: validatedData.metricName
+            flagKey,
+            metricName
           }
         })
 
@@ -121,8 +105,12 @@ export async function POST(request: NextRequest) {
         })
 
       case 'evaluate_multiple':
+        if (!Array.isArray(body.flags)) {
+          return NextResponse.json({ error: 'flags array is required' }, { status: 400 })
+        }
+
         const results = await Promise.all(
-          validatedData.flags.map(async (flag) => {
+          body.flags.map(async (flag: { key: string; defaultValue?: boolean }) => {
             const result = await featureFlagEngine.evaluateFlag(
               flag.key,
               experimentContext,
@@ -132,12 +120,12 @@ export async function POST(request: NextRequest) {
           })
         )
 
-        console?.logBusiness?.('multiple_flags_evaluated_api', {
+        console.log('multiple_flags_evaluated_api', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
-            flagCount: validatedData.flags.length,
-            flags: validatedData.flags.map(f => f.key)
+            flagCount: body.flags.length,
+            flags: body.flags.map((f: { key: string; defaultValue?: boolean }) => f.key)
           }
         })
 
@@ -145,17 +133,13 @@ export async function POST(request: NextRequest) {
           success: true,
           results
         })
+
+      default:
+        return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
     }
 
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: error.errors
-      }, { status: 400 })
-    }
-
-    console?.logSecurity?.('experiment_api_error', {
+    console.error('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })
@@ -189,9 +173,7 @@ export async function GET(request: NextRequest) {
         // flagKey validation already handled by schema
         const experimentResults = await featureFlagEngine.getExperimentResults(flagKey!)
 
-        const experimentResults = await featureFlagEngine.getExperimentResults(flagKey)
-
-        console?.logBusiness?.('experiment_results_viewed', {
+        console.log('experiment_results_viewed', {
           userId: session.user.id,
           feature: 'experimentation',
           metadata: {
@@ -234,7 +216,7 @@ export async function GET(request: NextRequest) {
     }
 
   } catch (error) {
-    console?.logSecurity?.('experiment_api_error', {
+    console.error('experiment_api_error', {
       severity: 'medium',
       details: { error: (error as Error).message }
     })

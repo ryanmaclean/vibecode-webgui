@@ -171,8 +171,8 @@ export async function createAuthOptions(): Promise<NextAuthOptions> {
       })
 
       if (token) {
-        session.user.id = token.id
-        session.user.role = token.role
+        session.user.id = token.id as string
+        session.user.role = token.role as string
         session.user.email = token.email as string
         session.user.name = token.name as string
         console.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })

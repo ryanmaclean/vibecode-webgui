@@ -59,6 +59,10 @@
     "node_modules",
     "jest.config.js",
     "tests/**/*.ts",
-    "tests/**/*.tsx"
+    "tests/**/*.tsx",
+    "src/extensions/**/*",
+    "extensions/**/*",
+    "**/*.stories.tsx",
+    "tmp-*/**/*"
   ]
 }

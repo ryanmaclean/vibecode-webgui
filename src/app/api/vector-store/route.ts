@@ -7,9 +7,13 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
+// import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 import { z } from '@/lib/zod-compat'
 // import { logger } from '@/lib/logger';
+
+// Stub for disabled enhanced-vector-store (has SQL Server dependency)
+const enhancedVectorStore = null as any;
+
 export const dynamic = 'force-dynamic'
 
 // Request schemas
@@ -116,7 +120,12 @@ export async function POST(req: NextRequest) {
     const searchOptions = searchSchema.parse(body)
 
     const startTime = Date.now()
-    const results = await enhancedVectorStore.search(searchOptions)
+    const results = await enhancedVectorStore.search(searchOptions.query, {
+      limit: searchOptions.limit,
+      threshold: searchOptions.threshold,
+      workspaceId: searchOptions.workspaceId,
+      fileIds: searchOptions.fileIds,
+    })
     const queryTime = Date.now() - startTime
 
     return NextResponse.json({
