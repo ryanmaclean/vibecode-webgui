@@ -6,7 +6,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getDatabaseMetricsCollector } from './db-metrics';
 import { ConnectionPoolStatus } from './db-types';
-// import { logger } from '@/lib/logger';
+
 // Connection pool configuration interface
 export interface ConnectionPoolConfig {
   min: number;
@@ -28,10 +28,8 @@ interface PoolConnection {
 /**
  * Database Connection Pool
  * Manages a pool of Prisma connections for efficient resource utilization
- * Now integrated with global connection pool coordinator
  */
-export class ConnectionPool implements ManagedConnectionPool {
-  public readonly name: string = 'general-prisma-pool';
+export class ConnectionPool {
   private connections: Map<string, PoolConnection> = new Map();
   private config: ConnectionPoolConfig;
   private metrics: ConnectionPoolStatus;
@@ -39,11 +37,10 @@ export class ConnectionPool implements ManagedConnectionPool {
 
   /**
    * Constructor for ConnectionPool
-   *
+   * 
    * @param config - Connection pool configuration
-   * @param budget - Optional connection budget (will register with coordinator)
    */
-  constructor(config?: Partial<ConnectionPoolConfig>, budget?: ConnectionBudget) {
+  constructor(config?: Partial<ConnectionPoolConfig>) {
     // Default configuration values
     this.config = {
       min: config?.min ?? 2,
@@ -87,17 +84,6 @@ export class ConnectionPool implements ManagedConnectionPool {
 
     // Start validation timer
     this.startValidationTimer();
-
-    // Register with global coordinator if budget provided
-    if (budget) {
-      try {
-        const coordinator = getGlobalCoordinator();
-        coordinator.registerPool(this, budget);
-        console.log(`${this.name} registered with global coordinator`, { budget });
-      } catch (error) {
-        console.warn(`${this.name} failed to register with coordinator, operating independently`, { error });
-      }
-    }
   }
 
   /**
@@ -127,7 +113,7 @@ export class ConnectionPool implements ManagedConnectionPool {
       // Update metrics
       this.updateMetrics();
       
-      console.info(`Connection pool initialized with ${this.config.min} connections`);
+      console.log(`Connection pool initialized with ${this.config.min} connections`);
     } catch (error) {
       console.error('Error initializing connection pool:', error);
     }
@@ -308,17 +294,9 @@ export class ConnectionPool implements ManagedConnectionPool {
               // Update average acquisition time
               const acquireTime = Date.now() - startTime;
               const totalAcquires = this.metrics.metrics.acquireSuccesses + this.metrics.metrics.acquireFailures;
-              this.metrics.metrics.acquireTimeAvg =
+              this.metrics.metrics.acquireTimeAvg = 
                 (this.metrics.metrics.acquireTimeAvg * (totalAcquires - 1) + acquireTime) / totalAcquires;
-
-              // Report to global coordinator
-              try {
-                const coordinator = getGlobalCoordinator();
-                coordinator.reportConnectionAcquired(this.name, acquireTime);
-              } catch (error) {
-                // Coordinator unavailable, continue without reporting
-              }
-
+              
               // Clear timeout and resolve
               clearTimeout(timeoutId);
               return resolve(conn.prisma);
@@ -374,12 +352,12 @@ export class ConnectionPool implements ManagedConnectionPool {
 
   /**
    * Release a connection back to the pool
-   *
+   * 
    * @param prisma - Prisma client to release
    */
   public async release(prisma: PrismaClient): Promise<void> {
     let found = false;
-
+    
     for (const [, conn] of this.connections.entries()) {
       if (conn.prisma === prisma) {
         // Mark as available
@@ -389,7 +367,7 @@ export class ConnectionPool implements ManagedConnectionPool {
         break;
       }
     }
-
+    
     // If the connection wasn't found in the pool, just disconnect it
     if (!found) {
       try {
@@ -400,15 +378,7 @@ export class ConnectionPool implements ManagedConnectionPool {
         }
       }
     }
-
-    // Report to global coordinator
-    try {
-      const coordinator = getGlobalCoordinator();
-      coordinator.reportConnectionReleased(this.name);
-    } catch (error) {
-      // Coordinator unavailable, continue without reporting
-    }
-
+    
     // Update metrics
     this.updateMetrics();
   }
@@ -424,17 +394,17 @@ export class ConnectionPool implements ManagedConnectionPool {
 
   /**
    * Get detailed information about all connections in the pool
-   *
+   * 
    * @returns Array of connection details
    */
-  public getDetailedInfo(): {
-    connections: Array<{
-      key: string;
-      inUse: boolean;
-      ageMs: number;
+  public getDetailedInfo(): { 
+    connections: Array<{ 
+      key: string; 
+      inUse: boolean; 
+      ageMs: number; 
       idleTimeMs: number;
       timeSinceValidationMs: number;
-    }>
+    }> 
   } {
     const now = Date.now();
     const connections = Array.from(this.connections.entries()).map(([id, conn]) => ({
@@ -444,64 +414,8 @@ export class ConnectionPool implements ManagedConnectionPool {
       idleTimeMs: conn.isInUse ? 0 : now - conn.lastUsed,
       timeSinceValidationMs: 0 // Not tracking this yet
     }));
-
+    
     return { connections };
-  }
-
-  /**
-   * Get pool metrics for coordinator
-   */
-  public getMetrics(): PoolMetrics {
-    return {
-      totalCreated: this.metrics.metrics.totalConnections,
-      totalAcquired: this.metrics.metrics.totalAcquires,
-      totalReleased: this.metrics.metrics.totalAcquires - this.metrics.inUse, // Approximation
-      totalDestroyed: this.metrics.metrics.totalConnections - this.connections.size,
-      totalErrors: this.metrics.metrics.acquireFailures + this.metrics.metrics.connectionValidationFailures,
-      totalTimeouts: 0, // Not tracked separately
-      totalExhausted: 0, // Not tracked
-      avgAcquireTime: this.metrics.metrics.acquireTimeAvg,
-      peakConnections: this.metrics.metrics.peakConnections
-    };
-  }
-
-  /**
-   * Get connections for leak detection
-   */
-  public getConnections(): Array<{
-    id: string;
-    inUse: boolean;
-    createdAt: number;
-    lastUsed: number;
-  }> {
-    return Array.from(this.connections.entries()).map(([id, conn]) => ({
-      id,
-      inUse: conn.isInUse,
-      createdAt: conn.createdAt,
-      lastUsed: conn.lastUsed
-    }));
-  }
-
-  /**
-   * Perform health check
-   */
-  public async healthCheck(): Promise<boolean> {
-    try {
-      // Try to acquire and immediately release a connection
-      const prisma = await this.acquire();
-      try {
-        // Simple query to test connection
-        await prisma.$queryRaw`SELECT 1 as health`;
-        await this.release(prisma);
-        return true;
-      } catch (error) {
-        await this.release(prisma);
-        throw error;
-      }
-    } catch (error) {
-      console.error(`${this.name} health check failed`, { error });
-      return false;
-    }
   }
 
   /**
@@ -534,7 +448,7 @@ export class ConnectionPool implements ManagedConnectionPool {
     // Update metrics
     this.updateMetrics();
     
-    console.info('Connection pool closed');
+    console.log('Connection pool closed');
   }
 }
 

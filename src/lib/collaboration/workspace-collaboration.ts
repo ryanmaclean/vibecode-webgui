@@ -14,7 +14,7 @@
 import { EventEmitter } from 'events';
 import { Redis } from 'ioredis';
 import { WebSocket } from 'ws';
-// import { logger } from '@/lib/logger';
+
 export interface CollaborationUser {
   id: string;
   name: string;

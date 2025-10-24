@@ -2,7 +2,7 @@
 
 import { prisma } from "@/lib/prisma/client";
 import weaviateClient from "@/lib/weaviate/client";
-// import { logger } from '@/lib/logger';
+
 /**
  * Perform a lightweight health check against the PostgreSQL instance.
  *
