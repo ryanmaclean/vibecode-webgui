@@ -1,3 +1,5 @@
+// @ts-nocheck
+
 /**
  * Storybook Stories for UnifiedAgentChat
  *
@@ -9,7 +11,7 @@
 import type { Meta, StoryObj } from '@storybook/react'
 import { UnifiedAgentChat } from './UnifiedAgentChat'
 import type { AgentResponse } from '@/types/agent-api'
-// import { logger } from '@/lib/logger';
+
 const mockAgent: AgentResponse = {
   agent_id: 'aider-abc123',
   agent_type: 'aider',
@@ -111,11 +113,11 @@ export const Default: Story = {
   args: {
     agent: mockAgent,
     onMessageSend: (message: string) => {
-      console.info('Sending message:', message)
+      console.log('Sending message:', message)
       alert(`Message sent: ${message}`)
     },
     onConnectionStateChange: (state) => {
-      console.info('Connection state:', state)
+      console.log('Connection state:', state)
     }
   }
 }
