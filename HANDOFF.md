@@ -149,12 +149,15 @@ Follow `CONSOLIDATION_CHECKLIST.md` systematically.
 ## 🗂️ Code Sources Catalog
 
 ### Branches
-- **main**: 780 errors (current baseline)
-- **fix/typescript-critical-errors**: 451 errors (better state, selective merge applied)
+- **main**: 780 errors (current baseline) - ✅ Pushed to remote
+- **fix/typescript-critical-errors**: 451 errors (better state, selective merge applied) - ✅ Pushed to remote
+- **preserve/type-safety-improvements**: Type safety improvements from stash - ✅ Pushed to remote
 
-### Stashes
-- **stash@{0}**: Database connection pool improvements (23 files)
-- **stash@{1}**: Type safety improvements (18 files, 884 additions, 182 deletions)
+### Stashes (All Preserved as Branches)
+- **stash@{0}**: Type safety improvements - ✅ PRESERVED as branch `preserve/type-safety-improvements`
+  - Contains: MFA provider enhancements, chat-mongodb service extensions, API route fixes
+  - Status: Committed and pushed to remote
+  - Next step: Review during Phase 1 execution (Issue #654)
 
 ### Open PRs
 - **PR #648**: Build PASSING ✅ | 780 → 451 errors | READY TO MERGE
