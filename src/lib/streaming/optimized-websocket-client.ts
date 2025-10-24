@@ -14,7 +14,7 @@
  */
 
 import {
-WebSocketStreamingClient,
+  WebSocketStreamingClient,
   WebSocketStreamConfig,
   StreamHandlers,
   StreamChunk,
@@ -25,7 +25,6 @@ import {
   globalWebSocketPool
 } from '@/lib/websocket-connection-pooling'
 import { prometheusExporter } from '@/lib/monitoring/agentapi-prometheus'
-// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Binary Protocol Configuration
@@ -517,7 +516,7 @@ export class OptimizedWebSocketClient {
       this.recordMetric('backpressure_start')
 
       if (this.config.debug) {
-        console.info('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
+        console.log('[OptimizedWebSocketClient] Backpressure triggered:', bufferedBytes, 'bytes')
       }
     }
 
@@ -529,7 +528,7 @@ export class OptimizedWebSocketClient {
       this.flushSendBuffer()
 
       if (this.config.debug) {
-        console.info('[OptimizedWebSocketClient] Backpressure cleared')
+        console.log('[OptimizedWebSocketClient] Backpressure cleared')
       }
     }
   }
@@ -682,7 +681,7 @@ export async function benchmarkWebSocketClients(
 
   // Create clients
   for (let i = 0; i < clientCount; i++) {
-const client = createOptimizedWebSocketClient(config, {
+    const client = createOptimizedWebSocketClient(config, {
       onChunk: () => {},
       onError: (error) => console.error(`Client ${i} error:`, error)
     })
