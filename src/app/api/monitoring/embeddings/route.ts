@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
-import { AzureEmbeddingService } from '@/lib/ai/azureEmbeddingService';
+import { azureEmbeddingService } from '@/lib/ai/azureEmbeddingService';
 import { EmbeddingService } from '@/lib/ai/embeddingService';
 import { EmbeddingServiceFactory, EmbeddingServiceType } from '@/lib/ai/embeddingServiceFactory';
 import { DatadogIntegration } from '@/lib/monitoring/datadog-integration';
@@ -93,7 +93,7 @@ export async function GET(request: NextRequest) {
           status: 'active',
           monitoringEnabled: true,
           metrics,
-          recentCalls: recentCalls.map(call => ({
+          recentCalls: recentCalls.map((call: any) => ({
             timestamp: call.timestamp,
             duration: call.duration,
             success: call.success,
@@ -259,10 +259,10 @@ function convertToPrometheusFormat(report: any): string {
   // Error breakdown
   lines.push(`# HELP azure_embedding_errors_by_type Errors broken down by type`);
   lines.push(`# TYPE azure_embedding_errors_by_type counter`);
-  Object.entries(report.errorBreakdown as Record<string, number>).forEach(([errorType, count]) => {
+  Object.entries(report.errorBreakdown as Record<string, number>).forEach(([errorType, count]: [string, number]) => {
     lines.push(`azure_embedding_errors_by_type{service="azure-embedding",error_type="${errorType}"} ${count} ${timestamp}`);
   });
-  
+
   // Hourly breakdown
   lines.push(`# HELP azure_embedding_hourly_requests Requests per hour`);
   lines.push(`# TYPE azure_embedding_hourly_requests gauge`);

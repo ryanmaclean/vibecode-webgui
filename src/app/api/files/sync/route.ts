@@ -287,7 +287,15 @@ if (!global.wss) {
         if (connections) {
           connections.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-              client.send(JSON.stringify(event))
+              // Convert FileSyncEvent to a serializable object
+              const eventData: Record<string, unknown> = {
+                type: event.type,
+                path: event.path,
+                metadata: event.metadata,
+                operation: event.operation,
+                ...(event.conflictInfo && { conflictInfo: event.conflictInfo })
+              }
+              client.send(JSON.stringify(eventData))
             }
           })
         }

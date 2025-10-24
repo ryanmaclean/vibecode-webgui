@@ -285,6 +285,14 @@ async function handleThreadRoutes(
   subId?: string
 ) {
   const { client, threadManager, toolRegistry } = getClient()
+
+  if (!threadManager) {
+    return NextResponse.json(
+      { error: 'Thread manager not initialized' },
+      { status: 500 }
+    )
+  }
+
   if (!id) {
     // Create new thread
     if (method === 'POST') {
@@ -340,6 +348,14 @@ async function handleThreadMessages(
   messageId?: string
 ) {
   const { client, threadManager, toolRegistry } = getClient()
+
+  if (!threadManager) {
+    return NextResponse.json(
+      { error: 'Thread manager not initialized' },
+      { status: 500 }
+    )
+  }
+
   if (method === 'POST') {
     const body = await request.json()
     const validated = addMessageSchema.parse(body)
