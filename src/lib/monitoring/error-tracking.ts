@@ -7,7 +7,7 @@
 
 import { datadogRum } from '@datadog/browser-rum';
 import { datadogLogs } from '@datadog/browser-logs';
-// import { logger } from '@/lib/logger';
+
 export interface ErrorTrackingConfig {
   service: string;
   environment: string;
@@ -54,7 +54,7 @@ class DatadogErrorTracker {
     try {
       // Error tracking is automatically enabled with RUM
       // We just need to ensure proper configuration
-      console.info('🐕 Datadog Error Tracking initialized for service:', this.config.service);
+      console.log('🐕 Datadog Error Tracking initialized for service:', this.config.service);
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize Datadog Error Tracking:', error);
@@ -84,7 +84,7 @@ class DatadogErrorTracker {
       });
 
       // Also log the error for additional context
-      datadogLogs.console.error(error.message, {
+      datadogLogs.logger.error(error.message, {
         error: {
           name: error.name,
           message: error.message,
@@ -98,7 +98,7 @@ class DatadogErrorTracker {
         ...tags
       });
 
-      console.info(`🐕 Error tracked: ${error.name} - ${error.message}`);
+      console.log(`🐕 Error tracked: ${error.name} - ${error.message}`);
     } catch (trackingError) {
       console.error('Failed to track error:', trackingError);
     }

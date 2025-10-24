@@ -4,7 +4,7 @@
  * Provides statistical analysis and data warehouse integration capabilities
  */
 
-// import { logger, console } from './server-monitoring'
+import { logger, appLogger } from './server-monitoring'
 
 interface FeatureFlag {
   key: string
@@ -77,7 +77,7 @@ class FeatureFlagEngine {
   constructor() {
     this.initializeDefaultFlags()
 
-    console.logBusiness('feature_flag_engine_initialized', {
+    appLogger.logBusiness('feature_flag_engine_initialized', {
       feature: 'experimentation',
       metadata: { totalFlags: this.flags.size }
     })
@@ -97,7 +97,7 @@ class FeatureFlagEngine {
       const flag = this.flags.get(flagKey)
 
       if (!flag || !flag.enabled) {
-        console.logBusiness('flag_evaluation_disabled', {
+        appLogger.logBusiness('flag_evaluation_disabled', {
           feature: 'feature_flags',
           metadata: { flagKey, enabled: flag?.enabled ?? false }
         })
@@ -131,7 +131,7 @@ class FeatureFlagEngine {
 
         const flagVariant = flag.variants.find(v => v.key === targetedVariant)
 
-        console.logBusiness('flag_evaluation_targeted', {
+        appLogger.logBusiness('flag_evaluation_targeted', {
           feature: 'feature_flags',
           userId: context.userId,
           metadata: { flagKey, variant: targetedVariant, targeted: true }
@@ -152,7 +152,7 @@ class FeatureFlagEngine {
 
       const flagVariant = flag.variants.find(v => v.key === allocatedVariant)
 
-      console.logBusiness('flag_evaluation_allocated', {
+      appLogger.logBusiness('flag_evaluation_allocated', {
         feature: 'feature_flags',
         userId: context.userId,
         metadata: { flagKey, variant: allocatedVariant, randomAllocation: true }
@@ -167,7 +167,7 @@ class FeatureFlagEngine {
       }
 
     } catch (error) {
-      console.error('Feature flag evaluation failed', {
+      logger.error('Feature flag evaluation failed', {
         flagKey,
         userId: context.userId,
         error: (error as Error).message
@@ -180,7 +180,7 @@ class FeatureFlagEngine {
       }
     } finally {
       const duration = Date.now() - startTime
-      console.logPerformance({
+      appLogger.logPerformance({
         endpoint: 'feature_flag_evaluation',
         responseTime: duration,
         method: 'evaluate'
@@ -213,7 +213,7 @@ class FeatureFlagEngine {
       this.metrics.push(metric)
 
       // Log to Datadog for analysis
-      console.logBusiness('experiment_metric_tracked', {
+      appLogger.logBusiness('experiment_metric_tracked', {
         feature: 'experimentation',
         userId: context.userId,
         value,
@@ -226,7 +226,7 @@ class FeatureFlagEngine {
       })
 
       // Send to Datadog as custom metric
-      console.log?.('Experiment metric tracked', {
+      logger?.info?.('Experiment metric tracked', {
         category: 'experimentation',
         flagKey,
         metricName,
@@ -259,7 +259,7 @@ class FeatureFlagEngine {
 
     this.flags.set(flag.key, fullFlag)
 
-    console.logBusiness('feature_flag_created', {
+    appLogger.logBusiness('feature_flag_created', {
       feature: 'feature_flags',
       metadata: {
         flagKey: flag.key,
@@ -268,7 +268,7 @@ class FeatureFlagEngine {
       }
     })
 
-    console.log?.('Feature flag created', {
+    logger?.info?.('Feature flag created', {
       category: 'feature_flags',
       flagKey: flag.key,
       enabled: flag.enabled,

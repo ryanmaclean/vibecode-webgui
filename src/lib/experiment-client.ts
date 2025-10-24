@@ -8,7 +8,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react'
 import { useSession } from 'next-auth/react'
-// import { logger } from '@/lib/logger';
+
 interface ExperimentResult {
   flagKey: string
   variant: string

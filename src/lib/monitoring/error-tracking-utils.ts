@@ -6,7 +6,7 @@
  */
 
 import { trackError, trackApiError, trackDatabaseError, trackAuthError, trackValidationError, trackPerformanceIssue } from '../monitoring/error-tracking';
-// import { logger } from '@/lib/logger';
+
 export interface ErrorContext {
   userId?: string;
   sessionId?: string;
@@ -50,7 +50,7 @@ export class ComponentErrorTracker {
    * Track user interactions that might lead to errors
    */
   trackUserInteraction(action: string, context: ErrorContext = {}): void {
-    console.info(`User interaction in ${this.componentName}: ${action}`, context);
+    console.log(`User interaction in ${this.componentName}: ${action}`, context);
   }
 }
 
