@@ -15,16 +15,9 @@ import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
-import { validateQueryParams } from '@/lib/api/validation/middleware'
-import { z } from 'zod'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-// Schema for file sync query parameters
-const fileSyncQuerySchema = z.object({
-  workspaceId: z.string().min(1, 'Workspace ID is required'),
-})
 
 interface WebSocketMessage {
   type: string;
@@ -217,7 +210,7 @@ async function createFilesInWorkspace(
     kubectl.stdin.end()
 
   kubectl.stdout.on('data', (data: Buffer) => {
-    console.info(`kubectl stdout: ${data}`)
+    console.log(`kubectl stdout: ${data}`)
   })
 
   kubectl.stderr.on('data', (data: Buffer) => {
@@ -229,7 +222,7 @@ async function createFilesInWorkspace(
       console.error(`kubectl process exited with code ${code}`)
       reject(new Error(`kubectl process exited with code ${code}`))
     } else {
-      console.info('File creation pod applied successfully')
+      console.log('File creation pod applied successfully')
       resolve()
     }
   })
@@ -239,7 +232,7 @@ async function createFilesInWorkspace(
 // Initialize WebSocket server if it doesn't exist
 if (!(globalThis as any).wss) {
   (globalThis as any).wss = new WebSocketServer({ noServer: true })
-  console.info('WebSocket server initialized')
+  console.log('WebSocket server initialized')
 
   (globalThis as any).wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
