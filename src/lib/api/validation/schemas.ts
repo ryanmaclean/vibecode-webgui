@@ -263,3 +263,123 @@ export const webSearchSchema = z.object({
   language: z.string().min(2).max(10).optional().default('en'),
   region: z.string().min(2).max(10).optional().default('us')
 })
+
+export const terminalWebSocketQuerySchema = z.object({
+  workspaceId: workspaceIdSchema,
+  userId: z.string().regex(/^[a-zA-Z0-9_-]+$/).max(50)
+})
+
+// ============================================================================
+// Health Check Schemas
+// ============================================================================
+
+export const healthCheckQuerySchema = z.object({
+  filter: z.enum(['database', 'redis', 'ai', 'memory', 'disk', 'all']).optional().default('all'),
+  format: z.enum(['json', 'text', 'metrics']).optional().default('json'),
+  verbose: z.boolean().optional().default(false)
+})
+
+// ============================================================================
+// Monitoring Schemas
+// ============================================================================
+
+export const monitoringQuerySchema = z.object({
+  timeframe: z.enum(['5m', '15m', '1h', '6h', '12h', '24h', '7d', '30d']).optional().default('1h'),
+  metricNames: z.string().transform(val => val.split(',')).pipe(z.array(z.string()).max(20)).optional(),
+  dashboardId: z.string().max(100).optional(),
+  logs: z.boolean().optional().default(false),
+  startTime: z.string().datetime().optional(),
+  endTime: z.string().datetime().optional()
+}).refine(
+  (data) => {
+    if (data.startTime && data.endTime) {
+      const start = new Date(data.startTime)
+      const end = new Date(data.endTime)
+      const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+      return diffDays >= 0 && diffDays <= 30
+    }
+    return true
+  },
+  {
+    message: 'Time range must be positive and max 30 days'
+  }
+)
+
+export const monitoringMetricsBodySchema = z.object({
+  type: z.enum(['performance', 'error']),
+  duration: z.number().max(300000), // Max 5 minutes
+  metrics: z.record(z.unknown()).refine(
+    (obj) => JSON.stringify(obj).length <= 100_000,
+    'Metrics object must not exceed 100KB'
+  )
+})
+
+export const monitoringHistoricalSchema = z.object({
+  startTime: z.string().datetime(),
+  endTime: z.string().datetime(),
+  metricTypes: z.array(z.string()).max(20).optional()
+}).refine(
+  (data) => {
+    const start = new Date(data.startTime)
+    const end = new Date(data.endTime)
+    const diffDays = (end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24)
+    return diffDays >= 0 && diffDays <= 30
+  },
+  {
+    message: 'Time range must be positive and max 30 days'
+  }
+)
+
+// ============================================================================
+// Experiments/Feature Flags Schemas
+// ============================================================================
+
+export const experimentsQuerySchema = z.object({
+  flagKey: z.string().max(100).optional(),
+  action: z.enum(['results', 'list']).optional().default('results')
+}).refine(
+  (data) => {
+    if (data.action === 'results' && !data.flagKey) {
+      return false
+    }
+    return true
+  },
+  {
+    message: 'flagKey is required when action is "results"'
+  }
+)
+
+export const experimentsBodySchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('evaluate'),
+    flagKey: z.string().max(100),
+    defaultValue: z.boolean().optional(),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  }),
+  z.object({
+    action: z.literal('track'),
+    flagKey: z.string().max(100),
+    metricName: z.string().max(100),
+    value: z.number(),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  }),
+  z.object({
+    action: z.literal('evaluate_multiple'),
+    flags: z.array(
+      z.object({
+        key: z.string().max(100),
+        defaultValue: z.boolean().optional()
+      })
+    ).min(1).max(20),
+    context: z.object({
+      workspaceId: workspaceIdSchema.optional(),
+      customAttributes: z.record(z.unknown()).optional()
+    }).optional()
+  })
+])

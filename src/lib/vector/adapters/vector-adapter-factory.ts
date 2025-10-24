@@ -4,7 +4,7 @@
  */
 
 import { 
-IVectorDatabaseAdapter,
+  IVectorDatabaseAdapter,
   IVectorEmbeddingProvider, 
   IVectorCacheAdapter,
   VectorDatabaseConfig,
@@ -17,7 +17,7 @@ import { RedisVectorAdapter } from './redis-vector-adapter';
 import { OpenAIEmbeddingProvider } from './openai-embedding-provider';
 import { AzureEmbeddingProvider } from './azure-embedding-provider';
 import { RedisVectorCacheAdapter } from './redis-vector-cache-adapter';
-// import { logger } from '@/lib/logger';
+
 export class VectorAdapterFactory {
   /**
    * Create a vector database adapter based on configuration
