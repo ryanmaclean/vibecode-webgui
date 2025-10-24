@@ -31,6 +31,8 @@ spec:
         - containerPort: 80
           name: http
         env:
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
         - name: DD_SERVICE
           value: "vibecode-webgui"
         - name: DD_ENV

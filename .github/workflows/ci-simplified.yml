@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.18.0'  # Latest Node.js 20 LTS
+  NODE_VERSION: '24.0.0'  # Latest Node.js 24
 
 jobs:
   # Code Quality & Security
