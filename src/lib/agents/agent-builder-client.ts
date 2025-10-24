@@ -43,7 +43,7 @@ export class AgentBuilderClient {
     });
 
     try {
-      const session = await this.client.beta.chatkit.sessions.create({
+      const session = await (this.client.beta as any).chatkit?.sessions?.create({
         user: userId,
         workflow: {
           id: request.workflowId,

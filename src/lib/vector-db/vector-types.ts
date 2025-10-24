@@ -26,6 +26,10 @@ export interface VectorChunk {
 export interface SearchResult {
   chunk: VectorChunk
   similarity: number
+  metadata?: {
+    provider?: string
+    [key: string]: any
+  }
 }
 
 /**

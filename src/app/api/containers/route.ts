@@ -10,7 +10,14 @@ import { authOptions } from '@/lib/auth'
 import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { createEnhancedContainerSchema } from '@/lib/api/validation/schemas-phase4-batch2'
+import { containerOptionsSchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
+
+// Define inline schema since schemas-phase4-batch2 doesn't exist
+const createEnhancedContainerSchema = z.object({
+  image: z.string().min(1).max(255),
+  options: containerOptionsSchema.optional()
+})
 // import { logger } from '@/lib/logger';
 /**
  * GET /api/containers

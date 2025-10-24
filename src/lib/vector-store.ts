@@ -374,8 +374,8 @@ this.embeddingService = null
 
       // Filter by threshold and format results
       const results: SearchResult[] = rawResults
-        .filter((row) => row.similarity >= threshold)
-        .map((row) => ({
+        .filter((row: RawResult) => row.similarity >= threshold)
+        .map((row: RawResult) => ({
           chunk: {
             id: row.chunk_id,
             content: row.content,
@@ -471,7 +471,7 @@ this.embeddingService = null
         }
       })
 
-      return chunks.filter(chunk => chunk.chunk_id && chunk.file_id && chunk.file).map(chunk => ({
+      return chunks.filter((chunk: any) => chunk.chunk_id && chunk.file_id && chunk.file).map((chunk: any) => ({
         chunk: {
           id: chunk.chunk_id!,
           content: chunk.content,

@@ -47,7 +47,7 @@ export class AgentSessionQueries {
     const startTime = Date.now();
 
     try {
-      const session = await prisma.$transaction(async (tx) => {
+      const session = await prisma.$transaction(async (tx: any) => {
         // Check workspace agent limit (max 3 per workspace)
         const activeCount = await tx.agentSession.count({
           where: {
@@ -372,7 +372,7 @@ export class AgentConversationQueries {
         await conversationContextCache.cacheContext(
           agentSessionId,
           conversationId,
-          chronological.map(m => ({ role: m.role, content: m.content }))
+          chronological.map((m: { role: string; content: string }) => ({ role: m.role, content: m.content }))
         );
       }
 

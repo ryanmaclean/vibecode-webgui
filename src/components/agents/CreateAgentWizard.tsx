@@ -26,7 +26,7 @@ Wand2,
   Sparkles,
   Settings,
   Eye,
-  Loader2
+  Loader
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -514,7 +514,7 @@ export function CreateAgentWizard({
             <Button onClick={handleCreate} disabled={isCreating || !canProceed()}>
               {isCreating ? (
                 <>
-                  <Loader2 className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
+                  <Loader className="h-4 w-4 mr-2 animate-spin" aria-hidden="true" />
                   Creating...
                 </>
               ) : (

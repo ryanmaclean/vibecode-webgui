@@ -66,7 +66,7 @@ export class CollaborationService {
   private setupSocketHandlers(): void {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: any) => {
       console.log('User connected:', socket.id);
 
       // Handle user joining workspace

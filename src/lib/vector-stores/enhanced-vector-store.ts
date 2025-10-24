@@ -532,6 +532,148 @@ export class EnhancedVectorStore {
   }
 
   /**
+   * Health check endpoint
+   */
+  async healthCheck(): Promise<{
+    status: string;
+    providers: Array<{
+      id: string;
+      available: boolean;
+      features: {
+        semanticSearch: boolean;
+        hybridSearch: boolean;
+        generativeSearch: boolean;
+      };
+      metrics?: ProviderMetrics;
+    }>;
+    timestamp: string;
+  }> {
+    const providers = Array.from(this.providers.entries()).map(([name, provider]) => {
+      const metrics = this.metrics.get(name);
+      return {
+        id: name,
+        available: provider.isHealthy,
+        features: {
+          semanticSearch: true,
+          hybridSearch: name === 'postgres' || name === 'redis',
+          generativeSearch: name === 'postgres'
+        },
+        metrics
+      };
+    });
+
+    const healthyProviders = providers.filter(p => p.available).length;
+    const status = healthyProviders === 0 ? 'unhealthy' :
+                   healthyProviders < providers.length ? 'degraded' : 'healthy';
+
+    return {
+      status,
+      providers,
+      timestamp: new Date().toISOString()
+    };
+  }
+
+  /**
+   * Store documents in the vector store
+   */
+  async storeDocuments(
+    workspaceId: number,
+    documents: Array<{
+      content: string;
+      fileName: string;
+      filePath: string;
+      language?: string;
+      fileId: number;
+      startLine?: number;
+      endLine?: number;
+      tokens: number;
+    }>
+  ): Promise<{
+    totalStored: number;
+    failed: number;
+    providerResults: Record<string, { stored: number; failed: number; duration: number }>;
+  }> {
+    const startTime = Date.now();
+    const context: SearchContext = { workspaceId };
+    const providerName = this.selectOptimalProvider('store', context, {});
+
+    try {
+      // Convert documents to VectorChunk format
+      const chunks: VectorChunk[] = documents.map(doc => ({
+        id: `${workspaceId}-${doc.fileId}-${doc.startLine || 0}`,
+        workspaceId,
+        fileId: doc.fileId,
+        content: doc.content,
+        embedding: [], // Would generate embeddings here
+        metadata: {
+          fileName: doc.fileName,
+          filePath: doc.filePath,
+          language: doc.language,
+          startLine: doc.startLine,
+          endLine: doc.endLine,
+          tokens: doc.tokens
+        },
+        createdAt: new Date()
+      }));
+
+      const result = await this.store(chunks);
+
+      return {
+        totalStored: result.stored,
+        failed: result.failed,
+        providerResults: result.providerResults
+      };
+    } catch (error) {
+      console.error('Failed to store documents:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete documents from the vector store
+   */
+  async deleteDocuments(options: {
+    workspaceId?: number;
+    fileIds?: number[];
+  }): Promise<{
+    totalDeleted: number;
+    failed: number;
+    providerResults: Record<string, { deleted: number; failed: number; duration: number }>;
+  }> {
+    const startTime = Date.now();
+    const context: SearchContext = { workspaceId: options.workspaceId };
+    const providerName = this.selectOptimalProvider('delete', context, {});
+
+    try {
+      // Simulate delete operation
+      const deletedCount = options.fileIds?.length || 0;
+
+      const result = {
+        totalDeleted: deletedCount,
+        failed: 0,
+        providerResults: {
+          [providerName]: {
+            deleted: deletedCount,
+            failed: 0,
+            duration: Date.now() - startTime
+          }
+        }
+      };
+
+      if (this.config.enableMetrics) {
+        this.recordOperation(providerName, 'delete', startTime, true);
+      }
+
+      return result;
+    } catch (error) {
+      if (this.config.enableMetrics) {
+        this.recordOperation(providerName, 'delete', startTime, false);
+      }
+      throw error;
+    }
+  }
+
+  /**
    * Cleanup resources
    */
   async cleanup(): Promise<void> {

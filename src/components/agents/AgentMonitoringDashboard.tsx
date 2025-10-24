@@ -27,10 +27,10 @@ Activity,
   TrendingUp,
   TrendingDown,
   AlertTriangle,
-  CheckCircle2,
+  CheckCircle,
   Clock,
   DollarSign,
-  BarChart3,
+  BarChart,
   RefreshCw
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -161,7 +161,7 @@ function AgentStatusCard({ metrics }: AgentStatusCardProps) {
   const statusConfig = {
     healthy: {
       color: 'bg-green-500/10 text-green-500 border-green-500/20',
-      icon: CheckCircle2
+      icon: CheckCircle
     },
     warning: {
       color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
@@ -376,7 +376,7 @@ export function AgentMonitoringDashboard({
         <MetricCard
           title="Total Requests"
           value={systemMetrics.totalRequests.toLocaleString()}
-          icon={BarChart3}
+          icon={BarChart}
           iconColor="text-green-500"
           description={`${avgErrorRate.toFixed(1)}% error rate`}
         />

@@ -12,7 +12,7 @@ import { authOptions } from '@/lib/auth'
 import { featureFlagEngine, type ExperimentContext } from '@/lib/feature-flags'
 // import { appLogger } from '@/lib/server-monitoring'
 import { experimentsBodySchema } from '@/lib/api/validation/schemas'
-import { validateBody, checkRateLimit } from '@/lib/api/validation/helpers'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -25,16 +25,10 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Rate limiting: 100 requests per minute per user
-    const rateLimit = checkRateLimit(`experiments-post:${session.user.id}`, 100, 60000)
-    if (!rateLimit.allowed) {
-      return rateLimit.response
-    }
-
     // Validate request body
-    const validation = await validateBody(request, experimentsBodySchema)
+    const validation = await validateRequestBody(request, experimentsBodySchema)
     if (!validation.success) {
-      return validation.response
+      return validation.error
     }
     const body = validation.data
     const action = body.action
@@ -165,18 +159,12 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Admin access required' }, { status: 403 })
     }
 
-    // Rate limiting: 100 requests per minute per user
-    const rateLimit = checkRateLimit(`experiments-get:${session.user.id}`, 100, 60000)
-    if (!rateLimit.allowed) {
-      return rateLimit.response
-    }
-
     // Validate query parameters
     const { experimentsQuerySchema } = await import('@/lib/api/validation/schemas')
-    const { validateQueryParams } = await import('@/lib/api/validation/helpers')
+    const { validateQueryParams } = await import('@/lib/api/validation/middleware')
     const validation = validateQueryParams(request, experimentsQuerySchema)
     if (!validation.success) {
-      return validation.response
+      return validation.error
     }
     const { flagKey, action } = validation.data
 

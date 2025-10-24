@@ -37,7 +37,7 @@ export class AIAssistantManager {
                 location: vscode.ProgressLocation.Notification,
                 title: "Explaining code...",
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 0 });
 
                 const explanation = await this.openRouterClient.explainCode(selectedText);
@@ -83,7 +83,7 @@ export class AIAssistantManager {
                 location: vscode.ProgressLocation.Notification,
                 title: "Optimizing code...",
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 0 });
 
                 const optimization = await this.openRouterClient.optimizeCode(selectedText);
@@ -127,17 +127,17 @@ export class AIAssistantManager {
 
             // Get diagnostic information for the selected code
             const diagnostics = vscode.languages.getDiagnostics(editor.document.uri);
-            const relevantDiagnostics = diagnostics.filter(diagnostic =>
+            const relevantDiagnostics = diagnostics.filter((diagnostic: vscode.Diagnostic) =>
                 selection.intersection(diagnostic.range)
             );
 
-            const errorMessages = relevantDiagnostics.map(d => d.message).join('\n');
+            const errorMessages = relevantDiagnostics.map((d: vscode.Diagnostic) => d.message).join('\n');
 
             await vscode.window.withProgress({
                 location: vscode.ProgressLocation.Notification,
                 title: "Fixing code...",
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 0 });
 
                 const fix = await this.openRouterClient.fixCode(selectedText, errorMessages);
@@ -153,7 +153,7 @@ export class AIAssistantManager {
                 );
 
                 if (action === 'Apply Fix') {
-                    await editor.edit(editBuilder => {
+                    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
                         editBuilder.replace(selection, this.extractCodeFromResponse(fix));
                     });
                 } else if (action === 'Show Fix') {

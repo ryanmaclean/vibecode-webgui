@@ -212,6 +212,22 @@ class DatadogMetricsService {
     this.sendMetric('vibecode.user.actions', 1, tags, options?.timestamp)
   }
 
+  // Counter increment method
+  increment(metricName: string, value: number = 1, options?: MetricOptions) {
+    if (!this.isEnabled) return
+
+    const tags = this.mergeTags(options?.tags)
+    this.sendMetric(this.formatMetricName(tags.component, metricName), value, tags, options?.timestamp)
+  }
+
+  // Histogram/gauge method
+  histogram(metricName: string, value: number, options?: MetricOptions) {
+    if (!this.isEnabled) return
+
+    const tags = this.mergeTags(options?.tags)
+    this.sendMetric(this.formatMetricName(tags.component, metricName), value, tags, options?.timestamp)
+  }
+
   // Helper methods for categorization
   private categorizeMessageSize(length: number): string {
     if (length < 100) return 'small'

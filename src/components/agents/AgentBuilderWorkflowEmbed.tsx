@@ -18,7 +18,7 @@ import type {} from '@openai/chatkit'
 
 import { useMemo, useState } from 'react'
 import { ChatKit, useChatKit, type UseChatKitOptions } from '@openai/chatkit-react'
-import { Loader2, RefreshCw, Settings2 } from 'lucide-react'
+import { Loader, RefreshCw, Settings } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -222,7 +222,7 @@ export function AgentBuilderWorkflowEmbed({ initialWorkflowId }: AgentBuilderWor
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
-            <Settings2 className="h-5 w-5 text-primary" />
+            <Settings className="h-5 w-5 text-primary" />
             Agent Builder Workflow
           </CardTitle>
           <CardDescription>
@@ -399,7 +399,7 @@ export function AgentBuilderWorkflowEmbed({ initialWorkflowId }: AgentBuilderWor
               <Button type="submit" disabled={isConnecting}>
                 {isConnecting ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    <Loader className="mr-2 h-4 w-4 animate-spin" />
                     Configuring…
                   </>
                 ) : (

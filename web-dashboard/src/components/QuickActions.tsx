@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Plus, RefreshCw, Settings, Terminal, Trash2 } from 'lucide-react'
+import { Plus, RefreshCw, Settings, Terminal, Trash } from 'lucide-react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { k8sApi, aiApi } from '../services/api'
 
@@ -40,7 +40,7 @@ export function QuickActions() {
     {
       name: 'Clear Cache',
       description: 'Clear AI response cache',
-      icon: Trash2,
+      icon: Trash,
       color: 'text-purple-600 bg-purple-50 hover:bg-purple-100',
       action: () => clearCacheMutation.mutate(),
       loading: clearCacheMutation.isPending

@@ -15,7 +15,12 @@ detectDockerRuntime,
 } from '@/lib/docker/detection';
 // import { logger } from '@/lib/logger';
 import { validateRequestBody } from '@/lib/api/validation/middleware';
-import { dockerActionSchema } from '@/lib/api/validation/schemas-phase4-batch2';
+import { z } from '@/lib/zod-compat';
+
+// Define inline schema since schemas-phase4-batch2 doesn't exist
+const dockerActionSchema = z.object({
+  action: z.enum(['start-colima', 'status', 'info'])
+});
 export const dynamic = 'force-dynamic';
 
 /**

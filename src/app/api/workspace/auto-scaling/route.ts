@@ -9,12 +9,40 @@ import { authOptions } from '@/lib/auth'
 import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
 // import { logger } from '@/lib/logger'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import {
-  workspaceMetricsSchema,
-  workspaceRegistrationSchema,
-  autoScalingConfigSchema
-} from '@/lib/api/validation/schemas-phase4-batch2'
 import { workspaceIdSchema } from '@/lib/api/validation/schemas'
+import { z } from '@/lib/zod-compat'
+
+// Define inline schemas since schemas-phase4-batch2 doesn't exist
+const workspaceMetricsSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  cpuUsage: z.number().min(0).max(100).optional(),
+  memoryUsage: z.number().min(0).max(100).optional(),
+  diskUsage: z.number().min(0).max(100).optional(),
+  networkIO: z.number().min(0).optional(),
+  activeConnections: z.number().int().min(0).optional(),
+  resourceRequests: z.number().int().min(0).optional(),
+  queueLength: z.number().int().min(0).optional()
+})
+
+const workspaceRegistrationSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  resources: z.object({
+    cpu: z.number().optional(),
+    memory: z.number().optional(),
+    storage: z.number().optional()
+  }).optional()
+})
+
+const autoScalingConfigSchema = z.object({
+  enabled: z.boolean().optional(),
+  minInstances: z.number().int().min(0).optional(),
+  maxInstances: z.number().int().min(1).optional(),
+  targetCpuUtilization: z.number().min(0).max(100).optional(),
+  targetMemoryUtilization: z.number().min(0).max(100).optional(),
+  scaleUpThreshold: z.number().min(0).max(100).optional(),
+  scaleDownThreshold: z.number().min(0).max(100).optional(),
+  cooldownPeriod: z.number().int().min(0).optional()
+})
 export const dynamic = 'force-dynamic'
 
 /**

@@ -21,8 +21,8 @@ import {
   Play,
   Square,
   AlertCircle,
-  CheckCircle2,
-  Loader2,
+  CheckCircle,
+  Loader,
   Code2,
   GitBranch,
   TestTube,
@@ -231,21 +231,21 @@ function getStatusIndicator(status: AgentStatus | 'ready' | 'starting') {
   switch (status) {
     case 'ready':
       return {
-        icon: <CheckCircle2 className="h-4 w-4" aria-hidden="true" />,
+        icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
         label: 'Ready',
         color: 'text-green-500',
         bgColor: 'bg-green-500/10'
       }
     case 'running':
       return {
-        icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
+        icon: <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />,
         label: 'Running',
         color: 'text-blue-500',
         bgColor: 'bg-blue-500/10'
       }
     case 'starting':
       return {
-        icon: <Loader2 className="h-4 w-4 animate-spin" aria-hidden="true" />,
+        icon: <Loader className="h-4 w-4 animate-spin" aria-hidden="true" />,
         label: 'Starting',
         color: 'text-yellow-500',
         bgColor: 'bg-yellow-500/10'
@@ -267,7 +267,7 @@ function getStatusIndicator(status: AgentStatus | 'ready' | 'starting') {
       }
     case 'completed':
       return {
-        icon: <CheckCircle2 className="h-4 w-4" aria-hidden="true" />,
+        icon: <CheckCircle className="h-4 w-4" aria-hidden="true" />,
         label: 'Completed',
         color: 'text-green-500',
         bgColor: 'bg-green-500/10'

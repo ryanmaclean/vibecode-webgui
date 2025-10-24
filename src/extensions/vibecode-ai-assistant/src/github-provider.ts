@@ -201,7 +201,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
             const repoName = await vscode.window.showInputBox({
                 prompt: 'Enter repository name',
                 value: workspaceFolder.name,
-                validateInput: (value) => {
+                validateInput: (value: string) => {
                     if (!value || value.trim().length === 0) {
                         return 'Repository name is required';
                     }
@@ -230,7 +230,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Creating GitHub repository...',
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 20, message: 'Creating repository...' });
 
                 const response = await axios.post(`${this.baseUrl}/api/github/repositories`, {
@@ -307,7 +307,7 @@ export class GitHubProvider implements vscode.TreeDataProvider<GitHubTreeItem> {
                 location: vscode.ProgressLocation.Notification,
                 title: 'Setting up GitHub workflow...',
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 30, message: 'Generating workflow file...' });
 
                 await axios.post(`${this.baseUrl}/api/github/repositories/${repo!.id}/workflows`, {

@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
     if (!conversation) {
       // Create new conversation if it doesn't exist
-      const newConv = await mongodbChatService.createConversation(
+      const newConv: any = await mongodbChatService.createConversation(
         message.slice(0, 100) + (message.length > 100 ? '...' : ''),
         `session-${Date.now()}`,
         model,
@@ -72,11 +72,12 @@ export async function POST(request: NextRequest) {
       )
 
       // Type guard: check if it's the new format with id
-      if (typeof newConv === 'object' && 'id' in newConv) {
+      if (typeof newConv === 'object' && newConv !== null && 'id' in newConv) {
         conversation = newConv as ChatConversation & { id: string; messages: Array<{ content: string; from: string }> }
       } else {
-        // Fetch the conversation we just created
-        conversation = await mongodbChatService.getConversationById(newConv.toString())
+        // Fetch the conversation we just created - handle ObjectId
+        const convId = typeof newConv === 'object' ? newConv.toString() : String(newConv)
+        conversation = await mongodbChatService.getConversationById(convId)
         if (!conversation) {
           throw new Error('Failed to create conversation')
         }
@@ -159,7 +160,7 @@ export async function POST(request: NextRequest) {
                     `You are a helpful AI assistant integrated with VibeCode WebGUI. You have access to the user's workspace and can help with development tasks, code review, and general questions. Use the following context to provide more accurate and relevant responses:\n\n${enhancedRAGService.formatContextForPrompt(ragContext)}` :
                     'You are a helpful AI assistant integrated with VibeCode WebGUI. You have access to the user\'s workspace and can help with development tasks, code review, and general questions.'
                 },
-                ...conversation.messages.slice(-10).map(msg => ({ // Last 10 messages for context
+                ...conversation.messages.slice(-10).map((msg: any) => ({ // Last 10 messages for context
                   role: msg.from === 'user' ? 'user' : 'assistant',
                   content: msg.content
                 })),

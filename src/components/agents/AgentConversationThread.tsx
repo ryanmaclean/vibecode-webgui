@@ -24,7 +24,7 @@ import {
   Shield,
   MoreVertical,
   Edit,
-  Trash2,
+  Trash,
   GitBranch,
   Copy,
   Check,
@@ -277,7 +277,7 @@ function MessageItem({
                 className="h-7 px-2 text-destructive hover:text-destructive"
                 aria-label="Delete message"
               >
-                <Trash2 className="h-3 w-3" aria-hidden="true" />
+                <Trash className="h-3 w-3" aria-hidden="true" />
               </Button>
             )}
           </div>

@@ -22,7 +22,7 @@ import {
   Search,
   Filter,
   Download,
-  Trash2,
+  Trash,
   MoreVertical,
   Clock,
   MessageSquare,
@@ -270,7 +270,7 @@ function ConversationItem({
                     setShowMenu(false)
                   }}
                 >
-                  <Trash2 className="h-3 w-3" aria-hidden="true" />
+                  <Trash className="h-3 w-3" aria-hidden="true" />
                   Delete
                 </button>
               )}

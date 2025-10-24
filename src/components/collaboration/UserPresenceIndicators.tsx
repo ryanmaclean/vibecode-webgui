@@ -154,7 +154,7 @@ export default function UserPresenceIndicators({
       const states = awareness.getStates()
       const newPresenceData = new Map<string, UserPresence>()
 
-      states.forEach((state, clientId) => {
+      states.forEach((state: any, clientId: number) => {
         if (state.presence && state.presence.userId !== currentUserId) {
           const user = state.user || {}
           const presence: UserPresence = {

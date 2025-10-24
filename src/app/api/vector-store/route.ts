@@ -73,7 +73,7 @@ export async function GET(req: NextRequest) {
         status: 'success',
         data: {
           providers: stats.providers,
-          recommendedProvider: stats.providers.find(p => p.available && p.features.semanticSearch)?.id || 'none'
+          recommendedProvider: stats.providers.find((p: { available: boolean; features: { semanticSearch: boolean }; id: string }) => p.available && p.features.semanticSearch)?.id || 'none'
         }
       })
     }

@@ -9,22 +9,15 @@ import { NextRequest, NextResponse } from 'next/server';
 import * as os from 'os';
 // import { logger } from '@/lib/logger';
 import { monitoringQuerySchema, monitoringMetricsBodySchema, monitoringHistoricalSchema } from '@/lib/api/validation/schemas';
-import { validateQueryParams, validateBody, checkRateLimit } from '@/lib/api/validation/helpers';
+import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware';
 
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
   try {
-    // Rate limiting: 100 requests per minute
-    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimit = checkRateLimit(`monitoring-metrics:${clientIp}`, 100, 60000);
-    if (!rateLimit.allowed) {
-      return rateLimit.response;
-    }
-
     // Validate query parameters
     const validation = validateQueryParams(request, monitoringQuerySchema);
     if (!validation.success) {
-      return validation.response;
+      return validation.error;
     }
 
     const metrics = await collectMetrics();
@@ -254,17 +247,10 @@ async function performHealthChecks(): Promise<boolean> {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Rate limiting: 100 requests per minute
-    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimit = checkRateLimit(`monitoring-metrics-post:${clientIp}`, 100, 60000);
-    if (!rateLimit.allowed) {
-      return rateLimit.response;
-    }
-
     // Validate request body
-    const validation = await validateBody(request, monitoringMetricsBodySchema);
+    const validation = await validateRequestBody(request, monitoringMetricsBodySchema);
     if (!validation.success) {
-      return validation.response;
+      return validation.error;
     }
     const { type, duration, metrics } = validation.data;
 
@@ -323,17 +309,10 @@ async function logErrorMetrics(metrics: Record<string, unknown>): Promise<void> 
  */
 export async function PUT(request: NextRequest) {
   try {
-    // Rate limiting: 100 requests per minute
-    const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
-    const rateLimit = checkRateLimit(`monitoring-metrics-put:${clientIp}`, 100, 60000);
-    if (!rateLimit.allowed) {
-      return rateLimit.response;
-    }
-
     // Validate request body
-    const validation = await validateBody(request, monitoringHistoricalSchema);
+    const validation = await validateRequestBody(request, monitoringHistoricalSchema);
     if (!validation.success) {
-      return validation.response;
+      return validation.error;
     }
     const { startTime, endTime, metricTypes } = validation.data;
 

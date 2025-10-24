@@ -79,7 +79,7 @@ export const CollaborativeChatInterface = ({
   }
 
   const renderCursors = () => {
-    return cursors.map((cursor) => {
+    return cursors.map((cursor: { userId: string; x: number; y: number }) => {
       const user = activeUsers.find(u => u.id === cursor.userId)
       if (!user || cursor.userId === userId) return null
 
@@ -130,7 +130,7 @@ export const CollaborativeChatInterface = ({
           ) : (
             <>
               <span className="font-medium">
-                {currentTypingUsers.slice(0, 2).map((user, index) => (
+                {currentTypingUsers.slice(0, 2).map((user: { id: string; color: string; name: string }, index: number) => (
                   <span key={user.id}>
                     {index > 0 && ', '}
                     <span style={{ color: user.color }}>{user.name}</span>

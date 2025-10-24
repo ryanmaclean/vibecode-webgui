@@ -21,7 +21,7 @@ Select,
   SelectValue,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
+import { Loader, Zap, Code, FileCode, Terminal } from 'lucide-react'
 // import { logger } from '@/lib/logger';
 
 const SAMPLE_CODE = {
