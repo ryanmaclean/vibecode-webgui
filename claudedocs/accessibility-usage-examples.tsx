@@ -9,7 +9,7 @@ import React, { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { X, Search, Save, Trash2 } from 'lucide-react'
+import { X, Search, Save, Trash } from 'lucide-react'
 
 // ============================================================================
 // BUTTON EXAMPLES
@@ -44,7 +44,7 @@ export function IconButtonExample() {
         size="icon"
         variant="destructive"
       >
-        <Trash2 className="h-4 w-4" />
+        <Trash className="h-4 w-4" />
       </Button>
     </div>
   )

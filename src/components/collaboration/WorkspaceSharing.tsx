@@ -28,7 +28,7 @@ Share2,
   Clock,
   Eye,
   Edit,
-  Trash2,
+  Trash,
   Crown,
   AlertTriangle,
   CheckCircle,
@@ -394,7 +394,7 @@ export default function WorkspaceSharing({
                 onClick={() => onTeamDelete(team.teamId)}
                 className="p-1 text-red-500 hover:text-red-700 transition-colors"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash className="w-4 h-4" />
               </button>
             </div>
           )}

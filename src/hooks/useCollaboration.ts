@@ -102,6 +102,21 @@ export interface UseCollaborationReturn extends CollaborationState, Collaboratio
   onlineUsers: User[];
   recentActivity: WorkspaceActivity[];
   unreadMessages: number;
+
+  // Typing indicators
+  typingUsers?: Set<string>;
+  startTyping?: () => void;
+  stopTyping?: () => void;
+
+  // Cursor tracking
+  cursors?: Map<string, { x: number; y: number; file?: string }>;
+
+  // Socket connection
+  socket?: any;
+
+  // Collaboration manager (for Yjs/collaborative editing)
+  collaborationManager?: any;
+  awareness?: any;
 }
 
 /**

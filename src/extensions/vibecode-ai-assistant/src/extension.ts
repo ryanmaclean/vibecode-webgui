@@ -110,7 +110,7 @@ export function activate(context: vscode.ExtensionContext) {
             `;
         }),
 
-        vscode.commands.registerCommand('vibecode.templates.create', async (template) => {
+        vscode.commands.registerCommand('vibecode.templates.create', async (template: any) => {
             if (template) {
                 await templatesProvider.createProjectFromTemplate(template);
             } else {
@@ -118,7 +118,7 @@ export function activate(context: vscode.ExtensionContext) {
             }
         }),
 
-        vscode.commands.registerCommand('vibecode.templates.preview', async (template) => {
+        vscode.commands.registerCommand('vibecode.templates.preview', async (template: any) => {
             await templatesProvider.previewTemplate(template);
         }),
 
@@ -131,15 +131,15 @@ export function activate(context: vscode.ExtensionContext) {
             await githubProvider.createRepository();
         }),
 
-        vscode.commands.registerCommand('vibecode.github.setupWorkflow', async (repo) => {
+        vscode.commands.registerCommand('vibecode.github.setupWorkflow', async (repo: any) => {
             await githubProvider.setupWorkflow(repo);
         }),
 
-        vscode.commands.registerCommand('vibecode.github.openRepo', async (repo) => {
+        vscode.commands.registerCommand('vibecode.github.openRepo', async (repo: any) => {
             await githubProvider.openRepository(repo);
         }),
 
-        vscode.commands.registerCommand('vibecode.github.triggerWorkflow', async (workflow) => {
+        vscode.commands.registerCommand('vibecode.github.triggerWorkflow', async (workflow: any) => {
             await githubProvider.triggerWorkflow(workflow);
         }),
 
@@ -193,7 +193,7 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(statusBarItem);
 
     // Handle configuration changes
-    const configurationChangeHandler = vscode.workspace.onDidChangeConfiguration(event => {
+    const configurationChangeHandler = vscode.workspace.onDidChangeConfiguration((event: vscode.ConfigurationChangeEvent) => {
         if (event.affectsConfiguration('vibecode')) {
             openRouterClient.updateConfiguration();
         }
@@ -206,7 +206,7 @@ export function activate(context: vscode.ExtensionContext) {
         'Open Templates',
         'Browse Marketplace',
         'Setup GitHub'
-    ).then(selection => {
+    ).then((selection: string | undefined) => {
         if (selection === 'Open Templates') {
             vscode.commands.executeCommand('workbench.view.extension.vibecode-ai');
         } else if (selection === 'Browse Marketplace') {

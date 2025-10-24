@@ -375,7 +375,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       for (let i = 0; i < resources.length; i += batchSize) {
         const batch = resources.slice(i, i + batchSize);
         await Promise.all(
-          batch.map(resource => this.container.item(resource.id, resource.id).delete())
+          batch.map((resource: { id: string }) => this.container.item(resource.id, resource.id).delete())
         );
       }
     } catch (error) {

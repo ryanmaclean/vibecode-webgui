@@ -497,7 +497,7 @@ export class EnhancedAIClient {
       throw new Error(`Provider ${finalConfig.provider} not configured for embeddings`);
     }
 
-    const response = await client.embeddings.create({
+    const response = await (client as any).embeddings?.create({
       model: finalConfig.model,
       input: input
     });

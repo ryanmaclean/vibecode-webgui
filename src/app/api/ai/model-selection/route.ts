@@ -1,7 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { intelligentModelSelection } from '@/lib/services/intelligent-model-selection'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { modelSelectionRequestSchema } from '@/lib/api/validation/schemas-phase4-batch2'
+import { z } from '@/lib/zod-compat'
+
+// Define inline schema since schemas-phase4-batch2 doesn't exist
+const modelSelectionRequestSchema = z.object({
+  prompt: z.string().min(1).max(50_000),
+  metadata: z.object({
+    taskType: z.enum(['code', 'chat', 'analysis', 'creative', 'reasoning']).optional(),
+    contextLength: z.number().int().positive().optional(),
+    hasImages: z.boolean().optional(),
+    hasFiles: z.boolean().optional()
+  }).optional(),
+  preferences: z.object({
+    prioritizeSpeed: z.boolean().optional(),
+    prioritizeCost: z.boolean().optional(),
+    prioritizeQuality: z.boolean().optional(),
+    preferredProvider: z.enum(['openrouter', 'huggingface']).optional()
+  }).optional()
+})
 
 export async function POST(request: NextRequest) {
   try {

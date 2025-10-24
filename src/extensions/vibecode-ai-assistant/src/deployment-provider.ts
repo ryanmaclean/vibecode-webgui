@@ -46,7 +46,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
 
         // Handle messages from webview
         webviewView.webview.onDidReceiveMessage(
-            async (data) => {
+            async (data: { type: string; provider?: string; url?: string; deploymentId?: string }) => {
                 switch (data.type) {
                     case 'deploy':
                         await this.deployProject(data.provider);
@@ -85,7 +85,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
             const projectName = await vscode.window.showInputBox({
                 prompt: 'Enter project name for deployment',
                 value: workspaceFolder.name,
-                validateInput: (value) => {
+                validateInput: (value: string) => {
                     if (!value || value.trim().length === 0) {
                         return 'Project name is required';
                     }
@@ -99,7 +99,7 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
                 location: vscode.ProgressLocation.Notification,
                 title: `Deploying to ${providerId}...`,
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 10, message: 'Preparing deployment...' });
 
                 const response = await axios.post(`${this.baseUrl}/api/deployment/deploy`, {
@@ -180,14 +180,14 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
 
         panel.webview.html = this._getProviderSetupHtml(providerId);
         
-        panel.webview.onDidReceiveMessage(async (message) => {
+        panel.webview.onDidReceiveMessage(async (message: { type: string; config?: any }) => {
             if (message.type === 'saveConfig') {
                 try {
                     await axios.post(`${this.baseUrl}/api/deployment/configure`, {
                         provider: providerId,
                         config: message.config
                     });
-                    
+
                     vscode.window.showInformationMessage(`${providerId} configured successfully!`);
                     panel.dispose();
                     this.refreshDeployments();

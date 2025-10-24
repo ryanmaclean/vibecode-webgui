@@ -375,7 +375,7 @@ export class WeaviateClient {
         for (let i = 0; i < ids.length; i += batchSize) {
           const batch = ids.slice(i, i + batchSize);
           await Promise.all(
-            batch.map(id => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
+            batch.map((id: string) => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
           );
         }
       }

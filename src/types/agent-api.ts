@@ -131,6 +131,9 @@ export interface AgentResponse {
   /** Unique identifier for the agent (format: {type}-{hex8}) */
   agent_id: string;
 
+  /** Type of agent */
+  agent_type?: AgentType;
+
   /** Current agent status */
   status: AgentStatus;
 

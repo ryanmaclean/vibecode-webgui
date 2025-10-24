@@ -134,8 +134,8 @@ export async function POST(request: NextRequest) {
               setupTime: template.estimatedSetupTime
             },
             generationTime,
-            setupInstructions: generatedProject.setupInstructions,
-            envVars: generatedProject.envVars.filter(env => env.value),
+            setupInstructions: generatedProject.setupInstructions || template.setupInstructions,
+            envVars: generatedProject.envVars?.filter((env: { value?: string }) => env.value) || [],
             nextSteps: [
               `Navigate to /workspace/${workspaceId}`,
               'Review the generated project structure',

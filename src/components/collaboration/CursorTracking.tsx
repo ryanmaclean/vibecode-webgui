@@ -249,7 +249,7 @@ if (!editorView || !editorRect) return null
       const states = awareness.getStates()
       const newCursors = new Map<string, UserCursor>()
 
-      states.forEach((state, clientId) => {
+      states.forEach((state: any, clientId: number) => {
         if (state.cursor && state.cursor.userId !== currentUserId) {
           const user = state.user || {}
           const cursor: UserCursor = {
@@ -306,8 +306,9 @@ if (!editorView || !editorRect) return null
     const view = EditorView.theme({}, { priority: 'low' })
     editorView.dispatch({
       effects: [
-        EditorView.appendConfig.of([updateHandler, view])
-      ]
+        // Type assertion for appendConfig StateEffect
+        (EditorView as any).appendConfig?.of?.([updateHandler, view])
+      ].filter(Boolean)
     })
 
     return () => {

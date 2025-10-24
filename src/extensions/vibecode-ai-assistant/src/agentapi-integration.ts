@@ -288,28 +288,28 @@ export class AgentAPIExtension {
   private setupEventListeners(): void {
     // Listen for text document changes
     this.disposables.push(
-      vscode.workspace.onDidChangeTextDocument((e) => {
+      vscode.workspace.onDidChangeTextDocument((e: vscode.TextDocumentChangeEvent) => {
         this.handleTextDocumentChange(e)
       })
     )
 
     // Listen for selection changes
     this.disposables.push(
-      vscode.window.onDidChangeTextEditorSelection((e) => {
+      vscode.window.onDidChangeTextEditorSelection((e: vscode.TextEditorSelectionChangeEvent) => {
         this.handleSelectionChange(e)
       })
     )
 
     // Listen for active editor changes
     this.disposables.push(
-      vscode.window.onDidChangeActiveTextEditor((editor) => {
+      vscode.window.onDidChangeActiveTextEditor((editor: vscode.TextEditor | undefined) => {
         this.handleActiveEditorChange(editor)
       })
     )
 
     // Listen for file saves
     this.disposables.push(
-      vscode.workspace.onDidSaveTextDocument((document) => {
+      vscode.workspace.onDidSaveTextDocument((document: vscode.TextDocument) => {
         this.handleFileSave(document)
       })
     )
@@ -416,7 +416,7 @@ export class AgentAPIExtension {
         title: 'Getting AI completion...',
         cancellable: true,
       },
-      async (progress, token) => {
+      async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
         const context = this.extractCodeContext(editor)
         const response = await this.client.sendRequest({
           action: 'complete',

@@ -7,7 +7,16 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware'
-import { codeServerSessionIdSchema, codeServerSessionUpdateSchema } from '@/lib/api/validation/schemas-phase4-batch2'
+import { z } from '@/lib/zod-compat'
+
+// Define inline schemas since schemas-phase4-batch2 doesn't exist
+const codeServerSessionIdSchema = z.object({
+  sessionId: z.string().uuid()
+})
+
+const codeServerSessionUpdateSchema = z.object({
+  status: z.enum(['starting', 'ready', 'error', 'stopped']).optional()
+})
 // Local implementation of container stopping
 async function stopCodeServerContainer(containerId: string): Promise<void> {
   // Debug log removed

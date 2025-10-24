@@ -21,7 +21,7 @@ export class CodeGenerator {
         const prompt = await vscode.window.showInputBox({
             prompt: 'Describe what code you want to generate',
             placeHolder: 'e.g., "Create a function that validates email addresses"',
-            validateInput: (value) => {
+            validateInput: (value: string) => {
                 return value.trim().length === 0 ? 'Please enter a description' : null;
             }
         });
@@ -43,7 +43,7 @@ export class CodeGenerator {
                 location: vscode.ProgressLocation.Notification,
                 title: "Generating code...",
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 0 });
 
                 const generatedCode = await this.openRouterClient.generateCode(
@@ -64,11 +64,11 @@ export class CodeGenerator {
                 );
 
                 if (action === 'Insert at Cursor') {
-                    await editor.edit(editBuilder => {
+                    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
                         editBuilder.insert(currentPosition, generatedCode);
                     });
                 } else if (action === 'Insert on New Line') {
-                    await editor.edit(editBuilder => {
+                    await editor.edit((editBuilder: vscode.TextEditorEdit) => {
                         const lineEnd = document.lineAt(currentPosition.line).range.end;
                         editBuilder.insert(lineEnd, '\n' + generatedCode);
                     });
@@ -133,7 +133,7 @@ export class CodeGenerator {
                 location: vscode.ProgressLocation.Notification,
                 title: "Generating tests...",
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 0 });
 
                 const tests = await this.openRouterClient.generateTests(

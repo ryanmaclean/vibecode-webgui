@@ -10,6 +10,26 @@ interface CacheEntry {
   ttl: number;
 }
 
+// Vector similarity query type
+export interface VectorSimilarityQuery {
+  embedding: number[];
+  table: string;
+  limit?: number;
+  minSimilarity?: number;
+  contentTypes?: string[];
+  filter?: Record<string, any>;
+}
+
+// Vector similarity results type
+export type VectorSimilarityResults = Array<{
+  id: string | number;
+  similarity: number;
+  metadata?: Record<string, any>;
+  content?: string;
+  table?: string;
+  contentType?: string;
+}>;
+
 // Vector cache manager mock implementation
 export class VectorCacheManager {
   private static cache: Map<string, CacheEntry> = new Map();
@@ -74,5 +94,38 @@ export class VectorCacheManager {
   private static generateCacheKey(key: any, workspace?: string): string {
     const keyStr = typeof key === 'string' ? key : JSON.stringify(key);
     return workspace ? `${workspace}:${keyStr}` : keyStr;
+  }
+
+  /**
+   * Public method to calculate cache key (alias for generateCacheKey)
+   */
+  public static calculateCacheKey(key: any, workspace?: string): string {
+    return this.generateCacheKey(key, workspace);
+  }
+
+  /**
+   * Invalidate cache entries for a specific table
+   */
+  public static async invalidateForTable(table: string, contentType?: string): Promise<number> {
+    const pattern = contentType ? `${table}:${contentType}` : table;
+    return this.clearCache(pattern);
+  }
+
+  /**
+   * Get cache performance statistics
+   */
+  public static getCacheStats(): {
+    totalEntries: number;
+    oldestEntry: number | null;
+    newestEntry: number | null;
+  } {
+    const entries = Array.from(this.cache.values());
+    const timestamps = entries.map(e => e.timestamp);
+
+    return {
+      totalEntries: this.cache.size,
+      oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : null,
+      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : null
+    };
   }
 }

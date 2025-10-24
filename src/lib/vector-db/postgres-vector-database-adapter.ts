@@ -421,13 +421,13 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       // For inner product, we handle similarity scores differently
       if (this.postgresConfig.pgSearchMethod === 'inner_product') {
         // Normalize scores to 0-1 range for inner product
-        const scores = rawResults.map(row => row.similarity);
+        const scores = rawResults.map((row: { similarity: number }) => row.similarity);
         const maxScore = Math.max(...scores);
         const minScore = Math.min(...scores);
         const range = maxScore - minScore;
         
         results = rawResults
-          .map((row) => ({
+          .map((row: any) => ({
             chunk: {
               id: row.chunk_id,
               content: row.content,
@@ -444,12 +444,12 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             // Normalize to 0-1 range
             similarity: range > 0 ? (row.similarity - minScore) / range : 0.5
           }))
-          .filter((result) => result.similarity >= threshold);
+          .filter((result: { similarity: number }) => result.similarity >= threshold);
       } else {
         // For cosine and euclidean, we can use the similarity directly
         results = rawResults
-          .filter((row) => row.similarity >= threshold)
-          .map((row) => ({
+          .filter((row: { similarity: number }) => row.similarity >= threshold)
+          .map((row: any) => ({
             chunk: {
               id: row.chunk_id,
               content: row.content,
@@ -696,7 +696,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         }
       });
 
-      return chunks.map(chunk => ({
+      return chunks.map((chunk: any) => ({
         chunk: {
           id: chunk.chunk_id,
           content: chunk.content,
