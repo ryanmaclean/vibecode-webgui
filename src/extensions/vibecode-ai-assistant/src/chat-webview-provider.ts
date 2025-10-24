@@ -29,7 +29,9 @@ export class ChatWebviewProvider implements vscode.WebviewViewProvider {
             (message: { type: string; text?: string; includeContext?: boolean }) => {
                 switch (message.type) {
                     case 'sendMessage':
-                        this.handleChatMessage(message.text, message.includeContext);
+                        if (message.text) {
+                            this.handleChatMessage(message.text, message.includeContext);
+                        }
                         break;
                     case 'clearChat':
                         this.clearChatHistory();

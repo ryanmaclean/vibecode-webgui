@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToMongoDB } from '@/lib/mongodb'
 import { v4 as uuidv4 } from 'uuid'
-import { mongodbChatActionSchema, mongodbChatQuerySchema } from '@/lib/api/validation/schemas'
+import { mongodbChatActionSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
 
 // Simple MongoDB chat test without complex service layer
@@ -61,7 +61,6 @@ export async function POST(request: NextRequest) {
         })
 
       case 'create_conversation':
-        if (validatedData.action !== 'create_conversation') break
         const { title, sessionId, model, workspaceId } = validatedData
         
         const conversation = {
@@ -87,7 +86,6 @@ export async function POST(request: NextRequest) {
         })
 
       case 'add_message':
-        if (validatedData.action !== 'add_message') break
         const { conversationId, content, from } = validatedData
         
         const message = {
@@ -134,6 +132,7 @@ export async function POST(request: NextRequest) {
           { error: 'Invalid action' },
           { status: 400 }
         )
+        break;
     }
   } catch (error) {
     // Server error logged

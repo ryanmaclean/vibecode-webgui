@@ -237,9 +237,9 @@ async function handleOverview(userId?: string, timeframe = '24h') {
       tokens: usage.tokens,
       cost: usage.cost,
       topModels: Object.entries(usage.models)
-        .sort(([,a]: [string, FieldAggregation], [,b]: [string, FieldAggregation]) => b.requests - a.requests)
+        .sort(([,a], [,b]) => (b as FieldAggregation).requests - (a as FieldAggregation).requests)
         .slice(0, 5)
-        .map(([model, stats]: [string, FieldAggregation]) => ({ model, ...stats }))
+        .map(([model, stats]) => ({ model, ...(stats as FieldAggregation) }))
     },
     recentActivity: recentRequests.map((req: AIRequestData) => ({
       id: req.id,
