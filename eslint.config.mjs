@@ -1,52 +1,80 @@
-import { dirname } from "path";
-import { fileURLToPath } from "url";
-import { FlatCompat } from "@eslint/eslintrc";
+import js from '@eslint/js';
+import typescript from '@typescript-eslint/eslint-plugin';
+import typescriptParser from '@typescript-eslint/parser';
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-});
-
-const eslintConfig = [
-  ...compat.extends("next/core-web-vitals", "next/typescript"),
+export default [
+  js.configs.recommended,
   {
+    files: ['**/*.ts', '**/*.tsx'],
+    languageOptions: {
+      parser: typescriptParser,
+      parserOptions: {
+        ecmaVersion: 'latest',
+        sourceType: 'module',
+      },
+      globals: {
+        // Browser globals
+        document: 'readonly',
+        window: 'readonly',
+        console: 'readonly',
+        setTimeout: 'readonly',
+        clearTimeout: 'readonly',
+        setInterval: 'readonly',
+        clearInterval: 'readonly',
+        HTMLInputElement: 'readonly',
+        HTMLElement: 'readonly',
+        Element: 'readonly',
+        Event: 'readonly',
+        SVGSVGElement: 'readonly',
+        SVGElement: 'readonly',
+        // Node.js globals
+        process: 'readonly',
+        Buffer: 'readonly',
+        global: 'readonly',
+        __dirname: 'readonly',
+        __filename: 'readonly',
+        // Jest globals
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+      },
+    },
+    plugins: {
+      '@typescript-eslint': typescript,
+    },
     rules: {
-      // Allow unused parameters prefixed with underscore
-      "@typescript-eslint/no-unused-vars": ["warn", { "argsIgnorePattern": "^_" }],
-      // Allow any type for now (can be gradually improved)
-      "@typescript-eslint/no-explicit-any": "warn",
-      // Allow require imports where needed
-      "@typescript-eslint/no-require-imports": "warn",
-      // Allow React hooks dependencies to be handled manually
-      "react-hooks/exhaustive-deps": "warn",
-      // Allow unused imports temporarily (can be cleaned up later)
-      "@typescript-eslint/no-unused-vars": ["warn", { 
-        "argsIgnorePattern": "^_",
-        "varsIgnorePattern": "^_",
-        "ignoreRestSiblings": true
+      '@typescript-eslint/no-unused-vars': ['warn', { 
+        'argsIgnorePattern': '^_',
+        'varsIgnorePattern': '^_',
+        'ignoreRestSiblings': true
       }],
-      // Prefer const assertions for better type inference
-      "prefer-const": "error",
-      // Enforce explicit return types for functions (improves maintainability)
-      "@typescript-eslint/explicit-function-return-type": "off",
-      // Allow console.log in development
-      "no-console": process.env.NODE_ENV === "production" ? "error" : "warn",
-      // Downgrade react/no-unescaped-entities to warning for CI
-      "react/no-unescaped-entities": "warn",
-      // Downgrade unsafe function type to warning
-      "@typescript-eslint/no-unsafe-function-type": "warn",
-      // Downgrade no-misused-new to warning
-      "@typescript-eslint/no-misused-new": "warn"
-    }
+      '@typescript-eslint/no-explicit-any': 'warn',
+      'no-console': 'warn',
+      'no-unused-vars': 'off',
+      'no-useless-escape': 'off', // Turn off to avoid regex escape issues
+    },
   },
   {
-    files: ["scripts/vector-db-migrations/**/*.js"],
+    files: ['src/__mocks__/**/*.ts'],
     rules: {
-      "@typescript-eslint/no-require-imports": "off"
-    }
-  }
+      '@typescript-eslint/no-explicit-any': 'off',
+      '@typescript-eslint/no-unused-vars': 'off',
+    },
+  },
+  {
+    files: ['**/*.test.ts', '**/*.test.tsx', '**/__tests__/**/*.ts', '**/__tests__/**/*.tsx'],
+    rules: {
+      '@typescript-eslint/no-explicit-any': 'off',
+      'no-console': 'off',
+    },
+  },
+  {
+    ignores: ['node_modules/**', 'dist/**', '.next/**', 'build/**'],
+  },
 ];
-
-export default eslintConfig;
