@@ -26,24 +26,7 @@ import {
   VectorSearchOptions,
   VectorStoreStats
 } from '../interfaces/vector-types';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from '@/lib/vector-db/vector-db-error-handler';
-import { metrics } from '@/lib/server-monitoring';
-import { logger } from '@/lib/logger';
-
-/**
- * PostgreSQL-specific configuration options
- */
-export interface PostgreSQLVectorConfig extends VectorDatabaseConfig {
-  pgPoolSize?: number;
-  pgSchemaName?: string;
-  pgVectorExtensionName?: string;
-  pgSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
-}
-
-/**
- * PostgreSQL Vector Database Adapter
- * Provides pgvector-based vector storage and search with enhanced features
- */
+// import { logger } from '@/lib/logger';
 export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   private errorHandler: VectorDbErrorHandler;
@@ -103,7 +86,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       return true;
     } catch (error) {
-      logger.error('Failed to connect to PostgreSQL:', error);
+      console.error('Failed to connect to PostgreSQL:', error);
       this.isConnectionActive = false;
 
       throw this.errorHandler.handleError(
@@ -183,25 +166,11 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
    * Disconnect from the PostgreSQL database
    */
   async disconnect(): Promise<void> {
-    if (this.prisma) {
-      try {
-        await this.prisma.$disconnect();
-        this.prisma = null;
-        this.isConnectionActive = false;
-
-        if (this.config.enableLogging) {
-          logger.info('Disconnected from PostgreSQL vector database');
-        }
-      } catch (error) {
-        logger.error('Error disconnecting from PostgreSQL:', error);
-
-        throw this.errorHandler.handleError(
-          error,
-          'disconnect',
-          VectorDbErrorType.CONNECTION_FAILED,
-          false
-        );
-      }
+    try {
+      await this.prisma.$disconnect();
+      this.isConnectionActive = false;
+    } catch (error) {
+      console.error('Error disconnecting from PostgreSQL:', error);
     }
   }
 
@@ -308,25 +277,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         logger.info(`Stored \${chunks.length} chunks for file \${fileId}`);
       }
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_adapter.store_vectors.error');
-      }
-
-      // Only wrap if not already a VectorDbError
-      if (!(error instanceof VectorDbError)) {
-        throw this.errorHandler.handleError(
-          error,
-          'storeVectors',
-          VectorDbErrorType.VECTOR_CREATION_FAILED,
-          this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
-          {
-            fileId,
-            chunkCount: chunks.length,
-            totalTokens: chunks.reduce((sum, chunk) => sum + chunk.tokens, 0)
-          }
-        );
-      }
-
+      console.error('Error storing vector chunks:', error);
       throw error;
     }
   }
@@ -375,11 +326,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             return this.formatCacheResults(cacheResult);
           }
         } catch (cacheError) {
-          logger.warn('Cache retrieval failed, falling back to direct query:', cacheError);
-
-          if (this.config.enableMetrics) {
-            metrics.increment('postgres_vector_adapter.find_similar.cache_miss');
-          }
+          console.warn('Cache retrieval failed, falling back to direct query:', cacheError);
         }
       }
 
@@ -541,9 +488,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             },
             cacheResults,
             workspaceId?.toString()
-          ).catch(err => logger.warn('Background cache storage failed:', err));
+          ).catch(err => console.warn('Background cache storage failed:', err));
         } catch (cacheError) {
-          logger.warn('Failed to cache results:', cacheError);
+          console.warn('Failed to cache results:', cacheError);
         }
       }
 
@@ -555,95 +502,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       return results;
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_adapter.find_similar.error');
-      }
-
-      // Only wrap if not already a VectorDbError
-      if (!(error instanceof VectorDbError)) {
-        throw this.errorHandler.handleError(
-          error,
-          'findSimilar',
-          VectorDbErrorType.SEARCH,
-          this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
-          {
-            embeddingSize: embedding.length,
-            workspaceId: options.workspaceId,
-            limit: options.limit,
-            threshold: options.threshold,
-            fileCount: options.fileIds?.length,
-            useCache: options.useCache
-          }
-        );
-      }
-
-      // Fallback to text search on error
-      logger.warn('Vector search failed, falling back to text search', { error });
-      return this.fallbackTextSearch('', options);
-    }
-  }
-
-  /**
-   * Fallback text search when vector search is not available
-   *
-   * @param query - Text query (currently unused but kept for interface compatibility)
-   * @param options - Search options
-   * @returns Array of search results with default similarity scores
-   */
-  private async fallbackTextSearch(query: string, options: VectorSearchOptions = {}): Promise<SearchResult[]> {
-    if (!this.prisma) {
-      logger.error('Cannot perform fallback search: Prisma not initialized');
-      return [];
-    }
-
-    try {
-      const { workspaceId, fileIds, limit = 10 } = options;
-
-      const whereClause: Prisma.RAGChunkWhereInput = {};
-
-      if (workspaceId) {
-        whereClause.file = { is: { workspace_id: workspaceId } };
-      }
-
-      if (fileIds && fileIds.length > 0) {
-        whereClause.file_id = { in: fileIds };
-      }
-
-      const chunks = await this.prisma.rAGChunk.findMany({
-        where: whereClause,
-        include: {
-          file: {
-            select: {
-              id: true,
-              name: true,
-              language: true
-            }
-          }
-        },
-        take: limit,
-        orderBy: {
-          created_at: 'desc'
-        }
-      });
-
-      return chunks.map((chunk: any) => ({
-        chunk: {
-          id: chunk.chunk_id,
-          content: chunk.content,
-          embedding: [],
-          metadata: {
-            fileId: chunk.file_id,
-            fileName: chunk.file.name,
-            startLine: chunk.start_line || undefined,
-            endLine: chunk.end_line || undefined,
-            language: chunk.file.language || undefined,
-            tokens: chunk.tokens || 0
-          }
-        },
-        similarity: 0.5 // Default similarity for text search
-      }));
-    } catch (error) {
-      logger.error('Error in fallback text search:', error);
+      console.error('Error in vector search:', error);
       return [];
     }
   }
@@ -717,17 +576,8 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         logger.info(`Deleted all chunks for file \${fileId}`);
       }
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_adapter.delete_vectors.error');
-      }
-
-      throw this.errorHandler.handleError(
-        error,
-        'deleteVectors',
-        VectorDbErrorType.VECTOR_CREATION_FAILED,
-        this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
-        { fileId }
-      );
+      console.error('Error deleting file chunks:', error);
+      throw error;
     }
   }
 
@@ -768,11 +618,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       return true;
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_adapter.update_vector.error');
-      }
-
-      logger.error('Error updating vector embedding:', error);
+      console.error('Error updating vector embedding:', error);
       return false;
     }
   }
@@ -827,11 +673,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       return stats;
     } catch (error) {
-      if (this.config.enableMetrics) {
-        metrics.increment('postgres_vector_adapter.get_stats.error');
-      }
-
-      logger.error('Error getting vector store stats:', error);
+      console.error('Error getting vector store stats:', error);
       return {
         totalChunks: 0,
         totalFiles: 0,

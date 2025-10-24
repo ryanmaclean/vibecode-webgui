@@ -114,7 +114,7 @@ export async function saveWorkflowExecution(
   };
 
   // await databaseClient.insertWorkflowExecution(record);
-  console.log('Workflow execution saved:', record.id);
+  console.info('Workflow execution saved:', record.id);
 }
 
 /**

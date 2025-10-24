@@ -62,7 +62,7 @@ export async function createRobustConnection(config: RobustConnectionConfig = {}
   
   try {
     if (config.debug || config.enableLogging) {
-      console.log('Creating robust database connection', { config });
+      console.info('Creating robust database connection', { config });
     }
     
     // For health checks, use a simple Prisma client
@@ -79,7 +79,7 @@ export async function createRobustConnection(config: RobustConnectionConfig = {}
     const duration = Date.now() - startTime;
     
     if (config.debug || config.enableLogging) {
-      console.log('Database connection established', { 
+      console.info('Database connection established', { 
         duration,
         poolKey: config.poolKey 
       });
@@ -93,7 +93,7 @@ export async function createRobustConnection(config: RobustConnectionConfig = {}
         // In a pooled system, we would return the connection to the pool
         // For now, we keep the connection alive for reuse
         if (config.debug || config.enableLogging) {
-          console.log('Connection released (kept alive for reuse)');
+          console.debug('Connection released (kept alive for reuse)');
         }
       }
     };
@@ -246,13 +246,13 @@ export async function executeWithRetry<T>(
  */
 export async function initializeVectorDatabaseRobust(config: { debug?: boolean } = {}): Promise<void> {
   try {
-    console.log('Initializing vector database with robust connections');
+    console.info('Initializing vector database with robust connections');
     
     // Initialize vector database factory
     const vectorDb = await VectorDatabaseFactory.getInstance();
     
     if (config.debug) {
-      console.log('Vector database initialized successfully');
+      console.info('Vector database initialized successfully');
     }
   } catch (error) {
     console.error('Failed to initialize vector database', { error });
@@ -272,7 +272,7 @@ export async function closeAllConnections(force: boolean = false): Promise<{ clo
       try {
         await pool.close();
         closedCount++;
-        console.log(`Closed connection pool: ${key}`);
+        console.info(`Closed connection pool: ${key}`);
       } catch (error) {
         console.error(`Error closing connection pool ${key}`, { error });
       }
@@ -287,13 +287,13 @@ export async function closeAllConnections(force: boolean = false): Promise<{ clo
         await prismaClient.$disconnect();
         prismaClient = null;
         closedCount++;
-        console.log('Closed Prisma database connection');
+        console.info('Closed Prisma database connection');
       } catch (error) {
         console.error('Error closing Prisma connection', { error });
       }
     }
     
-    console.log(`Closed ${closedCount} database connections`, { force });
+    console.info(`Closed ${closedCount} database connections`, { force });
   } catch (error) {
     console.error('Error during connection cleanup', { error });
   }
@@ -306,7 +306,7 @@ export async function closeAllConnections(force: boolean = false): Promise<{ clo
  */
 export function registerConnectionPool(key: string, pool: ConnectionPool<any>): void {
   connectionPools.set(key, pool);
-  console.log(`Registered connection pool: ${key}`);
+  console.info(`Registered connection pool: ${key}`);
 }
 
 /**
@@ -315,7 +315,7 @@ export function registerConnectionPool(key: string, pool: ConnectionPool<any>): 
 export function unregisterConnectionPool(key: string): boolean {
   const removed = connectionPools.delete(key);
   if (removed) {
-    console.log(`Unregistered connection pool: ${key}`);
+    console.info(`Unregistered connection pool: ${key}`);
   }
   return removed;
 }

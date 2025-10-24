@@ -123,7 +123,7 @@ export class FunctionCallingService {
         }
 
         if (options.enableLogging) {
-          console.log(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
+          console.info(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
         }
 
         return result;

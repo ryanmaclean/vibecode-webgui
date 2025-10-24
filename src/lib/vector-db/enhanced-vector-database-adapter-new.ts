@@ -356,6 +356,6 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
    */
   public resetCircuitBreaker(): void {
     this.retryHandler.resetCircuit();
-    console.log(`Circuit breaker reset for ${this.adapterName}`);
+    console.info(`Circuit breaker reset for ${this.adapterName}`);
   }
 }

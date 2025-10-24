@@ -227,7 +227,7 @@ export class AIProjectIntegration {
       files: [
         {
           path: 'src/index.ts',
-          content: '// Generated with semantic context\nconsole.log("Hello, World!");'
+          content: '// Generated with semantic context\nconsole.info("Hello, World!");'
         },
         {
           path: 'package.json',

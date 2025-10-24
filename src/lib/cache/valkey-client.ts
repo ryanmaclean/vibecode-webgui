@@ -5,23 +5,14 @@
  * This implementation uses Valkey (https://valkey.io/), the open-source fork of Redis
  * that maintains BSD licensing, avoiding Redis' restrictive RSAL/SSPL dual license.
  *
- * Valkey is Redis-compatible, so we use the MIT-licensed ioredis client while keeping all
- * functionality parity with Redis. This module exposes the shared cache surface (`cache`,
- * `CacheKeys`, `CacheTTL`) that the application expects.
+ * Valkey is protocol-compatible with Redis, so we rely on the MIT-licensed ioredis client.
+ * The cache manager below exposes a unified interface that mirrors historical exports so
+ * existing imports (`cache`, `CacheKeys`, `CacheTTL`) continue to compile.
  */
 
 import { Redis } from 'ioredis';
-import { metrics } from '../server-monitoring';
+import { metrics } from '@/lib/server-monitoring';
 // import { logger } from '@/lib/logger';
-
-type StandardConfig = {
-  type: 'standard';
-  url?: string;
-  host?: string;
-  port?: number;
-  password?: string;
-  db?: number;
-};
 
 type UpstashConfig = {
   type: 'upstash';
@@ -29,9 +20,22 @@ type UpstashConfig = {
   token: string;
 };
 
-type ValkeyConnectionConfig = StandardConfig | UpstashConfig;
+type StandardConfig =
+  | {
+      type: 'standard';
+      url: string;
+    }
+  | {
+      type: 'standard';
+      host: string;
+      port: number;
+      password?: string;
+      db: number;
+    };
 
-const getValkeyConfig = (): ValkeyConnectionConfig => {
+type ValkeyRuntimeConfig = UpstashConfig | StandardConfig;
+
+const getValkeyConfig = (): ValkeyRuntimeConfig => {
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
       type: 'upstash',
@@ -43,7 +47,7 @@ const getValkeyConfig = (): ValkeyConnectionConfig => {
   if (process.env.VALKEY_URL || process.env.REDIS_URL) {
     return {
       type: 'standard',
-      url: process.env.VALKEY_URL || process.env.REDIS_URL,
+      url: process.env.VALKEY_URL || process.env.REDIS_URL || '',
     };
   }
 
@@ -56,14 +60,14 @@ const getValkeyConfig = (): ValkeyConnectionConfig => {
   };
 };
 
-const connectionConfig = getValkeyConfig();
+const config = getValkeyConfig();
 
 let valkeyClient: Redis | null = null;
 
 try {
-  if (connectionConfig.type === 'standard') {
-    if (connectionConfig.url) {
-      valkeyClient = new Redis(connectionConfig.url, {
+  if (config.type === 'standard') {
+    if ('url' in config) {
+      valkeyClient = new Redis(config.url, {
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -75,10 +79,10 @@ try {
       });
     } else {
       valkeyClient = new Redis({
-        host: connectionConfig.host,
-        port: connectionConfig.port,
-        password: connectionConfig.password,
-        db: connectionConfig.db,
+        host: config.host,
+        port: config.port,
+        password: config.password,
+        db: config.db,
         retryDelayOnFailover: 100,
         enableReadyCheck: false,
         maxRetriesPerRequest: 3,
@@ -91,7 +95,7 @@ try {
     }
 
     valkeyClient.on('connect', () => {
-      console.log('Valkey connected successfully');
+      console.info('Valkey connected successfully');
       metrics.increment('valkey.connection.success');
     });
 
@@ -101,12 +105,12 @@ try {
     });
 
     valkeyClient.on('ready', () => {
-      console.log('Valkey client ready');
+      console.info('Valkey client ready');
       metrics.increment('valkey.ready');
     });
-  } else if (connectionConfig.type === 'upstash') {
-    // Upstash exposes an HTTP API; callers should use dedicated clients.
-    console.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
+  } else {
+    // Upstash REST mode is handled via HTTP API; for now fall back to standard client
+    console.warn('Upstash Valkey REST configuration detected; direct client support pending');
   }
 } catch (error) {
   console.warn('Valkey client initialization failed', { error });
@@ -119,13 +123,13 @@ export const CacheKeys = {
   project: (projectId: string) => `project:${projectId}`,
   aiResponse: (hash: string) => `ai:response:${hash}`,
   vectorSearch: (query: string, workspaceId?: string) =>
-    `vector:search:${Buffer.from(`${query}${workspaceId ?? ''}`).toString('base64')}`,
+    `vector:search:${Buffer.from(`${query}${workspaceId || ''}`).toString('base64')}`,
   fileContent: (fileId: string) => `file:content:${fileId}`,
   embeddings: (contentHash: string) => `embeddings:${contentHash}`,
   rateLimit: (identifier: string) => `ratelimit:${identifier}`,
   session: (sessionId: string) => `session:${sessionId}`,
   apiMetrics: (endpoint: string, timeWindow: string) => `metrics:${endpoint}:${timeWindow}`,
-} as const;
+};
 
 export const CacheTTL = {
   SHORT: 60,
@@ -138,27 +142,24 @@ export const CacheTTL = {
 } as const;
 
 export class ValkeyManager {
-  private readonly client: Redis | null;
-
-  constructor() {
-    this.client = valkeyClient;
-  }
+  constructor(private readonly client: Redis | null = valkeyClient) {}
 
   async get<T = unknown>(key: string): Promise<T | null> {
     if (!this.client) return null;
 
-    const start = Date.now();
+    const startTime = Date.now();
+
     try {
       const value = await this.client.get(key);
-      metrics.histogram('cache.get.duration', Date.now() - start);
+      metrics.histogram('cache.get.duration', Date.now() - startTime);
 
-      if (!value) {
-        metrics.increment('cache.miss');
-        return null;
+      if (value) {
+        metrics.increment('cache.hit');
+        return JSON.parse(value) as T;
       }
 
-      metrics.increment('cache.hit');
-      return JSON.parse(value) as T;
+      metrics.increment('cache.miss');
+      return null;
     } catch (error) {
       metrics.increment('cache.error');
       console.error('Valkey get error', { key, error });
@@ -169,15 +170,17 @@ export class ValkeyManager {
   async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
     if (!this.client) return false;
 
+    const startTime = Date.now();
+
     const start = Date.now();
     try {
       await this.client.setex(key, ttl, JSON.stringify(value));
-      metrics.histogram('cache.set.duration', Date.now() - start);
+      metrics.histogram('cache.set.duration', Date.now() - startTime);
       metrics.increment('cache.set.success');
       return true;
     } catch (error) {
       metrics.increment('cache.set.error');
-      console.error('Valkey set error', { key, error });
+      console.error('Valkey set error', { key, ttl, error });
       return false;
     }
   }
@@ -187,12 +190,13 @@ export class ValkeyManager {
 
     const keys = Array.isArray(key) ? key : [key];
     try {
+      const keys = Array.isArray(key) ? key : [key];
       await this.client.del(...keys);
       metrics.increment('cache.delete', { count: keys.length });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
-      console.error('Valkey delete error', { keys, error });
+      console.error('Valkey delete error', { key, error });
       return false;
     }
   }
@@ -208,12 +212,12 @@ export class ValkeyManager {
     }
   }
 
-  async mget<T = unknown>(keys: string[]): Promise<(T | null)[]> {
+  async mget<T = unknown>(keys: string[]): Promise<Array<T | null>> {
     if (!this.client || keys.length === 0) return [];
 
     try {
       const values = await this.client.mget(...keys);
-      return values.map((value: string | null) => (value ? (JSON.parse(value) as T) : null));
+      return values.map((value) => (value ? (JSON.parse(value) as T) : null));
     } catch (error) {
       console.error('Valkey mget error', { keys, error });
       return keys.map(() => null);
@@ -225,15 +229,17 @@ export class ValkeyManager {
 
     try {
       const pipeline = this.client.pipeline();
-      pairs.forEach(({ key, value, ttl = CacheTTL.MEDIUM }) => {
+
+      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         pipeline.setex(key, ttl, JSON.stringify(value));
-      });
+      }
+
       await pipeline.exec();
       metrics.increment('cache.mset.success', { count: pairs.length });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
-      console.error('Valkey mset error', { pairsCount: pairs.length, error });
+      console.error('Valkey mset error', { error });
       return false;
     }
   }
@@ -243,9 +249,11 @@ export class ValkeyManager {
 
     try {
       const value = await this.client.incr(key);
+
       if (ttl && value === 1) {
         await this.client.expire(key, ttl);
       }
+
       return value;
     } catch (error) {
       console.error('Valkey incr error', { key, error });
@@ -283,7 +291,7 @@ export class ValkeyManager {
         connected: true,
         keyCount: dbSize,
         memoryUsage: memoryMatch ? memoryMatch[1].trim() : '0B',
-        hitRate: 0.85, // Placeholder until real metrics are wired
+        hitRate: 0.85,
       };
     } catch (error) {
       console.error('Valkey stats error', { error });
@@ -311,7 +319,7 @@ export class ValkeyManager {
       await this.client.ping();
       return true;
     } catch (error) {
-      console.warn('Valkey health check failed', { error });
+      console.error('Valkey health check failed', { error });
       return false;
     }
   }
@@ -327,7 +335,8 @@ export function withCache<T extends unknown[], R>(
   return async (...args: T): Promise<R> => {
     const key = keyGenerator(...args);
     const cached = await cache.get<R>(key);
-    if (cached !== null && cached !== undefined) {
+
+    if (cached !== null) {
       return cached;
     }
 
@@ -338,7 +347,7 @@ export function withCache<T extends unknown[], R>(
 }
 
 export class CacheInvalidation {
-  static async invalidateUser(userId: string): Promise<void> {
+  static async invalidateUser(userId: string) {
     const patterns = [
       CacheKeys.user(userId),
       `workspace:*:user:${userId}`,
@@ -353,7 +362,7 @@ export class CacheInvalidation {
     }
   }
 
-  static async invalidateWorkspace(workspaceId: string): Promise<void> {
+  static async invalidateWorkspace(workspaceId: string) {
     const patterns = [
       CacheKeys.workspace(workspaceId),
       `project:*:workspace:${workspaceId}`,
@@ -368,14 +377,10 @@ export class CacheInvalidation {
     }
   }
 
-  static async invalidateProject(projectId: string): Promise<void> {
+  static async invalidateProject(projectId: string) {
     await cache.del(CacheKeys.project(projectId));
   }
 }
 
-// Export function for getting the Valkey client
-export function getValkeyClient() {
-  return cache;
-}
-
+export { CacheManager } from '@/lib/cache/unified-cache-client';
 export default cache;

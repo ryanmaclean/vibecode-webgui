@@ -106,11 +106,11 @@ export function useAuth() {
 
     if (!session && !isAuthPage) {
       // Not authenticated and not on auth page - redirect to login
-      console.log('🔄 Redirecting unauthenticated user to login')
+      console.info('🔄 Redirecting unauthenticated user to login')
       redirectToLogin()
     } else if (session && isAuthPage) {
       // Authenticated but on auth page - redirect to dashboard
-      console.log('🔄 Redirecting authenticated user to dashboard')
+      console.info('🔄 Redirecting authenticated user to dashboard')
       redirectToDashboard()
     }
   }, [session, status, redirectToLogin, redirectToDashboard])
@@ -122,7 +122,7 @@ export function useAuth() {
       const isAuthPage = pathname.startsWith('/auth/')
       
       if (!isAuthPage) {
-        console.log('🔄 Force redirecting unauthenticated user to login')
+        console.info('🔄 Force redirecting unauthenticated user to login')
         window.location.href = '/auth/signin'
       }
     }

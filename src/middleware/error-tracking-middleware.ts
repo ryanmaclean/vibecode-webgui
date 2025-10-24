@@ -87,7 +87,7 @@ export function withErrorTracking<R extends Response = NextResponse>(
 
       // Track successful requests if enabled
       if (trackSuccess && trackDetails) {
-        console.log(`✅ API Success: ${requestDetails.method} ${requestDetails.pathname} - ${response.status} (${duration}ms)`);
+        console.info(`✅ API Success: ${requestDetails.method} ${requestDetails.pathname} - ${response.status} (${duration}ms)`);
       }
 
       return response;

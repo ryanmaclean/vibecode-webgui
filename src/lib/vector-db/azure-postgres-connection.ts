@@ -110,7 +110,7 @@ export class AzurePostgresConnection {
       
       this.pool.on('connect', (client) => {
         if (this.config.enableLogging) {
-          console.log('New PostgreSQL client connected');
+          console.info('New PostgreSQL client connected');
         }
         
         // Set application_name for all connections
@@ -139,7 +139,7 @@ export class AzurePostgresConnection {
       }
       
       if (this.config.enableLogging) {
-        console.log('Azure PostgreSQL connection initialized successfully');
+        console.info('Azure PostgreSQL connection initialized successfully');
       }
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -386,14 +386,14 @@ export class AzurePostgresConnection {
         
         if (installedExtResult.rowCount === 0) {
           if (this.config.enableLogging) {
-            console.log('pgvector extension is available but not installed. Attempting to create extension...');
+            console.info('pgvector extension is available but not installed. Attempting to create extension...');
           }
           
           // Try to create the extension directly (without using shared_preload_libraries)
           await client.query('CREATE EXTENSION IF NOT EXISTS vector');
           
           if (this.config.enableLogging) {
-            console.log('Successfully created pgvector extension');
+            console.info('Successfully created pgvector extension');
           }
         }
       } catch (extError) {
@@ -423,7 +423,7 @@ export class AzurePostgresConnection {
         await client.query(`SELECT '[1,2,3]'::vector`);
         
         if (this.config.enableLogging) {
-          console.log('✅ PostgreSQL connection verified with pgvector extension working properly');
+          console.info('✅ PostgreSQL connection verified with pgvector extension working properly');
         }
       } catch (vectorTypeError) {
         throw new Error(`pgvector extension is installed but vector type is not working: ${vectorTypeError instanceof Error ? vectorTypeError.message : String(vectorTypeError)}`);
@@ -469,7 +469,7 @@ export class AzurePostgresConnection {
     // Azure Managed Identity authentication
     if (this.config.useManagedIdentity) {
       if (this.config.enableLogging) {
-        console.log('Using Azure Managed Identity for PostgreSQL authentication');
+        console.info('Using Azure Managed Identity for PostgreSQL authentication');
       }
       
       try {
@@ -506,7 +506,7 @@ export class AzurePostgresConnection {
       this.isInitialized = false;
       
       if (this.config.enableLogging) {
-        console.log('Azure PostgreSQL connection pool closed');
+        console.info('Azure PostgreSQL connection pool closed');
       }
     }
   }

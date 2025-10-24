@@ -7,7 +7,7 @@
 import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
-// import { logger } from '@/lib/logger';
+// // // import { logger } from '@/lib/logger';
 // Initialize Datadog tracer (should be done before importing other modules)
 if (process.env.DD_API_KEY) {
   tracer.init({
@@ -19,7 +19,7 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  console.info('🔍 Datadog APM tracer initialized')
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
@@ -95,7 +95,7 @@ class MetricsCollector {
     current.count += 1
     this.metrics.set(key, current)
 
-    console.log('Metric incremented', {
+    console.info('Metric incremented', {
       metric: metricName,
       count: current.count,
       tags
@@ -111,7 +111,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    console.log('Gauge metric set', {
+    console.info('Gauge metric set', {
       metric: metricName,
       value,
       tags
@@ -129,7 +129,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    console.log('Histogram metric recorded', {
+    console.info('Histogram metric recorded', {
       metric: metricName,
       value,
       average: current.sum / current.count,
@@ -266,7 +266,7 @@ class ApplicationLogger {
     activeConnections?: number
     error?: string
   }): void {
-    console.log('Performance metrics', {
+    console.info('Performance metrics', {
       category: 'performance',
       ...context
     })
@@ -328,7 +328,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    console.log(`Business: ${event}`, {
+    console.info(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -347,7 +347,7 @@ class ApplicationLogger {
   }
 }
 
-const appLogger = new ApplicationLogger()
+const console = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -358,7 +358,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      console.log({
+      console.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -403,7 +403,7 @@ export {
   logger,
   tracer,
   metrics,
-  appLogger,
+  console,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,

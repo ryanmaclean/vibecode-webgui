@@ -101,7 +101,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     this.pools.set(poolName, metrics)
     this.initializeHistory(poolName)
     
-    console.log(`📊 Registered pool '${poolName}' for monitoring`)
+    console.info(`📊 Registered pool '${poolName}' for monitoring`)
   }
 
   /**
@@ -227,7 +227,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       this.updatePoolHealth()
     }, 5000)
 
-    console.log('🔍 Connection pool monitoring started')
+    console.info('🔍 Connection pool monitoring started')
   }
 
   /**
@@ -240,7 +240,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     if (this.monitoringInterval) {
       clearInterval(this.monitoringInterval)
     }
-    console.log('🛑 Connection pool monitoring stopped')
+    console.info('🛑 Connection pool monitoring stopped')
   }
 
   /**
@@ -380,7 +380,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       alert.resolution_timestamp = new Date().toISOString()
       this.alerts.set(alertId, alert)
       this.emit('alertResolved', alert)
-      console.log(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
+      console.info(`✅ RESOLVED: ${alert.message} (Pool: ${alert.pool_name})`)
     }
   }
 

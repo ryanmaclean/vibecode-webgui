@@ -14,14 +14,12 @@ detectDockerRuntime,
   DockerType,
 } from '@/lib/docker/detection';
 // import { logger } from '@/lib/logger';
-import { validateRequestBody } from '@/lib/api/validation/middleware';
 import { z } from '@/lib/zod-compat';
-
-// Define inline schema since schemas-phase4-batch2 doesn't exist
-const dockerActionSchema = z.object({
-  action: z.enum(['start-colima', 'status', 'info'])
-});
 export const dynamic = 'force-dynamic';
+
+const dockerActionSchema = z.object({
+  action: z.enum(['start-colima']),
+}).strict();
 
 /**
  * GET /api/docker/status
@@ -35,7 +33,7 @@ export async function GET(request: Request) {
     if (detailed) {
       const report = await getDockerStatusReport();
 
-      console.log('Docker status report generated', {
+      console.info('Docker status report generated', {
         runtime: report.runtime.dockerType,
         running: report.runtime.running,
         version: report.runtime.version,
@@ -49,7 +47,7 @@ export async function GET(request: Request) {
 
     const status = await detectDockerRuntime();
 
-    console.log('Docker runtime detected', {
+    console.info('Docker runtime detected', {
       type: status.dockerType,
       running: status.running,
       version: status.version,
@@ -80,52 +78,41 @@ export async function GET(request: Request) {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body
-    const validation = await validateRequestBody(request, dockerActionSchema);
-    if (!validation.success) {
-      return validation.error as NextResponse;
+    const body = await request.json();
+    const { action } = dockerActionSchema.parse(body);
+
+    const result = await startColima();
+
+    if (result.success) {
+      console.info('Colima started successfully');
+
+      return NextResponse.json({
+        success: true,
+        message: result.message,
+      });
     }
 
-    const { action } = validation.data;
+    console.error('Failed to start Colima', { message: result.message });
 
-    // Log action attempt
-    console.log('Docker action requested', {
-      action,
-      timestamp: new Date().toISOString()
-    });
-
-    if (action === 'start-colima') {
-      const result = await startColima();
-
-      if (result.success) {
-        console.log('Colima started successfully');
-
-        return NextResponse.json({
-          success: true,
-          message: result.message,
-        });
-      }
-
-      console.error('Failed to start Colima', { message: result.message });
-
+    return NextResponse.json(
+      {
+        success: false,
+        error: result.message,
+      },
+      { status: 500 }
+    );
+  } catch (error) {
+    if (error instanceof z.ZodError) {
       return NextResponse.json(
         {
           success: false,
-          error: result.message,
+          error: 'Invalid request parameters',
+          details: error.errors
         },
-        { status: 500 }
+        { status: 400 }
       );
     }
 
-    // action 'status' or 'info' - return current status
-    const status = await detectDockerRuntime();
-    return NextResponse.json({
-      success: true,
-      action,
-      data: status
-    });
-
-  } catch (error) {
     console.error('Error processing Docker action', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });

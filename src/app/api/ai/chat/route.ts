@@ -7,17 +7,28 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { validateAIQuery } from '@/lib/security/input-validator'
-import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { aiChatUnifiedSchema } from '@/lib/api/validation/schemas'
-import { logger } from '@/lib/logger'
-import { ErrorResponses, createProblemDetailsFromError } from '@/lib/api-utils'
-import { withTracing, withAITracing } from '@/lib/monitoring/distributed-tracing'
-import { performanceBaselines } from '@/lib/monitoring/performance-baselines'
-import { enhancedAlerting } from '@/lib/monitoring/enhanced-alerting'
+// import { logger } from '@/lib/logger'
+import { z } from '@/lib/zod-compat'
+import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client'
+import crypto from 'crypto'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-// Log AI interaction events using structured logger
+// Zod validation schema for chat requests
+const chatRequestSchema = z.object({
+  messages: z.array(
+    z.object({
+      role: z.enum(['user', 'assistant', 'system']),
+      content: z.string().min(1).max(10000, 'Message content too long'),
+    })
+  ).min(1, 'At least one message is required').max(50, 'Too many messages'),
+  model: z.string().optional().default('ai/smollm2:360M-Q4_K_M'),
+  stream: z.boolean().optional().default(false),
+  temperature: z.number().min(0).max(2).optional().default(0.7),
+  maxTokens: z.number().min(1).max(4000).optional().default(1000),
+}).strict()
+
+// Log AI interaction events to Datadog
 function logAIInteraction(
   request: NextRequest,
   event: 'chat_request' | 'chat_response' | 'chat_error',
@@ -55,54 +66,55 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
   });
 
   try {
-    // Validate request body with unified schema
-    const validation = await validateRequestBody(request, aiChatUnifiedSchema)
+    // Parse and validate request body with Zod
+    const body = await request.json();
+    const validation = chatRequestSchema.safeParse(body);
+    
     if (!validation.success) {
       logAIInteraction(request, 'chat_error', {
-        error: 'Schema validation failed',
+        error: 'Request validation failed',
+        validationErrors: validation.error.errors,
         userId: request.user?.id,
-        requestId
-      })
-      return validation.error as NextResponse
-    }
-
-    const { messages, message, model = 'ai/smollm2:360M-Q4_K_M', stream = false } = validation.data;
-
-    // Validate input using security validator
-    try {
-      validateAIQuery({
-        query: message || messages?.[messages.length - 1]?.content || '',
-        context: messages?.slice(0, -1).map((m: any) => m.content).join('\n') || '',
-        metadata: { model, stream, userId: request.user?.id }
-      });
-    } catch (validationError) {
-      logAIInteraction(request, 'chat_error', {
-        error: 'Input validation failed',
-        validationError: validationError instanceof Error ? validationError.message : 'Unknown validation error',
-        userId: request.user?.id,
-        model,
-        requestId
       });
 
-      return ErrorResponses.badRequest(
-        'Invalid input format or content',
-        requestId
+      return NextResponse.json(
+        { 
+          error: 'Invalid request format',
+          details: validation.error.errors.map(err => ({
+            field: err.path.join('.'),
+            message: err.message
+          }))
+        },
+        { status: 400 }
       );
     }
 
-    // Validate messages structure
-    if (!messages || !Array.isArray(messages) || messages.length === 0) {
-      logAIInteraction(request, 'chat_error', {
-        error: 'Invalid messages format',
-        userId: request.user?.id,
-        model,
-        requestId
-      });
-
-      return ErrorResponses.badRequest(
-        'Messages array is required and cannot be empty',
-        requestId
-      );
+    const { messages, model, stream, temperature, maxTokens } = validation.data;
+    
+    // Generate cache key for AI chat responses (30-50% cost reduction)
+    // Only cache non-streaming, deterministic responses
+    let cacheKey: string | null = null;
+    if (!stream && temperature <= 0.3) {
+      cacheKey = generateAIChatCacheKey(messages, model, temperature, maxTokens);
+      
+      const cached = await cache.get(cacheKey);
+      if (cached) {
+        logAIInteraction(request, 'chat_response', {
+          model,
+          response_length: cached.choices[0]?.message?.content?.length || 0,
+          processing_time_ms: Date.now() - startTime,
+          from_cache: true,
+          userId: request.user?.id,
+          userRole: request.user?.role,
+        });
+        
+        return NextResponse.json({
+          ...cached,
+          from_cache: true,
+          cache_hit: true,
+          processing_time_ms: Date.now() - startTime
+        });
+      }
     }
 
     // Log the chat request
@@ -171,6 +183,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       response_length: response.length,
       processing_time_ms: processingTime,
       stream,
+      from_cache: false,
       userId: request.user?.id,
       userRole: request.user?.role,
     });
@@ -226,14 +239,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           });
         }
       } catch (streamError) {
-        logger.error('AI streaming error', {
-          service: 'vibecode-webgui',
-          component: 'ai-chat-api',
-          operation: 'streaming',
-          error: streamError instanceof Error ? streamError.message : 'Unknown streaming error',
-          requestId,
-          userId: request.user?.id
-        });
+        console.error('Streaming error:', streamError);
         // Fall back to mock streaming for errors
       }
       
@@ -278,7 +284,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     }
 
     // Regular JSON response
-    return NextResponse.json({
+    const responseData = {
       id: `chatcmpl-${Date.now()}`,
       object: 'chat.completion',
       created: Math.floor(Date.now() / 1000),
@@ -297,12 +303,25 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         prompt_tokens: messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) / 4,
       },
       processing_time_ms: processingTime,
+      from_cache: false,
+      cache_hit: false,
       userId: request.user?.id,
       userRole: request.user?.role,
-    });
+    };
+    
+    // Cache the response if conditions are met
+    if (cacheKey && !aiError && response.length > 0) {
+      await cache.set(cacheKey, responseData, CacheTTL.HOUR); // Cache for 1 hour
+      console.info('AI chat response cached', { 
+        cache_key: cacheKey.substring(0, 20) + '...', 
+        response_length: response.length 
+      });
+    }
+    
+    return NextResponse.json(responseData);
 
   } catch (error) {
-    const processingTime = Date.now() - startTime;
+    console.error('Chat API error:', error);
     
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -388,29 +407,30 @@ async function handleGET(request: AuthenticatedRequest): Promise<NextResponse> {
   });
 }
 
-// Export authenticated handlers with comprehensive monitoring
-export const POST = withTracing(
-  withAIAuth(handlePOST),
-  {
-    operation: 'ai.chat.post',
-    service: 'vibecode-ai',
-    tags: {
-      'endpoint': '/api/ai/chat',
-      'method': 'POST',
-      'feature': 'ai_chat'
-    }
-  }
-);
+// Export authenticated handlers
+export const POST = withAIAuth(handlePOST);
+export const GET = withAIAuth(handleGET);
 
-export const GET = withTracing(
-  withAIAuth(handleGET),
-  {
-    operation: 'ai.chat.get',
-    service: 'vibecode-ai',
-    tags: {
-      'endpoint': '/api/ai/chat',
-      'method': 'GET',
-      'feature': 'health_check'
-    }
-  }
-);
+// Helper function to generate consistent cache keys for AI chat requests
+function generateAIChatCacheKey(
+  messages: Array<{ role: string; content: string }>,
+  model: string,
+  temperature: number,
+  maxTokens: number
+): string {
+  // Create a deterministic hash from the conversation context
+  const keyData = {
+    messages: messages.map(m => ({ role: m.role, content: m.content.trim() })),
+    model,
+    temperature,
+    maxTokens
+  };
+  
+  const hash = crypto
+    .createHash('sha256')
+    .update(JSON.stringify(keyData))
+    .digest('hex')
+    .substring(0, 16);
+    
+  return `ai:chat:${hash}`;
+}

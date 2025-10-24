@@ -43,7 +43,7 @@ export function useTauriMenuBar() {
   useEffect(() => {
     // Only run in Tauri context
     if (typeof window === 'undefined' || !window.__TAURI__) {
-      console.log('useTauriMenuBar: Not running in Tauri context, skipping menu bar integration');
+      console.info('useTauriMenuBar: Not running in Tauri context, skipping menu bar integration');
       return;
     }
 
@@ -59,10 +59,10 @@ export function useTauriMenuBar() {
     const setupStartListener = async () => {
       try {
         const unlisten = await listen('start-services', async () => {
-          console.log('Menu bar: Start services triggered');
+          console.info('Menu bar: Start services triggered');
           try {
             const result = await invoke('start_containers');
-            console.log('Services started:', result);
+            console.info('Services started:', result);
           } catch (error) {
             console.error('Failed to start services:', error);
           }
@@ -77,10 +77,10 @@ export function useTauriMenuBar() {
     const setupStopListener = async () => {
       try {
         const unlisten = await listen('stop-services', async () => {
-          console.log('Menu bar: Stop services triggered');
+          console.info('Menu bar: Stop services triggered');
           try {
             const result = await invoke('stop_containers');
-            console.log('Services stopped:', result);
+            console.info('Services stopped:', result);
           } catch (error) {
             console.error('Failed to stop services:', error);
           }
@@ -95,18 +95,18 @@ export function useTauriMenuBar() {
     const setupRestartListener = async () => {
       try {
         const unlisten = await listen('restart-services', async () => {
-          console.log('Menu bar: Restart services triggered');
+          console.info('Menu bar: Restart services triggered');
           try {
             // Stop containers first
             await invoke('stop_containers');
-            console.log('Services stopped, waiting before restart...');
+            console.info('Services stopped, waiting before restart...');
 
             // Wait 2 seconds before starting
             await new Promise(resolve => setTimeout(resolve, 2000));
 
             // Start containers
             const result = await invoke('start_containers');
-            console.log('Services restarted:', result);
+            console.info('Services restarted:', result);
           } catch (error) {
             console.error('Failed to restart services:', error);
           }
@@ -122,14 +122,14 @@ export function useTauriMenuBar() {
     setupStopListener();
     setupRestartListener();
 
-    console.log('useTauriMenuBar: Menu bar event listeners initialized');
+    console.info('useTauriMenuBar: Menu bar event listeners initialized');
 
     // Cleanup listeners on unmount
     return () => {
       if (startUnlisten) startUnlisten();
       if (stopUnlisten) stopUnlisten();
       if (restartUnlisten) restartUnlisten();
-      console.log('useTauriMenuBar: Menu bar event listeners cleaned up');
+      console.info('useTauriMenuBar: Menu bar event listeners cleaned up');
     };
   }, []);
 }

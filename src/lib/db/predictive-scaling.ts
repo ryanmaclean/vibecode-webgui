@@ -89,7 +89,7 @@ class PredictiveScaler {
 
   constructor(config: Partial<PredictiveScalingConfig> = {}) {
     this.config = { ...DEFAULT_CONFIG, ...config };
-    this.console.log('Predictive connection pool scaler initialized', {
+    this.console.info('Predictive connection pool scaler initialized', {
       strategy: this.config.strategy,
       enabled: this.config.enabled
     });
@@ -405,7 +405,7 @@ class PredictiveScaler {
     // Update pool configuration
     connectionPool.maxSize = newSize;
     
-    this.console.log(`Predictive scaling applied: ${action}`, {
+    this.console.info(`Predictive scaling applied: ${action}`, {
       oldSize: connectionPool.clients.size,
       newMaxSize: newSize,
       strategy: this.config.strategy,
@@ -452,7 +452,7 @@ class PredictiveScaler {
   public updateConfig(newConfig: Partial<PredictiveScalingConfig>): void {
     this.config = { ...this.config, ...newConfig };
     
-    this.console.log('Predictive scaling configuration updated', {
+    this.console.info('Predictive scaling configuration updated', {
       enabled: this.config.enabled,
       strategy: this.config.strategy,
       minConnections: this.config.minConnections,

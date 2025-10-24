@@ -21,7 +21,7 @@ Select,
   SelectValue,
 } from '@/components/ui/select'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Loader, Zap, Code, FileCode, Terminal } from 'lucide-react'
+import { Loader2, Zap, Code, FileCode, Terminal } from 'lucide-react'
 // import { logger } from '@/lib/logger';
 
 const SAMPLE_CODE = {
@@ -151,7 +151,7 @@ cart
   .addItem({ id: 2, name: 'Mouse', price: 29.99 }, 2)
   .applyDiscount(10)
 
-console.log('Total:', cart.getTotal())`,
+console.info('Total:', cart.getTotal())`,
 }
 
 export default function EditorPage() {

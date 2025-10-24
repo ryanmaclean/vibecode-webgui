@@ -27,7 +27,7 @@ function getMonitor(): ConnectionPoolMonitor {
 
     // Start the monitor
     monitor.start();
-    console.log('Connection pool monitor started');
+    console.info('Connection pool monitor started');
   }
   return monitor;
 }

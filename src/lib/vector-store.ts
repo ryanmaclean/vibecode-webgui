@@ -90,14 +90,14 @@ this.embeddingService = null
       if (this.useLocalEmbeddings) {
         const embedding = generateLocalEmbedding(text, this.localEmbeddingDimensions)
         const duration = Date.now() - startTime
-        console.log(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
+        console.info(`Embedding (local-hash) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
       if (this.embeddingService) {
         const embedding = await this.embeddingService.generateEmbedding(text)
         const duration = Date.now() - startTime
-        console.log(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
+        console.info(`Embedding (${this.embeddingProviderLabel}) generated in ${duration}ms for ${text.length} chars`)
         return embedding
       }
 
@@ -111,7 +111,7 @@ this.embeddingService = null
       })
 
       const duration = Date.now() - startTime
-      console.log(`Embedding generation took ${duration}ms for ${text.length} chars`)
+      console.info(`Embedding generation took ${duration}ms for ${text.length} chars`)
 
       return response.data[0].embedding
     } catch (error) {
@@ -132,7 +132,7 @@ this.embeddingService = null
     tokens: number
   }>): Promise<void> {
     if (isBuilding || !prisma) {
-      console.log('Skipping vector storage during build')
+      console.info('Skipping vector storage during build')
       return
     }
     
@@ -260,7 +260,7 @@ this.embeddingService = null
     } = {}
   ): Promise<SearchResult[]> {
     if (isBuilding || !prisma) {
-      console.log('Skipping vector search during build')
+      console.info('Skipping vector search during build')
       return []
     }
     
@@ -541,7 +541,7 @@ this.embeddingService = null
    */
   async deleteFileChunks(fileId: number): Promise<void> {
     if (isBuilding || !prisma) {
-      console.log('Skipping delete during build')
+      console.info('Skipping delete during build')
       return
     }
     
@@ -565,7 +565,7 @@ this.embeddingService = null
     averageChunkSize: number
   }> {
     if (isBuilding || !prisma) {
-      console.log('Skipping stats during build')
+      console.info('Skipping stats during build')
       return {
         totalChunks: 0,
         totalFiles: 0,

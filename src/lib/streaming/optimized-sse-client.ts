@@ -427,7 +427,7 @@ export class OptimizedSSEClient {
     // This would require integration with the fetch API or a custom HTTP/2 client
     // For now, we log the configuration
     if (this.config.debug) {
-      console.log('[OptimizedSSEClient] HTTP/2 configuration:', this.http2Config)
+      console.info('[OptimizedSSEClient] HTTP/2 configuration:', this.http2Config)
     }
   }
 
@@ -555,7 +555,7 @@ export class OptimizedSSEClient {
     this.recordMetric('stream_paused')
 
     if (this.config.debug) {
-      console.log('[OptimizedSSEClient] Stream paused due to backpressure')
+      console.info('[OptimizedSSEClient] Stream paused due to backpressure')
     }
   }
 
@@ -583,7 +583,7 @@ export class OptimizedSSEClient {
     this.recordMetric('pause_duration_ms', pauseDuration)
 
     if (this.config.debug) {
-      console.log('[OptimizedSSEClient] Stream resumed after', pauseDuration, 'ms')
+      console.info('[OptimizedSSEClient] Stream resumed after', pauseDuration, 'ms')
     }
   }
 

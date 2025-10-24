@@ -411,7 +411,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      console.log('Codex CLI installed successfully')
+      console.info('Codex CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Codex CLI: ${error}`)
     }
@@ -430,7 +430,7 @@ export class CodexCLI {
         throw new Error(stderr)
       }
 
-      console.log('Codex CLI uninstalled successfully')
+      console.info('Codex CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Codex CLI: ${error}`)
     }

@@ -45,7 +45,7 @@ export type ValidatedEnv = z.infer<typeof envSchema>;
 export function validateEnvironment(): ValidatedEnv {
   try {
     const env = envSchema.parse(process.env);
-    console.log('✅ Environment validation successful');
+    console.info('✅ Environment validation successful');
     return env;
   } catch (error) {
     if (error instanceof z.ZodError) {

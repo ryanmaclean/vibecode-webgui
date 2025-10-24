@@ -619,7 +619,7 @@ export class MonacoAgentAPI {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[MonacoAgentAPI]', ...args)
+      console.info('[MonacoAgentAPI]', ...args)
     }
   }
 }

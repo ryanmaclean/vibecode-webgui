@@ -4,8 +4,21 @@ import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
 // import { logger } from '@/lib/monitoring'
-import { chatStreamSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
+import { loadSecret } from '@/lib/security/macos-keychain'
+
+const chatStreamSchema = z.object({
+  conversationId: z.string().min(1).max(100),
+  message: z.string().min(1).max(10000),
+  model: z.string().min(1).max(100).optional().default('anthropic/claude-3.5-sonnet'),
+  workspaceId: z.string().min(1).max(100).optional().default('default'),
+  files: z.array(z.object({
+    name: z.string().max(255),
+    content: z.string().max(100000)
+  })).max(10).optional().default([]),
+  enableWebSearch: z.boolean().optional().default(false),
+  enableRAG: z.boolean().optional().default(true)
+}).strict()
 
 // Streaming chat endpoint with MongoDB persistence
 export async function POST(request: NextRequest) {
@@ -27,26 +40,17 @@ export async function POST(request: NextRequest) {
 
     userId = token?.sub || testUserId || 'anonymous'
 
-    // Validate request body with Zod
-    let validatedData
-    try {
-      const body = await request.json()
-      validatedData = chatStreamSchema.parse(body)
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          {
-            error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
-              field: e.path.join('.'),
-              message: e.message
-            }))
-          },
-          { status: 400 }
-        )
-      }
-      throw error
-    }
+    const body = await request.json()
+    const validatedData = chatStreamSchema.parse(body)
+    const { 
+      conversationId, 
+      message, 
+      model,
+      workspaceId,
+      files,
+      enableWebSearch,
+      enableRAG
+    } = validatedData
 
     const {
       conversationId,
@@ -115,7 +119,7 @@ export async function POST(request: NextRequest) {
             { tags: { user_id: userId, workspace_id: workspaceId } }
           )
           
-          console.log('RAG context built', {
+          console.info('RAG context built', {
             service: 'enhanced-rag',
             sourcesCount: ragContext.sources.length,
             webResultsCount: ragContext.webResults?.length || 0,
@@ -146,7 +150,7 @@ export async function POST(request: NextRequest) {
           const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
+              'Authorization': `Bearer ${loadSecret('OPENROUTER_API_KEY') || process.env.OPENROUTER_API_KEY}`,
               'Content-Type': 'application/json',
               'X-Title': 'VibeCode WebGUI',
               'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
@@ -297,6 +301,16 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     statusCode = 500
     const responseTime = Date.now() - startTime
+    
+    if (error instanceof z.ZodError) {
+      statusCode = 400
+      datadogMetrics.recordError('chat_stream_validation_error', 'validation', '/api/chat/stream')
+      
+      return NextResponse.json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      }, { status: 400 })
+    }
     
     datadogMetrics.recordError('chat_stream_api_error', 'api', '/api/chat/stream')
     datadogMetrics.recordResponseTime(responseTime, '/api/chat/stream', 'POST', statusCode)

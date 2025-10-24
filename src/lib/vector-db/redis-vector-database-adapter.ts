@@ -58,7 +58,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.redis.connect();
 
       this.isInitialized = true;
-      console.log('Redis vector database adapter initialized successfully');
+      console.info('Redis vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -351,7 +351,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   async createIndex(field: string, options?: any): Promise<void> {
     // Redis doesn't have traditional indexes like SQL databases
     // This would integrate with Redisearch or similar for vector indexing
-    console.log(`Index creation requested for field: ${field}`);
+    console.info(`Index creation requested for field: ${field}`);
   }
 
   /**
@@ -359,7 +359,7 @@ export class RedisVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   async deleteIndex(field: string): Promise<void> {
     // Redis index deletion would be handled here
-    console.log(`Index deletion requested for field: ${field}`);
+    console.info(`Index deletion requested for field: ${field}`);
   }
 
   /**

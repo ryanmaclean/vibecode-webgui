@@ -44,12 +44,12 @@ export function createAccessibilityTest(options?: AccessibilityTestOptions) {
         const testOptions = { ...mergedOptions, ...pageOptions };
         
         // Use options in a real implementation
-        console.log('Using options:', testOptions);
+        console.info('Using options:', testOptions);
         
         // This is a mock implementation - in a real setup, you would use axe-core or a similar library
         await page.evaluate(() => {
           // Placeholder for accessibility testing logic
-          console.log('Running accessibility tests');
+          console.info('Running accessibility tests');
           return null;
         });
         

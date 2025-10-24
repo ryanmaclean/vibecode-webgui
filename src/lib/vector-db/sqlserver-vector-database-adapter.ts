@@ -66,7 +66,7 @@ export class SqlServerVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.createVectorTable();
 
       this.isInitialized = true;
-      console.log('SQL Server vector database adapter initialized successfully');
+      console.info('SQL Server vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');

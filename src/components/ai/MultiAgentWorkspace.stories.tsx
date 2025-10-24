@@ -93,8 +93,8 @@ type Story = StoryObj<typeof MultiAgentWorkspace>
 export const SingleAgent: Story = {
   args: {
     agents: [mockAgents[0]],
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
       alert(`Sent to ${agentId}: ${message}`)
     }
   }
@@ -106,8 +106,8 @@ export const SingleAgent: Story = {
 export const TwoAgents: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -118,8 +118,8 @@ export const TwoAgents: Story = {
 export const ThreeAgents: Story = {
   args: {
     agents: mockAgents,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -140,8 +140,8 @@ export const FourAgents: Story = {
         stream_url: '/api/agents/opencode-jkl012/events'
       }
     ],
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -153,8 +153,8 @@ export const WithContextSync: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
     enableContextSync: true,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -173,8 +173,8 @@ export const WithMetrics: Story = {
   args: {
     agents: mockAgents,
     showMetrics: true,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -195,8 +195,8 @@ export const FullyConfigured: Story = {
     enableContextSync: true,
     showMetrics: true,
     maxAgents: 4,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   }
 }
@@ -207,8 +207,8 @@ export const FullyConfigured: Story = {
 export const Tablet: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -224,8 +224,8 @@ export const Tablet: Story = {
 export const Mobile: Story = {
   args: {
     agents: mockAgents.slice(0, 2),
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -242,8 +242,8 @@ export const DarkMode: Story = {
   args: {
     agents: mockAgents,
     showMetrics: true,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {
@@ -261,8 +261,8 @@ export const Playground: Story = {
     agents: mockAgents.slice(0, 2),
     enableContextSync: false,
     showMetrics: false,
-    onMessageSend: (agentId: string, message: string) => {
-      console.log(`Message to ${agentId}:`, message)
+    onMessageSend: (agentId, message) => {
+      console.info(`Message to ${agentId}:`, message)
     }
   },
   parameters: {

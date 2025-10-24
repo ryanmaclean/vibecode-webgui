@@ -206,7 +206,7 @@ export class AgentAPIClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[AgentAPIClient]', ...args)
+      console.info('[AgentAPIClient]', ...args)
     }
   }
 }
@@ -625,7 +625,7 @@ export class AgentAPIExtension {
   }
 
   private log(...args: unknown[]): void {
-    console.log('[AgentAPIExtension]', ...args)
+    console.info('[AgentAPIExtension]', ...args)
   }
 }
 

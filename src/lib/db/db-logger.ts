@@ -12,8 +12,8 @@ interface Logger {
 
 // Create a default logger
 const defaultLogger: Logger = {
-  debug: (...args: any[]) => console.log('[DB]', ...args),
-  info: (...args: any[]) => console.log('[DB]', ...args),
+  debug: (...args: any[]) => console.debug('[DB]', ...args),
+  info: (...args: any[]) => console.info('[DB]', ...args),
   warn: (...args: any[]) => console.warn('[DB]', ...args),
   error: (...args: any[]) => console.error('[DB]', ...args),
 };
@@ -110,7 +110,7 @@ let globalOptions: DbLoggingOptions = { ...defaultOptions };
  */
 export function configureDbLogging(options: Partial<DbLoggingOptions>) {
   globalOptions = { ...globalOptions, ...options };
-  console.log('Database logging configured', { options: globalOptions });
+  console.info('Database logging configured', { options: globalOptions });
 }
 
 // Define Prisma event types
@@ -150,7 +150,7 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
       
       // Determine log level based on query duration
       let logLevel = LogLevel.DEBUG;
-      let logMethod = console.log;
+      let logMethod = console.debug;
       
       if (durationMs > loggingOptions.slowQueryThreshold!) {
         logLevel = LogLevel.WARN;
@@ -186,7 +186,7 @@ export function createLoggingPrismaClient(options?: Partial<DbLoggingOptions>) {
   // Info logging
   if (loggingOptions.level! >= LogLevel.INFO) {
     prisma.$on('info', (e: PrismaLogEvent) => {
-      console.log('Database info', {
+      console.info('Database info', {
         operation: DbOperationType.QUERY,
         message: e.message,
         target: e.target,
@@ -234,10 +234,10 @@ export function logDbOperation(
       console.warn(message, logData);
       break;
     case LogLevel.INFO:
-      console.log(message, logData);
+      console.info(message, logData);
       break;
     case LogLevel.DEBUG:
-      console.log(message, logData);
+      console.debug(message, logData);
       break;
   }
 }
@@ -420,7 +420,7 @@ export function enhancePrismaWithLogging(
         
         // Determine log level based on query duration
         let logLevel = LogLevel.DEBUG;
-        let logMethod = console.log;
+        let logMethod = console.debug;
         
         if (durationMs > loggingOptions.slowQueryThreshold!) {
           logLevel = LogLevel.WARN;

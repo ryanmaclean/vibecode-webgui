@@ -438,7 +438,7 @@ class MonitoringService {
   }
 
   logInfo(message: string, context?: Record<string, any>): void {
-    console.log(message, context)
+    console.info(message, context)
   }
 
   logError(message: string, context?: Record<string, any>): void {
@@ -465,7 +465,7 @@ export const logger = {
   },
   warn: (message: string, ...args: any[]) => console.warn(`[WARN] ${message}`, ...args),
   error: (message: string, ...args: any[]) => console.error(`[ERROR] ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => console.log(`[DEBUG] ${message}`, ...args)
+  debug: (message: string, ...args: any[]) => console.debug(`[DEBUG] ${message}`, ...args)
 }
 
 // Export singleton instance

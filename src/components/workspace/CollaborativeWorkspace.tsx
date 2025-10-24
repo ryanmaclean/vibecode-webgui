@@ -137,7 +137,7 @@ export function CollaborativeWorkspace({
   const loadWorkspaceData = async () => {
     // This would integrate with your workspace service
     // For now, simulate loading
-    console.log('Loading workspace data for:', workspaceId);
+    console.info('Loading workspace data for:', workspaceId);
   };
 
   const handleTemplateSelect = async (template: any) => {

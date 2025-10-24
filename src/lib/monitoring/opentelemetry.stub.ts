@@ -2,7 +2,7 @@
 
 
 export function initializeOpenTelemetry() {
-  console.log('🛠️ OpenTelemetry stub active (development mode)')
+  console.info('🛠️ OpenTelemetry stub active (development mode)')
   return null
 }
 

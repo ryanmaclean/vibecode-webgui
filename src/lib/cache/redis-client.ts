@@ -57,7 +57,7 @@ export class RedisCacheClient {
             console.error('Redis server connection refused');
             return new Error('Redis server connection refused');
           }
-          if (options.total_retry_time && options.total_retry_time > 1000 * 60 * 60) {
+          if (options.total_retry_time > 1000 * 60 * 60) {
             console.error('Redis retry time exhausted');
             return new Error('Retry time exhausted');
           }
@@ -71,7 +71,7 @@ export class RedisCacheClient {
 
       // Event listeners for monitoring
       this.client.on('connect', () => {
-        console.log('Redis client connected');
+        console.info('Redis client connected');
         this.isConnected = true;
       });
 
@@ -81,12 +81,12 @@ export class RedisCacheClient {
       });
 
       this.client.on('ready', () => {
-        console.log('Redis client ready');
+        console.info('Redis client ready');
         this.isConnected = true;
       });
 
       this.client.on('end', () => {
-        console.log('Redis client connection ended');
+        console.info('Redis client connection ended');
         this.isConnected = false;
       });
 

@@ -1,59 +1,48 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
 import { z } from '@/lib/zod-compat'
-import { webSearchSchema } from '@/lib/api/validation/schemas'
-// import { logger } from '@/lib/logger'
 
-// Extended schema with additional fields
-const extendedWebSearchSchema = webSearchSchema.extend({
+// Zod validation schema for web search requests
+const webSearchRequestSchema = z.object({
+  query: z.string()
+    .min(1, 'Query is required')
+    .max(500, 'Query too long')
+    .regex(/^[^\x00-\x1F\x7F]*$/, 'Query contains invalid characters'),
+  maxResults: z.number().int().min(1).max(20).optional().default(5),
   timeFilter: z.enum(['day', 'week', 'month', 'year']).optional(),
+  safeSearch: z.boolean().optional().default(true),
+  language: z.string().length(2).optional().default('en'),
+  region: z.string().length(2).optional().default('us'),
   includeContent: z.boolean().optional().default(false)
-});
-
-interface WebSearchRequest {
-  query: string
-  maxResults?: number
-  timeFilter?: 'day' | 'week' | 'month' | 'year'
-  safeSearch?: boolean
-  language?: string
-  region?: string
-  includeContent?: boolean
-}
+}).strict()
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body
-    let validatedData;
-    try {
-      const body = await request.json();
-      validatedData = extendedWebSearchSchema.parse(body);
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        console.warn('Web search validation failed', { errors: error.errors });
-        return NextResponse.json(
-          {
-            success: false,
-            error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
-              field: e.path.join('.'),
-              message: e.message
-            }))
-          },
-          { status: 400 }
-        );
-      }
-      throw error;
+    const body = await request.json()
+    
+    // Validate request body with Zod
+    const validation = webSearchRequestSchema.safeParse(body)
+    
+    if (!validation.success) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid request format',
+        details: validation.error.errors.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
+      }, { status: 400 })
     }
 
-    const {
-      query,
-      maxResults = 5,
+    const { 
+      query, 
+      maxResults, 
       timeFilter,
-      safeSearch = true,
-      language = 'en',
-      region = 'us',
-      includeContent = false
-    } = validatedData;
+      safeSearch,
+      language,
+      region,
+      includeContent
+    } = validation.data
 
     const startTime = Date.now()
     
@@ -136,10 +125,19 @@ export async function GET(request: NextRequest) {
   const maxResults = parseInt(searchParams.get('maxResults') || '5')
   const includeContent = searchParams.get('includeContent') === 'true'
 
-  if (!query) {
+  // Validate query parameter
+  if (!query || query.trim().length === 0) {
     return NextResponse.json({
       success: false,
       error: 'Query parameter (q or query) is required'
+    }, { status: 400 })
+  }
+
+  // Validate maxResults
+  if (isNaN(maxResults) || maxResults < 1 || maxResults > 20) {
+    return NextResponse.json({
+      success: false,
+      error: 'maxResults must be a number between 1 and 20'
     }, { status: 400 })
   }
 

@@ -52,7 +52,7 @@ export class VectorCacheAdapter {
       const cachedResult = await queryCache.get<CachedVectorResult>(cacheKey)
       
       if (cachedResult) {
-        console.log(`📦 Vector search cache HIT for query: "${query.substring(0, 50)}..."`)
+        console.info(`📦 Vector search cache HIT for query: "${query.substring(0, 50)}..."`)
         return {
           ...cachedResult,
           cached: true
@@ -60,7 +60,7 @@ export class VectorCacheAdapter {
       }
 
       // Cache miss - execute search
-      console.log(`🔍 Vector search cache MISS for query: "${query.substring(0, 50)}..."`)
+      console.info(`🔍 Vector search cache MISS for query: "${query.substring(0, 50)}..."`)
       const searchResults = await searchFunction()
       
       const result: CachedVectorResult = {
@@ -112,7 +112,7 @@ export class VectorCacheAdapter {
       const cachedEmbedding = await queryCache.get<CachedEmbedding>(cacheKey)
       
       if (cachedEmbedding) {
-        console.log(`📦 Embedding cache HIT for text: "${text.substring(0, 30)}..."`)
+        console.info(`📦 Embedding cache HIT for text: "${text.substring(0, 30)}..."`)
         return {
           ...cachedEmbedding,
           cached: true
@@ -120,7 +120,7 @@ export class VectorCacheAdapter {
       }
 
       // Cache miss - generate embedding
-      console.log(`🔥 Embedding cache MISS for text: "${text.substring(0, 30)}..."`)
+      console.info(`🔥 Embedding cache MISS for text: "${text.substring(0, 30)}..."`)
       const embedding = await embeddingFunction()
       
       const result: CachedEmbedding = {
@@ -175,7 +175,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
       const cachedData = await queryCache.get<T>(cacheKey)
       
       if (cachedData) {
-        console.log(`📦 Database query cache HIT`)
+        console.info(`📦 Database query cache HIT`)
         return {
           data: cachedData,
           cached: true,
@@ -184,7 +184,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
       }
 
       // Cache miss - execute query
-      console.log(`🗄️ Database query cache MISS`)
+      console.info(`🗄️ Database query cache MISS`)
       const queryResult = await queryFunction()
       
       // Cache the results
@@ -232,7 +232,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
       const cachedData = await queryCache.get<T>(cacheKey)
       
       if (cachedData) {
-        console.log(`📦 API cache HIT for ${endpoint}`)
+        console.info(`📦 API cache HIT for ${endpoint}`)
         return {
           data: cachedData,
           cached: true,
@@ -240,7 +240,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
         }
       }
 
-      console.log(`🌐 API cache MISS for ${endpoint}`)
+      console.info(`🌐 API cache MISS for ${endpoint}`)
       const apiResult = await apiFunction()
       
       await queryCache.set(cacheKey, apiResult, {
@@ -272,7 +272,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
    * Invalidate cache by tags
    */
   async invalidateByTag(tag: string): Promise<number> {
-    console.log(`🗑️ Invalidating cache entries with tag: ${tag}`)
+    console.info(`🗑️ Invalidating cache entries with tag: ${tag}`)
     return queryCache.deleteByTag(tag)
   }
 
@@ -292,7 +292,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
     data: any
     ttl?: number
   }>): Promise<void> {
-    console.log(`🔥 Warming up cache with ${commonQueries.length} common queries...`)
+    console.info(`🔥 Warming up cache with ${commonQueries.length} common queries...`)
     
     for (const query of commonQueries) {
       try {
@@ -307,7 +307,7 @@ const cacheKey = cacheUtils.databaseQueryKey(sql, params)
       }
     }
     
-    console.log(`✅ Cache warm-up completed`)
+    console.info(`✅ Cache warm-up completed`)
   }
 
   /**

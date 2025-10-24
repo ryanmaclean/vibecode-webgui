@@ -22,7 +22,7 @@ export abstract class BaseAIService implements Context7AIService {
     // to an AI service (e.g., OpenAI, Anthropic, etc.)
     // For this example, we will just return the formatted context.
     
-    console.log('Formatted Context for AI:', formattedContext);
+    console.info('Formatted Context for AI:', formattedContext);
     
     // Placeholder for actual AI service call
     return Promise.resolve({

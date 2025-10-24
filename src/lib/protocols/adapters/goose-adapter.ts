@@ -121,7 +121,7 @@ export class GooseAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.log(`[Goose] ${data.line}`);
+          console.info(`[Goose] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {

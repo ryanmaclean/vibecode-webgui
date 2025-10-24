@@ -3,7 +3,8 @@ import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
 import prisma from '@/lib/prisma'
-// import { logger } from '../../../../lib/logger';
+// import { logger } from '../../../../lib/logger'
+import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation';
 
 
 export const dynamic = 'force-dynamic'
@@ -27,29 +28,47 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Missing PDF file in form-data "file" field.' }, { status: 400 })
   }
 
-  // Security validation: Strict MIME type check
-  if (file.type !== 'application/pdf') {
-    return NextResponse.json({ error: 'Only application/pdf uploads are supported.' }, { status: 415 })
-  }
+  // SECURITY: Get file buffer for comprehensive validation
+  const arrayBuffer = await file.arrayBuffer()
+  const buffer = Buffer.from(arrayBuffer)
 
-  // Security validation: Filename sanitization (prevent directory traversal)
-  if (file.name.includes('..') || file.name.includes('/') || file.name.includes('\\')) {
-    return NextResponse.json({ error: 'Invalid filename format' }, { status: 400 })
-  }
-
-  // Security validation: File extension check
-  if (!file.name.toLowerCase().endsWith('.pdf')) {
-    return NextResponse.json({ error: 'File must have .pdf extension' }, { status: 400 })
-  }
-
-  if (file.size === 0 || file.size > MAX_UPLOAD_BYTES) {
+  // SECURITY: Comprehensive file validation beyond MIME type checking
+  const validationResult = validateFileUpload(file, buffer)
+  
+  if (!validationResult.isValid) {
+    console.warn('File upload validation failed', {
+      errors: validationResult.errors,
+      warnings: validationResult.warnings,
+      fileName: file.name,
+      fileSize: file.size,
+      mimeType: file.type
+    })
+    
     return NextResponse.json({
-      error: `PDF must be between 1 byte and ${MAX_UPLOAD_BYTES} bytes.`
+      error: 'File validation failed',
+      details: validationResult.errors,
+      warnings: validationResult.warnings
+    }, { status: 400 })
+  }
+
+  // Log warnings even if file passes validation
+  if (validationResult.warnings.length > 0) {
+    console.warn('File upload warnings', {
+      warnings: validationResult.warnings,
+      fileName: file.name,
+      confidence: validationResult.metadata
+    })
+  }
+
+  // SECURITY: Additional size check against configured maximum
+  if (file.size > MAX_UPLOAD_BYTES) {
+    return NextResponse.json({
+      error: `PDF must be smaller than ${MAX_UPLOAD_BYTES} bytes.`
     }, { status: 400 })
   }
 
   const jobId = randomUUID()
-  const blobName = `${jobId}.pdf`
+  const blobName = generateSecureStorageName(file.name, jobId)
 
   const workspace = await prisma.workspace.findUnique({
     where: { workspace_id: workspaceIdentifier },
@@ -74,9 +93,6 @@ export async function POST(request: NextRequest) {
     projectId = project.id
   }
 
-  const arrayBuffer = await file.arrayBuffer()
-  const buffer = Buffer.from(arrayBuffer)
-
   try {
     const blobClient = await getBlockBlobClient(blobName)
     await blobClient.uploadData(buffer, {
@@ -86,7 +102,12 @@ export async function POST(request: NextRequest) {
       },
       metadata: {
         originalFileName: file.name,
-        uploader: (formData.get('uploader') as string) || 'unknown'
+        uploader: (formData.get('uploader') as string) || 'unknown',
+        securityValidation: {
+          validated: true,
+          warnings: validationResult.warnings,
+          validatedAt: new Date().toISOString()
+        }
       }
     })
   } catch (error) {

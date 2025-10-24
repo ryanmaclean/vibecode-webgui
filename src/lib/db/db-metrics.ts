@@ -274,7 +274,7 @@ class DatabaseMetricsCollector {
       poolUtilization: 0
     };
     
-    console.log('Database metrics collector reset');
+    console.info('Database metrics collector reset');
   }
 
   /**
@@ -336,7 +336,7 @@ let metricsCollector: DatabaseMetricsCollector | null = null;
 export function getDatabaseMetricsCollector(): DatabaseMetricsCollector {
   if (!metricsCollector) {
     metricsCollector = new DatabaseMetricsCollector();
-    console.log('Database metrics collector initialized');
+    console.info('Database metrics collector initialized');
   }
   return metricsCollector;
 }

@@ -6,9 +6,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getDatabaseMetricsCollector } from './db-metrics';
 import { ConnectionPoolStatus } from './db-types';
-import { logger } from '@/lib/logger';
-import { getGlobalCoordinator } from './connection-pool-coordinator';
-import { ConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolStatus } from './connection-pool-types';
+// import { logger } from '@/lib/logger';
 // Connection pool configuration interface
 export interface ConnectionPoolConfig {
   min: number;
@@ -129,9 +127,9 @@ export class ConnectionPool implements ManagedConnectionPool {
       // Update metrics
       this.updateMetrics();
       
-      logger.info(`Connection pool initialized with ${this.config.min} connections`);
+      console.info(`Connection pool initialized with ${this.config.min} connections`);
     } catch (error) {
-      logger.error('Error initializing connection pool:', error);
+      console.error('Error initializing connection pool:', error);
     }
   }
 
@@ -176,7 +174,7 @@ export class ConnectionPool implements ManagedConnectionPool {
           this.metrics.metrics.dynamicPoolAdjustments++;
         } catch (error) {
           if (this.config.logErrors) {
-            logger.error(`Error closing idle connection ${id}:`, error);
+            console.error(`Error closing idle connection ${id}:`, error);
           }
           idsToRemove.push(id);
         }
@@ -193,7 +191,7 @@ export class ConnectionPool implements ManagedConnectionPool {
             await conn.prisma.$disconnect();
           } catch (disconnectError) {
             if (this.config.logErrors) {
-              logger.error(`Error disconnecting invalid connection ${id}:`, disconnectError);
+              console.error(`Error disconnecting invalid connection ${id}:`, disconnectError);
             }
           }
           idsToRemove.push(id);
@@ -226,7 +224,7 @@ export class ConnectionPool implements ManagedConnectionPool {
           this.metrics.metrics.dynamicPoolAdjustments++;
         } catch (error) {
           if (this.config.logErrors) {
-            logger.error('Error creating new connection during validation:', error);
+            console.error('Error creating new connection during validation:', error);
           }
         }
       }
@@ -398,7 +396,7 @@ export class ConnectionPool implements ManagedConnectionPool {
         await prisma.$disconnect();
       } catch (error) {
         if (this.config.logErrors) {
-          logger.error('Error disconnecting unknown connection:', error);
+          console.error('Error disconnecting unknown connection:', error);
         }
       }
     }
@@ -522,7 +520,7 @@ export class ConnectionPool implements ManagedConnectionPool {
         await conn.prisma.$disconnect();
       } catch (error) {
         if (this.config.logErrors) {
-          logger.error('Error closing connection during pool shutdown:', error);
+          console.error('Error closing connection during pool shutdown:', error);
         }
       }
     });
@@ -536,7 +534,7 @@ export class ConnectionPool implements ManagedConnectionPool {
     // Update metrics
     this.updateMetrics();
     
-    logger.info('Connection pool closed');
+    console.info('Connection pool closed');
   }
 }
 

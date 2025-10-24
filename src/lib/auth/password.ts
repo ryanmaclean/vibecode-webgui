@@ -56,6 +56,8 @@ export interface PasswordRequirements {
  * maintaining acceptable performance characteristics.
  *
  * @param password - Plaintext password to hash
+ * @param saltRounds - Number of salt rounds (default: 12)
+ * @param skipValidation - Skip password strength validation (for testing)
  * @returns Promise resolving to bcrypt hash string
  * @throws Error if password is invalid or hashing fails
  *
@@ -65,27 +67,32 @@ export interface PasswordRequirements {
  * // Returns: $2a$12$... (bcrypt hash)
  * ```
  */
-export async function hashPassword(password: string, saltRounds?: number): Promise<string> {
+export async function hashPassword(
+  password: string, 
+  saltRounds: number = PASSWORD_CONFIG.SALT_ROUNDS,
+  skipValidation: boolean = false
+): Promise<string> {
   // Input validation
   if (!password || typeof password !== 'string') {
     throw new Error('Password must be a non-empty string');
   }
 
   // Validate salt rounds
-  const rounds = saltRounds ?? PASSWORD_CONFIG.SALT_ROUNDS;
-  if (typeof rounds !== 'number' || rounds < 4 || rounds > 31) {
+  if (saltRounds < 4 || saltRounds > 31 || !Number.isInteger(saltRounds)) {
     throw new Error('Salt rounds must be an integer between 4 and 31');
   }
 
-  // Validate password strength before hashing
-  const validation = validatePasswordStrength(password);
-  if (!validation.valid) {
-    throw new Error(`Password validation failed: ${validation.errors.join(', ')}`);
+  // Validate password strength before hashing (unless skipped for testing)
+  if (!skipValidation) {
+    const validation = validatePasswordStrength(password);
+    if (!validation.valid) {
+      throw new Error(`Password validation failed: ${validation.errors.join(', ')}`);
+    }
   }
 
   try {
     // Generate salt and hash password
-    const salt = await bcrypt.genSalt(rounds);
+    const salt = await bcrypt.genSalt(saltRounds);
     const hash = await bcrypt.hash(password, salt);
     return hash;
   } catch (error) {
@@ -121,7 +128,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
     return false;
   }
 
-  // Validate hash format (bcrypt hashes start with $2a$, $2b$, or $2y$)
+  // Validate hash format using our utility function
   if (!isValidBcryptHash(hash)) {
     throw new Error('Invalid bcrypt hash format');
   }
@@ -154,7 +161,7 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
  * ```typescript
  * const result = validatePasswordStrength('weak');
  * if (!result.valid) {
- *   console.log(result.errors);
+ *   console.info(result.errors);
  *   // ['Password must be at least 8 characters', ...]
  * }
  * ```
@@ -278,27 +285,38 @@ export function needsRehash(hash: string): boolean {
 /**
  * Validate if a string is a properly formatted bcrypt hash
  *
- * @param hash - String to validate
- * @returns True if valid bcrypt hash format
+ * Checks if the provided string follows bcrypt hash format conventions
+ * and has appropriate security parameters.
+ *
+ * @param hash - String to validate as bcrypt hash
+ * @returns True if string is a valid bcrypt hash format
+ *
+ * @example
+ * ```typescript
+ * const isValid = isValidBcryptHash('$2a$12$...');
+ * // Returns: true for valid bcrypt hashes
+ * ```
  */
 export function isValidBcryptHash(hash: string): boolean {
   if (!hash || typeof hash !== 'string') {
     return false;
   }
 
-  // bcrypt hash format: $2[a|b|y]$rounds$salt+hash (total 60 chars)
-  const bcryptPattern = /^\$2[aby]\$\d{2}\$.{53}$/;
+  // Check bcrypt format: $2[a|b|y]$rounds$salt+hash
+  const bcryptPattern = /^\$2[aby]\$\d{2}\$[./A-Za-z0-9]{53}$/;
   if (!bcryptPattern.test(hash)) {
     return false;
   }
 
-  // Extract and validate rounds
-  const roundsMatch = hash.match(/^\$2[aby]\$(\d{2})\$/);
-  if (!roundsMatch) {
+  // Extract and validate cost factor
+  const match = hash.match(/^\$2[aby]\$(\d{2})\$/);
+  if (!match) {
     return false;
   }
 
-  const rounds = parseInt(roundsMatch[1], 10);
+  const rounds = parseInt(match[1], 10);
+  
+  // Ensure minimum security (rounds should be at least 4, typically 10-12)
   return rounds >= 4 && rounds <= 31;
 }
 

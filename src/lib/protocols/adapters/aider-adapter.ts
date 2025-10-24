@@ -111,7 +111,7 @@ export class AiderAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.log(`[Aider] ${data.line}`);
+          console.info(`[Aider] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {

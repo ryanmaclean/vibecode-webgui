@@ -56,7 +56,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    */
   protected async initializeProvider(): Promise<void> {
     if (this.config.enableLogging) {
-      console.log({
+      console.info({
         message: "Azure Cognitive Search adapter initialization (placeholder implementation)",
         indexName: this.cognitiveSearchConfig.indexName
       });
@@ -85,7 +85,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       const startTime = Date.now();
       
       if (this.config.enableLogging) {
-        console.log({
+        console.info({
           message: `Storing ${chunks.length} chunks for file ${fileId} (placeholder implementation)`,
           fileId,
           chunkCount: chunks.length
@@ -139,7 +139,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       const startTime = Date.now();
       
       if (this.config.enableLogging) {
-        console.log({
+        console.info({
           message: "Vector search in Azure Cognitive Search (placeholder implementation)",
           options: JSON.stringify(options)
         });
@@ -194,7 +194,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       const startTime = Date.now();
       
       if (this.config.enableLogging) {
-        console.log({
+        console.info({
           message: `Deleting chunks for file ${fileId} (placeholder implementation)`,
           fileId
         });
@@ -247,7 +247,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
       const startTime = Date.now();
       
       if (this.config.enableLogging) {
-        console.log({
+        console.info({
           message: "Getting Azure Cognitive Search stats (placeholder implementation)"
         });
       }
@@ -302,7 +302,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    */
   protected async pingProvider(): Promise<boolean> {
     if (this.config.enableLogging) {
-      console.log({
+      console.info({
         message: "Pinging Azure Cognitive Search (placeholder implementation)"
       });
     }
@@ -316,7 +316,7 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
    */
   protected async closeProvider(): Promise<void> {
     if (this.config.enableLogging) {
-      console.log({
+      console.info({
         message: "Closing Azure Cognitive Search connection (placeholder implementation)"
       });
     }
