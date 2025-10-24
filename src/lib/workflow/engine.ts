@@ -10,7 +10,7 @@
 
 import { EventEmitter } from 'events';
 import {
-WorkflowDefinition,
+  WorkflowDefinition,
   WorkflowExecution,
   WorkflowNode,
   WorkflowEdge,
@@ -28,12 +28,11 @@ WorkflowDefinition,
   ConditionConfig,
   ParallelConfig,
   LoopConfig,
-  MergeConfig,
   TransformConfig,
   DelayConfig,
   WebhookConfig,
 } from './types';
-// import { logger } from '@/lib/logger';
+
 // ============================================================================
 // DAG Graph Utilities
 // ============================================================================
@@ -118,8 +117,7 @@ function areDependenciesSatisfied(
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-    // Allow execution if dependency completed successfully OR failed but continued on error
-    return depExec?.status === 'completed' || depExec?.status === 'failed';
+    return depExec?.status === 'completed';
   });
 }
 
@@ -162,13 +160,7 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-    // Include both destructured input variables AND the input object itself
-    const contextVars = { 
-      ...context.input, 
-      ...context.globals, 
-      input: context.input,
-      nodes: context.nodes 
-    };
+    const contextVars = { ...context.input, ...context.globals, nodes: context.nodes };
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -256,7 +248,6 @@ export class WorkflowEngine extends EventEmitter {
       id: this.generateExecutionId(),
       workflowId: definition.name,
       workflowVersion: definition.version,
-      definition: definition,
       status: 'running',
       nodes: new Map(),
       context: {
@@ -401,10 +392,6 @@ export class WorkflowEngine extends EventEmitter {
           output = await this.executeParallel(node.config as ParallelConfig, execution);
           break;
 
-        case 'merge':
-          output = await this.executeMerge(node, execution);
-          break;
-
         case 'loop':
           output = await this.executeLoop(node, execution);
           break;
@@ -500,46 +487,6 @@ export class WorkflowEngine extends EventEmitter {
   ): Promise<unknown> {
     // Parallel execution handled by executeNodes
     return { parallel: true };
-  }
-
-  /**
-   * Execute merge node
-   */
-  private async executeMerge(
-    node: WorkflowNode,
-    execution: WorkflowExecution
-  ): Promise<unknown> {
-    const config = node.config as MergeConfig;
-    
-    // Get all input nodes' outputs
-    const inputs: unknown[] = [];
-    
-    // Find all nodes that feed into this merge node
-    for (const edge of execution.definition.edges) {
-      if (edge.target === node.id) {
-        const sourceOutput = execution.context.nodes[edge.source];
-        if (sourceOutput !== undefined) {
-          inputs.push(sourceOutput);
-        }
-      }
-    }
-
-    // Apply merge strategy
-    switch (config.strategy) {
-      case 'all':
-        return inputs;
-      case 'any':
-        return inputs.length > 0 ? inputs[0] : null;
-      case 'first':
-        return inputs[0] || null;
-      case 'custom':
-        if (config.mergeFunction) {
-          return evaluateExpression(config.mergeFunction, { ...execution.context, inputs });
-        }
-        return inputs;
-      default:
-        return inputs;
-    }
   }
 
   /**

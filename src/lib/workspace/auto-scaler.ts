@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 /**
  * Workspace Auto-Scaling Service
  * Dynamically scales workspace resources based on usage patterns and demand
