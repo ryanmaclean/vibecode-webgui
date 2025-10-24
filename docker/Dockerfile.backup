@@ -1,5 +1,5 @@
 # Multi-stage Docker build for VibeCode WebGUI
-FROM node:18-alpine AS base
+FROM node:20-alpine AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 
 # Install dependencies only when needed
