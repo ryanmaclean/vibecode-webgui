@@ -154,7 +154,7 @@ RUN set -eux && \
 # Layer 3: Install Node.js and Go
 RUN set -eux && \
     # Install Node.js
-    NODE_VERSION="18.18.0" && \
+    NODE_VERSION="20.11.0" && \
     case "$TARGETPLATFORM" in \
       "linux/amd64") NODE_ARCH=x64; GO_ARCH=amd64 ;; \
       "linux/arm64") NODE_ARCH=arm64; GO_ARCH=arm64 ;; \

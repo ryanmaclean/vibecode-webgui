@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  NODE_VERSION: '20.11.0'  # Match package.json engines requirement
+  NODE_VERSION: '20.18.0'  # Latest Node.js 20 LTS
 
 jobs:
   # Code Quality & Security
