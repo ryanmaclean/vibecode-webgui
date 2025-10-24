@@ -3,7 +3,7 @@
 # Supports multiple environments via build arguments
 
 # ===== Build Arguments =====
-ARG NODE_VERSION=20
+ARG NODE_VERSION=24
 ARG BASE_OS=alpine
 ARG BUILD_TARGET=production
 ARG INCLUDE_DEV_DEPS=false

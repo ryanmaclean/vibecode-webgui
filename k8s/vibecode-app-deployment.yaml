@@ -35,6 +35,8 @@ spec:
         env:
         - name: NODE_ENV
           value: "production"
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
         - name: PORT
           value: "3000"
         - name: DD_SERVICE
