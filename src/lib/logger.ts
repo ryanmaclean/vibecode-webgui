@@ -110,6 +110,10 @@ if (!isEdgeRuntime) {
 
 export const logger: StructuredLogger = baseLogger;
 
+export function createLogger(metadata: Record<string, unknown>): StructuredLogger {
+  return consoleImpl(metadata);
+}
+
 export function createChildLogger(metadata: Record<string, unknown>): StructuredLogger {
-  return createChildLoggerImpl(metadata);
+  return consoleImpl(metadata);
 }
