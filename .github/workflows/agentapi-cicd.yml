@@ -114,7 +114,7 @@ jobs:
         run: npm ci --prefer-offline --no-audit
 
       - name: Run unit tests with coverage
-        run: npm run test:unit -- --coverage --testPathPattern="agent"
+        run: npm run test:unit -- --coverage --testPathPatterns="agent"
         env:
           NODE_ENV: test
           CI: true
@@ -193,7 +193,7 @@ jobs:
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
 
       - name: Run integration tests
-        run: npm run test:integration -- --testPathPattern="agent" --runInBand
+        run: npm run test:integration -- --testPathPatterns="agent" --runInBand
         env:
           NODE_ENV: test
           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
