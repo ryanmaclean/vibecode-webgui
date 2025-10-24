@@ -133,11 +133,11 @@ export async function GET(request: NextRequest) {
   }
 
   try {
-    logger.info('Workspace management API called', logContext)
+    console.log('Workspace management API called', logContext)
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
-      logger.warn('Kubernetes not available for workspace management', logContext)
+      console.warn('Kubernetes not available for workspace management', logContext)
       return NextResponse.json({
         available: false,
         reason: 'Kubernetes cluster not configured',
@@ -149,11 +149,11 @@ export async function GET(request: NextRequest) {
 
     if (workspaceId) {
       // Get specific workspace
-      logger.debug('Fetching specific workspace', { ...logContext, workspaceId })
+      console.log('Fetching specific workspace', { ...logContext, workspaceId })
       const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
 
       if (!workspace) {
-        logger.warn('Workspace not found', { ...logContext, workspaceId })
+        console.warn('Workspace not found', { ...logContext, workspaceId })
         return ErrorResponses.notFound(
           `Workspace with ID ${workspaceId} not found`,
           requestId
@@ -170,7 +170,7 @@ export async function GET(request: NextRequest) {
       })
     } else {
       // List all workspaces
-      logger.debug('Listing all workspaces', logContext)
+      console.log('Listing all workspaces', logContext)
       const workspaces = await workspaceService.listWorkspaces()
 
       const responseTime = Date.now() - startTime

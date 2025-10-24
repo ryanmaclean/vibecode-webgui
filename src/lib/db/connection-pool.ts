@@ -93,9 +93,9 @@ export class ConnectionPool implements ManagedConnectionPool {
       try {
         const coordinator = getGlobalCoordinator();
         coordinator.registerPool(this, budget);
-        logger.info(`${this.name} registered with global coordinator`, { budget });
+        console.log(`${this.name} registered with global coordinator`, { budget });
       } catch (error) {
-        logger.warn(`${this.name} failed to register with coordinator, operating independently`, { error });
+        console.warn(`${this.name} failed to register with coordinator, operating independently`, { error });
       }
     }
   }
@@ -499,7 +499,7 @@ export class ConnectionPool implements ManagedConnectionPool {
         throw error;
       }
     } catch (error) {
-      logger.error(`${this.name} health check failed`, { error });
+      console.error(`${this.name} health check failed`, { error });
       return false;
     }
   }

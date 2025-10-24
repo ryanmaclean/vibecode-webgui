@@ -22,12 +22,12 @@ export async function GET(_request: NextRequest) {
     clientIp
   }
 
-  logger.info('Health check requested', logContext)
+  console.log('Health check requested', logContext)
 
   // Validate query parameters
   const validation = validateQueryParams(request, healthCheckQuerySchema)
   if (!validation.success) {
-    logger.warn('Invalid health check query parameters', {
+    console.warn('Invalid health check query parameters', {
       ...logContext,
       validationError: true
     })
@@ -74,7 +74,7 @@ export async function GET(_request: NextRequest) {
     const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
     if (hasFailures) {
       healthChecks.status = 'degraded'
-      logger.warn('Health check shows degraded status', { 
+      console.warn('Health check shows degraded status', { 
         ...logContext, 
         healthStatus: 'degraded',
         failedChecks: Object.entries(healthChecks.checks)
@@ -94,22 +94,17 @@ export async function GET(_request: NextRequest) {
   } catch (error) {
     console.error('Health check error:', error)
 
-    return NextResponse.json({
-      ...healthCheckResponse,
-      requestId
-    }, { status: 200 })
+    return NextResponse.json(healthCheckResponse, { status: 200 })
 
   } catch (error) {
-    logger.error('Health check failed with error', { 
-      ...logContext, 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      responseTime: Date.now() - startTime
-    })
+    console.error('Health check failed with error:', error)
 
-    return ErrorResponses.serviceUnavailable(
-      'Health check service temporarily unavailable',
+    return NextResponse.json({
+      status: 'unhealthy',
+      error: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString(),
       requestId
-    )
+    }, { status: 503 })
   }
 }
 
