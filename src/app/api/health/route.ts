@@ -10,7 +10,7 @@ import { monitoring } from '@/lib/monitoring'
 import { logger } from '@/lib/logger'
 import { ErrorResponses } from '@/lib/api-utils'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
-import { validateQueryParams, checkRateLimit } from '@/lib/api/validation/helpers'
+import { validateQueryParams } from '@/lib/api/validation/middleware'
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
@@ -27,17 +27,6 @@ export async function GET(request: NextRequest) {
   }
 
   logger.info('Health check requested', logContext)
-
-  // Rate limiting: 100 requests per minute
-  const rateLimit = checkRateLimit(`health:${clientIp}`, 100, 60000)
-  if (!rateLimit.allowed) {
-    logger.warn('Health check rate limited', { ...logContext, rateLimitExceeded: true })
-    return ErrorResponses.tooManyRequests(
-      'Too many health check requests. Please slow down.',
-      undefined,
-      requestId
-    )
-  }
 
   // Validate query parameters
   const validation = validateQueryParams(request, healthCheckQuerySchema)

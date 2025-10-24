@@ -7,7 +7,7 @@ import {
   MoreVertical,
   Play,
   Square,
-  Trash2,
+  Trash,
   ExternalLink,
   Cpu,
   HardDrive,
@@ -197,7 +197,7 @@ function WorkspaceCard({
                     onClick={onDelete}
                     className="flex items-center w-full px-4 py-2 text-sm text-red-700 hover:bg-red-50"
                   >
-                    <Trash2 className="h-4 w-4 mr-2" />
+                    <Trash className="h-4 w-4 mr-2" />
                     Delete
                   </button>
                 </div>

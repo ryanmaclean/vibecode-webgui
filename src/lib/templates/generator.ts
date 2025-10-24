@@ -58,6 +58,13 @@ export interface GeneratedProject {
     complexity: string;
     features: string[];
   };
+  setupInstructions?: string[];
+  envVars?: Array<{
+    key: string;
+    value?: string;
+    description?: string;
+  }>;
+  category?: string;
 }
 
 export interface GenerationOptions {
@@ -538,7 +545,10 @@ export default function RootLayout({
           estimatedSetupTime: template.estimatedTime,
           complexity: template.complexity,
           features: template.features
-        }
+        },
+        setupInstructions: template.setupInstructions,
+        envVars: [],
+        category: template.category
       };
     });
 
@@ -566,7 +576,10 @@ export default function RootLayout({
           estimatedSetupTime: template.estimatedTime,
           complexity: template.complexity,
           features: template.features
-        }
+        },
+        setupInstructions: template.setupInstructions,
+        envVars: [],
+        category: template.category
       };
     });
   }

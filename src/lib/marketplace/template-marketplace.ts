@@ -7,6 +7,7 @@ import { VectorChunk } from '../vector-db/vector-types';
 
 export interface MarketplaceTemplate {
   id: string;
+  marketplaceId?: string; // Alternative ID field for marketplace routing
   name: string;
   description: string;
   author: string;

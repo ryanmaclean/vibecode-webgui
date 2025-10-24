@@ -52,12 +52,12 @@ export class RedisCacheClient {
         password: this.config.password,
         database: this.config.database || 0,
         keyPrefix: this.config.keyPrefix,
-        retry_strategy: (options) => {
+        retry_strategy: (options: { error?: { code?: string }; total_retry_time?: number; attempt: number }) => {
           if (options.error && options.error.code === 'ECONNREFUSED') {
             console.error('Redis server connection refused');
             return new Error('Redis server connection refused');
           }
-          if (options.total_retry_time > 1000 * 60 * 60) {
+          if (options.total_retry_time && options.total_retry_time > 1000 * 60 * 60) {
             console.error('Redis retry time exhausted');
             return new Error('Retry time exhausted');
           }

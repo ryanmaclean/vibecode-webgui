@@ -25,7 +25,7 @@ import {
   Minimize2,
   Link as LinkIcon,
   Unlink,
-  BarChart3,
+  BarChart,
   GripVertical
 } from 'lucide-react'
 import { Card } from '@/components/ui/card'
@@ -135,7 +135,7 @@ function MetricsCard({ metrics, className }: MetricsCardProps) {
     <Card className={cn("p-4", className)}>
       <div className="flex items-center justify-between mb-3">
         <h3 className="text-sm font-semibold flex items-center gap-2">
-          <BarChart3 className="h-4 w-4" aria-hidden="true" />
+          <BarChart className="h-4 w-4" aria-hidden="true" />
           Performance Metrics
         </h3>
       </div>
@@ -458,7 +458,7 @@ export function MultiAgentWorkspace({
               onClick={() => setShowMetricsView(!showMetricsView)}
               aria-label="Toggle metrics view"
             >
-              <BarChart3 className="h-4 w-4" aria-hidden="true" />
+              <BarChart className="h-4 w-4" aria-hidden="true" />
               <span className="ml-1.5">Metrics</span>
             </Button>
           </div>

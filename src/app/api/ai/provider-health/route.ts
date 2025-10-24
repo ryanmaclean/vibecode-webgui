@@ -8,7 +8,12 @@ import { enhancedAI, AIProvider } from '@/lib/ai/enhanced-model-client';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { validateRequestBody } from '@/lib/api/validation/middleware';
-import { providerHealthCheckSchema } from '@/lib/api/validation/schemas-phase4-batch2';
+import { z } from '@/lib/zod-compat';
+
+// Define inline schema since schemas-phase4-batch2 doesn't exist
+const providerHealthCheckSchema = z.object({
+  provider: z.enum(['openai', 'anthropic', 'huggingface', 'openrouter', 'google', 'cohere'])
+});
 
 export async function POST(request: NextRequest) {
   try {

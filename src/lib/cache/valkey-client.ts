@@ -213,7 +213,7 @@ export class ValkeyManager {
 
     try {
       const values = await this.client.mget(...keys);
-      return values.map((value) => (value ? (JSON.parse(value) as T) : null));
+      return values.map((value: string | null) => (value ? (JSON.parse(value) as T) : null));
     } catch (error) {
       console.error('Valkey mget error', { keys, error });
       return keys.map(() => null);

@@ -24,7 +24,7 @@ Send,
   User,
   Copy,
   RefreshCw,
-  Trash2,
+  Trash,
   Check,
   AlertCircle,
   Code,
@@ -298,7 +298,7 @@ function MessageItem({ message, onRetry, onDelete, onCopy }: MessageItemProps) {
                 className="h-7 px-2 text-red-500 hover:text-red-600"
                 aria-label="Delete message"
               >
-                <Trash2 className="h-3 w-3" aria-hidden="true" />
+                <Trash className="h-3 w-3" aria-hidden="true" />
               </Button>
             )}
           </div>

@@ -27,7 +27,7 @@ Settings,
   Save,
   RotateCcw,
   AlertCircle,
-  CheckCircle2
+  CheckCircle
 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
@@ -244,7 +244,7 @@ export function AgentConfigPanel({
             >
               {saveStatus === 'success' ? (
                 <>
-                  <CheckCircle2 className="h-3 w-3" aria-hidden="true" />
+                  <CheckCircle className="h-3 w-3" aria-hidden="true" />
                   Saved
                 </>
               ) : (

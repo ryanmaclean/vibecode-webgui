@@ -108,7 +108,7 @@ const MessageRow = memo<ListChildComponentProps<ItemData>>(({ index, style, data
               {/* File Attachments */}
               {message.attachments && message.attachments.length > 0 && (
                 <div className="mt-3 space-y-2">
-                  {message.attachments.map((attachment) => (
+                  {message.attachments.map((attachment: FileAttachment) => (
                     <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted/50 rounded">
                       {attachment.type === 'image' && <Image className="w-4 h-4" />}
                       {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
@@ -179,7 +179,7 @@ const MessageRow = memo<ListChildComponentProps<ItemData>>(({ index, style, data
                   {/* Components */}
                   {message.metadata.components && (
                     <div className="flex flex-wrap gap-1 mt-2">
-                      {message.metadata.components.map((comp, idx) => (
+                      {message.metadata.components.map((comp: string, idx: number) => (
                         <Badge key={idx} variant="outline" className="text-xs">
                           {comp}
                         </Badge>

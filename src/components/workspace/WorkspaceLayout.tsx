@@ -195,7 +195,7 @@ export default function WorkspaceLayout({
               theme="dark"
               enableAI={true}
               enableWebGL={true}
-              onReady={(terminal) => {
+              onReady={(terminal: any) => {
                 console.log('Enhanced AI terminal ready:', terminal)
               }}
             />

@@ -271,7 +271,7 @@ export class CacheManager {
 
     try {
       const values = await this.client.mget(...keys);
-      return values.map(value => value ? JSON.parse(value) : null);
+      return values.map((value: string | null) => value ? JSON.parse(value) : null);
     } catch (error) {
       console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mget error:`, error);
       return keys.map(() => null);
