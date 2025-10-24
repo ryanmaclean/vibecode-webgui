@@ -130,6 +130,7 @@ export class EnhancedAIClient {
     // AWS Bedrock client
     if (process.env.AWS_ACCESS_KEY_ID && process.env.AWS_SECRET_ACCESS_KEY) {
       this.clients.set('bedrock', {
+        apiKey: '', // Bedrock doesn't use apiKey but we need it for the type
         region: process.env.AWS_REGION || 'us-east-1',
         accessKeyId: process.env.AWS_ACCESS_KEY_ID,
         secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY
@@ -248,19 +249,19 @@ export class EnhancedAIClient {
     switch (config.provider) {
       case 'openrouter':
       case 'azure-openai':
-        return await this.handleOpenAICompatible(client, messages, config);
+        return await this.handleOpenAICompatible(client as OpenAI, messages, config);
       
       case 'anthropic':
-        return await this.handleAnthropic(client, messages, config);
+        return await this.handleAnthropic(client as OpenAI, messages, config);
       
       case 'ollama':
-        return await this.handleOllama(client, messages, config);
+        return await this.handleOllama(client as { apiKey: string; endpoint: string }, messages, config);
       
       case 'gemini':
-        return await this.handleGemini(client, messages, config);
+        return await this.handleGemini(client as { apiKey: string; endpoint: string }, messages, config);
       
       case 'bedrock':
-        return await this.handleBedrock(client, messages, config);
+        return await this.handleBedrock(client as { region: string; accessKeyId: string; secretAccessKey: string }, messages, config);
       
       default:
         throw new Error(`Unsupported provider: ${config.provider}`);

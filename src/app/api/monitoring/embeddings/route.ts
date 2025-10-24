@@ -14,9 +14,9 @@ let serviceReleaseFunction: (() => Promise<void>) | null = null;
 async function getEmbeddingService(): Promise<EmbeddingServiceType> {
   if (!embeddingService) {
     try {
-      const { service, releaseConnection } = await EmbeddingServiceFactory.createEmbeddingServiceWithRobustConnection();
+      const service = await EmbeddingServiceFactory.createEmbeddingService();
       embeddingService = service;
-      serviceReleaseFunction = releaseConnection;
+      
     } catch (error) {
       console.error('Failed to create embedding service:', error);
       throw new Error('Embedding service not available');

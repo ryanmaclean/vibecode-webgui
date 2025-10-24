@@ -215,7 +215,7 @@ export default function CollaborativeEditingSessions({
    */
   const canManageSession = useCallback((session: CollaborativeSession, userId: string): boolean => {
     const role = getUserRole(session, userId)
-    return role === 'owner' || (role === 'editor' && session.participants.find(p => p.userId === userId)?.permissions.canManage)
+    return role === 'owner' || (role === 'editor' && session.participants.find(p => p.userId === userId)?.permissions.canManage === true)
   }, [getUserRole])
 
   /**

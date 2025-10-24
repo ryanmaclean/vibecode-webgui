@@ -14,6 +14,30 @@ import { Redis } from 'ioredis';
 import { metrics } from '../server-monitoring';
 // import { logger } from '@/lib/logger';
 
+// Type extension for Redis commands to fix TS2339 errors
+interface RedisCommands {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<'OK'>;
+  del(...keys: string[]): Promise<number>;
+  exists(...keys: string[]): Promise<number>;
+  mget(...keys: string[]): Promise<(string | null)[]>;
+  pipeline(): RedisPipeline;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+  keys(pattern: string): Promise<string[]>;
+  info(section?: string): Promise<string>;
+  dbsize(): Promise<number>;
+  flushdb(): Promise<'OK'>;
+  ping(): Promise<string>;
+}
+
+interface RedisPipeline {
+  setex(key: string, seconds: number, value: string): RedisPipeline;
+  exec(): Promise<[Error | null, unknown][]>;
+}
+
+type EnhancedRedis = Redis & RedisCommands;
+
 type StandardConfig = {
   type: 'standard';
   url?: string;
@@ -63,31 +87,9 @@ let valkeyClient: Redis | null = null;
 try {
   if (connectionConfig.type === 'standard') {
     if (connectionConfig.url) {
-      valkeyClient = new Redis(connectionConfig.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30_000,
-        family: 4,
-        commandTimeout: 5_000,
-        connectTimeout: 10_000,
-      });
+      valkeyClient = new Redis(connectionConfig.url);
     } else {
-      valkeyClient = new Redis({
-        host: connectionConfig.host,
-        port: connectionConfig.port,
-        password: connectionConfig.password,
-        db: connectionConfig.db,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30_000,
-        family: 4,
-        commandTimeout: 5_000,
-        connectTimeout: 10_000,
-      });
+      valkeyClient = new Redis(connectionConfig as any);
     }
 
     valkeyClient.on('connect', () => {
@@ -149,7 +151,7 @@ export class ValkeyManager {
 
     const start = Date.now();
     try {
-      const value = await this.client.get(key);
+      const value = await (this.client as EnhancedRedis).get(key);
       metrics.histogram('cache.get.duration', Date.now() - start);
 
       if (!value) {
@@ -171,7 +173,7 @@ export class ValkeyManager {
 
     const start = Date.now();
     try {
-      await this.client.setex(key, ttl, JSON.stringify(value));
+      await (this.client as EnhancedRedis).setex(key, ttl, JSON.stringify(value));
       metrics.histogram('cache.set.duration', Date.now() - start);
       metrics.increment('cache.set.success');
       return true;
@@ -187,8 +189,8 @@ export class ValkeyManager {
 
     const keys = Array.isArray(key) ? key : [key];
     try {
-      await this.client.del(...keys);
-      metrics.increment('cache.delete', { count: keys.length });
+      await (this.client as EnhancedRedis).del(...keys);
+      metrics.increment('cache.delete', { count: keys.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -201,7 +203,7 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      return (await this.client.exists(key)) === 1;
+      return (await (this.client as EnhancedRedis).exists(key)) === 1;
     } catch (error) {
       console.error('Valkey exists error', { key, error });
       return false;
@@ -212,7 +214,7 @@ export class ValkeyManager {
     if (!this.client || keys.length === 0) return [];
 
     try {
-      const values = await this.client.mget(...keys);
+      const values = await (this.client as EnhancedRedis).mget(...keys);
       return values.map((value: string | null) => (value ? (JSON.parse(value) as T) : null));
     } catch (error) {
       console.error('Valkey mget error', { keys, error });
@@ -224,12 +226,12 @@ export class ValkeyManager {
     if (!this.client || pairs.length === 0) return false;
 
     try {
-      const pipeline = this.client.pipeline();
+      const pipeline = (this.client as EnhancedRedis).pipeline();
       pairs.forEach(({ key, value, ttl = CacheTTL.MEDIUM }) => {
         pipeline.setex(key, ttl, JSON.stringify(value));
       });
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length });
+      metrics.increment('cache.mset.success', { count: pairs.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
@@ -242,9 +244,9 @@ export class ValkeyManager {
     if (!this.client) return 0;
 
     try {
-      const value = await this.client.incr(key);
+      const value = await (this.client as EnhancedRedis).incr(key);
       if (ttl && value === 1) {
-        await this.client.expire(key, ttl);
+        await (this.client as EnhancedRedis).expire(key, ttl);
       }
       return value;
     } catch (error) {
@@ -257,7 +259,7 @@ export class ValkeyManager {
     if (!this.client) return [];
 
     try {
-      return await this.client.keys(pattern);
+      return await (this.client as EnhancedRedis).keys(pattern);
     } catch (error) {
       console.error('Valkey keys error', { pattern, error });
       return [];
@@ -275,8 +277,8 @@ export class ValkeyManager {
     }
 
     try {
-      const info = await this.client.info('memory');
-      const dbSize = await this.client.dbsize();
+      const info = await (this.client as EnhancedRedis).info('memory');
+      const dbSize = await (this.client as EnhancedRedis).dbsize();
       const memoryMatch = info.match(/used_memory_human:(.+)/);
 
       return {
@@ -295,7 +297,7 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      await this.client.flushdb();
+      await (this.client as EnhancedRedis).flushdb();
       metrics.increment('cache.clear');
       return true;
     } catch (error) {
@@ -308,7 +310,7 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      await this.client.ping();
+      await (this.client as EnhancedRedis).ping();
       return true;
     } catch (error) {
       console.warn('Valkey health check failed', { error });

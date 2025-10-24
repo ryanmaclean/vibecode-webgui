@@ -256,7 +256,7 @@ export async function POST(request: NextRequest) {
 
     if (type === 'performance') {
       // Store performance metrics
-      await storePerformanceMetrics(duration, metrics);
+      await storePerformanceMetrics(duration ?? 0, metrics);
 
       return NextResponse.json({
         success: true,

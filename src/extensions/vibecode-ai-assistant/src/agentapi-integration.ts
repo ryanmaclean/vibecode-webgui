@@ -121,9 +121,9 @@ export class AgentAPIClient {
         task,
       })
 
-      this.currentAgentId = response.data.agent_id
+      this.currentAgentId = response.data.agent_id ?? null
       this.log('Agent started:', this.currentAgentId)
-      return this.currentAgentId
+      return this.currentAgentId as string
     } catch (error) {
       this.log('Error starting agent:', error)
       throw error

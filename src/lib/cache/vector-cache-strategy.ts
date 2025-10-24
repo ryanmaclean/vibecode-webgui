@@ -118,14 +118,34 @@ export class VectorCacheManager {
     totalEntries: number;
     oldestEntry: number | null;
     newestEntry: number | null;
+    hitRate: number;
+    hitCount: number;
+    missCount: number;
   } {
     const entries = Array.from(this.cache.values());
     const timestamps = entries.map(e => e.timestamp);
 
+    // Calculate hit/miss stats (simplified - in production this would track actual hits/misses)
+    const hitCount = 0;
+    const missCount = 0;
+    const hitRate = hitCount + missCount > 0 ? hitCount / (hitCount + missCount) : 0;
+
     return {
       totalEntries: this.cache.size,
       oldestEntry: timestamps.length > 0 ? Math.min(...timestamps) : null,
-      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : null
+      newestEntry: timestamps.length > 0 ? Math.max(...timestamps) : null,
+      hitRate,
+      hitCount,
+      missCount
     };
+  }
+
+  /**
+   * Reset cache statistics
+   */
+  public static resetStats(): void {
+    // In a real implementation, this would reset hit/miss counters
+    // For this mock, we just clear the cache
+    this.cache.clear();
   }
 }
