@@ -2,7 +2,7 @@ import { Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { EventEmitter } from 'events';
 import { logger } from '@/lib/logger';
 import { getGlobalCoordinator } from './connection-pool-coordinator';
-import { ConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolStatus } from './connection-pool-types';
+import { ConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolState, PoolStatusInfo } from './connection-pool-types';
 // Use a simple logger implementation
 const createLogger = (name: string) => ({
   info: (message: string, ...args: any[]) => logger.info(`[${name}] INFO: ${message}`, ...args),
@@ -316,7 +316,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
    * Gets the current status of the pool
    * @returns Pool status information
    */
-  public getStatus(): PoolStatus & { waitingClients: number; idleConnections: number } {
+  public getStatus(): PoolStatusInfo {
     return {
       name: this.name,
       size: this.poolSize,
