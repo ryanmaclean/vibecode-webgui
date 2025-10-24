@@ -154,7 +154,7 @@ class DeploymentTester {
         }
 
         // Check if Dockerfile exists
-        const dockerfileExists = fs.existsSync('./Dockerfile') || fs.existsSync('./Dockerfile.dev');
+        const dockerfileExists = fs.existsSync('./docker/Dockerfile');
         this.recordTest('Dockerfile exists', dockerfileExists);
 
         if (!dockerfileExists) return;

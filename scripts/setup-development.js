@@ -178,9 +178,8 @@ EXPOSE 3000
 CMD ["npm", "start"]
 `;
       
-      fs.writeFileSync('./Dockerfile.simple', simpleDockerfile);
-      log('Created Dockerfile.simple for reliable builds', 'green');
-      log('Use: docker build -f Dockerfile.simple -t vibecode .', 'yellow');
+      log('Using consolidated Docker structure: docker/Dockerfile', 'green');
+      log('Use: cd docker && ./build.sh dev', 'yellow');
     }
   }
 }
@@ -254,7 +253,7 @@ function printNextSteps() {
   
   log('\\nTroubleshooting:', 'blue');
   log('- If build fails: npm run dev:cdn (uses CDN Tailwind)', 'yellow');
-  log('- If Docker fails: Use Dockerfile.simple', 'yellow');
+  log('- If Docker fails: Use docker/build.sh dev', 'yellow');
   log('- For help: Check README.md or GitHub Issues', 'yellow');
   
   log('\\nDocumentation: https://ryanmaclean.github.io/vibecode-webgui/', 'blue');

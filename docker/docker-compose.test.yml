@@ -1,123 +1,58 @@
+# Testing Environment
 version: '3.8'
 
 services:
-  postgres:
-    image: postgres:15-alpine
-    environment:
-      POSTGRES_DB: vibecode_test
-      POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
+  webgui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: testing
+      args:
+        NODE_VERSION: 20
+        BASE_OS: alpine
+        INCLUDE_DEV_DEPS: true
+        ENABLE_LIGHTNINGCSS: true
+        ENABLE_PRISMA: true
     ports:
-      - "5434:5432"
+      - "3000:3000"
+    environment:
+      - NODE_ENV=test
+      - NEXT_TELEMETRY_DISABLED=1
+      - DATABASE_URL=postgresql://test:test@postgres:5432/testdb
+      - REDIS_URL=redis://redis:6379
+      - NEXTAUTH_SECRET=test-secret-key-for-ci
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - vibecode-test
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: testdb
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_test_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U test_user -d vibecode_test"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
     networks:
       - vibecode-test
 
   redis:
     image: redis:7-alpine
     ports:
-      - "6380:6379"
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - vibecode-test
-
-  vibecode-app:
-    build:
-      context: .
-      dockerfile: Dockerfile.test
-    ports:
-      - "3003:3000"
-    environment:
-      - NODE_ENV=test
-      - DATABASE_URL=postgresql://test_user:test_password@postgres:5432/vibecode_test
-      - REDIS_URL=redis://redis:6379
-      - NEXTAUTH_SECRET=test-secret-for-kind-testing
-      - NEXTAUTH_URL=http://localhost:3003
-      - DD_IAST_ENABLED=true
-      - USE_CONNECTION_POOL=true
-      - CONNECTION_POOL_MAX_CONNECTIONS=10
-      - CONNECTION_POOL_MIN_CONNECTIONS=2
-    depends_on:
-      postgres:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    networks:
-      - vibecode-test
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:3000/api/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 40s
-
-  test-runner:
-    image: curlimages/curl:latest
-    depends_on:
-      vibecode-app:
-        condition: service_healthy
-    networks:
-      - vibecode-test
+      - "6379:6379"
     volumes:
-      - ./scripts:/scripts:ro
-      - test_results:/results
-    command:
-      - sh
-      - -c
-      - |
-        echo '🚀 Starting Docker-based vector optimization testing...'
-        echo '============================================='
-        
-        echo '🔍 Testing Enhanced Vector Metrics...'
-        if curl -f http://vibecode-app:3000/api/health/vector-metrics > /results/vector-metrics.json 2>/dev/null; then
-          echo '✅ Vector metrics endpoint operational'
-        else
-          echo '❌ Vector metrics endpoint failed'
-        fi
-        
-        echo '🔗 Testing Connection Pool...'
-        if curl -f http://vibecode-app:3000/api/health/connection-pool > /results/connection-pool.json 2>/dev/null; then
-          echo '✅ Connection pool endpoint operational'  
-        else
-          echo '❌ Connection pool endpoint failed'
-        fi
-        
-        echo '📊 Testing Database Metrics...'
-        if curl -f http://vibecode-app:3000/api/health/database/metrics > /results/database-metrics.json 2>/dev/null; then
-          echo '✅ Database metrics endpoint operational'
-        else
-          echo '❌ Database metrics endpoint failed'
-        fi
-        
-        echo '⚡ Running performance stress test...'
-        SUCCESS_COUNT=0
-        for i in $(seq 1 10); do
-          if curl -s http://vibecode-app:3000/api/health/vector-metrics > /dev/null 2>&1; then
-            echo "Request $i: ✅"
-            SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
-          else
-            echo "Request $i: ❌"
-          fi
-          sleep 1
-        done
-        
-        echo "📊 Performance test: $SUCCESS_COUNT/10 successful"
-        echo '🎉 Docker-based testing complete!'
+      - redis_test_data:/data
+    networks:
+      - vibecode-test
+
+volumes:
+  postgres_test_data:
+  redis_test_data:
 
 networks:
   vibecode-test:
     driver: bridge
-
-volumes:
-  postgres_test_data:
-  test_results:

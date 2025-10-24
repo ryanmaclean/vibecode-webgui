@@ -4,7 +4,8 @@ set -euo pipefail
 CLUSTER=${CLUSTER:-vibecode}
 KIND_CONFIG=${KIND_CONFIG:-k8s/kind-test-config.yaml}
 APP_IMAGE=${APP_IMAGE:-vibecode-webgui:latest}
-DOCKERFILE=${DOCKERFILE:-Dockerfile.local}
+DOCKERFILE=${DOCKERFILE:-docker/Dockerfile}
+DOCKERFILE_TARGET=${DOCKERFILE_TARGET:-development}
 NAMESPACE=${NAMESPACE:-vibecode-platform}
 DELETE_EXISTING=${DELETE_EXISTING:-true}
 INGRESS_ENABLED=${INGRESS_ENABLED:-true}
@@ -52,7 +53,7 @@ if [ "${SKIP_BUILD:-0}" = "1" ]; then
   log "SKIP_BUILD=1 set; skipping application image build"
 else
   log "building application image using $DOCKERFILE"
-  docker build -f "$DOCKERFILE" -t "$APP_IMAGE" .
+  docker build -f "$DOCKERFILE" --target "$DOCKERFILE_TARGET" -t "$APP_IMAGE" .
 fi
 
 if kind get clusters | grep -q "^${CLUSTER}$"; then

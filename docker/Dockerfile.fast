@@ -2,6 +2,7 @@
 # Ultra-fast multi-stage build optimized for 2025 - concurrent builds, caching, minimal layers
 
 FROM --platform=$BUILDPLATFORM node:20-alpine AS base
+ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 RUN apk add --no-cache libc6-compat
 

@@ -1,5 +1,6 @@
 # Direct lightningcss x86-64 test
 FROM --platform=linux/amd64 node:20-slim
+ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 

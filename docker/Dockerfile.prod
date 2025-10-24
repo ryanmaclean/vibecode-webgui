@@ -2,6 +2,7 @@
 # Optimized for lightningcss compatibility and production readiness
 
 FROM --platform=linux/amd64 node:20-slim
+ENV NEXT_TELEMETRY_DISABLED=1
 
 # Set working directory
 WORKDIR /app

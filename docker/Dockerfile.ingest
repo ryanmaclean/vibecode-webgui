@@ -2,6 +2,7 @@
 # Builds a container that runs the documentation -> pgvector ingester inside AKS
 
 FROM node:20-alpine
+ENV NEXT_TELEMETRY_DISABLED=1
 
 WORKDIR /app
 
