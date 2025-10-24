@@ -1,6 +1,8 @@
 // Type definitions for the Agent Framework
 
-import type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './core';
+import type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './index';
+
+export * from './index';
 
 /**
  * Base interface for all agent events
