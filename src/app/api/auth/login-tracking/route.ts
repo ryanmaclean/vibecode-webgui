@@ -123,9 +123,7 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const validatedData = loginTrackingSchema.parse(body);
-    const { event, userId, email, provider, sessionId, ...otherMetadata } = validatedData;
-
-    const { event, userId, email, provider, sessionId, loginMethod } = validatedData
+    const { event, userId, email, provider, sessionId, loginMethod } = validatedData;
 
     // Log the authentication event
     logUserAuth(request, event, {

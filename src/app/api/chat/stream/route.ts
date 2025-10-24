@@ -42,16 +42,6 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json()
     const validatedData = chatStreamSchema.parse(body)
-    const { 
-      conversationId, 
-      message, 
-      model,
-      workspaceId,
-      files,
-      enableWebSearch,
-      enableRAG
-    } = validatedData
-
     const {
       conversationId,
       message,
