@@ -154,8 +154,8 @@ export class CachedVectorSearchService extends VectorSearchService {
       content_type
     );
 
-    metrics.increment('vector_cache.manual_invalidation', invalidatedCount);
-    
+    metrics.increment('vector_cache.manual_invalidation', { count: invalidatedCount.toString() });
+
     return invalidatedCount;
   }
 

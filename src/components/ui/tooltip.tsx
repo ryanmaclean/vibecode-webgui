@@ -35,7 +35,7 @@ export function Tooltip({ children, content, className }: TooltipProps) {
 
 // For compatibility with existing code
 export const TooltipProvider = ({ children }: { children: React.ReactNode }) => <>{children}</>
-export const TooltipTrigger = ({ children }: { children: React.ReactNode }) => <>{children}</>
+export const TooltipTrigger = ({ children, asChild }: { children: React.ReactNode; asChild?: boolean }) => <>{children}</>
 export const TooltipContent = ({ children }: { children: React.ReactNode }) => <>{children}</>
 
 export default Tooltip

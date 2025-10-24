@@ -106,14 +106,14 @@ Provide detailed reasoning and results.`
       const response = await this.aiClient.chat(messages, this.model)
       
       // Execute any required capabilities
-      let finalResult = response.content
-      
+      let finalResult: any = response.content
+
       for (const capabilityName of task.capabilities) {
         const capability = this.capabilities.get(capabilityName)
         if (capability) {
           try {
             const capResult = await capability.execute(
-              { task, aiResponse: response.content }, 
+              { task, aiResponse: response.content },
               context
             )
             finalResult = { aiReasoning: response.content, capabilityResults: capResult }
@@ -159,7 +159,7 @@ export class AgentCoordinator {
         // Use vector search to get code context
         const codeContext = await vectorStore.getContext(
           'code structure dependencies patterns',
-          context.workspaceId,
+          parseInt(context.workspaceId),
           5000,
           0.6
         )

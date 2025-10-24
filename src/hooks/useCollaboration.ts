@@ -144,11 +144,14 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | undefined>();
+  const [typingUsersMap, setTypingUsersMap] = useState<Map<string, Set<string>>>(new Map());
+  const [cursorsMap, setCursorsMap] = useState<Map<string, { x: number; y: number; file?: string }>>(new Map());
 
   // Refs for cleanup and intervals
   const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
   const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
   const cursorTimeoutRef = useRef<NodeJS.Timeout>();
+  const typingTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
 
   /**
    * Join workspace
@@ -367,6 +370,72 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   }, []);
 
   /**
+   * Start typing indicator
+   */
+  const startTyping = useCallback((conversationId: string) => {
+    if (!currentUser) return;
+
+    setTypingUsersMap(prev => {
+      const newMap = new Map(prev);
+      if (!newMap.has(conversationId)) {
+        newMap.set(conversationId, new Set());
+      }
+      newMap.get(conversationId)?.add(currentUser.id);
+      return newMap;
+    });
+
+    // Clear existing timeout
+    const timeouts = typingTimeoutRef.current;
+    const existingTimeout = timeouts.get(conversationId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+    }
+
+    // Auto-stop typing after 3 seconds of inactivity
+    const newTimeout = setTimeout(() => {
+      stopTyping(conversationId);
+    }, 3000);
+    timeouts.set(conversationId, newTimeout);
+  }, [currentUser]);
+
+  /**
+   * Stop typing indicator
+   */
+  const stopTyping = useCallback((conversationId: string) => {
+    if (!currentUser) return;
+
+    setTypingUsersMap(prev => {
+      const newMap = new Map(prev);
+      const userSet = newMap.get(conversationId);
+      if (userSet) {
+        userSet.delete(currentUser.id);
+        if (userSet.size === 0) {
+          newMap.delete(conversationId);
+        }
+      }
+      return newMap;
+    });
+
+    // Clear timeout
+    const timeouts = typingTimeoutRef.current;
+    const existingTimeout = timeouts.get(conversationId);
+    if (existingTimeout) {
+      clearTimeout(existingTimeout);
+      timeouts.delete(conversationId);
+    }
+  }, [currentUser]);
+
+  /**
+   * Get typing users for a conversation
+   */
+  const typingUsers = useCallback((conversationId: string) => {
+    const userIds = typingUsersMap.get(conversationId);
+    if (!userIds || userIds.size === 0) return [];
+
+    return activeUsers.filter(user => userIds.has(user.id));
+  }, [typingUsersMap, activeUsers]);
+
+  /**
    * Update cursor position
    */
   const updateCursor = useCallback((x: number, y: number, file?: string) => {
@@ -377,6 +446,13 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
         lastSeen: new Date()
       };
       setCurrentUser(updatedUser);
+
+      // Update cursors map
+      setCursorsMap(prev => {
+        const newMap = new Map(prev);
+        newMap.set(currentUser.id, { x, y, file });
+        return newMap;
+      });
 
       // Clear cursor after inactivity
       if (cursorTimeoutRef.current) {
@@ -399,6 +475,13 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
         lastSeen: new Date()
       };
       setCurrentUser(updatedUser);
+
+      // Remove from cursors map
+      setCursorsMap(prev => {
+        const newMap = new Map(prev);
+        newMap.delete(currentUser.id);
+        return newMap;
+      });
     }
   }, [currentUser]);
 
@@ -489,6 +572,9 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     if (cursorTimeoutRef.current) {
       clearTimeout(cursorTimeoutRef.current);
     }
+    // Clear all typing timeouts
+    typingTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
+    typingTimeoutRef.current.clear();
   }, []);
 
   // Auto-connect on mount
@@ -507,6 +593,12 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     msg.type === 'message' && msg.userId !== currentUser?.id
   ).length;
 
+  // Convert cursors map to array for easier iteration
+  const cursors = Array.from(cursorsMap.entries()).map(([userId, cursor]) => ({
+    userId,
+    ...cursor
+  }));
+
   return {
     // State
     workspaceId,
@@ -521,6 +613,14 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     onlineUsers,
     recentActivity,
     unreadMessages,
+
+    // Typing indicators
+    typingUsers,
+    startTyping,
+    stopTyping,
+
+    // Cursor tracking
+    cursors,
 
     // Actions
     joinWorkspace,

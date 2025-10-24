@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
         const result = await featureFlagEngine.evaluateFlag(
           flagKey,
           experimentContext,
-          context?.defaultValue
+          'defaultValue' in body && body.defaultValue !== undefined ? body.defaultValue : undefined
         )
 
         console.log('flag_evaluated_api', {

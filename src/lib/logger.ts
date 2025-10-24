@@ -117,19 +117,19 @@ if (!isEdgeRuntime) {
   createChildLoggerImpl = (metadata: Record<string, unknown>) => {
     const childWinston = {
       error: (message: unknown, additional?: Record<string, unknown>) => {
-        winstonLogger.error(message, { ...metadata, ...additional });
+        winstonLogger.error(String(message), { ...metadata, ...additional });
       },
       warn: (message: unknown, additional?: Record<string, unknown>) => {
-        winstonLogger.warn(message, { ...metadata, ...additional });
+        winstonLogger.warn(String(message), { ...metadata, ...additional });
       },
       info: (message: unknown, additional?: Record<string, unknown>) => {
-        winstonLogger.info(message, { ...metadata, ...additional });
+        winstonLogger.info(String(message), { ...metadata, ...additional });
       },
       debug: (message: unknown, additional?: Record<string, unknown>) => {
-        winstonLogger.debug(message, { ...metadata, ...additional });
+        winstonLogger.debug(String(message), { ...metadata, ...additional });
       },
     };
-    
+
     return createLoggerMethods(childWinston);
   };
 } else {

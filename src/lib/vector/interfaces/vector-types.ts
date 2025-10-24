@@ -41,6 +41,8 @@ export interface VectorDatabaseConfig {
     initialDelay: number;
     maxDelay: number;
   };
+  enableLogging?: boolean;
+  enableMetrics?: boolean;
 }
 
 export interface VectorCacheConfig {
