@@ -161,6 +161,22 @@ export const chatRequestSchema = z.object({
   includeRag: z.boolean().optional().default(true)
 })
 
+/** LiteLLM-specific chat request schema with extended OpenAI compatibility */
+export const liteLLMSchema = z.object({
+  messages: z.array(chatMessageSchema).min(1).max(100),
+  model: z.string().min(1).max(100).optional(),
+  temperature: z.number().min(0).max(2).optional(),
+  max_tokens: z.number().int().positive().max(32000).optional(),
+  top_p: z.number().min(0).max(1).optional(),
+  frequency_penalty: z.number().min(-2).max(2).optional(),
+  presence_penalty: z.number().min(-2).max(2).optional(),
+  n: z.number().int().positive().max(10).optional(),
+  stop: z.union([z.string(), z.array(z.string())]).optional(),
+  stream: z.boolean().optional(),
+  user: z.string().max(100).optional(),
+  metadata: z.record(z.unknown()).optional()
+})
+
 // ============================================================================
 // User Preferences Schemas
 // ============================================================================
@@ -200,6 +216,25 @@ export const templateQuerySchema = z.object({
   framework: z.string().optional(),
   difficulty: z.enum(['beginner', 'intermediate', 'advanced']).optional(),
   tags: z.array(z.string()).optional()
+})
+
+// ============================================================================
+// File Sync Schemas
+// ============================================================================
+
+export const fileSyncQuerySchema = z.object({
+  workspaceId: workspaceIdSchema
+})
+
+export const fileSyncBulkSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  files: z.array(
+    z.object({
+      path: filePathSchema,
+      content: z.string().max(10_000_000), // 10MB limit per file
+      type: z.string().min(1).max(50)
+    })
+  ).min(1).max(1000) // Max 1000 files per bulk operation
 })
 
 // ============================================================================
@@ -383,3 +418,89 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     }).optional()
   })
 ])
+
+// ============================================================================
+// SAML Authentication Schemas
+// ============================================================================
+
+/** SAML metadata query validation - restricts to allowlist of known providers */
+export const samlMetadataQuerySchema = z.object({
+  provider: z
+    .string()
+    .min(1)
+    .max(50)
+    .regex(/^[a-z0-9-]+$/, 'Provider must contain only lowercase alphanumeric characters and hyphens')
+    .refine(
+      (provider) => ['okta', 'azure', 'google', 'onelogin', 'auth0'].includes(provider),
+      'Provider must be one of: okta, azure, google, onelogin, auth0'
+    )
+})
+
+// ============================================================================
+// MongoDB Chat Schemas
+// ============================================================================
+
+/** MongoDB chat actions - discriminated union based on action type */
+export const mongodbChatActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('create_session')
+  }),
+  z.object({
+    action: z.literal('create_conversation'),
+    title: z.string().max(200).optional(),
+    sessionId: z.string().uuid(),
+    model: z.string().min(1).max(100),
+    workspaceId: workspaceIdSchema.optional()
+  }),
+  z.object({
+    action: z.literal('add_message'),
+    conversationId: z.string().uuid(),
+    content: z.string().min(1).max(100_000),
+    from: z.enum(['user', 'assistant', 'system'])
+  }),
+  z.object({
+    action: z.literal('get_conversations')
+  })
+])
+
+// ============================================================================
+// Claude Session Schemas
+// ============================================================================
+
+/** Claude session actions - discriminated union for session management */
+export const claudeSessionActionSchema = z.discriminatedUnion('action', [
+  z.object({
+    action: z.literal('start'),
+    workspaceId: workspaceIdSchema
+  }),
+  z.object({
+    action: z.literal('send'),
+    workspaceId: workspaceIdSchema,
+    sessionId: z.string().min(1).max(100),
+    message: z.string().min(1).max(100_000)
+  }),
+  z.object({
+    action: z.literal('close'),
+    workspaceId: workspaceIdSchema,
+    sessionId: z.string().min(1).max(100)
+  }),
+  z.object({
+    action: z.literal('status'),
+    workspaceId: workspaceIdSchema
+  })
+])
+
+/** Claude session query parameters */
+export const claudeSessionQuerySchema = z.object({
+  workspaceId: workspaceIdSchema
+})
+
+// ============================================================================
+// Code Server Session Schemas
+// ============================================================================
+
+/** Code Server session creation and management */
+export const codeServerSessionSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  userId: z.string().min(1).max(50).optional()
+})

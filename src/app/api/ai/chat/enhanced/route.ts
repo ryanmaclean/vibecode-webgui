@@ -33,7 +33,7 @@ const SUPPORTED_MODELS = {
 
 type SupportedModel = keyof typeof SUPPORTED_MODELS
 
-interface EnhancedChatRequest {
+interface _EnhancedChatRequest {
   message: string
   model: SupportedModel
   context: {
@@ -49,7 +49,7 @@ interface EnhancedChatRequest {
 
 // Zod validation schema for enhanced chat requests
 const enhancedChatRequestSchema = z.object({
-  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  message: z.string().min(1).max(4000).regex(/^[^\\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
   model: z.enum(['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-pro', 'gemini-1.5-pro', 'llama-3.1-70b', 'mistral-large']),
   context: z.object({
     workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
@@ -254,7 +254,7 @@ ${getToolCapabilities(enableTools)}
       }
     })
 
-    return new Response(customReadable, {
+    return new globalThis.Response(customReadable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -282,7 +282,7 @@ ${getToolCapabilities(enableTools)}
 
 // CORS support
 export async function OPTIONS() {
-  return new Response(null, {
+  return new globalThis.Response(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

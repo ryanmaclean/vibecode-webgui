@@ -95,7 +95,7 @@ class MetricsCollector {
     current.count += 1
     this.metrics.set(key, current)
 
-    console.info('Metric incremented', {
+    logger.info('Metric incremented', {
       metric: metricName,
       count: current.count,
       tags
@@ -111,7 +111,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    console.info('Gauge metric set', {
+    logger.info('Gauge metric set', {
       metric: metricName,
       value,
       tags
@@ -129,7 +129,7 @@ class MetricsCollector {
     current.lastValue = value
     this.metrics.set(key, current)
 
-    console.info('Histogram metric recorded', {
+    logger.info('Histogram metric recorded', {
       metric: metricName,
       value,
       average: current.sum / current.count,
@@ -176,7 +176,7 @@ class ApplicationLogger {
     userAgent?: string
   }): void {
     const level = context.success === false ? 'warn' : 'info'
-    console.log(level, `Authentication: ${event}`, {
+    logger[level](`Authentication: ${event}`, {
       category: 'auth',
       ...context
     })
@@ -201,7 +201,7 @@ class ApplicationLogger {
     terminalSessions?: number
   }): void {
     const level = context.error ? 'error' : 'info'
-    console.log(level, `Workspace: ${event}`, {
+    logger[level](`Workspace: ${event}`, {
       category: 'workspace',
       ...context
     })
@@ -229,7 +229,7 @@ class ApplicationLogger {
     codeContext?: boolean
   }): void {
     const level = context.error ? 'error' : 'info'
-    console.log(level, `AI: ${event}`, {
+    logger[level](`AI: ${event}`, {
       category: 'ai',
       ...context
     })
@@ -266,7 +266,7 @@ class ApplicationLogger {
     activeConnections?: number
     error?: string
   }): void {
-    console.info('Performance metrics', {
+    logger.info('Performance metrics', {
       category: 'performance',
       ...context
     })
@@ -306,7 +306,7 @@ class ApplicationLogger {
     const level = context.severity === 'critical' ? 'error' :
                   context.severity === 'high' ? 'warn' : 'info'
 
-    console.log(level, `Security: ${event}`, {
+    logger[level](`Security: ${event}`, {
       category: 'security',
       ...context
     })
@@ -328,7 +328,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    console.info(`Business: ${event}`, {
+    logger.info(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -347,7 +347,7 @@ class ApplicationLogger {
   }
 }
 
-const console = new ApplicationLogger()
+const appLogger = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -358,7 +358,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      console.logPerformance({
+      appLogger.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -368,7 +368,7 @@ function performanceMiddleware() {
 
       // Log slow requests
       if (responseTime > 1000) {
-        console.warn('Slow request detected', {
+        logger.warn('Slow request detected', {
           endpoint: req.path,
           method: req.method,
           responseTime,
@@ -403,7 +403,7 @@ export {
   logger,
   tracer,
   metrics,
-  console,
+  appLogger,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,

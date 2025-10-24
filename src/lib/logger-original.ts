@@ -114,7 +114,7 @@ if (!isEdgeRuntime) {
   });
 }
 
-export const logger: StructuredLogger = baseLogger;
+export const _logger: StructuredLogger = baseLogger;
 
 export function console(metadata: Record<string, unknown>) {
   return consoleImpl(metadata);

@@ -15,6 +15,8 @@ import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig, FileSyncEvent } from '@/lib/file-system-operations'
 import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
+import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware'
+import { fileSyncQuerySchema, fileSyncBulkSchema } from '@/lib/api/validation/schemas'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -232,7 +234,7 @@ async function createFilesInWorkspace(
 // Initialize WebSocket server if it doesn't exist
 if (!(globalThis as any).wss) {
   (globalThis as any).wss = new WebSocketServer({ noServer: true })
-  console.log('WebSocket server initialized')
+  console.log('WebSocket server initialized');
 
   (globalThis as any).wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
