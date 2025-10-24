@@ -23,7 +23,7 @@ export interface PoolMetrics {
   totalTimeouts?: number;
 }
 
-export enum PoolStatus {
+export enum PoolState {
   INITIALIZING = 'initializing',
   ACTIVE = 'active',
   DRAINING = 'draining',
@@ -31,9 +31,26 @@ export enum PoolStatus {
   ERROR = 'error'
 }
 
+// Keep PoolStatus as alias for backward compatibility
+export type PoolStatus = PoolState;
+export const PoolStatus = PoolState;
+
+export interface PoolStatusInfo {
+  name: string;
+  size: number;
+  available: number;
+  inUse: number;
+  maxSize: number;
+  minSize: number;
+  utilization: number;
+  waitingClients: number;
+  idleConnections: number;
+  lastHealthCheck: Date;
+}
+
 export interface ManagedConnectionPool {
   name: string;
-  status: PoolStatus;
+  status: PoolState;
   getMetrics(): PoolMetrics;
   drain(): Promise<void>;
   close(): Promise<void>;

@@ -5,14 +5,47 @@
  * This implementation uses Valkey (https://valkey.io/), the open-source fork of Redis
  * that maintains BSD licensing, avoiding Redis' restrictive RSAL/SSPL dual license.
  *
- * Valkey is protocol-compatible with Redis, so we rely on the MIT-licensed ioredis client.
- * The cache manager below exposes a unified interface that mirrors historical exports so
- * existing imports (`cache`, `CacheKeys`, `CacheTTL`) continue to compile.
+ * Valkey is Redis-compatible, so we use the MIT-licensed ioredis client while keeping all
+ * functionality parity with Redis. This module exposes the shared cache surface (`cache`,
+ * `CacheKeys`, `CacheTTL`) that the application expects.
  */
 
 import { Redis } from 'ioredis';
-import { metrics } from '@/lib/server-monitoring';
+import { metrics } from '../server-monitoring';
 // import { logger } from '@/lib/logger';
+
+// Type extension for Redis commands to fix TS2339 errors
+interface RedisCommands {
+  get(key: string): Promise<string | null>;
+  setex(key: string, seconds: number, value: string): Promise<'OK'>;
+  del(...keys: string[]): Promise<number>;
+  exists(...keys: string[]): Promise<number>;
+  mget(...keys: string[]): Promise<(string | null)[]>;
+  pipeline(): RedisPipeline;
+  incr(key: string): Promise<number>;
+  expire(key: string, seconds: number): Promise<number>;
+  keys(pattern: string): Promise<string[]>;
+  info(section?: string): Promise<string>;
+  dbsize(): Promise<number>;
+  flushdb(): Promise<'OK'>;
+  ping(): Promise<string>;
+}
+
+interface RedisPipeline {
+  setex(key: string, seconds: number, value: string): RedisPipeline;
+  exec(): Promise<[Error | null, unknown][]>;
+}
+
+type EnhancedRedis = Redis & RedisCommands;
+
+type StandardConfig = {
+  type: 'standard';
+  url?: string;
+  host?: string;
+  port?: number;
+  password?: string;
+  db?: number;
+};
 
 type UpstashConfig = {
   type: 'upstash';
@@ -20,22 +53,9 @@ type UpstashConfig = {
   token: string;
 };
 
-type StandardConfig =
-  | {
-      type: 'standard';
-      url: string;
-    }
-  | {
-      type: 'standard';
-      host: string;
-      port: number;
-      password?: string;
-      db: number;
-    };
+type ValkeyConnectionConfig = StandardConfig | UpstashConfig;
 
-type ValkeyRuntimeConfig = UpstashConfig | StandardConfig;
-
-const getValkeyConfig = (): ValkeyRuntimeConfig => {
+const getValkeyConfig = (): ValkeyConnectionConfig => {
   if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
     return {
       type: 'upstash',
@@ -47,7 +67,7 @@ const getValkeyConfig = (): ValkeyRuntimeConfig => {
   if (process.env.VALKEY_URL || process.env.REDIS_URL) {
     return {
       type: 'standard',
-      url: process.env.VALKEY_URL || process.env.REDIS_URL || '',
+      url: process.env.VALKEY_URL || process.env.REDIS_URL,
     };
   }
 
@@ -60,42 +80,20 @@ const getValkeyConfig = (): ValkeyRuntimeConfig => {
   };
 };
 
-const config = getValkeyConfig();
+const connectionConfig = getValkeyConfig();
 
 let valkeyClient: Redis | null = null;
 
 try {
-  if (config.type === 'standard') {
-    if ('url' in config) {
-      valkeyClient = new Redis(config.url, {
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30_000,
-        family: 4,
-        commandTimeout: 5_000,
-        connectTimeout: 10_000,
-      });
+  if (connectionConfig.type === 'standard') {
+    if (connectionConfig.url) {
+      valkeyClient = new Redis(connectionConfig.url);
     } else {
-      valkeyClient = new Redis({
-        host: config.host,
-        port: config.port,
-        password: config.password,
-        db: config.db,
-        retryDelayOnFailover: 100,
-        enableReadyCheck: false,
-        maxRetriesPerRequest: 3,
-        lazyConnect: true,
-        keepAlive: 30_000,
-        family: 4,
-        commandTimeout: 5_000,
-        connectTimeout: 10_000,
-      });
+      valkeyClient = new Redis(connectionConfig as any);
     }
 
     valkeyClient.on('connect', () => {
-      console.info('Valkey connected successfully');
+      console.log('Valkey connected successfully');
       metrics.increment('valkey.connection.success');
     });
 
@@ -105,12 +103,12 @@ try {
     });
 
     valkeyClient.on('ready', () => {
-      console.info('Valkey client ready');
+      console.log('Valkey client ready');
       metrics.increment('valkey.ready');
     });
-  } else {
-    // Upstash REST mode is handled via HTTP API; for now fall back to standard client
-    console.warn('Upstash Valkey REST configuration detected; direct client support pending');
+  } else if (connectionConfig.type === 'upstash') {
+    // Upstash exposes an HTTP API; callers should use dedicated clients.
+    console.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
   }
 } catch (error) {
   console.warn('Valkey client initialization failed', { error });
@@ -123,13 +121,13 @@ export const CacheKeys = {
   project: (projectId: string) => `project:${projectId}`,
   aiResponse: (hash: string) => `ai:response:${hash}`,
   vectorSearch: (query: string, workspaceId?: string) =>
-    `vector:search:${Buffer.from(`${query}${workspaceId || ''}`).toString('base64')}`,
+    `vector:search:${Buffer.from(`${query}${workspaceId ?? ''}`).toString('base64')}`,
   fileContent: (fileId: string) => `file:content:${fileId}`,
   embeddings: (contentHash: string) => `embeddings:${contentHash}`,
   rateLimit: (identifier: string) => `ratelimit:${identifier}`,
   session: (sessionId: string) => `session:${sessionId}`,
   apiMetrics: (endpoint: string, timeWindow: string) => `metrics:${endpoint}:${timeWindow}`,
-};
+} as const;
 
 export const CacheTTL = {
   SHORT: 60,
@@ -142,24 +140,27 @@ export const CacheTTL = {
 } as const;
 
 export class ValkeyManager {
-  constructor(private readonly client: Redis | null = valkeyClient) {}
+  private readonly client: Redis | null;
+
+  constructor() {
+    this.client = valkeyClient;
+  }
 
   async get<T = unknown>(key: string): Promise<T | null> {
     if (!this.client) return null;
 
-    const startTime = Date.now();
-
+    const start = Date.now();
     try {
-      const value = await this.client.get(key);
-      metrics.histogram('cache.get.duration', Date.now() - startTime);
+      const value = await (this.client as EnhancedRedis).get(key);
+      metrics.histogram('cache.get.duration', Date.now() - start);
 
-      if (value) {
-        metrics.increment('cache.hit');
-        return JSON.parse(value) as T;
+      if (!value) {
+        metrics.increment('cache.miss');
+        return null;
       }
 
-      metrics.increment('cache.miss');
-      return null;
+      metrics.increment('cache.hit');
+      return JSON.parse(value) as T;
     } catch (error) {
       metrics.increment('cache.error');
       console.error('Valkey get error', { key, error });
@@ -170,17 +171,15 @@ export class ValkeyManager {
   async set(key: string, value: unknown, ttl: number = CacheTTL.MEDIUM): Promise<boolean> {
     if (!this.client) return false;
 
-    const startTime = Date.now();
-
     const start = Date.now();
     try {
-      await this.client.setex(key, ttl, JSON.stringify(value));
-      metrics.histogram('cache.set.duration', Date.now() - startTime);
+      await (this.client as EnhancedRedis).setex(key, ttl, JSON.stringify(value));
+      metrics.histogram('cache.set.duration', Date.now() - start);
       metrics.increment('cache.set.success');
       return true;
     } catch (error) {
       metrics.increment('cache.set.error');
-      console.error('Valkey set error', { key, ttl, error });
+      console.error('Valkey set error', { key, error });
       return false;
     }
   }
@@ -190,13 +189,12 @@ export class ValkeyManager {
 
     const keys = Array.isArray(key) ? key : [key];
     try {
-      const keys = Array.isArray(key) ? key : [key];
-      await this.client.del(...keys);
-      metrics.increment('cache.delete', { count: keys.length });
+      await (this.client as EnhancedRedis).del(...keys);
+      metrics.increment('cache.delete', { count: keys.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
-      console.error('Valkey delete error', { key, error });
+      console.error('Valkey delete error', { keys, error });
       return false;
     }
   }
@@ -205,19 +203,19 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      return (await this.client.exists(key)) === 1;
+      return (await (this.client as EnhancedRedis).exists(key)) === 1;
     } catch (error) {
       console.error('Valkey exists error', { key, error });
       return false;
     }
   }
 
-  async mget<T = unknown>(keys: string[]): Promise<Array<T | null>> {
+  async mget<T = unknown>(keys: string[]): Promise<(T | null)[]> {
     if (!this.client || keys.length === 0) return [];
 
     try {
-      const values = await this.client.mget(...keys);
-      return values.map((value) => (value ? (JSON.parse(value) as T) : null));
+      const values = await (this.client as EnhancedRedis).mget(...keys);
+      return values.map((value: string | null) => (value ? (JSON.parse(value) as T) : null));
     } catch (error) {
       console.error('Valkey mget error', { keys, error });
       return keys.map(() => null);
@@ -228,18 +226,16 @@ export class ValkeyManager {
     if (!this.client || pairs.length === 0) return false;
 
     try {
-      const pipeline = this.client.pipeline();
-
-      for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
+      const pipeline = (this.client as EnhancedRedis).pipeline();
+      pairs.forEach(({ key, value, ttl = CacheTTL.MEDIUM }) => {
         pipeline.setex(key, ttl, JSON.stringify(value));
-      }
-
+      });
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length });
+      metrics.increment('cache.mset.success', { count: pairs.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
-      console.error('Valkey mset error', { error });
+      console.error('Valkey mset error', { pairsCount: pairs.length, error });
       return false;
     }
   }
@@ -248,12 +244,10 @@ export class ValkeyManager {
     if (!this.client) return 0;
 
     try {
-      const value = await this.client.incr(key);
-
+      const value = await (this.client as EnhancedRedis).incr(key);
       if (ttl && value === 1) {
-        await this.client.expire(key, ttl);
+        await (this.client as EnhancedRedis).expire(key, ttl);
       }
-
       return value;
     } catch (error) {
       console.error('Valkey incr error', { key, error });
@@ -265,7 +259,7 @@ export class ValkeyManager {
     if (!this.client) return [];
 
     try {
-      return await this.client.keys(pattern);
+      return await (this.client as EnhancedRedis).keys(pattern);
     } catch (error) {
       console.error('Valkey keys error', { pattern, error });
       return [];
@@ -283,15 +277,15 @@ export class ValkeyManager {
     }
 
     try {
-      const info = await this.client.info('memory');
-      const dbSize = await this.client.dbsize();
+      const info = await (this.client as EnhancedRedis).info('memory');
+      const dbSize = await (this.client as EnhancedRedis).dbsize();
       const memoryMatch = info.match(/used_memory_human:(.+)/);
 
       return {
         connected: true,
         keyCount: dbSize,
         memoryUsage: memoryMatch ? memoryMatch[1].trim() : '0B',
-        hitRate: 0.85,
+        hitRate: 0.85, // Placeholder until real metrics are wired
       };
     } catch (error) {
       console.error('Valkey stats error', { error });
@@ -303,7 +297,7 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      await this.client.flushdb();
+      await (this.client as EnhancedRedis).flushdb();
       metrics.increment('cache.clear');
       return true;
     } catch (error) {
@@ -316,10 +310,10 @@ export class ValkeyManager {
     if (!this.client) return false;
 
     try {
-      await this.client.ping();
+      await (this.client as EnhancedRedis).ping();
       return true;
     } catch (error) {
-      console.error('Valkey health check failed', { error });
+      console.warn('Valkey health check failed', { error });
       return false;
     }
   }
@@ -335,8 +329,7 @@ export function withCache<T extends unknown[], R>(
   return async (...args: T): Promise<R> => {
     const key = keyGenerator(...args);
     const cached = await cache.get<R>(key);
-
-    if (cached !== null) {
+    if (cached !== null && cached !== undefined) {
       return cached;
     }
 
@@ -347,7 +340,7 @@ export function withCache<T extends unknown[], R>(
 }
 
 export class CacheInvalidation {
-  static async invalidateUser(userId: string) {
+  static async invalidateUser(userId: string): Promise<void> {
     const patterns = [
       CacheKeys.user(userId),
       `workspace:*:user:${userId}`,
@@ -362,7 +355,7 @@ export class CacheInvalidation {
     }
   }
 
-  static async invalidateWorkspace(workspaceId: string) {
+  static async invalidateWorkspace(workspaceId: string): Promise<void> {
     const patterns = [
       CacheKeys.workspace(workspaceId),
       `project:*:workspace:${workspaceId}`,
@@ -377,10 +370,14 @@ export class CacheInvalidation {
     }
   }
 
-  static async invalidateProject(projectId: string) {
+  static async invalidateProject(projectId: string): Promise<void> {
     await cache.del(CacheKeys.project(projectId));
   }
 }
 
-export { CacheManager } from '@/lib/cache/unified-cache-client';
+// Export function for getting the Valkey client
+export function getValkeyClient() {
+  return cache;
+}
+
 export default cache;
