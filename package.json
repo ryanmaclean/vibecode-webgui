@@ -136,7 +136,7 @@
     "@heroicons/react": "2.2.0",
     "@huggingface/inference": "4.7.1",
     "@kubernetes/client-node": "1.3.0",
-    "@langchain/core": "^0.3.72",
+    "@langchain/core": "^1.0.1",
     "@langchain/openai": "0.6.12",
     "@langchain/weaviate": "^0.2.1",
     "@modelcontextprotocol/sdk": "1.18.2",
