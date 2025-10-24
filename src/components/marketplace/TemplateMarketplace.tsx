@@ -53,6 +53,7 @@ interface TemplateMarketplaceProps {
   onTemplateSelect?: (template: Template) => void;
   onTemplatePreview?: (template: Template) => void;
   selectedTemplateId?: string;
+  selectedCategory?: string;
   className?: string;
 }
 
@@ -60,6 +61,7 @@ export function TemplateMarketplace({
   onTemplateSelect,
   onTemplatePreview,
   selectedTemplateId,
+  selectedCategory,
   className = ''
 }: TemplateMarketplaceProps) {
   const [templates, setTemplates] = useState<Template[]>([]);
@@ -132,9 +134,10 @@ export function TemplateMarketplace({
         );
       }
 
-      if (searchOptions.category) {
+      const categoryFilter = searchOptions.category || selectedCategory || undefined
+      if (categoryFilter) {
         filteredTemplates = filteredTemplates.filter(template =>
-          template.category === searchOptions.category
+          template.category === categoryFilter
         );
       }
 

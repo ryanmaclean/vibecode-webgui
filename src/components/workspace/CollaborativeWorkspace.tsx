@@ -1,4 +1,3 @@
-
 /**
  * Collaborative Workspace Component
  * Real-time collaborative workspace with multiple users and shared projects
@@ -20,7 +19,7 @@ import {
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
-// import { logger } from '@/lib/logger';
+
 interface User {
   id: string;
   name: string;
@@ -137,7 +136,7 @@ export function CollaborativeWorkspace({
   const loadWorkspaceData = async () => {
     // This would integrate with your workspace service
     // For now, simulate loading
-    console.info('Loading workspace data for:', workspaceId);
+    console.log('Loading workspace data for:', workspaceId);
   };
 
   const handleTemplateSelect = async (template: any) => {

@@ -4,7 +4,18 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from 'react';
-// import { logger } from '@/lib/logger';
+import { collaborationManager as sharedCollaborationManager, CollaborationManager } from '@/lib/collaboration';
+
+export interface CollaborationSocket {
+  emit: (event: string, ...args: any[]) => void;
+  on?: (event: string, handler: (...args: any[]) => void) => void;
+  off?: (event: string, handler?: (...args: any[]) => void) => void;
+  once?: (event: string, handler: (...args: any[]) => void) => void;
+  disconnect?: () => void;
+  connected?: boolean;
+  id?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -76,7 +87,11 @@ export interface CollaborationActions {
 
   // Cursor tracking
   updateCursor: (x: number, y: number, file?: string) => void;
-  clearCursor: () => void;
+  clearCursor: (userId?: string) => void;
+
+  // Typing indicators
+  startTyping: (conversationId: string) => void;
+  stopTyping: (conversationId: string) => void;
 
   // Connection management
   reconnect: () => Promise<void>;
@@ -90,6 +105,10 @@ export interface UseCollaborationOptions {
   enableChat?: boolean;
   enableActivityTracking?: boolean;
   enableCursorTracking?: boolean;
+  conversationId?: string;
+  userId?: string;
+  userName?: string;
+  enabled?: boolean;
   onUserJoin?: (user: User) => void;
   onUserLeave?: (user: User) => void;
   onMessage?: (message: ChatMessage) => void;
@@ -102,22 +121,15 @@ export interface UseCollaborationReturn extends CollaborationState, Collaboratio
   onlineUsers: User[];
   recentActivity: WorkspaceActivity[];
   unreadMessages: number;
-
-  // Typing indicators
-  typingUsers?: Set<string>;
-  startTyping?: () => void;
-  stopTyping?: () => void;
-
-  // Cursor tracking
-  cursors?: Map<string, { x: number; y: number; file?: string }>;
-
-  // Socket connection
-  socket?: any;
-
-  // Collaboration manager (for Yjs/collaborative editing)
-  collaborationManager?: any;
-  awareness?: any;
+  typingUsers: (conversationId: string) => User[];
+  cursors: CursorState[];
+  socket: CollaborationSocket | null;
+  collaborationManager: CollaborationManager | null;
+  awareness: any;
 }
+
+type TypingStateMap = Record<string, User[]>;
+type CursorState = { userId: string; x: number; y: number; file?: string };
 
 /**
  * React hook for collaborative workspace features
@@ -144,14 +156,84 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | undefined>();
-  const [typingUsersMap, setTypingUsersMap] = useState<Map<string, Set<string>>>(new Map());
-  const [cursorsMap, setCursorsMap] = useState<Map<string, { x: number; y: number; file?: string }>>(new Map());
+  const [typingState, setTypingState] = useState<TypingStateMap>({});
+  const [cursors, setCursors] = useState<CursorState[]>([]);
+  const socketRef = useRef<CollaborationSocket | null>(null);
+  const currentUserRef = useRef<User | null>(null);
 
   // Refs for cleanup and intervals
-  const reconnectTimeoutRef = useRef<NodeJS.Timeout>();
-  const heartbeatIntervalRef = useRef<NodeJS.Timeout>();
-  const cursorTimeoutRef = useRef<NodeJS.Timeout>();
-  const typingTimeoutRef = useRef<Map<string, NodeJS.Timeout>>(new Map());
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const heartbeatIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cursorTimeoutRef = useRef<Record<string, ReturnType<typeof setTimeout>>>({});
+
+  useEffect(() => {
+    currentUserRef.current = currentUser;
+  }, [currentUser]);
+
+  useEffect(() => {
+    setTypingState(prev => {
+      if (activeUsers.length === 0) {
+        return Object.keys(prev).length ? {} : prev;
+      }
+
+      const activeIds = new Set(activeUsers.map(user => user.id));
+      let mutated = false;
+      const nextState: TypingStateMap = {};
+
+      for (const [conversationId, users] of Object.entries(prev)) {
+        const filtered = users.filter(user => activeIds.has(user.id));
+        if (filtered.length > 0) {
+          nextState[conversationId] = filtered;
+        }
+        if (filtered.length !== users.length) {
+          mutated = true;
+        }
+      }
+
+      return mutated ? nextState : prev;
+    });
+  }, [activeUsers]);
+
+  const typingUsers = useCallback((conversationId: string) => {
+    return typingState[conversationId] ?? [];
+  }, [typingState]);
+
+  const startTyping = useCallback((conversationId: string) => {
+    const user = currentUserRef.current;
+    if (!user) return;
+
+    setTypingState(prev => {
+      const existing = prev[conversationId] ?? [];
+      if (existing.some(u => u.id === user.id)) {
+        return prev;
+      }
+      return {
+        ...prev,
+        [conversationId]: [...existing, user]
+      };
+    });
+  }, []);
+
+  const stopTyping = useCallback((conversationId: string) => {
+    const user = currentUserRef.current;
+    if (!user) return;
+
+    setTypingState(prev => {
+      const existing = prev[conversationId];
+      if (!existing) return prev;
+      const filtered = existing.filter(u => u.id !== user.id);
+
+      if (filtered.length === 0) {
+        const { [conversationId]: _, ...rest } = prev;
+        return rest;
+      }
+
+      return {
+        ...prev,
+        [conversationId]: filtered
+      };
+    });
+  }, []);
 
   /**
    * Join workspace
@@ -214,6 +296,12 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
         onUserLeave?.(currentUser);
       }
 
+      setTypingState({});
+      setCursors([]);
+      setActiveUsers([]);
+      setCurrentUser(null);
+      currentUserRef.current = null;
+
       await disconnect();
       cleanup();
 
@@ -228,7 +316,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const inviteUser = useCallback(async (email: string, role: User['role']) => {
     try {
       // This would integrate with your invitation service
-      console.info(`Inviting ${email} as ${role}`);
+      console.log(`Inviting ${email} as ${role}`);
 
       // Simulate invitation
       await new Promise(resolve => setTimeout(resolve, 1000));
@@ -267,7 +355,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       setCurrentUser(updatedUser);
 
       // This would broadcast to other users
-      console.info('Updating user presence:', presence);
+      console.log('Updating user presence:', presence);
     }
   }, [currentUser]);
 
@@ -366,124 +454,60 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
    */
   const closeFile = useCallback((filePath: string) => {
     // File closing activity would go here if needed
-    console.info('File closed:', filePath);
+    console.log('File closed:', filePath);
   }, []);
 
   /**
-   * Start typing indicator
+   * Clear cursor position
    */
-  const startTyping = useCallback((conversationId: string) => {
-    if (!currentUser) return;
-
-    setTypingUsersMap(prev => {
-      const newMap = new Map(prev);
-      if (!newMap.has(conversationId)) {
-        newMap.set(conversationId, new Set());
-      }
-      newMap.get(conversationId)?.add(currentUser.id);
-      return newMap;
-    });
-
-    // Clear existing timeout
-    const timeouts = typingTimeoutRef.current;
-    const existingTimeout = timeouts.get(conversationId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
+  const clearCursor = useCallback((userId?: string) => {
+    const targetId = userId ?? currentUserRef.current?.id;
+    if (!targetId) {
+      return;
     }
 
-    // Auto-stop typing after 3 seconds of inactivity
-    const newTimeout = setTimeout(() => {
-      stopTyping(conversationId);
-    }, 3000);
-    timeouts.set(conversationId, newTimeout);
-  }, [currentUser]);
+    setCursors(prev => prev.filter(cursor => cursor.userId !== targetId));
 
-  /**
-   * Stop typing indicator
-   */
-  const stopTyping = useCallback((conversationId: string) => {
-    if (!currentUser) return;
-
-    setTypingUsersMap(prev => {
-      const newMap = new Map(prev);
-      const userSet = newMap.get(conversationId);
-      if (userSet) {
-        userSet.delete(currentUser.id);
-        if (userSet.size === 0) {
-          newMap.delete(conversationId);
-        }
-      }
-      return newMap;
-    });
-
-    // Clear timeout
-    const timeouts = typingTimeoutRef.current;
-    const existingTimeout = timeouts.get(conversationId);
-    if (existingTimeout) {
-      clearTimeout(existingTimeout);
-      timeouts.delete(conversationId);
+    const timeout = cursorTimeoutRef.current[targetId];
+    if (timeout) {
+      clearTimeout(timeout);
+      delete cursorTimeoutRef.current[targetId];
     }
-  }, [currentUser]);
 
-  /**
-   * Get typing users for a conversation
-   */
-  const typingUsers = useCallback((conversationId: string) => {
-    const userIds = typingUsersMap.get(conversationId);
-    if (!userIds || userIds.size === 0) return [];
-
-    return activeUsers.filter(user => userIds.has(user.id));
-  }, [typingUsersMap, activeUsers]);
+    if (currentUserRef.current?.id === targetId) {
+      setCurrentUser(prev => (prev ? { ...prev, cursor: undefined, lastSeen: new Date() } : prev));
+    }
+  }, []);
 
   /**
    * Update cursor position
    */
   const updateCursor = useCallback((x: number, y: number, file?: string) => {
-    if (currentUser && enableCursorTracking) {
-      const updatedUser = {
-        ...currentUser,
+    const user = currentUserRef.current;
+    if (user && enableCursorTracking) {
+      const updatedUser: User = {
+        ...user,
         cursor: { x, y, file },
         lastSeen: new Date()
       };
       setCurrentUser(updatedUser);
+      currentUserRef.current = updatedUser;
 
-      // Update cursors map
-      setCursorsMap(prev => {
-        const newMap = new Map(prev);
-        newMap.set(currentUser.id, { x, y, file });
-        return newMap;
+      setCursors(prev => {
+        const others = prev.filter(cursor => cursor.userId !== updatedUser.id);
+        return [...others, { userId: updatedUser.id, x, y, file }];
       });
 
-      // Clear cursor after inactivity
-      if (cursorTimeoutRef.current) {
-        clearTimeout(cursorTimeoutRef.current);
+      const existingTimeout = cursorTimeoutRef.current[updatedUser.id];
+      if (existingTimeout) {
+        clearTimeout(existingTimeout);
       }
-      cursorTimeoutRef.current = setTimeout(() => {
-        clearCursor();
+
+      cursorTimeoutRef.current[updatedUser.id] = setTimeout(() => {
+        clearCursor(updatedUser.id);
       }, 5000); // Hide cursor after 5 seconds of inactivity
     }
-  }, [currentUser, enableCursorTracking]);
-
-  /**
-   * Clear cursor position
-   */
-  const clearCursor = useCallback(() => {
-    if (currentUser) {
-      const updatedUser = {
-        ...currentUser,
-        cursor: undefined,
-        lastSeen: new Date()
-      };
-      setCurrentUser(updatedUser);
-
-      // Remove from cursors map
-      setCursorsMap(prev => {
-        const newMap = new Map(prev);
-        newMap.delete(currentUser.id);
-        return newMap;
-      });
-    }
-  }, [currentUser]);
+  }, [enableCursorTracking, clearCursor]);
 
   /**
    * Reconnect to workspace
@@ -514,9 +538,19 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const disconnect = useCallback(async () => {
     setIsConnected(false);
     setConnectionError(undefined);
+    setActiveUsers([]);
+    setTypingState({});
+    setCursors([]);
+    setCurrentUser(null);
+    currentUserRef.current = null;
+
+    if (socketRef.current?.disconnect) {
+      socketRef.current.disconnect();
+    }
+    socketRef.current = null;
 
     // This would disconnect from your collaboration service
-    console.info('Disconnected from workspace');
+    console.log('Disconnected from workspace');
   }, []);
 
   /**
@@ -565,16 +599,16 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const cleanup = useCallback(() => {
     if (reconnectTimeoutRef.current) {
       clearTimeout(reconnectTimeoutRef.current);
+      reconnectTimeoutRef.current = null;
     }
     if (heartbeatIntervalRef.current) {
       clearInterval(heartbeatIntervalRef.current);
+      heartbeatIntervalRef.current = null;
     }
-    if (cursorTimeoutRef.current) {
-      clearTimeout(cursorTimeoutRef.current);
-    }
-    // Clear all typing timeouts
-    typingTimeoutRef.current.forEach(timeout => clearTimeout(timeout));
-    typingTimeoutRef.current.clear();
+    Object.values(cursorTimeoutRef.current).forEach(timeout => {
+      clearTimeout(timeout);
+    });
+    cursorTimeoutRef.current = {};
   }, []);
 
   // Auto-connect on mount
@@ -593,12 +627,6 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     msg.type === 'message' && msg.userId !== currentUser?.id
   ).length;
 
-  // Convert cursors map to array for easier iteration
-  const cursors = Array.from(cursorsMap.entries()).map(([userId, cursor]) => ({
-    userId,
-    ...cursor
-  }));
-
   return {
     // State
     workspaceId,
@@ -614,14 +642,6 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     recentActivity,
     unreadMessages,
 
-    // Typing indicators
-    typingUsers,
-    startTyping,
-    stopTyping,
-
-    // Cursor tracking
-    cursors,
-
     // Actions
     joinWorkspace,
     leaveWorkspace,
@@ -636,7 +656,14 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     closeFile,
     updateCursor,
     clearCursor,
+    startTyping,
+    stopTyping,
     reconnect,
-    disconnect
+    disconnect,
+    typingUsers,
+    cursors,
+    socket: socketRef.current,
+    collaborationManager: sharedCollaborationManager,
+    awareness: null
   };
 }

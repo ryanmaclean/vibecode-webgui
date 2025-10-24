@@ -1,4 +1,3 @@
-
 /**
  * Multimodal Prompt Interface Component
  * Advanced input interface supporting text, voice, and image inputs for AI interactions
@@ -20,7 +19,7 @@ import {
   InformationCircleIcon
 } from '@heroicons/react/24/outline';
 import { MicrophoneIcon as MicrophoneIconSolid } from '@heroicons/react/24/solid';
-// import { logger } from '@/lib/logger';
+
 export interface MultimodalMessage {
   id: string;
   type: 'text' | 'voice' | 'image' | 'file';
@@ -76,7 +75,7 @@ export function MultimodalPromptInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
+  const recordingIntervalRef = useRef<NodeJS.Timeout>();
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   // Auto-scroll to bottom of messages
@@ -422,7 +421,12 @@ export function MultimodalPromptInterface({
               <div className="w-2 h-2 bg-blue-600 rounded-full animate-pulse" style={{ animationDelay: '0.4s' }}></div>
             </div>
             <p className="text-sm text-blue-700">
-              Listening... {transcript && <span className="font-medium">"{transcript}"</span>}
+              Listening...{" "}
+              {transcript && (
+                <span className="font-medium">
+                  &quot;{transcript}&quot;
+                </span>
+              )}
             </p>
           </div>
         </div>

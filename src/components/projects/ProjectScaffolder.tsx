@@ -5,7 +5,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import {
   PlusIcon,
   MagnifyingGlassIcon,
@@ -68,22 +68,48 @@ interface GenerationStatus {
   }>;
 }
 
+type GeneratedProject = {
+  name: string;
+  templateId: string;
+  files: Array<{ name: string; path: string; content: string }>;
+};
+
+type InitialTemplate = {
+  id: string;
+  name: string;
+  description?: string;
+  category?: string;
+  language?: string;
+  framework?: string;
+  complexity?: 'beginner' | 'intermediate' | 'advanced';
+  tags?: string[];
+  estimatedTime?: string;
+  features?: string[];
+  previewImage?: string;
+  downloads?: number;
+  stars?: number;
+};
+
 interface ProjectScaffolderProps {
   workspaceId?: number;
-  onProjectCreate?: (project: {
-    name: string;
-    templateId: string;
-    files: Array<{ name: string; path: string; content: string }>;
-  }) => void;
+  onProjectCreate?: (project: GeneratedProject) => void;
+  onGenerate?: (project: GeneratedProject) => void;
+  onDownload?: (project: GeneratedProject) => void;
   onTemplateSelect?: (template: ProjectTemplate) => void;
   className?: string;
+  initialTemplate?: InitialTemplate | null;
+  initialProjectName?: string;
 }
 
 export function ProjectScaffolder({
   workspaceId,
   onProjectCreate,
+  onGenerate,
+  onDownload,
   onTemplateSelect,
-  className = ''
+  className = '',
+  initialTemplate,
+  initialProjectName
 }: ProjectScaffolderProps) {
   const [templates, setTemplates] = useState<ProjectTemplate[]>([]);
   const [selectedTemplate, setSelectedTemplate] = useState<ProjectTemplate | null>(null);
@@ -104,9 +130,29 @@ export function ProjectScaffolder({
     status: 'idle',
     message: 'Ready to create project'
   });
+  const [generatedProject, setGeneratedProject] = useState<GeneratedProject | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [showAdvanced, setShowAdvanced] = useState(false);
+
+  const normalizeTemplate = useMemo(
+    () => (template: InitialTemplate): ProjectTemplate => ({
+      id: template.id,
+      name: template.name,
+      description: template.description ?? 'Starter template',
+      category: template.category ?? 'web',
+      language: template.language ?? 'typescript',
+      framework: template.framework ?? 'react',
+      complexity: template.complexity ?? 'intermediate',
+      stars: template.stars ?? 4.5,
+      downloads: template.downloads ?? 1000,
+      tags: template.tags ?? ['starter'],
+      previewImage: template.previewImage,
+      estimatedTime: template.estimatedTime ?? '5 min',
+      features: template.features ?? ['TypeScript', 'Tooling']
+    }),
+    []
+  );
 
   // Load available templates
   useEffect(() => {
@@ -161,8 +207,41 @@ export function ProjectScaffolder({
       }
     ];
 
-    setTemplates(mockTemplates);
+    setTemplates(() => {
+      const combined = [...mockTemplates];
+      if (initialTemplate) {
+        const normalized = normalizeTemplate(initialTemplate);
+        const exists = combined.some(template => template.id === normalized.id);
+        if (!exists) {
+          combined.push(normalized);
+        }
+      }
+      return combined;
+    });
   };
+
+  useEffect(() => {
+    if (!initialTemplate) return;
+
+    const normalized = normalizeTemplate(initialTemplate);
+
+    setTemplates(prev => {
+      const exists = prev.some(template => template.id === normalized.id);
+      if (exists) return prev;
+      return [...prev, normalized];
+    });
+
+    setSelectedTemplate(normalized);
+    setProjectConfig(prev => ({
+      ...prev,
+      name:
+        initialProjectName ??
+        prev.name ??
+        normalized.name.toLowerCase().replace(/\s+/g, '-'),
+      templateId: normalized.id
+    }));
+    onTemplateSelect?.(normalized);
+  }, [initialTemplate, initialProjectName, normalizeTemplate, onTemplateSelect]);
 
   const filteredTemplates = templates.filter(template => {
     const matchesSearch = template.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -209,6 +288,12 @@ export function ProjectScaffolder({
       // Simulate project generation process
       await generateProject();
 
+      const projectPayload: GeneratedProject = {
+        name: projectConfig.name,
+        templateId: selectedTemplate.id,
+        files: [] // Placeholder for generated file content
+      };
+
       setGenerationStatus({
         status: 'success',
         message: 'Project created successfully!',
@@ -221,11 +306,9 @@ export function ProjectScaffolder({
         ]
       });
 
-      onProjectCreate?.({
-        name: projectConfig.name,
-        templateId: selectedTemplate.id,
-        files: [] // Would contain actual file contents
-      });
+      setGeneratedProject(projectPayload);
+
+      onProjectCreate?.(projectPayload);
 
     } catch (error) {
       setGenerationStatus({
@@ -627,6 +710,26 @@ export function ProjectScaffolder({
                         )}
                         {generationStatus.error && (
                           <p className="text-sm text-red-600 mt-2">{generationStatus.error}</p>
+                        )}
+                        {generationStatus.status === 'success' && generatedProject && (
+                          <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                            {onGenerate && (
+                              <button
+                                onClick={() => onGenerate(generatedProject)}
+                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                              >
+                                Open in Workspace
+                              </button>
+                            )}
+                            {onDownload && (
+                              <button
+                                onClick={() => onDownload(generatedProject)}
+                                className="flex-1 px-4 py-2 border border-blue-600 text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                              >
+                                Download Project
+                              </button>
+                            )}
+                          </div>
                         )}
                       </div>
                     </div>
