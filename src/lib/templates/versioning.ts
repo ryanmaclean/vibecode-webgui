@@ -2,9 +2,9 @@
  * Template versioning and update management system
  */
 
-import { z } from '@/lib/zod-compat'
+import { z } from 'zod'
 import type { ProjectTemplate } from './index'
-// import { logger } from '@/lib/logger';
+
 export interface TemplateVersion {
   version: string
   releaseDate: string
@@ -254,7 +254,7 @@ export class TemplateRegistry {
 
     // Check for newer versions
     for (let i = 0; i < currentIndex; i++) {
-const version = metadata.versions[i]
+      const version = metadata.versions[i]
       if (!version.deprecated) {
         const updateType = this.getUpdateType(currentVersion, version.version)
         updates.push({
