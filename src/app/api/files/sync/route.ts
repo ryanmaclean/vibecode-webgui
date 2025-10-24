@@ -226,17 +226,12 @@ async function createFilesInWorkspace(
   })
 }
 
-// Extend the global object to hold the WebSocket server
-declare global {
-  var wss: WebSocketServer | undefined
-}
-
 // Initialize WebSocket server if it doesn't exist
-if (!global.wss) {
-  global.wss = new WebSocketServer({ noServer: true })
+if (!(globalThis as any).wss) {
+  (globalThis as any).wss = new WebSocketServer({ noServer: true })
   console.info('WebSocket server initialized')
 
-  global.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
+  (globalThis as any).wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
     const workspaceId = searchParams.get('workspaceId') || ''
     const userId = searchParams.get('userId') || ''
