@@ -118,20 +118,58 @@ global.Headers = class Headers {
   }
 };
 
-// Minimal ReadableStream stub (non-mocked)
-global.ReadableStream = function ReadableStream() {
-  return {
-    getReader: () => ({
-      read: async () => ({ done: true, value: undefined }),
+// Minimal ReadableStream implementation (supports constructor with underlyingSource)
+global.ReadableStream = class ReadableStream {
+  constructor(underlyingSource = {}) {
+    this._controller = {
+      enqueue: (chunk) => {
+        // In a real implementation, this would add chunk to the stream
+        // For testing, we'll just store it
+        if (!this._chunks) this._chunks = [];
+        this._chunks.push(chunk);
+      },
+      close: () => {
+        this._closed = true;
+      },
+      error: (error) => {
+        this._error = error;
+      }
+    };
+    
+    this._chunks = [];
+    this._closed = false;
+    this._error = null;
+    
+    // Call the start method if provided
+    if (underlyingSource.start) {
+      try {
+        underlyingSource.start(this._controller);
+      } catch (error) {
+        this._error = error;
+      }
+    }
+  }
+  
+  getReader() {
+    return {
+      read: async () => {
+        if (this._error) throw this._error;
+        if (this._chunks.length > 0) {
+          return { done: false, value: this._chunks.shift() };
+        }
+        return { done: true, value: undefined };
+      },
       cancel: () => {},
       releaseLock: () => {},
-    }),
-    cancel: () => {},
-    locked: false,
-    pipeTo: () => {},
-    pipeThrough: () => {},
-    tee: () => {},
-  };
+    };
+  }
+  
+  cancel() {}
+  pipeTo() {}
+  pipeThrough() {}
+  tee() {}
+  
+  get locked() { return false; }
 };
 
 // Minimal WHATWG Response implementation (non-mocked)
