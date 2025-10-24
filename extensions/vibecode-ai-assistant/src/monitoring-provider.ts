@@ -255,7 +255,7 @@ export class MonitoringProvider implements vscode.WebviewViewProvider {
         if (enabled) {
             this._refreshInterval = setInterval(() => {
                 this._refreshMetrics();
-            }, 30000); // Refresh every 30 seconds
+            }, 30000) as NodeJS.Timeout; // Refresh every 30 seconds
 
             this._context.subscriptions.push({ dispose: () => {
                 if (this._refreshInterval) {
