@@ -403,7 +403,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('OpenCode CLI installed successfully')
+      console.info('OpenCode CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install OpenCode CLI: ${error}`)
     }
@@ -422,7 +422,7 @@ export class OpenCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('OpenCode CLI uninstalled successfully')
+      console.info('OpenCode CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall OpenCode CLI: ${error}`)
     }

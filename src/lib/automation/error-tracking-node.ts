@@ -56,7 +56,7 @@ class NodeScriptErrorTracker {
    */
   init(): void {
     if (!this.config.enabled || !this.config.apiKey) {
-      console.log('⚠️  Datadog Error Tracking is disabled or not configured');
+      console.info('⚠️  Datadog Error Tracking is disabled or not configured');
       return;
     }
 
@@ -66,7 +66,7 @@ class NodeScriptErrorTracker {
     // Track script start
     this.trackScriptStart();
 
-    console.log(`📊 Datadog Error Tracking initialized for ${this.context.scriptName}`);
+    console.info(`📊 Datadog Error Tracking initialized for ${this.context.scriptName}`);
   }
 
   /**
@@ -464,7 +464,7 @@ export async function safeExecuteCommand(
   const startTime = Date.now();
   
   try {
-    console.log(`🔧 Executing: ${command}`);
+    console.info(`🔧 Executing: ${command}`);
     
     const output = execSync(command, {
       encoding: 'utf8',
@@ -511,8 +511,8 @@ export function checkErrorTrackingAvailability(): boolean {
   const apiKey = process.env.DD_API_KEY;
   
   if (!enabled || !apiKey) {
-    console.log('⚠️  Datadog Error Tracking is disabled or not configured');
-    console.log('   Set DD_ERROR_TRACKING_ENABLED=true and DD_API_KEY to enable');
+    console.info('⚠️  Datadog Error Tracking is disabled or not configured');
+    console.info('   Set DD_ERROR_TRACKING_ENABLED=true and DD_API_KEY to enable');
     return false;
   }
   

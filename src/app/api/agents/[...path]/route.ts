@@ -31,7 +31,7 @@ import {
   getThreadManager,
   initializeThreadManager,
 } from '@/lib/agents/thread-manager'
-// import { createChildLogger } from '@/lib/logger'
+// import { console } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 
 const logger = console
@@ -146,7 +146,7 @@ async function handleRequest(
     const path = params.path || []
     const [resource, id, subResource, subId] = path
 
-    console.log('Handling agent API request', {
+    console.debug('Handling agent API request', {
       method,
       resource,
       id,
@@ -214,7 +214,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
     },
   })
 
-  console.log('Agent created', { agentId: agent.id, userId })
+  console.info('Agent created', { agentId: agent.id, userId })
 
   return NextResponse.json(agent, { status: 201 })
 }
@@ -232,7 +232,7 @@ async function handleListAgents(request: NextRequest, userId: string) {
     (agent) => agent.metadata.userId === userId
   )
 
-  console.log('Listed agents', { userId, count: userAgents.length })
+  console.debug('Listed agents', { userId, count: userAgents.length })
 
   return NextResponse.json({
     ...response,
@@ -308,7 +308,7 @@ async function handleThreadRoutes(
         }
       )
 
-      console.log('Thread created', { threadId: session.threadId, userId })
+      console.info('Thread created', { threadId: session.threadId, userId })
 
       return NextResponse.json(session, { status: 201 })
     }
@@ -455,7 +455,7 @@ async function handleFileRoutes(
 
     const fileObject = await client.uploadFile(file, file.name, purpose)
 
-    console.log('File uploaded', { fileId: fileObject.id, userId })
+    console.info('File uploaded', { fileId: fileObject.id, userId })
 
     return NextResponse.json(fileObject, { status: 201 })
   }

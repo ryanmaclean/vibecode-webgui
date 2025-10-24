@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { Ratelimit } from '@upstash/ratelimit';
 import { Redis } from '@upstash/redis';
 import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
+import { loadSecret } from '@/lib/security/macos-keychain-server';
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
     /bot/i, /crawler/i, /spider/i, /scraper/i, /automated/i,
@@ -22,8 +23,8 @@ let ratelimit: Ratelimit | null = null;
 // Initialize Redis and rate limiting outside of middleware function
 // to avoid Edge Runtime compatibility issues
 try {
-  const redisUrl = process.env.UPSTASH_REDIS_REST_URL;
-  const redisToken = process.env.UPSTASH_REDIS_REST_TOKEN;
+  const redisUrl = loadSecret('UPSTASH_REDIS_REST_URL') || process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = loadSecret('UPSTASH_REDIS_REST_TOKEN') || process.env.UPSTASH_REDIS_REST_TOKEN;
   
   if (redisUrl && redisToken) {
     redis = new Redis({

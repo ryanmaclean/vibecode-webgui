@@ -169,7 +169,7 @@ $$;
   `;
   
   fs.writeFileSync(filePath, schema, 'utf8');
-  console.log(`Schema file written to ${filePath}`);
+  console.info(`Schema file written to ${filePath}`);
   return filePath;
 }
 

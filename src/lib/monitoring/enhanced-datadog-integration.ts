@@ -456,7 +456,7 @@ datadogMonitoring.startSystemMonitoring()
 export { tracer }
 
 // Log startup
-console.log('🐕 Enhanced Datadog monitoring initialized for VibeCode Platform')
-console.log(`📊 Service: ${process.env.DD_SERVICE || 'vibecode-enhanced'}`)
-console.log(`🌍 Environment: ${process.env.DD_ENV || 'development'}`)
-console.log(`📈 Version: ${process.env.DD_VERSION || '2.0.0'}`)
+console.info('🐕 Enhanced Datadog monitoring initialized for VibeCode Platform')
+console.info(`📊 Service: ${process.env.DD_SERVICE || 'vibecode-enhanced'}`)
+console.info(`🌍 Environment: ${process.env.DD_ENV || 'development'}`)
+console.info(`📈 Version: ${process.env.DD_VERSION || '2.0.0'}`)

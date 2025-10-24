@@ -18,7 +18,7 @@ import {
   RegisteredTool,
   ToolHandler,
 } from '@/types/openai-agents'
-// import { createChildLogger } from '@/lib/logger'
+// import { console } from '@/lib/logger'
 
 const logger = console
 
@@ -86,7 +86,7 @@ export class ToolRegistry {
       totalDuration: 0,
     })
 
-    console.log('Tool registered', {
+    console.info('Tool registered', {
       name,
       category: metadata?.category,
       tags: metadata?.tags,
@@ -103,7 +103,7 @@ export class ToolRegistry {
     this.executionMetrics.delete(name)
 
     if (existed) {
-      console.log('Tool unregistered', { name })
+      console.info('Tool unregistered', { name })
     }
 
     return existed
@@ -197,7 +197,7 @@ export class ToolRegistry {
     metrics.totalCalls++
 
     try {
-      console.log('Executing tool', { toolName, args })
+      console.info('Executing tool', { toolName, args })
 
       const result = await tool.handler(args)
 
@@ -205,7 +205,7 @@ export class ToolRegistry {
       metrics.successfulCalls++
       metrics.totalDuration += duration
 
-      console.log('Tool executed successfully', {
+      console.info('Tool executed successfully', {
         toolName,
         duration,
       })
@@ -240,7 +240,7 @@ export class ToolRegistry {
    * Execute multiple tool calls in parallel
    */
   async executeBatch(toolCalls: ToolCall[]): Promise<ToolOutput[]> {
-    console.log('Executing tool batch', { count: toolCalls.length })
+    console.info('Executing tool batch', { count: toolCalls.length })
 
     const results = await Promise.all(
       toolCalls.map((call) => this.execute(call))
@@ -295,7 +295,7 @@ export class ToolRegistry {
         failedCalls: 0,
         totalDuration: 0,
       })
-      console.log('Tool metrics reset', { name })
+      console.info('Tool metrics reset', { name })
     }
   }
 
@@ -327,7 +327,7 @@ export class ToolRegistry {
     this.rateLimits.clear()
     this.executionMetrics.clear()
 
-    console.log('All tools cleared', { count })
+    console.info('All tools cleared', { count })
   }
 
   // Private Helper Methods
@@ -367,7 +367,7 @@ let globalRegistry: ToolRegistry | null = null
 export function getToolRegistry(): ToolRegistry {
   if (!globalRegistry) {
     globalRegistry = new ToolRegistry()
-    console.log('Global tool registry created')
+    console.info('Global tool registry created')
   }
   return globalRegistry
 }
@@ -521,7 +521,7 @@ export function registerBuiltInTools(registry: ToolRegistry): void {
     }
   )
 
-  console.log('Built-in tools registered', {
+  console.info('Built-in tools registered', {
     count: 4,
   })
 }

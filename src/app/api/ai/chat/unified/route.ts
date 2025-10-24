@@ -133,7 +133,7 @@ export async function POST(request: NextRequest) {
     const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
     const providerHealth = await aiClient.getProviderHealth()
     
-    console.log('Provider health check:', providerHealth)
+    console.info('Provider health check:', providerHealth)
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -253,7 +253,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.close()
 
           // Enhanced completion analytics
-          console.log(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          console.info(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
 
         } catch (error) {
           console.error('Unified streaming error:', error)

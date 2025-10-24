@@ -545,7 +545,7 @@ export class WebSocketStreamingClient {
 
   private log(...args: unknown[]): void {
     if (this.config.debug) {
-      console.log('[WebSocketStreamingClient]', ...args)
+      console.info('[WebSocketStreamingClient]', ...args)
     }
   }
 }

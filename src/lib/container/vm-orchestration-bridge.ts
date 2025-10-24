@@ -155,7 +155,7 @@ export interface VMPoolConfig {
  *
  * // Allocate a VM
  * const vm = await orchestration.allocateVM();
- * console.log(`VM ready at ${vm.agentApiUrl}`);
+ * console.info(`VM ready at ${vm.agentApiUrl}`);
  *
  * // Use VM...
  * const response = await fetch(`${vm.agentApiUrl}/api/health`);

@@ -6,7 +6,7 @@
 
 import OpenAI from 'openai';
 import type { AgentBuilderSessionRequest, AgentBuilderSession } from '@/types/agent-builder';
-// import { createChildLogger } from '@/lib/logger';
+// import { console } from '@/lib/logger';
 
 const logger = console;
 
@@ -36,7 +36,7 @@ export class AgentBuilderClient {
    * Create a ChatKit session for a published Agent Builder workflow.
    */
   async createSession(userId: string, request: AgentBuilderSessionRequest): Promise<AgentBuilderSession> {
-    console.log('Creating Agent Builder session', {
+    console.info('Creating Agent Builder session', {
       userId,
       workflowId: request.workflowId,
       version: request.version,

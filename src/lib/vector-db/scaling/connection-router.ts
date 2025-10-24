@@ -154,7 +154,7 @@ export class VectorDBConnectionRouter {
     // Start health checks
     this.startHealthChecks();
     
-    this.console.log(`Initialized connection router with ${this.readReplicas.length} read replicas`);
+    this.console.info(`Initialized connection router with ${this.readReplicas.length} read replicas`);
   }
   
   /**
@@ -384,7 +384,7 @@ export class VectorDBConnectionRouter {
       }
     }, this.healthCheckInterval);
     
-    this.console.log(`Started health checks with interval ${this.healthCheckInterval}ms`);
+    this.console.info(`Started health checks with interval ${this.healthCheckInterval}ms`);
   }
   
   /**
@@ -394,7 +394,7 @@ export class VectorDBConnectionRouter {
     if (this.healthCheckTimer) {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
-      this.console.log('Stopped health checks');
+      this.console.info('Stopped health checks');
     }
   }
   
@@ -402,7 +402,7 @@ export class VectorDBConnectionRouter {
    * Check health of all connections
    */
   private async checkConnections(): Promise<void> {
-    this.console.log('Running connection health checks');
+    this.console.debug('Running connection health checks');
     
     // Check primary
     await this.checkConnection(
@@ -422,7 +422,7 @@ export class VectorDBConnectionRouter {
     }
     
     // Log health status
-    this.console.log('Connection health check results', {
+    this.console.debug('Connection health check results', {
       primary: this.primaryStatus.healthy,
       replicas: [...this.replicaStatus.entries()].map(([id, status]) => ({
         id,
@@ -471,7 +471,7 @@ export class VectorDBConnectionRouter {
         failureCount: 0
       });
       
-      this.console.log(`Health check for ${connectionId} succeeded with latency ${latency}ms`);
+      this.console.debug(`Health check for ${connectionId} succeeded with latency ${latency}ms`);
     } catch (error) {
       // Update status with failure
       const newFailureCount = currentStatus.failureCount + 1;
@@ -515,6 +515,6 @@ export class VectorDBConnectionRouter {
    */
   public dispose(): void {
     this.stopHealthChecks();
-    this.console.log('Connection router disposed');
+    this.console.info('Connection router disposed');
   }
 }

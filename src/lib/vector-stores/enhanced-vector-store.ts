@@ -148,7 +148,7 @@ export class EnhancedVectorStore {
         metrics.lastHealthCheck = new Date();
 
         if (this.config.enableMetrics) {
-          console.log(`Provider ${providerName} health check: ${isHealthy ? 'healthy' : 'unhealthy'}`);
+          console.info(`Provider ${providerName} health check: ${isHealthy ? 'healthy' : 'unhealthy'}`);
         }
       } catch (error) {
         console.error(`Health check failed for provider ${providerName}:`, error);
@@ -374,7 +374,7 @@ export class EnhancedVectorStore {
 
       try {
         // Attempt search with fallback provider
-        console.log(`Attempting search with fallback provider: ${providerName}`);
+        console.info(`Attempting search with fallback provider: ${providerName}`);
         return this.search(query, options, { ...context, _useProvider: providerName });
       } catch (error) {
         console.warn(`Fallback provider ${providerName} also failed:`, error);
@@ -685,7 +685,7 @@ export class EnhancedVectorStore {
     for (const [providerName, provider] of this.providers.entries()) {
       try {
         // Would call provider.close() here
-        console.log(`Closed provider: ${providerName}`);
+        console.info(`Closed provider: ${providerName}`);
       } catch (error) {
         console.error(`Failed to close provider ${providerName}:`, error);
       }

@@ -12,10 +12,19 @@
  * - MDM policy integration
  */
 
-import { execSync } from 'child_process'
-// import { createChildLogger } from './logger'
+// import { console } from './logger'
 
 const logger = console
+
+// Server-only imports (not available in Edge Runtime)
+let execSync: typeof import('child_process').execSync
+if (typeof window === 'undefined') {
+  try {
+    execSync = require('child_process').execSync
+  } catch (error) {
+    console.warn('child_process not available, falling back to environment variables')
+  }
+}
 
 // Keychain configuration
 const KEYCHAIN_SERVICE = 'com.vibecode.secrets'
@@ -79,7 +88,7 @@ export async function setSecret(
 
     execSync(commandParts.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
-    console.log('Secret stored in Keychain', {
+    console.info('Secret stored in Keychain', {
       service: opts.service,
       account: opts.account,
     })
@@ -126,7 +135,7 @@ export async function getSecret(
       shell: '/bin/bash',
     })
 
-    console.log('Secret retrieved from Keychain', {
+    console.debug('Secret retrieved from Keychain', {
       service: opts.service,
       account: opts.account,
     })
@@ -135,7 +144,7 @@ export async function getSecret(
   } catch (error) {
     // Secret not found is not an error, just return null
     if (error instanceof Error && error.message.includes('could not be found')) {
-      console.log('Secret not found in Keychain', { account: key })
+      console.debug('Secret not found in Keychain', { account: key })
       return null
     }
 
@@ -175,7 +184,7 @@ export async function deleteSecret(
 
     execSync(command.join(' '), { encoding: 'utf8', shell: '/bin/bash' })
 
-    console.log('Secret deleted from Keychain', {
+    console.info('Secret deleted from Keychain', {
       service: opts.service,
       account: opts.account,
     })
@@ -193,8 +202,11 @@ export async function deleteSecret(
  */
 export function isKeychainAvailable(): boolean {
   try {
+    if (typeof process === 'undefined' || !execSync) {
+      return false
+    }
     execSync('which security', { encoding: 'utf8', stdio: 'ignore' })
-    return process.platform === 'darwin'
+    return process?.platform === 'darwin'
   } catch {
     return false
   }
@@ -235,14 +247,14 @@ export async function migrateSecretsToKeychain(): Promise<void> {
           accessibility: 'whenUnlockedThisDeviceOnly',
         })
         migratedCount++
-        console.log(`Migrated ${secretKey} to Keychain`)
+        console.info(`Migrated ${secretKey} to Keychain`)
       } catch (error) {
         console.error(`Failed to migrate ${secretKey}`, { error })
       }
     }
   }
 
-  console.log(`Migrated ${migratedCount} secrets to Keychain`)
+  console.info(`Migrated ${migratedCount} secrets to Keychain`)
 }
 
 /**
@@ -251,29 +263,34 @@ export async function migrateSecretsToKeychain(): Promise<void> {
  * @param key - Secret identifier
  * @returns Secret value or undefined
  */
-export async function loadSecret(key: string): Promise<string | undefined> {
-  // Try Keychain first (if on macOS)
-  if (isKeychainAvailable()) {
-    try {
-      const keychainValue = await getSecret(key)
-      if (keychainValue) {
-        console.log(`Loaded ${key} from Keychain`)
-        return keychainValue
-      }
-    } catch (error) {
-      console.warn(`Failed to load ${key} from Keychain, falling back to env`, {
-        error,
-      })
+/**
+ * Synchronous version of loadSecret for compatibility
+ * Falls back to environment variables if keychain is not available
+ */
+export function loadSecret(key: string): string | null {
+  try {
+    // Check if running on macOS and execSync is available
+    if (typeof process === 'undefined' || process?.platform !== 'darwin' || !execSync) {
+      return process?.env?.[key] || null
     }
-  }
 
-  // Fallback to environment variable
-  const envValue = process.env[key]
-  if (envValue) {
-    console.log(`Loaded ${key} from environment variable`)
-  }
+    // Use security command to retrieve from keychain
+    const command = `security find-generic-password -s "${key}" -a "${KEYCHAIN_SERVICE}" -w`
+    const result = execSync(command, { 
+      encoding: 'utf8',
+      timeout: 5000,
+      stdio: ['pipe', 'pipe', 'pipe']
+    }).trim()
 
-  return envValue
+    if (result) {
+      return result
+    }
+
+    return null
+  } catch (error) {
+    // Fall back to environment variable
+    return process?.env?.[key] || null
+  }
 }
 
 /**
@@ -293,7 +310,7 @@ export async function rotateSecret(
       accessibility: 'whenUnlockedThisDeviceOnly',
     })
 
-    console.log(`Rotated secret: ${key}`)
+    console.info(`Rotated secret: ${key}`)
   } catch (error) {
     console.error(`Failed to rotate secret: ${key}`, { error })
     throw error
@@ -337,7 +354,7 @@ export async function listSecrets(): Promise<string[]> {
       .split('\n')
       .filter((line) => line.trim().length > 0)
 
-    console.log(`Found ${secrets.length} secrets in Keychain`)
+    console.debug(`Found ${secrets.length} secrets in Keychain`)
 
     return secrets
   } catch (error) {

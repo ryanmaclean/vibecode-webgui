@@ -11,6 +11,8 @@ import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { workspaceIdSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
+// import { logger } from '@/lib/logger';
+export const dynamic = 'force-dynamic'
 
 // Define inline schemas since schemas-phase4-batch2 doesn't exist
 const workspaceMetricsSchema = z.object({
@@ -144,6 +146,17 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     console.error('Metrics update error:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: 'Invalid metrics data',
+          errors: error.errors
+        },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json(
       {
@@ -202,6 +215,17 @@ export async function PUT(req: NextRequest) {
     })
   } catch (error) {
     console.error('Workspace registration error:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: 'Invalid registration data',
+          errors: error.errors
+        },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json(
       {
@@ -249,6 +273,17 @@ export async function PATCH(req: NextRequest) {
     })
   } catch (error) {
     console.error('Config update error:', error)
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          status: 'error',
+          message: 'Invalid configuration data',
+          errors: error.errors
+        },
+        { status: 400 }
+      )
+    }
 
     return NextResponse.json(
       {
@@ -286,7 +321,7 @@ export async function DELETE(req: NextRequest) {
 
     // In a real implementation, you would remove the workspace from tracking
     // For now, we'll just log it
-    console.log(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
+    console.info(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
 
     return NextResponse.json({
       status: 'success',

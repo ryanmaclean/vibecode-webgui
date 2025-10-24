@@ -111,7 +111,7 @@ export class ClineAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.log(`[Cline] ${data.line}`);
+          console.info(`[Cline] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {

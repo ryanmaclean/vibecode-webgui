@@ -411,7 +411,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('Claude Code CLI installed successfully')
+      console.info('Claude Code CLI installed successfully')
     } catch (error) {
       throw new Error(`Failed to install Claude Code CLI: ${error}`)
     }
@@ -430,7 +430,7 @@ export class ClaudeCodeCLI {
         throw new Error(stderr)
       }
 
-      console.log('Claude Code CLI uninstalled successfully')
+      console.info('Claude Code CLI uninstalled successfully')
     } catch (error) {
       throw new Error(`Failed to uninstall Claude Code CLI: ${error}`)
     }

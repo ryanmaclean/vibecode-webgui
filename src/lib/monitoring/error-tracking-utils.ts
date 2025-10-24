@@ -50,7 +50,7 @@ export class ComponentErrorTracker {
    * Track user interactions that might lead to errors
    */
   trackUserInteraction(action: string, context: ErrorContext = {}): void {
-    console.log(`User interaction in ${this.componentName}: ${action}`, context);
+    console.info(`User interaction in ${this.componentName}: ${action}`, context);
   }
 }
 

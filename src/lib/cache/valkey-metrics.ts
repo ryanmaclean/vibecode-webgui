@@ -51,7 +51,7 @@ export class ValKeyMetricsCollector {
   initialize(client: RedisClientType): void {
     this.client = client;
     this.collectionEnabled = true;
-    console.log('ValKey metrics collection initialized');
+    console.info('ValKey metrics collection initialized');
     
     // Start collection interval
     this.startCollection();
@@ -65,7 +65,7 @@ export class ValKeyMetricsCollector {
       return;
     }
 
-    console.log('Starting ValKey metrics collection');
+    console.info('Starting ValKey metrics collection');
     
     // Collect metrics immediately
     this.collectMetrics();
@@ -83,7 +83,7 @@ export class ValKeyMetricsCollector {
     if (this.interval) {
       clearInterval(this.interval);
       this.interval = null;
-      console.log('ValKey metrics collection stopped');
+      console.info('ValKey metrics collection stopped');
     }
   }
 
@@ -298,7 +298,7 @@ export class ValKeyMetricsCollector {
     }
     
     // Log summary of metrics
-    console.log('ValKey metrics collected', {
+    console.debug('ValKey metrics collected', {
       clients: metricsData.connected_clients,
       memory_used_mb: metricsData.used_memory ? Math.round(metricsData.used_memory / (1024 * 1024) * 100) / 100 : undefined,
       ops_per_sec: metricsData.instantaneous_ops_per_sec,

@@ -1,11 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { loginTrackingSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Zod validation schemas
+const loginTrackingSchema = z.object({
+  event: z.enum(['login_attempt', 'login_success', 'login_failure', 'logout']),
+  userId: z.string().optional(),
+  email: z.string().email().optional(),
+  provider: z.string().optional(),
+  sessionId: z.string().optional(),
+  loginMethod: z.string().optional(),
+  timestamp: z.string().optional(),
+}).strict()
 
 // Get client IP for geographic mapping
 function getClientIP(request: NextRequest): string {
@@ -111,26 +121,9 @@ function logUserAuth(
 // Track login attempts
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body with Zod
-    let validatedData
-    try {
-      const body = await request.json()
-      validatedData = loginTrackingSchema.parse(body)
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return NextResponse.json(
-          {
-            error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
-              field: e.path.join('.'),
-              message: e.message
-            }))
-          },
-          { status: 400 }
-        )
-      }
-      throw error
-    }
+    const body = await request.json();
+    const validatedData = loginTrackingSchema.parse(body);
+    const { event, userId, email, provider, sessionId, ...otherMetadata } = validatedData;
 
     const { event, userId, email, provider, sessionId, loginMethod } = validatedData
 
@@ -152,6 +145,14 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     // Server error logged
+    
+    if (error instanceof z.ZodError) {
+      return NextResponse.json({
+        error: 'Invalid request parameters',
+        details: error.errors
+      }, { status: 400 })
+    }
+
     return NextResponse.json(
       { error: 'Failed to track login event' },
       { status: 500 }

@@ -8,7 +8,7 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getAgentBuilderClient } from '@/lib/agents/agent-builder-client';
 import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
-// import { createChildLogger } from '@/lib/logger';
+// import { console } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
 
 const logger = console;
@@ -66,7 +66,7 @@ export async function POST(request: NextRequest) {
     const agentBuilder = getAgentBuilderClient();
     const chatkitSession = await agentBuilder.createSession(userIdentifier, payload);
 
-    console.log('Agent Builder session created', {
+    console.info('Agent Builder session created', {
       userId: userIdentifier,
       workflowId: payload.workflowId,
       sessionId: chatkitSession.sessionId,

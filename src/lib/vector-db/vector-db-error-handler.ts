@@ -290,7 +290,7 @@ export class VectorDbErrorHandler {
         console.warn('MEDIUM VectorDB Error:', logData);
         break;
       case 'low':
-        console.log('LOW VectorDB Error:', logData);
+        console.info('LOW VectorDB Error:', logData);
         break;
     }
   }

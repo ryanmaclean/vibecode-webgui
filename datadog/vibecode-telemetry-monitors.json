@@ -1,0 +1,17 @@
+[
+  {
+    "name": "Vibecode WebGUI Error Rate",
+    "type": "query alert",
+    "query": "sum(last_5m):sum:http.errors{service:vibecode-webgui} by {env} > 5",
+    "message": "High HTTP error rate detected on {{env.name}}. Investigate recent deployments and telemetry events.",
+    "tags": ["service:vibecode-webgui", "source:imported-zfs"],
+    "options": {
+      "notify_no_data": false,
+      "escalation_message": "Escalate to Vibecode on-call if triggered twice within 30 minutes.",
+      "thresholds": {
+        "critical": 5,
+        "warning": 2
+      }
+    }
+  }
+]
