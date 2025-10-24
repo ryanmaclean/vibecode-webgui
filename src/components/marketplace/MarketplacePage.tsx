@@ -68,10 +68,11 @@ export function MarketplacePage({
         
         <div className="py-8">
           <TemplateSubmissionForm
-            {...({
-              onSubmissionComplete: handleSubmissionComplete,
-              onCancel: handleCancelSubmission
-            } as any)}
+            onSubmit={async (data) => {
+              // TODO: integrate with backend API
+              handleSubmissionComplete('submission')
+            }}
+            onCancel={handleCancelSubmission}
           />
         </div>
       </div>
@@ -106,10 +107,9 @@ export function MarketplacePage({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <TemplateMarketplace
-          {...({
-            onSelectTemplate: handleSelectTemplate,
-            selectedCategory
-          } as any)}
+          onTemplateSelect={handleSelectTemplate}
+          selectedTemplateId={selectedTemplate?.id}
+          selectedCategory={selectedCategory}
         />
       </div>
 
