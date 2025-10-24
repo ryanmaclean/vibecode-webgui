@@ -66,7 +66,7 @@ const pinoOptions: pino.LoggerOptions = {
 };
 
 // Transport configuration
-const transports: Array<pino.TransportTargetOptions> = [];
+const transports: pino.TransportMultiOptions['targets'] = [];
 
 // Pretty print for development
 if (config.prettyPrint) {
