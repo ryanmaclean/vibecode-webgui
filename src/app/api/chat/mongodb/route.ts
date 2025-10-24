@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
-import { logger } from '@/lib/logger'
+// import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
@@ -120,7 +120,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    logger.error('MongoDB Chat API Error', {
+    console.error('MongoDB Chat API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
@@ -184,7 +184,7 @@ export async function GET(request: NextRequest) {
             }
           })
         } catch (mongoError) {
-          logger.error('MongoDB health check failed', {
+          console.error('MongoDB health check failed', {
             service: 'mongodb-chat-health',
             error: mongoError instanceof Error ? mongoError.message : String(mongoError)
           })
@@ -212,7 +212,7 @@ export async function GET(request: NextRequest) {
         )
     }
   } catch (error) {
-    logger.error('MongoDB Chat GET API Error', {
+    console.error('MongoDB Chat GET API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error)
     })
