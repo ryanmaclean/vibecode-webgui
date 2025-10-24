@@ -1,12 +1,8 @@
 /**
- * Real Monitoring Integration
- * Actual Datadog metrics submission and health checks
+ * Core monitoring module with StatsD integration.
  */
-
 import { logger } from '@/lib/logger';
-
-import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env'
-import { logger } from '@/lib/logger'
+import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env';
 
 interface MetricData {
   metric: string
