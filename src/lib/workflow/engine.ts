@@ -118,7 +118,8 @@ function areDependenciesSatisfied(
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-    return depExec?.status === 'completed';
+    // Allow execution if dependency completed successfully OR failed but continued on error
+    return depExec?.status === 'completed' || depExec?.status === 'failed';
   });
 }
 
@@ -161,7 +162,13 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-    const contextVars = { ...context.input, ...context.globals, nodes: context.nodes };
+    // Include both destructured input variables AND the input object itself
+    const contextVars = { 
+      ...context.input, 
+      ...context.globals, 
+      input: context.input,
+      nodes: context.nodes 
+    };
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -249,6 +256,7 @@ export class WorkflowEngine extends EventEmitter {
       id: this.generateExecutionId(),
       workflowId: definition.name,
       workflowVersion: definition.version,
+      definition: definition,
       status: 'running',
       nodes: new Map(),
       context: {

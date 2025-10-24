@@ -85,8 +85,7 @@ export async function GET(request: NextRequest) {
       ['source:health-check', `env:${process.env.NODE_ENV}`]
     )
 
-    // Calculate response time and log performance
-    const responseTime = Date.now() - startTime
+    // Log performance
     logger.performance('health-check', responseTime, logContext)
 
     // Determine overall health status
@@ -120,12 +119,10 @@ export async function GET(request: NextRequest) {
     }, { status: 200 })
 
   } catch (error) {
-    const responseTime = Date.now() - startTime
-    
     logger.error('Health check failed with error', { 
       ...logContext, 
       error: error instanceof Error ? error.message : 'Unknown error',
-      responseTime
+      responseTime: Date.now() - startTime
     })
 
     return ErrorResponses.serviceUnavailable(
