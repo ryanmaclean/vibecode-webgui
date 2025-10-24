@@ -69,7 +69,7 @@ export default function CursorTracking({
   className = '',
   onCursorClick
 }: CursorTrackingProps) {
-  const { collaborationManager, awareness } = useCollaboration()
+  const { collaborationManager, awareness } = useCollaboration({})
   const [cursors, setCursors] = useState<Map<string, UserCursor>>(new Map())
   const [editorRect, setEditorRect] = useState<DOMRect | null>(null)
   const lastUpdateRef = useRef<number>(0)

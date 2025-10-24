@@ -14,6 +14,7 @@
 import { create, StateCreator } from 'zustand';
 import { devtools, persist, subscribeWithSelector } from 'zustand/middleware';
 import type { PersistOptions } from 'zustand/middleware';
+import { useEffect } from 'react';
 
 // ============================================================================
 // Types
@@ -768,7 +769,9 @@ export const selectCommandPaletteOpen = (state: UIStore) => state.commandPalette
 export function useBreakpointDetector() {
   const setBreakpoint = useUIStore((state) => state.setBreakpoint);
 
-  if (typeof window !== 'undefined') {
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+
     const updateBreakpoint = () => {
       const width = window.innerWidth;
       let breakpoint: Breakpoint = 'xs';
@@ -783,8 +786,8 @@ export function useBreakpointDetector() {
     };
 
     window.addEventListener('resize', updateBreakpoint);
-    updateBreakpoint();
+    updateBreakpoint(); // Initial call
 
     return () => window.removeEventListener('resize', updateBreakpoint);
-  }
+  }, [setBreakpoint]);
 }

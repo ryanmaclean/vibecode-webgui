@@ -5,13 +5,13 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { 
-  Database, 
-  Activity, 
-  Clock, 
-  AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Database,
+  Activity,
+  Clock,
+  TriangleAlert,
+  CheckCircle,
+  XCircle,
   TrendingUp,
   Server,
   Zap
@@ -190,7 +190,7 @@ export default function DatabaseHealthDashboard() {
       case 'healthy':
         return <CheckCircle className="h-5 w-5 text-green-500" />;
       case 'warning':
-        return <AlertTriangle className="h-5 w-5 text-yellow-500" />;
+        return <TriangleAlert className="h-5 w-5 text-yellow-500" />;
       case 'error':
       case 'critical':
         return <XCircle className="h-5 w-5 text-red-500" />;
@@ -223,7 +223,7 @@ export default function DatabaseHealthDashboard() {
         <Card className="border-red-200">
           <CardContent className="pt-6">
             <div className="flex items-center space-x-2 text-red-600">
-              <AlertTriangle size={20} />
+              <TriangleAlert size={20} />
               <span>Error loading database health: {error}</span>
             </div>
             <Button onClick={() => window.location.reload()} className="mt-4">
@@ -265,7 +265,7 @@ export default function DatabaseHealthDashboard() {
       {poolAlerts.length > 0 && (
         <div className="space-y-3">
           <h2 className="text-xl font-semibold text-red-600 flex items-center">
-            <AlertTriangle className="h-5 w-5 mr-2" />
+            <TriangleAlert className="h-5 w-5 mr-2" />
             Active Pool Alerts ({poolAlerts.length})
           </h2>
           <div className="grid gap-4">
@@ -281,7 +281,7 @@ export default function DatabaseHealthDashboard() {
                         {alert.severity === 'critical' ? (
                           <XCircle className="h-5 w-5 text-red-500" />
                         ) : (
-                          <AlertTriangle className="h-5 w-5 text-yellow-500" />
+                          <TriangleAlert className="h-5 w-5 text-yellow-500" />
                         )}
                         <Badge 
                           variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}
@@ -408,8 +408,8 @@ export default function DatabaseHealthDashboard() {
                     return "default";
                   };
                   const getAlertIcon = () => {
-                    if (utilizationPercent >= 90) return <AlertTriangle className="h-4 w-4 text-red-500 ml-1" />;
-                    if (utilizationPercent >= 80) return <AlertTriangle className="h-4 w-4 text-yellow-500 ml-1" />;
+                    if (utilizationPercent >= 90) return <TriangleAlert className="h-4 w-4 text-red-500 ml-1" />;
+                    if (utilizationPercent >= 80) return <TriangleAlert className="h-4 w-4 text-yellow-500 ml-1" />;
                     return null;
                   };
                   
@@ -605,7 +605,7 @@ export default function DatabaseHealthDashboard() {
                 {health?.embeddingsStats.error && (
                   <div className="bg-red-50 border border-red-200 rounded-lg p-3">
                     <div className="flex items-center space-x-2">
-                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                      <TriangleAlert className="h-4 w-4 text-red-500" />
                       <span className="text-sm font-medium text-red-800">Embeddings Error</span>
                     </div>
                     <p className="text-sm text-red-700 mt-1">{health.embeddingsStats.error}</p>

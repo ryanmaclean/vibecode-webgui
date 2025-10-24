@@ -21,7 +21,7 @@ export interface ProjectTemplate {
   devDependencies: Record<string, string>;
   scripts: Record<string, string>;
   files: TemplateFile[];
-  setupInstructions: string[];
+  setupInstructions?: string[];
   documentation: {
     readme: string;
     gettingStarted: string;
@@ -81,6 +81,7 @@ export interface GenerationOptions {
 
 export interface GenerateFromTemplateOptions extends GenerationOptions {
   templateId: string;
+  projectName?: string;
 }
 
 /**

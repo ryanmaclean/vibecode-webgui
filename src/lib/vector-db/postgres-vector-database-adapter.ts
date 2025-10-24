@@ -47,11 +47,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     };
     
     // Initialize error handler
-    this.errorHandler = new VectorDbErrorHandler(
-      'postgres',
-      this.config.enableLogging || false,
-      this.config.enableMetrics || false
-    );
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
@@ -94,8 +90,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       const enhancedError = this.errorHandler.handleError(
         error,
         'initializeProvider',
-        VectorDbErrorType.INITIALIZATION,
-        false,
         {
           connectionString: this.postgresConfig.connectionString ? '[REDACTED]' : undefined,
           cacheEnabled: this.config.cacheEnabled
@@ -113,8 +107,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('Prisma client not initialized'),
-        'verifyPgVectorExtension',
-        VectorDbErrorType.INITIALIZATION
+        'verifyPgVectorExtension'
       );
     }
 
@@ -128,8 +121,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('pgVector extension is not installed in the database'),
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { extensionName: 'vector' }
         );
       }
@@ -143,8 +134,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('Vector data type not found, pgVector extension may be incorrectly installed'),
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { typeName: 'vector' }
         );
       }
@@ -158,8 +147,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { extensionName: 'vector' }
         );
       }
@@ -179,9 +166,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'storeChunks',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'storeChunks'
       );
     }
 
@@ -227,8 +212,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             throw this.errorHandler.handleError(
               chunkError,
               'storeChunks.insertChunk',
-              VectorDbErrorType.VECTOR_CREATION_FAILED,
-              this.errorHandler.isNetworkError(chunkError),
               {
                 fileId,
                 chunkId,
@@ -263,8 +246,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'storeChunks',
-          VectorDbErrorType.VECTOR_CREATION_FAILED,
-          this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
           {
             fileId,
             chunkCount: chunks.length,
@@ -284,9 +265,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'search',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'search'
       );
     }
 

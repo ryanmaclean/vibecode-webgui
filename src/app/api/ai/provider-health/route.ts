@@ -12,7 +12,7 @@ import { z } from '@/lib/zod-compat';
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const providerHealthCheckSchema = z.object({
-  provider: z.enum(['openai', 'anthropic', 'huggingface', 'openrouter', 'google', 'cohere'])
+  provider: z.enum(['openrouter', 'azure-openai', 'anthropic', 'ollama', 'gemini', 'bedrock'])
 });
 
 export async function POST(request: NextRequest) {
@@ -32,7 +32,7 @@ export async function POST(request: NextRequest) {
     const { provider } = validation.data;
 
     // Check provider health
-    const healthCheck = await enhancedAI.checkProviderHealth(provider);
+    const healthCheck = await enhancedAI.checkProviderHealth(provider as AIProvider);
 
     return NextResponse.json({
       provider,

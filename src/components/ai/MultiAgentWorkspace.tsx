@@ -21,10 +21,9 @@ import React, { useState, useCallback, useMemo } from 'react'
 import {
   Layout,
   Grid,
-  Maximize2,
-  Minimize2,
+  Maximize,
+  Minimize,
   Link as LinkIcon,
-  Unlink,
   BarChart,
   GripVertical
 } from 'lucide-react'
@@ -87,7 +86,7 @@ const LAYOUT_MODES: LayoutMode[] = [
   {
     id: 'single',
     name: 'Single',
-    icon: <Maximize2 className="h-4 w-4" aria-hidden="true" />,
+    icon: <Maximize className="h-4 w-4" aria-hidden="true" />,
     gridClass: 'grid-cols-1',
     maxAgents: 1
   },
@@ -252,9 +251,9 @@ function DraggablePanel({
             aria-label={panel.isExpanded ? "Minimize panel" : "Maximize panel"}
           >
             {panel.isExpanded ? (
-              <Minimize2 className="h-4 w-4" aria-hidden="true" />
+              <Minimize className="h-4 w-4" aria-hidden="true" />
             ) : (
-              <Maximize2 className="h-4 w-4" aria-hidden="true" />
+              <Maximize className="h-4 w-4" aria-hidden="true" />
             )}
           </Button>
         )}
@@ -442,7 +441,7 @@ export function MultiAgentWorkspace({
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <Unlink className="h-3 w-3" aria-hidden="true" />
+                    <LinkIcon className="h-3 w-3" aria-hidden="true" />
                     Independent
                   </span>
                 )}
