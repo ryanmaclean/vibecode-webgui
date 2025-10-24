@@ -1,4 +1,4 @@
-import { z } from '@/lib/zod-compat'
+import { z } from 'zod'
 
 export const themeOptionSchema = z.enum(['light', 'dark', 'auto'])
 export type ThemeOption = z.infer<typeof themeOptionSchema>
