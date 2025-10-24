@@ -10,7 +10,7 @@
 
 import { prisma } from '@/lib/prisma';
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
-// import { logger } from '@/lib/logger';
+
 /**
  * Workspace roles with hierarchical permissions
  */

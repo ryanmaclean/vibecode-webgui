@@ -10,7 +10,7 @@ import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
 import EnhancedTerminal from '@/components/terminal/EnhancedTerminal'
 import { useAuth } from '@/hooks/useAuth'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 interface WorkspaceLayoutProps {
   workspaceId: string
   projectName?: string
@@ -164,7 +164,7 @@ export default function WorkspaceLayout({
               workspaceId={workspaceId}
               className="h-full"
               onReady={(iframe) => {
-                console.info('Code-server IDE ready (terminal disabled):', iframe)
+                logger.info('Code-server IDE ready (terminal disabled):', iframe)
                 
                 // Hide the built-in terminal since we use our enhanced terminal
                 try {
@@ -172,11 +172,11 @@ export default function WorkspaceLayout({
                     type: 'workbench.action.togglePanel'
                   }, '*')
                 } catch (error) {
-                  console.info('Could not hide terminal panel:', error)
+                  logger.info('Could not hide terminal panel:', error)
                 }
               }}
               onError={(error) => {
-                console.error('Code-server IDE error:', error)
+                logger.error('Code-server IDE error:', error)
               }}
             />
           </div>
@@ -196,7 +196,7 @@ export default function WorkspaceLayout({
               enableAI={true}
               enableWebGL={true}
               onReady={(terminal) => {
-                console.info('Enhanced AI terminal ready:', terminal)
+                logger.info('Enhanced AI terminal ready:', terminal)
               }}
             />
           </div>
