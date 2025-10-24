@@ -1,2 +1,16 @@
-/** Auto-resolved merge conflict in ./src/app/api/health/vector-metrics/route.ts */
-export const route = {};
+import { NextRequest, NextResponse } from 'next/server';
+
+export async function GET(request: NextRequest) {
+  try {
+    return NextResponse.json({ 
+      status: 'healthy',
+      message: 'Vector metrics endpoint is working',
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
+}
