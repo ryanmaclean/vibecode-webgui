@@ -4,7 +4,7 @@
  */
 
 import { VectorChunk, SearchResult, SearchOptions } from '../vector-db/vector-types';
-// import { logger } from '@/lib/logger';
+
 export interface WeaviateConfig {
   host: string;
   port?: number;
@@ -71,7 +71,7 @@ export class WeaviateClient {
       await this.client.misc.readyChecker().do();
 
       this.isConnected = true;
-      console.info('Weaviate client initialized successfully');
+      console.log('Weaviate client initialized successfully');
 
     } catch (error) {
       console.error('Failed to initialize Weaviate client:', error);
@@ -126,7 +126,7 @@ export class WeaviateClient {
 
       if (!existingClass) {
         await this.client.schema.classCreator().withClass(classDefinition).do();
-        console.info(`Created Weaviate class: ${classDefinition.class}`);
+        console.log(`Created Weaviate class: ${classDefinition.class}`);
       }
     } catch (error) {
       console.error(`Failed to create Weaviate class ${classDefinition.class}:`, error);
@@ -375,7 +375,7 @@ export class WeaviateClient {
         for (let i = 0; i < ids.length; i += batchSize) {
           const batch = ids.slice(i, i + batchSize);
           await Promise.all(
-            batch.map((id: string) => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
+            batch.map(id => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
           );
         }
       }
@@ -390,7 +390,7 @@ export class WeaviateClient {
    */
   async createIndex(field: string, options?: any): Promise<void> {
     // Weaviate handles indexing automatically through schema configuration
-    console.info(`Index for ${field} is handled by Weaviate schema configuration`);
+    console.log(`Index for ${field} is handled by Weaviate schema configuration`);
   }
 
   /**
@@ -398,7 +398,7 @@ export class WeaviateClient {
    */
   async deleteIndex(field: string): Promise<void> {
     // Weaviate index management is handled at the class level
-    console.info(`Index deletion for ${field} is handled by Weaviate class management`);
+    console.log(`Index deletion for ${field} is handled by Weaviate class management`);
   }
 
   /**
