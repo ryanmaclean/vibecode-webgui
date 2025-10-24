@@ -4,7 +4,6 @@
  */
 
 import { queryCache, cacheUtils } from './query-cache'
-// import { logger } from '@/lib/logger'
 
 export interface CachedVectorResult {
   documents: Array<{

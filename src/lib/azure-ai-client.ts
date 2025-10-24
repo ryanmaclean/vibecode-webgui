@@ -2,7 +2,7 @@
 // Provides OpenRouter-like functionality using Azure AI Services
 
 import OpenAI from 'openai';
-// import { logger } from '@/lib/logger';
+
 export interface AzureAIConfig {
   // Azure OpenAI configuration
   openai: {

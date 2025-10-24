@@ -13,7 +13,7 @@
  */
 
 import { EventEmitter } from 'events'
-// import { logger } from '@/lib/logger';
+
 /**
  * VM instance information returned from orchestration layer
  */
@@ -149,13 +149,13 @@ export interface VMPoolConfig {
  *   mode: 'http',
  *   endpoint: 'http://localhost:8765'
  * });
-*
+ *
  * // Warm the pool
  * await orchestration.warmPool();
  *
  * // Allocate a VM
  * const vm = await orchestration.allocateVM();
- * console.info(`VM ready at ${vm.agentApiUrl}`);
+ * console.log(`VM ready at ${vm.agentApiUrl}`);
  *
  * // Use VM...
  * const response = await fetch(`${vm.agentApiUrl}/api/health`);

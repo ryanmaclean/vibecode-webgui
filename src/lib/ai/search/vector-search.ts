@@ -1,10 +1,7 @@
 import { ChromaClient, type GetResult, type Metadata } from 'chromadb';
 import { OpenAIEmbeddings } from '@langchain/openai';
-// import { Document } from 'langchain/document';
-// import { logger } from '@/lib/logger';
+import { Document } from 'langchain/document';
 
-// Stub type for removed langchain dependency
-type Document = { pageContent: string; metadata: Record<string, unknown> };
 // Extended type for ChromaDB get result with distances
 interface ChromaGetResult extends GetResult<Metadata> {
   distances?: number[][];
