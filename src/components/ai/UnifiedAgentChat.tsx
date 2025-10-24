@@ -19,12 +19,12 @@
 
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import {
-Send,
+  Send,
   Bot,
   User,
   Copy,
   RefreshCw,
-  Trash,
+  Trash2,
   Check,
   AlertCircle,
   Code,
@@ -37,7 +37,6 @@ import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import { createSSEClient, type SSEClient, type SSEConnectionState } from '@/lib/streaming/sse-client'
 import type { AgentType, AgentResponse } from '@/types/agent-api'
-// import { logger } from '@/lib/logger';
 
 // ============================================================================
 // Type Definitions
@@ -298,7 +297,7 @@ function MessageItem({ message, onRetry, onDelete, onCopy }: MessageItemProps) {
                 className="h-7 px-2 text-red-500 hover:text-red-600"
                 aria-label="Delete message"
               >
-                <Trash className="h-3 w-3" aria-hidden="true" />
+                <Trash2 className="h-3 w-3" aria-hidden="true" />
               </Button>
             )}
           </div>
@@ -322,6 +321,7 @@ export function UnifiedAgentChat({
   className,
   maxMessages = 1000
 }: UnifiedAgentChatProps) {
+  const agentType = (agent as { agent_type?: AgentType }).agent_type ?? 'aider'
   const [messages, setMessages] = useState<Message[]>(initialMessages)
   const [input, setInput] = useState('')
   const [isConnected, setIsConnected] = useState(false)
@@ -367,7 +367,7 @@ export function UnifiedAgentChat({
                 {
                   id: `assistant-${Date.now()}`,
                   agentId: agent.agent_id,
-                  agentType: agent.agent_type || 'aider',
+                  agentType,
                   role: 'assistant',
                   content: chunk.content,
                   timestamp: new Date(),
@@ -469,7 +469,7 @@ export function UnifiedAgentChat({
     const userMessage: Message = {
       id: `user-${Date.now()}`,
       agentId: agent.agent_id,
-      agentType: agent.agent_type || 'aider',
+      agentType,
       role: 'user',
       content: input.trim(),
       timestamp: new Date(),
@@ -532,7 +532,7 @@ export function UnifiedAgentChat({
 
     return availableAgents.filter(a =>
       a.agent_id.toLowerCase().includes(mentionFilter) ||
-      (a.agent_type && a.agent_type.toLowerCase().includes(mentionFilter))
+      ((a as { agent_type?: AgentType }).agent_type ?? '').toLowerCase().includes(mentionFilter)
     )
   }, [showMentionSuggestions, availableAgents, mentionFilter])
 
@@ -542,7 +542,7 @@ export function UnifiedAgentChat({
         <div className="flex items-center justify-between">
           <CardTitle className="text-lg flex items-center gap-2">
             <Bot className="h-5 w-5" aria-hidden="true" />
-            {agent.agent_type || 'Agent'} Chat
+            {agentType || 'Agent'} Chat
           </CardTitle>
           <Badge
             variant={connectionState === 'connected' ? 'default' : 'secondary'}
