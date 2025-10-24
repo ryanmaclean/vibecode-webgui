@@ -6,13 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-import { z, ZodSchema, isZodError } from '@/lib/zod-compat'
-// import { logger } from '@/lib/logger'
-import { 
-  createValidationErrorResponse, 
-  ApiErrors, 
-  generateTraceId 
-} from '@/lib/utils/api-response'
+import { z, ZodError, ZodSchema } from 'zod'
+
 export interface ValidationOptions {
   /** Transform successful validation results */
   transform?: (data: unknown) => unknown
@@ -20,8 +15,6 @@ export interface ValidationOptions {
   customMessages?: Record<string, string>
   /** Enable detailed error reporting (disable in production) */
   verboseErrors?: boolean
-  /** Trace ID for request tracking */
-  traceId?: string
 }
 
 export type ValidationResult<T> =
@@ -41,7 +34,6 @@ export async function validateRequestBody<T extends ZodSchema>(
   schema: T,
   options: ValidationOptions = {}
 ): Promise<ValidationResult<z.infer<T>>> {
-  const traceId = options.traceId || generateTraceId()
   try {
     const body = await req.json()
     const validated = schema.parse(body)
@@ -55,45 +47,51 @@ export async function validateRequestBody<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (isZodError(error)) {
+    if (error instanceof ZodError) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
-      
-      const validationErrors = error.errors.map(err => ({
-        field: err.path.join('.'),
-        message: options.customMessages?.[err.path.join('.')] || err.message
-      }))
-
-      console.warn('Request body validation failed', {
-        traceId,
-        errors: validationErrors,
-        url: req.url
-      })
 
       return {
         success: false,
-        error: verboseErrors 
-          ? createValidationErrorResponse(validationErrors, traceId)
-          : ApiErrors.badRequest('Request body contains invalid or missing fields', traceId)
+        error: NextResponse.json(
+          {
+            error: 'Validation failed',
+            message: 'Request body contains invalid or missing fields',
+            ...(verboseErrors && {
+              details: error.errors.map(err => ({
+                field: err.path.join('.'),
+                message: options.customMessages?.[err.path.join('.')] || err.message,
+                code: err.code
+              }))
+            })
+          },
+          { status: 400 }
+        )
       }
     }
 
     if (error instanceof SyntaxError) {
-      console.warn('Invalid JSON in request body', { traceId, url: req.url })
       return {
         success: false,
-        error: ApiErrors.badRequest('Request body must be valid JSON', traceId)
+        error: NextResponse.json(
+          {
+            error: 'Invalid JSON',
+            message: 'Request body must be valid JSON'
+          },
+          { status: 400 }
+        )
       }
     }
 
     // Unexpected error
-    console.error('Unexpected validation error', { 
-      traceId, 
-      error: error instanceof Error ? error.message : 'Unknown error',
-      url: req.url
-    })
     return {
       success: false,
-      error: ApiErrors.internalServerError('An unexpected error occurred during validation', traceId)
+      error: NextResponse.json(
+        {
+          error: 'Validation error',
+          message: 'An unexpected error occurred during validation'
+        },
+        { status: 500 }
+      )
     }
   }
 }
@@ -111,8 +109,6 @@ export function validateQueryParams<T extends ZodSchema>(
   schema: T,
   options: ValidationOptions = {}
 ): ValidationResult<z.infer<T>> {
-  const traceId = options.traceId || generateTraceId()
-  
   try {
     const { searchParams } = new URL(req.url)
     const params: Record<string, string | string[]> = {}
@@ -142,7 +138,7 @@ export function validateQueryParams<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (isZodError(error)) {
+    if (error instanceof ZodError) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       return {
@@ -202,7 +198,7 @@ export function validatePathParams<T extends ZodSchema>(
       data: finalData as z.infer<T>
     }
   } catch (error) {
-    if (isZodError(error)) {
+    if (error instanceof ZodError) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       return {

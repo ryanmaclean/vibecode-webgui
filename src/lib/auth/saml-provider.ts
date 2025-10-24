@@ -6,7 +6,6 @@
 
 import { z } from 'zod'
 import { randomBytes } from 'crypto'
-// import { logger } from '@/lib/logger'
 
 export interface SAMLConfig {
   entityId: string

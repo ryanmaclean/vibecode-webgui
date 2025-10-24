@@ -4,7 +4,7 @@
 import { UnifiedAIClient, type UnifiedChatMessage } from './unified-ai-client'
 import { ollamaClient } from './ollama-client'
 import { vectorStore } from './vector-store'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 export interface AgentCapability {
   name: string
   description: string
@@ -73,7 +73,7 @@ export class Agent {
   }
 
   async executeTask(task: AgentTask, context: AgentContext): Promise<any> {
-    console.info(`Agent ${this.name} executing task: ${task.description}`)
+    logger.info(`Agent ${this.name} executing task: ${task.description}`)
     
     try {
       // Check if agent has required capabilities
@@ -106,26 +106,26 @@ Provide detailed reasoning and results.`
       const response = await this.aiClient.chat(messages, this.model)
       
       // Execute any required capabilities
-      let finalResult: any = response.content
-
+      let finalResult = response.content
+      
       for (const capabilityName of task.capabilities) {
         const capability = this.capabilities.get(capabilityName)
         if (capability) {
           try {
             const capResult = await capability.execute(
-              { task, aiResponse: response.content },
+              { task, aiResponse: response.content }, 
               context
             )
             finalResult = { aiReasoning: response.content, capabilityResults: capResult }
           } catch (error) {
-            console.warn(`Capability ${capabilityName} failed:`, error)
+            logger.warn(`Capability ${capabilityName} failed:`, error)
           }
         }
       }
 
       return finalResult
     } catch (error) {
-      console.error(`Agent ${this.name} task execution failed:`, error)
+      logger.error(`Agent ${this.name} task execution failed:`, error)
       throw error
     }
   }
@@ -159,7 +159,7 @@ export class AgentCoordinator {
         // Use vector search to get code context
         const codeContext = await vectorStore.getContext(
           'code structure dependencies patterns',
-          parseInt(context.workspaceId),
+          context.workspaceId,
           5000,
           0.6
         )
@@ -313,7 +313,7 @@ export class AgentWorkflow {
   }
 
   async execute(): Promise<Map<string, any>> {
-    console.info(`Executing workflow for goal: ${this.plan.goal}`)
+    logger.info(`Executing workflow for goal: ${this.plan.goal}`)
     
     // Sort tasks by dependencies and priority
     const sortedTasks = this.topologicalSort(this.plan.tasks)
@@ -331,7 +331,7 @@ export class AgentWorkflow {
           throw new Error(`No suitable agent found for task: ${task.description}`)
         }
 
-        console.info(`Executing task ${task.id} with agent ${agent.name}`)
+        logger.info(`Executing task ${task.id} with agent ${agent.name}`)
         
         const result = await agent.executeTask(task, this.context)
         
@@ -345,7 +345,7 @@ export class AgentWorkflow {
       } catch (error) {
         task.status = 'failed'
         task.error = error instanceof Error ? error.message : 'Unknown error'
-        console.error(`Task ${task.id} failed:`, error)
+        logger.error(`Task ${task.id} failed:`, error)
         
         // Decide whether to continue or abort based on task priority
         if (task.priority === 'high') {

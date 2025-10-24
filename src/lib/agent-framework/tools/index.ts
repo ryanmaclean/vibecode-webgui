@@ -1,6 +1,6 @@
 // Built-in tools for the agent framework
 
-import { ToolDefinition } from '../core';
+import { ToolDefinition } from '..';
 
 /**
  * Calculator tool - performs basic arithmetic calculations
