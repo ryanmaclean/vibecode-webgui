@@ -226,7 +226,7 @@ build_and_load_images() {
     
     # Try to build the main application image with local Dockerfile first
     echo "📦 Building VibeCode application image..."
-    if docker build -f Dockerfile.local -t vibecode-webgui:local-test . 2>/dev/null; then
+    if docker build -f docker/Dockerfile --target development -t vibecode-webgui:local-test . 2>/dev/null; then
         echo "✅ Built with local Dockerfile"
     elif docker build -t vibecode-webgui:local-test . 2>/dev/null; then
         echo "✅ Built with main Dockerfile"

@@ -124,7 +124,7 @@ echo ""
 echo "🐳 Testing Docker build..."
 
 echo "   📋 Testing with simplified local Dockerfile..."
-if docker build -f Dockerfile.local -t vibecode-webgui:quick-test . >/dev/null 2>&1; then
+if docker build -f docker/Dockerfile --target development -t vibecode-webgui:quick-test . >/dev/null 2>&1; then
     echo "✅ Docker build successful (local)"
     docker rmi vibecode-webgui:quick-test >/dev/null 2>&1 || true
 elif docker build -t vibecode-webgui:quick-test . >/dev/null 2>&1; then

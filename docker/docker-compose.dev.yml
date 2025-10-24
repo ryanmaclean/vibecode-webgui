@@ -1,89 +1,67 @@
-# Version declaration removed - Docker Compose v2+ automatically detects format
+# Development Environment
+version: '3.8'
 
 services:
-  vibecode-dev:
+  webgui:
     build:
-      context: .
-      dockerfile: Dockerfile.dev
-    image: vibecode-dev-local
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+      args:
+        NODE_VERSION: 20
+        BASE_OS: alpine
+        INCLUDE_DEV_DEPS: true
+        ENABLE_LIGHTNINGCSS: true
+        ENABLE_PRISMA: true
     ports:
       - "3000:3000"
+      - "9229:9229"  # Debug port
     volumes:
-      # Bind mount source code for hot reloading
-      - .:/app
-      # CRITICAL: Anonymous volume for node_modules to prevent host override
-      - node-modules-dev:/app/node_modules
-      # Prevent .next cache conflicts
-      - next-cache-dev:/app/.next
-      # Share generated free model lists with other services
-      - free-llm-models:/app/runtime/free-llm-models
+      - ../src:/app/src
+      - ../public:/app/public
+      - ../package.json:/app/package.json
+      - ../next.config.mjs:/app/next.config.mjs
+      - ../tailwind.config.js:/app/tailwind.config.js
+      - ../tsconfig.json:/app/tsconfig.json
+      - /app/node_modules
+      - /app/.next
     environment:
       - NODE_ENV=development
-      - DOCKER=true
-      - DD_IAST_ENABLED=true
-      - DD_DBM_PROPAGATION_MODE=full
-      - DD_SERVICE=vibecode-webgui
-      - DD_ENV=development
-      - DD_VERSION=0.1.0-dev
-      - FREE_LLM_MODELS_FILE=/app/runtime/free-llm-models/models.txt
-    stdin_open: true
-    tty: true
+      - NEXT_TELEMETRY_DISABLED=1
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/vibecode_dev
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
     networks:
-      - vibecode-network
+      - vibecode-dev
 
-  # Valkey for Redis compatibility
-  valkey:
-    image: valkey/valkey:7-alpine
-    container_name: vibecode-valkey-dev
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vibecode_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vibecode-dev
+
+  redis:
+    image: redis:7-alpine
     ports:
       - "6379:6379"
     volumes:
-      - valkey-data-dev:/data
-    command: valkey-server --save 900 1 --maxmemory 256mb --appendonly yes
+      - redis_data:/data
     networks:
-      - vibecode-network
-
-  free-llm-model-updater:
-    build:
-      context: .
-      dockerfile: Dockerfile.dev
-    image: vibecode-dev-local
-    working_dir: /app
-    command: >
-      bash -lc "mkdir -p runtime/free-llm-models && while true; do node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js && sleep 43200; done"
-    environment:
-      - OUTPUT_JSON_PATH=/app/runtime/free-llm-models/models.json
-      - OUTPUT_TEXT_PATH=/app/runtime/free-llm-models/models.txt
-      - FREE_LLM_MODELS_FILE=/app/runtime/free-llm-models/models.txt
-      - ENABLE_CONFIGMAP_SYNC=false
-      - MAX_FREE_MODELS=10
-      - MIN_WORKING_MODELS=3
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
-      - OPENROUTER_HTTP_REFERER=${OPENROUTER_HTTP_REFERER:-}
-      - OPENROUTER_APP_TITLE=${OPENROUTER_APP_TITLE:-}
-      - DD_API_KEY=${DD_API_KEY:-}
-      - DD_SITE=${DD_SITE:-datadoghq.com}
-      - DD_ENV=${DD_ENV:-development}
-      - DD_DBM_PROPAGATION_MODE=full
-      - DD_SERVICE=vibecode-webgui
-      - DD_VERSION=0.1.0-dev
-      - DATADOG_METRIC_TAGS=environment:local_dev
-    volumes:
-      - .:/app
-      - node-modules-dev:/app/node_modules
-      - next-cache-dev:/app/.next
-      - free-llm-models:/app/runtime/free-llm-models
-    depends_on:
       - vibecode-dev
-    networks:
-      - vibecode-network
-
-networks:
-  vibecode-network:
-    driver: bridge
 
 volumes:
-  valkey-data-dev:
-  node-modules-dev:
-  next-cache-dev:
-  free-llm-models:
+  postgres_data:
+  redis_data:
+
+networks:
+  vibecode-dev:
+    driver: bridge

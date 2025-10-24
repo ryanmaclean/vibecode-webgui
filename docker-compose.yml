@@ -13,6 +13,7 @@ services:
       - NEXTAUTH_SECRET=your-nextauth-secret-here
       - NEXTAUTH_URL=http://localhost:3000
       - NODE_ENV=production
+      - NEXT_TELEMETRY_DISABLED=1
     depends_on:
       - postgres
       - redis

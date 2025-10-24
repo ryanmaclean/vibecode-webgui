@@ -11,6 +11,9 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { aiChatUnifiedSchema } from '@/lib/api/validation/schemas'
 import { logger } from '@/lib/logger'
 import { ErrorResponses, createProblemDetailsFromError } from '@/lib/api-utils'
+import { withTracing, withAITracing } from '@/lib/monitoring/distributed-tracing'
+import { performanceBaselines } from '@/lib/monitoring/performance-baselines'
+import { enhancedAlerting } from '@/lib/monitoring/enhanced-alerting'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -44,6 +47,12 @@ function logAIInteraction(
 async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> {
   const startTime = Date.now();
   const requestId = crypto.randomUUID();
+
+  // Record initial request metrics
+  logger.counter('vibecode.api.ai.chat.requests', 1, {
+    endpoint: '/api/ai/chat',
+    method: 'POST'
+  });
 
   try {
     // Validate request body with unified schema
@@ -166,6 +175,29 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       userRole: request.user?.role,
     });
 
+    // Record performance metrics
+    performanceBaselines.recordMeasurement('api.ai.chat', processingTime, {
+      model,
+      stream: stream.toString(),
+      user_type: request.user?.role || 'unknown'
+    });
+
+    // Record alerting metrics  
+    enhancedAlerting.recordMetric('ai.chat_completion', 'response_time', processingTime);
+    enhancedAlerting.recordMetric('ai.chat_completion', 'success_rate', 1);
+
+    // Record business metrics
+    logger.counter('vibecode.ai.chat.completions', 1, {
+      model,
+      stream: stream.toString(),
+      user_role: request.user?.role || 'unknown'
+    });
+
+    logger.gauge('vibecode.ai.chat.response_length', response.length, {
+      model,
+      endpoint: '/api/ai/chat'
+    });
+
     // Handle streaming response if requested
     if (stream && !aiError) {
       try {
@@ -280,6 +312,32 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       processingTime
     });
 
+    // Record error metrics
+    logger.counter('vibecode.api.ai.chat.errors', 1, {
+      error_type: error instanceof Error ? error.name : 'UnknownError',
+      endpoint: '/api/ai/chat'
+    });
+
+    // Record failed performance metrics
+    performanceBaselines.recordMeasurement('api.ai.chat.errors', processingTime, {
+      error_type: error instanceof Error ? error.name : 'UnknownError',
+      user_type: request.user?.role || 'unknown'
+    });
+
+    // Record alerting metrics for failures
+    enhancedAlerting.recordMetric('ai.chat_completion', 'error_rate', 1);
+    enhancedAlerting.recordMetric('ai.chat_completion', 'success_rate', 0);
+
+    // Log security event if needed
+    if (error instanceof Error && error.message.includes('validation')) {
+      logger.security('ai_validation_failure', {
+        endpoint: '/api/ai/chat',
+        error: error.message,
+        userId: request.user?.id,
+        requestId
+      });
+    }
+
     return createProblemDetailsFromError(error, 500, {
       instance: '/api/ai/chat',
       traceId: requestId,
@@ -330,6 +388,29 @@ async function handleGET(request: AuthenticatedRequest): Promise<NextResponse> {
   });
 }
 
-// Export authenticated handlers
-export const POST = withAIAuth(handlePOST);
-export const GET = withAIAuth(handleGET);
+// Export authenticated handlers with comprehensive monitoring
+export const POST = withTracing(
+  withAIAuth(handlePOST),
+  {
+    operation: 'ai.chat.post',
+    service: 'vibecode-ai',
+    tags: {
+      'endpoint': '/api/ai/chat',
+      'method': 'POST',
+      'feature': 'ai_chat'
+    }
+  }
+);
+
+export const GET = withTracing(
+  withAIAuth(handleGET),
+  {
+    operation: 'ai.chat.get',
+    service: 'vibecode-ai',
+    tags: {
+      'endpoint': '/api/ai/chat',
+      'method': 'GET',
+      'feature': 'health_check'
+    }
+  }
+);

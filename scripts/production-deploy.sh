@@ -202,7 +202,8 @@ build_application() {
 
     docker buildx build \
       --platform linux/amd64,linux/arm64 \
-      -f Dockerfile.production \
+      -f docker/Dockerfile \
+      --target production \
       -t "$image_tag_timestamp" \
       -t "$image_tag_latest" \
       --push \

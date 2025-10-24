@@ -70,18 +70,8 @@ move_batch "Datadog Configs" "configs/datadog" \
 # Batch 3: Dockerfiles (12 files)
 echo "=== Batch 3: Dockerfiles ==="
 move_batch "Dockerfiles" "docker" \
-    Dockerfile.aks \
-    Dockerfile.dev \
-    Dockerfile.fast \
-    Dockerfile.ingest \
-    Dockerfile.lightningcss-only \
-    Dockerfile.local \
-    Dockerfile.multiarch \
-    Dockerfile.prod \
-    Dockerfile.production \
-    Dockerfile.simple \
-    Dockerfile.tailwind-test \
-    Dockerfile.test
+    # Old Dockerfiles (now consolidated)
+    # docker/Dockerfile.backup \
 
 # Batch 4: Docker Compose Files (10 files)
 echo "=== Batch 4: Docker Compose ==="

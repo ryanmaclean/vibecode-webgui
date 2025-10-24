@@ -103,7 +103,8 @@ if confirm "Remove temporary test files and configurations?"; then
     # Remove temporary files
     rm -f test-app.yaml 2>/dev/null || true
     rm -f kind-config.yaml 2>/dev/null || true
-    rm -f Dockerfile.simple 2>/dev/null || true
+    # Remove any temporary Dockerfiles (now using consolidated structure)
+    # rm -f Dockerfile.simple 2>/dev/null || true
     
     echo -e "${GREEN}✅ Temporary files removed${NC}"
 else

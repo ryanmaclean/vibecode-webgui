@@ -10,7 +10,7 @@ echo "=============================================="
 
 # Build the optimized application
 echo "📦 Building optimized application..."
-docker build -t vibecode-test:latest -f Dockerfile.simple .
+docker build -t vibecode-test:latest -f docker/Dockerfile --target production .
 
 # Start test environment with PostgreSQL
 echo "🔄 Starting test environment..."

@@ -13,6 +13,7 @@ services:
     environment:
       - NODE_ENV=production
       - DOCKER=true
+      - NEXT_TELEMETRY_DISABLED=1
     networks:
       - vibecode-prod-network
 
