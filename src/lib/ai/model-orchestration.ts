@@ -3,7 +3,7 @@
  * Manages multiple AI providers and automatically selects the best model for each task
  */
 
-import { z } from '@/lib/zod-compat'
+import { z } from 'zod'
 
 // Model capability definitions
 export interface ModelCapabilities {
@@ -47,8 +47,7 @@ export enum TaskType {
   GENERAL_CHAT = 'general_chat',
   FUNCTION_CALLING = 'function_calling',
   JSON_GENERATION = 'json_generation',
-  MULTIMODAL = 'multimodal',
-  REASONING = 'reasoning'
+  MULTIMODAL = 'multimodal'
 }
 
 // Request context for model selection
