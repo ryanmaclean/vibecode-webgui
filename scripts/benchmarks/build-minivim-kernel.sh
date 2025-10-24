@@ -6,7 +6,7 @@
 set -euo pipefail
 
 ARCH="${1:-x86_64}"
-KERNEL_VERSION="${2:-6.17.14}"
+KERNEL_VERSION="${2:-6.6.52}"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
 WORK_DIR="${REPO_ROOT}/artifacts/minivim/work"
@@ -15,17 +15,8 @@ CONFIG_DIR="${SCRIPT_DIR}/kernel-configs"
 
 # Build configuration
 SKIP_MRPROPER="${SKIP_MRPROPER:-0}"
-# On macOS use sysctl, on Linux use nproc
-if command -v sysctl &> /dev/null && sysctl -n hw.logicalcpu &> /dev/null; then
-    DEFAULT_JOBS=$(sysctl -n hw.logicalcpu)
-else
-    DEFAULT_JOBS=$(nproc 2>/dev/null || echo 4)
-fi
-MINIVIM_JOBS="${MINIVIM_JOBS:-${DEFAULT_JOBS}}"
+MINIVIM_JOBS="${MINIVIM_JOBS:-$(nproc 2>/dev/null || echo 4)}"
 CROSS_COMPILE="${CROSS_COMPILE:-}"
-# Support ccache and custom compiler flags
-BUILD_CC="${CC:-clang}"
-BUILD_KCFLAGS="${KCFLAGS:-}"
 
 # Kernel download URL
 KERNEL_MAJOR="${KERNEL_VERSION%%.*}"
@@ -35,8 +26,6 @@ echo "=== MiniVim Kernel Build ==="
 echo "Architecture: ${ARCH}"
 echo "Kernel Version: ${KERNEL_VERSION}"
 echo "Jobs: ${MINIVIM_JOBS}"
-echo "Compiler: ${BUILD_CC}"
-echo "KCFLAGS: ${BUILD_KCFLAGS:-none}"
 echo "Cross Compile: ${CROSS_COMPILE:-native}"
 echo "Skip mrproper: ${SKIP_MRPROPER}"
 echo ""
@@ -95,26 +84,16 @@ case "${ARCH}" in
         ;;
 esac
 
-BUILD_ARCH="${ARCH}"
-if [ "${ARCH}" = "armv7" ]; then
-    BUILD_ARCH="arm"
-fi
-
 # Merge config fragments
 echo "Merging config fragments..."
 ./scripts/kconfig/merge_config.sh -m .config "${BASE_CONFIG}" "${ARCH_CONFIG}"
 
-echo "Reconciling kernel defaults..."
-OLDDEFCONFIG_LOG="$(mktemp -t minivim-olddefconfig.XXXXXX)"
-if ! make ARCH="${BUILD_ARCH}" olddefconfig > "${OLDDEFCONFIG_LOG}" 2>&1; then
-    echo "ERROR: make olddefconfig failed. Details:"
-    cat "${OLDDEFCONFIG_LOG}"
-    exit 1
-fi
-rm -f "${OLDDEFCONFIG_LOG}"
-
 # Build the kernel
 echo "Building kernel..."
+BUILD_ARCH="${ARCH}"
+if [ "${ARCH}" = "armv7" ]; then
+    BUILD_ARCH="arm"
+fi
 
 # Determine output image name
 case "${ARCH}" in
@@ -134,21 +113,17 @@ esac
 
 # Build with clang if available, otherwise gcc
 if command -v clang &> /dev/null; then
-    echo "Building with ${BUILD_CC}..."
-    echo "KCFLAGS: ${BUILD_KCFLAGS:-none}"
+    echo "Building with clang..."
     make ARCH="${BUILD_ARCH}" \
          CROSS_COMPILE="${CROSS_COMPILE}" \
          LLVM=1 \
-         CC="${BUILD_CC}" \
-         KCFLAGS="${BUILD_KCFLAGS}" \
+         CC="clang" \
          -j"${MINIVIM_JOBS}" \
          "${IMAGE_NAME}"
 else
     echo "Building with gcc..."
     make ARCH="${BUILD_ARCH}" \
          CROSS_COMPILE="${CROSS_COMPILE}" \
-         CC="${BUILD_CC}" \
-         KCFLAGS="${BUILD_KCFLAGS}" \
          -j"${MINIVIM_JOBS}" \
          "${IMAGE_NAME}"
 fi
