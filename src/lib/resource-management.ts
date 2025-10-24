@@ -5,7 +5,7 @@
 
 import { prisma } from './prisma'
 import { monitoring } from './monitoring'
-// import { logger } from '@/lib/logger';
+
 interface UserQuotas {
   maxWorkspaces: number
   maxFilesPerWorkspace: number
@@ -152,7 +152,7 @@ export class ResourceManager {
     action: 'create_workspace' | 'upload_file' | 'api_call' | 'create_session',
     size?: number
   ): Promise<{ allowed: boolean; reason?: string; usage: ResourceUsage; quotas: UserQuotas }> {
-const [quotas, usage] = await Promise.all([
+    const [quotas, usage] = await Promise.all([
       this.getUserQuotas(userId),
       this.getResourceUsage(userId)
     ])

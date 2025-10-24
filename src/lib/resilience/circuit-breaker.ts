@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 /**
  * Circuit Breaker Pattern Implementation
  * Prevents cascade failures by monitoring service health and failing fast
@@ -68,7 +65,7 @@ export class CircuitBreaker {
     }
 
     this.startMonitoring()
-    console.info(`🔧 Circuit breaker initialized for service: ${serviceName}`)
+    console.log(`🔧 Circuit breaker initialized for service: ${serviceName}`)
   }
 
   /**
@@ -264,7 +261,7 @@ export class CircuitBreaker {
       this.metrics.successCount = 0
     }
     
-    console.info(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
+    console.log(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
   }
 
   /**
@@ -333,7 +330,7 @@ export class CircuitBreaker {
    * Reset circuit breaker
    */
   reset(): void {
-    console.info(`🔄 Resetting circuit breaker for ${this.serviceName}`)
+    console.log(`🔄 Resetting circuit breaker for ${this.serviceName}`)
     this.metrics = {
       state: CircuitState.CLOSED,
       failureCount: 0,
@@ -352,7 +349,7 @@ export class CircuitBreaker {
   destroy(): void {
     this.timers.forEach(timer => clearInterval(timer))
     this.timers.clear()
-    console.info(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
+    console.log(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
   }
 
   /**

@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 // Ollama Client - Local AI model integration for VibeCode
 // Provides seamless access to local LLM models for privacy and cost savings
 

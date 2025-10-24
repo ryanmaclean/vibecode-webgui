@@ -1,7 +1,3 @@
-// import { logger } from '@/lib/logger';
-import { loadSecret } from '@/lib/security/macos-keychain-server';
-
-
 /**
  * OpenRouter API Client
  * 
@@ -49,13 +45,8 @@ export class OpenRouter {
   private apiKey: string;
   private baseUrl: string = 'https://openrouter.ai/api/v1';
 
-  constructor(apiKey?: string) {
-    // Load API key from keychain with fallback to environment variable
-    this.apiKey = apiKey || loadSecret('OPENROUTER_API_KEY') || process.env.OPENROUTER_API_KEY || '';
-    
-    if (!this.apiKey) {
-      throw new Error('OpenRouter API key is required. Set OPENROUTER_API_KEY in keychain or environment variable.');
-    }
+  constructor(apiKey: string) {
+    this.apiKey = apiKey;
   }
 
   async createChatCompletion(request: OpenRouterRequest): Promise<OpenRouterResponse> {
@@ -100,6 +91,7 @@ export class OpenRouter {
 
 \`\`\`typescript
 import React from 'react';
+
 interface Props {
   title: string;
   onClick: () => void;
