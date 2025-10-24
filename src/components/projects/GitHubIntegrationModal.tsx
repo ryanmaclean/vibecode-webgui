@@ -16,7 +16,7 @@ XMarkIcon,
   EyeIcon,
   EyeSlashIcon
 } from '@heroicons/react/24/outline'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 interface GitHubIntegrationModalProps {
   isOpen: boolean
@@ -147,7 +147,7 @@ export function GitHubIntegrationModal({
     try {
       await navigator.clipboard.writeText(text)
     } catch (error) {
-      console.error('Failed to copy to clipboard:', error)
+      logger.error('Failed to copy to clipboard:', error)
     }
   }
 
