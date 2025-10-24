@@ -49,7 +49,9 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
             async (data: { type: string; provider?: string; url?: string; deploymentId?: string }) => {
                 switch (data.type) {
                     case 'deploy':
-                        await this.deployProject(data.provider);
+                        if (data.provider) {
+                            await this.deployProject(data.provider);
+                        }
                         break;
                     case 'refresh':
                         await this.refreshDeployments();
@@ -60,10 +62,14 @@ export class DeploymentWebviewProvider implements vscode.WebviewViewProvider {
                         }
                         break;
                     case 'setupProvider':
-                        await this.setupProvider(data.provider);
+                        if (data.provider) {
+                            await this.setupProvider(data.provider);
+                        }
                         break;
                     case 'viewLogs':
-                        await this.viewDeploymentLogs(data.deploymentId);
+                        if (data.deploymentId) {
+                            await this.viewDeploymentLogs(data.deploymentId);
+                        }
                         break;
                 }
             }

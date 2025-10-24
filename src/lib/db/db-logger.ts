@@ -8,6 +8,17 @@ interface Logger {
   info: (...args: any[]) => void;
   warn: (...args: any[]) => void;
   error: (...args: any[]) => void;
+  createTimer: (name: string) => any;
+}
+
+export enum LogCategory {
+  CONNECTION = 'connection',
+  INITIALIZATION = 'initialization',
+  QUERY = 'query',
+}
+
+export interface LoggerOptions {
+  defaultCategory?: LogCategory;
 }
 
 // Create a default logger
@@ -16,6 +27,17 @@ const defaultLogger: Logger = {
   info: (...args: any[]) => console.info('[DB]', ...args),
   warn: (...args: any[]) => console.warn('[DB]', ...args),
   error: (...args: any[]) => console.error('[DB]', ...args),
+  createTimer: (name: string) => {
+    const start = Date.now();
+    return {
+      elapsed: () => Date.now() - start,
+      end: (message: string, metadata?: Record<string, any>) => {
+        const elapsed = Date.now() - start;
+        console.log(`[DB] ${message} (${elapsed}ms)`, metadata);
+        return elapsed;
+      }
+    }
+  }
 };
 
 // Use default logger
@@ -414,7 +436,6 @@ export function enhancePrismaWithLogging(
   // Add event handlers if possible
   try {
     if (loggingOptions.logQueries && loggingOptions.level! >= LogLevel.DEBUG) {
-      // @ts-expect-error - Adding event handlers to an existing client might not be supported
       prisma.$on('query', (e: PrismaQueryEvent) => {
         const durationMs = e.duration;
         
@@ -450,6 +471,11 @@ export function enhancePrismaWithLogging(
   return prisma;
 }
 
+export function getDatabaseLogger(options?: LoggerOptions): Logger {
+  // In a real app, you might use options to create a more specific logger
+  return logger;
+}
+
 export default {
   configureDbLogging,
   createLoggingPrismaClient,
@@ -461,6 +487,7 @@ export default {
   getDbLoggingConfig,
   logSlowQuery,
   enhancePrismaWithLogging,
+  getDatabaseLogger,
   LogLevel,
   DbOperationType,
 };

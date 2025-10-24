@@ -79,13 +79,15 @@ export const CollaborativeChatInterface = ({
   }
 
   const renderCursors = () => {
-    return cursors.map((cursor: { userId: string; x: number; y: number }) => {
-      const user = activeUsers.find(u => u.id === cursor.userId)
-      if (!user || cursor.userId === userId) return null
+    if (!cursors) return null
+
+    return Array.from(cursors.entries()).map(([cursorUserId, cursor]) => {
+      const user = activeUsers.find(u => u.id === cursorUserId)
+      if (!user || cursorUserId === userId) return null
 
       return (
         <div
-          key={cursor.userId}
+          key={cursorUserId}
           className="absolute pointer-events-none z-50 transition-all duration-150"
           style={{
             left: `${cursor.x}%`,
@@ -94,12 +96,12 @@ export const CollaborativeChatInterface = ({
           }}
         >
           {/* Cursor dot */}
-          <div 
+          <div
             className="w-3 h-3 rounded-full border-2 border-white shadow-lg"
             style={{ backgroundColor: user.color }}
           />
           {/* User label */}
-          <div 
+          <div
             className="absolute top-4 left-0 px-2 py-1 text-xs text-white rounded shadow-lg whitespace-nowrap"
             style={{ backgroundColor: user.color }}
           >

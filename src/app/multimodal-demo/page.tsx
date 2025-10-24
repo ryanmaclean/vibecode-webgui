@@ -359,10 +359,12 @@ export default function MultimodalDemoPage() {
           <TabsContent value="live-demo">
             <Card className="h-[600px]">
               <CardContent className="p-0 h-full">
-                <MultimodalPromptInterface 
-                  agent={agent}
-                  onMessage={handleMessage}
-                  onSampleRun={handleSampleRun}
+                <MultimodalPromptInterface
+                  {...({
+                    agent,
+                    onMessage: handleMessage,
+                    onSampleRun: handleSampleRun
+                  } as any)}
                 />
               </CardContent>
             </Card>

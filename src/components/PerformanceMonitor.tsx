@@ -7,7 +7,7 @@
  */
 
 import { useEffect } from 'react';
-import { initRUM, reportWebVitals } from '@/lib/monitoring/rum';
+import { initRUM, reportWebVitals } from '@/lib/monitoring/rum-client';
 
 export function PerformanceMonitor() {
   useEffect(() => {

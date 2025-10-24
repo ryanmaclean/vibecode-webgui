@@ -62,11 +62,9 @@ export class VectorRetriever extends BaseRetriever {
     retriever: VectorRetriever,
     modelName = "gpt-4o-mini",
   ): Promise<RetrievalQAChain> {
-    const prompt = new PromptTemplate({
-      template:
-        "Answer the question based on the following context:\n{context}\n\nQuestion: {question}",
-      inputVariables: ["context", "question"],
-    });
+    const prompt = PromptTemplate.fromTemplate(
+      "Answer the question based on the following context:\n{context}\n\nQuestion: {question}"
+    );
 
     return RetrievalQAChain.fromLLM(
       new OpenAIEmbeddings({ modelName }),

@@ -20,16 +20,16 @@
 
 import React, { useState, useMemo } from 'react'
 import {
-Activity,
+  Activity,
   Cpu,
   MemoryStick,
   Zap,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
+  AlertCircle,
   CheckCircle,
   Clock,
-  DollarSign,
+
   BarChart,
   RefreshCw
 } from 'lucide-react'
@@ -165,11 +165,11 @@ function AgentStatusCard({ metrics }: AgentStatusCardProps) {
     },
     warning: {
       color: 'bg-yellow-500/10 text-yellow-500 border-yellow-500/20',
-      icon: AlertTriangle
+      icon: AlertCircle
     },
     error: {
       color: 'bg-red-500/10 text-red-500 border-red-500/20',
-      icon: AlertTriangle
+      icon: AlertCircle
     },
     offline: {
       color: 'bg-gray-500/10 text-gray-500 border-gray-500/20',
@@ -389,7 +389,7 @@ export function AgentMonitoringDashboard({
         <MetricCard
           title="Total Cost"
           value={`$${systemMetrics.totalCost.toFixed(2)}`}
-          icon={DollarSign}
+          icon={TrendingUp}
           iconColor="text-yellow-500"
           description={`${systemMetrics.totalTokenUsage.toLocaleString()} tokens`}
         />

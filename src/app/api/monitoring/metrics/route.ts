@@ -272,7 +272,7 @@ export async function POST(request: NextRequest) {
     if (performanceValidation.success) {
       const { duration, metrics } = performanceValidation.data;
       // Store performance metrics
-      await storePerformanceMetrics(duration, metrics);
+      await storePerformanceMetrics(duration ?? 0, metrics);
 
       return NextResponse.json({
         success: true,

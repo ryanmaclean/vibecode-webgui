@@ -211,7 +211,7 @@ export class CacheManager {
     const startTime = Date.now();
 
     try {
-      const value = await this.client.get(key);
+      const value = await (this.client as EnhancedRedis).get(key);
       const duration = Date.now() - startTime;
 
       metrics.histogram('cache.get.duration', duration);
@@ -245,7 +245,7 @@ export class CacheManager {
 
     try {
       const serialized = JSON.stringify(value);
-      await this.client.setex(key, ttl, serialized);
+      await (this.client as EnhancedRedis).setex(key, ttl, serialized);
 
       const duration = Date.now() - startTime;
       metrics.histogram('cache.set.duration', duration);
@@ -273,9 +273,9 @@ export class CacheManager {
 
     try {
       const keys = Array.isArray(key) ? key : [key];
-      await this.client.del(...keys);
+      await (this.client as EnhancedRedis).del(...keys);
 
-      metrics.increment('cache.delete', { count: keys.length });
+      metrics.increment('cache.delete', { count: keys.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.delete.error');
@@ -296,7 +296,7 @@ export class CacheManager {
     if (!this.client) return false;
 
     try {
-      const result = await this.client.exists(key);
+      const result = await (this.client as EnhancedRedis).exists(key);
       return result === 1;
     } catch (error) {
       console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} exists error`, {
@@ -316,7 +316,7 @@ export class CacheManager {
     if (!this.client || keys.length === 0) return [];
 
     try {
-      const values = await this.client.mget(...keys);
+      const values = await (this.client as EnhancedRedis).mget(...keys);
       return values.map((value: string | null) => value ? JSON.parse(value) : null);
     } catch (error) {
       console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} mget error`, {
@@ -336,7 +336,7 @@ export class CacheManager {
     if (!this.client || pairs.length === 0) return false;
 
     try {
-      const pipeline = this.client.pipeline();
+      const pipeline = (this.client as EnhancedRedis).pipeline();
 
       for (const { key, value, ttl = CacheTTL.MEDIUM } of pairs) {
         const serialized = JSON.stringify(value);
@@ -344,7 +344,7 @@ export class CacheManager {
       }
 
       await pipeline.exec();
-      metrics.increment('cache.mset.success', { count: pairs.length });
+      metrics.increment('cache.mset.success', { count: pairs.length.toString() });
       return true;
     } catch (error) {
       metrics.increment('cache.mset.error');
@@ -365,11 +365,11 @@ export class CacheManager {
     if (!this.client) return 0;
 
     try {
-      const value = await this.client.incr(key);
+      const value = await (this.client as EnhancedRedis).incr(key);
 
       if (ttl && value === 1) {
         // Set TTL only on first increment
-        await this.client.expire(key, ttl);
+        await (this.client as EnhancedRedis).expire(key, ttl);
       }
 
       return value;
@@ -392,7 +392,7 @@ export class CacheManager {
     if (!this.client) return [];
 
     try {
-      return await this.client.keys(pattern);
+      return await (this.client as EnhancedRedis).keys(pattern);
     } catch (error) {
       console.error(`${this.clientType.charAt(0).toUpperCase() + this.clientType.slice(1)} keys error`, {
         clientType: this.clientType,
@@ -423,8 +423,8 @@ export class CacheManager {
     }
 
     try {
-      const info = await this.client.info('memory');
-      const dbSize = await this.client.dbsize();
+      const info = await (this.client as EnhancedRedis).info('memory');
+      const dbSize = await (this.client as EnhancedRedis).dbsize();
 
       // Parse memory usage from info
       const memoryMatch = info.match(/used_memory_human:(.+)/);
@@ -461,7 +461,7 @@ export class CacheManager {
     if (!this.client) return false;
 
     try {
-      await this.client.flushdb();
+      await (this.client as EnhancedRedis).flushdb();
       metrics.increment('cache.clear');
       return true;
     } catch (error) {
@@ -481,7 +481,7 @@ export class CacheManager {
     if (!this.client) return false;
 
     try {
-      await this.client.ping();
+      await (this.client as EnhancedRedis).ping();
       return true;
     } catch (error) {
       return false;

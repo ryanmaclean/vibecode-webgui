@@ -27,14 +27,11 @@ export async function GET(_request: NextRequest) {
   // Validate query parameters
   const validation = validateQueryParams(request, healthCheckQuerySchema)
   if (!validation.success) {
-    logger.warn('Invalid health check query parameters', { 
-      ...logContext, 
-      validationErrors: validation.response 
+    logger.warn('Invalid health check query parameters', {
+      ...logContext,
+      validationError: true
     })
-    return ErrorResponses.badRequest(
-      'Invalid query parameters for health check',
-      requestId
-    )
+    return validation.error
   }
   const { filter: _filter, format: _format, verbose: _verbose } = validation.data
 
