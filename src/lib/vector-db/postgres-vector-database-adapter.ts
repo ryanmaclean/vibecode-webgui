@@ -79,11 +79,11 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info('PostgreSQL vector database adapter initialized successfully');
+        console.log('PostgreSQL vector database adapter initialized successfully');
       }
     } catch (error) {
       if (this.config.enableLogging) {
-        logger.error('Failed to initialize PostgreSQL vector database adapter:', { error });
+        console.error('Failed to initialize PostgreSQL vector database adapter:', { error });
       }
       
       // Create standardized error
@@ -139,7 +139,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info('pgVector extension verified successfully');
+        console.log('pgVector extension verified successfully');
       }
     } catch (error) {
       // Only wrap in our error handler if it's not already a VectorDbError
@@ -297,7 +297,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         } catch (cacheError) {
           // Log cache retrieval error but continue with direct query
           if (this.config.enableLogging) {
-            logger.warn('Cache retrieval failed, falling back to direct query:', {
+            console.warn('Cache retrieval failed, falling back to direct query:', {
               error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheRetrieval',
@@ -458,7 +458,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             useCache: true
           }, results).catch(err => {
             if (this.config.enableLogging) {
-              logger.warn('Background cache storage failed:', {
+              console.warn('Background cache storage failed:', {
                 error: this.errorHandler.handleError(
                   err,
                   'search.cacheStorage',
@@ -470,7 +470,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
           });
         } catch (cacheError) {
           if (this.config.enableLogging) {
-            logger.warn('Failed to cache results:', {
+            console.warn('Failed to cache results:', {
               error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheStorage',
@@ -513,7 +513,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }
       
       // Fallback to simple text search if vector search fails
-      logger.warn('Vector search failed, falling back to text search', { error });
+      console.warn('Vector search failed, falling back to text search', { error });
       return this.fallbackTextSearch(
         '', // We don't have the original query text here
         options
@@ -691,7 +691,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       }));
     } catch (error) {
       // Handle fallback search errors but don't throw - return empty results
-      logger.error('Error in fallback text search:', {
+      console.error('Error in fallback text search:', {
         error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
@@ -800,7 +800,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         metrics.increment('postgres_vector_db.get_stats.error');
       }
       
-      logger.error('Error getting vector store stats:', {
+      console.error('Error getting vector store stats:', {
         error: this.errorHandler.handleError(
           error,
           'getStats',
@@ -846,7 +846,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         metrics.increment('postgres_vector_db.invalidate_cache.error');
       }
       
-      logger.error('Error invalidating cache:', {
+      console.error('Error invalidating cache:', {
         error: this.errorHandler.handleError(
           error,
           'invalidateCache',
@@ -887,7 +887,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         await this.prisma.$disconnect();
         this.prisma = null;
       } catch (error) {
-        logger.warn('Error disconnecting from PostgreSQL:', {
+        console.warn('Error disconnecting from PostgreSQL:', {
           error: this.errorHandler.handleError(
             error,
             'closeProvider',
