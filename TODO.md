@@ -68,6 +68,21 @@ description: Active project tasks and priorities
 - **Evidence**: 215 tests in `/tests`, only 11 in `/src` (co-located pattern)
 - Proper organization achieved
 
+#### ✅ Modern CLI Tools (#463) - COMPLETE & CLOSED
+- **Status**: Issue closed - Already installed
+- **Evidence**: Tools in 8 Dockerfile variants (helix, micro, lazygit, bat, etc.)
+- Profile-based distribution (minimal, standard, web, ai, full)
+
+#### ✅ Deprecate GPL Images (#454) - COMPLETE & CLOSED
+- **Status**: Issue closed - Documentation complete
+- **Evidence**: DEPRECATION_NOTICE_v1.1.0.md created (12,272 bytes)
+- README.md and CHANGELOG.md updated, migration guide complete
+
+#### ✅ Dockerfile Layer Optimization (#459) - COMPLETE & CLOSED
+- **Status**: Issue closed - 75% reduction achieved
+- **Evidence**: Dockerfile.optimized created (14 layers vs 57 original)
+- Faster builds, better caching, proper consolidation
+
 ## 🚀 CURRENT STATUS - Oct 23, 2025 (Session Handoff)
 
 ### 📊 TypeScript Error Analysis Complete
