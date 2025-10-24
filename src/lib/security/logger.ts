@@ -17,7 +17,7 @@ export interface Logger {
   debug(message: string, metadata?: Record<string, unknown>): void
 }
 
-export function createLogger(options: LoggerOptions): Logger {
+export function console(options: LoggerOptions): Logger {
   const prefix = `[${options.module}:${options.scope}]`
 
   return {
@@ -37,17 +37,17 @@ export function createLogger(options: LoggerOptions): Logger {
     },
     info(message: string, metadata?: Record<string, unknown>) {
       if (metadata) {
-        console.log(prefix, 'INFO', message, metadata)
+        console.info(prefix, 'INFO', message, metadata)
       } else {
-        console.log(prefix, 'INFO', message)
+        console.info(prefix, 'INFO', message)
       }
     },
     debug(message: string, metadata?: Record<string, unknown>) {
       if (process.env.NODE_ENV === 'development' || process.env.ENABLE_DEBUG_LOGGING === 'true') {
         if (metadata) {
-          console.log(prefix, 'DEBUG', message, metadata)
+          console.debug(prefix, 'DEBUG', message, metadata)
         } else {
-          console.log(prefix, 'DEBUG', message)
+          console.debug(prefix, 'DEBUG', message)
         }
       }
     },

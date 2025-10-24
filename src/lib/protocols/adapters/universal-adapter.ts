@@ -232,7 +232,7 @@ export class UniversalAdapter extends BaseAgentAdapter {
       undefined,
       {
         onOutput: (data) => {
-          console.log(`[Universal] ${data.line}`);
+          console.info(`[Universal] ${data.line}`);
         },
         onStatus: (data) => {
           if (this.session) {

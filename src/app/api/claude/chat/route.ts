@@ -10,9 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
-// import { logger } from '../../../../lib/logger'
-import { claudeChatSchema } from '@/lib/api/validation/schemas'
-import { z } from '@/lib/zod-compat'
+// import { logger } from '../../../../lib/logger';
 
 // import type { ClaudeCliRequest } from '@/lib/claude-cli-integration'
 

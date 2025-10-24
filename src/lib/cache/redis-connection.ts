@@ -87,7 +87,7 @@ export class RedisConnectionManager {
               // Exponential backoff with a maximum delay of 10 seconds
               const delay = Math.min(times * 1000, 10000);
               this.connectionAttempts = times;
-              console.log(`Redis connection attempt ${times}, retrying in ${delay}ms`);
+              console.info(`Redis connection attempt ${times}, retrying in ${delay}ms`);
               
               // Stop retrying after MAX_CONNECTION_ATTEMPTS
               if (times >= MAX_CONNECTION_ATTEMPTS) {
@@ -128,7 +128,7 @@ export class RedisConnectionManager {
     if (!this.redis) return;
 
     this.redis.on('connect', () => {
-      console.log('Redis connection established successfully');
+      console.info('Redis connection established successfully');
       this.connectionAttempts = 0; // Reset counter on successful connection
       this.reconnecting = false;
       metrics.increment('redis.connection.success');
@@ -140,12 +140,12 @@ export class RedisConnectionManager {
     });
 
     this.redis.on('ready', () => {
-      console.log('Redis client ready');
+      console.info('Redis client ready');
       metrics.increment('redis.ready');
     });
     
     this.redis.on('reconnecting', () => {
-      console.log('Redis client reconnecting...');
+      console.info('Redis client reconnecting...');
       this.reconnecting = true;
       metrics.increment('redis.reconnect.attempt');
     });
@@ -183,7 +183,7 @@ export class RedisConnectionManager {
    */
   async reconnect(): Promise<boolean> {
     if (this.reconnecting) {
-      console.log('Already attempting to reconnect to Redis...');
+      console.info('Already attempting to reconnect to Redis...');
       return false;
     }
     
@@ -196,7 +196,7 @@ export class RedisConnectionManager {
         }
       } catch (error) {
         // Existing connection failed, try to reinitialize
-        console.log('Existing Redis connection failed, attempting to reconnect...');
+        console.info('Existing Redis connection failed, attempting to reconnect...');
         
         // Close the existing connection
         try {
@@ -217,7 +217,7 @@ export class RedisConnectionManager {
       if (this.redis) {
         const result = await this.redis.ping();
         if (result === 'PONG') {
-          console.log('Redis reconnection successful');
+          console.info('Redis reconnection successful');
           this.reconnecting = false;
           return true;
         }
@@ -237,7 +237,7 @@ export class RedisConnectionManager {
     if (this.redis) {
       try {
         await this.redis.quit();
-        console.log('Redis connection closed successfully');
+        console.info('Redis connection closed successfully');
       } catch (error) {
         console.error('Error closing Redis connection:', error);
       } finally {

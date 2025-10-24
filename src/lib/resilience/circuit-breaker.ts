@@ -68,7 +68,7 @@ export class CircuitBreaker {
     }
 
     this.startMonitoring()
-    console.log(`🔧 Circuit breaker initialized for service: ${serviceName}`)
+    console.info(`🔧 Circuit breaker initialized for service: ${serviceName}`)
   }
 
   /**
@@ -264,7 +264,7 @@ export class CircuitBreaker {
       this.metrics.successCount = 0
     }
     
-    console.log(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
+    console.info(`🔄 Circuit breaker ${this.serviceName}: ${oldState} -> ${newState}`)
   }
 
   /**
@@ -333,7 +333,7 @@ export class CircuitBreaker {
    * Reset circuit breaker
    */
   reset(): void {
-    console.log(`🔄 Resetting circuit breaker for ${this.serviceName}`)
+    console.info(`🔄 Resetting circuit breaker for ${this.serviceName}`)
     this.metrics = {
       state: CircuitState.CLOSED,
       failureCount: 0,
@@ -352,7 +352,7 @@ export class CircuitBreaker {
   destroy(): void {
     this.timers.forEach(timer => clearInterval(timer))
     this.timers.clear()
-    console.log(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
+    console.info(`🗑️ Circuit breaker destroyed for ${this.serviceName}`)
   }
 
   /**

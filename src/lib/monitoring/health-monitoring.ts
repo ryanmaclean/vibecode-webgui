@@ -17,7 +17,7 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.log('🔍 Datadog APM tracer initialized')
+  console.info('🔍 Datadog APM tracer initialized')
 } else {
   console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
@@ -66,7 +66,7 @@ const logger = createLogger({
   ]
 })
 
-console.log('Winston logger initialized')
+console.info('Winston logger initialized')
 
 /**
  * Custom metrics collector (compatible with Datadog)
@@ -75,20 +75,20 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric increment: ${name}`, tags)
+    console.info(`📊 Metric increment: ${name}`, tags)
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
+    console.info(`📊 Metric gauge: ${name} = ${value}`, tags)
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
+    console.info(`📊 Metric histogram: ${name} = ${value}`, tags)
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []
@@ -117,7 +117,7 @@ class ApplicationLogger {
     responseTime: number
     memoryUsage: number
   }): void {
-    console.log(`Performance: ${context.method} ${context.endpoint}`, {
+    console.info(`Performance: ${context.method} ${context.endpoint}`, {
       category: 'performance',
       ...context
     })
@@ -165,7 +165,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    console.log(`Business: ${event}`, {
+    console.info(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -184,7 +184,7 @@ class ApplicationLogger {
   }
 }
 
-const appLogger = new ApplicationLogger()
+const console = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -195,7 +195,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      console.log({
+      console.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -240,7 +240,7 @@ export {
   logger,
   tracer,
   metrics,
-  appLogger,
+  console,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,

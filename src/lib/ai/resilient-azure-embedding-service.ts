@@ -45,7 +45,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
       maxRetries: 2                 // Retry twice with backoff
     })
 
-    console.log(`🛡️ Resilient Azure Embedding Service initialized with circuit breaker`)
+    console.info(`🛡️ Resilient Azure Embedding Service initialized with circuit breaker`)
   }
 
   /**
@@ -119,7 +119,7 @@ const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fal
     const azureCount = results.filter(r => r.source === 'azure').length
     const fallbackCount = results.filter(r => r.source === 'fallback').length
     
-    console.log(`📊 Batch embedding results: ${azureCount} from Azure, ${fallbackCount} from fallback`)
+    console.info(`📊 Batch embedding results: ${azureCount} from Azure, ${fallbackCount} from fallback`)
     
     return results
   }
@@ -180,7 +180,7 @@ const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fal
   resetCircuitBreaker(): void {
     const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
     circuitBreaker.reset()
-    console.log(`🔄 Circuit breaker reset for ${this.serviceName}`)
+    console.info(`🔄 Circuit breaker reset for ${this.serviceName}`)
   }
 
   /**
@@ -188,7 +188,7 @@ const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fal
    * In production, this could be replaced with a local embedding model
    */
   private async generateFallbackEmbedding(text: string): Promise<number[]> {
-    console.log(`🔄 Generating fallback embedding for: "${text.substring(0, 30)}..."`)
+    console.info(`🔄 Generating fallback embedding for: "${text.substring(0, 30)}..."`)
     
     // Simple deterministic embedding based on text hash
     // In production, use a local model like sentence-transformers
@@ -240,9 +240,9 @@ const results: Array<{ text: string; embedding: number[]; source: 'azure' | 'fal
    */
   setCircuitBreakerEnabled(enabled: boolean): void {
     if (enabled) {
-      console.log(`✅ Circuit breaker enabled for ${this.serviceName}`)
+      console.info(`✅ Circuit breaker enabled for ${this.serviceName}`)
     } else {
-      console.log(`⚠️ Circuit breaker disabled for ${this.serviceName}`)
+      console.info(`⚠️ Circuit breaker disabled for ${this.serviceName}`)
       // Force circuit closed when disabled
       const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
       circuitBreaker.forceState('CLOSED' as any)

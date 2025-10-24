@@ -111,11 +111,11 @@ export const Default: Story = {
   args: {
     agent: mockAgent,
     onMessageSend: (message: string) => {
-      console.log('Sending message:', message)
+      console.info('Sending message:', message)
       alert(`Message sent: ${message}`)
     },
-    onConnectionStateChange: (state: string) => {
-      console.log('Connection state:', state)
+    onConnectionStateChange: (state) => {
+      console.info('Connection state:', state)
     }
   }
 }

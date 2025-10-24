@@ -71,7 +71,7 @@ export class WeaviateClient {
       await this.client.misc.readyChecker().do();
 
       this.isConnected = true;
-      console.log('Weaviate client initialized successfully');
+      console.info('Weaviate client initialized successfully');
 
     } catch (error) {
       console.error('Failed to initialize Weaviate client:', error);
@@ -126,7 +126,7 @@ export class WeaviateClient {
 
       if (!existingClass) {
         await this.client.schema.classCreator().withClass(classDefinition).do();
-        console.log(`Created Weaviate class: ${classDefinition.class}`);
+        console.info(`Created Weaviate class: ${classDefinition.class}`);
       }
     } catch (error) {
       console.error(`Failed to create Weaviate class ${classDefinition.class}:`, error);
@@ -390,7 +390,7 @@ export class WeaviateClient {
    */
   async createIndex(field: string, options?: any): Promise<void> {
     // Weaviate handles indexing automatically through schema configuration
-    console.log(`Index for ${field} is handled by Weaviate schema configuration`);
+    console.info(`Index for ${field} is handled by Weaviate schema configuration`);
   }
 
   /**
@@ -398,7 +398,7 @@ export class WeaviateClient {
    */
   async deleteIndex(field: string): Promise<void> {
     // Weaviate index management is handled at the class level
-    console.log(`Index deletion for ${field} is handled by Weaviate class management`);
+    console.info(`Index deletion for ${field} is handled by Weaviate class management`);
   }
 
   /**

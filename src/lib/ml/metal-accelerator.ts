@@ -103,7 +103,7 @@ export class MetalAccelerator {
 
       await invoke('ml_init');
       this.isInitialized = true;
-      console.log('[MetalAccelerator] Initialized successfully');
+      console.info('[MetalAccelerator] Initialized successfully');
       return true;
     } catch (error) {
       console.error('[MetalAccelerator] Initialization failed:', error);
@@ -138,7 +138,7 @@ export class MetalAccelerator {
    * Example:
    * ```typescript
    * for await (const token of accelerator.generateText("Hello")) {
-   *   console.log(token);
+   *   console.info(token);
    * }
    * ```
    */

@@ -54,7 +54,7 @@ class DatadogErrorTracker {
     try {
       // Error tracking is automatically enabled with RUM
       // We just need to ensure proper configuration
-      console.log('🐕 Datadog Error Tracking initialized for service:', this.config.service);
+      console.info('🐕 Datadog Error Tracking initialized for service:', this.config.service);
       this.initialized = true;
     } catch (error) {
       console.error('Failed to initialize Datadog Error Tracking:', error);
@@ -98,7 +98,7 @@ class DatadogErrorTracker {
         ...tags
       });
 
-      console.log(`🐕 Error tracked: ${error.name} - ${error.message}`);
+      console.info(`🐕 Error tracked: ${error.name} - ${error.message}`);
     } catch (trackingError) {
       console.error('Failed to track error:', trackingError);
     }

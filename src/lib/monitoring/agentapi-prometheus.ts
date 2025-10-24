@@ -54,7 +54,7 @@ class AgentAPIPrometheusExporter {
           preventServerStart: config.preventServerStart
         },
         () => {
-          console.log(
+          console.info(
             `📊 Prometheus metrics available at http://${config.hostname || 'localhost'}:${config.port}${config.endpoint}`
           );
         }
@@ -66,7 +66,7 @@ class AgentAPIPrometheusExporter {
         readers: [this.exporter]
       });
 
-      console.log('✅ AgentAPI Prometheus exporter initialized');
+      console.info('✅ AgentAPI Prometheus exporter initialized');
     } catch (error) {
       console.error('❌ Failed to initialize Prometheus exporter:', error);
       throw error;
@@ -151,7 +151,7 @@ class AgentAPIPrometheusExporter {
   async shutdown(): Promise<void> {
     if (this.meterProvider) {
       await this.meterProvider.shutdown();
-      console.log('✅ Prometheus exporter shutdown complete');
+      console.info('✅ Prometheus exporter shutdown complete');
     }
   }
 

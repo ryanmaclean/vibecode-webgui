@@ -228,10 +228,10 @@ export class ValKeyLogger {
     // Log based on level
     switch (level) {
       case ValKeyLogLevel.DEBUG:
-        console.log(message, logContext);
+        console.debug(message, logContext);
         break;
       case ValKeyLogLevel.INFO:
-        console.log(message, logContext);
+        console.info(message, logContext);
         break;
       case ValKeyLogLevel.WARN:
         console.warn(message, logContext);

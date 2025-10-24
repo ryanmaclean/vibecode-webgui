@@ -40,17 +40,17 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
         defaultCategory: LogCategory.CONNECTION
       })
     : null;
-
-  // Use Winston logger instead of console.log for production safety
-  const log = dbLogger
-    ? (message: string, metadata?: Record<string, any>) => dbLogger.debug(message, metadata)
-    : debug
-      ? (message: string) => console.log(message)
+  
+  // Fallback to console.log if debug is true but logging is disabled
+  const log = logger 
+    ? (message: string, metadata?: Record<string, any>) => console.debug(message, metadata)
+    : debug 
+      ? console.log 
       : () => {};
 
   if (!connectionUrl) {
     const error = new Error('Database connection URL is required. Set DATABASE_URL or provide connectionUrl.');
-    if (dbLogger) dbLogger.error(error.message);
+    if (logger) console.error(error.message);
     throw error;
   }
   
@@ -72,12 +72,12 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     // Check if the connection has been idle too long
     if (idleTimeout > 0 && idleTime > idleTimeout) {
       // Connection is too old, remove it and create a new one
-      if (dbLogger) dbLogger.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
-      await removeConnection(poolKey, dbLogger);
+      if (logger) console.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
+      await removeConnection(poolKey, logger);
     } else {
       // Use existing connection
       const message = `Using existing database connection from pool: ${poolKey}`;
-      if (dbLogger) dbLogger.info(message, { poolKey, idleTime });
+      if (logger) console.info(message, { poolKey, idleTime });
       else log(message);
       
       connectionPool.inUse++;
@@ -103,7 +103,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     if (enableDynamicSizing) {
       const removedKey = findLeastRecentlyUsedConnection();
       if (removedKey) {
-        if (logger) console.log(`Pool at capacity. Removing least recently used connection: ${removedKey}`);
+        if (logger) console.info(`Pool at capacity. Removing least recently used connection: ${removedKey}`);
         await removeConnection(removedKey, logger);
         connectionPool.usage.dynamicPoolAdjustments++;
       } else {
@@ -151,13 +151,13 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
   // Retry function for database operations
   async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
     let lastError: Error = new Error('Unknown error');
-    const timer = logger ? logger.createTimer('database_operation_retry') : null;
+    const timer = logger ? console.createTimer('database_operation_retry') : null;
     if (timer) timer.start();
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const message = `Database operation attempt ${attempt}/${maxRetries}`;
-        if (logger) console.log(message, { attempt, maxRetries });
+        if (logger) console.debug(message, { attempt, maxRetries });
         else log(message);
         
         // Add timeout for the operation
@@ -186,7 +186,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
         
         if (attempt < maxRetries) {
           const waitMessage = `Waiting ${retryDelay}ms before retry...`;
-          if (logger) console.log(waitMessage);
+          if (logger) console.debug(waitMessage);
           else log(waitMessage);
           
           await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -204,10 +204,10 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
   try {
     // Test connection with retry and timeout
     const message = 'Testing database connection...';
-    if (logger) console.log(message);
+    if (logger) console.info(message);
     else log(message);
     
-    const timer = logger ? logger.createTimer('connection_test') : null;
+    const timer = logger ? console.createTimer('connection_test') : null;
     if (timer) timer.start();
     
     // Set up an overall acquire timeout
@@ -225,7 +225,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     
     if (timer) {
       const elapsed = timer.elapsed();
-      if (logger) console.log(`Database connection successful in ${elapsed}ms`);
+      if (logger) console.info(`Database connection successful in ${elapsed}ms`);
     } else {
       log('Database connection successful!');
     }
@@ -246,7 +246,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     }
     
     const poolMessage = `Added connection to pool: ${poolKey}`;
-    if (logger) console.log(poolMessage, { 
+    if (logger) console.debug(poolMessage, { 
       poolSize: connectionPool.clients.size,
       poolKey,
       maxSize: poolMaxSize,
@@ -310,7 +310,7 @@ export function releaseConnection(poolKey: string, logger?: ReturnType<typeof ge
     connectionPool.lastUsed.set(poolKey, Date.now());
     
     if (logger) {
-      console.log(`Released connection back to pool: ${poolKey}`, {
+      console.debug(`Released connection back to pool: ${poolKey}`, {
         poolSize: connectionPool.clients.size,
         inUse: connectionPool.inUse,
         poolKey
@@ -362,7 +362,7 @@ async function validatePoolConnections(logger?: ReturnType<typeof getDatabaseLog
     if (validationAge > 60000) {
       connectionPool.usage.connectionValidations++;
       
-      if (logger) console.log(`Validating connection: ${key}`, { validationAge });
+      if (logger) console.debug(`Validating connection: ${key}`, { validationAge });
       
       const promise = validateConnection(key, client, logger).catch(async error => {
         connectionPool.usage.connectionValidationFailures++;
@@ -403,7 +403,7 @@ async function validateConnection(
     // Update last validation time
     connectionPool.lastValidated.set(key, Date.now());
     
-    if (logger) console.log(`Connection ${key} validated successfully`);
+    if (logger) console.debug(`Connection ${key} validated successfully`);
   } catch (error) {
     if (logger) console.error(`Connection ${key} validation failed: ${(error as Error).message}`);
     throw error;
@@ -429,7 +429,7 @@ async function removeConnection(
     connectionPool.lastValidated.delete(key);
     connectionPool.creationTimes.delete(key);
     
-    if (logger) console.log(`Removed connection from pool: ${key}`);
+    if (logger) console.debug(`Removed connection from pool: ${key}`);
     return true;
   } catch (error) {
     if (logger) console.error(`Failed to remove connection ${key}: ${(error as Error).message}`);
@@ -447,19 +447,19 @@ export async function executeWithRetry<T>(
   enableLogging = false
 ): Promise<T> {
   const logger = enableLogging ? getDatabaseLogger() : null;
-  const timer = logger ? logger.createTimer('db_operation') : null;
+  const timer = logger ? console.createTimer('db_operation') : null;
   if (timer) timer.start();
   
   let lastError: Error = new Error('Unknown error');
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      if (logger) console.log(`Database operation attempt ${attempt}/${maxRetries}`);
+      if (logger) console.debug(`Database operation attempt ${attempt}/${maxRetries}`);
       const result = await operation();
       
       if (timer) {
         const elapsed = timer.elapsed();
-        if (logger) console.log(`Database operation completed successfully in ${elapsed}ms`);
+        if (logger) console.debug(`Database operation completed successfully in ${elapsed}ms`);
       }
       
       return result;
@@ -506,12 +506,11 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
   const initLogger = enableLogging ? getDatabaseLogger({
     defaultCategory: LogCategory.INITIALIZATION
   }) : null;
-
-  // Use Winston logger instead of console.log for production safety
-  const log = initLogger
-    ? (message: string, metadata?: Record<string, any>) => initLogger.info(message, metadata)
-    : debug
-      ? (message: string) => console.log(message)
+  
+  const log = logger 
+    ? (message: string, metadata?: Record<string, any>) => console.info(message, metadata)
+    : debug 
+      ? console.log 
       : () => {};
   
   // Create robust connection
@@ -630,7 +629,7 @@ export async function closeAllConnections(enableLogging = false): Promise<{ clos
   const logger = enableLogging ? getDatabaseLogger() : null;
   const promises: Promise<void>[] = [];
   
-  if (logger) console.log(`Closing all database connections (${connectionPool.clients.size})...`);
+  if (logger) console.info(`Closing all database connections (${connectionPool.clients.size})...`);
   
   for (const [key, client] of connectionPool.clients.entries()) {
     promises.push(client.$disconnect().then(() => {
@@ -638,14 +637,14 @@ export async function closeAllConnections(enableLogging = false): Promise<{ clos
       connectionPool.lastUsed.delete(key);
       connectionPool.lastValidated.delete(key);
       connectionPool.creationTimes.delete(key);
-      if (logger) console.log(`Closed connection: ${key}`);
+      if (logger) console.debug(`Closed connection: ${key}`);
     }));
   }
   
   await Promise.all(promises);
   connectionPool.inUse = 0;
   
-  if (logger) console.log(`Closed ${promises.length} database connections successfully`);
+  if (logger) console.info(`Closed ${promises.length} database connections successfully`);
   
   return { closed: promises.length };
 }
@@ -658,10 +657,10 @@ export async function createRobustConnectionWithLogging(
   loggerOptions?: LoggerOptions
 ) {
   const logger = getDatabaseLogger(loggerOptions);
-  const timer = logger.createTimer('connection');
+  const timer = console.createTimer('connection');
   timer.start();
   
-  console.log('Creating robust database connection', {
+  console.info('Creating robust database connection', {
     connectionUrl: options?.connectionUrl ? 'Provided' : 'Using DATABASE_URL',
     maxRetries: options?.maxRetries,
   });
@@ -681,7 +680,7 @@ export async function createRobustConnectionWithLogging(
     );
     
     if (connection.success) {
-      console.log(`Database connection established in ${elapsed}ms`, {
+      console.info(`Database connection established in ${elapsed}ms`, {
         fromPool: connection.fromPool
       });
     } else {

@@ -138,7 +138,7 @@ export class DatabaseLogger implements DbLogger {
       
       // Log additional details at debug level
       if (this.shouldLog(LogLevel.DEBUG) && (options.sql || options.params || options.metadata)) {
-        console.log('Details:', {
+        console.debug('Details:', {
           sql: options.sql,
           params: options.params,
           metadata: options.metadata
@@ -279,7 +279,7 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
   });
   
   // Log queries
-  prisma.$on('query', (e: { query: string; params: string; duration: number }) => {
+  prisma.$on('query', (e) => {
     console.log(e.query, {
       level: LogLevel.DEBUG,
       category: LogCategory.QUERY,
@@ -291,21 +291,21 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
   });
 
   // Log errors
-  prisma.$on('error', (e: { message: string; target: string }) => {
+  prisma.$on('error', (e) => {
     console.error(`Database error: ${e.message}`, new Error(e.message), {
       target: e.target,
     });
   });
 
   // Log info messages
-  prisma.$on('info', (e: { message: string; target: string }) => {
-    console.log(e.message, {
+  prisma.$on('info', (e) => {
+    console.info(e.message, {
       target: e.target,
     });
   });
 
   // Log warnings
-  prisma.$on('warn', (e: { message: string; target: string }) => {
+  prisma.$on('warn', (e) => {
     console.warn(e.message, {
       target: e.target,
     });

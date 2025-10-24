@@ -49,7 +49,7 @@ export class VectorCacheFactory {
     try {
       // If explicitly set to NONE, return null (no caching)
       if (config.type === CacheAdapterType.NONE) {
-        console.log('Vector cache disabled (NONE)');
+        console.info('Vector cache disabled (NONE)');
         return null;
       }
 
@@ -72,7 +72,7 @@ export class VectorCacheFactory {
       // Initialize the adapter
       await adapter.initialize();
 
-      console.log(`Vector cache adapter (${config.type}) initialized successfully`);
+      console.info(`Vector cache adapter (${config.type}) initialized successfully`);
       return adapter;
     } catch (error) {
       console.error(`Failed to create vector cache adapter: ${error instanceof Error ? error.message : String(error)}`);

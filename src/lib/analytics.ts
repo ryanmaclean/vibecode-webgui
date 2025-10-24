@@ -54,12 +54,12 @@ export function logEvent<T extends NestedObject = NestedObject>(
   // In production, send to your analytics service
   if (config.enabled) {
     // Example: sendToAnalyticsService(event);
-    console.log('[Analytics]', { data: event });
+    console.info('[Analytics]', { data: event });
   }
 
   // In development, log to console and buffer
   if (config.debug) {
-    console.log(`[Analytics] ${name}`, { data: properties });
+    console.info(`[Analytics] ${name}`, { data: properties });
     
     // Add to buffer (useful for debugging)
     eventBuffer.push(event);
@@ -157,7 +157,7 @@ export function initAnalytics(options: {
   }
   
   if (config.enabled || config.debug) {
-    console.log('[Analytics] Initialized', { config });
+    console.info('[Analytics] Initialized', { config });
   }
 }
 
