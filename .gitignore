@@ -133,7 +133,7 @@ fast-openvscode-vm/vmlinuz-*
 fast-openvscode-vm/qemu.log
 fast-openvscode-vm/downloads/
 fast-openvscode-vm/rootfs/bin/
-fast-openvscode-vm/rootfs/lib/
+fast-openvscode-vm/rootfs//lib/
 fast-openvscode-vm/rootfs/lib64/
 fast-openvscode-vm/rootfs/opt/
 fast-openvscode-vm/rootfs/usr/
@@ -173,7 +173,7 @@ develop-eggs/
 downloads/
 eggs/
 .eggs/
-lib/
+/lib/
 lib64/
 parts/
 sdist/

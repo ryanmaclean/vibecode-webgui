@@ -1,0 +1,246 @@
+/**
+ * Validation Helper Functions
+ * 
+ * Common validation and utility functions for API routes
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { ZodSchema, z } from 'zod'
+import { validateRequestBody, validateQueryParams } from './middleware'
+
+// Re-export validation functions for convenience
+export { validateRequestBody, validateQueryParams }
+
+/**
+ * Rate limiting check function
+ * Simple in-memory rate limiting (for development/testing)
+ * In production, this should use Redis or similar
+ */
+const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
+
+export function checkRateLimit(
+  request: NextRequest,
+  options: {
+    maxRequests?: number
+    windowMs?: number
+    keyGenerator?: (req: NextRequest) => string
+  } = {}
+): { allowed: boolean; remaining: number; resetTime: number } {
+  const {
+    maxRequests = 100,
+    windowMs = 60 * 1000, // 1 minute
+    keyGenerator = (req) => req.ip || 'unknown'
+  } = options
+
+  const key = keyGenerator(request)
+  const now = Date.now()
+  const windowStart = now - windowMs
+
+  // Clean up expired entries
+  for (const [k, v] of rateLimitStore.entries()) {
+    if (v.resetTime < now) {
+      rateLimitStore.delete(k)
+    }
+  }
+
+  const current = rateLimitStore.get(key)
+  
+  if (!current || current.resetTime < now) {
+    // New window or expired
+    rateLimitStore.set(key, {
+      count: 1,
+      resetTime: now + windowMs
+    })
+    
+    return {
+      allowed: true,
+      remaining: maxRequests - 1,
+      resetTime: now + windowMs
+    }
+  }
+
+  if (current.count >= maxRequests) {
+    return {
+      allowed: false,
+      remaining: 0,
+      resetTime: current.resetTime
+    }
+  }
+
+  // Increment count
+  current.count++
+  rateLimitStore.set(key, current)
+
+  return {
+    allowed: true,
+    remaining: maxRequests - current.count,
+    resetTime: current.resetTime
+  }
+}
+
+/**
+ * Create a rate-limited response
+ */
+export function createRateLimitResponse(resetTime: number): NextResponse {
+  return NextResponse.json(
+    {
+      error: 'Rate limit exceeded',
+      message: 'Too many requests, please try again later',
+      retryAfter: Math.ceil((resetTime - Date.now()) / 1000)
+    },
+    {
+      status: 429,
+      headers: {
+        'Retry-After': Math.ceil((resetTime - Date.now()) / 1000).toString(),
+        'X-RateLimit-Limit': '100',
+        'X-RateLimit-Remaining': '0',
+        'X-RateLimit-Reset': resetTime.toString()
+      }
+    }
+  )
+}
+
+/**
+ * Validate request body with error handling
+ */
+export async function validateBody<T extends ZodSchema>(
+  request: NextRequest,
+  schema: T
+): Promise<{ success: true; data: z.infer<T> } | { success: false; error: NextResponse }> {
+  try {
+    const result = await validateRequestBody(request, schema)
+    return result
+  } catch (error) {
+    return {
+      success: false,
+      error: NextResponse.json(
+        {
+          error: 'Invalid request body',
+          message: error instanceof Error ? error.message : 'Unknown validation error'
+        },
+        { status: 400 }
+      )
+    }
+  }
+}
+
+/**
+ * Validate query parameters with error handling
+ */
+export function validateQuery<T extends ZodSchema>(
+  request: NextRequest,
+  schema: T
+): { success: true; data: z.infer<T> } | { success: false; error: NextResponse } {
+  try {
+    const result = validateQueryParams(request, schema)
+    return result
+  } catch (error) {
+    return {
+      success: false,
+      error: NextResponse.json(
+        {
+          error: 'Invalid query parameters',
+          message: error instanceof Error ? error.message : 'Unknown validation error'
+        },
+        { status: 400 }
+      )
+    }
+  }
+}
+
+/**
+ * Create a standardized error response
+ */
+export function createErrorResponse(
+  message: string,
+  status: number = 500,
+  details?: Record<string, unknown>
+): NextResponse {
+  return NextResponse.json(
+    {
+      error: message,
+      timestamp: new Date().toISOString(),
+      ...details
+    },
+    { status }
+  )
+}
+
+/**
+ * Create a standardized success response
+ */
+export function createSuccessResponse<T>(
+  data: T,
+  status: number = 200,
+  metadata?: Record<string, unknown>
+): NextResponse {
+  return NextResponse.json(
+    {
+      success: true,
+      data,
+      timestamp: new Date().toISOString(),
+      ...metadata
+    },
+    { status }
+  )
+}
+
+/**
+ * Extract user ID from request (for authenticated routes)
+ */
+export function getUserId(request: NextRequest): string | null {
+  // This would typically extract from JWT token or session
+  // For now, return a placeholder
+  return request.headers.get('x-user-id') || null
+}
+
+/**
+ * Extract workspace ID from request
+ */
+export function getWorkspaceId(request: NextRequest): string | null {
+  return request.headers.get('x-workspace-id') || 
+         new URL(request.url).searchParams.get('workspaceId') ||
+         null
+}
+
+/**
+ * Check if request is from an authenticated user
+ */
+export function isAuthenticated(request: NextRequest): boolean {
+  return getUserId(request) !== null
+}
+
+/**
+ * Get request IP address
+ */
+export function getClientIP(request: NextRequest): string {
+  return request.ip || 
+         request.headers.get('x-forwarded-for')?.split(',')[0] ||
+         request.headers.get('x-real-ip') ||
+         'unknown'
+}
+
+/**
+ * Log API request for monitoring
+ */
+export function logAPIRequest(
+  request: NextRequest,
+  response: NextResponse,
+  duration: number,
+  metadata?: Record<string, unknown>
+): void {
+  const logData = {
+    method: request.method,
+    url: request.url,
+    status: response.status,
+    duration,
+    ip: getClientIP(request),
+    userAgent: request.headers.get('user-agent'),
+    userId: getUserId(request),
+    workspaceId: getWorkspaceId(request),
+    ...metadata
+  }
+
+  // In production, this would send to a logging service
+  console.log('[API Request]', logData)
+}

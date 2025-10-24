@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, CheckCircle, AlertTriangle, Info, Code, Shield, Zap, BookOpen } from 'lucide-react';
+import { Loader, CheckCircle, TriangleAlert as AlertTriangle, Info, Code, Shield, Zap, BookOpen } from 'lucide-react';
 // import { logger } from '@/lib/logger';
 // import { EnhancedAIManager } from '@/lib/ai/enhanced-ai-manager';
 
