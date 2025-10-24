@@ -18,14 +18,8 @@ FROM node:${NODE_VERSION}-${BASE_OS} AS base
 ENV NEXT_TELEMETRY_DISABLED=1
 WORKDIR /app
 
-# Install system dependencies based on base OS
-RUN if [ "${BASE_OS}" = "alpine" ]; then \
-        apk add --no-cache libc6-compat python3 make g++ curl dumb-init; \
-    else \
-        apt-get update && apt-get install -y --no-install-recommends \
-            ca-certificates python3 make g++ curl dumb-init tini && \
-            rm -rf /var/lib/apt/lists/*; \
-    fi
+# Install system dependencies
+RUN apk add --no-cache libc6-compat python3 make gcc g++ curl dumb-init git
 
 # ===== Dependencies Stage =====
 FROM base AS deps
@@ -133,34 +127,32 @@ COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
 
 # Create health check script if enabled
 RUN if [ "${ENABLE_HEALTH_CHECK}" = "true" ]; then \
-        cat <<'EOF' > /app/healthcheck.js && \
-        const http = require('http'); \
-        const options = { \
-          hostname: 'localhost', \
-          port: 3000, \
-          path: '/api/health', \
-          method: 'GET', \
-          timeout: 5000 \
-        }; \
-        const req = http.request(options, (res) => { \
-          if (res.statusCode === 200) { \
-            process.exit(0); \
-          } else { \
-            console.error(\`Health check failed with status: \${res.statusCode}\`); \
-            process.exit(1); \
-          } \
-        }); \
-        req.on('error', (err) => { \
-          console.error(\`Health check error: \${err.message}\`); \
-          process.exit(1); \
-        }); \
-        req.on('timeout', () => { \
-          console.error('Health check timeout'); \
-          req.destroy(); \
-          process.exit(1); \
-        }); \
-        req.end(); \
-        EOF \
+        echo 'const http = require("http");' > /app/healthcheck.js && \
+        echo 'const options = {' >> /app/healthcheck.js && \
+        echo '  hostname: "localhost",' >> /app/healthcheck.js && \
+        echo '  port: 3000,' >> /app/healthcheck.js && \
+        echo '  path: "/api/health",' >> /app/healthcheck.js && \
+        echo '  method: "GET",' >> /app/healthcheck.js && \
+        echo '  timeout: 5000' >> /app/healthcheck.js && \
+        echo '};' >> /app/healthcheck.js && \
+        echo 'const req = http.request(options, (res) => {' >> /app/healthcheck.js && \
+        echo '  if (res.statusCode === 200) {' >> /app/healthcheck.js && \
+        echo '    process.exit(0);' >> /app/healthcheck.js && \
+        echo '  } else {' >> /app/healthcheck.js && \
+        echo '    console.error(`Health check failed with status: ${res.statusCode}`);' >> /app/healthcheck.js && \
+        echo '    process.exit(1);' >> /app/healthcheck.js && \
+        echo '  }' >> /app/healthcheck.js && \
+        echo '});' >> /app/healthcheck.js && \
+        echo 'req.on("error", (err) => {' >> /app/healthcheck.js && \
+        echo '  console.error(`Health check error: ${err.message}`);' >> /app/healthcheck.js && \
+        echo '  process.exit(1);' >> /app/healthcheck.js && \
+        echo '});' >> /app/healthcheck.js && \
+        echo 'req.on("timeout", () => {' >> /app/healthcheck.js && \
+        echo '  console.error("Health check timeout");' >> /app/healthcheck.js && \
+        echo '  req.destroy();' >> /app/healthcheck.js && \
+        echo '  process.exit(1);' >> /app/healthcheck.js && \
+        echo '});' >> /app/healthcheck.js && \
+        echo 'req.end();' >> /app/healthcheck.js && \
         chmod +x /app/healthcheck.js; \
     fi
 
