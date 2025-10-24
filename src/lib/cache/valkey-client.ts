@@ -373,4 +373,9 @@ export class CacheInvalidation {
   }
 }
 
+// Export function for getting the Valkey client
+export function getValkeyClient() {
+  return cache;
+}
+
 export default cache;

@@ -22,11 +22,14 @@ jest.mock('openai', () => ({
   OpenAI: jest.fn().mockImplementation(() => ({
     chat: {
       completions: {
-        create: jest.fn().mockResolvedValue({
-          [Symbol.asyncIterator]: async function* () {
-            yield { choices: [{ delta: { content: 'Hello' } }] };
-            yield { choices: [{ delta: { content: ' World' } }] };
-          }
+        create: jest.fn().mockImplementation(async () => {
+          // Return an object that can be used with for-await-of
+          return {
+            async *[Symbol.asyncIterator]() {
+              yield { choices: [{ delta: { content: 'Hello' } }] };
+              yield { choices: [{ delta: { content: ' World' } }] };
+            }
+          };
         })
       }
     }

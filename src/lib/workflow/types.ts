@@ -314,6 +314,9 @@ export interface WorkflowExecution {
   workflowId: string;
   workflowVersion: string;
 
+  /** Workflow definition (for execution) */
+  definition: WorkflowDefinition;
+
   /** Execution status */
   status: WorkflowStatus;
 
