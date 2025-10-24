@@ -251,3 +251,15 @@ export const createTerminalSessionSchema = z.object({
 export const terminalSessionIdSchema = z.object({
   sessionId: z.string().uuid()
 })
+
+// ============================================================================
+// Web Search Schemas
+// ============================================================================
+
+export const webSearchSchema = z.object({
+  query: z.string().min(1).max(500),
+  maxResults: z.number().int().positive().max(50).optional().default(5),
+  safeSearch: z.boolean().optional().default(true),
+  language: z.string().min(2).max(10).optional().default('en'),
+  region: z.string().min(2).max(10).optional().default('us')
+})

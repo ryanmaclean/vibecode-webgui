@@ -13,7 +13,7 @@
  */
 
 import { execSync } from 'child_process'
-import { createChildLogger } from './logger'
+import { createChildLogger } from '@/lib/logger'
 
 const logger = createChildLogger({ module: 'security', scope: 'keychain' })
 
