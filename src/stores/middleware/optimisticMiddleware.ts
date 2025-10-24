@@ -180,7 +180,7 @@ export const optimisticMiddleware: (
 ) => OptimisticMiddlewareImpl =
   (options = {}) =>
   (initializer) =>
-  (set, get, store) => {
+  (set: any, get: any, store: any) => {
     const manager = new OptimisticUpdateManager(options);
 
     // Add optimistic methods to store

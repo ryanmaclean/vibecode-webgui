@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
         try {
           // Generate project from template
           const options: GenerateFromTemplateOptions = {
-            projectName: validatedData.projectName,
-            template: validatedData.templateId,
-            customizations: validatedData.customizations,
+            name: validatedData.projectName,
+            templateId: validatedData.templateId,
+            description: validatedData.customizations?.description,
             features: validatedData.features,
-            envOverrides: validatedData.envOverrides,
+            customVariables: validatedData.envOverrides,
           }
 
           const generatedProject = await generateFromTemplate(options)

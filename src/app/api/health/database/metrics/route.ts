@@ -54,26 +54,6 @@ type ConnectionSnapshot = {
   [key: string]: unknown;
 };
 
-interface DetailedPoolEntry {
-  stats?: {
-    connections?: unknown;
-    [key: string]: unknown;
-  };
-  connections?: unknown;
-  [key: string]: unknown;
-}
-
-interface ConnectionDetail {
-  ageMs?: number;
-  idleTimeMs?: number;
-}
-
-type ConnectionSnapshot = {
-  ageMs?: unknown;
-  idleTimeMs?: unknown;
-  [key: string]: unknown;
-};
-
 type DetailedPoolEntry = {
   type?: string;
   connected?: boolean;
@@ -84,6 +64,11 @@ type DetailedPoolEntry = {
   connections?: unknown;
   [key: string]: unknown;
 };
+
+interface ConnectionDetail {
+  ageMs?: number;
+  idleTimeMs?: number;
+}
 
 // Query result interfaces
 interface PgVectorQueryResult {
