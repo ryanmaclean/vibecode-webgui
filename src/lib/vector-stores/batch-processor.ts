@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 /**
  * Batch Vector Operations Processor
  * Optimizes vector operations through intelligent batching
@@ -83,7 +80,7 @@ export class VectorBatchProcessor {
       this.timers.delete(queueKey)
     }
 
-    console.info(`Processing batch of ${operations.length} ${queueKey} operations`)
+    console.log(`Processing batch of ${operations.length} ${queueKey} operations`)
 
     try {
       switch (queueKey) {
@@ -166,7 +163,7 @@ export class VectorBatchProcessor {
    */
   private async batchStoreDocuments(documents: any[]): Promise<any> {
     // Implementation would integrate with actual vector store
-    console.info(`Batch storing ${documents.length} documents`)
+    console.log(`Batch storing ${documents.length} documents`)
     return { stored: documents.length, success: true }
   }
 
@@ -175,7 +172,7 @@ export class VectorBatchProcessor {
    */
   private async executeSearch(payload: any): Promise<any> {
     // Implementation would integrate with actual vector search
-    console.info(`Executing search for: ${payload.query}`)
+    console.log(`Executing search for: ${payload.query}`)
     return { results: [], query: payload.query }
   }
 
@@ -183,7 +180,7 @@ export class VectorBatchProcessor {
    * Batch delete implementation (placeholder)
    */
   private async batchDeleteDocuments(options: { fileIds: number[], workspaceIds: number[] }): Promise<any> {
-    console.info(`Batch deleting files: ${options.fileIds.length}, workspaces: ${options.workspaceIds.length}`)
+    console.log(`Batch deleting files: ${options.fileIds.length}, workspaces: ${options.workspaceIds.length}`)
     return { deleted: options.fileIds.length + options.workspaceIds.length }
   }
 

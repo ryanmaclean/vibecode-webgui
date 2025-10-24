@@ -7,12 +7,12 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { IVectorEmbeddingProvider } from '../interfaces/vector-embedding-provider';
 import { IVectorCacheAdapter } from '../interfaces/vector-cache-adapter';
 import { 
-SearchResult, 
+  SearchResult, 
   VectorDatabaseConfig,
   VectorSearchOptions, 
   VectorStoreStats 
 } from '../interfaces/vector-types';
-// import { logger } from '@/lib/logger';
+
 export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
   private connectionConfig: any;
   private redisClient: any = null;
@@ -55,7 +55,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       // 
       // await this.ensureIndex();
       
-      console.info('Mock Redis connection established');
+      console.log('Mock Redis connection established');
       this.isConnectionActive = true;
       return true;
     } catch (error) {
@@ -77,7 +77,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       //   this.redisClient = null;
       // }
       
-      console.info('Mock Redis connection closed');
+      console.log('Mock Redis connection closed');
       this.isConnectionActive = false;
     } catch (error) {
       console.error('Error disconnecting from Redis:', error);
@@ -114,12 +114,12 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
       //       PREFIX: this.keyPrefix
       //     }
       //   );
-      //   console.info(`Created Redis vector index ${this.indexName}`);
+      //   console.log(`Created Redis vector index ${this.indexName}`);
       // } else {
-      //   console.info(`Redis vector index ${this.indexName} already exists`);
+      //   console.log(`Redis vector index ${this.indexName} already exists`);
       // }
       
-      console.info('Mock Redis vector index creation check');
+      console.log('Mock Redis vector index creation check');
     } catch (error) {
       console.error('Error creating Redis vector index:', error);
       throw error;
@@ -141,7 +141,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.info(`Mock storing ${chunks.length} vectors for file ${fileId} in Redis`);
+      console.log(`Mock storing ${chunks.length} vectors for file ${fileId} in Redis`);
       
       // Process chunks in batches to avoid rate limits
       const batchSize = 10;
@@ -172,7 +172,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
           //   }
           // });
           
-          console.info(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Redis`);
+          console.log(`Mock storing chunk ${chunkId} with ${embedding.length} dimensions in Redis`);
         }
         
         // Execute the batch
@@ -233,10 +233,10 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
         }
       }
 
-      console.info(`Mock searching for similar vectors with ${embedding.length} dimensions in Redis`);
-      console.info(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
+      console.log(`Mock searching for similar vectors with ${embedding.length} dimensions in Redis`);
+      console.log(`Search parameters: workspaceId=${workspaceId}, limit=${limit}, threshold=${threshold}`);
       if (fileIds?.length) {
-        console.info(`Filtering by file IDs: ${fileIds.join(', ')}`);
+        console.log(`Filtering by file IDs: ${fileIds.join(', ')}`);
       }
       
       // In a real implementation, we would use a Redis vector search query:
@@ -345,7 +345,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.info(`Mock deleting vectors for file ${fileId} from Redis`);
+      console.log(`Mock deleting vectors for file ${fileId} from Redis`);
       
       // In a real implementation, we would:
       // 1. Find all keys for this file
@@ -382,7 +382,7 @@ export class RedisVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      console.info(`Mock updating vector ${id} with ${embedding.length} dimensions in Redis`);
+      console.log(`Mock updating vector ${id} with ${embedding.length} dimensions in Redis`);
       
       // In a real implementation, we would update just the embedding field
       // const key = `${this.keyPrefix}${id.toString()}`;
