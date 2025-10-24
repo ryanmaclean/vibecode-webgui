@@ -59,9 +59,9 @@ function getClient() {
       // console.warn('Thread manager already initialized', { error })
     }
 
-    threadManager = getThreadManager()
+    _threadManager = getThreadManager()
   }
-  return { client, threadManager, toolRegistry: getToolRegistry() }
+  return { client, _threadManager, toolRegistry: getToolRegistry() }
 }
 
 // Validation schemas
@@ -226,7 +226,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
   const limit = Number(searchParams.get('limit')) || 20
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
@@ -253,7 +253,7 @@ async function handleAgentOperations(
   agentId: string,
   operation?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   // Verify ownership
   const agent = await client.getAgent(agentId)
   if (agent.metadata.userId !== userId) {
@@ -290,9 +290,9 @@ async function handleThreadRoutes(
   subResource?: string,
   subId?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
 
-  if (!threadManager) {
+  if (!_threadManager) {
     return NextResponse.json(
       { error: 'Thread manager not initialized' },
       { status: 500 }
@@ -305,7 +305,7 @@ async function handleThreadRoutes(
       const body = await request.json()
       const validated = createThreadSchema.parse(body)
 
-      const session = await threadManager.createThread(
+      const session = await _threadManager.createThread(
         userId,
         validated.assistantId,
         {
@@ -320,7 +320,7 @@ async function handleThreadRoutes(
     }
   } else {
     // Thread operations
-    const session = threadManager.getSession(id)
+    const session = _threadManager.getSession(id)
     if (!session || session.userId !== userId) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
@@ -334,12 +334,12 @@ async function handleThreadRoutes(
     }
 
     if (method === 'GET') {
-      const context = await threadManager.getContext(id)
+      const context = await _threadManager.getContext(id)
       return NextResponse.json(context)
     }
 
     if (method === 'DELETE') {
-      await threadManager.deleteThread(id)
+      await _threadManager.deleteThread(id)
       return NextResponse.json({ deleted: true, id })
     }
   }
@@ -353,9 +353,9 @@ async function handleThreadMessages(
   threadId: string,
   messageId?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
 
-  if (!threadManager) {
+  if (!_threadManager) {
     return NextResponse.json(
       { error: 'Thread manager not initialized' },
       { status: 500 }
@@ -366,7 +366,7 @@ async function handleThreadMessages(
     const body = await request.json()
     const validated = addMessageSchema.parse(body)
 
-    const message = await threadManager.addMessage(
+    const message = await _threadManager.addMessage(
       threadId,
       validated.role,
       validated.content,
@@ -382,7 +382,7 @@ async function handleThreadMessages(
       return NextResponse.json(message)
     }
 
-    const messages = await threadManager.getMessageHistory(threadId)
+    const messages = await _threadManager.getMessageHistory(threadId)
     return NextResponse.json({ messages })
   }
 
@@ -395,7 +395,7 @@ async function handleThreadRuns(
   threadId: string,
   runId?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !runId) {
     const body = await request.json()
     const validated = createRunSchema.parse(body)
@@ -449,7 +449,7 @@ async function handleFileRoutes(
   fileId?: string,
   operation?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !fileId) {
     const formData = await request.formData()
     const file = formData.get('file') as File
@@ -498,7 +498,7 @@ async function handleToolRoutes(
   userId: string,
   toolName?: string
 ) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   if (method === 'GET') {
     if (toolName) {
       const tool = toolRegistry.get(toolName)
@@ -520,7 +520,7 @@ async function handleToolRoutes(
 // Helper Functions
 
 async function pollRun(threadId: string, runId: string, maxAttempts = 60) {
-  const { client, threadManager, toolRegistry } = getClient()
+  const { client, _threadManager, toolRegistry } = getClient()
   let attempts = 0
 
   while (attempts < maxAttempts) {

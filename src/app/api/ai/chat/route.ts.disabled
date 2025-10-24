@@ -52,7 +52,7 @@ function logAIInteraction(
   };
 
   const logLevel = event === 'chat_error' ? 'error' : 'info';
-  logger[logLevel](`AI Chat ${event.replace('_', ' ')}`, logContext);
+  console[logLevel](`AI Chat ${event.replace('_', ' ')}`, logContext);
 }
 
 async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> {
@@ -60,7 +60,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
   const requestId = crypto.randomUUID();
 
   // Record initial request metrics
-  console.counter('vibecode.api.ai.chat.requests', 1, {
+  console.log('vibecode.api.ai.chat.requests', {
     endpoint: '/api/ai/chat',
     method: 'POST'
   });
@@ -200,13 +200,13 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     // enhancedAlerting.recordMetric('ai.chat_completion', 'success_rate', 1);
 
     // Record business metrics
-    console.counter('vibecode.ai.chat.completions', 1, {
+    console.count('vibecode.ai.chat.completions', 1, {
       model,
       stream: stream.toString(),
       user_role: request.user?.role || 'unknown'
     });
 
-    console.gauge('vibecode.ai.chat.response_length', response.length, {
+    console.log('vibecode.ai.chat.response_length', response.length, {
       model,
       endpoint: '/api/ai/chat'
     });
@@ -332,7 +332,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
     // Record error metrics
-    console.counter('vibecode.api.ai.chat.errors', 1, {
+    console.count('vibecode.api.ai.chat.errors', 1, {
       error_type: error instanceof Error ? error.name : 'UnknownError',
       endpoint: '/api/ai/chat'
     });
@@ -349,7 +349,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
 
     // Log security event if needed
     if (error instanceof Error && error.message.includes('validation')) {
-      console.security('ai_validation_failure', {
+      console.log('ai_validation_failure', {
         endpoint: '/api/ai/chat',
         error: error.message,
         userId: request.user?.id,
