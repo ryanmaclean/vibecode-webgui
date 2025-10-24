@@ -3,14 +3,14 @@
 
 import { PrismaClient } from '@prisma/client';
 import { 
-LogLevel, 
+  LogLevel, 
   LogCategory, 
   LogOptions,
   DbLogger, 
   DbOperationTimer, 
   LoggerOptions
 } from './db-types';
-// import { logger } from '@/lib/logger';
+
 /**
  * Class for logging database operations
  */
@@ -280,7 +280,7 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
   
   // Log queries
   prisma.$on('query', (e) => {
-    console.log(e.query, {
+    logger.log(e.query, {
       level: LogLevel.DEBUG,
       category: LogCategory.QUERY,
       operation: 'query',
@@ -289,24 +289,24 @@ export function createPrismaWithLogging(connectionUrl?: string, loggerOptions?: 
       elapsed: e.duration,
     });
   });
-
+  
   // Log errors
   prisma.$on('error', (e) => {
-    console.error(`Database error: ${e.message}`, new Error(e.message), {
+    logger.error(`Database error: ${e.message}`, new Error(e.message), {
       target: e.target,
     });
   });
-
+  
   // Log info messages
   prisma.$on('info', (e) => {
-    console.info(e.message, {
+    logger.info(e.message, {
       target: e.target,
     });
   });
-
+  
   // Log warnings
   prisma.$on('warn', (e) => {
-    console.warn(e.message, {
+    logger.warn(e.message, {
       target: e.target,
     });
   });

@@ -1,4 +1,4 @@
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 
 
 /**
@@ -9,7 +9,7 @@
 // Import ddtrace for LLM observability
 // NOTE: This must be imported before any other modules that use AI services
 // Using CommonJS require because '../instrument' exports via module.exports
- 
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const tracer = require('../instrument')
 import { Span } from 'dd-trace'
 import { getDatadogSite, getDatadogApiKey, getServiceEnvVersion } from '@/lib/monitoring/datadog-env'
@@ -105,7 +105,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error in LLM workflow span:', error);
+      logger.error('Error in LLM workflow span:', error);
       return operation(undefined);
     }
   }
@@ -161,7 +161,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error in LLM task span:', error);
+      logger.error('Error in LLM task span:', error);
       return operation(undefined);
     }
   }
@@ -177,7 +177,7 @@ class LLMObservability {
     try {
       const activeSpan = tracer.scope().active();
       if (!activeSpan) {
-        console.warn('No active span to annotate for LLM Observability');
+        logger.warn('No active span to annotate for LLM Observability');
         return;
       }
 
@@ -201,7 +201,7 @@ class LLMObservability {
         });
       }
     } catch (error) {
-      console.error('Error annotating LLM span:', error);
+      logger.error('Error annotating LLM span:', error);
     }
   }
 
@@ -214,7 +214,7 @@ class LLMObservability {
       return new Promise(resolve => {
         if (ddTracer.tracer?._writer?.flush) {
           ddTracer.tracer._writer.flush(() => {
-            console.info('LLM observability data flushed to Datadog');
+            logger.info('LLM observability data flushed to Datadog');
             resolve();
           });
         } else {
@@ -222,7 +222,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      console.error('Error flushing LLM observability data:', error);
+      logger.error('Error flushing LLM observability data:', error);
       return Promise.resolve();
     }
   }

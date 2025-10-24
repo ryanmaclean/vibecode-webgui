@@ -4,7 +4,7 @@
 import { PrismaClient } from '@prisma/client';
 import { getDatabaseLogger } from './database-logger';
 import { 
-LogCategory, 
+  LogCategory, 
   DatabaseConnectionOptions,
   ConnectionResult,
   LoggerOptions
@@ -13,7 +13,7 @@ import {
   poolConfig, 
   connectionPool 
 } from './db-pool';
-// import { logger } from '@/lib/logger';
+
 /**
  * Creates a robust database connection with retry capability
  */
@@ -35,22 +35,22 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
   } = options;
 
   // Set up logging
-  const dbLogger = enableLogging
-    ? getDatabaseLogger({
+  const logger = enableLogging 
+    ? getDatabaseLogger({ 
         defaultCategory: LogCategory.CONNECTION
-      })
+      }) 
     : null;
   
   // Fallback to console.log if debug is true but logging is disabled
   const log = logger 
-    ? (message: string, metadata?: Record<string, any>) => console.debug(message, metadata)
+    ? (message: string, metadata?: Record<string, any>) => logger.debug(message, metadata)
     : debug 
       ? console.log 
       : () => {};
 
   if (!connectionUrl) {
     const error = new Error('Database connection URL is required. Set DATABASE_URL or provide connectionUrl.');
-    if (logger) console.error(error.message);
+    if (logger) logger.error(error.message);
     throw error;
   }
   
@@ -60,7 +60,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
 
   // Check if we need to remove idle connections or validate existing connections
   if (enableConnectionValidation) {
-    await validatePoolConnections(dbLogger);
+    await validatePoolConnections(logger);
   }
 
   // Check if we already have an available client for this pool key
@@ -68,16 +68,16 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     const currentTime = Date.now();
     const lastUsedTime = connectionPool.lastUsed.get(poolKey) || 0;
     const idleTime = currentTime - lastUsedTime;
-
+    
     // Check if the connection has been idle too long
     if (idleTimeout > 0 && idleTime > idleTimeout) {
       // Connection is too old, remove it and create a new one
-      if (logger) console.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
+      if (logger) logger.info(`Connection ${poolKey} exceeded idle timeout (${idleTime}ms > ${idleTimeout}ms). Creating new connection.`);
       await removeConnection(poolKey, logger);
     } else {
       // Use existing connection
       const message = `Using existing database connection from pool: ${poolKey}`;
-      if (logger) console.info(message, { poolKey, idleTime });
+      if (logger) logger.info(message, { poolKey, idleTime });
       else log(message);
       
       connectionPool.inUse++;
@@ -89,11 +89,11 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
       connectionPool.usage.acquireTimeTotal += acquireTime;
       connectionPool.usage.acquireTimeAvg = connectionPool.usage.acquireTimeTotal / connectionPool.usage.acquireSuccesses;
       
-      return {
+      return { 
         prisma: connectionPool.clients.get(poolKey) || null,
         fromPool: true,
         success: true,
-        release: () => releaseConnection(poolKey, dbLogger)
+        release: () => releaseConnection(poolKey, logger)
       };
     }
   }
@@ -103,13 +103,13 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     if (enableDynamicSizing) {
       const removedKey = findLeastRecentlyUsedConnection();
       if (removedKey) {
-        if (logger) console.info(`Pool at capacity. Removing least recently used connection: ${removedKey}`);
+        if (logger) logger.info(`Pool at capacity. Removing least recently used connection: ${removedKey}`);
         await removeConnection(removedKey, logger);
         connectionPool.usage.dynamicPoolAdjustments++;
       } else {
         // No connection to replace, fail the acquire
         const error = new Error(`Connection pool at capacity (${poolMaxSize}). No available connections.`);
-        if (logger) console.error(error.message);
+        if (logger) logger.error(error.message);
         
         // Record acquire failure
         connectionPool.usage.acquireFailures++;
@@ -123,7 +123,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     } else {
       // Dynamic sizing disabled, fail the acquire
       const error = new Error(`Connection pool at capacity (${poolMaxSize}). No available connections.`);
-      if (logger) console.error(error.message);
+      if (logger) logger.error(error.message);
       
       // Record acquire failure
       connectionPool.usage.acquireFailures++;
@@ -151,13 +151,13 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
   // Retry function for database operations
   async function withRetry<T>(operation: () => Promise<T>): Promise<T> {
     let lastError: Error = new Error('Unknown error');
-    const timer = logger ? console.createTimer('database_operation_retry') : null;
+    const timer = logger ? logger.createTimer('database_operation_retry') : null;
     if (timer) timer.start();
     
     for (let attempt = 1; attempt <= maxRetries; attempt++) {
       try {
         const message = `Database operation attempt ${attempt}/${maxRetries}`;
-        if (logger) console.debug(message, { attempt, maxRetries });
+        if (logger) logger.debug(message, { attempt, maxRetries });
         else log(message);
         
         // Add timeout for the operation
@@ -176,7 +176,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
         lastError = error as Error;
         const message = `Database operation failed (attempt ${attempt}/${maxRetries}): ${lastError.message}`;
         
-        if (logger) console.warn(message, { 
+        if (logger) logger.warn(message, { 
           attempt, 
           maxRetries, 
           error: lastError.message,
@@ -186,7 +186,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
         
         if (attempt < maxRetries) {
           const waitMessage = `Waiting ${retryDelay}ms before retry...`;
-          if (logger) console.debug(waitMessage);
+          if (logger) logger.debug(waitMessage);
           else log(waitMessage);
           
           await new Promise(resolve => setTimeout(resolve, retryDelay));
@@ -197,17 +197,17 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     const errorMessage = `Database operation failed after ${maxRetries} attempts. Last error: ${lastError.message}`;
     if (timer) timer.end(`Database operation failed after ${maxRetries} attempts`);
     
-    if (logger) console.error(errorMessage, lastError);
+    if (logger) logger.error(errorMessage, lastError);
     throw new Error(errorMessage);
   }
   
   try {
     // Test connection with retry and timeout
     const message = 'Testing database connection...';
-    if (logger) console.info(message);
+    if (logger) logger.info(message);
     else log(message);
     
-    const timer = logger ? console.createTimer('connection_test') : null;
+    const timer = logger ? logger.createTimer('connection_test') : null;
     if (timer) timer.start();
     
     // Set up an overall acquire timeout
@@ -225,7 +225,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     
     if (timer) {
       const elapsed = timer.elapsed();
-      if (logger) console.info(`Database connection successful in ${elapsed}ms`);
+      if (logger) logger.info(`Database connection successful in ${elapsed}ms`);
     } else {
       log('Database connection successful!');
     }
@@ -246,7 +246,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     }
     
     const poolMessage = `Added connection to pool: ${poolKey}`;
-    if (logger) console.debug(poolMessage, { 
+    if (logger) logger.debug(poolMessage, { 
       poolSize: connectionPool.clients.size,
       poolKey,
       maxSize: poolMaxSize,
@@ -268,7 +268,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     };
   } catch (error) {
     const message = `Database connection failed: ${(error as Error).message}`;
-    if (logger) console.error(message, error as Error);
+    if (logger) logger.error(message, error as Error);
     else log(message);
     
     await prisma.$disconnect();
@@ -310,7 +310,7 @@ export function releaseConnection(poolKey: string, logger?: ReturnType<typeof ge
     connectionPool.lastUsed.set(poolKey, Date.now());
     
     if (logger) {
-      console.debug(`Released connection back to pool: ${poolKey}`, {
+      logger.debug(`Released connection back to pool: ${poolKey}`, {
         poolSize: connectionPool.clients.size,
         inUse: connectionPool.inUse,
         poolKey
@@ -362,11 +362,11 @@ async function validatePoolConnections(logger?: ReturnType<typeof getDatabaseLog
     if (validationAge > 60000) {
       connectionPool.usage.connectionValidations++;
       
-      if (logger) console.debug(`Validating connection: ${key}`, { validationAge });
+      if (logger) logger.debug(`Validating connection: ${key}`, { validationAge });
       
       const promise = validateConnection(key, client, logger).catch(async error => {
         connectionPool.usage.connectionValidationFailures++;
-        if (logger) console.error(`Connection validation failed for ${key}: ${error.message}`, error);
+        if (logger) logger.error(`Connection validation failed for ${key}: ${error.message}`, error);
         await removeConnection(key, logger);
       });
       
@@ -403,9 +403,9 @@ async function validateConnection(
     // Update last validation time
     connectionPool.lastValidated.set(key, Date.now());
     
-    if (logger) console.debug(`Connection ${key} validated successfully`);
+    if (logger) logger.debug(`Connection ${key} validated successfully`);
   } catch (error) {
-    if (logger) console.error(`Connection ${key} validation failed: ${(error as Error).message}`);
+    if (logger) logger.error(`Connection ${key} validation failed: ${(error as Error).message}`);
     throw error;
   }
 }
@@ -429,10 +429,10 @@ async function removeConnection(
     connectionPool.lastValidated.delete(key);
     connectionPool.creationTimes.delete(key);
     
-    if (logger) console.debug(`Removed connection from pool: ${key}`);
+    if (logger) logger.debug(`Removed connection from pool: ${key}`);
     return true;
   } catch (error) {
-    if (logger) console.error(`Failed to remove connection ${key}: ${(error as Error).message}`);
+    if (logger) logger.error(`Failed to remove connection ${key}: ${(error as Error).message}`);
     return false;
   }
 }
@@ -447,19 +447,19 @@ export async function executeWithRetry<T>(
   enableLogging = false
 ): Promise<T> {
   const logger = enableLogging ? getDatabaseLogger() : null;
-  const timer = logger ? console.createTimer('db_operation') : null;
+  const timer = logger ? logger.createTimer('db_operation') : null;
   if (timer) timer.start();
   
   let lastError: Error = new Error('Unknown error');
   
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      if (logger) console.debug(`Database operation attempt ${attempt}/${maxRetries}`);
+      if (logger) logger.debug(`Database operation attempt ${attempt}/${maxRetries}`);
       const result = await operation();
       
       if (timer) {
         const elapsed = timer.elapsed();
-        if (logger) console.debug(`Database operation completed successfully in ${elapsed}ms`);
+        if (logger) logger.debug(`Database operation completed successfully in ${elapsed}ms`);
       }
       
       return result;
@@ -467,7 +467,7 @@ export async function executeWithRetry<T>(
       lastError = error as Error;
       
       if (logger) {
-        console.warn(`Database operation failed (attempt ${attempt}/${maxRetries})`, {
+        logger.warn(`Database operation failed (attempt ${attempt}/${maxRetries})`, {
           error: lastError.message,
           attempt,
           maxRetries,
@@ -482,7 +482,7 @@ export async function executeWithRetry<T>(
   }
   
   if (logger) {
-    console.error(`Database operation failed after ${maxRetries} attempts`, lastError);
+    logger.error(`Database operation failed after ${maxRetries} attempts`, lastError);
   }
   
   throw new Error(`Database operation failed after ${maxRetries} attempts. Last error: ${lastError.message}`);
@@ -503,12 +503,12 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
     ...connectionOptions
   } = options;
   
-  const initLogger = enableLogging ? getDatabaseLogger({
+  const logger = enableLogging ? getDatabaseLogger({
     defaultCategory: LogCategory.INITIALIZATION
   }) : null;
   
   const log = logger 
-    ? (message: string, metadata?: Record<string, any>) => console.info(message, metadata)
+    ? (message: string, metadata?: Record<string, any>) => logger.info(message, metadata)
     : debug 
       ? console.log 
       : () => {};
@@ -538,7 +538,7 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
       } catch (extError) {
         const errorMessage = `Could not create pgvector extension: ${(extError as Error).message}`;
         log(errorMessage);
-        if (logger) console.warn(errorMessage, { error: extError });
+        if (logger) logger.warn(errorMessage, { error: extError });
         log('This may be due to insufficient database permissions or pgvector not being installed.');
       }
     }
@@ -584,7 +584,7 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
         } catch (idxError) {
           const errorMessage = `Could not create vector L2 index: ${(idxError as Error).message}`;
           log(errorMessage);
-          if (logger) console.warn(errorMessage, { error: idxError });
+          if (logger) logger.warn(errorMessage, { error: idxError });
         }
         
         try {
@@ -598,13 +598,13 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
         } catch (idxError) {
           const errorMessage = `Could not create vector IP index: ${(idxError as Error).message}`;
           log(errorMessage);
-          if (logger) console.warn(errorMessage, { error: idxError });
+          if (logger) logger.warn(errorMessage, { error: idxError });
         }
         
       } catch (tableError) {
         const errorMessage = `Could not create document_embeddings table: ${(tableError as Error).message}`;
         log(errorMessage);
-        if (logger) console.error(errorMessage, tableError as Error);
+        if (logger) logger.error(errorMessage, tableError as Error);
         throw tableError;
       }
     }
@@ -613,7 +613,7 @@ export async function initializeVectorDatabaseRobust(options: DatabaseConnection
   } catch (error) {
     const errorMessage = `Database initialization failed: ${(error as Error).message}`;
     log(errorMessage);
-    if (logger) console.error(errorMessage, error as Error);
+    if (logger) logger.error(errorMessage, error as Error);
     
     if (!result.fromPool) {
       await prismaClient.$disconnect();
@@ -629,7 +629,7 @@ export async function closeAllConnections(enableLogging = false): Promise<{ clos
   const logger = enableLogging ? getDatabaseLogger() : null;
   const promises: Promise<void>[] = [];
   
-  if (logger) console.info(`Closing all database connections (${connectionPool.clients.size})...`);
+  if (logger) logger.info(`Closing all database connections (${connectionPool.clients.size})...`);
   
   for (const [key, client] of connectionPool.clients.entries()) {
     promises.push(client.$disconnect().then(() => {
@@ -637,14 +637,14 @@ export async function closeAllConnections(enableLogging = false): Promise<{ clos
       connectionPool.lastUsed.delete(key);
       connectionPool.lastValidated.delete(key);
       connectionPool.creationTimes.delete(key);
-      if (logger) console.debug(`Closed connection: ${key}`);
+      if (logger) logger.debug(`Closed connection: ${key}`);
     }));
   }
   
   await Promise.all(promises);
   connectionPool.inUse = 0;
   
-  if (logger) console.info(`Closed ${promises.length} database connections successfully`);
+  if (logger) logger.info(`Closed ${promises.length} database connections successfully`);
   
   return { closed: promises.length };
 }
@@ -657,10 +657,10 @@ export async function createRobustConnectionWithLogging(
   loggerOptions?: LoggerOptions
 ) {
   const logger = getDatabaseLogger(loggerOptions);
-  const timer = console.createTimer('connection');
+  const timer = logger.createTimer('connection');
   timer.start();
   
-  console.info('Creating robust database connection', {
+  logger.info('Creating robust database connection', {
     connectionUrl: options?.connectionUrl ? 'Provided' : 'Using DATABASE_URL',
     maxRetries: options?.maxRetries,
   });
@@ -680,11 +680,11 @@ export async function createRobustConnectionWithLogging(
     );
     
     if (connection.success) {
-      console.info(`Database connection established in ${elapsed}ms`, {
+      logger.info(`Database connection established in ${elapsed}ms`, {
         fromPool: connection.fromPool
       });
     } else {
-      console.error(`Database connection failed after ${elapsed}ms`, 
+      logger.error(`Database connection failed after ${elapsed}ms`, 
         connection.error, 
         { fromPool: connection.fromPool }
       );
@@ -693,7 +693,7 @@ export async function createRobustConnectionWithLogging(
     return connection;
   } catch (error) {
     const elapsed = timer.end('Database connection failed with exception');
-    console.error(`Database connection failed after ${elapsed}ms with exception`, error as Error);
+    logger.error(`Database connection failed after ${elapsed}ms with exception`, error as Error);
     throw error;
   }
 }
