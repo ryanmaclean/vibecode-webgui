@@ -9,7 +9,7 @@ import { litellmClient } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
-import { z } from '@/lib/zod-compat';
+import { z } from 'zod';
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const aiManagementActionSchema = z.object({
