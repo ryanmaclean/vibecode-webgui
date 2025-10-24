@@ -7,7 +7,7 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorDatabaseConfig, VectorDatabaseProvider } from './vector-types';
 import { VectorChunk, SearchResult, SearchOptions } from './vector-types';
 import { VectorDbErrorHandler, VectorDbErrorType } from './vector-db-error-handler';
-// import { logger } from '@/lib/logger';
+
 /**
  * CosmosDB-specific configuration options
  */
@@ -68,7 +68,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       await this.ensureContainer();
 
       this.isInitialized = true;
-      console.info('CosmosDB vector database adapter initialized successfully');
+      console.log('CosmosDB vector database adapter initialized successfully');
 
     } catch (error) {
       const vectorDbError = this.errorHandler.handleError(error, 'initialize');
@@ -119,7 +119,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     } catch (error: any) {
       if (error.code === 404) {
         // Container doesn't exist, create it
-        console.info('Creating CosmosDB container for vectors...');
+        console.log('Creating CosmosDB container for vectors...');
 
         const partitionKey = this.cosmosConfig.partitionKey || '/workspaceId';
 
@@ -375,7 +375,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       for (let i = 0; i < resources.length; i += batchSize) {
         const batch = resources.slice(i, i + batchSize);
         await Promise.all(
-          batch.map((resource: { id: string }) => this.container.item(resource.id, resource.id).delete())
+          batch.map(resource => this.container.item(resource.id, resource.id).delete())
         );
       }
     } catch (error) {
@@ -390,7 +390,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   async createIndex(field: string, options?: any): Promise<void> {
     // CosmosDB handles vector indexing through the vectorEmbeddingPolicy
     // This is configured when the container is created
-    console.info(`Vector index for ${field} is handled by CosmosDB container configuration`);
+    console.log(`Vector index for ${field} is handled by CosmosDB container configuration`);
   }
 
   /**
@@ -398,7 +398,7 @@ export class CosmosDbVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   async deleteIndex(field: string): Promise<void> {
     // Vector indexes in CosmosDB are managed at the container level
-    console.info(`Vector index deletion for ${field} is handled by CosmosDB container management`);
+    console.log(`Vector index deletion for ${field} is handled by CosmosDB container management`);
   }
 
   /**
