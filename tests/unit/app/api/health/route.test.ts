@@ -110,21 +110,43 @@ describe('/api/health', () => {
     });
 
     it('should use default version when npm_package_version is not set', async () => {
-      Reflect.deleteProperty(process.env, 'npm_package_version');
-      
-      const response = await GET();
-      const data = await response.json();
+      // Save the original value and create a copy without npm_package_version
+      const originalVersion = process.env.npm_package_version;
+      const { npm_package_version, ...envWithoutVersion } = process.env;
+      Object.assign(process.env, envWithoutVersion);
+      delete process.env.npm_package_version;
 
-      expect(data.version).toBe('1.0.0');
+      try {
+        const response = await GET();
+        const data = await response.json();
+
+        expect(data.version).toBe('1.0.0');
+      } finally {
+        // Restore the original value
+        if (originalVersion !== undefined) {
+          process.env.npm_package_version = originalVersion;
+        }
+      }
     });
 
     it('should use default environment when NODE_ENV is not set', async () => {
-      Reflect.deleteProperty(process.env, 'NODE_ENV');
-      
-      const response = await GET();
-      const data = await response.json();
+      // Save the original value and create a copy without NODE_ENV
+      const originalEnv = process.env.NODE_ENV;
+      const { NODE_ENV, ...envWithoutNodeEnv } = process.env;
+      Object.assign(process.env, envWithoutNodeEnv);
+      delete process.env.NODE_ENV;
 
-      expect(data.environment).toBe('development');
+      try {
+        const response = await GET();
+        const data = await response.json();
+
+        expect(data.environment).toBe('development');
+      } finally {
+        // Restore the original value
+        if (originalEnv !== undefined) {
+          process.env.NODE_ENV = originalEnv;
+        }
+      }
     });
 
     it('should include performance metrics', async () => {
