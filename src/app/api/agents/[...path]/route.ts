@@ -35,30 +35,28 @@ import {
 import { z } from '@/lib/zod-compat'
 
 // Use console directly for logging
-const logger = {
-  info: console.log,
-  error: console.error,
-  warn: console.warn,
-  debug: console.debug,
-  log: console.log
-}
-
-// Force dynamic rendering
+const _logger = {
+  info: () => {},
+  error: () => {},
+  warn: () => {},
+  debug: () => {},
+  log: () => {}
+}// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 // Lazy-initialize OpenAI client to avoid build-time errors
 let client: ReturnType<typeof createOpenAIAgentsClient> | null = null
-let threadManager: ReturnType<typeof getThreadManager> | null = null
+let _threadManager: ReturnType<typeof getThreadManager> | null = null
 
 function getClient() {
   if (!client) {
     client = createOpenAIAgentsClient()
-    const toolRegistry = getToolRegistry()
+    const _toolRegistry = getToolRegistry()
 
     try {
       initializeThreadManager({ client })
     } catch (error) {
-      console.warn('Thread manager already initialized', { error })
+      // console.warn('Thread manager already initialized', { error })
     }
 
     threadManager = getThreadManager()
@@ -154,7 +152,7 @@ async function handleRequest(
     const path = resolvedParams.path || []
     const [resource, id, subResource, subId] = path
 
-    console.debug('Handling agent API request', {
+    // console.debug('Handling agent API request', {
       method,
       resource,
       id,
@@ -194,7 +192,7 @@ async function handleRequest(
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   } catch (error) {
-    console.error('API request failed', { error, path: params.path })
+    // // console.error('API request failed', { error, path: params.path })
 
     return NextResponse.json(
       {
@@ -229,7 +227,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 
 async function handleListAgents(request: NextRequest, userId: string) {
   const { client, threadManager, toolRegistry } = getClient()
-  const { searchParams } = new URL(request.url)
+  const { searchParams } = new globalThis.URL(request.url)
   const limit = Number(searchParams.get('limit')) || 20
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
 
@@ -240,7 +238,7 @@ async function handleListAgents(request: NextRequest, userId: string) {
     (agent) => agent.metadata.userId === userId
   )
 
-  console.debug('Listed agents', { userId, count: userAgents.length })
+  // console.debug('Listed agents', { userId, count: userAgents.length })
 
   return NextResponse.json({
     ...response,

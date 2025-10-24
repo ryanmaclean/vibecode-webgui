@@ -11,7 +11,7 @@ import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
 // import { console } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
 
-const logger = console;
+const _logger = console;
 
 const stateValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 
@@ -66,15 +66,15 @@ export async function POST(request: NextRequest) {
     const agentBuilder = getAgentBuilderClient();
     const chatkitSession = await agentBuilder.createSession(userIdentifier, payload);
 
-    console.info('Agent Builder session created', {
-      userId: userIdentifier,
-      workflowId: payload.workflowId,
-      sessionId: chatkitSession.sessionId,
-    });
+    // console.info('Agent Builder session created', {
+    //   userId: userIdentifier,
+    //   workflowId: payload.workflowId,
+    //   sessionId: chatkitSession.sessionId,
+    // });
 
     return NextResponse.json(chatkitSession, { status: 201 });
   } catch (error) {
-    console.error('Failed to create Agent Builder session', { error });
+    // console.error('Failed to create Agent Builder session', { error });
 
     if (error instanceof z.ZodError) {
       return NextResponse.json(

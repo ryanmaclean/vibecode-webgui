@@ -8,11 +8,11 @@ import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '@/lib/mongodb';
 
 // Mock external dependencies
-jest.mock('../../mongodb', () => ({
+jest.mock('../../../lib/mongodb', () => ({
   getDatabase: jest.fn()
 }));
 
-jest.mock('../../monitoring', () => ({
+jest.mock('../../../lib/monitoring', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn()
