@@ -132,9 +132,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
     try {
       // Check if vector extension is installed
-      const extensionResult = await this.prisma.$queryRaw\`
+      const extensionResult = await this.prisma.$queryRaw`
         SELECT extname FROM pg_extension WHERE extname = 'vector'
-      \`;
+      `;
 
       if (!Array.isArray(extensionResult) || extensionResult.length === 0) {
         throw this.errorHandler.handleError(
@@ -147,9 +147,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       // Verify vector type exists
-      const typeResult = await this.prisma.$queryRaw\`
+      const typeResult = await this.prisma.$queryRaw`
         SELECT typname FROM pg_type WHERE typname = 'vector'
-      \`;
+      `;
 
       if (!Array.isArray(typeResult) || typeResult.length === 0) {
         throw this.errorHandler.handleError(
@@ -246,18 +246,18 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         // Process each chunk individually to handle pgvector embedding insertion
         for (let j = 0; j < batch.length; j++) {
           const chunk = batch[j];
-          const chunkId = \`\${fileId}-chunk-\${i + j}\`;
+          const chunkId = `\${fileId}-chunk-\${i + j}`;
 
           // Generate embedding using the provider
           const embedding = await this.generateEmbedding(chunk.content);
-          const embeddingString = \`[\${embedding.join(',')}]\`;
+          const embeddingString = `[\${embedding.join(',')}]`;
 
           try {
             // Use raw SQL to insert with pgvector embedding
-            await this.prisma.$executeRawUnsafe(\`
+            await this.prisma.$executeRawUnsafe(`
               INSERT INTO rag_chunks (file_id, chunk_id, content, start_line, end_line, tokens, embedding, metadata, created_at)
               VALUES ($1, $2, $3, $4, $5, $6, $7::vector, $8, NOW())
-            \`,
+            `,
               fileId,
               chunkId,
               chunk.content,
@@ -305,7 +305,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info(\`Stored \${chunks.length} chunks for file \${fileId}\`);
+        logger.info(`Stored \${chunks.length} chunks for file \${fileId}`);
       }
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -384,7 +384,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       // If cache miss or caching disabled, perform direct query
-      const embeddingString = \`[\${embedding.join(',')}]\`;
+      const embeddingString = `[\${embedding.join(',')}]`;
 
       // Build WHERE clause for filtering
       const whereConditions: string[] = [];
@@ -392,18 +392,18 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       let paramIndex = 1;
 
       if (workspaceId) {
-        whereConditions.push(\`f.workspace_id = $\${paramIndex}\`);
+        whereConditions.push(`f.workspace_id = $\${paramIndex}`);
         params.push(workspaceId);
         paramIndex++;
       }
 
       if (fileIds && fileIds.length > 0) {
-        whereConditions.push(\`rc.file_id = ANY($\${paramIndex}::int[])\`);
-        params.push(\`{\${fileIds.join(',')}}\`);
+        whereConditions.push(`rc.file_id = ANY($\${paramIndex}::int[])`);
+        params.push(`{\${fileIds.join(',')}}`);
         paramIndex++;
       }
 
-      const whereClause = whereConditions.length > 0 ? \`WHERE \${whereConditions.join(' AND ')}\` : '';
+      const whereClause = whereConditions.length > 0 ? `WHERE \${whereConditions.join(' AND ')}` : '';
 
       // Add embedding parameter
       const embeddingParamIndex = paramIndex++;
@@ -419,15 +419,15 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       // Calculate similarity expression based on search method
       const similarityExpression = this.postgresConfig.pgSearchMethod === 'inner_product'
-        ? \`(rc.embedding <#> $\${embeddingParamIndex}::vector) as similarity\`
-        : \`(1 - (rc.embedding \${distanceOperator} $\${embeddingParamIndex}::vector)) as similarity\`;
+        ? `(rc.embedding <#> $\${embeddingParamIndex}::vector) as similarity`
+        : `(1 - (rc.embedding \${distanceOperator} $\${embeddingParamIndex}::vector)) as similarity`;
 
       // Order by expression differs for inner product
       const orderByExpression = this.postgresConfig.pgSearchMethod === 'inner_product'
-        ? \`ORDER BY rc.embedding <#> $\${embeddingParamIndex}::vector DESC\`
-        : \`ORDER BY rc.embedding \${distanceOperator} $\${embeddingParamIndex}::vector\`;
+        ? `ORDER BY rc.embedding <#> $\${embeddingParamIndex}::vector DESC`
+        : `ORDER BY rc.embedding \${distanceOperator} $\${embeddingParamIndex}::vector`;
 
-      const sql = \`
+      const sql = `
         SELECT
           rc.chunk_id,
           rc.content,
@@ -443,7 +443,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         \${whereClause}
         \${orderByExpression}
         LIMIT $\${limitParamIndex}
-      \`;
+      `;
 
       // Add parameters in the correct order
       params.push(embeddingString, limit);
@@ -714,7 +714,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info(\`Deleted all chunks for file \${fileId}\`);
+        logger.info(`Deleted all chunks for file \${fileId}`);
       }
     } catch (error) {
       if (this.config.enableMetrics) {
@@ -753,14 +753,14 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     try {
-      const embeddingString = \`[\${embedding.join(',')}]\`;
+      const embeddingString = `[\${embedding.join(',')}]`;
 
       // Update embedding in database
-      await this.prisma.$executeRawUnsafe(\`
+      await this.prisma.$executeRawUnsafe(`
         UPDATE rag_chunks
         SET embedding = $1::vector, updated_at = NOW()
         WHERE chunk_id = $2
-      \`, embeddingString, id.toString());
+      `, embeddingString, id.toString());
 
       if (this.config.enableMetrics) {
         metrics.increment('postgres_vector_adapter.update_vector.success');

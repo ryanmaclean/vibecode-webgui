@@ -283,7 +283,9 @@ export async function PUT(request: NextRequest) {
     const fileSystem = getFileSystemInstance(config)
 
     try {
-      const metadata = await fileSystem.updateFile(filePath, content, expectedVersion)
+      // Convert expectedVersion from string to number if provided
+      const versionNumber = expectedVersion !== undefined ? parseInt(expectedVersion, 10) : undefined
+      const metadata = await fileSystem.updateFile(filePath, content, versionNumber)
       return NextResponse.json({
         success: true,
         metadata,

@@ -17,25 +17,14 @@ const chatRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Validate request body
-    const validation = await validateRequestBody(request, chatRequestSchema)
-    if (!validation.success) {
-      return NextResponse.json(
-        { error: 'Invalid request data', details: validation.error },
-        { status: 400 }
-      )
-    }
-
-    const { message, conversationId, model, temperature, maxTokens, stream } = validation.data
-
     // Get authentication token with development bypass support
     let token = await getToken({ req: request })
-    
+
     // Development testing bypass
     if (!token && process.env.NODE_ENV === 'development') {
       const testUserId = request.headers.get('x-test-user-id')
       const testUserRole = request.headers.get('x-test-user-role')
-      
+
       if (testUserId) {
         token = {
           sub: testUserId,
@@ -46,7 +35,7 @@ export async function POST(request: NextRequest) {
         } as any
       }
     }
-    
+
     if (!token?.sub) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -95,7 +84,7 @@ export async function POST(request: NextRequest) {
 
       case 'get_conversation':
         const { conversationId: convId } = data
-        const conv = await mongodbChatService.getConversation(convId)
+        const conv = await mongodbChatService.getConversationById(convId)
         if (!conv) {
           return NextResponse.json(
             { error: 'Conversation not found' },
