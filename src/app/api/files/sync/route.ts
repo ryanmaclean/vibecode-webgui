@@ -220,7 +220,7 @@ async function createFilesInWorkspace(
   kubectl.on('close', (code: number) => {
     if (code !== 0) {
       console.error(`kubectl process exited with code ${code}`)
-      reject(new Error(`kubectl exited with code ${code}`))
+      reject(new Error(`kubectl process exited with code ${code}`))
     } else {
       console.info('File creation pod applied successfully')
       resolve()
