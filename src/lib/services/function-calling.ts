@@ -1,6 +1,3 @@
-// import { logger } from '@/lib/logger';
-
-
 /**
  * Function Calling Service
  * Handles AI-powered function calling and execution for VibeCode
@@ -123,7 +120,7 @@ export class FunctionCallingService {
         }
 
         if (options.enableLogging) {
-          console.info(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
+          console.log(`Function ${call.name} executed successfully in ${result.executionTime}ms`);
         }
 
         return result;
