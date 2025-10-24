@@ -81,7 +81,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       this.isConnectionActive = true;
 
       if (this.config.enableLogging) {
-        logger.info('PostgreSQL vector database adapter connected successfully');
+        console.log('PostgreSQL vector database adapter connected successfully');
       }
 
       return true;
@@ -145,7 +145,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info('pgVector extension verified successfully');
+        console.log('pgVector extension verified successfully');
       }
     } catch (error) {
       // Only wrap in our error handler if it's not already a VectorDbError
@@ -263,7 +263,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         try {
           await this.cacheAdapter.invalidateCache({ fileId });
         } catch (cacheError) {
-          logger.warn('Failed to invalidate cache after storing vectors:', cacheError);
+          console.warn('Failed to invalidate cache after storing vectors:', cacheError);
         }
       }
 
@@ -274,7 +274,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info(`Stored \${chunks.length} chunks for file \${fileId}`);
+        console.log(`Stored \${chunks.length} chunks for file \${fileId}`);
       }
     } catch (error) {
       console.error('Error storing vector chunks:', error);
@@ -563,7 +563,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         try {
           await this.cacheAdapter.invalidateCache({ fileId });
         } catch (cacheError) {
-          logger.warn('Failed to invalidate cache after deleting vectors:', cacheError);
+          console.warn('Failed to invalidate cache after deleting vectors:', cacheError);
         }
       }
 
@@ -573,7 +573,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       }
 
       if (this.config.enableLogging) {
-        logger.info(`Deleted all chunks for file \${fileId}`);
+        console.log(`Deleted all chunks for file \${fileId}`);
       }
     } catch (error) {
       console.error('Error deleting file chunks:', error);
@@ -634,7 +634,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     }
 
     if (!this.prisma) {
-      logger.error('Cannot get stats: Prisma not initialized');
+      console.error('Cannot get stats: Prisma not initialized');
       return {
         totalChunks: 0,
         totalFiles: 0,
