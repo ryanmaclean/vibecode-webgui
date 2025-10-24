@@ -190,12 +190,12 @@ build_and_push_image() {
   # Return to project root
   cd ..
   
-  if [ -f "Dockerfile.production" ]; then
+  if [ -f "docker/Dockerfile" ]; then
     local image_tag="${TF_VAR_app_image_tag:-latest}"
     local full_image="$ACR_NAME.azurecr.io/vibecode-webgui:$image_tag"
     
     log "building image: $full_image"
-    docker build -f Dockerfile.production -t "$full_image" .
+    docker build -f docker/Dockerfile --target production -t "$full_image" .
     
     log "pushing to ACR: $full_image"
     az acr login --name "$ACR_NAME"
@@ -203,7 +203,7 @@ build_and_push_image() {
     
     log "✅ Image pushed: $full_image"
   else
-    log "⚠️  Dockerfile.production not found, skipping image build"
+    log "⚠️  docker/Dockerfile not found, skipping image build"
   fi
 }
 

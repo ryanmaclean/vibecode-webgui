@@ -20,6 +20,7 @@ services:
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - DATABASE_URL=${DATABASE_URL:-postgresql://vibecode:vibecode@postgres:5432/vibecode}
       - REDIS_URL=${REDIS_URL:-redis://redis:6379}
+      - NEXT_TELEMETRY_DISABLED=1
       - DD_IAST_ENABLED=true
       - DD_DBM_PROPAGATION_MODE=full
       - DD_SERVICE=vibecode-webgui

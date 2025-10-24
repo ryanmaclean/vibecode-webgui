@@ -147,10 +147,10 @@ fi
 # Check Dockerfile
 echo
 info "Checking container configuration..."
-if [ -f "Dockerfile.production" ]; then
+if [ -f "docker/Dockerfile" ]; then
   success "Production Dockerfile: Found"
 else
-  error "Production Dockerfile: NOT FOUND (Dockerfile.production required)"
+  error "Production Dockerfile: NOT FOUND (docker/Dockerfile required)"
   ((VALIDATION_ERRORS++))
 fi
 

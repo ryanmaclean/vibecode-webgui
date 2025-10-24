@@ -17,6 +17,7 @@ services:
     environment:
       - NODE_ENV=development
       - DOCKER=true
+      - NEXT_TELEMETRY_DISABLED=1
       - REDIS_URL=valkey://valkey:6379
       - VALKEY_URL=valkey://valkey:6379
     stdin_open: true

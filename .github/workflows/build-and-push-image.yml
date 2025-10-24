@@ -11,7 +11,7 @@ on:
       - 'next.config.js'
       - 'tailwind.config.js'
       - 'tsconfig.json'
-      - 'Dockerfile.production'
+      - 'docker/**'
       - '.github/workflows/build-and-push-image.yml'
   pull_request:
     branches: [ main ]
@@ -23,7 +23,7 @@ on:
       - 'next.config.js'
       - 'tailwind.config.js'
       - 'tsconfig.json'
-      - 'Dockerfile.production'
+      - 'docker/**'
   workflow_dispatch:
     inputs:
       force_build:
@@ -78,15 +78,23 @@ jobs:
       uses: docker/build-push-action@v5
       with:
         context: .
-        file: ./Dockerfile.production
+        file: ./docker/Dockerfile
+        target: production
         push: ${{ github.event_name != 'pull_request' }}
         tags: ${{ steps.meta.outputs.tags }}
         labels: ${{ steps.meta.outputs.labels }}
         cache-from: type=gha
         cache-to: type=gha,mode=max
         build-args: |
-          NODE_ENV=production
-          NEXT_TELEMETRY_DISABLED=1
+          NODE_VERSION=20
+          BASE_OS=alpine
+          BUILD_TARGET=production
+          INCLUDE_DEV_DEPS=false
+          ENABLE_SOURCE_MAPS=true
+          ENABLE_DATADOG=true
+          ENABLE_LIGHTNINGCSS=true
+          ENABLE_PRISMA=true
+          ENABLE_HEALTH_CHECK=true
 
     - name: Generate SBOM
       uses: anchore/sbom-action@v0
