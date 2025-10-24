@@ -161,8 +161,8 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       minConnections: this.config.minPoolSize ?? 2,
       maxConnections: this.config.maxPoolSize ?? 10,
       createConnection: () => this.createPoolConnection(),
-      validateConnectionFn: (connection) => this.validatePoolConnection(connection),
-      closeConnection: (connection) => this.closePoolConnection(connection),
+      validateConnectionFn: (connection: unknown) => this.validatePoolConnection(connection),
+      closeConnection: (connection: unknown) => this.closePoolConnection(connection),
     };
 
     this.connectionPool = new ConnectionPool(poolConfig);

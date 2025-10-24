@@ -11,7 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, Sparkles, Code, Rocket, Download, ExternalLink } from 'lucide-react'
+import { Loader, Sparkles, Code, Rocket, Download, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
 // import { logger } from '@/lib/logger';
 interface ProjectTemplate {
@@ -297,7 +297,7 @@ export default function AIProjectGenerator() {
           >
             {isGenerating ? (
               <>
-                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                <Loader className="h-4 w-4 animate-spin mr-2" />
                 Generating Project...
               </>
             ) : (

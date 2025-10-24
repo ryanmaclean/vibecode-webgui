@@ -114,7 +114,7 @@ export class CollaborationManager {
       const states = wsProvider.awareness?.getStates()
       if (states) {
         session.users.clear()
-        states.forEach((state, clientId) => {
+        states.forEach((state: any, clientId: number) => {
           if (state.user) {
             session.users.set(state.user.id, state.user)
           }

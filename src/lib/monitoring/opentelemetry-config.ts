@@ -249,7 +249,7 @@ export function initializeOpenTelemetry(): boolean {
         .then(() => {
           // OpenTelemetry terminated  
         })
-        .catch((error) => console.error('❌ Error terminating OpenTelemetry', error))
+        .catch((error: Error) => console.error('❌ Error terminating OpenTelemetry', error))
         .finally(() => process.exit(0));
     });
     

@@ -24,7 +24,7 @@ File,
   Folder,
   FolderOpen,
   Upload,
-  Trash2,
+  Trash,
   Download,
   Search,
   ChevronRight,
@@ -228,7 +228,7 @@ function FileTreeItem({
               className="h-6 w-6 p-0 text-destructive"
               aria-label="Delete file"
             >
-              <Trash2 className="h-3 w-3" aria-hidden="true" />
+              <Trash className="h-3 w-3" aria-hidden="true" />
             </Button>
           )}
         </div>

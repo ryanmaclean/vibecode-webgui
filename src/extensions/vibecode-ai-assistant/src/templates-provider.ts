@@ -151,7 +151,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
             vscode.window.showErrorMessage(
                 'Failed to load templates from marketplace. Please check your connection and try again.',
                 'Retry'
-            ).then(selection => {
+            ).then((selection: string | undefined) => {
                 if (selection === 'Retry') {
                     this.refresh();
                 }
@@ -165,7 +165,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
             const projectName = await vscode.window.showInputBox({
                 prompt: `Enter name for your new ${template.name} project`,
                 value: template.name.toLowerCase().replace(/\s+/g, '-'),
-                validateInput: (value) => {
+                validateInput: (value: string) => {
                     if (!value || value.trim().length === 0) {
                         return 'Project name is required';
                     }
@@ -197,7 +197,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
                 location: vscode.ProgressLocation.Notification,
                 title: `Creating ${template.name} project...`,
                 cancellable: false
-            }, async (progress) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>) => {
                 progress.report({ increment: 10, message: 'Initializing project...' });
 
                 const response = await axios.post(`${this.baseUrl}/api/ai/generate-project`, {
@@ -223,7 +223,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
                 `Successfully created ${template.name} project!`,
                 'Open Project',
                 'View in Explorer'
-            ).then(selection => {
+            ).then((selection: string | undefined) => {
                 if (selection === 'Open Project') {
                     const projectPath = vscode.Uri.file(`${folderUri[0].fsPath}/${projectName.trim()}`);
                     vscode.commands.executeCommand('vscode.openFolder', projectPath, true);
@@ -257,7 +257,7 @@ export class TemplatesProvider implements vscode.TreeDataProvider<Template | Tem
 
         // Handle messages from webview
         panel.webview.onDidReceiveMessage(
-            async (message) => {
+            async (message: { command: string }) => {
                 switch (message.command) {
                     case 'createProject':
                         panel.dispose();

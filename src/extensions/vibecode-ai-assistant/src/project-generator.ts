@@ -65,7 +65,7 @@ export class ProjectGenerator {
             const projectDescription = await vscode.window.showInputBox({
                 prompt: 'Describe the project you want to generate',
                 placeHolder: 'e.g., "A REST API for a todo app with user authentication"',
-                validateInput: (value) => {
+                validateInput: (value: string) => {
                     return value.trim().length < 10 ? 'Please provide a more detailed description' : null;
                 }
             });
@@ -101,7 +101,7 @@ export class ProjectGenerator {
                 location: vscode.ProgressLocation.Notification,
                 title: "Generating project...",
                 cancellable: true
-            }, async (progress, token) => {
+            }, async (progress: vscode.Progress<{ message?: string; increment?: number }>, token: vscode.CancellationToken) => {
                 progress.report({ increment: 0, message: 'Analyzing requirements...' });
 
                 const projectTemplate = await this.generateProjectTemplate(

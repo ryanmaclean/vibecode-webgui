@@ -92,7 +92,7 @@ export class EmbeddingService {
       
       // Format context from similar documents
       const context = similarDocs
-        .map((doc, i) => `Document ${i + 1}:\n${doc.content}`)
+        .map((doc: { content: string }, i: number) => `Document ${i + 1}:\n${doc.content}`)
         .join('\n\n');
 
       return {

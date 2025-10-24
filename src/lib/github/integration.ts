@@ -258,11 +258,11 @@ export class GitHubIntegration {
     // Add environment variables template
     if (generatedProject.envVars.length > 0) {
       const envContent = generatedProject.envVars
-        .map(env => `${env.name}=${env.value}`)
+        .map((env: { name: string; value: string }) => `${env.name}=${env.value}`)
         .join('\n')
-      
+
       const envExampleContent = generatedProject.envVars
-        .map(env => `# ${env.description}\n${env.name}=${env.value || 'your-value-here'}`)
+        .map((env: { name: string; value: string; description?: string }) => `# ${env.description}\n${env.name}=${env.value || 'your-value-here'}`)
         .join('\n\n')
 
       githubFiles.push({

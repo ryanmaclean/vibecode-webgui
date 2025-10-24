@@ -104,25 +104,18 @@ export async function GET(request: NextRequest) {
     import('@/lib/db/robust-db-connection'),
     import('@/lib/db/db-metrics'),
     import('@/lib/db/pool-adapter'),
-    import('@/lib/api/validation/helpers'),
+    import('@/lib/api/validation/middleware'),
   ]);
   const { createRobustConnection, getConnectionPoolStatus } = dbMod as any;
   const { getDatabaseMetricsCollector } = metricsMod as any;
   const { adaptPoolStatus } = poolMod as any;
-  const { checkRateLimit, validateQueryParams } = validationMod as any;
-
-  // Rate limiting: 100 requests per minute
-  const clientIp = request.headers.get('x-forwarded-for') || 'unknown';
-  const rateLimit = checkRateLimit(`health-db:${clientIp}`, 100, 60000);
-  if (!rateLimit.allowed) {
-    return rateLimit.response;
-  }
+  const { validateQueryParams } = validationMod as any;
 
   // Validate query parameters
   const { healthCheckQuerySchema } = await import('@/lib/api/validation/schemas');
   const validation = validateQueryParams(request, healthCheckQuerySchema);
   if (!validation.success) {
-    return validation.response;
+    return validation.error;
   }
   const { format, verbose } = validation.data;
 

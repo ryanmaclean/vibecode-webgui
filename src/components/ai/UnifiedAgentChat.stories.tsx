@@ -114,7 +114,7 @@ export const Default: Story = {
       console.log('Sending message:', message)
       alert(`Message sent: ${message}`)
     },
-    onConnectionStateChange: (state) => {
+    onConnectionStateChange: (state: string) => {
       console.log('Connection state:', state)
     }
   }

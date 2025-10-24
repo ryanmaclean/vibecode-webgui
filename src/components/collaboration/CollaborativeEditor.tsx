@@ -173,7 +173,8 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
 
       // Set up connection status monitoring
       if (session.provider) {
-        session.provider.on('status', ({ status }: { status: string }) => {
+        const provider = session.provider as any; // Type assertion for WebsocketProvider events
+        provider.on?.('status', ({ status }: { status: string }) => {
           setIsConnected(status === 'connected')
           if (status === 'disconnected') {
             setConnectionError('Connection lost. Attempting to reconnect...')
@@ -182,7 +183,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
           }
         })
 
-        session.provider.on('connection-error', (error: Error) => {
+        provider.on?.('connection-error', (error: Error) => {
           setConnectionError(`Connection error: ${error.message}`)
         })
       }
