@@ -12,9 +12,15 @@
  * - MDM policy integration
  */
 
-// import { console } from './logger'
+// import { createLogger } from './logger'
 
-const logger = console
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.debug,
+  log: console.log
+}
 
 // Server-only imports (not available in Edge Runtime)
 let execSync: typeof import('child_process').execSync

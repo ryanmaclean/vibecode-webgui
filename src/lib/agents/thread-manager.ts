@@ -19,9 +19,15 @@ import {
   ThreadSession,
 } from '@/types/openai-agents'
 import { OpenAIAgentsClient } from './openai-client'
-// import { console } from '@/lib/logger'
+// import { createLogger } from '@/lib/logger'
 
-const logger = console
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.debug,
+  log: console.log
+}
 
 export interface ThreadManagerConfig {
   client: OpenAIAgentsClient

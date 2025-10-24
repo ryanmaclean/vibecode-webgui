@@ -31,10 +31,16 @@ import {
   OpenAIAgentsConfig,
   ToolOutput,
 } from '@/types/openai-agents'
-// import { console } from '@/lib/logger'
+// import { createLogger } from '@/lib/logger'
 import { loadSecret } from '@/lib/security/macos-keychain-server'
 
-const logger = console
+const logger = {
+  info: console.log,
+  error: console.error,
+  warn: console.warn,
+  debug: console.debug,
+  log: console.log
+}
 
 export class OpenAIAgentsClient {
   private apiKey: string
