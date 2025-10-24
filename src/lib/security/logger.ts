@@ -17,7 +17,7 @@ export interface Logger {
   debug(message: string, metadata?: Record<string, unknown>): void
 }
 
-export function console.log(options: LoggerOptions): Logger {
+export function createLogger(options: LoggerOptions): Logger {
   const prefix = `[${options.module}:${options.scope}]`
 
   return {
