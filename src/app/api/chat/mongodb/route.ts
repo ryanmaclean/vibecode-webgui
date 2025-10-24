@@ -1,30 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
-// import { logger } from '@/lib/monitoring'
-import { z } from '@/lib/zod-compat'
-import { validateRequestBody } from '@/lib/api/validation/middleware'
-
-// Chat request validation schema
-const chatRequestSchema = z.object({
-  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
-  conversationId: z.string().optional(),
-  model: z.string().optional().default('gpt-4'),
-  temperature: z.number().min(0).max(2).optional().default(0.7),
-  maxTokens: z.number().min(1).max(4000).optional().default(1000),
-  stream: z.boolean().optional().default(false)
-})
+import { logger } from '@/lib/logger'
 
 export async function POST(request: NextRequest) {
   try {
     // Get authentication token with development bypass support
     let token = await getToken({ req: request })
-
+    
     // Development testing bypass
     if (!token && process.env.NODE_ENV === 'development') {
       const testUserId = request.headers.get('x-test-user-id')
       const testUserRole = request.headers.get('x-test-user-role')
-
+      
       if (testUserId) {
         token = {
           sub: testUserId,
@@ -35,7 +23,7 @@ export async function POST(request: NextRequest) {
         } as any
       }
     }
-
+    
     if (!token?.sub) {
       return NextResponse.json(
         { error: 'Authentication required' },
@@ -84,7 +72,7 @@ export async function POST(request: NextRequest) {
 
       case 'get_conversation':
         const { conversationId: convId } = data
-        const conv = await mongodbChatService.getConversationById(convId)
+        const conv = await mongodbChatService.getConversation(convId)
         if (!conv) {
           return NextResponse.json(
             { error: 'Conversation not found' },
@@ -132,7 +120,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('MongoDB Chat API Error', {
+    logger.error('MongoDB Chat API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
@@ -196,7 +184,7 @@ export async function GET(request: NextRequest) {
             }
           })
         } catch (mongoError) {
-          console.error('MongoDB health check failed', {
+          logger.error('MongoDB health check failed', {
             service: 'mongodb-chat-health',
             error: mongoError instanceof Error ? mongoError.message : String(mongoError)
           })
@@ -224,7 +212,7 @@ export async function GET(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('MongoDB Chat GET API Error', {
+    logger.error('MongoDB Chat GET API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error)
     })
