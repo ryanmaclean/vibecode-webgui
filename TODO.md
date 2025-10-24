@@ -39,9 +39,9 @@ release/* branches:
 ```
 
 ## 🧩 TYPE-SAFETY / BUILD BLOCKERS
+- [x] (Codex) **Health metrics API** (`src/app/api/health/database/metrics/route.ts`) — typed connection snapshots to eliminate implicit `any` filters.
 - [x] (Codex) **AI advanced features demo** (`src/app/ai-advanced-features-demo/page.tsx`) — solidified result interfaces and state narrowing (ReactNode + `tests/testSuite` errors cleared).
-- [ ] **Health metrics API** (`src/app/api/health/database/metrics/route.ts`) — annotate pg-stat helpers (`conn`, `age`, `idle` implicit anys).
-- [ ] **Health route test** (`src/app/api/health/__tests__/route.test.ts`) — stop deleting readonly helpers (copy instead of `delete`).
+- [x] **Health route test** (`src/app/api/health/__tests__/route.test.ts`) — stop deleting readonly helpers (copy instead of `delete`).
 - [ ] **Function-call controller** (`src/app/api/ai/function-call/route.ts`) — update types for `metadata`, config spreads, and `getFunctionDefinition` rename.
 - [ ] **Zustand stores & middleware** (`src/stores/uiStore.ts`, `middleware/optimisticMiddleware.ts`, `middleware/sseMiddleware.ts`) — add `zustand` types and refit middleware generics (coordinate before starting; >150 errors).
 - [ ] **Agent API discriminated unions** (`src/types/agent-api.ts`) — tighten event shapes so `type`/`progress` assignments satisfy index signatures.
@@ -1122,6 +1122,10 @@ The systematic E2E methodology has been successfully **validated across multiple
 - [ ] Implement advanced caching strategies for vector operations
 - [ ] Add predictive scaling based on usage patterns
 - [ ] Optimize database queries for large-scale operations
+- [ ] **Explore musl vs glibc for container deployments** - Evaluate Alpine Linux (musl) for smaller Docker images vs glibc for build performance
+  - **Context**: Current glibc setup optimal for build speed; musl offers 50-70% smaller containers
+  - **Trade-off**: musl 5-15% slower for CPU-intensive builds but better for deployment image size
+  - **Action**: Benchmark both approaches for production container optimization
 
 ### Developer Experience
 - [ ] Create comprehensive API documentation
