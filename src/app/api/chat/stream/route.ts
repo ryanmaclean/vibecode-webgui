@@ -1,24 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { mongodbChatService, ChatConversation } from '@/lib/services/chat-mongodb'
+import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { enhancedRAGService, RAGContext } from '@/lib/services/rag-enhanced'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 import { getToken } from 'next-auth/jwt'
-// import { logger } from '@/lib/monitoring'
-import { z } from '@/lib/zod-compat'
-import { loadSecret } from '@/lib/security/macos-keychain'
-
-const chatStreamSchema = z.object({
-  conversationId: z.string().min(1).max(100),
-  message: z.string().min(1).max(10000),
-  model: z.string().min(1).max(100).optional().default('anthropic/claude-3.5-sonnet'),
-  workspaceId: z.string().min(1).max(100).optional().default('default'),
-  files: z.array(z.object({
-    name: z.string().max(255),
-    content: z.string().max(100000)
-  })).max(10).optional().default([]),
-  enableWebSearch: z.boolean().optional().default(false),
-  enableRAG: z.boolean().optional().default(true)
-}).strict()
+import { logger } from '@/lib/logger'
 
 // Streaming chat endpoint with MongoDB persistence
 export async function POST(request: NextRequest) {
@@ -41,45 +26,39 @@ export async function POST(request: NextRequest) {
     userId = token?.sub || testUserId || 'anonymous'
 
     const body = await request.json()
-    const validatedData = chatStreamSchema.parse(body)
-    const {
-      conversationId,
-      message,
-      model,
-      workspaceId,
-      files,
-      enableWebSearch,
-      enableRAG
-    } = validatedData
+    const { 
+      conversationId, 
+      message, 
+      model = 'anthropic/claude-3.5-sonnet',
+      workspaceId = 'default',
+      files = [],
+      enableWebSearch = false,
+      enableRAG = true
+    } = body
+
+    if (!conversationId || !message) {
+      return NextResponse.json(
+        { error: 'conversationId and message are required' },
+        { status: 400 }
+      )
+    }
 
     // Validate session and conversation
-    let conversation = await mongodbChatService.getConversationById(conversationId)
-
+    let conversation = await mongodbChatService.getConversation(conversationId)
+    
     if (!conversation) {
       // Create new conversation if it doesn't exist
-      const newConv: any = await mongodbChatService.createConversation(
+      conversation = await mongodbChatService.createConversation(
         message.slice(0, 100) + (message.length > 100 ? '...' : ''),
         `session-${Date.now()}`,
         model,
         userId,
         workspaceId
       )
-
-      // Type guard: check if it's the new format with id
-      if (typeof newConv === 'object' && newConv !== null && 'id' in newConv) {
-        conversation = newConv as ChatConversation & { id: string; messages: Array<{ content: string; from: string }> }
-      } else {
-        // Fetch the conversation we just created - handle ObjectId
-        const convId = typeof newConv === 'object' ? newConv.toString() : String(newConv)
-        conversation = await mongodbChatService.getConversationById(convId)
-        if (!conversation) {
-          throw new Error('Failed to create conversation')
-        }
-      }
     }
 
     // Add user message to MongoDB
-    const userMessage = await mongodbChatService.addMessage(conversation.id, {
+    const userMessage = await mongodbChatService.addMessage(conversationId, {
       content: message,
       from: 'user',
       files: files.length > 0 ? files : undefined
@@ -109,7 +88,7 @@ export async function POST(request: NextRequest) {
             { tags: { user_id: userId, workspace_id: workspaceId } }
           )
           
-          console.info('RAG context built', {
+          logger.info('RAG context built', {
             service: 'enhanced-rag',
             sourcesCount: ragContext.sources.length,
             webResultsCount: ragContext.webResults?.length || 0,
@@ -119,7 +98,7 @@ export async function POST(request: NextRequest) {
         }
       } catch (error) {
         datadogMetrics.recordError('rag_context_failed', 'rag', '/api/chat/stream')
-        console.warn('RAG context building failed, continuing without context', {
+        logger.warn('RAG context building failed, continuing without context', {
           service: 'enhanced-rag',
           error: error instanceof Error ? error.message : String(error),
           conversationId
@@ -140,7 +119,7 @@ export async function POST(request: NextRequest) {
           const openRouterResponse = await fetch('https://openrouter.ai/api/v1/chat/completions', {
             method: 'POST',
             headers: {
-              'Authorization': `Bearer ${loadSecret('OPENROUTER_API_KEY') || process.env.OPENROUTER_API_KEY}`,
+              'Authorization': `Bearer ${process.env.OPENROUTER_API_KEY}`,
               'Content-Type': 'application/json',
               'X-Title': 'VibeCode WebGUI',
               'HTTP-Referer': process.env.NEXTAUTH_URL || 'http://localhost:3000',
@@ -154,7 +133,7 @@ export async function POST(request: NextRequest) {
                     `You are a helpful AI assistant integrated with VibeCode WebGUI. You have access to the user's workspace and can help with development tasks, code review, and general questions. Use the following context to provide more accurate and relevant responses:\n\n${enhancedRAGService.formatContextForPrompt(ragContext)}` :
                     'You are a helpful AI assistant integrated with VibeCode WebGUI. You have access to the user\'s workspace and can help with development tasks, code review, and general questions.'
                 },
-                ...conversation.messages.slice(-10).map((msg: any) => ({ // Last 10 messages for context
+                ...conversation.messages.slice(-10).map(msg => ({ // Last 10 messages for context
                   role: msg.from === 'user' ? 'user' : 'assistant',
                   content: msg.content
                 })),
@@ -203,7 +182,7 @@ export async function POST(request: NextRequest) {
                     )
                     
                     // Save assistant response to MongoDB
-                    await mongodbChatService.addMessage(conversation.id, {
+                    await mongodbChatService.addMessage(conversationId, {
                       content: assistantResponse,
                       from: 'assistant'
                     })
@@ -258,7 +237,7 @@ export async function POST(request: NextRequest) {
           statusCode = 500
           datadogMetrics.recordError('chat_stream_error', 'chat', '/api/chat/stream')
           
-          console.error('Streaming chat error', {
+          logger.error('Streaming chat error', {
             service: 'mongodb-chat-stream',
             error: error instanceof Error ? error.message : String(error),
             conversationId,
@@ -292,20 +271,10 @@ export async function POST(request: NextRequest) {
     statusCode = 500
     const responseTime = Date.now() - startTime
     
-    if (error instanceof z.ZodError) {
-      statusCode = 400
-      datadogMetrics.recordError('chat_stream_validation_error', 'validation', '/api/chat/stream')
-      
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: error.errors
-      }, { status: 400 })
-    }
-    
     datadogMetrics.recordError('chat_stream_api_error', 'api', '/api/chat/stream')
     datadogMetrics.recordResponseTime(responseTime, '/api/chat/stream', 'POST', statusCode)
     
-    console.error('Chat Stream API Error', {
+    logger.error('Chat Stream API Error', {
       service: 'vibecode-webgui',
       error: error instanceof Error ? error.message : String(error),
       userId: userId
