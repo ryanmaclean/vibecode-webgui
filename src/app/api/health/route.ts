@@ -7,8 +7,11 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
+import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
+import { validateQueryParams } from '@/lib/api/validation/middleware'
 // import { logger } from '@/lib/logger';
-export async function GET(_request: NextRequest) {
+
+export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
   const clientIp = request.headers.get('x-forwarded-for') ||
