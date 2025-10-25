@@ -31,15 +31,18 @@ observability, and MIT/BSD/Apache licensing (CDDL-compatible)
 ### OmniOS ARM64 (vibecode-omnios-arm64.pkr.hcl)
 QEMU builder that provisions OmniOS CE (experimental ARM64 build) with:
 - Native ARM64 architecture (Apple Silicon M1/M2/M3)
+- **Debian ARM64 userland via LX-branded zones** (apt/dpkg)
+- **code-server (VS Code in browser)** on port 8080
 - ZFS advanced filesystem
 - DTrace performance analysis
 - Zones for OS-level virtualization
-- Node.js via pkgsrc (SmartOS package manager)
+- Node.js 24 + PostgreSQL 16 + pgvector
 - Hypervisor.framework acceleration on macOS
 
 **Architecture**: ARM64/aarch64 (experimental build)
+**Userland**: Debian ARM64 in LX zone (full apt/dpkg ecosystem)
 **Use Case**: Apple Silicon Macs requiring native ARM64 performance with illumos/Solaris
-stability, ZFS, and DTrace. Ideal for development environments on M-series Macs.
+stability, Debian packages, ZFS, and DTrace. Browser-based VS Code included.
 
 ## Files
 
@@ -105,12 +108,19 @@ packer build infrastructure/packer/vibecode-omnios-arm64.pkr.hcl
 
 **Features**:
 - Native ARM64 execution (no emulation)
+- Debian ARM64 userland in LX zone
+- code-server (VS Code) at http://localhost:8080 (password: vibecode)
 - Hypervisor.framework acceleration
 - VNC on port 5901 for monitoring
 - Faster than x86_64 emulation
 
 **Output**: `output-vibecode-omnios-arm64/vibecode-omnios-arm64.qcow2` +
 `manifest-vibecode-omnios-arm64.json`
+
+**After Build**:
+- Access code-server: http://localhost:8080 (password: vibecode)
+- SSH to VM: ssh -p 2222 root@localhost
+- Login to Debian zone: zlogin vibecode-zone
 
 ### Using Built Images
 
@@ -201,8 +211,9 @@ source "qemu" "vibecode-arm64" {
 | **Architecture** | x86-64 | x86-64 | ARM64 (native) |
 | **Filesystem** | ext4 | ZFS (snapshots, compression) | ZFS (snapshots, compression) |
 | **Observability** | SystemTap, perf | DTrace (native) | DTrace (native) |
-| **Containers** | Docker, containerd | LX zones (OS virtualization) | Zones (OS virtualization) |
-| **Package Mgmt** | APT (native) | APT (in zone) + IPS (host) | pkgsrc (SmartOS) |
+| **Containers** | Docker, containerd | LX zones (OS virtualization) | LX zones (OS virtualization) |
+| **Package Mgmt** | APT (native) | APT (in zone) + IPS (host) | APT (in zone) + IPS (host) |
+| **code-server** | Not included | Not included | Included (port 8080) |
 | **Boot Time** | ~15s | ~20s (zone boot included) | ~18s |
 | **Licensing** | GPL | CDDL (MIT/BSD-compatible) | CDDL (MIT/BSD-compatible) |
 | **Apple Silicon** | Emulated (slow) | Emulated (slow) | Native (fast) |
