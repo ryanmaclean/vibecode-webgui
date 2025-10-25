@@ -348,6 +348,6 @@ export async function batchEvaluate(
 export function averageQuality(evaluations: QualityEvaluation[]): number {
   if (evaluations.length === 0) return 0;
 
-  const sum = evaluations.reduce((acc, eval) => acc + eval.score, 0);
+  const sum = evaluations.reduce((acc, evaluation) => acc + evaluation.score, 0);
   return sum / evaluations.length;
 }
