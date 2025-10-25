@@ -6,9 +6,28 @@
 import OpenAI from 'openai';
 import { logger } from '@/lib/logger';
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+let openai: OpenAI | null = null;
+
+function getClient(): OpenAI {
+  if (!openai) {
+    if (!process.env.OPENAI_API_KEY) {
+      // During build, OPENAI_API_KEY might be missing. We should not fail the build.
+      // The error will be thrown when the service is actually used.
+      if (process.env.NODE_ENV === 'production') {
+        logger.warn('OPENAI_API_KEY is not set. Embedding service will not work.');
+        // Return a dummy client to avoid crashing the build
+        return { embeddings: { create: () => { throw new Error('OPENAI_API_KEY is not set'); } } } as any;
+      } else {
+        throw new Error('The OPENAI_API_KEY environment variable is missing or empty.');
+      }
+    }
+    openai = new OpenAI({
+      apiKey: process.env.OPENAI_API_KEY
+    });
+  }
+  return openai;
+}
+
 
 export interface EmbeddingOptions {
   model?: string;
@@ -29,7 +48,8 @@ export class EmbeddingService {
     const { model = this.defaultModel, dimensions = this.defaultDimensions } = options;
     
     try {
-      const response = await openai.embeddings.create({
+      const client = getClient();
+      const response = await client.embeddings.create({
         model,
         input: text,
         dimensions
@@ -60,7 +80,8 @@ export class EmbeddingService {
     const { model = this.defaultModel, dimensions = this.defaultDimensions } = options;
     
     try {
-      const response = await openai.embeddings.create({
+      const client = getClient();
+      const response = await client.embeddings.create({
         model,
         input: texts,
         dimensions

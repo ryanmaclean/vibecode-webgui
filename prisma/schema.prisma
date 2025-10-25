@@ -129,6 +129,7 @@ model File {
   user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
   workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
   project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  rag_chunks RAGChunk[]
 
   @@index([user_id])
   @@index([workspace_id])

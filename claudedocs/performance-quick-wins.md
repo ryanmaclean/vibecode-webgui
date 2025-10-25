@@ -14,18 +14,14 @@
 
 ### Current Conflict:
 ```javascript
-<<<<<<< Updated upstream
-    // Note: Removed webpack minimize configuration - Next.js 15 uses SWC minification by default
-    // which provides better performance. The previous webpack minimizer was causing build errors.
-=======
-    config.optimization = {
-      ...config.optimization,
-      minimize: !dev,
-    }
+// RECOMMENDED RESOLUTION:
+config.optimization = {
+  ...config.optimization,
+  minimize: !dev, // Enable SWC minification in production
+}
 
-    // TerserPlugin modification removed - Next.js 15 uses SWC minifier
-    // The webpack minimizer array doesn't contain TerserPlugin in Next.js 15+
->>>>>>> Stashed changes
+// Note: Next.js 15 uses SWC minification by default
+// Previous webpack minimizer was causing build errors
 ```
 
 ### Resolution Required:
