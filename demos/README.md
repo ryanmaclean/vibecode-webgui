@@ -57,6 +57,7 @@ The prebuilt OpenVSCode microVM used for instant IDE boot is packaged as a GitHu
 To rebuild the package locally, run:
 
 ```bash
+scripts/release/fetch-openvscode-server.sh   # latest Gitpod OpenVSCode tarball
 scripts/release/package-fast-openvscode-vm.sh
 ```
 
@@ -68,28 +69,3 @@ gh release create fast-openvscode-vm-v<new-version> dist/fast-openvscode-vm-*.ta
 ```
 
 The packaging script intentionally ignores the VM sources via `.gitignore`, so the repository remains lightweight for other collaborators.
-
-### Automated Packaging Workflow (Draft)
-
-- Workflow file: see `archive/agents/release/2025-10-22-ci-workflow-skeleton.yml`
-- Jobs:
-  1. **package** – runs `scripts/release/package-fast-openvscode-vm.sh`, computes SHA256 sums, uploads artifacts
-  2. **draft-release** – downloads artifacts and creates a draft GitHub release with checksums attached
-- Trigger: `workflow_dispatch` (manual) with input `build-type` (`stable` or `insiders`)
-- Next steps: move the skeleton into `.github/workflows/` once handshake and benchmark checks are green.
-
-### Handshake Smoke Test
-
-Use `scripts/tests/fast-openvscode-handshake.sh` to verify the packaged image serves `/` without connection resets:
-
-```bash
-FAST_OPENVSCODE_HOST=http://localhost:8080 scripts/tests/fast-openvscode-handshake.sh
-```
-
-The script records curl traces under `artifacts/` for triage.
-
-### Nightly Verification Report
-
-- Template: `reports/nightly/template.md`
-- Checklist items: MCP health, Next.js API integration test, handshake smoke test, benchmark upload, release artifact verification, documentation updates.
-- Automation: Codex-Verification personas will wire the template into CI once benchmark and release jobs are stable.
