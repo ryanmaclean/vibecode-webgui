@@ -36,6 +36,7 @@ This creates a complete development environment with:
 ## 📚 Documentation
 
 ### 🎯 Featured
+- **[Platform Overview](./PLATFORM_OVERVIEW.md)** - Complete system overview ⭐⭐⭐
 - **[Multi-Agent Workflow Complete](./MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation ⭐
 - **[RAG System Architecture](./ARCHITECTURE_RAG_SYSTEM.md)** - Technical deep-dive ⭐
 - **[VibeCode CLI](../cli-tools/README.md)** - Unified development toolkit ⭐
