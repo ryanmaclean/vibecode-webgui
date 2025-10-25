@@ -1,5 +1,6 @@
 use crate::docker;
 use crate::mdns::{DiscoveredService, VibeCodeService};
+use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::command;
 
@@ -216,82 +217,88 @@ pub async fn start_vfkit_vm() -> Result<String, String> {
 }
 
     #[command]
-    pub async fn start_code_server() -> Result<String, String> {
+    pub async fn start_code_server(_app: tauri::AppHandle) -> Result<String, String> {
         use std::process::Command;
-        use std::path::Path;
 
-        // Try multiple code-server locations
-        let possible_paths = vec![
-            "/opt/homebrew/bin/code-server",
-            "/usr/local/bin/code-server",
-            "/usr/bin/code-server",
-            "code-server" // Try PATH
-        ];
-        
-        let mut code_server_path = None;
-        for path in &possible_paths {
-            let check = Command::new(path)
-                .arg("--version")
-                .output();
-            
+        // 1) Locate code-server: prefer bundled binary inside the app Resources/, then system paths
+        let mut candidates: Vec<PathBuf> = Vec::new();
+
+        // Compute macOS Resources path relative to current executable: App.app/Contents/MacOS/vibecode → Contents/Resources
+        if let Ok(exe) = std::env::current_exe() {
+            if let Some(contents_dir) = exe.parent().and_then(|p| p.parent()) {
+                let resources = contents_dir.join("Resources");
+                // Common placements
+                candidates.push(resources.join("codeserver/bin/code-server"));
+                candidates.push(resources.join("openvscode-server/bin/openvscode-server"));
+                // When tauri.conf.json uses "resources/codeserver/**" the on-disk path is Resources/resources/codeserver/...
+                candidates.push(resources.join("resources/codeserver/bin/code-server"));
+                candidates.push(resources.join("resources/openvscode-server/bin/openvscode-server"));
+            }
+        }
+
+        // System fallbacks
+        candidates.push(PathBuf::from("/opt/homebrew/bin/code-server"));
+        candidates.push(PathBuf::from("/usr/local/bin/code-server"));
+        candidates.push(PathBuf::from("/usr/bin/code-server"));
+        candidates.push(PathBuf::from("code-server"));
+
+        let mut chosen: Option<PathBuf> = None;
+        for c in candidates {
+            let check = Command::new(&c).arg("--version").stdout(Stdio::null()).stderr(Stdio::null()).output();
             if check.is_ok() {
-                code_server_path = Some(path.to_string());
+                chosen = Some(c);
                 break;
             }
         }
 
-        let code_server_path = match code_server_path {
-            Some(path) => path,
-            None => {
-                return Err("code-server not found. Please install with: brew install code-server or visit https://code-server.dev".to_string());
+        let code_server_path = chosen.ok_or_else(||
+            "code-server not found (bundled or system). Please ensure the app bundle includes codeserver/bin/code-server or install via Homebrew.".to_string()
+        )?;
+
+        // 2) If port 8080 is already in use, assume editor is running
+        if let Ok(output) = Command::new("lsof").arg("-ti:8080").output() {
+            if !output.stdout.is_empty() {
+                return Ok("code-server is already running on port 8080".to_string());
             }
-        };
-    
-    // Check if port 8080 is already in use
-    let port_check = Command::new("lsof")
-        .arg("-ti:8080")
-        .output();
-    
-    if let Ok(output) = port_check {
-        if !output.stdout.is_empty() {
-            return Ok("code-server is already running on port 8080".to_string());
         }
-    }
-    
-    // Start code-server on port 8080 with automatic trust, theme, and local Datadog tracing
-    let mut cmd = Command::new(code_server_path);
-    cmd.arg("--bind-addr")
-        .arg("0.0.0.0:8080")
-        .arg("--auth")
-        .arg("none")
-        .arg("--disable-telemetry")
-        .arg("--disable-update-check")
-        .arg("--disable-workspace-trust")
-        .arg("--disable-getting-started-override")
-        .arg("--user-data-dir")
-        .arg("~/.config/code-server/user-data")
-        .arg("--extensions-dir")
-        .arg("~/.config/code-server/extensions");
-    
-    // Add local Datadog tracing (no API key needed for local agent)
-    cmd.env("DD_TRACE_ENABLED", "true")
-        .env("DD_TRACE_AGENT_URL", "http://localhost:8126")
-        .env("DD_DOGSTATSD_URL", "localhost:8125")
-        .env("DD_SERVICE", "vibecode-codeserver")
-        .env("DD_ENV", "development")
-        .env("DD_VERSION", "1.0.0")
-        .env("DD_TRACE_SAMPLE_RATE", "1.0")
-        .env("DD_TRACE_ANALYTICS_ENABLED", "true")
-        .env("DD_TRACE_DEBUG", "true")
-        .env("DD_TRACE_STARTUP_LOGS", "true")
-        .env("DD_RUNTIME_METRICS_ENABLED", "true")
-        .env("DD_LOGS_ENABLED", "true")
-        .env("DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", "true")
-        .env("DD_HOSTNAME", hostname::get().unwrap_or_default().to_string_lossy().to_string());
-    
-    let _output = cmd.arg(".")
-        .spawn()
-        .map_err(|e| format!("Failed to start code-server: {}", e))?;
-    
-    Ok("code-server started successfully at http://localhost:8080".to_string())
+
+        // 3) Expand user dirs for data/extension directories
+        let home = dirs::home_dir().unwrap_or_else(|| PathBuf::from("."));
+        let user_data_dir = home.join(".config/code-server/user-data");
+        let extensions_dir = home.join(".config/code-server/extensions");
+        let workspace = home.join("vibecode/workspaces/default");
+        let _ = std::fs::create_dir_all(&user_data_dir);
+        let _ = std::fs::create_dir_all(&extensions_dir);
+        let _ = std::fs::create_dir_all(&workspace);
+
+        // 4) Launch bound to localhost
+        let mut cmd = Command::new(code_server_path);
+        cmd.arg("--bind-addr").arg("127.0.0.1:8080")
+            .arg("--auth").arg("none")
+            .arg("--disable-telemetry")
+            .arg("--disable-update-check")
+            .arg("--disable-workspace-trust")
+            .arg("--disable-getting-started-override")
+            .arg("--user-data-dir").arg(user_data_dir)
+            .arg("--extensions-dir").arg(extensions_dir)
+            .arg(workspace);
+
+        // Datadog local agent environment
+        cmd.env("DD_TRACE_ENABLED", "true")
+            .env("DD_TRACE_AGENT_URL", "http://localhost:8126")
+            .env("DD_DOGSTATSD_URL", "localhost:8125")
+            .env("DD_SERVICE", "vibecode-codeserver")
+            .env("DD_ENV", "development")
+            .env("DD_VERSION", "1.0.0")
+            .env("DD_TRACE_SAMPLE_RATE", "1.0")
+            .env("DD_TRACE_ANALYTICS_ENABLED", "true")
+            .env("DD_TRACE_DEBUG", "true")
+            .env("DD_TRACE_STARTUP_LOGS", "true")
+            .env("DD_RUNTIME_METRICS_ENABLED", "true")
+            .env("DD_LOGS_ENABLED", "true")
+            .env("DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", "true")
+            .env("DD_HOSTNAME", hostname::get().unwrap_or_default().to_string_lossy().to_string());
+
+        cmd.spawn().map_err(|e| format!("Failed to start code-server: {}", e))?;
+        Ok("code-server started successfully at http://127.0.0.1:8080".to_string())
 }

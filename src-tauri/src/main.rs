@@ -57,30 +57,23 @@ fn main() {
                 eprintln!("Failed to create system tray: {}", e);
             }
 
-            // Try vfkit VM first, fallback to direct code-server
+            // Start code-server immediately (prefer bundled), then optionally try vfkit
             let _app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                // Try to start vfkit VM with Datadog tracing
-                match commands::start_vfkit_vm().await {
+                // Start code-server first for fast local UX
+                match commands::start_code_server(_app_handle.clone()).await {
                     Ok(msg) => {
                         println!("✅ {}", msg);
-                        // Wait for VM to boot (20 seconds as mentioned)
-                        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
-                        
-                        // Start code-server after VM is ready
-                        match commands::start_code_server().await {
-                            Ok(msg) => println!("✅ {}", msg),
-                            Err(e) => eprintln!("❌ Failed to start code-server: {}", e),
+                        // Optionally try vfkit VM in the background (non-blocking)
+                        if let Err(e) = commands::start_vfkit_vm().await {
+                            println!("⚠️  vfkit VM not available: {}", e);
                         }
                     },
                     Err(e) => {
-                        println!("⚠️  vfkit VM not available: {}", e);
-                        println!("🔄 Falling back to direct code-server...");
-                        
-                        // Fallback to direct code-server if VM fails
-                        match commands::start_code_server().await {
-                            Ok(msg) => println!("✅ Fallback: {}", msg),
-                            Err(e) => eprintln!("❌ Failed to start code-server fallback: {}", e),
+                        eprintln!("❌ Failed to start code-server: {}", e);
+                        // As a fallback, still attempt vfkit VM
+                        if let Err(e2) = commands::start_vfkit_vm().await {
+                            println!("⚠️  vfkit VM not available: {}", e2);
                         }
                     }
                 }
