@@ -69,7 +69,7 @@ echo "Building Valkey with ARM64 optimizations..."
 NCPUS=$(nproc)
 echo "Using ${NCPUS} CPU cores for parallel build"
 
-make -j${NCPUS} \
+make -j"${NCPUS}" \
   MALLOC=libc \
   USE_SYSTEMD=no \
   BUILD_TLS=no \

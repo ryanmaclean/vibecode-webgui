@@ -23,14 +23,14 @@ echo "Host: ${VALKEY_HOST}:${VALKEY_PORT}"
 echo ""
 
 # Check if valkey-cli is available
-if ! command -v ${VALKEY_CLI} &> /dev/null; then
+if ! command -v "${VALKEY_CLI}" &> /dev/null; then
     echo -e "${RED}❌ Error: valkey-cli not found${NC}"
     echo "Please ensure Valkey is installed"
     exit 1
 fi
 
 # Check if valkey-benchmark is available
-if ! command -v ${VALKEY_BENCHMARK} &> /dev/null; then
+if ! command -v "${VALKEY_BENCHMARK}" &> /dev/null; then
     echo -e "${RED}❌ Error: valkey-benchmark not found${NC}"
     echo "Please ensure Valkey is installed"
     exit 1
@@ -38,7 +38,7 @@ fi
 
 # Test 1: Basic connectivity
 echo -e "${BLUE}=== Test 1: Connectivity ===${NC}"
-if ${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} PING | grep -q "PONG"; then
+if ${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" PING | grep -q "PONG"; then
     echo -e "${GREEN}✅ Connection successful${NC}"
 else
     echo -e "${RED}❌ Connection failed${NC}"
@@ -48,7 +48,7 @@ echo ""
 
 # Test 2: Server info
 echo -e "${BLUE}=== Test 2: Server Information ===${NC}"
-SERVER_INFO=$(${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} INFO server)
+SERVER_INFO=$(${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" INFO server)
 VERSION=$(echo "$SERVER_INFO" | grep "redis_version" | cut -d':' -f2 | tr -d '\r')
 OS=$(echo "$SERVER_INFO" | grep "os:" | cut -d':' -f2 | tr -d '\r')
 ARCH=$(echo "$SERVER_INFO" | grep "arch_bits" | cut -d':' -f2 | tr -d '\r')
@@ -60,7 +60,7 @@ echo ""
 
 # Test 3: Memory info
 echo -e "${BLUE}=== Test 3: Memory Usage ===${NC}"
-MEMORY_INFO=$(${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} INFO memory)
+MEMORY_INFO=$(${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" INFO memory)
 USED_MEMORY=$(echo "$MEMORY_INFO" | grep "used_memory_human:" | cut -d':' -f2 | tr -d '\r')
 PEAK_MEMORY=$(echo "$MEMORY_INFO" | grep "used_memory_peak_human:" | cut -d':' -f2 | tr -d '\r')
 
@@ -74,7 +74,7 @@ echo "Writing test keys..."
 
 # Write 1000 keys
 for i in {1..1000}; do
-    ${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} SET "test:key:${i}" "value${i}" > /dev/null
+    ${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" SET "test:key:${i}" "value${i}" > /dev/null
 done
 
 echo "Measuring GET latency (1000 operations)..."
@@ -82,7 +82,7 @@ echo "Measuring GET latency (1000 operations)..."
 # Measure latency using Valkey's built-in latency tracking
 START_TIME=$(date +%s%N)
 for i in {1..1000}; do
-    ${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} GET "test:key:${i}" > /dev/null
+    ${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" GET "test:key:${i}" > /dev/null
 done
 END_TIME=$(date +%s%N)
 
@@ -106,7 +106,7 @@ echo ""
 # Clean up test keys
 echo "Cleaning up test keys..."
 for i in {1..1000}; do
-    ${VALKEY_CLI} -h ${VALKEY_HOST} -p ${VALKEY_PORT} DEL "test:key:${i}" > /dev/null
+    ${VALKEY_CLI} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" DEL "test:key:${i}" > /dev/null
 done
 
 # Test 5: Operations per second benchmark
@@ -115,7 +115,7 @@ echo "Running benchmark (this may take 30-60 seconds)..."
 echo ""
 
 # Run benchmark with different operation types
-BENCHMARK_OUTPUT=$(${VALKEY_BENCHMARK} -h ${VALKEY_HOST} -p ${VALKEY_PORT} -t set,get,incr,lpush,lpop,sadd,spop -q -c 50 -n 100000)
+BENCHMARK_OUTPUT=$(${VALKEY_BENCHMARK} -h "${VALKEY_HOST}" -p "${VALKEY_PORT}" -t set,get,incr,lpush,lpop,sadd,spop -q -c 50 -n 100000)
 
 echo "$BENCHMARK_OUTPUT"
 echo ""
@@ -150,7 +150,8 @@ if [ "$ARCH" = "aarch64" ] || [ "$ARCH" = "arm64" ]; then
     
     # Check for ARM64-specific features in build
     if command -v ldd &> /dev/null; then
-        LIBC_INFO=$(ldd $(which valkey-server) 2>&1 || echo "static")
+        VALKEY_SERVER_PATH=$(command -v valkey-server)
+        LIBC_INFO=$(ldd "${VALKEY_SERVER_PATH}" 2>&1 || echo "static")
         if echo "$LIBC_INFO" | grep -q "musl"; then
             echo -e "${GREEN}✅ Built with musl libc (Alpine optimized)${NC}"
         elif echo "$LIBC_INFO" | grep -q "static"; then
