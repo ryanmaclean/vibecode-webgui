@@ -1,150 +1,118 @@
 #!/usr/bin/env bash
-# Build a minimal kernel for MiniVim benchmarks
-# Usage: ./build-minivim-kernel.sh <arch> <kernel_version>
-# Example: ./build-minivim-kernel.sh x86_64 6.17
-
 set -euo pipefail
 
-ARCH="${1:-x86_64}"
-KERNEL_VERSION="${2:-6.6.52}"
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "${SCRIPT_DIR}/../.." && pwd)"
-WORK_DIR="${REPO_ROOT}/artifacts/minivim/work"
-OUTPUT_DIR="${REPO_ROOT}/bench-images/minivim"
-CONFIG_DIR="${SCRIPT_DIR}/kernel-configs"
+# Build a minimal kernel + initramfs tuned for vi launch benchmarks.
+# Usage: ./scripts/benchmarks/build-minivim-kernel.sh [x86_64|arm64|armv7] [kernel_version]
 
-# Build configuration
-SKIP_MRPROPER="${SKIP_MRPROPER:-0}"
-MINIVIM_JOBS="${MINIVIM_JOBS:-$(nproc 2>/dev/null || echo 4)}"
-CROSS_COMPILE="${CROSS_COMPILE:-}"
+ARCH_TARGET=${1:-x86_64}
+KERNEL_VERSION=${2:-6.12.10}
 
-# Kernel download URL
-KERNEL_MAJOR="${KERNEL_VERSION%%.*}"
-KERNEL_URL="https://cdn.kernel.org/pub/linux/kernel/v${KERNEL_MAJOR}.x/linux-${KERNEL_VERSION}.tar.xz"
-
-echo "=== MiniVim Kernel Build ==="
-echo "Architecture: ${ARCH}"
-echo "Kernel Version: ${KERNEL_VERSION}"
-echo "Jobs: ${MINIVIM_JOBS}"
-echo "Cross Compile: ${CROSS_COMPILE:-native}"
-echo "Skip mrproper: ${SKIP_MRPROPER}"
-echo ""
-
-# Create directories
-mkdir -p "${WORK_DIR}" "${OUTPUT_DIR}"
-
-# Download and extract kernel if needed
-KERNEL_SRC="${WORK_DIR}/linux-${KERNEL_VERSION}"
-if [ ! -d "${KERNEL_SRC}" ]; then
-    echo "Downloading kernel ${KERNEL_VERSION}..."
-    cd "${WORK_DIR}"
-    curl -L -o "linux-${KERNEL_VERSION}.tar.xz" "${KERNEL_URL}"
-    echo "Extracting kernel..."
-    tar -xf "linux-${KERNEL_VERSION}.tar.xz"
-    rm "linux-${KERNEL_VERSION}.tar.xz"
+SUPPORTED_ARCHES=(x86_64 arm64 armv7)
+if [[ ! " ${SUPPORTED_ARCHES[*]} " =~ " ${ARCH_TARGET} " ]]; then
+  echo "error: unsupported arch '${ARCH_TARGET}'. choose from: ${SUPPORTED_ARCHES[*]}" >&2
+  exit 1
 fi
 
-cd "${KERNEL_SRC}"
+REPO_ROOT=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
+BUILD_ROOT="${REPO_ROOT}/bench-images/minivim"
+SRC_DIR="${BUILD_ROOT}/linux-${KERNEL_VERSION}"
+CONFIG_DIR="${REPO_ROOT}/scripts/benchmarks/kernel-configs"
 
-# Clean if requested
-if [ "${SKIP_MRPROPER}" = "0" ]; then
-    echo "Running make mrproper..."
-    make mrproper
-fi
+SKIP_MRPROPER=${SKIP_MRPROPER:-0}
 
-# Determine kernel config fragments
-BASE_CONFIG="${CONFIG_DIR}/minivim-base.config"
-ARCH_CONFIG="${CONFIG_DIR}/minivim-${ARCH}.config"
-
-if [ ! -f "${BASE_CONFIG}" ]; then
-    echo "ERROR: Base config not found: ${BASE_CONFIG}"
-    exit 1
-fi
-
-if [ ! -f "${ARCH_CONFIG}" ]; then
-    echo "ERROR: Architecture config not found: ${ARCH_CONFIG}"
-    exit 1
-fi
-
-# Start with minimal defconfig
-echo "Creating minimal config..."
-case "${ARCH}" in
-    x86_64)
-        make ARCH=x86_64 tinyconfig
-        ;;
-    arm64)
-        make ARCH=arm64 tinyconfig
-        ;;
-    armv7)
-        make ARCH=arm tinyconfig
-        ;;
-    *)
-        echo "ERROR: Unsupported architecture: ${ARCH}"
-        exit 1
-        ;;
-esac
-
-# Merge config fragments
-echo "Merging config fragments..."
-./scripts/kconfig/merge_config.sh -m .config "${BASE_CONFIG}" "${ARCH_CONFIG}"
-
-# Build the kernel
-echo "Building kernel..."
-BUILD_ARCH="${ARCH}"
-if [ "${ARCH}" = "armv7" ]; then
-    BUILD_ARCH="arm"
-fi
-
-# Determine output image name
-case "${ARCH}" in
-    x86_64)
-        IMAGE_NAME="bzImage"
-        IMAGE_PATH="arch/x86/boot/bzImage"
-        ;;
-    arm64)
-        IMAGE_NAME="Image"
-        IMAGE_PATH="arch/arm64/boot/Image"
-        ;;
-    armv7)
-        IMAGE_NAME="zImage"
-        IMAGE_PATH="arch/arm/boot/zImage"
-        ;;
-esac
-
-# Build with clang if available, otherwise gcc
-if command -v clang &> /dev/null; then
-    echo "Building with clang..."
-    make ARCH="${BUILD_ARCH}" \
-         CROSS_COMPILE="${CROSS_COMPILE}" \
-         LLVM=1 \
-         CC="clang" \
-         -j"${MINIVIM_JOBS}" \
-         "${IMAGE_NAME}"
+if command -v gmake >/dev/null 2>&1; then
+  MAKE_BIN=$(command -v gmake)
 else
-    echo "Building with gcc..."
-    make ARCH="${BUILD_ARCH}" \
-         CROSS_COMPILE="${CROSS_COMPILE}" \
-         -j"${MINIVIM_JOBS}" \
-         "${IMAGE_NAME}"
+  MAKE_BIN=$(command -v make)
 fi
 
-# Copy output
-OUTPUT_IMAGE="${OUTPUT_DIR}/${IMAGE_NAME}-${ARCH}-${KERNEL_VERSION}"
-echo "Copying ${IMAGE_PATH} to ${OUTPUT_IMAGE}..."
-cp "${IMAGE_PATH}" "${OUTPUT_IMAGE}"
-
-# Capture CPU info for documentation
-echo "Capturing CPU info..."
-if command -v lscpu &> /dev/null; then
-    lscpu > "${OUTPUT_DIR}/cpuinfo-${ARCH}.txt" 2>&1 || true
-elif [ -f /proc/cpuinfo ]; then
-    cat /proc/cpuinfo > "${OUTPUT_DIR}/cpuinfo-${ARCH}.txt" 2>&1 || true
-elif command -v sysctl &> /dev/null; then
-    sysctl -a | grep -i cpu > "${OUTPUT_DIR}/cpuinfo-${ARCH}.txt" 2>&1 || true
+JOBS=${MINIVIM_JOBS:-}
+if [[ -z "${JOBS}" ]]; then
+  if command -v nproc >/dev/null 2>&1; then
+    JOBS=$(nproc)
+  elif command -v sysctl >/dev/null 2>&1; then
+    JOBS=$(sysctl -n hw.logicalcpu)
+  else
+    JOBS=4
+  fi
 fi
 
-echo ""
-echo "=== Build Complete ==="
-echo "Output: ${OUTPUT_IMAGE}"
-echo "Size: $(du -h "${OUTPUT_IMAGE}" | cut -f1)"
-echo ""
+mkdir -p "${BUILD_ROOT}"
+
+KERNEL_TARBALL="linux-${KERNEL_VERSION}.tar.xz"
+KERNEL_URL="https://cdn.kernel.org/pub/linux/kernel/v6.x/${KERNEL_TARBALL}"
+if [[ ! -f "${BUILD_ROOT}/${KERNEL_TARBALL}" ]]; then
+  curl -L "${KERNEL_URL}" -o "${BUILD_ROOT}/${KERNEL_TARBALL}"
+fi
+
+if [[ ! -d "${SRC_DIR}" ]]; then
+  tar -C "${BUILD_ROOT}" --no-same-owner -xf "${BUILD_ROOT}/${KERNEL_TARBALL}"
+fi
+
+pushd "${SRC_DIR}" >/dev/null
+
+# Detect host CPU features for informational logging.
+CPU_INFO_FILE="${BUILD_ROOT}/cpuinfo-${ARCH_TARGET}.txt"
+if command -v lscpu >/dev/null 2>&1; then
+  lscpu >"${CPU_INFO_FILE}" || true
+elif [[ "${ARCH_TARGET}" == "x86_64" ]] && command -v sysctl >/dev/null 2>&1; then
+  sysctl -a | grep machdep.cpu >"${CPU_INFO_FILE}" || true
+fi
+
+defconfig_target="${ARCH_TARGET}"
+case "${ARCH_TARGET}" in
+  x86_64)
+    DEFCONFIG="x86_64_defconfig"
+    ;;
+  arm64)
+    DEFCONFIG="defconfig"
+    ;;
+  armv7)
+    DEFCONFIG="multi_v7_defconfig"
+    ;;
+esac
+
+if [[ "${SKIP_MRPROPER}" != "1" ]]; then
+  "${MAKE_BIN}" ARCH="${ARCH_TARGET}" mrproper
+fi
+
+"${MAKE_BIN}" ARCH="${ARCH_TARGET}" "${DEFCONFIG}"
+
+# Merge common + arch-specific fragments.
+MERGE_FILES=(
+  "${CONFIG_DIR}/minivim-base.config"
+  "${CONFIG_DIR}/minivim-${ARCH_TARGET}.config"
+)
+./scripts/kconfig/merge_config.sh -m .config "${MERGE_FILES[@]}"
+"${MAKE_BIN}" ARCH="${ARCH_TARGET}" olddefconfig
+
+# Drop objtool / ORC requirements for lightweight build.
+if [[ "${ARCH_TARGET}" == "x86_64" ]]; then
+  ./scripts/config --disable UNWINDER_ORC --disable STACK_VALIDATION
+  "${MAKE_BIN}" ARCH="${ARCH_TARGET}" olddefconfig
+fi
+
+# Build the kernel image.
+MAKEFLAGS=(ARCH="${ARCH_TARGET}" -j"${JOBS}" bzImage)
+if [[ "${ARCH_TARGET}" == "armv7" ]]; then
+  MAKEFLAGS=(ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j"${JOBS}" zImage)
+fi
+
+"${MAKE_BIN}" "${MAKEFLAGS[@]}"
+
+# Copy artifacts to bench-images/minivim
+case "${ARCH_TARGET}" in
+  x86_64)
+    cp arch/x86/boot/bzImage "${BUILD_ROOT}/bzImage-${ARCH_TARGET}-${KERNEL_VERSION}"
+    ;;
+  arm64)
+    cp arch/arm64/boot/Image "${BUILD_ROOT}/Image-${ARCH_TARGET}-${KERNEL_VERSION}"
+    ;;
+  armv7)
+    cp arch/arm/boot/zImage "${BUILD_ROOT}/zImage-${ARCH_TARGET}-${KERNEL_VERSION}"
+    ;;
+esac
+
+popd >/dev/null
+
+echo "Kernel build complete. Artifacts saved in ${BUILD_ROOT}."
