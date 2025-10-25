@@ -44,8 +44,8 @@ jobs:
           if [ "$input" = "all" ]; then
             profiles='["minimal","standard","ai","web","full"]'
           else
-            # Convert comma-separated to JSON array, trimming whitespace
-            profiles=$(echo "$input" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R -s -c 'split("\n") | map(select(length > 0))')
+            # Convert comma-separated to JSON array
+            profiles=$(echo "$input" | jq -R -s -c 'split(",") | map(select(length > 0))')
           fi
           echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
           echo "Building profiles: $profiles"
