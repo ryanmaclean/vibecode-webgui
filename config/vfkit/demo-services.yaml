@@ -1,0 +1,112 @@
+# vfkit VM: Redis + nginx Services
+# Alpine ARM64 - Minimal services VM for VibeCode demo
+# Usage: vfkit --config demo-services.yaml
+
+name: vibecode-services
+vcpus: 2
+memory: 1024  # 1GB
+
+# Alpine ARM64 kernel and initrd
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  - path: /opt/vibecode/disks/services-vm.img
+    size: 10G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:58"
+    forward:
+      - host_port: 80
+        guest_port: 80
+      - host_port: 443
+        guest_port: 443
+      - host_port: 6379
+        guest_port: 6379
+
+# Serial console
+serial:
+  - stdio
+
+# Resource limits
+limits:
+  cpu_percent: 40
+  io_weight: 300
+
+# Services setup script
+setup: |
+  #!/bin/sh
+  # Update and install services
+  apk update
+  apk add --no-cache \
+    redis \
+    nginx \
+    openssl
+  
+  # Configure Redis
+  cat > /etc/redis.conf <<EOF
+bind 0.0.0.0
+port 6379
+protected-mode no
+maxmemory 512mb
+maxmemory-policy allkeys-lru
+save 900 1
+save 300 10
+save 60 10000
+EOF
+  
+  # Start Redis
+  redis-server /etc/redis.conf --daemonize yes
+  
+  # Configure nginx as reverse proxy
+  cat > /etc/nginx/http.d/vibecode.conf <<EOF
+upstream code_server {
+    server 192.168.64.2:8080;
+}
+
+upstream vibecode_api {
+    server 192.168.64.2:3000;
+}
+
+server {
+    listen 80;
+    server_name _;
+    
+    # code-server
+    location /ide/ {
+        proxy_pass http://code_server/;
+        proxy_set_header Host \$host;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection upgrade;
+        proxy_set_header Accept-Encoding gzip;
+    }
+    
+    # VibeCode API
+    location /api/ {
+        proxy_pass http://vibecode_api/;
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+    }
+    
+    # Health check
+    location /health {
+        access_log off;
+        return 200 "healthy\n";
+        add_header Content-Type text/plain;
+    }
+}
+EOF
+  
+  # Start nginx
+  nginx
+  
+  echo "Services ready:"
+  echo "  Redis: localhost:6379"
+  echo "  nginx: localhost:80"
+  echo "  Proxy: http://localhost/ide/ -> code-server"
+  echo "  Proxy: http://localhost/api/ -> VibeCode API"

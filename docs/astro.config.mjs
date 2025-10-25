@@ -124,6 +124,28 @@ export default defineConfig({
           ]
         },
         {
+          label: 'Wiki & Sessions',
+          collapsed: true,
+          items: [
+            { label: 'Wiki Home', link: '/wiki/' },
+            {
+              label: 'Session Notes',
+              collapsed: true,
+              autogenerate: { directory: 'wiki/sessions' }
+            },
+            {
+              label: 'Guides',
+              collapsed: true,
+              autogenerate: { directory: 'wiki/guides' }
+            },
+            {
+              label: 'Proposals',
+              collapsed: true,
+              autogenerate: { directory: 'wiki/proposals' }
+            }
+          ]
+        },
+        {
           label: 'Deployment',
           collapsed: true,
           autogenerate: { directory: 'deployment' }
