@@ -567,9 +567,16 @@ const variant = 'gpt4';
 
 **Rollback Command:**
 ```bash
-# Emergency rollback
-./scripts/rollback-experiment.sh speech_transcription_model gpt41
+# Emergency rollback (script to be created in Phase 2)
+# ./scripts/rollback-experiment.sh speech_transcription_model gpt41
+
+# Manual rollback for now:
+# Update variant assignment logic to use previous variant
+# Deploy immediately
+# Verify metrics return to baseline
 ```
+
+**Note:** Automated rollback script will be created during Phase 2 implementation.
 
 ## Timeline Summary
 
