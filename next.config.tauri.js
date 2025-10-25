@@ -10,6 +10,15 @@ const nextConfig = {
 
   // Disable server-side features
   trailingSlash: true,
+  
+  // Skip problematic routes during build
+  generateStaticParams: false,
+  
+  // Disable page data collection for API routes
+  experimental: {
+    skipTrailingSlashRedirect: true,
+    skipMiddlewareUrlNormalize: true,
+  },
 
   // Webpack configuration
   webpack: (config, { dev, isServer }) => {

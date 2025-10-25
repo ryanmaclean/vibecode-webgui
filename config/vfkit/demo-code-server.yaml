@@ -1,0 +1,78 @@
+# vfkit VM: code-server Development Environment
+# Alpine ARM64 - Minimal IDE VM for VibeCode demo
+# Usage: vfkit --config demo-code-server.yaml
+
+name: vibecode-dev
+vcpus: 4
+memory: 4096  # 4GB
+
+# Alpine ARM64 kernel and initrd
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  - path: /opt/vibecode/disks/dev-vm.img
+    size: 20G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:56"
+
+# Shared directories (virtiofs)
+shares:
+  - source: ~/vibecode-workspace
+    target: /workspace
+    readonly: false
+
+# Serial console
+serial:
+  - stdio
+
+# Resource limits
+limits:
+  cpu_percent: 80
+  io_weight: 500
+
+# Alpine setup script (cloud-init style)
+# Run on first boot
+setup: |
+  #!/bin/sh
+  # Update and install packages
+  apk update
+  apk add --no-cache \
+    code-server \
+    nodejs \
+    npm \
+    git \
+    curl \
+    bash \
+    sudo \
+    shadow
+  
+  # Create vibecode user
+  adduser -D -s /bin/bash vibecode
+  echo "vibecode:vibecode" | chpasswd
+  adduser vibecode wheel
+  
+  # Configure code-server
+  mkdir -p /home/vibecode/.config/code-server
+  cat > /home/vibecode/.config/code-server/config.yaml <<EOF
+bind-addr: 0.0.0.0:8080
+auth: password
+password: vibecode
+cert: false
+EOF
+  
+  # Install VibeCode dependencies
+  cd /workspace
+  npm install
+  
+  # Start code-server
+  sudo -u vibecode code-server --bind-addr 0.0.0.0:8080 &
+  
+  echo "code-server ready at http://localhost:8080"
+  echo "Password: vibecode"
