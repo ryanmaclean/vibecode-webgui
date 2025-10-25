@@ -6,6 +6,7 @@ import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
 import { TauriMenuBarProvider } from '@/components/TauriMenuBarProvider';
+import { TauriIdeBootstrapper } from '@/components/TauriIdeBootstrapper';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -62,6 +63,7 @@ export default function RootLayout({
       >
         <Providers>
           <TauriMenuBarProvider />
+          <TauriIdeBootstrapper />
           {children}
         </Providers>
       </body>
