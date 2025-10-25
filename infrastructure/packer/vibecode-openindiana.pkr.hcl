@@ -1,5 +1,13 @@
 # Packer template for OpenIndiana-based VibeCode development image
 # Creates VM with ZFS, DTrace, LX zones, and Debian userland
+#
+# ARCHITECTURE NOTE:
+# OpenIndiana officially supports x86-64 only. ARM64 support is experimental.
+# On Apple Silicon (M1/M2/M3), this template uses QEMU x86_64 emulation which
+# is slower than native virtualization but maintains full compatibility.
+#
+# For native ARM64 performance on Apple Silicon, use the Alpine Linux vfkit
+# templates in scripts/vfkit/ which provide similar ZFS-like features via btrfs.
 
 packer {
   required_plugins {
@@ -15,9 +23,16 @@ variable "vm_name" {
   default = "vibecode-openindiana"
 }
 
+variable "architecture" {
+  type        = string
+  default     = "x86_64"
+  description = "Target architecture: x86_64 (official) or aarch64 (experimental, emulated)"
+}
+
 variable "iso_url" {
   type    = string
   default = "https://dlc.openindiana.org/isos/hipster/OI-hipster-gui-20231027.iso"
+  description = "OpenIndiana ISO URL (x86-64 only, no official ARM64 ISO available)"
 }
 
 variable "iso_checksum" {
@@ -65,16 +80,16 @@ source "qemu" "openindiana" {
   format           = "qcow2"
   accelerator      = "kvm"
   qemu_binary      = "qemu-system-x86_64"
-  headless         = false  # OpenIndiana installer requires GUI interaction
+  headless         = false # OpenIndiana installer requires GUI interaction
   cpus             = var.cpus
   memory           = var.memory
 
   # Network configuration
-  net_device       = "virtio-net"
-  disk_interface   = "virtio"
+  net_device     = "virtio-net"
+  disk_interface = "virtio"
 
   # Boot configuration for OpenIndiana installer
-  boot_wait        = "10s"
+  boot_wait = "10s"
   boot_command = [
     # OpenIndiana text installer automation
     # Note: This is a simplified boot command. Full automation may require
@@ -83,11 +98,11 @@ source "qemu" "openindiana" {
   ]
 
   # SSH configuration (after installation)
-  ssh_username     = "root"
-  ssh_password     = "vibecode"
-  ssh_timeout      = "60m"
+  ssh_username           = "root"
+  ssh_password           = "vibecode"
+  ssh_timeout            = "60m"
   ssh_handshake_attempts = 100
-  ssh_pty          = true
+  ssh_pty                = true
 
   # Display configuration
   vnc_bind_address = "0.0.0.0"
@@ -249,13 +264,13 @@ build {
   post-processor "manifest" {
     output = "manifest-vibecode-openindiana.json"
     custom_data = {
-      zone_name        = var.zone_name
-      zone_cpus        = var.zone_cpus
-      zone_memory      = var.zone_memory
+      zone_name           = var.zone_name
+      zone_cpus           = var.zone_cpus
+      zone_memory         = var.zone_memory
       openindiana_version = "Hipster 2023.10"
-      debian_version   = "11"
-      nodejs_version   = "24"
-      postgresql_version = "16"
+      debian_version      = "11"
+      nodejs_version      = "24"
+      postgresql_version  = "16"
     }
   }
 
