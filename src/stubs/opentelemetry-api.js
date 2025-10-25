@@ -26,4 +26,7 @@ module.exports = {
     OK: 0,
     ERROR: 1,
   },
+  // Add createContextKey function
+  createContextKey: (description) => Symbol(description),
+  ROOT_CONTEXT: {},
 };
