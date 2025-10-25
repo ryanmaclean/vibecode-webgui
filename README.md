@@ -140,6 +140,175 @@ npm run dev
 
 Visit [http://localhost:3000](http://localhost:3000) to see the application.
 
+## 🧪 Benchmarking References
+
+- Mini-VM vi latency notes and kernel build instructions: [docs/virtualization/minivim-kernel.md](./docs/virtualization/minivim-kernel.md)
+- Downloadable bundle: [MiniVim x86_64 (2025-10-02) release](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/minivim-20251002) (`minivim-x86_64-20251002.tar.gz` ships the stripped bzImage, BusyBox binary, initramfs, CPU info, and benchmark JSON)
+
+| Guest | Avg boot-to-vi (3 runs) | vi runtime |
+|-------|------------------------|------------|
+| BusyBox initramfs (MiniVim kernel) | **4.38 s** | 0.11 s |
+| TinyCore 16.2 | 15.1 s | 0.14 s |
+| Yocto 5.2.3 core-image-minimal | 12.9 s | 0.08 s |
+| OpenWrt 23.05.4 | 18.8 s | 0.07 s |
+
+Raw measurements live in `reports/benchmarks/vim_qemu_results_2025-10-02-stripped.json` and `reports/benchmarks/vim_hypervisor_results_2025-10-02.json`.
+
+#### Quick start (QEMU/Lima/HyperKit)
+```bash
+# 1. Fetch and unpack the bundle
+curl -LO https://github.com/ryanmaclean/vibecode-webgui/releases/download/minivim-20251002/minivim-x86_64-20251002.tar.gz
+tar -xzf minivim-x86_64-20251002.tar.gz
+
+# 2. Run the BusyBox vi benchmark in QEMU (exits immediately)
+qemu-system-x86_64 \
+  -m 256 \
+  -kernel bzImage-x86_64-6.12.10-stripped \
+  -initrd busybox-initramfs.cpio.gz \
+  -append "console=ttyS0 loglevel=3" \
+  -nographic
+
+# The initramfs drops to /bin/sh; `vi -u NONE -U NONE -c q` is what the benchmark harness measures.
+```
+Use the same bzImage/initramfs pair for Lima (`vmType=vz`/`vmType=qemu`) or HyperKit by pointing the guest config at the extracted files. The bundle’s `vim_qemu_results_2025-10-02-stripped.json` captures the latest timings (BusyBox 4.38 s total, TinyCore 15.1 s, Yocto 12.9 s, OpenWrt 18.8 s).
+
+### ⚡ Fast OpenVSCode MicroVM (x86_64 & arm64)
+
+Download the latest archives from the [Fast OpenVSCode release](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/fast-openvscode-vm-v0.1.0):
+
+- `fast-openvscode-vm-*.tar.gz` (x86_64, Hypervisor.framework/KVM)
+- `fast-openvscode-vm-arm64-*.tar.gz` (arm64, Virtualization.framework/Colima)
+
+Extract beside the repo and use the helper script:
+
+```bash
+# x86_64 (default flow)
+tar -xzf fast-openvscode-vm-20251003T015614Z.tar.gz
+scripts/benchmarks/vscode_microvm.sh start
+curl -I http://127.0.0.1:3600/
+scripts/benchmarks/vscode_microvm.sh stop
+
+# arm64 (QEMU on Intel, Virtualization.framework on Apple Silicon)
+tar -xzf fast-openvscode-vm-arm64-20251003T022414Z.tar.gz
+MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh start
+curl -I http://127.0.0.1:4600/
+MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh stop
+```
+
+Need a fresh build? Repackage with `scripts/release/package-fast-openvscode-vm.sh fast-openvscode-vm[-arm64]`; new tarballs drop into `dist/` along with `.sha256` files for release uploads. For CI automation, use `scripts/ci/package_microvm.sh` to benchmark and package both arches in one shot.
+
+## 💻 Fast OpenVSCode on macOS Virtualization.framework
+
+- Ships the same `fast-openvscode-vm` payload we use in QEMU, but boots it with Apple’s native hypervisor for lower overhead on modern macOS.
+- Works today on Intel Macs (x86_64 kernel + initramfs). Apple Silicon support lands with the arm64 image tracked in [#553](https://github.com/ryanmaclean/vibecode-webgui/issues/553).
+- Reuses the BusyBox init that auto-starts our OpenVSCode fork, proxying `/` and `/healthz` while the editor warms up.
+- Full release flow (download helper, packaging, verification, pending tasks) is captured in `wiki/FAST_OPENVSCODIUM_RELEASE_FLOW.md`.
+
+### 1. Prerequisites
+
+- macOS 14.6 or newer with the Virtualization entitlement enabled (launch `vfkit` once to grant permissions).
+- Xcode command line tools (`xcode-select --install`) for `cpio`/`pkgutil` updates.
+- Homebrew packages:
+
+```bash
+brew install vfkit gvisor-tap-vsock
+```
+
+`vfkit` exposes the Virtualization.framework CLI, while `gvproxy` from gvisor-tap-vsock gives us user-mode networking with dynamic port forwarding.
+
+### 2. Package (or download) the OpenVSCode initramfs
+
+```bash
+# from repo root
+scripts/release/fetch-openvscode-server.sh   # pulls the latest Gitpod tarball
+scripts/release/package-fast-openvscode-vm.sh
+ls dist/fast-openvscode-vm-*.tar.gz
+```
+
+`fetch-openvscode-server.sh` also writes a `.sha256` beside the tarball so you can verify the download before injecting it into the initramfs. Grab the published release (`fast-openvscode-vm-v0.1.0`) instead if you don’t want to rebuild (see `demos/README.md`).
+
+### 3. Adjust the static IP for gvproxy networking
+
+```bash
+REPO_ROOT=$(pwd)
+tmpdir=$(mktemp -d)
+pushd "$tmpdir"
+gzip -dc "$REPO_ROOT/fast-openvscode-vm/openvscode-initramfs.cpio.gz" | cpio -idm
+sed -i '' 's/10.0.2.15/192.168.127.2/' init
+sed -i '' 's/10.0.2.2/192.168.127.1/' init
+find . -print0 | cpio --null -ov --format=newc | gzip > "$REPO_ROOT/fast-openvscode-vm/openvscode-initramfs.cpio.gz"
+popd
+rm -rf "$tmpdir"
+```
+
+> On GNU sed (Linux builders), drop the empty string after `-i`.
+
+### 4. Launch gvproxy for user-mode networking
+
+```bash
+gvproxy --listen unix:///tmp/openvscode-net.sock \
+        --listen-vfkit unixgram:///tmp/openvscode-vfkit.sock \
+        --ssh-port 0 --mtu 1500 &
+GVPROXY_PID=$!
+```
+
+The UNIX datagram socket lets `vfkit` hand packets to `gvproxy`, which in turn NATs traffic and exposes a REST API for port forwarding.
+
+### 5. Boot the microVM with vfkit
+
+```bash
+vfkit \
+  --cpus 4 \
+  --memory 2048 \
+  --bootloader linux,\\
+kernel=$PWD/fast-openvscode-vm/vmlinuz-host,\\
+initrd=$PWD/fast-openvscode-vm/openvscode-initramfs.cpio.gz,\\
+cmdline="\"rdinit=/init console=hvc0 quiet\"" \
+  --device virtio-net,unixSocketPath=/tmp/openvscode-vfkit.sock,mac=5a:94:ef:e4:0c:ee \
+  --device virtio-serial,stdio
+```
+
+When the init script reports “OpenVSCode ready”, note the DHCP lease in `/tmp/openvscode-net.sock` via `curl` (next step).
+
+### 6. Forward the IDE port back to localhost
+
+```bash
+# replace 192.168.127.2 if gvproxy handed out a different address
+curl --unix-socket /tmp/openvscode-net.sock \
+  http:/unix/services/forwarder/expose \
+  -X POST -d '{"local":":3600","remote":"192.168.127.2:3000"}'
+```
+
+Visit `http://127.0.0.1:3600` to reach the forked OpenVSCode instance. Tear down by killing `vfkit`, undoing the port forward (`forwarder/unexpose`), then stopping `gvproxy`.
+
+### 7. Optional: wrap the IDE in HTTPS (for Safari/iPad testing)
+
+```bash
+# run from repo root after the microVM is up
+npm run microvm:https
+# opens https://127.0.0.1:3443 -> http://127.0.0.1:3600
+```
+
+The helper script generates a local certificate (prefers mkcert, falls back to OpenSSL) and proxies HTTPS/WebSocket traffic to the microVM. Trust the certificate in macOS/iPadOS so Safari can treat the workspace as a secure context—extensions will otherwise fail to activate.
+
+### 8. Apple Silicon alternative (preview)
+
+Until the arm64 initramfs is ready, Apple Silicon users can run the same fork inside Apple’s `container` CLI, which spins up per-container micro-VMs on macOS 15.5+. Install the CLI and launch a Kali-derived workspace as a placeholder while #553 lands:
+
+```bash
+brew install --cask container
+container system start
+container run --rm -it kalilinux/kali-rolling
+```
+
+Swap in our OpenVSCode OCI image once the arm64 build artifact ships. Apple’s container runtime uses Virtualization.framework under the hood and boots OCI images in under a second.
+
+> Need Rosetta-backed x86 tooling on Apple Silicon? The Virtualization framework now supports Rosetta inside Linux guests—download an ARM ISO and enable Rosetta when provisioning with vfkit or `vzcli`.
+
+> **Heads-up:** Virtualization.framework is macOS-only, so there is no supported path to run these microVMs directly on iPhone or iPad; use a browser pointed at a remote IDE instead.
+
+> **Safari testing tip:** host the editor over HTTPS (mkcert/self-signed certs work locally). WebKit blocks many extension APIs on plain HTTP, so serving the workspace securely is required before validating extensions on iPad.
+
 ## Project Structure
 
 ```
