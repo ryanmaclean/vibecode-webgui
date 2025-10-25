@@ -36,20 +36,20 @@ variable "vm_name" {
 
 variable "omnios_version" {
   type    = string
-  default = "braich"
-  description = "OmniOS ARM64 experimental branch name"
+  default = "r151055"
+  description = "OmniOS ARM64 version (r151055 is latest as of Oct 2025)"
 }
 
 variable "iso_url" {
   type    = string
-  default = "https://downloads.omnios.org/media/braich/omnios-r151054-braich.raw.xz"
-  description = "OmniOS ARM64 raw image (experimental)"
+  default = "https://downloads.omnios.org/media/braich/braich-151055.raw.zst"
+  description = "OmniOS ARM64 raw image (experimental, zstd compressed)"
 }
 
 variable "iso_checksum" {
   type    = string
-  default = "none"
-  description = "SHA256 checksum (verify from https://downloads.omnios.org/media/braich/)"
+  default = "sha256:9c96ce2d3348b0aa5451cf739366188039c36a96a5392b6b2af67979779cb705"
+  description = "SHA256 checksum from https://downloads.omnios.org/media/braich/braich-151055.raw.zst.sha256"
 }
 
 variable "disk_size" {
