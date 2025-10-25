@@ -8,7 +8,7 @@
 import React, { useState, useEffect } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, Database, Activity, TrendingUp, Clock, Users } from 'lucide-react'
+import { AlertCircle, Database, Activity, TrendingUp, Clock, Users } from 'lucide-react'
 
 interface PoolMetrics {
   pool_name: string
@@ -156,7 +156,7 @@ export default function ConnectionPoolDashboard() {
     return (
       <div className="bg-red-50 border border-red-200 rounded-lg p-4">
         <div className="flex items-center">
-          <AlertTriangle className="h-5 w-5 text-red-500 mr-2" />
+          <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
           <span className="text-red-700">Error loading dashboard: {error}</span>
         </div>
         <button
@@ -255,7 +255,7 @@ export default function ConnectionPoolDashboard() {
                   {data.overview.critical_alerts} critical, {data.overview.warning_alerts} warning
                 </p>
               </div>
-              <AlertTriangle className={`h-8 w-8 ${data.overview.active_alerts > 0 ? 'text-red-500' : 'text-gray-400'}`} />
+              <AlertCircle className={`h-8 w-8 ${data.overview.active_alerts > 0 ? 'text-red-500' : 'text-gray-400'}`} />
             </div>
           </CardContent>
         </Card>
@@ -266,7 +266,7 @@ export default function ConnectionPoolDashboard() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center">
-              <AlertTriangle className="h-5 w-5 mr-2 text-red-500" />
+              <AlertCircle className="h-5 w-5 mr-2 text-red-500" />
               Active Alerts ({data.alerts.active.length})
             </CardTitle>
           </CardHeader>
@@ -376,7 +376,7 @@ export default function ConnectionPoolDashboard() {
                 <div className="mt-3 space-y-1">
                   {pool.alerts.map((alert) => (
                     <div key={alert.id} className="text-sm text-red-600 flex items-center">
-                      <AlertTriangle className="h-3 w-3 mr-1" />
+                      <AlertCircle className="h-3 w-3 mr-1" />
                       {alert.message}
                     </div>
                   ))}
