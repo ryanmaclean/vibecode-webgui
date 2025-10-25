@@ -15,12 +15,11 @@ while true; do
     echo "==============================================="
     echo ""
     
-    # Check if running
-    if pgrep vibecode-vm > /dev/null; then
+    # Check if running (capture PID once)
+    VM_PID=$(pgrep vibecode-vm || echo "")
+    
+    if [ -n "$VM_PID" ]; then
         echo "Status:     ✅ Running"
-        
-        # Get PID
-        VM_PID=$(pgrep vibecode-vm)
         echo "PID:        $VM_PID"
         
         # Memory usage

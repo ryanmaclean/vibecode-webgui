@@ -98,17 +98,18 @@ fi
 echo "🚀 Starting VibeCode VM..."
 ./bin/vibecode-vm > ~/.vibecode/vm/migration.log 2>&1 &
 VM_PID=$!
-sleep 5
+sleep 3
 
 # 6. Verify VM is running
-if kill -0 $VM_PID 2>/dev/null; then
-    echo "   ✅ VibeCode VM is running! (PID: $VM_PID)"
-    echo "   📍 Code-server: http://localhost:8080"
-else
+if ! kill -0 $VM_PID 2>/dev/null; then
     echo "   ❌ Failed to start VM"
     echo "   Check logs: ~/.vibecode/vm/migration.log"
+    cat ~/.vibecode/vm/migration.log
     exit 1
 fi
+
+echo "   ✅ VibeCode VM is running! (PID: $VM_PID)"
+echo "   📍 Code-server: http://localhost:8080"
 
 # 7. Performance comparison
 echo ""

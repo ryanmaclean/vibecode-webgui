@@ -77,9 +77,7 @@ fi
 # Create archive
 echo ""
 echo "📦 Creating archive..."
-tar czf "$DIAG_DIR.tar.gz" -C /tmp "$(basename "$DIAG_DIR")" 2>/dev/null
-
-if [ -f "$DIAG_DIR.tar.gz" ]; then
+if tar czf "$DIAG_DIR.tar.gz" -C /tmp "$(basename "$DIAG_DIR")" 2>&1; then
     echo "✅ Diagnostics collected successfully!"
     echo ""
     echo "📍 Archive location: $DIAG_DIR.tar.gz"
@@ -89,5 +87,6 @@ if [ -f "$DIAG_DIR.tar.gz" ]; then
     echo "https://github.com/ryanmaclean/vibecode-webgui/issues"
 else
     echo "❌ Failed to create archive"
+    echo "   Diagnostic files are available at: $DIAG_DIR"
     exit 1
 fi

@@ -8,6 +8,13 @@ echo "📊 Performance Comparison: Docker Desktop vs VibeCode VM"
 echo "=========================================================="
 echo ""
 
+# Check dependencies
+if ! command -v bc &>/dev/null; then
+    echo "❌ This script requires 'bc' for calculations"
+    echo "   Install with: brew install bc"
+    exit 1
+fi
+
 # Check if we're on macOS
 if [[ "$(uname)" != "Darwin" ]]; then
     echo "❌ This script must be run on macOS"
@@ -165,13 +172,13 @@ cat > "$RESULTS_FILE" << EOF
   "platform": "$(uname -m)",
   "os_version": "$(sw_vers -productVersion)",
   "docker": {
-    "boot_time_seconds": $([ "$DOCKER_BOOT" != "N/A" ] && echo "$DOCKER_BOOT" || echo "null"),
-    "memory_mb": $([ "$DOCKER_MEM" != "N/A" ] && echo "$DOCKER_MEM" || echo "null"),
+    "boot_time_seconds": $([ "$DOCKER_BOOT" != "N/A" ] && echo "\"$DOCKER_BOOT\"" || echo "null"),
+    "memory_mb": $([ "$DOCKER_MEM" != "N/A" ] && echo "\"$DOCKER_MEM\"" || echo "null"),
     "binary_size_mb": $DOCKER_SIZE_MB
   },
   "vibecode": {
-    "boot_time_seconds": $([ "$VIBECODE_BOOT" != "N/A" ] && echo "$VIBECODE_BOOT" || echo "null"),
-    "memory_mb": $([ "$VIBECODE_MEM" != "N/A" ] && echo "$VIBECODE_MEM" || echo "null"),
+    "boot_time_seconds": $([ "$VIBECODE_BOOT" != "N/A" ] && echo "\"$VIBECODE_BOOT\"" || echo "null"),
+    "memory_mb": $([ "$VIBECODE_MEM" != "N/A" ] && echo "\"$VIBECODE_MEM\"" || echo "null"),
     "binary_size_kb": $VIBECODE_SIZE_KB
   }
 }
