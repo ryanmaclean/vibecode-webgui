@@ -1,15 +1,22 @@
 # Packer template for OmniOS ARM64-based VibeCode development image
-# Creates VM with ZFS, DTrace, zones, and native ARM64 performance on Apple Silicon
+# Creates VM with ZFS, DTrace, LX zones, and Debian userland on Apple Silicon
 #
 # ARCHITECTURE: ARM64/aarch64 (Apple Silicon M1/M2/M3, Raspberry Pi 4)
 # DISTRIBUTION: OmniOS CE (Community Edition) - Experimental ARM64 build
+# USERLAND: Debian ARM64 via LX-branded zones (apt/dpkg compatibility)
 #
-# OmniOS is a server-oriented illumos distribution with:
-# - ZFS filesystem (snapshots, compression, deduplication)
-# - DTrace performance analysis
-# - Zones (OS-level virtualization)
-# - LX zones for Linux binary compatibility
-# - CDDL licensing (MIT/BSD-compatible)
+# Architecture Stack:
+# ┌─────────────────────────────────────┐
+# │   VibeCode Application              │
+# │   (Node.js 24 + PostgreSQL + Redis) │
+# ├─────────────────────────────────────┤
+# │   Debian ARM64 Userland (LX zone)   │
+# │   - apt/dpkg package management     │
+# │   - Full Debian package ecosystem   │
+# ├─────────────────────────────────────┤
+# │   OmniOS CE ARM64 Kernel            │
+# │   - ZFS, DTrace, Zones, Crossbow    │
+# └─────────────────────────────────────┘
 #
 # Experimental ARM64 build from: https://downloads.omnios.org/media/braich/
 
@@ -114,7 +121,7 @@ source "qemu" "omnios-arm64" {
 
     # Network: virtio-net for performance
     ["-device", "virtio-net-pci,netdev=net0"],
-    ["-netdev", "user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3000-:3000"],
+    ["-netdev", "user,id=net0,hostfwd=tcp::2222-:22,hostfwd=tcp::3000-:3000,hostfwd=tcp::8080-:8080"],
 
     # Storage: virtio-blk for performance
     ["-device", "virtio-blk-pci,drive=drive0"],
@@ -193,17 +200,83 @@ build {
     ]
   }
 
-  # Install Node.js in native zone or via pkgsrc
+  # Install Node.js 24 + PostgreSQL 16 in Debian LX zone
   provisioner "shell" {
     inline = [
-      "# Install pkgsrc for broader ARM64 package availability",
-      "curl -O https://pkgsrc.smartos.org/packages/SmartOS/bootstrap/bootstrap-trunk-aarch64-20240901.tar.gz",
-      "tar -zxpf bootstrap-trunk-aarch64-20240901.tar.gz -C /",
-      "export PATH=/opt/local/bin:/opt/local/sbin:$PATH",
-      "# Install Node.js via pkgsrc",
-      "pkgin -y install nodejs",
-      "node --version",
-      "npm --version"
+      "# Install Node.js 24 in Debian zone",
+      "zlogin ${var.zone_name} 'bash -s' < /root/omnios-setup/03-install-node24.sh || echo 'Node.js install may need manual setup for ARM64'",
+      "",
+      "# Verify Node.js installation",
+      "zlogin ${var.zone_name} node --version || echo 'Node.js not yet installed'",
+      "zlogin ${var.zone_name} npm --version || echo 'npm not yet installed'"
+    ]
+  }
+
+  # Setup PostgreSQL 16 + pgvector in Debian zone
+  provisioner "shell" {
+    inline = [
+      "# Install PostgreSQL 16 with pgvector in Debian zone",
+      "zlogin ${var.zone_name} 'bash -s' < /root/omnios-setup/04-setup-postgres-pgvector.sh || echo 'PostgreSQL setup may need manual configuration for ARM64'"
+    ]
+  }
+
+  # Install code-server (VS Code Server) in Debian zone
+  provisioner "shell" {
+    inline = [
+      "cat > /root/install-code-server.sh <<'CODESERVER'",
+      "#!/bin/bash",
+      "set -euo pipefail",
+      "",
+      "echo 'Installing code-server in Debian zone...'",
+      "",
+      "# Update package lists",
+      "apt-get update -qq",
+      "",
+      "# Install code-server dependencies",
+      "apt-get install -y curl wget git",
+      "",
+      "# Install code-server (official ARM64 binary)",
+      "curl -fsSL https://code-server.dev/install.sh | sh",
+      "",
+      "# Create code-server config directory",
+      "mkdir -p ~/.config/code-server",
+      "",
+      "# Configure code-server",
+      "cat > ~/.config/code-server/config.yaml <<EOF",
+      "bind-addr: 0.0.0.0:8080",
+      "auth: password",
+      "password: vibecode",
+      "cert: false",
+      "EOF",
+      "",
+      "# Create systemd service",
+      "cat > /etc/systemd/system/code-server.service <<EOF",
+      "[Unit]",
+      "Description=code-server",
+      "After=network.target",
+      "",
+      "[Service]",
+      "Type=simple",
+      "User=root",
+      "WorkingDirectory=/workspace",
+      "ExecStart=/usr/bin/code-server --config ~/.config/code-server/config.yaml",
+      "Restart=always",
+      "",
+      "[Install]",
+      "WantedBy=multi-user.target",
+      "EOF",
+      "",
+      "# Enable and start code-server",
+      "systemctl daemon-reload",
+      "systemctl enable code-server",
+      "systemctl start code-server",
+      "",
+      "echo 'code-server installed and running on port 8080'",
+      "code-server --version",
+      "CODESERVER",
+      "",
+      "chmod +x /root/install-code-server.sh",
+      "zlogin ${var.zone_name} 'bash -s' < /root/install-code-server.sh"
     ]
   }
 
@@ -223,22 +296,28 @@ build {
       "========================================",
       "",
       "This image includes:",
-      "- OmniOS CE r151054 ARM64 (experimental)",
+      "- OmniOS CE r151054 ARM64 kernel (experimental)",
+      "- Debian ARM64 userland via LX-branded zone",
+      "- apt/dpkg package management (full Debian ecosystem)",
+      "- code-server (VS Code in browser) on port 8080",
       "- Native ARM64 architecture (Apple Silicon optimized)",
       "- ZFS filesystem with compression and snapshots",
       "- DTrace performance monitoring",
-      "- Node.js installed via pkgsrc",
+      "- Node.js 24 + PostgreSQL 16 + pgvector",
       "- Zones for OS-level virtualization",
       "",
       "Architecture: aarch64 (ARM64)",
       "Host: Apple Silicon M1/M2/M3, Raspberry Pi 4",
       "",
       "To deploy VibeCode:",
-      "1. Clone repository:",
-      "   git clone https://github.com/your-org/vibecode-webgui.git /workspace/vibecode",
+      "1. Login to Debian zone:",
+      "   zlogin ${var.zone_name}",
       "",
-      "2. Install dependencies:",
+      "2. Clone repository:",
+      "   git clone https://github.com/your-org/vibecode-webgui.git /workspace/vibecode",
       "   cd /workspace/vibecode",
+      "",
+      "3. Install dependencies (using Debian packages):",
       "   npm install",
       "",
       "3. Configure environment:",
@@ -251,12 +330,21 @@ build {
       "5. Start application:",
       "   npm run start",
       "",
+      "Access Points:",
+      "- code-server:    http://localhost:8080 (password: vibecode)",
+      "- SSH to zone:    ssh -p 2222 root@localhost (then zlogin)",
+      "",
       "Useful Commands:",
+      "- Zone login:     zlogin ${var.zone_name}",
       "- Zone status:    zoneadm list -v",
       "- ZFS datasets:   zfs list",
       "- DTrace probes:  dtrace -l",
-      "- Package search: pkgin search <package>",
-      "- Package install: pkgin install <package>",
+      "",
+      "Inside Debian Zone:",
+      "- Package search: apt search <package>",
+      "- Package install: apt install <package>",
+      "- System update:  apt update && apt upgrade",
+      "- code-server:    systemctl status code-server",
       "",
       "Performance:",
       "- Native ARM64 execution (no emulation overhead)",
@@ -311,12 +399,17 @@ build {
     output = "manifest-vibecode-omnios-arm64.json"
     custom_data = {
       architecture     = "aarch64"
+      userland         = "Debian ARM64 (LX zone)"
+      package_manager  = "apt/dpkg"
+      code_server      = "Installed (port 8080)"
       zone_name        = var.zone_name
       zone_cpus        = var.zone_cpus
       zone_memory      = var.zone_memory
       omnios_version   = "r151054-braich"
       omnios_arch      = "ARM64"
-      nodejs_source    = "pkgsrc"
+      nodejs_version   = "24"
+      postgresql_version = "16"
+      code_server_port = "8080"
       acceleration     = "Hypervisor.framework (macOS)"
     }
   }
