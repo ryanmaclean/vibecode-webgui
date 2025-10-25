@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.vibecode.app",
   "build": {
-    "beforeDevCommand": "echo 'Starting code-server...'",
-    "beforeBuildCommand": "echo 'Building for production...'",
-    "frontendDist": "../public",
+    "beforeDevCommand": "echo 'Using external code-server on :8080'",
+    "beforeBuildCommand": "echo 'Skipping Next.js build (using out/ redirect to code-server)'",
+    "frontendDist": "../out",
     "devUrl": "http://localhost:8080"
   },
   "bundle": {
@@ -20,7 +20,6 @@
       "icons/icon.ico"
     ],
     "resources": [],
-    "externalBin": [],
     "copyright": "",
     "category": "DeveloperTool",
     "shortDescription": "AI-Powered Development Environment",

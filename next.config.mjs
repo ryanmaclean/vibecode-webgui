@@ -99,9 +99,11 @@ const addUniqueStrings = (target, values) => {
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  productionBrowserSourceMaps: true,
+  productionBrowserSourceMaps: false,
   reactStrictMode: true,
   output: outputMode,
+  // Avoid Next inferring workspace root; speeds tracing and prevents pulling unrelated files
+  outputFileTracingRoot: __dirname,
 
   // Compiler optimizations (SWC minification is default in Next.js 15)
   compiler: {
@@ -140,6 +142,9 @@ const nextConfig = {
       '@radix-ui/react-tabs',
       'lucide-react',
       'framer-motion',
+      // common utilities; safely modularize when present
+      'date-fns',
+      'lodash-es',
     ],
   },
   trailingSlash: false,
@@ -194,7 +199,7 @@ const nextConfig = {
   },
   webpack: (config, { dev, isServer }) => {
     if (!dev) {
-      config.devtool = 'source-map'
+      config.devtool = false
     }
 
     config.plugins = config.plugins || []
@@ -296,11 +301,18 @@ const nextConfig = {
       config.externals = externals
     }
 
-    // Next.js 15 uses SWC minification by default for better performance
-    // Temporarily disable minification due to webpack plugin constructor error
+    // Ensure minification is enabled (SWC by default in Next 15)
     config.optimization = {
       ...config.optimization,
-      minimize: false, // Disabled temporarily to bypass webpack error
+      minimize: true,
+    }
+
+    // Drop all Moment.js locales if Moment is used anywhere
+    const hasMomentLocaleDrop = config.plugins.some(
+      (p) => p?.constructor?.name === 'ContextReplacementPlugin'
+    )
+    if (!hasMomentLocaleDrop) {
+      config.plugins.push(new webpack.ContextReplacementPlugin(/moment[\\/\\]locale$/, /^$/))
     }
 
     config.module = config.module || {}

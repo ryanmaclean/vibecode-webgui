@@ -1,0 +1,175 @@
+name: Build and Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., v1.0.0)'
+        required: true
+        default: 'v1.0.0'
+
+jobs:
+  build-and-release:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [macos-latest, ubuntu-latest, windows-latest]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+        
+    - name: Install dependencies
+      run: npm ci
+      
+    - name: Install Rust
+      uses: dtolnay/rust-toolchain@stable
+      
+    - name: Install Tauri CLI
+      run: npm install -g @tauri-apps/cli
+        
+    - name: Build application
+      run: npm run tauri:build
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        
+    - name: Upload macOS artifacts
+      if: matrix.os == 'macos-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: vibecode-macos
+        path: |
+          src-tauri/target/release/bundle/macos/VibeCode.app
+          src-tauri/target/release/bundle/dmg/VibeCode_*.dmg
+          
+    - name: Upload Linux artifacts
+      if: matrix.os == 'ubuntu-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: vibecode-linux
+        path: |
+          src-tauri/target/release/bundle/appimage/VibeCode_*.AppImage
+          src-tauri/target/release/bundle/deb/VibeCode_*.deb
+          
+    - name: Upload Windows artifacts
+      if: matrix.os == 'windows-latest'
+      uses: actions/upload-artifact@v4
+      with:
+        name: vibecode-windows
+        path: |
+          src-tauri/target/release/bundle/msi/VibeCode_*.msi
+          src-tauri/target/release/bundle/nsis/VibeCode_*.exe
+
+  create-release:
+    needs: build-and-release
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Download macOS artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: vibecode-macos
+        path: ./artifacts/macos
+        
+    - name: Download Linux artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: vibecode-linux
+        path: ./artifacts/linux
+        
+    - name: Download Windows artifacts
+      uses: actions/download-artifact@v4
+      with:
+        name: vibecode-windows
+        path: ./artifacts/windows
+        
+    - name: Create Release
+      uses: softprops/action-gh-release@v1
+      with:
+        tag_name: ${{ github.ref_name }}
+        name: VibeCode ${{ github.ref_name }}
+        body: |
+          # VibeCode ${{ github.ref_name }}
+          
+          ## 🚀 What's New
+          - Professional VS Code development environment
+          - Cross-platform desktop application
+          - Automatic code-server integration
+          - Clean Dark+ theme with no welcome screens
+          
+          ## 📦 Downloads
+          
+          ### macOS
+          - **DMG Installer**: Drag and drop installation
+          - **App Bundle**: Direct application bundle
+          
+          ### Linux
+          - **AppImage**: Portable application
+          - **Deb Package**: Debian/Ubuntu installation
+          
+          ### Windows
+          - **MSI Installer**: Windows installer
+          - **NSIS Executable**: Portable executable
+          
+          ## 🛠️ Installation
+          
+          ### macOS
+          1. Download the DMG file
+          2. Double-click to mount
+          3. Drag VibeCode to Applications folder
+          4. Launch from Applications or Spotlight
+          
+          ### Linux
+          **AppImage**: Make executable and run
+          ```bash
+          chmod +x VibeCode_*.AppImage
+          ./VibeCode_*.AppImage
+          ```
+          
+          **Deb Package**: Install with package manager
+          ```bash
+          sudo dpkg -i VibeCode_*.deb
+          ```
+          
+          ### Windows
+          1. Download MSI or EXE file
+          2. Run installer or executable
+          3. Follow installation prompts
+          
+          ## ✨ Features
+          - 🎨 Professional VS Code interface
+          - 🌙 Dark theme optimized for coding
+          - 🚀 Instant startup with pre-configured workspace
+          - 🔧 Full VS Code extension support
+          - 📁 Automatic workspace loading
+          - 🖥️ Native desktop application experience
+          
+          ## 🐛 Bug Reports
+          Please report issues on our [GitHub Issues](https://github.com/${{ github.repository }}/issues) page.
+          
+          ## 📄 License
+          This project is licensed under the MIT License.
+        files: |
+          ./artifacts/macos/VibeCode.app
+          ./artifacts/macos/VibeCode_*.dmg
+          ./artifacts/linux/VibeCode_*.AppImage
+          ./artifacts/linux/VibeCode_*.deb
+          ./artifacts/windows/VibeCode_*.msi
+          ./artifacts/windows/VibeCode_*.exe
+        draft: false
+        prerelease: false
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
