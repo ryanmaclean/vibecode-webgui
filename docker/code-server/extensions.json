@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "vibecode.vibecode-ai-assistant",
+    "Datadog.datadog-vscode",
     "ms-vscode.vscode-typescript-next",
     "ms-vscode.vscode-json",
     "ms-vscode.vscode-eslint",

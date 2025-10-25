@@ -18,3 +18,11 @@ bollard = "0.18"
 mdns-sd = "0.11"
 hostname = "0.4"
 thiserror = "2"
+
+[profile.release]
+# optimize for small binary size
+strip = true
+lto = "thin"
+opt-level = "z"
+codegen-units = 1
+panic = "abort"
