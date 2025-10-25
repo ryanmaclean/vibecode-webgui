@@ -179,7 +179,7 @@
         {
           "level": 2,
           "text": "🔒 Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 211
         },
         {
@@ -872,7 +872,7 @@
         {
           "level": 2,
           "text": "🔒 **SECURITY & COMPLIANCE**",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 203
         },
         {
@@ -3068,7 +3068,7 @@
         {
           "level": 3,
           "text": "Security Commands",
-          "id": "security-commands",
+          "id": "security.devmands",
           "line": 201
         },
         {
@@ -3439,7 +3439,7 @@
         }
       ],
       "content": "🚀 VibeCode Production Deployment Guide Your GitOps automation is now 100% validated and ready for production! Here's how to deploy to any cloud provider. 🎯 Current Status: PRODUCTION READY ✅ 100% Test Success Rate - All 28 validation tests passing ✅ Zero Manual Intervention - Complete automation from setup to deployment ✅ Enterprise Security - Sealed secrets, RBAC, network policies ✅ Full Observability - Datadog, Prometheus, Grafana monitoring ✅ Multi-Environment - Staging and production confi...",
-      "keywords": "production-deployment-guide production deployment guide comprehensive guide for deploying vibecode to production environments with enterprise-grade security and automation deployment 🚀 vibecode production deployment guide 🎯 current status: **production ready** 🌐 cloud provider deployment option 1: aws eks production deployment 1. create eks cluster 2. deploy infrastructure with terraform 3. install argocd and applications 4. configure domain and ssl option 2: google gke production deployment 1. create gke cluster 2. deploy with terraform 3. setup gitops option 3: azure aks production deployment 1. create resource group and aks cluster 2. deploy infrastructure 3. configure gitops 🔧 production configuration environment variables (update for production) production security ai integration azure openai (for vector embeddings) alternative: use azure managed identity connection pooling (for improved performance) production database (see postgresql + pgvector guide for detailed setup) production monitoring domain configuration dns & ssl setup 1. point your domain to the load balancer get load balancer ip/hostname 2. configure dns records a record: vibecode.yourdomain.com -> load_balancer_ip cname: *.vibecode.yourdomain.com -> vibecode.yourdomain.com 3. ssl certificates (automatic with cert-manager) 📊 monitoring & alerting setup datadog production configuration update datadog configuration for production apply production monitoring alert channels configuration slack integration pagerduty integration 🔐 production security checklist essential security tasks security commands generate sealed secrets for production apply production security policies enable network policies 🚀 deployment workflow automated deployments staging (auto-deploys from develop branch) → automatically deploys to staging environment production (manual approval required) → creates pull request for production deployment → manual approval required in argocd ui manual deployment controls sync applications manually rollback to previous version scale production application 📈 performance & scaling auto-scaling configuration apply production auto-scaling monitor scaling events database connection pooling monitor connection pool metrics optimize pool settings (example) check pool utilization from logs resource optimization view resource usage update resource requests/limits 🧪 production testing smoke tests run production smoke tests monitor test results load testing deploy load testing suite monitor performance during load test 🆘 production support health checks & monitoring application health service connectivity database connectivity log analysis application logs system logs ingress logs troubleshooting commands debug pod issues network connectivity testing resource constraints 📋 production maintenance regular tasks update dependencies rotate secrets database maintenance backup verification cost optimization review resource usage optimize node utilization scale down during low traffic periods 🎉 success metrics key performance indicators vector database performance business metrics 🚀 **ready for production!** 📚 related documentation 🚀 vibecode production deployment guide your gitops automation is now 100% validated and ready for production! here's how to deploy to any cloud provider. 🎯 current status: production ready ✅ 100% test success rate - all 28 validation tests passing ✅ zero manual intervention - complete automation from setup to",
+      "keywords": "production-deployment-guide production deployment guide comprehensive guide for deploying vibecode to production environments with enterprise-grade security and automation deployment 🚀 vibecode production deployment guide 🎯 current status: **production ready** 🌐 cloud provider deployment option 1: aws eks production deployment 1. create eks cluster 2. deploy infrastructure with terraform 3. install argocd and applications 4. configure domain and ssl option 2: google gke production deployment 1. create gke cluster 2. deploy with terraform 3. setup gitops option 3: azure aks production deployment 1. create resource group and aks cluster 2. deploy infrastructure 3. configure gitops 🔧 production configuration environment variables (update for production) production security ai integration azure openai (for vector embeddings) alternative: use azure managed identity connection pooling (for improved performance) production database (see postgresql + pgvector guide for detailed setup) production monitoring domain configuration dns & ssl setup 1. point your domain to the load balancer get load balancer ip/hostname 2. configure dns records a record: vibecode.yourdomain.com -> load_balancer_ip cname: *.vibecode.yourdomain.com -> vibecode.yourdomain.com 3. ssl certificates (automatic with cert-manager) 📊 monitoring & alerting setup datadog production configuration update datadog configuration for production apply production monitoring alert channels configuration slack integration pagerduty integration 🔐 production security checklist essential security tasks security.devmands generate sealed secrets for production apply production security policies enable network policies 🚀 deployment workflow automated deployments staging (auto-deploys from develop branch) → automatically deploys to staging environment production (manual approval required) → creates pull request for production deployment → manual approval required in argocd ui manual deployment controls sync applications manually rollback to previous version scale production application 📈 performance & scaling auto-scaling configuration apply production auto-scaling monitor scaling events database connection pooling monitor connection pool metrics optimize pool settings (example) check pool utilization from logs resource optimization view resource usage update resource requests/limits 🧪 production testing smoke tests run production smoke tests monitor test results load testing deploy load testing suite monitor performance during load test 🆘 production support health checks & monitoring application health service connectivity database connectivity log analysis application logs system logs ingress logs troubleshooting commands debug pod issues network connectivity testing resource constraints 📋 production maintenance regular tasks update dependencies rotate secrets database maintenance backup verification cost optimization review resource usage optimize node utilization scale down during low traffic periods 🎉 success metrics key performance indicators vector database performance business metrics 🚀 **ready for production!** 📚 related documentation 🚀 vibecode production deployment guide your gitops automation is now 100% validated and ready for production! here's how to deploy to any cloud provider. 🎯 current status: production ready ✅ 100% test success rate - all 28 validation tests passing ✅ zero manual intervention - complete automation from setup to",
       "wordCount": 555,
       "lastModified": "2025-09-03T17:10:41.162Z",
       "size": 13622
@@ -17899,7 +17899,7 @@
         {
           "level": 2,
           "text": "🔒 Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 211
         },
         {
@@ -18238,7 +18238,7 @@
         {
           "level": 2,
           "text": "🔒 Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 499
         },
         {
@@ -18433,7 +18433,7 @@
         {
           "level": 2,
           "text": "🔒 Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 211
         },
         {
@@ -23917,7 +23917,7 @@
         {
           "level": 3,
           "text": "🔐 **6. Security & Compliance**",
-          "id": "6-security-compliance",
+          "id": "6-security.devpliance",
           "line": 58
         },
         {
@@ -26656,7 +26656,7 @@
         {
           "level": 2,
           "text": "Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 495
         },
         {
@@ -26877,7 +26877,7 @@
         }
       ],
       "content": "VibeCode Platform - Consolidated Documentation This document consolidates key information from various documentation sources across the VibeCode platform, providing a unified reference for developers, operators, and users. 📋 Table of Contents 1. Platform Overviewplatform-overview 2. Architecture & Componentsarchitecture--components 3. Monitoring & Observabilitymonitoring--observability 4. AI Integration & Featuresai-integration--features 5. Development & Deploymentdevelopment--deployment 6. Per...",
-      "keywords": "consolidated_documentation wiki-archive vibecode platform - consolidated documentation 📋 table of contents platform overview key features platform status (august 2025) architecture & components infrastructure architecture core components service architecture monitoring & observability datadog integration initialize datadog monitoring check monitoring health view metrics configuration opentelemetry integration enable opentelemetry setup opentelemetry check configuration performance testing run comprehensive performance tests run specific test types ai integration & features multi-provider ai gateway ai project generation vector search & rag development & deployment local development clone and setup install dependencies configure environment edit .env.local with your api keys start development server or production deployment core application ai integration monitoring ci/cd pipeline performance & scaling performance optimization comprehensive performance testing specific test types scaling architecture load balancing & high availability security & compliance authentication & authorization api security comprehensive security scan pre-commit security checks api key protection compliance & standards troubleshooting & support common issues install correct node.js version or use npx for one-time usage use cdn mode to avoid native module compilation use simplified docker configuration check postgresql service test connection verify redis connectivity verify api key check api key format (should start with sk-or-v1-) check api endpoint health verify datadog configuration test metric submission check opentelemetry configuration verify trace collection debugging commands application health monitoring dashboard opentelemetry status pod status pod logs service connectivity comprehensive performance test individual test components support resources appendix version information related documentation last updated vibecode platform - consolidated documentation this document consolidates key information from various documentation sources across the vibecode platform, providing a unified reference for developers, operators, and users. 📋 table of contents 1. platform overviewplatform-overview 2. architecture & componentsarchitecture--components 3. monitoring & observabilitymonitoring--observability 4. ai integration & featuresai-integration--features 5. development &",
+      "keywords": "consolidated_documentation wiki-archive vibecode platform - consolidated documentation 📋 table of contents platform overview key features platform status (august 2025) architecture & components infrastructure architecture core components service architecture monitoring & observability datadog integration initialize datadog monitoring check monitoring health view metrics configuration opentelemetry integration enable opentelemetry setup opentelemetry check configuration performance testing run comprehensive performance tests run specific test types ai integration & features multi-provider ai gateway ai project generation vector search & rag development & deployment local development clone and setup install dependencies configure environment edit .env.local with your api keys start development server or production deployment core application ai integration monitoring ci/cd pipeline performance & scaling performance optimization comprehensive performance testing specific test types scaling architecture load balancing & high availability security & compliance authentication & authorization api security.devprehensive security scan pre-commit security checks api key protection compliance & standards troubleshooting & support common issues install correct node.js version or use npx for one-time usage use cdn mode to avoid native module compilation use simplified docker configuration check postgresql service test connection verify redis connectivity verify api key check api key format (should start with sk-or-v1-) check api endpoint health verify datadog configuration test metric submission check opentelemetry configuration verify trace collection debugging commands application health monitoring dashboard opentelemetry status pod status pod logs service connectivity comprehensive performance test individual test components support resources appendix version information related documentation last updated vibecode platform - consolidated documentation this document consolidates key information from various documentation sources across the vibecode platform, providing a unified reference for developers, operators, and users. 📋 table of contents 1. platform overviewplatform-overview 2. architecture & componentsarchitecture--components 3. monitoring & observabilitymonitoring--observability 4. ai integration & featuresai-integration--features 5. development &",
       "wordCount": 1985,
       "lastModified": "2025-09-17T16:07:45.589Z",
       "size": 22183
@@ -32863,7 +32863,7 @@
         {
           "level": 3,
           "text": "5. Security Compliance",
-          "id": "5-security-compliance",
+          "id": "5-security.devpliance",
           "line": 40
         },
         {
@@ -32994,7 +32994,7 @@
         }
       ],
       "content": "VibeCode Docs Deployment Validation Report Generated: July 22, 2025 Environment: KIND Local Cluster Status: ✅ PRODUCTION READY 🎯 Executive Summary The VibeCode documentation service has been successfully deployed and tested in KIND with comprehensive validation. All critical tests pass, demonstrating production readiness. ✅ Validation Results 1. Container Build & Runtime - ✅ Multi-stage Docker build - Security hardened with non-root user - ✅ Astro + Starlight content - Static site generation wo...",
-      "keywords": "docs_deployment_validation docs deployment validation docs deployment validation documentation wiki-archive vibecode docs deployment validation report 🎯 executive summary ✅ validation results 1. container build & runtime 2. kubernetes deployment 3. health checks & probes 4. performance validation 5. security compliance 6. high availability 🧪 test execution automated test script integration test suite 📊 infrastructure status current deployment resource allocation network configuration 🚀 azure production readiness container registry terraform infrastructure ci/cd pipeline 📈 monitoring & observability prometheus integration datadog integration 🔧 maintenance & operations scaling updates troubleshooting ✅ deployment checklist 🎉 conclusion vibecode docs deployment validation report generated: july 22, 2025 environment: kind local cluster status: ✅ production ready 🎯 executive summary the vibecode documentation service has been successfully deployed and tested in kind with comprehensive validation. all critical tests pass, demonstrating production readiness. ✅ validation results 1. container build & runtime",
+      "keywords": "docs_deployment_validation docs deployment validation docs deployment validation documentation wiki-archive vibecode docs deployment validation report 🎯 executive summary ✅ validation results 1. container build & runtime 2. kubernetes deployment 3. health checks & probes 4. performance validation 5. security.devpliance 6. high availability 🧪 test execution automated test script integration test suite 📊 infrastructure status current deployment resource allocation network configuration 🚀 azure production readiness container registry terraform infrastructure ci/cd pipeline 📈 monitoring & observability prometheus integration datadog integration 🔧 maintenance & operations scaling updates troubleshooting ✅ deployment checklist 🎉 conclusion vibecode docs deployment validation report generated: july 22, 2025 environment: kind local cluster status: ✅ production ready 🎯 executive summary the vibecode documentation service has been successfully deployed and tested in kind with comprehensive validation. all critical tests pass, demonstrating production readiness. ✅ validation results 1. container build & runtime",
       "wordCount": 847,
       "lastModified": "2025-09-17T16:07:45.652Z",
       "size": 6983
@@ -33235,7 +33235,7 @@
         {
           "level": 3,
           "text": "Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 46
         },
         {
@@ -34048,7 +34048,7 @@
         {
           "level": 2,
           "text": "🔒 **SECURITY & COMPLIANCE**",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 203
         },
         {
@@ -34351,7 +34351,7 @@
         {
           "level": 2,
           "text": "🔒 **SECURITY & COMPLIANCE**",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 203
         },
         {
@@ -35692,7 +35692,7 @@
         {
           "level": 2,
           "text": "🔒 Enterprise Security & Compliance",
-          "id": "enterprise-security-compliance",
+          "id": "enterprise-security.devpliance",
           "line": 40
         },
         {
@@ -36232,7 +36232,7 @@
         {
           "level": 2,
           "text": "Security & Compliance Benefits",
-          "id": "security-compliance-benefits",
+          "id": "security.devpliance-benefits",
           "line": 159
         },
         {
@@ -38629,7 +38629,7 @@
         {
           "level": 2,
           "text": "🔒 Security & Compliance",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 140
         },
         {
@@ -38760,7 +38760,7 @@
         }
       ],
       "content": "VibeCode Infrastructure Overview This document provides a comprehensive overview of the VibeCode platform infrastructure, deployment options, and operational procedures. It serves as the central hub for all infrastructure-related documentation. 🏗️ Architecture Overview VibeCode is designed as a cloud-native, scalable platform that can be deployed across multiple environments: 🚀 Deployment Options 1. Automated CI/CD Recommended - GitHub Actions automatically builds and deploys on every push to ...",
-      "keywords": "infrastructure_overview wiki-archive vibecode infrastructure overview 🏗️ architecture overview 🚀 deployment options 1. **automated ci/cd (recommended)** 2. **kubernetes (production)** 3. **docker (development/testing)** 4. **self-hosted server** ☁️ cloud infrastructure azure (primary) multi-cloud support 🔧 infrastructure as code terraform helm charts kubernetes manifests 📊 monitoring & observability datadog integration opentelemetry built-in monitoring 🔒 security & compliance authentication & authorization infrastructure security compliance features 📈 scaling & performance horizontal scaling vertical scaling performance optimization 🚨 disaster recovery & backup backup strategies recovery procedures high availability 🛠️ operations & maintenance day-to-day operations maintenance procedures troubleshooting 📚 quick start guides production deployment development setup infrastructure setup 🔗 related documentation 📞 support & resources vibecode infrastructure overview this document provides a comprehensive overview of the vibecode platform infrastructure, deployment options, and operational procedures. it serves as the central hub for all infrastructure-related documentation. 🏗️ architecture overview vibecode is designed as a cloud-native, scalable platform that can be deployed across multiple environments: 🚀 deployment options",
+      "keywords": "infrastructure_overview wiki-archive vibecode infrastructure overview 🏗️ architecture overview 🚀 deployment options 1. **automated ci/cd (recommended)** 2. **kubernetes (production)** 3. **docker (development/testing)** 4. **self-hosted server** ☁️ cloud infrastructure azure (primary) multi-cloud support 🔧 infrastructure as code terraform helm charts kubernetes manifests 📊 monitoring & observability datadog integration opentelemetry built-in monitoring 🔒 security & compliance authentication & authorization infrastructure security.devpliance features 📈 scaling & performance horizontal scaling vertical scaling performance optimization 🚨 disaster recovery & backup backup strategies recovery procedures high availability 🛠️ operations & maintenance day-to-day operations maintenance procedures troubleshooting 📚 quick start guides production deployment development setup infrastructure setup 🔗 related documentation 📞 support & resources vibecode infrastructure overview this document provides a comprehensive overview of the vibecode platform infrastructure, deployment options, and operational procedures. it serves as the central hub for all infrastructure-related documentation. 🏗️ architecture overview vibecode is designed as a cloud-native, scalable platform that can be deployed across multiple environments: 🚀 deployment options",
       "wordCount": 779,
       "lastModified": "2025-09-17T16:07:45.803Z",
       "size": 10371
@@ -40795,7 +40795,7 @@
         {
           "level": 3,
           "text": "**Security & Compliance**",
-          "id": "security-compliance",
+          "id": "security.devpliance",
           "line": 146
         },
         {
@@ -46380,7 +46380,7 @@
         {
           "level": 3,
           "text": "Security Commands",
-          "id": "security-commands",
+          "id": "security.devmands",
           "line": 201
         },
         {
@@ -46751,7 +46751,7 @@
         }
       ],
       "content": "🚀 VibeCode Production Deployment Guide Your GitOps automation is now 100% validated and ready for production! Here's how to deploy to any cloud provider. 🎯 Current Status: PRODUCTION READY ✅ 100% Test Success Rate - All 28 validation tests passing ✅ Zero Manual Intervention - Complete automation from setup to deployment ✅ Enterprise Security - Sealed secrets, RBAC, network policies ✅ Full Observability - Datadog, Prometheus, Grafana monitoring ✅ Multi-Environment - Staging and production confi...",
-      "keywords": "production-deployment-guide production deployment guide comprehensive guide for deploying vibecode to production environments with enterprise-grade security and automation wiki-archive 🚀 vibecode production deployment guide 🎯 current status: **production ready** 🌐 cloud provider deployment option 1: aws eks production deployment 1. create eks cluster 2. deploy infrastructure with terraform 3. install argocd and applications 4. configure domain and ssl option 2: google gke production deployment 1. create gke cluster 2. deploy with terraform 3. setup gitops option 3: azure aks production deployment 1. create resource group and aks cluster 2. deploy infrastructure 3. configure gitops 🔧 production configuration environment variables (update for production) production security ai integration azure openai (for vector embeddings) alternative: use azure managed identity connection pooling (for improved performance) production database (see postgresql + pgvector guide for detailed setup) production monitoring domain configuration dns & ssl setup 1. point your domain to the load balancer get load balancer ip/hostname 2. configure dns records a record: vibecode.yourdomain.com -> load_balancer_ip cname: *.vibecode.yourdomain.com -> vibecode.yourdomain.com 3. ssl certificates (automatic with cert-manager) 📊 monitoring & alerting setup datadog production configuration update datadog configuration for production apply production monitoring alert channels configuration slack integration pagerduty integration 🔐 production security checklist essential security tasks security commands generate sealed secrets for production apply production security policies enable network policies 🚀 deployment workflow automated deployments staging (auto-deploys from develop branch) → automatically deploys to staging environment production (manual approval required) → creates pull request for production deployment → manual approval required in argocd ui manual deployment controls sync applications manually rollback to previous version scale production application 📈 performance & scaling auto-scaling configuration apply production auto-scaling monitor scaling events database connection pooling monitor connection pool metrics optimize pool settings (example) check pool utilization from logs resource optimization view resource usage update resource requests/limits 🧪 production testing smoke tests run production smoke tests monitor test results load testing deploy load testing suite monitor performance during load test 🆘 production support health checks & monitoring application health service connectivity database connectivity log analysis application logs system logs ingress logs troubleshooting commands debug pod issues network connectivity testing resource constraints 📋 production maintenance regular tasks update dependencies rotate secrets database maintenance backup verification cost optimization review resource usage optimize node utilization scale down during low traffic periods 🎉 success metrics key performance indicators vector database performance business metrics 🚀 **ready for production!** 📚 related documentation 🚀 vibecode production deployment guide your gitops automation is now 100% validated and ready for production! here's how to deploy to any cloud provider. 🎯 current status: production ready ✅ 100% test success rate - all 28 validation tests passing ✅ zero manual intervention - complete automation from setup to",
+      "keywords": "production-deployment-guide production deployment guide comprehensive guide for deploying vibecode to production environments with enterprise-grade security and automation wiki-archive 🚀 vibecode production deployment guide 🎯 current status: **production ready** 🌐 cloud provider deployment option 1: aws eks production deployment 1. create eks cluster 2. deploy infrastructure with terraform 3. install argocd and applications 4. configure domain and ssl option 2: google gke production deployment 1. create gke cluster 2. deploy with terraform 3. setup gitops option 3: azure aks production deployment 1. create resource group and aks cluster 2. deploy infrastructure 3. configure gitops 🔧 production configuration environment variables (update for production) production security ai integration azure openai (for vector embeddings) alternative: use azure managed identity connection pooling (for improved performance) production database (see postgresql + pgvector guide for detailed setup) production monitoring domain configuration dns & ssl setup 1. point your domain to the load balancer get load balancer ip/hostname 2. configure dns records a record: vibecode.yourdomain.com -> load_balancer_ip cname: *.vibecode.yourdomain.com -> vibecode.yourdomain.com 3. ssl certificates (automatic with cert-manager) 📊 monitoring & alerting setup datadog production configuration update datadog configuration for production apply production monitoring alert channels configuration slack integration pagerduty integration 🔐 production security checklist essential security tasks security.devmands generate sealed secrets for production apply production security policies enable network policies 🚀 deployment workflow automated deployments staging (auto-deploys from develop branch) → automatically deploys to staging environment production (manual approval required) → creates pull request for production deployment → manual approval required in argocd ui manual deployment controls sync applications manually rollback to previous version scale production application 📈 performance & scaling auto-scaling configuration apply production auto-scaling monitor scaling events database connection pooling monitor connection pool metrics optimize pool settings (example) check pool utilization from logs resource optimization view resource usage update resource requests/limits 🧪 production testing smoke tests run production smoke tests monitor test results load testing deploy load testing suite monitor performance during load test 🆘 production support health checks & monitoring application health service connectivity database connectivity log analysis application logs system logs ingress logs troubleshooting commands debug pod issues network connectivity testing resource constraints 📋 production maintenance regular tasks update dependencies rotate secrets database maintenance backup verification cost optimization review resource usage optimize node utilization scale down during low traffic periods 🎉 success metrics key performance indicators vector database performance business metrics 🚀 **ready for production!** 📚 related documentation 🚀 vibecode production deployment guide your gitops automation is now 100% validated and ready for production! here's how to deploy to any cloud provider. 🎯 current status: production ready ✅ 100% test success rate - all 28 validation tests passing ✅ zero manual intervention - complete automation from setup to",
       "wordCount": 555,
       "lastModified": "2025-09-17T16:07:45.821Z",
       "size": 13622
