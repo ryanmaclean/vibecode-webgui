@@ -14,5 +14,9 @@
     "workbench.tips.enabled": false,
     "workbench.firstRun": false,
     "workbench.hideWelcomeOnLaunch": true,
-    "workbench.welcomePage.experimental.allowWalkthroughs": false
+    "workbench.welcomePage.experimental.allowWalkthroughs": false,
+    "workbench.preferredLightColorTheme": "Light+ (default light)",
+    "workbench.preferredDarkColorTheme": "Dark+ (default dark)",
+    "workbench.preferredHighContrastColorTheme": "Default High Contrast",
+    "workbench.preferredHighContrastLightColorTheme": "Default High Contrast Light"
 }
