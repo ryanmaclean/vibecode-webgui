@@ -157,7 +157,11 @@ export default defineConfig({
         {
           label: 'Deployment',
           collapsed: true,
-          autogenerate: { directory: 'deployment' }
+          items: [
+            { label: 'Overview', link: '/deployment/' },
+            { label: 'Astro Docs', link: '/deployment/astro/' },
+            { label: 'Next.js App', link: '/deployment/nextjs/' }
+          ]
         },
         {
           label: 'Security',
