@@ -1,0 +1,317 @@
+{
+  "key": "pricing_annual_emphasis",
+  "name": "Pricing Page: Annual vs Monthly Emphasis",
+  "hypothesis": "Emphasizing annual plans with 30% discount will increase customer lifetime value by 25%",
+  "description": "Test whether highlighting annual plans (with 30% discount) as the default/recommended option increases annual subscriptions and overall LTV compared to current monthly emphasis.",
+  "type": "ab_test",
+  "status": "draft",
+  "config": {
+    "variants": [
+      {
+        "key": "control",
+        "name": "Monthly Emphasis (Current)",
+        "description": "Current pricing page with monthly plans as default",
+        "weight": 0.5,
+        "config": {
+          "defaultPlan": "monthly",
+          "recommendedBadge": null,
+          "annualDiscount": "20% off",
+          "layout": "monthly_first"
+        }
+      },
+      {
+        "key": "treatment",
+        "name": "Annual Emphasis",
+        "description": "Redesigned pricing page emphasizing annual plans",
+        "weight": 0.5,
+        "config": {
+          "defaultPlan": "annual",
+          "recommendedBadge": "annual",
+          "annualDiscount": "30% off",
+          "layout": "annual_first",
+          "savingsCallout": true
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "name": "ltv_30day",
+        "type": "continuous",
+        "unit": "usd",
+        "description": "Customer lifetime value projection based on 30-day cohort",
+        "target": "maximize",
+        "isPrimary": true
+      },
+      {
+        "name": "annual_subscription_rate",
+        "type": "binary",
+        "description": "User selected annual plan (vs monthly)",
+        "target": "maximize",
+        "isPrimary": true
+      },
+      {
+        "name": "conversion_rate",
+        "type": "binary",
+        "description": "User completed purchase (any plan)",
+        "target": "maximize",
+        "isPrimary": false
+      },
+      {
+        "name": "revenue_per_customer",
+        "type": "continuous",
+        "unit": "usd",
+        "description": "Initial transaction value",
+        "target": "maximize",
+        "isPrimary": false
+      },
+      {
+        "name": "churn_rate_30day",
+        "type": "binary",
+        "description": "User canceled within 30 days",
+        "target": "minimize",
+        "isPrimary": false
+      },
+      {
+        "name": "time_to_decision",
+        "type": "continuous",
+        "unit": "seconds",
+        "description": "Time from landing on pricing to purchase",
+        "target": "monitor",
+        "isPrimary": false
+      }
+    ],
+    "guardrails": [
+      {
+        "metric": "conversion_rate",
+        "operator": ">",
+        "threshold": 0.08,
+        "severity": "critical",
+        "description": "Pause if overall conversion drops below 8%"
+      },
+      {
+        "metric": "churn_rate_30day",
+        "operator": "<",
+        "threshold": 0.12,
+        "severity": "warning",
+        "description": "Alert if 30-day churn exceeds 12%"
+      },
+      {
+        "metric": "refund_rate",
+        "operator": "<",
+        "threshold": 0.05,
+        "severity": "warning",
+        "description": "Alert if refund rate exceeds 5%"
+      }
+    ],
+    "targetingRules": [
+      {
+        "attribute": "userType",
+        "operator": "equals",
+        "value": "new_visitor",
+        "description": "Only show to new visitors (not existing customers)"
+      },
+      {
+        "attribute": "referralSource",
+        "operator": "not_in",
+        "values": ["partnership", "enterprise_sales"],
+        "description": "Exclude partnership and enterprise leads (custom pricing)"
+      }
+    ],
+    "trafficAllocation": {
+      "percentage": 1.0,
+      "rolloutStrategy": "immediate"
+    }
+  },
+  "sampleSize": {
+    "target": 5000,
+    "perVariant": 2500,
+    "estimatedDuration": "30 days",
+    "powerAnalysis": {
+      "baselineConversion": 0.10,
+      "baselineAnnualRate": 0.25,
+      "minimumDetectableEffect": 0.20,
+      "statisticalPower": 0.85,
+      "significanceLevel": 0.05
+    }
+  },
+  "expectedResults": {
+    "description": "Based on industry benchmarks and our A/B test of discount size, we expect annual plan adoption to increase from 25% to 35-40%, driving a 20-25% increase in LTV. Overall conversion may decrease slightly (2-3%) due to higher upfront cost, but LTV gains should far exceed conversion loss.",
+    "primaryMetric": {
+      "control": {
+        "annualRate": 0.25,
+        "conversionRate": 0.10,
+        "avgLTV": 240,
+        "description": "Current baseline: 25% annual, 75% monthly"
+      },
+      "treatment": {
+        "annualRate": 0.38,
+        "conversionRate": 0.097,
+        "avgLTV": 302,
+        "lift": {
+          "annualRateLift": 0.52,
+          "conversionRateLift": -0.03,
+          "ltvLift": 0.26
+        },
+        "description": "Expected: 38% annual, 3% conversion drop, 26% LTV increase"
+      }
+    },
+    "revenueProjection": {
+      "monthlyVisitors": 10000,
+      "controlRevenue": {
+        "conversions": 1000,
+        "annualCustomers": 250,
+        "monthlyCustomers": 750,
+        "revenue": 240000,
+        "description": "250 × $600 (annual) + 750 × $20 (monthly) × 12"
+      },
+      "treatmentRevenue": {
+        "conversions": 970,
+        "annualCustomers": 369,
+        "monthlyCustomers": 601,
+        "revenue": 293040,
+        "lift": 53040,
+        "description": "369 × $420 (annual at 30% off) + 601 × $20 (monthly) × 12"
+      },
+      "annualImpact": 636480,
+      "description": "$636K additional annual revenue if treatment wins"
+    }
+  },
+  "decisionCriteria": {
+    "conditions": [
+      {
+        "metric": "ltv_30day",
+        "requirement": "Treatment must increase LTV by at least 15%",
+        "minEffect": 0.15,
+        "description": "LTV lift must justify any conversion rate drop"
+      },
+      {
+        "metric": "conversion_rate",
+        "requirement": "Conversion rate must not drop more than 5%",
+        "maxDegradation": 0.05,
+        "description": "Can't sacrifice too much volume for higher LTV"
+      },
+      {
+        "metric": "churn_rate_30day",
+        "requirement": "30-day churn must not increase",
+        "maxIncrease": 0.0,
+        "description": "Annual customers must stick around (validate commitment)"
+      }
+    ],
+    "decisionMatrix": {
+      "ship_treatment": "LTV up 15%+, conversion drop <5%, churn stable, p<0.05",
+      "ship_control": "LTV improvement <10% or conversion drop >5%",
+      "test_hybrid": "Strong results but segment-dependent (e.g., good for B2B, bad for B2C)",
+      "continue_testing": "Trending positive but need more data on retention"
+    }
+  },
+  "rolloutPlan": {
+    "strategy": "gradual_with_cohort_analysis",
+    "stages": [
+      {
+        "name": "Initial Test",
+        "percentage": 0.50,
+        "duration": "14 days",
+        "checkpoints": [
+          "Sufficient sample size",
+          "Initial conversion and annual rate data"
+        ],
+        "description": "A/B test to measure immediate impact"
+      },
+      {
+        "name": "Retention Analysis",
+        "percentage": 0.50,
+        "duration": "30 days",
+        "checkpoints": [
+          "30-day churn comparison",
+          "Engagement metrics",
+          "Refund rate"
+        ],
+        "description": "Wait 30 days to measure retention and validate LTV projection"
+      },
+      {
+        "name": "Full Rollout",
+        "percentage": 1.0,
+        "duration": "permanent",
+        "checkpoints": [
+          "LTV improvement confirmed",
+          "Finance team approval",
+          "Revenue projections validated"
+        ],
+        "description": "Roll out to 100% if all metrics positive"
+      }
+    ],
+    "rollbackTriggers": [
+      "Conversion rate drops >10%",
+      "Churn rate increases significantly",
+      "High refund rate (buyers remorse)",
+      "Negative customer feedback"
+    ],
+    "cohortTracking": {
+      "enabled": true,
+      "trackDuration": 90,
+      "description": "Track cohorts for 90 days to measure long-term retention and LTV"
+    }
+  },
+  "segmentation": {
+    "enabled": true,
+    "segments": [
+      {
+        "name": "B2B",
+        "criteria": { "companySize": ">1" },
+        "hypothesis": "B2B users more likely to commit to annual"
+      },
+      {
+        "name": "B2C",
+        "criteria": { "companySize": "1" },
+        "hypothesis": "B2C users may prefer flexibility of monthly"
+      },
+      {
+        "name": "HighIntent",
+        "criteria": { "pagesViewed": ">5" },
+        "hypothesis": "High-intent users ready to commit annually"
+      },
+      {
+        "name": "PriceShoppers",
+        "criteria": { "referralSource": "pricing_comparison" },
+        "hypothesis": "Price-sensitive users will love the discount"
+      }
+    ],
+    "analysis": "Analyze results by segment to inform future targeting and personalization"
+  },
+  "metadata": {
+    "owner": "growth_team",
+    "stakeholders": ["cfo", "vp_sales", "product_manager", "marketing"],
+    "priority": "high",
+    "estimatedImpact": {
+      "annualRevenue": "$636,000",
+      "ltvImprovement": "26%",
+      "cashFlowImpact": "Positive (more upfront annual payments)",
+      "description": "Significant revenue and LTV opportunity with improved cash flow"
+    },
+    "relatedExperiments": [
+      "pricing_discount_20_vs_30_percent",
+      "annual_plan_messaging_test",
+      "pricing_tier_restructure"
+    ],
+    "references": [
+      "Industry benchmark: Annual adoption increases 15-25% with emphasis",
+      "Previous experiment: 30% discount performed better than 20%",
+      "Competitor analysis: Most SaaS companies emphasize annual"
+    ],
+    "risks": [
+      {
+        "risk": "Lower cash flow in short term if conversions drop",
+        "mitigation": "Monitor daily revenue and pause if drop is too severe"
+      },
+      {
+        "risk": "Annual customers may have higher expectations",
+        "mitigation": "Track NPS and support tickets by plan type"
+      },
+      {
+        "risk": "Discount may cheapen perceived value",
+        "mitigation": "Frame as 'savings' not 'sale', test messaging"
+      }
+    ],
+    "notes": "This is a high-stakes experiment that could significantly impact revenue and LTV. Plan to run for full 30 days to capture retention data before making final decision. If successful, consider A/B testing different discount levels (25%, 35%) to optimize further."
+  }
+}

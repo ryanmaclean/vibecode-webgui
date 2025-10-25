@@ -1,0 +1,373 @@
+{
+  "key": "multi_model_bandit_optimization",
+  "name": "Multi-Armed Bandit: Dynamic AI Model Selection",
+  "hypothesis": "Thompson Sampling can automatically optimize across 4 AI models to achieve 95% of GPT-4's quality at 50% of the cost",
+  "description": "Use Thompson Sampling to dynamically allocate traffic across GPT-4, Claude, Gemini, and Llama based on real-time quality, latency, and cost metrics. The algorithm learns optimal allocation while minimizing regret.",
+  "type": "multi_armed_bandit",
+  "status": "draft",
+  "config": {
+    "algorithm": "thompson_sampling",
+    "algorithmConfig": {
+      "priors": {
+        "alpha": 1,
+        "beta": 1,
+        "description": "Uniform prior (Beta(1,1)) - no initial bias"
+      },
+      "explorationRate": 0.10,
+      "description": "10% random exploration, 90% Thompson Sampling",
+      "updateFrequency": "realtime",
+      "convergenceCriteria": {
+        "minTrials": 2000,
+        "stabilityWindow": 500,
+        "maxAllocationChange": 0.05
+      }
+    },
+    "variants": [
+      {
+        "key": "gpt4",
+        "name": "GPT-4 Turbo",
+        "description": "High quality, expensive, moderate latency",
+        "weight": 0.25,
+        "config": {
+          "model": "openai/gpt-4-turbo",
+          "temperature": 0.2,
+          "maxTokens": 800,
+          "expectedCost": 0.030,
+          "expectedQuality": 0.88,
+          "expectedLatency": 2000
+        }
+      },
+      {
+        "key": "claude",
+        "name": "Claude 3.5 Sonnet",
+        "description": "Excellent reasoning, moderate cost, good latency",
+        "weight": 0.25,
+        "config": {
+          "model": "anthropic/claude-3.5-sonnet",
+          "temperature": 0.2,
+          "maxTokens": 800,
+          "expectedCost": 0.015,
+          "expectedQuality": 0.92,
+          "expectedLatency": 1800
+        }
+      },
+      {
+        "key": "gemini",
+        "name": "Gemini 1.5 Pro",
+        "description": "Good quality, low cost, fast",
+        "weight": 0.25,
+        "config": {
+          "model": "google/gemini-1.5-pro",
+          "temperature": 0.2,
+          "maxTokens": 800,
+          "expectedCost": 0.007,
+          "expectedQuality": 0.82,
+          "expectedLatency": 1500
+        }
+      },
+      {
+        "key": "llama",
+        "name": "Llama 3.1 70B",
+        "description": "Decent quality, very cheap, fast",
+        "weight": 0.25,
+        "config": {
+          "model": "meta-llama/llama-3.1-70b",
+          "temperature": 0.2,
+          "maxTokens": 800,
+          "expectedCost": 0.0015,
+          "expectedQuality": 0.75,
+          "expectedLatency": 1200
+        }
+      }
+    ],
+    "rewardFunction": {
+      "formula": "(quality * 0.5) + (speed * 0.3) + (cost * 0.2)",
+      "components": {
+        "quality": {
+          "weight": 0.5,
+          "calculation": "heuristic_score",
+          "description": "Composite score from length, structure, relevance, code quality"
+        },
+        "speed": {
+          "weight": 0.3,
+          "calculation": "1 - (latency_ms / 10000)",
+          "description": "Normalized latency (faster = higher reward)"
+        },
+        "cost": {
+          "weight": 0.2,
+          "calculation": "1 - (cost_usd / 0.10)",
+          "description": "Normalized cost (cheaper = higher reward)"
+        }
+      },
+      "normalization": "Reward clamped to [0, 1]",
+      "customization": "Weights can be tuned based on business priorities"
+    },
+    "metrics": [
+      {
+        "name": "reward",
+        "type": "continuous",
+        "description": "Composite reward score (0-1)",
+        "target": "maximize",
+        "isPrimary": true
+      },
+      {
+        "name": "quality_score",
+        "type": "continuous",
+        "description": "Heuristic quality evaluation (0-1)",
+        "target": "maximize",
+        "isPrimary": true
+      },
+      {
+        "name": "latency_ms",
+        "type": "continuous",
+        "unit": "milliseconds",
+        "description": "Time to first token",
+        "target": "minimize",
+        "isPrimary": true
+      },
+      {
+        "name": "cost_per_request",
+        "type": "continuous",
+        "unit": "usd",
+        "description": "API cost per request",
+        "target": "minimize",
+        "isPrimary": true
+      },
+      {
+        "name": "cumulative_regret",
+        "type": "continuous",
+        "description": "Total regret (opportunity cost of suboptimal choices)",
+        "target": "minimize",
+        "isPrimary": false
+      },
+      {
+        "name": "allocation_entropy",
+        "type": "continuous",
+        "description": "Distribution entropy (higher = more exploration)",
+        "target": "monitor",
+        "isPrimary": false
+      }
+    ],
+    "guardrails": [
+      {
+        "metric": "quality_score",
+        "operator": ">",
+        "threshold": 0.70,
+        "severity": "critical",
+        "description": "Pause if overall quality drops below 70%",
+        "scope": "global"
+      },
+      {
+        "metric": "quality_score",
+        "operator": ">",
+        "threshold": 0.60,
+        "severity": "critical",
+        "description": "Disable arm if its quality drops below 60%",
+        "scope": "per_variant"
+      },
+      {
+        "metric": "error_rate",
+        "operator": "<",
+        "threshold": 0.02,
+        "severity": "critical",
+        "description": "Pause if error rate exceeds 2%",
+        "scope": "global"
+      },
+      {
+        "metric": "p95_latency_ms",
+        "operator": "<",
+        "threshold": 8000,
+        "severity": "warning",
+        "description": "Alert if p95 latency exceeds 8 seconds",
+        "scope": "global"
+      },
+      {
+        "metric": "hourly_cost",
+        "operator": "<",
+        "threshold": 200,
+        "severity": "warning",
+        "description": "Alert if hourly cost exceeds $200",
+        "scope": "global"
+      }
+    ],
+    "targetingRules": [
+      {
+        "attribute": "userTier",
+        "operator": "in",
+        "values": ["pro", "enterprise"],
+        "description": "Only test on paid users initially"
+      }
+    ],
+    "trafficAllocation": {
+      "percentage": 1.0,
+      "rolloutStrategy": "dynamic",
+      "description": "Traffic allocated dynamically by Thompson Sampling algorithm"
+    }
+  },
+  "sampleSize": {
+    "target": 10000,
+    "estimatedDuration": "30 days",
+    "convergenceExpected": "2000-3000 requests",
+    "description": "Run for 30 days or until clear convergence, whichever comes first"
+  },
+  "expectedResults": {
+    "description": "Based on initial benchmarks, we expect Claude to emerge as the winner with ~40-45% traffic allocation, followed by GPT-4 (~30%), Gemini (~20%), and Llama (~5-10%). Overall cost should decrease by 40-50% while maintaining 95%+ of GPT-4 quality.",
+    "convergence": {
+      "expectedWinner": "claude",
+      "expectedAllocation": {
+        "claude": 0.42,
+        "gpt4": 0.31,
+        "gemini": 0.19,
+        "llama": 0.08
+      },
+      "estimatedRequests": 2500,
+      "estimatedRegret": 25
+    },
+    "performance": {
+      "weightedQuality": 0.86,
+      "qualityVsGpt4": 0.98,
+      "weightedCost": 0.013,
+      "costVsGpt4": 0.43,
+      "costSavingsPercent": 57
+    },
+    "annualImpact": {
+      "requestsPerYear": 3650000,
+      "currentCost": 109500,
+      "projectedCost": 47450,
+      "annualSavings": 62050,
+      "description": "$62K annual savings at 10K requests/day"
+    }
+  },
+  "decisionCriteria": {
+    "convergenceCriteria": {
+      "minTrials": 2000,
+      "stabilityWindow": 500,
+      "maxAllocationChange": 0.05,
+      "description": "Converged when allocation changes < 5% over 500 requests"
+    },
+    "successCriteria": [
+      {
+        "metric": "overall_quality",
+        "requirement": "> 95% of GPT-4 quality",
+        "threshold": 0.836,
+        "description": "Must achieve at least 83.6% quality (95% of 88%)"
+      },
+      {
+        "metric": "cost_savings",
+        "requirement": "> 30% cost reduction",
+        "threshold": 0.30,
+        "description": "Must save at least 30% vs GPT-4 only"
+      },
+      {
+        "metric": "cumulative_regret",
+        "requirement": "< 50",
+        "threshold": 50,
+        "description": "Learning must be efficient (low regret)"
+      }
+    ],
+    "decisionMatrix": {
+      "deploy_production": "Convergence achieved, quality >95%, cost savings >30%",
+      "continue_learning": "Trending positive but not yet converged",
+      "adjust_reward_function": "Converged but poor tradeoff (tune weights)",
+      "abort": "Guardrail violations or quality <90% of GPT-4"
+    }
+  },
+  "rolloutPlan": {
+    "strategy": "phased_with_validation",
+    "phases": [
+      {
+        "name": "Shadow Mode",
+        "description": "Run algorithm but don't serve results to users",
+        "duration": "3 days",
+        "trafficPercentage": 0.0,
+        "purpose": "Validate algorithm correctness and metric collection"
+      },
+      {
+        "name": "Limited Production",
+        "description": "Serve to 10% of traffic",
+        "duration": "7 days",
+        "trafficPercentage": 0.10,
+        "checkpoints": ["Algorithm learning", "No errors", "Guardrails passing"]
+      },
+      {
+        "name": "Expanded Production",
+        "description": "Serve to 50% of traffic",
+        "duration": "14 days",
+        "trafficPercentage": 0.50,
+        "checkpoints": ["Convergence achieved", "Cost savings confirmed", "Quality validated"]
+      },
+      {
+        "name": "Full Production",
+        "description": "Serve to 100% of traffic",
+        "duration": "permanent",
+        "trafficPercentage": 1.0,
+        "checkpoints": ["Engineering approval", "Stakeholder sign-off", "Monitoring in place"]
+      }
+    ],
+    "continuousOptimization": {
+      "enabled": true,
+      "retrainFrequency": "monthly",
+      "description": "Periodically reset priors to adapt to model improvements and pricing changes"
+    }
+  },
+  "monitoring": {
+    "realTimeDashboard": {
+      "url": "/experiments/demos/model-comparison",
+      "metrics": [
+        "Current traffic allocation",
+        "Cumulative regret",
+        "Quality by model",
+        "Cost by model",
+        "Convergence status"
+      ],
+      "refreshInterval": "30 seconds"
+    },
+    "alerts": [
+      {
+        "condition": "guardrail_violation",
+        "channels": ["slack", "pagerduty"],
+        "severity": "critical"
+      },
+      {
+        "condition": "allocation_shift > 0.15 in 1 hour",
+        "channels": ["slack"],
+        "severity": "warning",
+        "description": "Alert if traffic allocation shifts dramatically (may indicate model issue)"
+      },
+      {
+        "condition": "cumulative_regret_rate > 0.05",
+        "channels": ["slack"],
+        "severity": "info",
+        "description": "Regret accumulating faster than expected"
+      }
+    ],
+    "reports": {
+      "daily": "Traffic allocation, cost, quality summary",
+      "weekly": "Detailed performance analysis with recommendations",
+      "monthly": "ROI report and algorithm tuning suggestions"
+    }
+  },
+  "metadata": {
+    "owner": "ai_optimization_team",
+    "stakeholders": ["cto", "vp_engineering", "finance", "product"],
+    "priority": "critical",
+    "estimatedImpact": {
+      "annualSavings": "$62,000 (at 10K req/day)",
+      "scaledSavings": "$1,970,000 (at 1M req/day)",
+      "qualityImpact": "95-98% of GPT-4 quality maintained",
+      "latencyImpact": "10-15% improvement expected",
+      "description": "Massive cost optimization opportunity with automated, continuous optimization"
+    },
+    "relatedExperiments": [
+      "ai_model_comparison_gpt4_vs_claude",
+      "contextual_bandit_user_based_routing"
+    ],
+    "references": [
+      "Thompson Sampling paper: Thompson (1933)",
+      "Multi-Armed Bandits tutorial: Russo et al. (2018)",
+      "Internal blog: /docs/blog/multi-armed-bandits-ai.md",
+      "Cost analysis: /internal/ai-model-cost-comparison"
+    ],
+    "notes": "This is our most advanced optimization experiment. Success here could save millions annually at scale. Plan to extend to contextual bandits (route by user type, query complexity) if this succeeds."
+  }
+}
