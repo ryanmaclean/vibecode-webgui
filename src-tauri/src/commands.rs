@@ -130,18 +130,54 @@ pub async fn start_code_server() -> Result<String, String> {
         .output();
     
     if code_server_check.is_err() {
-        return Err("code-server is not installed. Please install code-server first: npm install -g code-server".to_string());
+        return Err("code-server is not installed. Please install code-server first: brew install code-server".to_string());
     }
     
-    // Start code-server on port 8080
-    let output = Command::new("code-server")
-        .arg("--bind-addr")
+    // Check if port 8080 is already in use
+    let port_check = Command::new("lsof")
+        .arg("-ti:8080")
+        .output();
+    
+    if let Ok(output) = port_check {
+        if !output.stdout.is_empty() {
+            return Ok("code-server is already running on port 8080".to_string());
+        }
+    }
+    
+    // Start code-server on port 8080 with automatic trust, theme, and local Datadog tracing
+    let mut cmd = Command::new("code-server");
+    cmd.arg("--bind-addr")
         .arg("0.0.0.0:8080")
         .arg("--auth")
         .arg("none")
         .arg("--disable-telemetry")
         .arg("--disable-update-check")
-        .arg(".")
+        .arg("--disable-workspace-trust")
+        .arg("--disable-getting-started-override")
+        .arg("--open")
+        .arg("README.md")
+        .arg("--user-data-dir")
+        .arg("~/.config/code-server/user-data")
+        .arg("--extensions-dir")
+        .arg("~/.config/code-server/extensions");
+    
+    // Add local Datadog tracing (no API key needed for local agent)
+    cmd.env("DD_TRACE_ENABLED", "true")
+        .env("DD_TRACE_AGENT_URL", "http://localhost:8126")
+        .env("DD_DOGSTATSD_URL", "localhost:8125")
+        .env("DD_SERVICE", "vibecode-codeserver")
+        .env("DD_ENV", "development")
+        .env("DD_VERSION", "1.0.0")
+        .env("DD_TRACE_SAMPLE_RATE", "1.0")
+        .env("DD_TRACE_ANALYTICS_ENABLED", "true")
+        .env("DD_TRACE_DEBUG", "true")
+        .env("DD_TRACE_STARTUP_LOGS", "true")
+        .env("DD_RUNTIME_METRICS_ENABLED", "true")
+        .env("DD_LOGS_ENABLED", "true")
+        .env("DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", "true")
+        .env("DD_HOSTNAME", hostname::get().unwrap_or_default().to_string_lossy().to_string());
+    
+    let _output = cmd.arg(".")
         .spawn()
         .map_err(|e| format!("Failed to start code-server: {}", e))?;
     
