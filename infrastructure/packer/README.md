@@ -24,13 +24,28 @@ QEMU builder that provisions OpenIndiana Hipster with:
 - StatsD bridge for Datadog integration
 - Crossbow network virtualization
 
+**Architecture**: x86-64 only (no official ARM64 support)
 **Use Case**: Production environments requiring enterprise stability, advanced
 observability, and MIT/BSD/Apache licensing (CDDL-compatible)
 
+### OmniOS ARM64 (vibecode-omnios-arm64.pkr.hcl)
+QEMU builder that provisions OmniOS CE (experimental ARM64 build) with:
+- Native ARM64 architecture (Apple Silicon M1/M2/M3)
+- ZFS advanced filesystem
+- DTrace performance analysis
+- Zones for OS-level virtualization
+- Node.js via pkgsrc (SmartOS package manager)
+- Hypervisor.framework acceleration on macOS
+
+**Architecture**: ARM64/aarch64 (experimental build)
+**Use Case**: Apple Silicon Macs requiring native ARM64 performance with illumos/Solaris
+stability, ZFS, and DTrace. Ideal for development environments on M-series Macs.
+
 ## Files
 
-- `vibecode-ubuntu.pkr.hcl` – Ubuntu 24.04 cloud image builder
-- `vibecode-openindiana.pkr.hcl` – OpenIndiana Hipster ISO installer
+- `vibecode-ubuntu.pkr.hcl` – Ubuntu 24.04 cloud image builder (x86-64)
+- `vibecode-openindiana.pkr.hcl` – OpenIndiana Hipster ISO installer (x86-64)
+- `vibecode-omnios-arm64.pkr.hcl` – OmniOS CE ARM64 raw image (experimental)
 - `http/user-data`, `http/meta-data` – Cloud-init seed files for Ubuntu
 
 ## Usage
@@ -75,6 +90,27 @@ packer build infrastructure/packer/vibecode-openindiana.pkr.hcl
 
 **Output**: `output-vibecode-openindiana/vibecode-openindiana.qcow2` +
 `manifest-vibecode-openindiana.json`
+
+### OmniOS ARM64 Build
+
+**Note**: Experimental ARM64 build for Apple Silicon native performance.
+
+```bash
+# Initialize
+packer init infrastructure/packer/vibecode-omnios-arm64.pkr.hcl
+
+# Build (native ARM64 on Apple Silicon)
+packer build infrastructure/packer/vibecode-omnios-arm64.pkr.hcl
+```
+
+**Features**:
+- Native ARM64 execution (no emulation)
+- Hypervisor.framework acceleration
+- VNC on port 5901 for monitoring
+- Faster than x86_64 emulation
+
+**Output**: `output-vibecode-omnios-arm64/vibecode-omnios-arm64.qcow2` +
+`manifest-vibecode-omnios-arm64.json`
 
 ### Using Built Images
 
@@ -160,15 +196,17 @@ source "qemu" "vibecode-arm64" {
 
 ## Platform Comparison
 
-| Feature | Ubuntu | OpenIndiana |
-|---------|--------|-------------|
-| **Filesystem** | ext4 | ZFS (snapshots, compression) |
-| **Observability** | SystemTap, perf | DTrace (native) |
-| **Containers** | Docker, containerd | LX zones (OS virtualization) |
-| **Package Mgmt** | APT (native) | APT (in zone) + IPS (host) |
-| **Boot Time** | ~15s | ~20s (zone boot included) |
-| **Licensing** | GPL | CDDL (MIT/BSD-compatible) |
-| **Use Case** | Cloud, dev | Production, compliance |
+| Feature | Ubuntu | OpenIndiana | OmniOS ARM64 |
+|---------|--------|-------------|--------------|
+| **Architecture** | x86-64 | x86-64 | ARM64 (native) |
+| **Filesystem** | ext4 | ZFS (snapshots, compression) | ZFS (snapshots, compression) |
+| **Observability** | SystemTap, perf | DTrace (native) | DTrace (native) |
+| **Containers** | Docker, containerd | LX zones (OS virtualization) | Zones (OS virtualization) |
+| **Package Mgmt** | APT (native) | APT (in zone) + IPS (host) | pkgsrc (SmartOS) |
+| **Boot Time** | ~15s | ~20s (zone boot included) | ~18s |
+| **Licensing** | GPL | CDDL (MIT/BSD-compatible) | CDDL (MIT/BSD-compatible) |
+| **Apple Silicon** | Emulated (slow) | Emulated (slow) | Native (fast) |
+| **Use Case** | Cloud, dev | Production, compliance | Apple Silicon dev |
 
 ## Automated Installer (OpenIndiana)
 
