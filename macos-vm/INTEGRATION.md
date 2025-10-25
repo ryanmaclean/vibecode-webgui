@@ -154,6 +154,7 @@ pub struct VMStatus {
 pub struct VMManager {
     process: Arc<Mutex<Option<Child>>>,
     binary_path: String,
+    start_time: Arc<Mutex<Option<std::time::Instant>>>,
 }
 
 impl VMManager {
@@ -161,12 +162,20 @@ impl VMManager {
         Self {
             process: Arc::new(Mutex::new(None)),
             binary_path,
+            start_time: Arc::new(Mutex::new(None)),
         }
+    }
+    
+    fn calculate_uptime(&self) -> Option<u64> {
+        self.start_time.lock()
+            .ok()
+            .and_then(|guard| guard.as_ref())
+            .map(|start| start.elapsed().as_secs())
     }
     
     pub fn start(&self) -> Result<u32, String> {
         let mut process_guard = self.process.lock()
-            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
+            .map_err(|_| "VM is currently busy. Please wait and try again.".to_string())?;
         
         if let Some(child) = &*process_guard {
             if let Some(pid) = child.id() {
@@ -188,7 +197,7 @@ impl VMManager {
     
     pub fn stop(&self) -> Result<(), String> {
         let mut process_guard = self.process.lock()
-            .map_err(|e| format!("Failed to acquire lock: {}", e))?;
+            .map_err(|_| "VM is currently busy. Please wait and try again.".to_string())?;
         
         if let Some(mut child) = process_guard.take() {
             child.kill()
@@ -544,116 +553,39 @@ class AppDelegate: NSObject, NSApplicationDelegate {
 
 ## Docker Desktop Migration
 
-### Migration Script
+### Automated Migration
+
+Use the migration script to migrate from Docker Desktop:
 
 ```bash
-#!/bin/bash
-# migrate-from-docker.sh
-
-echo "🚀 Migrating from Docker Desktop to VibeCode Native VM"
-echo ""
-
-# 1. Export Docker volumes (if needed)
-echo "📦 Exporting Docker volumes..."
-docker volume ls -q | while read volume; do
-    echo "  Exporting $volume..."
-    docker run --rm -v "$volume:/data" -v "$PWD:/backup" \
-        alpine tar czf "/backup/${volume}.tar.gz" /data
-done
-
-# 2. Stop Docker Desktop
-echo "🛑 Stopping Docker Desktop..."
-osascript -e 'quit app "Docker"'
-sleep 5
-
-# 3. Install VibeCode VM
-echo "⚙️  Installing VibeCode VM..."
-./scripts/macos-vm/install.sh
-
-# 4. Start VibeCode VM
-echo "🚀 Starting VibeCode VM..."
-./bin/vibecode-vm &
-VM_PID=$!
-sleep 5
-
-# 5. Verify VM is running
-if kill -0 $VM_PID 2>/dev/null; then
-    echo "✅ VibeCode VM is running!"
-    echo "📍 Code-server: http://localhost:8080"
-else
-    echo "❌ Failed to start VM"
-    exit 1
-fi
-
-echo ""
-echo "✅ Migration complete!"
-echo ""
-echo "Next steps:"
-echo "  1. Access code-server: http://localhost:8080"
-echo "  2. Import Docker volumes if needed"
-echo "  3. Optional: Uninstall Docker Desktop"
+./scripts/macos-vm/migrate-from-docker.sh
 ```
 
-### Performance Comparison
+This automated script will:
+1. Export Docker volumes (optional)
+2. Stop Docker Desktop
+3. Check prerequisites
+4. Install VibeCode VM
+5. Start and verify VM
+6. Provide next steps
+
+The script includes interactive prompts and detailed progress reporting.
+
+### Automated Performance Comparison
+
+Use the performance comparison script:
 
 ```bash
-#!/bin/bash
-# compare-performance.sh
-
-echo "📊 Performance Comparison: Docker Desktop vs VibeCode VM"
-echo ""
-
-# Docker Desktop
-echo "Testing Docker Desktop..."
-osascript -e 'quit app "Docker"'
-sleep 5
-
-DOCKER_START=$(date +%s.%N)
-open -a Docker
-# Wait for Docker to be ready
-while ! docker info &>/dev/null; do
-    sleep 1
-done
-DOCKER_END=$(date +%s.%N)
-DOCKER_BOOT=$(echo "$DOCKER_END - $DOCKER_START" | bc)
-
-DOCKER_MEM=$(ps aux | grep -i docker | awk '{sum+=$6} END {print sum/1024}')
-
-# VibeCode VM
-echo "Testing VibeCode VM..."
-osascript -e 'quit app "Docker"'
-sleep 5
-
-VIBECODE_START=$(date +%s.%N)
-./bin/vibecode-vm > /tmp/vm.log 2>&1 &
-VM_PID=$!
-
-while ! grep -q "VM started successfully" /tmp/vm.log; do
-    sleep 0.1
-done
-VIBECODE_END=$(date +%s.%N)
-VIBECODE_BOOT=$(echo "$VIBECODE_END - $VIBECODE_START" | bc)
-
-VIBECODE_MEM=$(ps -o rss= -p $VM_PID | awk '{print $1/1024}')
-
-kill $VM_PID
-
-# Results
-echo ""
-echo "Results:"
-echo "--------"
-printf "Boot Time:\n"
-printf "  Docker Desktop: %.2fs\n" $DOCKER_BOOT
-printf "  VibeCode VM:    %.2fs\n" $VIBECODE_BOOT
-printf "  Improvement:    %.1fx faster\n" $(echo "$DOCKER_BOOT / $VIBECODE_BOOT" | bc -l)
-echo ""
-printf "Memory Usage:\n"
-printf "  Docker Desktop: %.0f MB\n" $DOCKER_MEM
-printf "  VibeCode VM:    %.0f MB\n" $VIBECODE_MEM
-printf "  Savings:        %.0f MB (%.0f%%)\n" \
-    $(echo "$DOCKER_MEM - $VIBECODE_MEM" | bc) \
-    $(echo "($DOCKER_MEM - $VIBECODE_MEM) / $DOCKER_MEM * 100" | bc)
+./scripts/macos-vm/compare-performance.sh
 ```
+
+This script:
+- Tests Docker Desktop boot time and memory usage
+- Tests VibeCode VM boot time and memory usage
+- Calculates improvement metrics
+- Exports results to JSON
+
+Results are saved to `~/.vibecode/vm/performance-comparison.json`
 
 ## Monitoring and Observability
 

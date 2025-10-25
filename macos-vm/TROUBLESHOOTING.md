@@ -487,99 +487,42 @@ Enable dynamic memory adjustment:
 
 ## Health Monitoring
 
-### Create Monitoring Script
+### Real-Time Monitoring
+
+Use the VM monitoring script for live health status:
 
 ```bash
-#!/bin/bash
-# monitor-vm.sh
-
-while true; do
-    clear
-    echo "VibeCode VM Health Monitor"
-    echo "=========================="
-    echo ""
-    
-    # Check if running
-    if pgrep vibecode-vm > /dev/null; then
-        echo "Status: ✅ Running"
-        
-        # Get PID
-        VM_PID=$(pgrep vibecode-vm)
-        echo "PID: $VM_PID"
-        
-        # Memory usage
-        VM_MEM=$(ps -o rss= -p $VM_PID | awk '{print $1/1024}')
-        echo "Memory: ${VM_MEM} MB"
-        
-        # CPU usage
-        VM_CPU=$(ps -o %cpu= -p $VM_PID)
-        echo "CPU: ${VM_CPU}%"
-        
-        # Uptime
-        VM_START=$(ps -o lstart= -p $VM_PID)
-        echo "Started: $VM_START"
-        
-        # Network test
-        if curl -s http://localhost:8080 > /dev/null; then
-            echo "Code-Server: ✅ Accessible"
-        else
-            echo "Code-Server: ❌ Not accessible"
-        fi
-    else
-        echo "Status: ❌ Not running"
-    fi
-    
-    echo ""
-    echo "Press Ctrl+C to exit"
-    sleep 5
-done
+./scripts/macos-vm/monitor-vm.sh
 ```
+
+This provides real-time monitoring of:
+- VM running status
+- Process ID and uptime
+- Memory usage
+- CPU usage
+- Code-server accessibility
+- Log file size
+
+Updates every 5 seconds. Press Ctrl+C to exit.
 
 ## Getting Help
 
 ### Collect Diagnostic Information
 
+Use the automated diagnostic collection script:
+
 ```bash
-#!/bin/bash
-# collect-diagnostics.sh
-
-DIAG_DIR="/tmp/vibecode-vm-diagnostics-$(date +%Y%m%d-%H%M%S)"
-mkdir -p "$DIAG_DIR"
-
-echo "Collecting diagnostics to $DIAG_DIR..."
-
-# System info
-sw_vers > "$DIAG_DIR/system-info.txt"
-uname -a >> "$DIAG_DIR/system-info.txt"
-sysctl -n machdep.cpu.brand_string >> "$DIAG_DIR/system-info.txt"
-
-# VM files
-ls -lR ~/.vibecode/vm > "$DIAG_DIR/vm-files.txt"
-
-# Logs
-cp ~/.vibecode/vm/*.log "$DIAG_DIR/" 2>/dev/null || true
-
-# Process info
-ps aux | grep vibecode > "$DIAG_DIR/processes.txt"
-
-# Network
-lsof -i:8080 > "$DIAG_DIR/network.txt"
-
-# Build info
-file bin/vibecode-vm > "$DIAG_DIR/binary-info.txt"
-
-# Package info
-cat macos-vm/Package.swift > "$DIAG_DIR/Package.swift"
-
-# Benchmark results
-cp ~/.vibecode/vm/benchmark-results.json "$DIAG_DIR/" 2>/dev/null || true
-
-# Create archive
-tar czf "$DIAG_DIR.tar.gz" -C /tmp "$(basename "$DIAG_DIR")"
-
-echo "Diagnostics collected: $DIAG_DIR.tar.gz"
-echo "Please attach this file when reporting issues"
+./scripts/macos-vm/collect-diagnostics.sh
 ```
+
+This will:
+- Collect system information
+- Export VM files and logs
+- Gather process and network info
+- Include benchmark results
+- Create a compressed archive
+
+The archive will be saved to `/tmp/vibecode-vm-diagnostics-YYYYMMDD-HHMMSS.tar.gz`
 
 ### Reporting Issues
 

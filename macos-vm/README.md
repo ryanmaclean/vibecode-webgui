@@ -255,7 +255,7 @@ Automated build and test pipeline via GitHub Actions:
 - Security scanning
 ```
 
-View workflow: [.github/workflows/macos-vm.yml](../.github/workflows/macos-vm.yml)
+View workflow: [GitHub Actions - macOS VM](.github/workflows/macos-vm.yml)
 
 ## Related Projects
 
