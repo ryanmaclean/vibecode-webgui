@@ -1,9 +1,9 @@
 {
-  "timestamp": "2025-10-23T07:06:43.390Z",
+  "timestamp": "2025-10-25T06:45:57.777Z",
   "baseSegment": "vibecode-webgui",
-  "pagesChecked": 82,
+  "pagesChecked": 93,
   "emptyLinks": 0,
-  "brokenCount": 5,
+  "brokenCount": 4,
   "brokenLinks": [
     {
       "from": "/Users/studio/Documents/vibecode-webgui/docs/dist/guides/quick-start/index.html",
@@ -20,10 +20,6 @@
     {
       "from": "/Users/studio/Documents/vibecode-webgui/docs/dist/monitoring/overview/index.html",
       "to": "../DATADOG_LOCAL_DEVELOPMENT/"
-    },
-    {
-      "from": "/Users/studio/Documents/vibecode-webgui/docs/dist/wiki-index/index.html",
-      "to": "./infrastructure-fixes-august-2025/"
     }
   ]
 }
