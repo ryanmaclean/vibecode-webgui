@@ -16,11 +16,22 @@ on:
 
 permissions:
   contents: read
+<<<<<<< HEAD
+<<<<<<< HEAD
+  packages: write        # For Docker image publishing
+  security-events: write  # For security scan results
+  id-token: write        # For OIDC authentication
 =======
+=======
+>>>>>>> merge-conflict-cleanup
 
 concurrency:
   group: docs-ci-${{ github.ref }}
   cancel-in-progress: true
+<<<<<<< HEAD
+>>>>>>> fix/consolidated-dependency-updates
+=======
+>>>>>>> merge-conflict-cleanup
 
 env:
   REGISTRY: vibecodecr.azurecr.io
@@ -64,7 +75,8 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        run: bash scripts/install-ci.sh --prefix docs
+        working-directory: ./docs
+        run: npm ci
 
       - name: Run security audit
         working-directory: ./docs
@@ -104,7 +116,8 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        run: bash scripts/install-ci.sh --prefix docs
+        working-directory: ./docs
+        run: npm ci
 
       - name: Lint documentation
         working-directory: ./docs
@@ -217,10 +230,10 @@ jobs:
                 }
               ]
             }' > datadog-docs-security-results.sarif
-            
+
             # Run actual container scan and append results
             npx --yes @datadog/datadog-ci security scan container --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif --output temp-docs-scan.sarif || true
-            
+
             # If scan produced results, merge them
             if [ -f temp-docs-scan.sarif ] && [ -s temp-docs-scan.sarif ]; then
               cat temp-docs-scan.sarif >> datadog-docs-security-results.sarif
@@ -279,13 +292,13 @@ jobs:
         run: |
           # Deploy with full monitoring stack using automated script
           chmod +x scripts/deploy-kind-with-monitoring.sh
-          
+
           # Update image in deployment to use built image
           sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
-          
+
           # Deploy with monitoring
           scripts/deploy-kind-with-monitoring.sh
-          
+
           # Wait for rollout
           kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=300s
 
@@ -296,7 +309,7 @@ jobs:
           PF_PID=$!
           trap "kill $PF_PID || true" EXIT
           sleep 10
-          
+
           if curl -f http://localhost:8080/ > /dev/null; then
             echo "✅ Docs deployment successful"
           else
@@ -304,7 +317,7 @@ jobs:
             kubectl logs -l app=vibecode-docs -n vibecode
             exit 1
           fi
-          
+
           # Test Datadog monitoring
           DATADOG_PODS=$(kubectl get pods -n datadog --no-headers | wc -l)
           if [ "$DATADOG_PODS" -gt 0 ]; then
@@ -313,7 +326,7 @@ jobs:
             echo "❌ Datadog monitoring not deployed"
             exit 1
           fi
-          
+
           kill $PF_PID
 
   # Deploy to production
@@ -347,7 +360,7 @@ jobs:
         run: |
           # Update image in deployment
           sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
-          
+
           kubectl apply -f k8s/docs-deployment.yaml
           kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=600s
 
@@ -388,7 +401,7 @@ jobs:
         run: |
           # Update last modified date in wiki index
           sed -i "s/\*\*Last Updated:\*\* .*/\*\*Last Updated:\*\* $(date +'%B %d, %Y')/g" WIKI_INDEX.md
-          
+
           # Update documentation links if needed
           echo "📚 Documentation updated on $(date)" >> docs/DEPLOYMENT_LOG.md
 

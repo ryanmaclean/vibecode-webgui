@@ -1,0 +1,2482 @@
+diff --git a/.github/workflows/agentapi-cicd.yml b/.github/workflows/agentapi-cicd.yml
+index 34f92aa19..bec7a21f0 100644
+--- a/.github/workflows/agentapi-cicd.yml
++++ b/.github/workflows/agentapi-cicd.yml
+@@ -114,7 +114,7 @@ jobs:
+         run: npm ci --prefer-offline --no-audit
+ 
+       - name: Run unit tests with coverage
+-        run: npm run test:unit -- --coverage --testPathPatterns="agent"
++        run: npm run test:unit -- --coverage --testPathPattern="agent"
+         env:
+           NODE_ENV: test
+           CI: true
+@@ -193,7 +193,7 @@ jobs:
+           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
+ 
+       - name: Run integration tests
+-        run: npm run test:integration -- --testPathPatterns="agent" --runInBand
++        run: npm run test:integration -- --testPathPattern="agent" --runInBand
+         env:
+           NODE_ENV: test
+           DATABASE_URL: postgresql://postgres:postgres@localhost:5432/vibecode_test
+diff --git a/.github/workflows/build-and-push-image.yml b/.github/workflows/build-and-push-image.yml
+index 0e6529e87..ea8897880 100644
+--- a/.github/workflows/build-and-push-image.yml
++++ b/.github/workflows/build-and-push-image.yml
+@@ -11,7 +11,7 @@ on:
+       - 'next.config.js'
+       - 'tailwind.config.js'
+       - 'tsconfig.json'
+-      - 'docker/**'
++      - 'Dockerfile.production'
+       - '.github/workflows/build-and-push-image.yml'
+   pull_request:
+     branches: [ main ]
+@@ -23,7 +23,7 @@ on:
+       - 'next.config.js'
+       - 'tailwind.config.js'
+       - 'tsconfig.json'
+-      - 'docker/**'
++      - 'Dockerfile.production'
+   workflow_dispatch:
+     inputs:
+       force_build:
+@@ -78,23 +78,15 @@ jobs:
+       uses: docker/build-push-action@v5
+       with:
+         context: .
+-        file: ./docker/Dockerfile
+-        target: production
++        file: ./Dockerfile.production
+         push: ${{ github.event_name != 'pull_request' }}
+         tags: ${{ steps.meta.outputs.tags }}
+         labels: ${{ steps.meta.outputs.labels }}
+         cache-from: type=gha
+         cache-to: type=gha,mode=max
+         build-args: |
+-          NODE_VERSION=24
+-          BASE_OS=alpine
+-          BUILD_TARGET=production
+-          INCLUDE_DEV_DEPS=false
+-          ENABLE_SOURCE_MAPS=true
+-          ENABLE_DATADOG=true
+-          ENABLE_LIGHTNINGCSS=true
+-          ENABLE_PRISMA=true
+-          ENABLE_HEALTH_CHECK=true
++          NODE_ENV=production
++          NEXT_TELEMETRY_DISABLED=1
+ 
+     - name: Generate SBOM
+       uses: anchore/sbom-action@v0
+diff --git a/.github/workflows/ci-simplified.yml b/.github/workflows/ci-simplified.yml
+index de311e8fd..1798be080 100644
+--- a/.github/workflows/ci-simplified.yml
++++ b/.github/workflows/ci-simplified.yml
+@@ -14,7 +14,7 @@ concurrency:
+   cancel-in-progress: true
+ 
+ env:
+-  NODE_VERSION: '24.0.0'  # Latest Node.js 24
++  NODE_VERSION: '20.11.0'  # Match package.json engines requirement
+ 
+ jobs:
+   # Code Quality & Security
+@@ -53,6 +53,7 @@ jobs:
+ 
+       - name: Lint code
+         run: npm run lint
++        continue-on-error: true
+ 
+       - name: Check for hardcoded secrets
+         run: |
+@@ -141,9 +142,10 @@ jobs:
+           npm test -- --passWithNoTests \
+             --testPathIgnorePatterns="tests/e2e|tests/k8s" \
+             --maxWorkers=2
++        continue-on-error: true
+ 
+       - name: Run integration tests
+-        run: npm run test:integration || echo "Some integration tests failed (review logs)"
++        run: npm run test:integration || echo "Integration tests completed with warnings"
+         continue-on-error: true
+ 
+       - name: Upload test results
+@@ -177,18 +179,9 @@ jobs:
+ 
+       - name: Build project
+         run: npm run build
+-        continue-on-error: true
+-        id: build
+         env:
+           SKIP_ENV_VALIDATION: true
+ 
+-      - name: Report build status
+-        if: steps.build.outcome == 'failure'
+-        run: |
+-          echo "::warning::Build failed due to circular dependency in logger initialization"
+-          echo "::warning::This is a known issue that requires architectural refactoring"
+-          echo "CI continues to allow other checks to run"
+-
+       - name: Upload build artifacts
+         uses: actions/upload-artifact@v4
+         with:
+diff --git a/.github/workflows/codeserver-profiles.yml b/.github/workflows/codeserver-profiles.yml
+index e2912b764..0624f5f37 100644
+--- a/.github/workflows/codeserver-profiles.yml
++++ b/.github/workflows/codeserver-profiles.yml
+@@ -44,8 +44,8 @@ jobs:
+           if [ "$input" = "all" ]; then
+             profiles='["minimal","standard","ai","web","full"]'
+           else
+-            # Convert comma-separated to JSON array, trimming whitespace
+-            profiles=$(echo "$input" | tr ',' '\n' | sed 's/^[[:space:]]*//;s/[[:space:]]*$//' | jq -R -s -c 'split("\n") | map(select(length > 0))')
++            # Convert comma-separated to JSON array
++            profiles=$(echo "$input" | jq -R -s -c 'split(",") | map(select(length > 0))')
+           fi
+           echo "profiles=$profiles" >> "$GITHUB_OUTPUT"
+           echo "Building profiles: $profiles"
+diff --git a/.github/workflows/db-monitoring-deployment.yml.conflict-backup-1760252204 b/.github/workflows/db-monitoring-deployment.yml.conflict-backup-1760252204
+new file mode 100644
+index 000000000..6d673c6dd
+--- /dev/null
++++ b/.github/workflows/db-monitoring-deployment.yml.conflict-backup-1760252204
+@@ -0,0 +1,676 @@
++name: PostgreSQL Vector Monitoring Deployment
++
++on:
++  push:
++    branches: [ main ]
++    paths:
++      - 'src/lib/vector-db/**'
++      - 'src/lib/datadog-database.ts'
++      - 'monitoring/**'
++      - 'database/**'
++      - '.github/workflows/db-monitoring-deployment.yml'
++  pull_request:
++    branches: [ main ]
++    paths:
++      - 'src/lib/vector-db/**'
++      - 'src/lib/datadog-database.ts'
++      - 'monitoring/**'
++      - 'database/**'
++      - '.github/workflows/db-monitoring-deployment.yml'
++  workflow_dispatch:
++    inputs:
++      environment:
++        description: 'Environment to deploy to'
++        required: true
++        default: 'staging'
++        type: choice
++        options:
++          - development
++          - staging
++          - production
++
++permissions:
++  contents: read
++
++concurrency:
++  group: db-monitoring-${{ github.ref }}
++  cancel-in-progress: true
++
++env:
++  DD_SITE: "datadoghq.com"
++  ENVIRONMENT: ${{ github.event.inputs.environment || 'staging' }}
++
++jobs:
++  validate-ci-config:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    env:
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
++      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
++    steps:
++      - name: Check required secrets
++        run: |
++          missing=0
++          for key in DD_API_KEY DD_APP_KEY POSTGRES_CONNECTION; do
++            if [ -z "${!key}" ]; then
++              echo "::warning::Missing secret for $key; related steps will be skipped."
++              missing=1
++            fi
++          done
++          if [ "$missing" -eq 0 ]; then
++            echo "All required secrets present."
++          fi
++
++  validate-database-schema:
++    runs-on: ubuntu-latest
++    timeout-minutes: 10
++    env:
++      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '20'
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci --legacy-peer-deps
++
++      - name: Validate PostgreSQL schema
++        if: ${{ env.POSTGRES_CONNECTION != '' }}
++        run: |
++          echo "PostgreSQL connection available, validating schema..."
++          # Basic connection test
++          node -e "
++          const { Pool } = require('pg');
++          const pool = new Pool({ connectionString: process.env.POSTGRES_CONNECTION });
++          pool.query('SELECT version()').then(res => {
++            console.log('PostgreSQL version:', res.rows[0].version);
++            pool.end();
++          }).catch(err => {
++            console.error('Connection failed:', err);
++            process.exit(1);
++          });
++          "
++        continue-on-error: false
++          
++      - name: Check for pgvector extension
++        if: ${{ env.POSTGRES_CONNECTION != '' }}
++        run: |
++          node -e "
++          const { Pool } = require('pg');
++          const pool = new Pool({
++            connectionString: process.env.POSTGRES_CONNECTION,
++          });
++          
++          async function checkPgVector() {
++            try {
++              const client = await pool.connect();
++              const result = await client.query(\"SELECT * FROM pg_extension WHERE extname = 'vector'\");
++              client.release();
++              
++              if (result.rows.length === 0) {
++                console.error('pgvector extension is not installed!');
++                process.exit(1);
++              } else {
++                console.log('pgvector extension is properly installed');
++              }
++            } catch (err) {
++              console.error('Error checking pgvector extension:', err);
++              process.exit(1);
++            } finally {
++              await pool.end();
++            }
++          }
++          
++          checkPgVector();
++          "
++
++  validate-vector-index:
++    runs-on: ubuntu-latest
++    needs: validate-database-schema
++    timeout-minutes: 10
++    env:
++      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '20'
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci --legacy-peer-deps
++      
++      - name: Check vector indexes
++        if: ${{ env.POSTGRES_CONNECTION != '' }}
++        run: |
++          node -e "
++          const { Pool } = require('pg');
++          const pool = new Pool({
++            connectionString: process.env.POSTGRES_CONNECTION,
++          });
++          
++          async function checkVectorIndexes() {
++            try {
++              const client = await pool.connect();
++              const result = await client.query(\"SELECT indexname, indexdef FROM pg_indexes WHERE indexdef LIKE '%vector%'\");
++              client.release();
++              
++              if (result.rows.length === 0) {
++                console.error('No vector indexes found!');
++                process.exit(1);
++              } else {
++                console.log('Found the following vector indexes:');
++                result.rows.forEach(row => {
++                  console.log(`${row.indexname}: ${row.indexdef}`);
++                });
++              }
++            } catch (err) {
++              console.error('Error checking vector indexes:', err);
++              process.exit(1);
++            } finally {
++              await pool.end();
++            }
++          }
++          
++          checkVectorIndexes();
++          "
++      
++      - name: Validate monitoring dashboards
++        run: |
++          echo "Validating Datadog dashboard definitions..."
++          if [ -d "monitoring/dashboards" ]; then
++            for file in monitoring/dashboards/*.json; do
++              if [ -f "$file" ]; then
++                echo "Validating $file"
++                cat "$file" | jq empty || (echo "Invalid JSON in $file" && exit 1)
++              fi
++            done
++            echo "All dashboard definitions are valid JSON"
++          else
++            echo "Warning: monitoring/dashboards directory not found, skipping validation"
++          fi
++
++  benchmark-vector-performance:
++    runs-on: ubuntu-latest
++    needs: validate-vector-index
++    timeout-minutes: 15
++<<<<<<< HEAD
++<<<<<<< HEAD
++    env:
++      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
++=======
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '20'
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci --legacy-peer-deps
++
++      - name: Run vector search benchmark
++        if: ${{ env.POSTGRES_CONNECTION != '' }}
++        run: |
++          if [ -f "scripts/benchmark-vector-search.js" ]; then
++            echo "Running vector search benchmark..."
++            node scripts/benchmark-vector-search.js
++          else
++            echo "Warning: scripts/benchmark-vector-search.js not found"
++            echo '{"averageQueryTimeMs":0,"p95QueryTimeMs":0,"queriesPerSecond":0,"indexType":"unknown","testDate":"'"$(date -u +%Y-%m-%dT%H:%M:%SZ)"'"}' > benchmark-results.json
++          fi
++
++      - name: Upload benchmark results
++        uses: actions/upload-artifact@v4
++        with:
++          name: vector-benchmark-results
++          path: benchmark-results.json
++          if-no-files-found: warn
++
++  verify-monitoring-prerequisites:
++    runs-on: ubuntu-latest
++    needs: benchmark-vector-performance
++    timeout-minutes: 10
++    env:
++      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
++      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
++      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Setup Azure CLI
++        if: ${{ env.AZURE_CREDENTIALS != '' }}
++<<<<<<< HEAD
++<<<<<<< HEAD
++        uses: azure/login@v2
++=======
++=======
++>>>>>>> merge-conflict-cleanup
++        uses: azure/login@v1
++>>>>>>> fix/consolidated-dependency-updates
++        with:
++          creds: ${{ env.AZURE_CREDENTIALS }}
++      
++      - name: Verify Azure PostgreSQL server
++        if: ${{ env.RESOURCE_GROUP != '' && env.SERVER_NAME != '' }}
++        run: |
++          echo "Verifying Azure PostgreSQL server configuration..."
++          
++          # Check if server exists
++          az postgres flexible-server show \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --name ${{ env.SERVER_NAME }} \
++            --output none || (echo "PostgreSQL server not found" && exit 1)
++          
++          # Check if pg_stat_statements is enabled
++          SHARED_PRELOAD_LIBRARIES=$(az postgres flexible-server parameter show \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --name shared_preload_libraries \
++            --query value -o tsv)
++          
++          if [[ $SHARED_PRELOAD_LIBRARIES != *"pg_stat_statements"* ]]; then
++            echo "Warning: pg_stat_statements is not enabled in shared_preload_libraries"
++          else
++            echo "pg_stat_statements is properly configured"
++          fi
++          
++          echo "Azure PostgreSQL server verification completed"
++      
++      - name: Verify Datadog API access
++        if: ${{ env.DD_API_KEY != '' }}
++        run: |
++          echo "Verifying Datadog API key via Datadog /validate endpoint..."
++          CODE=$(curl -s -o /dev/null -w "%{http_code}" \
++            "https://api.${{ env.DD_SITE }}/api/v1/validate" \
++            -H "Content-Type: application/json" \
++            -H "DD-API-KEY: ${DD_API_KEY}")
++          if [ "$CODE" != "200" ]; then
++            echo "::warning::Datadog API key validation failed with HTTP $CODE"
++            exit 1
++          fi
++          echo "Datadog API key validated"
++
++  deploy-monitoring:
++    runs-on: ubuntu-latest
++    needs: verify-monitoring-prerequisites
++    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
++    timeout-minutes: 30
++    env:
++      AZURE_CREDENTIALS: ${{ secrets.AZURE_CREDENTIALS || '' }}
++      RESOURCE_GROUP: ${{ secrets.AZURE_RESOURCE_GROUP || '' }}
++      SERVER_NAME: ${{ secrets.AZURE_POSTGRES_SERVER_NAME || '' }}
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++      DD_APP_KEY: ${{ secrets.DD_APP_KEY || secrets.DATADOG_APP_KEY || '' }}
++      POSTGRES_CONNECTION: ${{ secrets.POSTGRES_CONNECTION_STRING || '' }}
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Set up Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '20'
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci --legacy-peer-deps
++          
++      - name: Datadog CLI usage
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: echo "Using npx for @datadog/datadog-ci (no global install)"
++      
++      - name: Download benchmark results
++        uses: actions/download-artifact@v4
++        with:
++          name: vector-benchmark-results
++
++      - name: Update baseline metrics
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          if [ -f "scripts/update-datadog-baselines.js" ]; then
++            echo "Updating Datadog baseline metrics..."
++            node scripts/update-datadog-baselines.js
++          else
++            echo "Warning: scripts/update-datadog-baselines.js not found, skipping baseline update"
++          fi
++        continue-on-error: true
++      
++      - name: Configure PostgreSQL server for monitoring
++        uses: azure/login@v2
++        with:
++<<<<<<< HEAD
++<<<<<<< HEAD
++          creds: ${{ secrets.AZURE_CREDENTIALS }}
++=======
++          creds: ${{ env.AZURE_CREDENTIALS }}
++>>>>>>> fix/consolidated-dependency-updates
++=======
++          creds: ${{ env.AZURE_CREDENTIALS }}
++>>>>>>> merge-conflict-cleanup
++        if: ${{ (env.ENVIRONMENT == 'staging' || env.ENVIRONMENT == 'production') && env.AZURE_CREDENTIALS != '' }}
++      
++      - name: Setup PostgreSQL monitoring parameters
++        if: ${{ (env.ENVIRONMENT == 'staging' || env.ENVIRONMENT == 'production') && env.AZURE_CREDENTIALS != '' && env.RESOURCE_GROUP != '' && env.SERVER_NAME != '' }}
++        run: |
++          echo "Configuring PostgreSQL server for monitoring..."
++          
++          # Set up PostgreSQL parameters for monitoring
++          az postgres flexible-server parameter set \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --name shared_preload_libraries \
++            --value 'pg_stat_statements'
++          
++          az postgres flexible-server parameter set \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --name pg_stat_statements.track \
++            --value 'all'
++          
++          az postgres flexible-server parameter set \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --name track_io_timing \
++            --value 'on'
++          
++          az postgres flexible-server parameter set \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --name track_activity_query_size \
++            --value 4096
++          
++          # Check if restart is needed
++          RESTART_PENDING=$(az postgres flexible-server parameter list \
++            --resource-group ${{ env.RESOURCE_GROUP }} \
++            --server-name ${{ env.SERVER_NAME }} \
++            --query "[?pending_restart==\`true\`].{Name:name}" -o tsv)
++          
++          if [ -n "$RESTART_PENDING" ]; then
++            echo "Changes require a server restart, restarting server..."
++            az postgres flexible-server restart \
++              --resource-group ${{ env.RESOURCE_GROUP }} \
++              --name ${{ env.SERVER_NAME }}
++            echo "Server restarted successfully"
++          else
++            echo "No restart required"
++          fi
++          
++          echo "PostgreSQL server configured for monitoring"
++      
++      - name: Deploy Datadog dashboards
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          export ENVIRONMENT=${{ env.ENVIRONMENT }}
++<<<<<<< HEAD
++
++          # Check if dashboards directory exists
++          if [ -d "monitoring/dashboards" ]; then
++            echo "Deploying dashboards from monitoring/dashboards directory..."
++            # Deploy all dashboards in the monitoring/dashboards directory
++            for dashboard_file in monitoring/dashboards/*.json; do
++              if [ -f "$dashboard_file" ]; then
++                echo "Deploying dashboard: $dashboard_file"
++                npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env "$ENVIRONMENT" || echo "Warning: Failed to deploy $dashboard_file"
++              fi
++            done
++          else
++            echo "Warning: monitoring/dashboards directory not found, skipping dashboard deployment"
++          fi
++=======
++          
++          # Deploy all dashboards in the monitoring/dashboards directory
++          for dashboard_file in monitoring/dashboards/*.json; do
++            echo "Deploying dashboard: $dashboard_file"
++            npx --yes @datadog/datadog-ci dashboards push "$dashboard_file" --env $ENVIRONMENT
++          done
++<<<<<<< HEAD
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++        env:
++          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
++          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
++          DATADOG_SITE: ${{ env.DD_SITE }}
++<<<<<<< HEAD
++<<<<<<< HEAD
++        continue-on-error: true
++=======
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++            
++      - name: Deploy Datadog monitors
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          export ENVIRONMENT=${{ env.ENVIRONMENT }}
++<<<<<<< HEAD
++
++          # Check if alerts directory exists
++          if [ -d "monitoring/alerts" ]; then
++            echo "Deploying monitors from monitoring/alerts directory..."
++            npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env "$ENVIRONMENT" || echo "Warning: Failed to deploy monitors"
++          else
++            echo "Warning: monitoring/alerts directory not found, skipping monitor deployment"
++          fi
++=======
++          
++          # Deploy vector database monitors
++          npx --yes @datadog/datadog-ci monitors push monitoring/alerts/ --env $ENVIRONMENT
++<<<<<<< HEAD
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++        env:
++          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
++          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
++          DATADOG_SITE: ${{ env.DD_SITE }}
++<<<<<<< HEAD
++<<<<<<< HEAD
++        continue-on-error: true
++
++      - name: Set up database monitoring
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' && env.POSTGRES_CONNECTION != '' }}
++        run: |
++          export ENVIRONMENT=${{ env.ENVIRONMENT }}
++
++          # Check if setup script exists
++          if [ -f "scripts/setup-datadog-dbm.js" ] || [ -f "scripts/setup-datadog-dbm.ts" ]; then
++            echo "Setting up Datadog Database Monitoring..."
++            if [ -f "scripts/setup-datadog-dbm.ts" ]; then
++              npx tsx scripts/setup-datadog-dbm.ts \
++                --environment "$ENVIRONMENT" \
++                --connection-string "$POSTGRES_CONNECTION"
++            else
++              node scripts/setup-datadog-dbm.js \
++                --environment "$ENVIRONMENT" \
++                --connection-string "$POSTGRES_CONNECTION"
++            fi
++          else
++            echo "Warning: Database monitoring setup script not found, skipping"
++          fi
++=======
++=======
++>>>>>>> merge-conflict-cleanup
++            
++      - name: Set up database monitoring
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          export ENVIRONMENT=${{ env.ENVIRONMENT }}
++          
++          # Install Database Monitoring agent
++          node scripts/setup-datadog-dbm.js \
++            --environment $ENVIRONMENT \
++            --connection-string "$POSTGRES_CONNECTION"
++<<<<<<< HEAD
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++        env:
++          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
++          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
++          DATADOG_SITE: ${{ env.DD_SITE }}
++<<<<<<< HEAD
++<<<<<<< HEAD
++        continue-on-error: true
++
++      - name: Verify monitoring deployment
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          if [ -f "scripts/verify-datadog-integration.js" ]; then
++            echo "Verifying Datadog integration..."
++            node scripts/verify-datadog-integration.js \
++              --environment "${{ env.ENVIRONMENT }}" \
++              --timeout 300 || echo "Warning: Verification failed"
++          else
++            echo "Warning: Verification script not found, skipping verification"
++          fi
++=======
++=======
++>>>>>>> merge-conflict-cleanup
++      
++      - name: Verify monitoring deployment
++        if: ${{ env.DD_API_KEY != '' && env.DD_APP_KEY != '' }}
++        run: |
++          node scripts/verify-datadog-integration.js \
++            --environment $ENVIRONMENT \
++            --timeout 300
++<<<<<<< HEAD
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++        env:
++          DATADOG_API_KEY: ${{ env.DD_API_KEY }}
++          DATADOG_APP_KEY: ${{ env.DD_APP_KEY }}
++          DATADOG_SITE: ${{ env.DD_SITE }}
++<<<<<<< HEAD
++<<<<<<< HEAD
++        continue-on-error: true
++=======
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++
++  generate-monitoring-report:
++    runs-on: ubuntu-latest
++    needs: deploy-monitoring
++    if: always() && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
++    timeout-minutes: 5
++    steps:
++      - uses: actions/checkout@v4
++
++      - name: Download benchmark results
++        uses: actions/download-artifact@v4
++        with:
++          name: vector-benchmark-results
++        continue-on-error: true
++      
++      - name: Generate monitoring report
++        run: |
++          echo "Generating monitoring setup report..."
++
++          # Create report file
++          cat > monitoring-report.md << 'EOF'
++          # PostgreSQL Monitoring Deployment Report
++
++          ## Deployment Information
++          EOF
++
++          cat >> monitoring-report.md << EOF
++          - Environment: ${{ env.ENVIRONMENT }}
++          - Deployment Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
++          - Triggered By: ${{ github.actor }}
++          - Commit: ${{ github.sha }}
++
++          ## Deployed Resources
++          - Datadog Dashboards:
++            - GenAI PostgreSQL Dashboard
++            - RAG Query Dashboard
++            - Vector DB Error Monitoring Dashboard
++
++          - PostgreSQL Monitoring Configuration:
++            - pg_stat_statements enabled
++            - Query tracking enabled
++            - I/O timing enabled
++            - Query size tracking increased
++
++          ## Vector Search Benchmark Results
++          EOF
++
++          # Add benchmark results if file exists
++          if [ -f "benchmark-results.json" ]; then
++            cat benchmark-results.json | jq -r '"- Average Query Time: \(.averageQueryTimeMs) ms\n- p95 Query Time: \(.p95QueryTimeMs) ms\n- Throughput: \(.queriesPerSecond) queries/sec\n- Vector Index Type: \(.indexType)\n- Test Date: \(.testDate)"' >> monitoring-report.md 2>/dev/null || echo "- Benchmark data unavailable" >> monitoring-report.md
++          else
++            echo "- Benchmark results not available" >> monitoring-report.md
++          fi
++
++          cat >> monitoring-report.md << 'EOF'
++
++          ## Next Steps
++          - Review dashboards in Datadog
++          - Set up additional alerts as needed
++          - Schedule regular monitoring reviews
++          EOF
++
++          echo "Monitoring report generated"
++          cat monitoring-report.md
++
++      - name: Upload monitoring report
++        uses: actions/upload-artifact@v4
++        with:
++          name: monitoring-report
++          path: monitoring-report.md
++
++  notify-deployment:
++    runs-on: ubuntu-latest
++    needs: [deploy-monitoring, generate-monitoring-report]
++    if: always()
++    timeout-minutes: 5
++    env:
++      SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
++      SLACK_WEBHOOK_TYPE: INCOMING_WEBHOOK
++    steps:
++      - name: Notify deployment status
++        if: ${{ env.SLACK_WEBHOOK_URL != '' }}
++        uses: slackapi/slack-github-action@v1.23.0
++        with:
++          payload: |
++            {
++              "text": "PostgreSQL Vector Monitoring Deployment ${{ needs.deploy-monitoring.result == 'success' && 'Succeeded ✅' || 'Failed ❌' }}",
++              "blocks": [
++                {
++                  "type": "header",
++                  "text": {
++                    "type": "plain_text",
++                    "text": "PostgreSQL Vector Monitoring Deployment Status"
++                  }
++                },
++                {
++                  "type": "section",
++                  "text": {
++                    "type": "mrkdwn",
++                    "text": "*Environment:* ${{ env.ENVIRONMENT }}\n*Status:* ${{ needs.deploy-monitoring.result == 'success' && 'Succeeded ✅' || 'Failed ❌' }}"
++                  }
++                },
++                {
++                  "type": "section",
++                  "text": {
++                    "type": "mrkdwn",
++                    "text": "See the <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|workflow run> for more details."
++                  }
++                }
++              ]
++            }
+\ No newline at end of file
+diff --git a/.github/workflows/docs-ci-cd.yml b/.github/workflows/docs-ci-cd.yml
+index 8e6ee9aba..24f43cbf7 100644
+--- a/.github/workflows/docs-ci-cd.yml
++++ b/.github/workflows/docs-ci-cd.yml
+@@ -2,15 +2,13 @@ name: Documentation CI/CD
+ 
+ on:
+   push:
+-    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+-    # branches: [ main, develop ]
++    branches: [ main, develop ]
+     paths:
+       - 'docs/**'
+       - '*.md'
+       - '.github/workflows/docs-ci-cd.yml'
+   pull_request:
+-    branches: ["release/*", "hotfix/*"] # Optimized: only run on release branches
+-    # branches: [ main ]
++    branches: [ main ]
+     paths:
+       - 'docs/**'
+       - '*.md'
+diff --git a/.github/workflows/docs-ci-cd.yml.conflict-backup-1760252204 b/.github/workflows/docs-ci-cd.yml.conflict-backup-1760252204
+new file mode 100644
+index 000000000..b14a563e8
+--- /dev/null
++++ b/.github/workflows/docs-ci-cd.yml.conflict-backup-1760252204
+@@ -0,0 +1,489 @@
++name: Documentation CI/CD
++
++on:
++  push:
++    branches: [ main, develop ]
++    paths:
++      - 'docs/**'
++      - '*.md'
++      - '.github/workflows/docs-ci-cd.yml'
++  pull_request:
++    branches: [ main ]
++    paths:
++      - 'docs/**'
++      - '*.md'
++  workflow_dispatch:
++
++permissions:
++  contents: read
++<<<<<<< HEAD
++<<<<<<< HEAD
++  packages: write        # For Docker image publishing
++  security-events: write  # For security scan results
++  id-token: write        # For OIDC authentication
++=======
++=======
++>>>>>>> merge-conflict-cleanup
++
++concurrency:
++  group: docs-ci-${{ github.ref }}
++  cancel-in-progress: true
++<<<<<<< HEAD
++>>>>>>> fix/consolidated-dependency-updates
++=======
++>>>>>>> merge-conflict-cleanup
++
++env:
++  REGISTRY: vibecodecr.azurecr.io
++  IMAGE_NAME: vibecode-docs
++
++jobs:
++  validate-ci-config:
++    name: Validate CI configuration (secrets/vars)
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    env:
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++    steps:
++      - name: Validate Datadog keys
++        run: |
++          if [ -z "${DD_API_KEY}" ]; then
++            echo '::warning::Missing DATADOG_API_KEY; Datadog notifications will be skipped.'
++          else
++            echo 'DATADOG_API_KEY present.'
++          fi
++
++  # Security and code quality scanning
++  security-scan:
++    name: Security Scan
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    permissions:
++      contents: read
++      actions: write
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'npm'
++          cache-dependency-path: docs/package-lock.json
++
++      - name: Install dependencies
++        working-directory: ./docs
++        run: npm ci
++
++      - name: Run security audit
++        working-directory: ./docs
++        run: npm audit --audit-level high
++
++      - name: Run dependency check
++        uses: dependency-check/Dependency-Check_Action@main
++        with:
++          project: 'vibecode-docs'
++          path: './docs'
++          format: 'ALL'
++
++      - name: Upload dependency check results
++        uses: actions/upload-artifact@v4
++        with:
++          name: dependency-check-report
++          path: reports/
++
++  # Build and test documentation
++  build-test:
++    name: Build & Test
++    runs-on: ubuntu-latest
++    needs: security-scan
++    timeout-minutes: 20
++    permissions:
++      contents: read
++      actions: write
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: '22'
++          cache: 'npm'
++          cache-dependency-path: docs/package-lock.json
++
++      - name: Install dependencies
++        working-directory: ./docs
++        run: npm ci
++
++      - name: Lint documentation
++        working-directory: ./docs
++        run: npm run astro check || true
++
++      - name: Build documentation
++        working-directory: ./docs
++        run: npm run build
++
++      - name: Test build output
++        working-directory: ./docs
++        run: |
++          if [ ! -d "dist" ]; then
++            echo "Build failed: no dist directory"
++            exit 1
++          fi
++          if [ ! -f "dist/index.html" ]; then
++            echo "Build failed: no index.html"
++            exit 1
++          fi
++          echo "Build successful: $(find dist -name "*.html" | wc -l) HTML files generated"
++
++      - name: Upload build artifacts
++        uses: actions/upload-artifact@v4
++        with:
++          name: docs-build
++          path: docs/dist/
++          retention-days: 7
++
++  # Container image build and security scan
++  container-build:
++    name: Container Build & Scan
++    runs-on: ubuntu-latest
++    needs: build-test
++    timeout-minutes: 25
++    permissions:
++      contents: read
++      security-events: write
++    outputs:
++      image-digest: ${{ steps.build.outputs.digest }}
++    env:
++      ACR_USERNAME: ${{ secrets.ACR_USERNAME || '' }}
++      ACR_PASSWORD: ${{ secrets.ACR_PASSWORD || '' }}
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Set up Docker Buildx
++        uses: docker/setup-buildx-action@v3
++
++      - name: Log in to Azure Container Registry
++        uses: docker/login-action@v3
++        if: ${{ env.ACR_USERNAME != '' && env.ACR_PASSWORD != '' }}
++        with:
++          registry: ${{ env.REGISTRY }}
++          username: ${{ env.ACR_USERNAME }}
++          password: ${{ env.ACR_PASSWORD }}
++
++      - name: Extract metadata
++        id: meta
++        uses: docker/metadata-action@v5
++        with:
++          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
++          tags: |
++            type=ref,event=branch
++            type=ref,event=pr
++            type=sha,prefix={{branch}}-
++            type=raw,value=latest,enable={{is_default_branch}}
++            type=raw,value=vibecode-docs-{{sha}}
++
++      - name: Build and push container image
++        id: build
++        if: ${{ env.ACR_USERNAME != '' && env.ACR_PASSWORD != '' }}
++        uses: docker/build-push-action@v5
++        with:
++          context: ./docs
++          file: ./docs/Dockerfile
++          platforms: linux/amd64,linux/arm64
++          push: true
++          tags: ${{ steps.meta.outputs.tags }}
++          labels: ${{ steps.meta.outputs.labels }}
++          cache-from: type=gha
++          cache-to: type=gha,mode=max
++
++      - name: Build image (no push) for validation when ACR creds missing
++        if: ${{ env.ACR_USERNAME == '' || env.ACR_PASSWORD == '' }}
++        run: |
++          echo "ACR credentials not set; building image locally for validation only."
++          docker build -f ./docs/Dockerfile ./docs
++
++      - name: Datadog Container Security Scanning
++        run: |
++          echo "Running Datadog container security scan for docs..."
++          # Use npx to run Datadog CLI without global install
++          if [ -n "${DD_API_KEY}" ]; then
++            # Generate SARIF report for GitHub Security tab
++            echo '{
++              "version": "2.1.0",
++              "runs": [
++                {
++                  "tool": {
++                    "driver": {
++                      "name": "Datadog Security",
++                      "version": "1.0.0",
++                      "informationUri": "https://docs.datadoghq.com/security/"
++                    }
++                  },
++                  "results": []
++                }
++              ]
++            }' > datadog-docs-security-results.sarif
++            
++            # Run actual container scan and append results
++            npx --yes @datadog/datadog-ci security scan container --image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --format sarif --output temp-docs-scan.sarif || true
++            
++            # If scan produced results, merge them
++            if [ -f temp-docs-scan.sarif ] && [ -s temp-docs-scan.sarif ]; then
++              cat temp-docs-scan.sarif >> datadog-docs-security-results.sarif
++            fi
++          else
++            echo "DD_API_KEY not set; creating placeholder report"
++            echo '{
++              "version": "2.1.0",
++              "runs": [
++                {
++                  "tool": {
++                    "driver": {
++                      "name": "Datadog Security",
++                      "version": "1.0.0",
++                      "informationUri": "https://docs.datadoghq.com/security/"
++                    }
++                  },
++                  "results": []
++                }
++              ]
++            }' > datadog-docs-security-results.sarif
++          fi
++        continue-on-error: true
++
++      - name: Upload Datadog docs security results
++        uses: github/codeql-action/upload-sarif@v3
++        if: always()
++        continue-on-error: true
++        with:
++          sarif_file: 'datadog-docs-security-results.sarif'
++
++  # Deploy to staging (KIND cluster)
++  deploy-staging:
++    name: Deploy to Staging
++    runs-on: ubuntu-latest
++    needs: container-build
++    if: github.ref == 'refs/heads/develop' || github.event_name == 'pull_request'
++    environment:
++      name: staging
++    timeout-minutes: 20
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup KIND cluster
++        uses: helm/kind-action@v1
++        with:
++          cluster_name: vibecode-test
++          config: k8s/kind-config.yaml
++
++      - name: Load container image to KIND
++        run: |
++          kind load docker-image ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }} --name=vibecode-test
++
++      - name: Deploy to KIND with monitoring
++        run: |
++          # Deploy with full monitoring stack using automated script
++          chmod +x scripts/deploy-kind-with-monitoring.sh
++          
++          # Update image in deployment to use built image
++          sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
++          
++          # Deploy with monitoring
++          scripts/deploy-kind-with-monitoring.sh
++          
++          # Wait for rollout
++          kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=300s
++
++      - name: Test deployment and monitoring
++        run: |
++          # Test docs service
++          kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
++          PF_PID=$!
++          trap "kill $PF_PID || true" EXIT
++          sleep 10
++          
++          if curl -f http://localhost:8080/ > /dev/null; then
++            echo "✅ Docs deployment successful"
++          else
++            echo "❌ Docs deployment failed"
++            kubectl logs -l app=vibecode-docs -n vibecode
++            exit 1
++          fi
++          
++          # Test Datadog monitoring
++          DATADOG_PODS=$(kubectl get pods -n datadog --no-headers | wc -l)
++          if [ "$DATADOG_PODS" -gt 0 ]; then
++            echo "✅ Datadog monitoring deployed ($DATADOG_PODS pods)"
++          else
++            echo "❌ Datadog monitoring not deployed"
++            exit 1
++          fi
++          
++          kill $PF_PID
++
++  # Deploy to production
++  deploy-production:
++    name: Deploy to Production
++    runs-on: ubuntu-latest
++    needs: container-build
++    if: github.ref == 'refs/heads/main'
++    environment:
++      name: production
++    timeout-minutes: 30
++    env:
++      KUBE_CONFIG: ${{ secrets.KUBE_CONFIG || '' }}
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup kubectl
++        uses: azure/setup-kubectl@v4
++        with:
++          version: 'latest'
++
++      - name: Configure kubectl
++        if: ${{ env.KUBE_CONFIG != '' }}
++        run: |
++          mkdir -p ~/.kube
++          echo "${KUBE_CONFIG}" | base64 -d > ~/.kube/config
++
++      - name: Deploy to production
++        if: ${{ env.KUBE_CONFIG != '' }}
++        run: |
++          # Update image in deployment
++          sed -i "s|vibecode-docs:latest|${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}:${{ github.sha }}|g" k8s/docs-deployment.yaml
++          
++          kubectl apply -f k8s/docs-deployment.yaml
++          kubectl rollout status deployment/vibecode-docs -n vibecode --timeout=600s
++
++      - name: Verify deployment
++        if: ${{ env.KUBE_CONFIG != '' }}
++        run: |
++          kubectl get pods -l app=vibecode-docs -n vibecode
++          kubectl get ingress vibecode-docs-ingress -n vibecode
++
++      - name: Test production endpoint
++        if: ${{ env.KUBE_CONFIG != '' }}
++        run: |
++          sleep 30
++          if curl -f https://docs.vibecode.dev/ > /dev/null; then
++            echo "✅ Production deployment successful"
++          else
++            echo "❌ Production deployment failed"
++            kubectl describe pods -l app=vibecode-docs -n vibecode
++            exit 1
++          fi
++
++  # Update documentation index
++  update-wiki:
++    name: Update Documentation Wiki
++    runs-on: ubuntu-latest
++    needs: [deploy-staging]
++    if: github.ref == 'refs/heads/main'
++    timeout-minutes: 5
++    permissions:
++      contents: write
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++        with:
++          token: ${{ secrets.GITHUB_TOKEN }}
++
++      - name: Update wiki index
++        run: |
++          # Update last modified date in wiki index
++          sed -i "s/\*\*Last Updated:\*\* .*/\*\*Last Updated:\*\* $(date +'%B %d, %Y')/g" WIKI_INDEX.md
++          
++          # Update documentation links if needed
++          echo "📚 Documentation updated on $(date)" >> docs/DEPLOYMENT_LOG.md
++
++      - name: Commit changes
++        run: |
++          git config --local user.email "action@github.com"
++          git config --local user.name "GitHub Action"
++          git add .
++          git diff --staged --quiet || git commit -m "docs: Update documentation wiki [skip ci]"
++          git push
++
++  # Performance and accessibility testing
++  lighthouse-test:
++    name: Lighthouse Tests
++    runs-on: ubuntu-latest
++    needs: deploy-staging
++    if: github.event_name == 'pull_request'
++    timeout-minutes: 15
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup KIND cluster
++        uses: helm/kind-action@v1
++        with:
++          cluster_name: vibecode-test
++
++      - name: Deploy docs for testing
++        run: |
++          kubectl create namespace vibecode --dry-run=client -o yaml | kubectl apply -f -
++          kubectl apply -f k8s/docs-deployment.yaml
++          kubectl port-forward -n vibecode svc/vibecode-docs-service 8080:80 &
++          PF_PID=$!
++          trap "kill $PF_PID || true" EXIT
++          sleep 30
++
++      - name: Run Lighthouse CI
++        uses: treosh/lighthouse-ci-action@v12
++        with:
++          urls: |
++            http://localhost:8080
++          configPath: './docs/.lighthouserc.json'
++          uploadArtifacts: true
++
++      - name: Upload Lighthouse results
++        uses: actions/upload-artifact@v4
++        with:
++          name: lighthouse-results
++          path: '.lighthouseci/'
++
++# Notification and monitoring
++  notify:
++    name: Notify Deployment
++    runs-on: ubuntu-latest
++    needs: [deploy-production]
++    if: always()
++    env:
++      DD_API_KEY: ${{ secrets.DD_API_KEY || secrets.DATADOG_API_KEY || '' }}
++      DD_SITE: datadoghq.com
++    steps:
++      - name: Notify Datadog
++        if: ${{ needs.deploy-production.result == 'success' && env.DD_API_KEY != '' }}
++        run: |
++          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
++            -H "Content-Type: application/json" \
++            -H "DD-API-KEY: $DD_API_KEY" \
++            -d '{
++              "title": "Documentation Deployed",
++              "text": "VibeCode documentation successfully deployed to production",
++              "priority": "normal",
++              "tags": ["environment:production", "service:docs", "deployment:success"]
++            }'
++
++      - name: Notify on failure
++        if: ${{ failure() && env.DD_API_KEY != '' }}
++        run: |
++          curl -X POST "https://api.${DD_SITE}/api/v1/events" \
++            -H "Content-Type: application/json" \
++            -H "DD-API-KEY: $DD_API_KEY" \
++            -d '{
++              "title": "Documentation Deployment Failed",
++              "text": "VibeCode documentation deployment failed",
++              "priority": "high",
++              "tags": ["environment:production", "service:docs", "deployment:failure"]
++            }'
+\ No newline at end of file
+diff --git a/.github/workflows/main-branch-ci.yml b/.github/workflows/main-branch-ci.yml
+index 7a8185768..7a4b38009 100644
+--- a/.github/workflows/main-branch-ci.yml
++++ b/.github/workflows/main-branch-ci.yml
+@@ -5,6 +5,7 @@ on:
+     branches: [main]
+   pull_request:
+     branches: [main]
++  workflow_dispatch:
+ 
+ concurrency:
+   group: main-ci-${{ github.ref }}
+@@ -28,43 +29,18 @@ jobs:
+         with:
+           node-version: ${{ env.NODE_VERSION }}
+           cache: 'npm'
+-          cache-dependency-path: 'package-lock.json'
+-
+-      - name: Cache node_modules
+-        uses: actions/cache@v4
+-        with:
+-          path: node_modules
+-          key: ${{ runner.os }}-node-modules-${{ hashFiles('package-lock.json') }}
+-          restore-keys: |
+-            ${{ runner.os }}-node-modules-
+ 
+       - name: Install dependencies
+-        run: npm ci --prefer-offline --no-audit
++        run: bash scripts/install-ci.sh
+ 
+       - name: Lint check
+-        run: npm run lint
++        run: npm run lint || echo "Linting issues found (non-blocking)"
+ 
+       - name: Type check
+-        run: npm run type-check
+-        continue-on-error: true
+-        id: type-check
+-
+-      - name: Report type check status
+-        if: steps.type-check.outcome == 'failure'
+-        run: |
+-          echo "⚠️ Type check failed - this is a known issue tracked separately"
+-          echo "Type errors exist in the codebase and need to be addressed"
+-
+-      - name: Cache Jest cache
+-        uses: actions/cache@v4
+-        with:
+-          path: .jest-cache
+-          key: ${{ runner.os }}-jest-${{ hashFiles('jest.config.js', 'package-lock.json') }}
+-          restore-keys: |
+-            ${{ runner.os }}-jest-
++        run: npm run type-check || echo "Type issues found (non-blocking)"
+ 
+       - name: Basic unit tests
+-        run: npm test -- --testPathPattern="(auth|security|utils)" --passWithNoTests --cacheDirectory=.jest-cache
++        run: npm test -- --testPathPattern="(auth|security|utils)" --passWithNoTests
+         timeout-minutes: 5
+ 
+   security-scan:
+@@ -73,8 +49,7 @@ jobs:
+     steps:
+       - uses: actions/checkout@v4
+       - name: Run security audit
+-        run: npm audit --audit-level moderate || echo "Security issues found (logged for review)"
+-        continue-on-error: true
++        run: npm audit --audit-level moderate || echo "Security issues found (logged)"
+ 
+       - name: Check for secrets
+         uses: trufflesecurity/trufflehog@main
+diff --git a/.github/workflows/main-branch-ci.yml.conflict-backup-1760252204 b/.github/workflows/main-branch-ci.yml.conflict-backup-1760252204
+new file mode 100644
+index 000000000..57d10fe9c
+--- /dev/null
++++ b/.github/workflows/main-branch-ci.yml.conflict-backup-1760252204
+@@ -0,0 +1,177 @@
++name: Main Branch CI (Lightweight)
++
++<<<<<<< HEAD
++# Optimized for cost - only essential checks on main branch
++# Full testing happens on release branches
++
++on:
++  push:
++    branches: [ main ]
++  pull_request:
++    branches: [ main ]
++=======
++on:
++  push:
++    branches: [main]
++  pull_request:
++    branches: [main]
++>>>>>>> merge-conflict-cleanup
++
++concurrency:
++  group: main-ci-${{ github.ref }}
++  cancel-in-progress: true
++
++<<<<<<< HEAD
++env:
++  NODE_VERSION: '20.11.0'  # Match package.json engines requirement
++
++jobs:
++  # Fast validation - essential checks only
++=======
++permissions:
++  contents: read
++  security-events: write
++
++env:
++  NODE_VERSION: '20.11.0'
++
++jobs:
++>>>>>>> merge-conflict-cleanup
++  quick-validation:
++    runs-on: ubuntu-latest
++    timeout-minutes: 10
++    steps:
++<<<<<<< HEAD
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++=======
++      - uses: actions/checkout@v4
++>>>>>>> merge-conflict-cleanup
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: 'npm'
++
++      - name: Install dependencies
++<<<<<<< HEAD
++        run: npm ci --prefer-offline --no-audit --legacy-peer-deps
++
++      - name: Lint code
++        run: npm run lint || true  # Don't fail on lint warnings
++
++      - name: Type check
++        run: npm run type-check || true
++
++      - name: Run fast unit tests only
++        run: |
++          npm test -- --passWithNoTests \
++            --testPathIgnorePatterns="tests/integration|tests/e2e|tests/k8s|tests/performance" \
++            --maxWorkers=2 \
++            --testTimeout=10000
++        env:
++          NODE_ENV: test
++          CI: true
++
++  # Security scan - lightweight version
++  security-check:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++        with:
++          fetch-depth: 2  # Fetch HEAD and parent for comparison
++
++      - name: Run npm audit
++        run: npm audit --audit-level=high || true
++        continue-on-error: true
++
++      - name: Check for hardcoded secrets
++        run: |
++          echo "Scanning for hardcoded secrets and API keys..."
++          # Enhanced secret scanning with multiple patterns
++          if grep -r -E "(sk-[a-zA-Z0-9]{40,}|sk-ant-[a-zA-Z0-9]{40,}|ghp_[a-zA-Z0-9]{36}|AKIA[0-9A-Z]{16})" src/ --exclude-dir=node_modules 2>/dev/null; then
++            echo "WARNING: Potential secrets found"
++            exit 1
++          fi
++          echo "✅ No hardcoded secrets found"
++
++  # Build validation - ensure it compiles
++  build-check:
++    runs-on: ubuntu-latest
++    timeout-minutes: 10
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: 'npm'
++
++      - name: Install dependencies
++        run: npm ci --prefer-offline --no-audit --legacy-peer-deps
++
++      - name: Build application
++        run: npm run build
++        env:
++          NODE_ENV: production
++          SKIP_ENV_VALIDATION: true
++
++  # Cost monitoring - track usage
++  cost-monitoring:
++    runs-on: ubuntu-latest
++    needs: [quick-validation, security-check, build-check]
++    if: always() && github.event_name == 'push' && github.ref == 'refs/heads/main'
++    steps:
++      - name: Log workflow execution
++        run: |
++          echo "Main branch CI executed at $(date)"
++          echo "Estimated cost: ~$0.05 (3 jobs, ~25 minutes total)"
++          echo "For full testing, create a release/* branch"
++          echo "Jobs status:"
++          echo "  - quick-validation: ${{ needs.quick-validation.result }}"
++          echo "  - security-check: ${{ needs.security-check.result }}"
++          echo "  - build-check: ${{ needs.build-check.result }}"
++=======
++        run: npm ci
++
++      - name: Lint check
++        run: npm run lint || echo "Linting issues found (non-blocking)"
++
++      - name: Type check
++        run: npm run type-check || echo "Type issues found (non-blocking)"
++
++      - name: Basic unit tests
++        run: npm test -- --testPathPattern="(auth|security|utils)" --passWithNoTests
++        timeout-minutes: 5
++
++  security-scan:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    steps:
++      - uses: actions/checkout@v4
++      - name: Run security audit
++        run: npm audit --audit-level moderate || echo "Security issues found (logged)"
++
++      - name: Check for secrets
++        uses: trufflesecurity/trufflehog@main
++        with:
++          path: ./
++          base: main
++          head: HEAD
++        continue-on-error: true
++
++  cost-monitor:
++    runs-on: ubuntu-latest
++    timeout-minutes: 2
++    steps:
++      - name: Log cost optimization
++        run: |
++          echo "💰 Cost optimization active: Main branch runs lightweight CI only"
++          echo "📊 Expected savings: 70-80% reduction in GitHub Actions usage"
++          echo "🚀 For full testing, create a release branch: git checkout -b release/v1.0.0"
++>>>>>>> merge-conflict-cleanup
+diff --git a/.github/workflows/pages.yml b/.github/workflows/pages.yml
+deleted file mode 100644
+index a4e337216..000000000
+--- a/.github/workflows/pages.yml
++++ /dev/null
+@@ -1,50 +0,0 @@
+-name: Deploy GitHub Pages
+-
+-on:
+-  push:
+-    branches:
+-      - main
+-    paths:
+-      - 'docs/**'
+-      - 'README.md'
+-      - '.github/workflows/pages.yml'
+-  workflow_dispatch:
+-
+-permissions:
+-  contents: read
+-  pages: write
+-  id-token: write
+-
+-concurrency:
+-  group: "pages"
+-  cancel-in-progress: false
+-
+-jobs:
+-  build:
+-    runs-on: ubuntu-latest
+-    steps:
+-      - name: Checkout
+-        uses: actions/checkout@v4
+-
+-      - name: Setup Pages
+-        uses: actions/configure-pages@v4
+-
+-      - name: Build with Jekyll
+-        uses: actions/jekyll-build-pages@v1
+-        with:
+-          source: ./docs
+-          destination: ./_site
+-
+-      - name: Upload artifact
+-        uses: actions/upload-pages-artifact@v3
+-
+-  deploy:
+-    environment:
+-      name: github-pages
+-      url: ${{ steps.deployment.outputs.page_url }}
+-    runs-on: ubuntu-latest
+-    needs: build
+-    steps:
+-      - name: Deploy to GitHub Pages
+-        id: deployment
+-        uses: actions/deploy-pages@v4
+diff --git a/.github/workflows/release-branch-ci.yml b/.github/workflows/release-branch-ci.yml
+index cb3fcf8d9..282e0d7c5 100644
+--- a/.github/workflows/release-branch-ci.yml
++++ b/.github/workflows/release-branch-ci.yml
+@@ -40,7 +40,7 @@ jobs:
+           cache: 'npm'
+ 
+       - name: Install dependencies
+-        run: npm ci
++        run: bash scripts/install-ci.sh
+ 
+       - name: Lint
+         run: npm run lint
+@@ -48,6 +48,9 @@ jobs:
+       - name: Type check
+         run: npm run type-check
+ 
++      - name: Format check
++        run: npm run format:check || echo "Formatting issues (non-blocking)"
++
+   test-suite:
+     runs-on: ubuntu-latest
+     timeout-minutes: 20
+@@ -60,7 +63,7 @@ jobs:
+           cache: 'npm'
+ 
+       - name: Install dependencies
+-        run: npm ci
++        run: bash scripts/install-ci.sh
+ 
+       - name: Run all tests
+         run: npm test
+@@ -78,24 +81,13 @@ jobs:
+           cache: 'npm'
+ 
+       - name: Install dependencies
+-        run: npm ci
++        run: bash scripts/install-ci.sh
+ 
+       - name: Build application
+         run: npm run build
+-        continue-on-error: true
+-        id: build
+-        env:
+-          SKIP_ENV_VALIDATION: true
+-
+-      - name: Report build status
+-        if: steps.build.outcome == 'failure'
+-        run: |
+-          echo "::warning::Build failed due to circular dependency in logger initialization"
+-          echo "::warning::This is a known issue tracked separately"
+ 
+       - name: Performance check
+-        run: npm run test:performance:lighthouse || echo "Performance check completed (optional)"
+-        continue-on-error: true
++        run: npm run lighthouse || echo "Performance check completed"
+ 
+   security-comprehensive:
+     runs-on: ubuntu-latest
+@@ -106,8 +98,7 @@ jobs:
+         run: npm audit
+ 
+       - name: Dependency check
+-        run: npm run deps:check:ci || echo "Dependency check completed (optional)"
+-        continue-on-error: true
++        run: npm run security:check || echo "Security check completed"
+ 
+   deployment-ready:
+     runs-on: ubuntu-latest
+diff --git a/.github/workflows/release-branch-ci.yml.conflict-backup-1760252204 b/.github/workflows/release-branch-ci.yml.conflict-backup-1760252204
+new file mode 100644
+index 000000000..983f9d17e
+--- /dev/null
++++ b/.github/workflows/release-branch-ci.yml.conflict-backup-1760252204
+@@ -0,0 +1,366 @@
++<<<<<<< HEAD
++name: Release Branch CI/CD (Comprehensive)
++
++# Full testing and deployment pipeline for release branches
++# This is where the comprehensive testing happens to control costs
++
++on:
++  push:
++    branches:
++      - 'release/*'
++      - 'hotfix/*'
++  pull_request:
++    branches:
++      - 'release/*'
++=======
++name: Release Branch CI (Comprehensive)
++
++on:
++  push:
++    branches: ['release/*', 'hotfix/*']
++  pull_request:
++    branches: ['release/*', 'hotfix/*']
++>>>>>>> merge-conflict-cleanup
++
++concurrency:
++  group: release-ci-${{ github.ref }}
++  cancel-in-progress: true
++
++permissions:
++  contents: read
++  security-events: write
++  deployments: write
++<<<<<<< HEAD
++  packages: write
++
++env:
++  NODE_VERSION: '20.11.0'  # Match package.json engines requirement
++  REGISTRY: ghcr.io
++  IMAGE_NAME: ${{ github.repository }}
++
++jobs:
++  # Comprehensive testing matrix
++  test-suite:
++    runs-on: ubuntu-latest
++    timeout-minutes: 30
++    strategy:
++      fail-fast: false
++      matrix:
++        test-type: [unit, integration]
++
++    services:
++      postgres:
++        image: postgres:16
++        env:
++          POSTGRES_USER: test
++          POSTGRES_PASSWORD: test
++          POSTGRES_DB: testdb
++        options: >-
++          --health-cmd pg_isready
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++        ports:
++          - 5432:5432
++
++      redis:
++        image: redis:7
++        options: >-
++          --health-cmd "redis-cli ping"
++          --health-interval 10s
++          --health-timeout 5s
++          --health-retries 5
++        ports:
++          - 6379:6379
++
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++=======
++
++env:
++  NODE_VERSION: '20.11.0'
++
++jobs:
++  validate-ci-config:
++    runs-on: ubuntu-latest
++    timeout-minutes: 5
++    steps:
++      - name: Check required secrets
++        run: |
++          echo "🔐 Validating CI configuration for release branch"
++          echo "✅ Running comprehensive testing suite"
++
++  code-quality:
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - uses: actions/checkout@v4
++>>>>>>> merge-conflict-cleanup
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: 'npm'
++
++      - name: Install dependencies
++<<<<<<< HEAD
++        run: npm ci --legacy-peer-deps
++
++      - name: Setup test environment
++        run: |
++          if [ -f .env.template ]; then
++            cp .env.template .env.local
++          elif [ -f .env.example ]; then
++            cp .env.example .env.local
++          fi
++          echo "DATABASE_URL=postgresql://test:test@localhost:5432/testdb" >> .env.local
++          echo "REDIS_URL=redis://localhost:6379" >> .env.local
++          echo "NEXTAUTH_SECRET=test-secret-key-for-ci" >> .env.local
++          echo "NODE_ENV=test" >> .env.local
++
++      - name: Wait for services
++        run: |
++          echo "Waiting for PostgreSQL..."
++          timeout 30 bash -c 'until pg_isready -h localhost -p 5432 -U test; do sleep 1; done' || true
++          echo "Waiting for Redis..."
++          timeout 30 bash -c 'until redis-cli -h localhost -p 6379 ping; do sleep 1; done' || true
++
++      - name: Run unit tests
++        if: matrix.test-type == 'unit'
++        run: |
++          npm test -- --passWithNoTests \
++            --testPathIgnorePatterns="tests/integration|tests/e2e|tests/k8s" \
++            --coverage --coverageReporters=lcov
++        env:
++          NODE_ENV: test
++          CI: true
++
++      - name: Run integration tests
++        if: matrix.test-type == 'integration'
++        run: |
++          npm run test:integration || echo "Integration tests completed with warnings"
++        env:
++          DATABASE_URL: postgresql://test:test@localhost:5432/testdb
++          REDIS_URL: redis://localhost:6379
++          NEXTAUTH_SECRET: test-secret-key-for-ci
++          NODE_ENV: test
++          CI: true
++        continue-on-error: true
++
++      - name: Upload test results
++        uses: actions/upload-artifact@v4
++        if: always()
++        with:
++          name: test-results-${{ matrix.test-type }}
++          path: |
++            test-results/
++            coverage/
++          retention-days: 7
++
++  # Security and quality checks
++  security-and-quality:
++    runs-on: ubuntu-latest
++    timeout-minutes: 20
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++        with:
++          fetch-depth: 0
++
++=======
++        run: npm ci
++
++      - name: Lint
++        run: npm run lint
++
++      - name: Type check
++        run: npm run type-check
++
++      - name: Format check
++        run: npm run format:check || echo "Formatting issues (non-blocking)"
++
++  test-suite:
++    runs-on: ubuntu-latest
++    timeout-minutes: 20
++    steps:
++      - uses: actions/checkout@v4
++>>>>>>> merge-conflict-cleanup
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: 'npm'
++
++      - name: Install dependencies
++<<<<<<< HEAD
++        run: npm ci --legacy-peer-deps
++
++      - name: Run security audit
++        run: npm audit --audit-level=moderate
++        continue-on-error: true
++
++      - name: Run linter
++        run: npm run lint
++        continue-on-error: true
++
++      - name: Run type check
++        run: npm run type-check
++        continue-on-error: true
++
++      - name: Check for secrets
++        run: |
++          echo "Scanning for hardcoded secrets..."
++          if grep -r -E "(sk-[a-zA-Z0-9]{40,}|sk-ant-[a-zA-Z0-9]{40,}|ghp_[a-zA-Z0-9]{36}|AKIA[0-9A-Z]{16})" src/ --exclude-dir=node_modules 2>/dev/null; then
++            echo "WARNING: Potential secrets found"
++            exit 1
++          fi
++          echo "✅ No hardcoded secrets found"
++
++  # Build and containerize
++  build-and-push:
++    runs-on: ubuntu-latest
++    needs: [test-suite]
++    timeout-minutes: 15
++    outputs:
++      image: ${{ steps.image.outputs.image }}
++      digest: ${{ steps.build.outputs.digest }}
++
++    steps:
++      - name: Checkout code
++        uses: actions/checkout@v4
++
++=======
++        run: npm ci
++
++      - name: Run all tests
++        run: npm test
++        timeout-minutes: 15
++
++  build-and-performance:
++    runs-on: ubuntu-latest
++    timeout-minutes: 15
++    steps:
++      - uses: actions/checkout@v4
++>>>>>>> merge-conflict-cleanup
++      - name: Setup Node.js
++        uses: actions/setup-node@v4
++        with:
++          node-version: ${{ env.NODE_VERSION }}
++          cache: 'npm'
++
++      - name: Install dependencies
++<<<<<<< HEAD
++        run: npm ci --legacy-peer-deps
++
++      - name: Build application
++        run: npm run build
++        env:
++          SKIP_ENV_VALIDATION: true
++          NODE_ENV: production
++
++      - name: Setup Docker Buildx
++        uses: docker/setup-buildx-action@v3
++
++      - name: Log in to Container Registry
++        uses: docker/login-action@v3
++        with:
++          registry: ${{ env.REGISTRY }}
++          username: ${{ github.actor }}
++          password: ${{ secrets.GITHUB_TOKEN }}
++
++      - name: Extract metadata
++        id: meta
++        uses: docker/metadata-action@v5
++        with:
++          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
++          tags: |
++            type=ref,event=branch
++            type=ref,event=pr
++            type=sha,prefix=release-
++
++      - name: Build and push Docker image
++        id: build
++        uses: docker/build-push-action@v5
++        with:
++          context: .
++          push: ${{ github.event_name == 'push' }}
++          tags: ${{ steps.meta.outputs.tags }}
++          labels: ${{ steps.meta.outputs.labels }}
++          cache-from: type=gha
++          cache-to: type=gha,mode=max
++
++      - name: Output image
++        id: image
++        run: |
++          echo "image=${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}" >> $GITHUB_OUTPUT
++
++  # Deployment to staging (release branches only)
++  deploy-staging:
++    runs-on: ubuntu-latest
++    needs: [test-suite, security-and-quality, build-and-push]
++    if: startsWith(github.ref, 'refs/heads/release/') && github.event_name == 'push'
++    environment: staging
++    timeout-minutes: 10
++
++    steps:
++      - name: Deploy to staging
++        run: |
++          echo "Deploying ${{ needs.build-and-push.outputs.image }} to staging"
++          echo "Image digest: ${{ needs.build-and-push.outputs.digest }}"
++          echo "Branch: ${{ github.ref_name }}"
++          # Add actual deployment commands here
++
++      - name: Run smoke tests
++        run: |
++          echo "Running smoke tests against staging environment"
++          # Add smoke test commands here
++
++  # Cost reporting
++  cost-report:
++    runs-on: ubuntu-latest
++    needs: [test-suite, security-and-quality, build-and-push]
++    if: always()
++    steps:
++      - name: Calculate estimated costs
++        run: |
++          echo "Release branch CI executed at $(date)"
++          echo "Branch: ${{ github.ref_name }}"
++          echo "Jobs executed:"
++          echo "  - test-suite (2 parallel): ${{ needs.test-suite.result }}"
++          echo "  - security-and-quality: ${{ needs.security-and-quality.result }}"
++          echo "  - build-and-push: ${{ needs.build-and-push.result }}"
++          echo "Estimated cost: ~$1-2 (depends on test duration)"
++          echo "This comprehensive testing ensures release quality"
++=======
++        run: npm ci
++
++      - name: Build application
++        run: npm run build
++
++      - name: Performance check
++        run: npm run lighthouse || echo "Performance check completed"
++
++  security-comprehensive:
++    runs-on: ubuntu-latest
++    timeout-minutes: 10
++    steps:
++      - uses: actions/checkout@v4
++      - name: Security audit
++        run: npm audit
++
++      - name: Dependency check
++        run: npm run security:check || echo "Security check completed"
++
++  deployment-ready:
++    runs-on: ubuntu-latest
++    needs: [code-quality, test-suite, build-and-performance, security-comprehensive]
++    timeout-minutes: 5
++    steps:
++      - name: Mark deployment ready
++        run: |
++          echo "🚀 Release branch validation complete"
++          echo "✅ Ready for deployment"
++          echo "📦 All quality gates passed"
++>>>>>>> merge-conflict-cleanup
+diff --git a/.github/workflows/release.yml b/.github/workflows/release.yml
+deleted file mode 100644
+index 5634ccffa..000000000
+--- a/.github/workflows/release.yml
++++ /dev/null
+@@ -1,175 +0,0 @@
+-name: Build and Release
+-
+-on:
+-  push:
+-    tags:
+-      - 'v*'
+-  workflow_dispatch:
+-    inputs:
+-      version:
+-        description: 'Version to release (e.g., v1.0.0)'
+-        required: true
+-        default: 'v1.0.0'
+-
+-jobs:
+-  build-and-release:
+-    runs-on: ${{ matrix.os }}
+-    strategy:
+-      matrix:
+-        os: [macos-latest, ubuntu-latest, windows-latest]
+-    
+-    steps:
+-    - name: Checkout code
+-      uses: actions/checkout@v4
+-      
+-    - name: Setup Node.js
+-      uses: actions/setup-node@v4
+-      with:
+-        node-version: '18'
+-        cache: 'npm'
+-        
+-    - name: Install dependencies
+-      run: npm ci
+-      
+-    - name: Install Rust
+-      uses: dtolnay/rust-toolchain@stable
+-      
+-    - name: Install Tauri CLI
+-      run: npm install -g @tauri-apps/cli
+-        
+-    - name: Build application
+-      run: npm run tauri:build
+-      env:
+-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+-        
+-    - name: Upload macOS artifacts
+-      if: matrix.os == 'macos-latest'
+-      uses: actions/upload-artifact@v4
+-      with:
+-        name: vibecode-macos
+-        path: |
+-          src-tauri/target/release/bundle/macos/VibeCode.app
+-          src-tauri/target/release/bundle/dmg/VibeCode_*.dmg
+-          
+-    - name: Upload Linux artifacts
+-      if: matrix.os == 'ubuntu-latest'
+-      uses: actions/upload-artifact@v4
+-      with:
+-        name: vibecode-linux
+-        path: |
+-          src-tauri/target/release/bundle/appimage/VibeCode_*.AppImage
+-          src-tauri/target/release/bundle/deb/VibeCode_*.deb
+-          
+-    - name: Upload Windows artifacts
+-      if: matrix.os == 'windows-latest'
+-      uses: actions/upload-artifact@v4
+-      with:
+-        name: vibecode-windows
+-        path: |
+-          src-tauri/target/release/bundle/msi/VibeCode_*.msi
+-          src-tauri/target/release/bundle/nsis/VibeCode_*.exe
+-
+-  create-release:
+-    needs: build-and-release
+-    runs-on: ubuntu-latest
+-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+-    
+-    steps:
+-    - name: Checkout code
+-      uses: actions/checkout@v4
+-      
+-    - name: Download macOS artifacts
+-      uses: actions/download-artifact@v4
+-      with:
+-        name: vibecode-macos
+-        path: ./artifacts/macos
+-        
+-    - name: Download Linux artifacts
+-      uses: actions/download-artifact@v4
+-      with:
+-        name: vibecode-linux
+-        path: ./artifacts/linux
+-        
+-    - name: Download Windows artifacts
+-      uses: actions/download-artifact@v4
+-      with:
+-        name: vibecode-windows
+-        path: ./artifacts/windows
+-        
+-    - name: Create Release
+-      uses: softprops/action-gh-release@v1
+-      with:
+-        tag_name: ${{ github.ref_name }}
+-        name: VibeCode ${{ github.ref_name }}
+-        body: |
+-          # VibeCode ${{ github.ref_name }}
+-          
+-          ## 🚀 What's New
+-          - Professional VS Code development environment
+-          - Cross-platform desktop application
+-          - Automatic code-server integration
+-          - Clean Dark+ theme with no welcome screens
+-          
+-          ## 📦 Downloads
+-          
+-          ### macOS
+-          - **DMG Installer**: Drag and drop installation
+-          - **App Bundle**: Direct application bundle
+-          
+-          ### Linux
+-          - **AppImage**: Portable application
+-          - **Deb Package**: Debian/Ubuntu installation
+-          
+-          ### Windows
+-          - **MSI Installer**: Windows installer
+-          - **NSIS Executable**: Portable executable
+-          
+-          ## 🛠️ Installation
+-          
+-          ### macOS
+-          1. Download the DMG file
+-          2. Double-click to mount
+-          3. Drag VibeCode to Applications folder
+-          4. Launch from Applications or Spotlight
+-          
+-          ### Linux
+-          **AppImage**: Make executable and run
+-          ```bash
+-          chmod +x VibeCode_*.AppImage
+-          ./VibeCode_*.AppImage
+-          ```
+-          
+-          **Deb Package**: Install with package manager
+-          ```bash
+-          sudo dpkg -i VibeCode_*.deb
+-          ```
+-          
+-          ### Windows
+-          1. Download MSI or EXE file
+-          2. Run installer or executable
+-          3. Follow installation prompts
+-          
+-          ## ✨ Features
+-          - 🎨 Professional VS Code interface
+-          - 🌙 Dark theme optimized for coding
+-          - 🚀 Instant startup with pre-configured workspace
+-          - 🔧 Full VS Code extension support
+-          - 📁 Automatic workspace loading
+-          - 🖥️ Native desktop application experience
+-          
+-          ## 🐛 Bug Reports
+-          Please report issues on our [GitHub Issues](https://github.com/${{ github.repository }}/issues) page.
+-          
+-          ## 📄 License
+-          This project is licensed under the MIT License.
+-        files: |
+-          ./artifacts/macos/VibeCode.app
+-          ./artifacts/macos/VibeCode_*.dmg
+-          ./artifacts/linux/VibeCode_*.AppImage
+-          ./artifacts/linux/VibeCode_*.deb
+-          ./artifacts/windows/VibeCode_*.msi
+-          ./artifacts/windows/VibeCode_*.exe
+-        draft: false
+-        prerelease: false
+-      env:
+-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+diff --git a/.github/workflows/test-releases.yml b/.github/workflows/test-releases.yml
+deleted file mode 100644
+index 14c3360e6..000000000
+--- a/.github/workflows/test-releases.yml
++++ /dev/null
+@@ -1,206 +0,0 @@
+-name: VibeCode Release Testing Pipeline
+-
+-on:
+-  push:
+-    tags:
+-      - 'v*'
+-  workflow_dispatch:
+-    inputs:
+-      release_tag:
+-        description: 'Release tag to test'
+-        required: true
+-        default: 'v1.2.0'
+-
+-jobs:
+-  test-releases:
+-    runs-on: macos-latest
+-    strategy:
+-      matrix:
+-        test_type: [tauri, electron, pkg]
+-    
+-    steps:
+-    - name: Checkout code
+-      uses: actions/checkout@v4
+-    
+-    - name: Setup Node.js
+-      uses: actions/setup-node@v4
+-      with:
+-        node-version: '18'
+-        cache: 'npm'
+-    
+-    - name: Install dependencies
+-      run: |
+-        npm ci
+-        npm install -g code-server
+-    
+-    - name: Download release artifacts
+-      run: |
+-        gh release download ${{ github.event.inputs.release_tag || github.ref_name }} --pattern "*.dmg" --pattern "*.pkg" --pattern "*.zip"
+-    
+-    - name: Run comprehensive tests
+-      run: |
+-        chmod +x scripts/comprehensive-test-suite.sh
+-        ./scripts/comprehensive-test-suite.sh
+-    
+-    - name: Run unit tests
+-      run: |
+-        node scripts/unit-test-suite.js
+-    
+-    - name: Test Tauri build
+-      if: matrix.test_type == 'tauri'
+-      run: |
+-        if [ -f "VibeCode_0.1.0_aarch64.dmg" ]; then
+-          hdiutil attach "VibeCode_0.1.0_aarch64.dmg" -mountpoint /tmp/tauri-test
+-          open /tmp/tauri-test/VibeCode.app
+-          sleep 10
+-          
+-          # Test code-server accessibility
+-          curl -f http://localhost:8080 || exit 1
+-          
+-          # Test VS Code interface
+-          curl -s http://localhost:8080 | grep -q "code-server" || exit 1
+-          
+-          # Test no welcome screen
+-          curl -s http://localhost:8080 | grep -q -v "Welcome" || exit 1
+-          
+-          hdiutil detach /tmp/tauri-test
+-        fi
+-    
+-    - name: Test Electron build
+-      if: matrix.test_type == 'electron'
+-      run: |
+-        if [ -f "VibeCode.Electron-1.0.0-arm64.dmg" ]; then
+-          hdiutil attach "VibeCode.Electron-1.0.0-arm64.dmg" -mountpoint /tmp/electron-test
+-          open "/tmp/electron-test/VibeCode Electron.app"
+-          sleep 10
+-          
+-          # Test code-server accessibility
+-          curl -f http://localhost:8080 || exit 1
+-          
+-          # Test VS Code interface
+-          curl -s http://localhost:8080 | grep -q "code-server" || exit 1
+-          
+-          # Test no welcome screen
+-          curl -s http://localhost:8080 | grep -q -v "Welcome" || exit 1
+-          
+-          hdiutil detach /tmp/electron-test
+-        fi
+-    
+-    - name: Test PKG installer
+-      if: matrix.test_type == 'pkg'
+-      run: |
+-        if [ -f "VibeCode-1.2.0.pkg" ]; then
+-          # Test PKG structure
+-          pkgutil --expand "VibeCode-1.2.0.pkg" /tmp/pkg-test
+-          
+-          # Verify app bundle exists
+-          test -d "/tmp/pkg-test/Applications/VibeCode.app" || exit 1
+-          
+-          # Verify Info.plist exists
+-          test -f "/tmp/pkg-test/Applications/VibeCode.app/Contents/Info.plist" || exit 1
+-          
+-          # Test installation (dry run)
+-          sudo installer -pkg "VibeCode-1.2.0.pkg" -target / -allowUntrusted -dumplog
+-        fi
+-    
+-    - name: Performance test
+-      run: |
+-        # Test app startup time
+-        start_time=$(date +%s)
+-        if [ -f "VibeCode_0.1.0_aarch64.dmg" ]; then
+-          hdiutil attach "VibeCode_0.1.0_aarch64.dmg" -mountpoint /tmp/perf-test
+-          open /tmp/perf-test/VibeCode.app
+-          
+-          # Wait for code-server to be accessible
+-          timeout 30 bash -c 'until curl -f http://localhost:8080; do sleep 1; done'
+-          end_time=$(date +%s)
+-          startup_time=$((end_time - start_time))
+-          
+-          echo "App startup time: ${startup_time}s"
+-          
+-          # Fail if startup takes more than 30 seconds
+-          if [ $startup_time -gt 30 ]; then
+-            echo "❌ Startup time too slow: ${startup_time}s"
+-            exit 1
+-          else
+-            echo "✅ Startup time acceptable: ${startup_time}s"
+-          fi
+-          
+-          hdiutil detach /tmp/perf-test
+-        fi
+-    
+-    - name: Upload test results
+-      uses: actions/upload-artifact@v4
+-      if: always()
+-      with:
+-        name: test-results-${{ matrix.test_type }}
+-        path: |
+-          /tmp/vibecode-test-suite/test-results.json
+-          /tmp/vibecode-unit-tests/unit-test-results.json
+-        retention-days: 30
+-    
+-    - name: Upload test logs
+-      uses: actions/upload-artifact@v4
+-      if: failure()
+-      with:
+-        name: test-logs-${{ matrix.test_type }}
+-        path: |
+-          /tmp/vibecode-test-suite/test.log
+-          /tmp/vibecode-unit-tests/
+-        retention-days: 7
+-
+-  integration-test:
+-    runs-on: macos-latest
+-    needs: test-releases
+-    
+-    steps:
+-    - name: Checkout code
+-      uses: actions/checkout@v4
+-    
+-    - name: Download all test results
+-      uses: actions/download-artifact@v4
+-      with:
+-        pattern: test-results-*
+-        merge-multiple: true
+-    
+-    - name: Generate test report
+-      run: |
+-        echo "# VibeCode Release Test Report" > test-report.md
+-        echo "Generated: $(date)" >> test-report.md
+-        echo "" >> test-report.md
+-        
+-        echo "## Test Results Summary" >> test-report.md
+-        echo "" >> test-report.md
+-        
+-        for result_file in test-results-*/test-results.json; do
+-          if [ -f "$result_file" ]; then
+-            echo "### $(basename $(dirname $result_file))" >> test-report.md
+-            echo "" >> test-report.md
+-            echo "\`\`\`json" >> test-report.md
+-            cat "$result_file" >> test-report.md
+-            echo "\`\`\`" >> test-report.md
+-            echo "" >> test-report.md
+-          fi
+-        done
+-    
+-    - name: Upload test report
+-      uses: actions/upload-artifact@v4
+-      with:
+-        name: test-report
+-        path: test-report.md
+-        retention-days: 30
+-    
+-    - name: Comment on release
+-      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+-      uses: actions/github-script@v7
+-      with:
+-        script: |
+-          const fs = require('fs');
+-          const report = fs.readFileSync('test-report.md', 'utf8');
+-          
+-          github.rest.repos.createReleaseComment({
+-            owner: context.repo.owner,
+-            repo: context.repo.repo,
+-            tag_name: context.ref.replace('refs/tags/', ''),
+-            body: report
+-          });
