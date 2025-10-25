@@ -29,12 +29,12 @@ export async function POST(request: NextRequest) {
       validatedData = extendedWebSearchSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.warn('Web search validation failed', { errors: error.errors });
+        // console.warn('Web search validation failed', { errors: error.errors });
         return NextResponse.json(
           {
             success: false,
             error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
+            details: error.errors.map((e: any) => ({
               field: e.path.join('.'),
               message: e.message
             }))
