@@ -46,6 +46,11 @@ start_host_codeserver() {
   return 1
 }
 
+if ! command -v limactl >/dev/null 2>&1 && [[ ${LIMA_DISABLED:-0} != 1 ]]; then
+  log "error: limactl not found. Install Lima via 'brew install lima' or set LIMA_DISABLED=1 to run host mode."
+  exit 1
+fi
+
 if [[ ! -d "$CHROME_APP" ]]; then
   log "error: Chromium/Chrome app not found at $CHROME_APP"
   log "Set CHROMIUM_APP_PATH to your browser app (e.g., /Applications/Chromium.app)"
@@ -60,33 +65,37 @@ start_lima_vm() {
   fi
 }
 
-log "Starting Lima VM via ${LIMA_LAUNCHER_BIN:-npm run lima:start}"
-start_lima_vm
+if [[ ${LIMA_DISABLED:-0} != 1 ]]; then
+  log "Starting Lima VM via ${LIMA_LAUNCHER_BIN:-npm run lima:start}"
+  start_lima_vm
 
-log "Ensuring code-server is installed and running inside ide-lima"
-limactl shell ide-lima -- sudo env CODE_SERVER_VERSION="'$CODE_SERVER_VERSION'" ash -c '
-  set -e
-  VERSION="${CODE_SERVER_VERSION:-4.105.1}"
-  if ! command -v code-server >/dev/null 2>&1; then
-    echo "[ide-lima] Installing code-server v$VERSION"
-    apk add --no-cache curl tar
-    TMP=$(mktemp -d)
-    cd "$TMP"
-    curl -fsSLo code-server.tgz "https://github.com/coder/code-server/releases/download/v$VERSION/code-server-$VERSION-linux-amd64.tar.gz"
-    tar -xzf code-server.tgz
-    install -m 0755 "code-server-$VERSION-linux-amd64/bin/code-server" /usr/local/bin/code-server
-    rm -rf "$TMP"
-  fi
-  pkill code-server >/dev/null 2>&1 || true
-  nohup code-server --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry >/tmp/code-server.log 2>&1 &
-'
+  log "Ensuring code-server is installed and running inside ide-lima"
+  limactl shell ide-lima -- sudo env CODE_SERVER_VERSION="'$CODE_SERVER_VERSION'" ash -c '
+    set -e
+    VERSION="${CODE_SERVER_VERSION:-4.105.1}"
+    if ! command -v code-server >/dev/null 2>&1; then
+      echo "[ide-lima] Installing code-server v$VERSION"
+      apk add --no-cache curl tar
+      TMP=$(mktemp -d)
+      cd "$TMP"
+      curl -fsSLo code-server.tgz "https://github.com/coder/code-server/releases/download/v$VERSION/code-server-$VERSION-linux-amd64.tar.gz"
+      tar -xzf code-server.tgz
+      install -m 0755 "code-server-$VERSION-linux-amd64/bin/code-server" /usr/local/bin/code-server
+      rm -rf "$TMP"
+    fi
+    pkill code-server >/dev/null 2>&1 || true
+    nohup code-server --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry >/tmp/code-server.log 2>&1 &
+  '
+else
+  log "LIMA_DISABLED=1; using host-only mode"
+fi
 
 log "Waiting for code-server at $HEALTH_PATH (timeout ${WAIT_SECONDS}s)"
 deadline=$((SECONDS + WAIT_SECONDS))
 ready_source="lima"
 until curl -fsS "$HEALTH_PATH" >/dev/null 2>&1; do
   if (( SECONDS >= deadline )); then
-    log "Lima code-server did not start within ${WAIT_SECONDS}s; attempting host fallback"
+    log "code-server did not start within ${WAIT_SECONDS}s; attempting host fallback"
     if start_host_codeserver; then
       ready_source="host"
       deadline=$((SECONDS + WAIT_SECONDS))
