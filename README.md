@@ -17,6 +17,7 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
+- [Vibecode CLI](#vibecode-cli)
 - [Available Scripts](#available-scripts)
 - [Codex Salvage Extractions](#codex-salvage-extractions)
 - [eBPF Observability](#ebpf-observability)
@@ -371,6 +372,117 @@ The application provides REST API endpoints for various functionalities:
 - `/api/workspaces/[id]`
 
 For endpoint details and request/response examples, see [`docs/src/content/docs/api-reference.md`](docs/src/content/docs/api-reference.md).
+
+## Vibecode CLI
+
+The Vibecode CLI provides a unified, interactive interface for all platform operations - from development and testing to deployment and monitoring.
+
+### Quick Start
+
+```bash
+# Install the CLI
+bash scripts/vibecode-cli/install.sh
+
+# Launch interactive menu
+bash scripts/vibecode-cli.sh
+```
+
+### Features
+
+The CLI organizes operations into 6 main categories:
+
+#### 1. Development & Testing
+- Local development setup and teardown
+- Test execution (unit, integration, e2e)
+- Code quality checks (lint, format, type-check)
+- Build and compilation
+
+#### 2. Security & Compliance
+- Dependency vulnerability scanning
+- Secret detection
+- Security audits and monitoring
+- Compliance validation
+
+#### 3. Database Operations
+- Schema migrations
+- Database seeding and backups
+- Performance tuning
+- Connection testing
+
+#### 4. Deployment Automation
+- Multi-environment deployment (dev, staging, prod)
+- Platform-specific deployment (AKS, Fly.io, Docker)
+- Rollback capabilities
+- Deployment validation
+
+#### 5. VM Management
+- VM creation and lifecycle
+- Configuration and provisioning
+- Snapshot management
+- Resource monitoring
+
+#### 6. Monitoring & Observability
+- **Datadog Setup** - APM, DBM, CNM, and LLM observability
+- **Performance Baselines** - Record, view, and compare system performance
+- **Log Analysis** - View, search, and tail application logs
+- **Metrics Dashboards** - System and application metrics
+- **Health Checks** - System, services, and dependency validation
+- **Security Monitoring** - Continuous threat detection
+
+### Example: Deploy Monitoring Stack
+
+```bash
+# Launch CLI
+bash scripts/vibecode-cli.sh
+
+# Navigate: 6) Monitoring & Observability
+# Select: 1) Deploy Datadog Monitoring Stack
+# Choose: 1) Docker Compose
+# Enter your Datadog API key
+
+# Result: Complete monitoring stack deployed with:
+# - Datadog agent for APM
+# - Log collection
+# - Metrics collection
+# - Database monitoring
+```
+
+### Example: Performance Baseline
+
+```bash
+# Record baseline before optimization
+# Navigate: 6) Monitoring & Observability
+# Select: 7) Record Performance Baseline
+# Name: "pre-optimization"
+
+# Make your changes...
+
+# Record new baseline
+# Select: 7) Record Performance Baseline
+# Name: "post-optimization"
+
+# Compare results
+# Select: 9) Compare Performance Baselines
+# Shows side-by-side performance metrics
+```
+
+### Documentation
+
+- **User Guide**: [scripts/VIBECODE_CLI.md](scripts/VIBECODE_CLI.md) - Complete usage guide
+- **Architecture**: [scripts/vibecode-cli-lib/README.md](scripts/vibecode-cli-lib/README.md) - Technical documentation
+
+### Script Mapping
+
+Legacy scripts are now organized into the CLI:
+
+| Original Script | CLI Menu Path |
+|----------------|---------------|
+| `deploy-monitoring.sh` | Monitoring > Deploy Datadog Monitoring Stack |
+| `setup-azure-openai-monitoring.sh` | Monitoring > Setup Azure OpenAI Monitoring |
+| `security-monitoring.sh` | Monitoring > Start Security Monitoring |
+| `test-monitoring.sh` | Monitoring > Validate Monitoring Setup |
+
+See [scripts/VIBECODE_CLI.md](scripts/VIBECODE_CLI.md) for complete mapping.
 
 ## Available Scripts
 
