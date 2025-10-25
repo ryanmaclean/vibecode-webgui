@@ -220,3 +220,5 @@ db.sqlite3-journal
 *.ncb
 *.opendb
 .VC.db
+node_modules/
+docs/node_modules/
