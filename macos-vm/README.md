@@ -173,6 +173,102 @@ Expected metrics on Apple Silicon:
 | Native | No | Yes |
 | License | Proprietary | MIT |
 
+## Documentation
+
+### Guides
+
+- **[API Reference](API.md)** - Complete API documentation for Swift code
+  - Class and method reference
+  - Configuration options
+  - Integration patterns
+  - Performance characteristics
+
+- **[Benchmarking Guide](BENCHMARKING.md)** - Performance testing and optimization
+  - Comprehensive benchmark suite
+  - Performance metrics
+  - Comparison methodologies
+  - CI/CD integration
+
+- **[Integration Guide](INTEGRATION.md)** - Application integration patterns
+  - Tauri application integration
+  - LaunchAgent service setup
+  - Menu bar application
+  - Docker Desktop migration
+
+- **[Troubleshooting Guide](TROUBLESHOOTING.md)** - Common issues and solutions
+  - Quick diagnostics
+  - Common error solutions
+  - Advanced debugging
+  - Performance optimization
+
+- **[Verification Results](VERIFIED.md)** - Build and test verification
+  - Kernel download verification
+  - Binary compilation results
+  - Installation flow validation
+
+- **[Related Issues](RELATED_ISSUES.md)** - GitHub issue tracking
+  - Primary issue (#547)
+  - Related dependencies
+  - Integration opportunities
+
+## Testing
+
+### Run Health Check
+
+```bash
+./scripts/macos-vm/test-vm.sh
+```
+
+Checks:
+- Platform compatibility
+- Dependencies
+- File structure
+- Build status
+- Kernel components
+- Runtime functionality
+
+### Run Benchmarks
+
+```bash
+./scripts/macos-vm/benchmark.sh
+```
+
+Measures:
+- Boot time performance
+- Memory usage
+- CPU efficiency
+- Binary size
+- Disk footprint
+
+Results saved to: `~/.vibecode/vm/benchmark-results.json`
+
+## CI/CD
+
+Automated build and test pipeline via GitHub Actions:
+
+```yaml
+# .github/workflows/macos-vm.yml
+- Build on macOS-13 (Intel) and macOS-14 (Apple Silicon)
+- Automated benchmarking
+- Performance validation
+- Universal binary creation
+- Security scanning
+```
+
+View workflow: [.github/workflows/macos-vm.yml](../.github/workflows/macos-vm.yml)
+
+## Related Projects
+
+- **Cloud Hypervisor** (#542, #544) - Linux/KVM micro-VMs
+- **Custom M-Series Kernel** (#543) - Kernel build automation
+- **Tauri App** (#488) - Native macOS application
+- **Performance Benchmarking** (#545) - M-series optimizations
+- **eBPF Observability** (#546) - Full tracing with BTF
+
+## Contributing
+
+Contributions welcome! Please see [CONTRIBUTING.md](../CONTRIBUTING.md) for guidelines.
+
 ## License
 
 MIT - See root LICENSE file
