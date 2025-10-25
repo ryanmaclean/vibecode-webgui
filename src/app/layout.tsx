@@ -32,6 +32,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
+        <link rel="manifest" href="/manifest.webmanifest" />
+        <meta name="theme-color" content="#0f172a" />
         {/* Tailwind CSS v4 is now handled via PostCSS in Docker mode */}
         {/* Datadog RUM Browser SDK (enabled when NEXT_PUBLIC_DD_* env vars are set) */}
         {process.env.NEXT_PUBLIC_DD_APPLICATION_ID && process.env.NEXT_PUBLIC_DD_CLIENT_TOKEN && (
@@ -57,6 +59,15 @@ export default function RootLayout({
             </Script>
           </>
         )}
+        <Script id="sw-register" strategy="afterInteractive">
+          {`
+          if ('serviceWorker' in navigator) {
+            window.addEventListener('load', function () {
+              navigator.serviceWorker.register('/sw.js').catch(() => {});
+            });
+          }
+          `}
+        </Script>
       </head>
       <body
         className="antialiased"
