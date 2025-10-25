@@ -205,8 +205,10 @@ echo ""
 # Show compilation details
 echo "Compilation details:"
 echo "  Libc: musl (static)"
-echo "  Optimization: -Os (size)"
-echo "  Architecture: ARM64"
+echo "  Optimization: -O3 (performance)"
+echo "  Architecture: ARM64 with CRC32 and crypto extensions"
+echo "  Tuning: Cortex-A76 (Apple Silicon compatible)"
+echo "  LTO: Enabled"
 echo "  Stripped: yes"
 echo ""
 

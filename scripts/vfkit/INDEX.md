@@ -124,6 +124,22 @@ Complete documentation for the VibeCode Alpine Linux ARM64 VM using vfkit on App
 
 ---
 
+### 8. [VALKEY_DEPLOYMENT.md](./VALKEY_DEPLOYMENT.md) - Valkey Cache Deployment
+**Cache deployment** - High-performance Valkey on Alpine ARM64
+
+**Contents:**
+- Quick start deployment guide
+- ARM64 optimization details (CRC32, crypto extensions)
+- Performance benchmarks (<1ms, >10k ops/sec)
+- Service management with OpenRC
+- Testing and verification procedures
+- Monitoring and troubleshooting
+- Integration with Alpine VM setup
+
+**Best for:** Deploying Valkey cache, performance optimization
+
+---
+
 ## 🚀 Quick Navigation
 
 ### I want to...
@@ -152,6 +168,12 @@ Complete documentation for the VibeCode Alpine Linux ARM64 VM using vfkit on App
 → Read [WIKI.md](./WIKI.md) advanced topics section
 → Read [KERNEL_OPTIMIZATION_ANALYSIS.md](./KERNEL_OPTIMIZATION_ANALYSIS.md)
 → Explore build scripts in `scripts/vfkit/`
+
+#### Deploy Valkey Cache
+→ Start with [VALKEY_DEPLOYMENT.md](./VALKEY_DEPLOYMENT.md) overview
+→ Run `./deploy-valkey-alpine-arm64.sh` for full setup
+→ Verify with `./verify-valkey-performance.sh`
+→ Check performance targets: <1ms cache hits, >10k ops/sec
 
 ---
 
@@ -202,6 +224,15 @@ Complete documentation for the VibeCode Alpine Linux ARM64 VM using vfkit on App
 | `11-build-minimal-kernel.sh` | Build custom minimal kernel | LFS learning, max optimization |
 | `11-build-minimal-kernel-docker.sh` | Build in Docker | Easier build environment |
 | `compare-boot-times.sh` | Benchmark boot times | Performance testing |
+
+### Valkey Deployment Scripts
+
+| Script | Purpose | When to Use |
+|--------|---------|-------------|
+| `compile-valkey-musl.sh` | Compile Valkey with ARM64 optimizations | Inside Alpine VM |
+| `deploy-valkey-alpine-arm64.sh` | Full deployment wrapper | Complete Valkey setup |
+| `verify-valkey-performance.sh` | Performance testing | Verify <1ms, >10k ops/sec |
+| `quick-valkey-setup.sh` | Quick installation | Fast setup during VM provisioning |
 
 ### One-Command Installer
 
