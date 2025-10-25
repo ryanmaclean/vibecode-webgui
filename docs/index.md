@@ -38,8 +38,10 @@ This creates a complete development environment with:
 ### 🎯 Featured
 - **[Multi-Agent Workflow Complete](./MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation ⭐
 - **[RAG System Architecture](./ARCHITECTURE_RAG_SYSTEM.md)** - Technical deep-dive ⭐
+- **[VibeCode CLI](../cli-tools/README.md)** - Unified development toolkit ⭐
 
 ### Getting Started
+- **[VibeCode CLI Integration](./CLI_INTEGRATION.md)** - Unified toolkit guide
 - **[Demo Environment Guide](./VFKIT_DEMO_GUIDE.md)** - Complete setup walkthrough
 - **[vfkit Quick Start](../scripts/vfkit/QUICK_START.md)** - VM basics
 - **[Alpine VM Setup](../scripts/vfkit/README.md)** - Detailed Alpine guide

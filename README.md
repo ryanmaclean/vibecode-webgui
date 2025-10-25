@@ -69,7 +69,8 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 🔧 **TypeScript** - Full type safety with strict configuration
 
 **📖 [Multi-Agent Workflow Complete](./docs/MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation  
-**📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview
+**📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview  
+**🛠️ [VibeCode CLI](./cli-tools/README.md)** - Unified development toolkit
 
 ## 🚀 GenAI Development VM
 
