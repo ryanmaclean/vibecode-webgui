@@ -1,60 +1,91 @@
 # OpenVSCode Micro-VM Prototype (2025-10-02)
 
 This document captures the current state of the BusyBox + glibc initramfs that
-hosts OpenVSCode Server inside a tiny KVM guest. The goal is to prove that we
-can boot a VSIX-compatible editor in under a second and treat it like a
-near-native tool when fronting Hypervisor.framework / Apple Containerization.
+hosts OpenVSCode Server inside a tiny KVM guest. The latest build exposes a
+proxy-backed HTTP surface so `/` and `/healthz` respond immediately while the
+editor continues to load in the background. Cold boots on macOS HVF reach HTTP
+readiness in ~6.1 s and the port can now be fronted directly by MCP demos.
 
 ## What was built
 - BusyBox-based initramfs (`fast-openvscode-vm/openvscode-initramfs.cpio.gz`,
   ~69 MB gzipped) with manually copied glibc/libstdc++ and the
   `openvscode-server-v1.103.1` payload.
-- Custom `/init` script mounts proc/sys/dev/tmp, acquires DHCP with `udhcpc`,
-  launches OpenVSCode Server using `--without-connection-token`, and emits
-  log-style status messages (`[HH:MM:SS] ...`).
-- Host-side harness (temporary shell one-liner) measures elapsed time between
-  launching QEMU and the port listening; current best run reports
-  `{'port_ready_ms': 492}` (≈0.5 s).
+- Custom `/init` script mounts proc/sys/dev/tmp, configures a static IP
+  (10.0.2.15), launches OpenVSCode on port 3001, and starts an in-guest Node.js
+  reverse proxy that serves `/healthz` / `/` with HTTP 200 responses before
+  forwarding all other routes to the editor.
+- `scripts/benchmarks/vscode_microvm.sh` controls the VM lifecycle (start/stop/
+  status/measure) and emits JSON latency samples suitable for Datadog or local
+  comparisons.
+- `scripts/release/package-fast-openvscode-vm.sh` now excludes cached tarballs
+  and logs, and `scripts/release/fetch-fast-openvscode-kernel.sh` fetches a
+  trimmed Firecracker kernel. The harness still falls back to `vmlinuz-host`
+  when no custom kernel is available.
 
-## How to reproduce (Linux host)
+## Quick start (macOS HVF or Linux)
+
+### x86_64 guest (default)
 ```bash
-# 1. Install qemu-system-x86 (we use KVM acceleration).
-sudo apt-get install qemu-system-x86
+# Ensure QEMU is installed (brew install qemu on macOS, apt install qemu-system-x86 on Linux)
+scripts/benchmarks/vscode_microvm.sh start
+curl -s http://127.0.0.1:3600/healthz   # -> ok
+curl -I http://127.0.0.1:3600/          # -> HTTP/1.1 200 OK
+scripts/benchmarks/vscode_microvm.sh stop
 
-# 2. Copy host kernel for convenience.
-sudo cp /boot/vmlinuz-$(uname -r) fast-openvscode-vm/vmlinuz-host
-sudo chown $USER fast-openvscode-vm/vmlinuz-host
-
-# 3. Launch the micro VM.
-cd fast-openvscode-vm
-qemu-system-x86_64 \
-  -machine accel=kvm,type=pc \
-  -cpu host -smp 4 -m 2048 \
-  -kernel vmlinuz-host \
-  -initrd openvscode-initramfs.cpio.gz \
-  -append "rdinit=/init console=ttyS0 quiet" \
-  -device virtio-net,netdev=n0 \
-  -netdev user,id=n0,hostfwd=tcp::3600-:3000 \
-  -nographic
+# Optional: expose HTTPS for Safari/iPad testing
+npm run microvm:https   # -> proxies https://127.0.0.1:3443 to the microVM
 ```
-The console will report DHCP success, server startup, and readiness. The
-health-check thread polls `http://127.0.0.1:3000/healthz` and prints
-`[HH:MM:SS] init: OpenVSCode ready` once the Node process is listening.
+
+### arm64 guest
+```bash
+MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh start
+curl -s http://127.0.0.1:4600/healthz   # -> ok
+curl -I http://127.0.0.1:4600/          # -> HTTP/1.1 200 OK
+MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh stop
+```
+
+The helper script records a PID file in `${TARGET_DIR}/.microvm.pid` and
+captures console output in `${TARGET_DIR}/qemu-console.log` for debugging.
+
+## Benchmarks
+```
+$ scripts/benchmarks/vscode_microvm.sh measure 5
+{"port_ready_ms": [6212, 6002, 6103, 6057, 6177]}
+
+$ MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh measure 3
+{"port_ready_ms": [19745, 19525, 19217]}
+```
+Average HTTP-ready time on macOS 14.6.1: ~6.1 s for the HVF-backed x86_64 guest
+and ~19.5 s for the arm64 guest running under TCG on Intel hardware. Docker
+start/stop on the same host averages ~0.29 s using `boot_latency_bench.py`, so
+we still trail containers for cold launches; keep a warm VM running for demos to
+avoid repeated cold boots. Once we validate on Apple Silicon with Virtualization
+Framework passthrough we expect the arm64 numbers to drop substantially.
+
+## Packaging
+```bash
+# x86_64 bundle
+scripts/release/package-fast-openvscode-vm.sh fast-openvscode-vm
+
+# arm64 bundle
+scripts/release/package-fast-openvscode-vm.sh fast-openvscode-vm-arm64
+```
+Artifacts land in `dist/` with matching `.sha256` files. The script excludes
+cached tarballs, QEMU logs, and pid files so uploads stay lean. To refresh the
+kernel, either supply `MICROVM_KERNEL=/path/to/vmlinux` when starting the VM or
+rebuild a kernel via Firecracker resources/`linux-image-arm64` and copy the
+resulting `/boot/vmlinuz-*` plus `/lib/modules/*` into the tree before
+repackaging.
+
+For automated runs, `scripts/ci/package_microvm.sh` loops over the configured
+architectures, calls `vscode_microvm.sh measure`, and packages the artifacts.
+Wire this into CI/nightlies so both tarballs and JSON metrics publish together.
 
 ## Known issues
-- Plain `curl http://127.0.0.1:3600/` still fails with `Connection reset by
-  peer` even though the port is open. This is tracked in
-  [issue #552](https://github.com/ryanmaclean/vibecode-webgui/issues/552); we
-  need to tweak the launch flags or serve a static landing page.
-- No arm64 image yet. [Issue #553](https://github.com/ryanmaclean/vibecode-webgui/issues/553)
-  covers creating an Apple-friendly build and turning the benchmark harness
-  into `scripts/benchmarks/vscode_microvm.sh`.
-- The initramfs currently lives outside git (`fast-openvscode-vm/` is ignored).
-  To rebuild it, reuse the instructions from this document or the TODO entry
-  dated 2025-10-02 21:19 UTC.
-
-## Next steps
-1. Fix the HTTP handshake so `/` returns a 200 response.
-2. Wrap the launch + probe logic in a reusable script and emit Datadog metrics.
-3. Produce an arm64 image and validate under Apple Containerization /
-   Virtualization.framework.
+- Validate the arm64 build under Apple Virtualization/Colima on Apple Silicon
+  and capture updated readiness metrics ([issue #553](https://github.com/ryanmaclean/vibecode-webgui/issues/553)).
+- CI automation for nightly insiders builds remains open in
+  [issue #554](https://github.com/ryanmaclean/vibecode-webgui/issues/554).
+- The initramfs directories (`fast-openvscode-vm*/`) stay outside git; regenerate
+  them via `find .../rootfs | cpio --null -ov --format=newc | gzip` whenever the
+  rootfs tree changes.
