@@ -202,6 +202,13 @@ const nextConfig = {
       config.devtool = false
     }
 
+    // Remove Next.js MinifyPlugin to work around webpack.WebpackError bug
+    if (!dev && !isServer) {
+      config.plugins = (config.plugins || []).filter(
+        (plugin) => plugin?.constructor?.name !== 'MinifyPlugin'
+      )
+    }
+
     config.plugins = config.plugins || []
     const hasIgnorePlugin = config.plugins.some(
       (plugin) =>
@@ -232,14 +239,20 @@ const nextConfig = {
       config.resolve.alias = {
         ...config.resolve.alias,
         ...datadogStubAliases,
+        '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
+        '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
+        '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
         pg: false,
         redis: false,
       }
     } else {
-      // For all server builds, stub dd-trace to avoid bundling native modules
+      // For all server builds, stub dd-trace and opentelemetry to avoid bundling native modules
       config.resolve.alias = {
         ...config.resolve.alias,
         'dd-trace': datadogStubAliases['dd-trace'],
+        '@opentelemetry/api': require.resolve('./src/stubs/opentelemetry-api.js'),
+        '@opentelemetry/core': require.resolve('./src/stubs/opentelemetry-core.js'),
+        '@opentelemetry/instrumentation': require.resolve('./src/stubs/opentelemetry-instrumentation.js'),
       }
     }
 
@@ -255,22 +268,9 @@ const nextConfig = {
       stream: false,
       events: false,
       fsevents: false,
-      '@opentelemetry/sdk-node': false,
-      '@opentelemetry/auto-instrumentations-node': false,
-      '@opentelemetry/exporter-otlp-http': false,
-      '@opentelemetry/exporter-prometheus': false,
-      '@opentelemetry/resources': false,
-      '@opentelemetry/semantic-conventions': false,
-      '@opentelemetry/core': false,
-      '@opentelemetry/api': false,
-      '@opentelemetry/instrumentation': false,
-      '@opentelemetry/sdk-trace-web': false,
-      '@opentelemetry/auto-instrumentations-web': false,
-      '@opentelemetry/sdk-trace-base': false,
-      '@opentelemetry/sdk-metrics': false,
     }
 
-    // For server builds, configure externals but NOT dd-trace (it's stubbed via alias)
+    // For server builds, configure externals but NOT dd-trace or opentelemetry (they're stubbed via alias)
     if (isServer) {
       const externals = ensureArray(config.externals)
       addUniqueStrings(externals, [
@@ -285,9 +285,6 @@ const nextConfig = {
         '@opentelemetry/exporter-prometheus',
         '@opentelemetry/resources',
         '@opentelemetry/semantic-conventions',
-        '@opentelemetry/core',
-        '@opentelemetry/api',
-        '@opentelemetry/instrumentation',
         '@opentelemetry/sdk-trace-web',
         '@opentelemetry/auto-instrumentations-web',
         '@opentelemetry/sdk-trace-base',
@@ -301,10 +298,13 @@ const nextConfig = {
       config.externals = externals
     }
 
-    // Ensure minification is enabled (SWC by default in Next 15)
-    config.optimization = {
-      ...config.optimization,
-      minimize: true,
+    // Keep minification disabled since we removed MinifyPlugin
+    // Build will be larger but functional until Next.js fixes the bug
+    if (!dev && !isServer) {
+      config.optimization = {
+        ...config.optimization,
+        minimize: false,
+      }
     }
 
     // Drop all Moment.js locales if Moment is used anywhere
