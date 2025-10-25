@@ -75,6 +75,14 @@ export default defineConfig({
           ]
         },
         {
+          label: 'Alternative Platforms',
+          collapsed: true,
+          items: [
+            { label: 'OpenIndiana / illumos', link: '/platforms/openindiana/', badge: 'New' },
+            { label: 'Datadog on OpenIndiana', link: '/platforms/datadog-openindiana/', badge: 'New' },
+          ]
+        },
+        {
           label: 'AI Integration',
           collapsed: false,
           items: [
