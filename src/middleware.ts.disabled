@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { Ratelimit } from '@upstash/ratelimit';
+import { Redis } from '@upstash/redis';
 import { apiSecurityMiddleware, addSecurityHeaders } from './middleware/security-middleware';
-
-// Skip Redis/ValKey initialization in test environment
-const isTestEnvironment = process.env.NODE_ENV === 'test' || process.env.CI === 'true' || process.env.PLAYWRIGHT_TEST === 'true';
-
+import { loadSecret } from '@/lib/security/macos-keychain-server';
 const BOT_PROTECTION_CONFIG = {
   suspiciousPatterns: [
     /bot/i, /crawler/i, /spider/i, /scraper/i, /automated/i,
@@ -17,15 +16,39 @@ const BOT_PROTECTION_CONFIG = {
   ],
 };
 
-// Legacy snapshot: rate limiting disabled in this file; see active middleware.ts for current logic
-const ratelimit: any = null;
+// Edge Runtime compatible initialization
+let redis: Redis | null = null;
+let ratelimit: Ratelimit | null = null;
+
+// Initialize Redis and rate limiting outside of middleware function
+// to avoid Edge Runtime compatibility issues
+try {
+  const redisUrl = loadSecret('UPSTASH_REDIS_REST_URL') || process.env.UPSTASH_REDIS_REST_URL;
+  const redisToken = loadSecret('UPSTASH_REDIS_REST_TOKEN') || process.env.UPSTASH_REDIS_REST_TOKEN;
+  
+  if (redisUrl && redisToken) {
+    redis = new Redis({
+      url: redisUrl,
+      token: redisToken,
+    });
+
+    ratelimit = new Ratelimit({
+      redis: redis,
+      limiter: Ratelimit.slidingWindow(10, '10 s'),
+      analytics: true,
+      prefix: '@upstash/ratelimit',
+    });
+  }
+} catch (error) {
+  console.warn('Failed to initialize Redis for rate limiting:', error);
+}
 
 function logToDatadog(
   request: NextRequest,
   eventType: 'bot_detected' | 'rate_limited' | 'suspicious_activity' | 'user_access',
   metadata: Record<string, any>
 ) {
-  console.log(JSON.stringify({ ddsource: 'next-js', eventType, ...metadata }));
+  console.info(JSON.stringify({ ddsource: 'next-js', eventType, ...metadata }));
 }
 
 function detectBot(request: NextRequest): {
@@ -67,36 +90,6 @@ function detectBot(request: NextRequest): {
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-
-  // Skip authentication and ALL middleware logic in E2E test environment FIRST
-  if (isTestEnvironment) {
-    return NextResponse.next();
-  }
-
-  // Handle authentication redirects for production environments only
-  const isAuthPage = pathname.startsWith('/auth/');
-  const isApiRoute = pathname.startsWith('/api/');
-  const isPublicRoute = pathname.startsWith('/_next/') || 
-                       pathname.startsWith('/favicon.ico') || 
-                       pathname.startsWith('/public');
-
-  // Check for authentication token in cookies
-  const sessionToken = request.cookies.get('next-auth.session-token') || 
-                      request.cookies.get('__Secure-next-auth.session-token');
-  
-  const isAuthenticated = !!sessionToken;
-
-  // Redirect unauthenticated users to signin (except for auth pages and public routes)
-  if (!isAuthenticated && !isAuthPage && !isPublicRoute && !isApiRoute) {
-    const signInUrl = new URL('/auth/signin', request.url);
-    signInUrl.searchParams.set('callbackUrl', pathname);
-    return NextResponse.redirect(signInUrl);
-  }
-
-  // Redirect authenticated users away from auth pages
-  if (isAuthenticated && isAuthPage && pathname !== '/auth/signout') {
-    return NextResponse.redirect(new URL('/', request.url));
-  }
 
   if (
     pathname.startsWith('/_next/static') ||

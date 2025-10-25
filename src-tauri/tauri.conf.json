@@ -4,10 +4,10 @@
   "version": "0.1.0",
   "identifier": "com.vibecode.app",
   "build": {
-    "beforeDevCommand": "npm run dev",
-    "beforeBuildCommand": "npm run build:tauri",
-    "frontendDist": "../.next",
-    "devUrl": "http://localhost:3000"
+    "beforeDevCommand": "echo 'Starting vfkit VM...'",
+    "beforeBuildCommand": "echo 'Building for production...'",
+    "frontendDist": "../code-server",
+    "devUrl": "http://localhost:8080"
   },
   "bundle": {
     "active": true,

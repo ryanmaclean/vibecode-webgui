@@ -25,12 +25,22 @@ fn main() {
             commands::start_containers,
             commands::stop_containers,
             commands::restart_containers,
+            commands::start_code_server,
         ])
         .setup(|app| {
             // Initialize system tray
             if let Err(e) = menu::create_system_tray(app.handle()) {
                 eprintln!("Failed to create system tray: {}", e);
             }
+
+            // Start code-server automatically
+            let app_handle = app.handle().clone();
+            tauri::async_runtime::spawn(async move {
+                match commands::start_code_server().await {
+                    Ok(msg) => println!("{}", msg),
+                    Err(e) => eprintln!("Failed to start code-server: {}", e),
+                }
+            });
 
             #[cfg(debug_assertions)]
             {
