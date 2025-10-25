@@ -100,3 +100,4 @@ Wire this into CI/nightlies so both tarballs and JSON metrics publish together.
   - `npm run lima:status`
   - `npm run lima:stop`
 - Use `swift run --package-path swift/lima-launcher lima-launcher forward --port 8080` (or hand-wire an ssh tunnel) to expose code-server inside the Lima guest at `http://127.0.0.1:8080`—handy when testing Tauri or hypervisor orchestration that expects the classic port 8080 workflow.
+- Want a Chrome/Chromium kiosk view? Run `npm run ide:kiosk` (optionally set `CHROMIUM_APP_PATH=/Applications/Chromium.app`). The script boots Lima, waits for `/healthz`, and opens the IDE fullscreen with a dedicated profile under `.chrome-code-server`.
