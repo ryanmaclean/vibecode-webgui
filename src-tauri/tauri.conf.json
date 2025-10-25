@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.vibecode.app",
   "build": {
-    "beforeDevCommand": "echo 'Starting vfkit VM...'",
+    "beforeDevCommand": "echo 'Starting code-server...'",
     "beforeBuildCommand": "echo 'Building for production...'",
-    "frontendDist": "../code-server",
+    "frontendDist": "../public",
     "devUrl": "http://localhost:8080"
   },
   "bundle": {

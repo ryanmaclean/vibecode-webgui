@@ -154,8 +154,6 @@ pub async fn start_code_server() -> Result<String, String> {
         .arg("--disable-update-check")
         .arg("--disable-workspace-trust")
         .arg("--disable-getting-started-override")
-        .arg("--open")
-        .arg("README.md")
         .arg("--user-data-dir")
         .arg("~/.config/code-server/user-data")
         .arg("--extensions-dir")
