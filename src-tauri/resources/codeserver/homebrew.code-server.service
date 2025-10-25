@@ -1,0 +1,13 @@
+[Unit]
+Description=Homebrew generated unit for code-server
+
+[Install]
+WantedBy=default.target
+
+[Service]
+Type=simple
+ExecStart="/opt/homebrew/opt/code-server/bin/code-server"
+Restart=on-failure
+WorkingDirectory=/Users/studio
+StandardOutput=append:/opt/homebrew/var/log/code-server.log
+StandardError=append:/opt/homebrew/var/log/code-server.log
