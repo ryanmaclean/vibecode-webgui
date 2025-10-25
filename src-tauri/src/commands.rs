@@ -119,3 +119,31 @@ pub async fn stop_containers() -> Result<String, String> {
 pub async fn restart_containers() -> Result<String, String> {
     docker::restart_containers().await
 }
+
+#[command]
+pub async fn start_code_server() -> Result<String, String> {
+    use std::process::Command;
+    
+    // Check if code-server is available
+    let code_server_check = Command::new("code-server")
+        .arg("--version")
+        .output();
+    
+    if code_server_check.is_err() {
+        return Err("code-server is not installed. Please install code-server first: npm install -g code-server".to_string());
+    }
+    
+    // Start code-server on port 8080
+    let output = Command::new("code-server")
+        .arg("--bind-addr")
+        .arg("0.0.0.0:8080")
+        .arg("--auth")
+        .arg("none")
+        .arg("--disable-telemetry")
+        .arg("--disable-update-check")
+        .arg(".")
+        .spawn()
+        .map_err(|e| format!("Failed to start code-server: {}", e))?;
+    
+    Ok("code-server started successfully at http://localhost:8080".to_string())
+}
