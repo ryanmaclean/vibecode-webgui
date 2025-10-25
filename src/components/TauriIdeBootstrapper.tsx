@@ -28,10 +28,9 @@ export function TauriIdeBootstrapper() {
       try {
         await tauriCommands.startLimaVm();
         if (cancelled) return;
-        // Give code-server a short window to boot before opening the browser.
         await new Promise((resolve) => setTimeout(resolve, 5000));
         if (cancelled) return;
-        await tauriCommands.launchBrowser('http://127.0.0.1:8080');
+        window.location.replace('http://127.0.0.1:8080');
       } catch (error) {
         console.error('Tauri IDE bootstrap failed', error);
       }
