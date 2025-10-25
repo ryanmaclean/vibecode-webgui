@@ -40,11 +40,7 @@
         "./src/*"
       ]
     },
-    "moduleDetection": "force",
-    "types": [
-      "node",
-      "jest"
-    ]
+    "moduleDetection": "force"
   },
   "include": [
     "next-env.d.ts",
@@ -63,6 +59,7 @@
     "src/extensions/**/*",
     "extensions/**/*",
     "**/*.stories.tsx",
-    "tmp-*/**/*"
+    "tmp-*/**/*",
+    "src/components/terminal/**/*"
   ]
 }
