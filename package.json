@@ -71,6 +71,7 @@
     "lima:start": "swift run --package-path swift/lima-launcher lima-launcher start --name ide-lima --config vm-assets/ide-lima.yaml",
     "lima:stop": "swift run --package-path swift/lima-launcher lima-launcher stop --name ide-lima",
     "lima:status": "swift run --package-path swift/lima-launcher lima-launcher status",
+    "ide:kiosk": "scripts/dev/start-chromium-ide.sh",
     "test:synthetics": "datadog-ci synthetics run-tests -c datadog-synthetics.json",
     "test:monitoring:production": "jest --testPathPatterns=tests/production/.*monitoring.*\\.test\\.(ts|js)$",
     "test:monitoring:health": "jest --testPathPatterns=tests/unit/health-check.test.ts",
