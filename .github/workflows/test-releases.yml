@@ -1,0 +1,206 @@
+name: VibeCode Release Testing Pipeline
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: 'Release tag to test'
+        required: true
+        default: 'v1.2.0'
+
+jobs:
+  test-releases:
+    runs-on: macos-latest
+    strategy:
+      matrix:
+        test_type: [tauri, electron, pkg]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '18'
+        cache: 'npm'
+    
+    - name: Install dependencies
+      run: |
+        npm ci
+        npm install -g code-server
+    
+    - name: Download release artifacts
+      run: |
+        gh release download ${{ github.event.inputs.release_tag || github.ref_name }} --pattern "*.dmg" --pattern "*.pkg" --pattern "*.zip"
+    
+    - name: Run comprehensive tests
+      run: |
+        chmod +x scripts/comprehensive-test-suite.sh
+        ./scripts/comprehensive-test-suite.sh
+    
+    - name: Run unit tests
+      run: |
+        node scripts/unit-test-suite.js
+    
+    - name: Test Tauri build
+      if: matrix.test_type == 'tauri'
+      run: |
+        if [ -f "VibeCode_0.1.0_aarch64.dmg" ]; then
+          hdiutil attach "VibeCode_0.1.0_aarch64.dmg" -mountpoint /tmp/tauri-test
+          open /tmp/tauri-test/VibeCode.app
+          sleep 10
+          
+          # Test code-server accessibility
+          curl -f http://localhost:8080 || exit 1
+          
+          # Test VS Code interface
+          curl -s http://localhost:8080 | grep -q "code-server" || exit 1
+          
+          # Test no welcome screen
+          curl -s http://localhost:8080 | grep -q -v "Welcome" || exit 1
+          
+          hdiutil detach /tmp/tauri-test
+        fi
+    
+    - name: Test Electron build
+      if: matrix.test_type == 'electron'
+      run: |
+        if [ -f "VibeCode.Electron-1.0.0-arm64.dmg" ]; then
+          hdiutil attach "VibeCode.Electron-1.0.0-arm64.dmg" -mountpoint /tmp/electron-test
+          open "/tmp/electron-test/VibeCode Electron.app"
+          sleep 10
+          
+          # Test code-server accessibility
+          curl -f http://localhost:8080 || exit 1
+          
+          # Test VS Code interface
+          curl -s http://localhost:8080 | grep -q "code-server" || exit 1
+          
+          # Test no welcome screen
+          curl -s http://localhost:8080 | grep -q -v "Welcome" || exit 1
+          
+          hdiutil detach /tmp/electron-test
+        fi
+    
+    - name: Test PKG installer
+      if: matrix.test_type == 'pkg'
+      run: |
+        if [ -f "VibeCode-1.2.0.pkg" ]; then
+          # Test PKG structure
+          pkgutil --expand "VibeCode-1.2.0.pkg" /tmp/pkg-test
+          
+          # Verify app bundle exists
+          test -d "/tmp/pkg-test/Applications/VibeCode.app" || exit 1
+          
+          # Verify Info.plist exists
+          test -f "/tmp/pkg-test/Applications/VibeCode.app/Contents/Info.plist" || exit 1
+          
+          # Test installation (dry run)
+          sudo installer -pkg "VibeCode-1.2.0.pkg" -target / -allowUntrusted -dumplog
+        fi
+    
+    - name: Performance test
+      run: |
+        # Test app startup time
+        start_time=$(date +%s)
+        if [ -f "VibeCode_0.1.0_aarch64.dmg" ]; then
+          hdiutil attach "VibeCode_0.1.0_aarch64.dmg" -mountpoint /tmp/perf-test
+          open /tmp/perf-test/VibeCode.app
+          
+          # Wait for code-server to be accessible
+          timeout 30 bash -c 'until curl -f http://localhost:8080; do sleep 1; done'
+          end_time=$(date +%s)
+          startup_time=$((end_time - start_time))
+          
+          echo "App startup time: ${startup_time}s"
+          
+          # Fail if startup takes more than 30 seconds
+          if [ $startup_time -gt 30 ]; then
+            echo "❌ Startup time too slow: ${startup_time}s"
+            exit 1
+          else
+            echo "✅ Startup time acceptable: ${startup_time}s"
+          fi
+          
+          hdiutil detach /tmp/perf-test
+        fi
+    
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-${{ matrix.test_type }}
+        path: |
+          /tmp/vibecode-test-suite/test-results.json
+          /tmp/vibecode-unit-tests/unit-test-results.json
+        retention-days: 30
+    
+    - name: Upload test logs
+      uses: actions/upload-artifact@v4
+      if: failure()
+      with:
+        name: test-logs-${{ matrix.test_type }}
+        path: |
+          /tmp/vibecode-test-suite/test.log
+          /tmp/vibecode-unit-tests/
+        retention-days: 7
+
+  integration-test:
+    runs-on: macos-latest
+    needs: test-releases
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Download all test results
+      uses: actions/download-artifact@v4
+      with:
+        pattern: test-results-*
+        merge-multiple: true
+    
+    - name: Generate test report
+      run: |
+        echo "# VibeCode Release Test Report" > test-report.md
+        echo "Generated: $(date)" >> test-report.md
+        echo "" >> test-report.md
+        
+        echo "## Test Results Summary" >> test-report.md
+        echo "" >> test-report.md
+        
+        for result_file in test-results-*/test-results.json; do
+          if [ -f "$result_file" ]; then
+            echo "### $(basename $(dirname $result_file))" >> test-report.md
+            echo "" >> test-report.md
+            echo "\`\`\`json" >> test-report.md
+            cat "$result_file" >> test-report.md
+            echo "\`\`\`" >> test-report.md
+            echo "" >> test-report.md
+          fi
+        done
+    
+    - name: Upload test report
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-report
+        path: test-report.md
+        retention-days: 30
+    
+    - name: Comment on release
+      if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          const report = fs.readFileSync('test-report.md', 'utf8');
+          
+          github.rest.repos.createReleaseComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            tag_name: context.ref.replace('refs/tags/', ''),
+            body: report
+          });

@@ -1,0 +1,194 @@
+{
+  "key": "button_color_test",
+  "name": "Homepage CTA Button Color Experiment",
+  "hypothesis": "Blue button increases conversions by 10% compared to current green button",
+  "description": "Testing button color impact on signup conversions. Blue is often associated with trust and professionalism, while green suggests action. We expect blue to perform better for our B2B audience.",
+  "type": "ab_test",
+  "status": "draft",
+  "config": {
+    "variants": [
+      {
+        "key": "control",
+        "name": "Green Button (Current)",
+        "description": "Existing green button (#10B981)",
+        "weight": 0.5,
+        "config": {
+          "buttonColor": "#10B981",
+          "buttonText": "Start Free Trial"
+        }
+      },
+      {
+        "key": "treatment",
+        "name": "Blue Button",
+        "description": "New blue button (#3B82F6)",
+        "weight": 0.5,
+        "config": {
+          "buttonColor": "#3B82F6",
+          "buttonText": "Start Free Trial"
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "name": "conversion_rate",
+        "type": "binary",
+        "description": "User clicked CTA and completed signup",
+        "target": "maximize",
+        "expectedImprovement": 0.10,
+        "isPrimary": true
+      },
+      {
+        "name": "time_on_page",
+        "type": "continuous",
+        "unit": "seconds",
+        "description": "Time spent on homepage before action",
+        "target": "maximize",
+        "isPrimary": false
+      },
+      {
+        "name": "bounce_rate",
+        "type": "binary",
+        "description": "User left without any interaction",
+        "target": "minimize",
+        "isPrimary": false
+      },
+      {
+        "name": "cta_click_rate",
+        "type": "binary",
+        "description": "User clicked CTA button (may not complete signup)",
+        "target": "maximize",
+        "isPrimary": false
+      }
+    ],
+    "guardrails": [
+      {
+        "metric": "bounce_rate",
+        "operator": "<",
+        "threshold": 0.65,
+        "severity": "warning",
+        "description": "Alert if bounce rate exceeds 65%"
+      },
+      {
+        "metric": "page_load_time",
+        "operator": "<",
+        "threshold": 3000,
+        "unit": "ms",
+        "severity": "critical",
+        "description": "Pause experiment if page load exceeds 3s"
+      }
+    ],
+    "targetingRules": [
+      {
+        "attribute": "userType",
+        "operator": "equals",
+        "value": "new_visitor",
+        "description": "Only target new visitors (not returning users)"
+      },
+      {
+        "attribute": "deviceType",
+        "operator": "in",
+        "values": ["desktop", "mobile"],
+        "description": "Include all device types"
+      }
+    ],
+    "trafficAllocation": {
+      "percentage": 1.0,
+      "rolloutStrategy": "immediate"
+    }
+  },
+  "sampleSize": {
+    "target": 2000,
+    "perVariant": 1000,
+    "estimatedDuration": "14 days",
+    "powerAnalysis": {
+      "baselineConversion": 0.12,
+      "minimumDetectableEffect": 0.10,
+      "statisticalPower": 0.80,
+      "significanceLevel": 0.05
+    }
+  },
+  "expectedResults": {
+    "description": "We expect the blue button to increase conversions by 8-12% based on industry benchmarks and color psychology research. The effect should be more pronounced for B2B users.",
+    "primaryMetric": {
+      "control": {
+        "conversionRate": 0.120,
+        "confidence": "baseline"
+      },
+      "treatment": {
+        "conversionRate": 0.132,
+        "confidence": "estimated",
+        "lift": 0.10,
+        "liftPercent": 10.0
+      }
+    },
+    "secondaryMetrics": {
+      "timeOnPage": "No significant change expected",
+      "bounceRate": "Should remain stable or improve slightly",
+      "ctaClickRate": "Should increase in line with conversions"
+    }
+  },
+  "decisionCriteria": {
+    "conditions": [
+      {
+        "metric": "conversion_rate",
+        "requirement": "Treatment must show statistically significant improvement (p < 0.05)",
+        "minEffect": 0.05,
+        "description": "At least 5% relative lift required"
+      },
+      {
+        "metric": "bounce_rate",
+        "requirement": "No significant increase in bounce rate",
+        "maxDegradation": 0.05,
+        "description": "Bounce rate can't increase more than 5%"
+      }
+    ],
+    "decisionMatrix": {
+      "ship_treatment": "Conversion rate up >5% with p<0.05, no guardrail violations",
+      "ship_control": "No significant difference or treatment performs worse",
+      "continue_testing": "Trending positive but not yet significant",
+      "abort": "Guardrail violations or negative impact"
+    }
+  },
+  "rolloutPlan": {
+    "strategy": "gradual",
+    "stages": [
+      {
+        "name": "Initial Validation",
+        "percentage": 0.10,
+        "duration": "2 days",
+        "checkpoints": ["No errors", "No significant quality degradation"]
+      },
+      {
+        "name": "Expanded Testing",
+        "percentage": 0.50,
+        "duration": "3 days",
+        "checkpoints": ["Guardrails passing", "Trending positive"]
+      },
+      {
+        "name": "Full Rollout",
+        "percentage": 1.0,
+        "duration": "permanent",
+        "checkpoints": ["Statistical significance achieved", "Product team approval"]
+      }
+    ],
+    "rollbackTriggers": [
+      "Guardrail violation",
+      "Error rate > 1%",
+      "Negative user feedback spike"
+    ]
+  },
+  "metadata": {
+    "owner": "growth_team",
+    "stakeholders": ["product_manager", "design_lead", "analytics_team"],
+    "priority": "high",
+    "estimatedImpact": {
+      "annualRevenue": "$50,000",
+      "description": "Based on 50,000 monthly visitors, 10% conversion lift, and $50 ARPU"
+    },
+    "relatedExperiments": [
+      "homepage_headline_test",
+      "cta_copy_variation"
+    ],
+    "notes": "Consider running follow-up experiment with different button sizes and positions if this succeeds."
+  }
+}
