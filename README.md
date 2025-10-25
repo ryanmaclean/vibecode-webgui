@@ -1,5 +1,33 @@
 # vibecode-webgui
 
+Web-based GUI for VibeCode - AI-powered development environment
+
+## 🚀 Quick Demo: Alpine ARM64 VMs with vfkit
+
+**Run a complete VibeCode demo in minutes on Apple Silicon!**
+
+```bash
+# One-command setup
+./scripts/vfkit/setup-demo-environment.sh
+
+# Includes:
+# - code-server (Web IDE)
+# - PostgreSQL (Database)
+# - Valkey (Redis alternative, compiled with musl)
+# - nginx (Reverse proxy)
+```
+
+**📖 [Complete Demo Guide](./docs/VFKIT_DEMO_GUIDE.md)** | **⚡ [Valkey ARM64 Build](./scripts/vfkit/compile-valkey-musl.sh)**
+
+### Why This Demo?
+
+- ✅ **Native ARM64**: Zero emulation overhead on M-Series Macs
+- ✅ **Minimal**: Alpine Linux (~130MB), fast boot (<6s)
+- ✅ **Production-Ready**: Real PostgreSQL + Valkey + code-server
+- ✅ **Efficient**: 8 CPU cores, 7GB RAM total (leaves plenty free)
+
+---
+
 ![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 ![Node](https://img.shields.io/badge/node-18.18.0 25.0.0-brightgreen.svg)
@@ -30,15 +58,18 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 ## Features
 
 🚀 **Next.js 15** - Latest React framework with App Router
-🤖 **AI Integration** - Unified LiteLLM gateway with multiple providers
+🤖 **RAG System** - PostgreSQL + pgvector + Valkey for intelligent retrieval
 🔒 **Security Hardened** - Comprehensive security middleware and monitoring
 📊 **Performance Monitoring** - Real-time metrics with Datadog integration
-💾 **Caching Layer** - Redis-based intelligent caching
+💾 **Caching Layer** - Valkey (Redis alternative) compiled for ARM64
 🗄️ **Database** - PostgreSQL with pgvector for AI embeddings
 🧪 **Testing** - Complete testing suite with Jest, Playwright, and TestContainers
 📚 **Documentation** - Auto-generated API docs and developer guides
-🐳 **Docker Support** - Full containerization with development environment
+🐳 **Alpine VMs** - Lightweight ARM64 VMs with vfkit
 🔧 **TypeScript** - Full type safety with strict configuration
+
+**📖 [Multi-Agent Workflow Complete](./docs/MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation  
+**📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview
 
 ## 🚀 GenAI Development VM
 
