@@ -5,6 +5,7 @@
  */
 
 import { datadogLLMTracker, type LLMExperimentMetrics } from './datadog-llm-tracking';
+import { datadogAgentTracker } from './datadog-agent-tracking';
 import RUMMonitoring from '../monitoring/rum-client';
 
 // Initialize Datadog RUM
@@ -31,14 +32,16 @@ export async function runSpeechTranscriptionExperiment(
   const variant = Math.random() < 0.5 ? 'gpt4' : 'gpt41';
   const model = variant === 'gpt4' ? 'gpt-4-turbo' : 'gpt-4-turbo-preview';
 
-  // Track assignment to Datadog
-  datadogLLMTracker.trackAssignment({
+  // Track assignment to Datadog (both RUM and Agent)
+  const assignment = {
     experimentKey,
     variantKey: variant,
     userId,
     sessionId: RUMMonitoring.getSessionInfo()?.sessionId,
     assignmentProbability: 0.5,
-  });
+  };
+  datadogLLMTracker.trackAssignment(assignment); // RUM (browser)
+  datadogAgentTracker.trackAssignment(assignment); // Agent (server)
 
   console.log(`[Experiment] Assigned user ${userId} to variant: ${variant}`);
 
@@ -87,28 +90,33 @@ export async function runSpeechTranscriptionExperiment(
       maxTokens: 1000,
     };
 
-    // Track to Datadog LLM Observability
-    datadogLLMTracker.trackLLMExperiment(metrics);
+    // Track to Datadog LLM Observability (both RUM and Agent)
+    datadogLLMTracker.trackLLMExperiment(metrics); // RUM (browser)
+    datadogAgentTracker.trackLLMExperiment(metrics); // Agent (server)
 
     // Track conversion metric (successful transcription)
-    datadogLLMTracker.trackMetric({
+    const conversionMetric = {
       experimentKey,
       variantKey: variant,
       userId,
       metricName: 'transcription_success',
       metricValue: 1,
-      metricType: 'conversion',
-    });
+      metricType: 'conversion' as const,
+    };
+    datadogLLMTracker.trackMetric(conversionMetric);
+    datadogAgentTracker.trackMetric(conversionMetric);
 
     // Track latency as continuous metric
-    datadogLLMTracker.trackMetric({
+    const latencyMetric = {
       experimentKey,
       variantKey: variant,
       userId,
       metricName: 'latency_ms',
       metricValue: latency,
-      metricType: 'continuous',
-    });
+      metricType: 'continuous' as const,
+    };
+    datadogLLMTracker.trackMetric(latencyMetric);
+    datadogAgentTracker.trackMetric(latencyMetric);
 
     console.log(`[Experiment] Tracked to Datadog - Variant: ${variant}, Latency: ${latency}ms, Cost: $${costUsd.toFixed(4)}`);
 
@@ -140,14 +148,16 @@ export async function runChatbotPerformanceExperiment(
   // Randomly assign variant
   const variant = Math.random() < 0.5 ? 'lazy_load' : 'preload';
 
-  // Track assignment
-  datadogLLMTracker.trackAssignment({
+  // Track assignment (both RUM and Agent)
+  const assignment = {
     experimentKey,
     variantKey: variant,
     userId,
     sessionId: RUMMonitoring.getSessionInfo()?.sessionId,
     assignmentProbability: 0.5,
-  });
+  };
+  datadogLLMTracker.trackAssignment(assignment);
+  datadogAgentTracker.trackAssignment(assignment);
 
   const startTime = Date.now();
   let coldStartTime: number | undefined;
@@ -184,29 +194,34 @@ export async function runChatbotPerformanceExperiment(
       qualityScore: 0.92,
     };
 
-    // Track to Datadog
+    // Track to Datadog (both RUM and Agent)
     datadogLLMTracker.trackLLMExperiment(metrics);
+    datadogAgentTracker.trackLLMExperiment(metrics);
 
     // Track specific metrics
     if (coldStartTime) {
-      datadogLLMTracker.trackMetric({
+      const coldStartMetric = {
         experimentKey,
         variantKey: variant,
         userId,
         metricName: 'cold_start_ms',
         metricValue: coldStartTime,
-        metricType: 'continuous',
-      });
+        metricType: 'continuous' as const,
+      };
+      datadogLLMTracker.trackMetric(coldStartMetric);
+      datadogAgentTracker.trackMetric(coldStartMetric);
     }
 
-    datadogLLMTracker.trackMetric({
+    const ttftMetric = {
       experimentKey,
       variantKey: variant,
       userId,
       metricName: 'ttft_ms',
       metricValue: ttftTime || 0,
-      metricType: 'continuous',
-    });
+      metricType: 'continuous' as const,
+    };
+    datadogLLMTracker.trackMetric(ttftMetric);
+    datadogAgentTracker.trackMetric(ttftMetric);
 
     console.log(`[Chatbot Experiment] Variant: ${variant}, Total: ${totalLatency}ms, TTFT: ${ttftTime}ms, Cold Start: ${coldStartTime || 0}ms`);
 
@@ -239,13 +254,15 @@ export async function runMultiModelExperiment(
   // Simple Thompson Sampling (replace with actual bandit logic)
   const selectedModel = models[Math.floor(Math.random() * models.length)];
 
-  // Track assignment
-  datadogLLMTracker.trackAssignment({
+  // Track assignment (both RUM and Agent)
+  const multiModelAssignment = {
     experimentKey,
     variantKey: selectedModel.key,
     userId,
     sessionId: RUMMonitoring.getSessionInfo()?.sessionId,
-  });
+  };
+  datadogLLMTracker.trackAssignment(multiModelAssignment);
+  datadogAgentTracker.trackAssignment(multiModelAssignment);
 
   const startTime = Date.now();
   let ttftTime: number | undefined;
@@ -281,27 +298,32 @@ export async function runMultiModelExperiment(
       responseLength: response.length,
     };
 
-    // Track to Datadog
+    // Track to Datadog (both RUM and Agent)
     datadogLLMTracker.trackLLMExperiment(metrics);
+    datadogAgentTracker.trackLLMExperiment(metrics);
 
     // Track quality and cost metrics
-    datadogLLMTracker.trackMetric({
+    const qualityMetric = {
       experimentKey,
       variantKey: selectedModel.key,
       userId,
       metricName: 'quality_score',
       metricValue: qualityScore,
-      metricType: 'continuous',
-    });
+      metricType: 'continuous' as const,
+    };
+    datadogLLMTracker.trackMetric(qualityMetric);
+    datadogAgentTracker.trackMetric(qualityMetric);
 
-    datadogLLMTracker.trackMetric({
+    const costMetric = {
       experimentKey,
       variantKey: selectedModel.key,
       userId,
       metricName: 'cost_usd',
       metricValue: costUsd,
-      metricType: 'continuous',
-    });
+      metricType: 'continuous' as const,
+    };
+    datadogLLMTracker.trackMetric(costMetric);
+    datadogAgentTracker.trackMetric(costMetric);
 
     console.log(`[Multi-Model] Selected: ${selectedModel.key}, Quality: ${qualityScore.toFixed(2)}, Cost: $${costUsd.toFixed(4)}`);
 
