@@ -6,5 +6,13 @@
     "debug.internalConsoleOptions": "neverOpen",
     "azureFunctions.projectLanguageModel": 4,
     "azureFunctions.preDeployTask": "npm prune (functions)",
-    "azureFunctions.projectSubpath": "azure-functions"
+    "azureFunctions.projectSubpath": "azure-functions",
+    "workbench.colorTheme": "Dark+ (default dark)",
+    "workbench.startupEditor": "none",
+    "workbench.welcome.enabled": false,
+    "workbench.welcomePage.walkthroughs.openOnInstall": false,
+    "workbench.tips.enabled": false,
+    "workbench.firstRun": false,
+    "workbench.hideWelcomeOnLaunch": true,
+    "workbench.welcomePage.experimental.allowWalkthroughs": false
 }
