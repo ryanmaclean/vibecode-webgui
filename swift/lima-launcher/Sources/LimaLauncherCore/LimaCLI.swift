@@ -99,11 +99,14 @@ public final class LimaLifecycleManager {
 
   public func start() throws -> String {
     let path = expandPath(options.configPath)
-    if !FileManager.default.fileExists(atPath: path) {
-      throw LimaLauncherError.commandFailed(1, "Config not found at \(path)")
+    var args: [String]
+    if FileManager.default.fileExists(atPath: path) && !instanceExists() {
+      args = ["start", "--name", options.name, "--tty=false", path]
+    } else {
+      args = ["start", options.name, "--tty=false"]
     }
-    let _ = try runner.run(arguments: ["start", options.name, "--config", path])
-    return "Lima VM \(options.name) started using \(path)"
+    let _ = try runner.run(arguments: args)
+    return "Lima VM \(options.name) started"
   }
 
   public func stop() throws -> String {
@@ -112,7 +115,7 @@ public final class LimaLifecycleManager {
   }
 
   public func status() throws -> String {
-    return try runner.run(arguments: ["info", options.name])
+    return try runner.run(arguments: ["list"])
   }
 
   public func shell(command: String?) throws -> String {
@@ -140,5 +143,12 @@ public final class LimaLifecycleManager {
     }
     let repoRoot = FileManager.default.currentDirectoryPath
     return URL(fileURLWithPath: repoRoot).appendingPathComponent(path).path
+  }
+
+  private func instanceExists() -> Bool {
+    let limaDir = FileManager.default.homeDirectoryForCurrentUser
+      .appendingPathComponent(".lima")
+      .appendingPathComponent(options.name)
+    return FileManager.default.fileExists(atPath: limaDir.path)
   }
 }
