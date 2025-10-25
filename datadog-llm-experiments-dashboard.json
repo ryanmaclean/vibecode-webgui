@@ -1,0 +1,494 @@
+{
+  "title": "VibeCode LLM Experiments - A/B Testing Dashboard",
+  "description": "Complete dashboard for tracking LLM experiments with Datadog observability",
+  "widgets": [
+    {
+      "id": 0,
+      "definition": {
+        "type": "note",
+        "content": "# LLM Experiments Overview\n\nThis dashboard tracks 3 active A/B experiments:\n1. **Speech Transcription**: GPT-4 vs GPT-4.1\n2. **Chatbot Performance**: Lazy Load vs Preload\n3. **Multi-Model Selection**: GPT-4, Claude, Gemini, Llama\n\nAll metrics prefixed with `vibecode.experiments.*`",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "id": 1,
+      "definition": {
+        "title": "Experiment Assignments by Variant",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.assignments{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 0,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "Total LLM Interactions",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.llm.interactions{*}.as_count()",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 3,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Average Cost per Request",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.cost.usd{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 6,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 6,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "Average Quality Score",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.quality.score{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 3
+      },
+      "layout": {
+        "x": 9,
+        "y": 2,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "Experiment 1: Speech Transcription - Latency by Variant",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.latency_ms{experiment:speech_transcription_model} by {variant}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Latency (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Experiment 1: Speech Transcription - Cost by Variant",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.cost.usd{experiment:speech_transcription_model} by {variant}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Cost (USD)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 6,
+        "y": 4,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Experiment 2: Chatbot Performance - Total Latency",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.latency_ms{experiment:chatbot_initialization_strategy} by {variant}",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Latency (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 2000",
+            "display_type": "error dashed",
+            "label": "Target Latency"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Experiment 2: Cold Start Time (Lazy Load)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.metrics.cold_start_ms{experiment:chatbot_initialization_strategy,variant:lazy_load}",
+            "display_type": "bars",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Cold Start (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "title": "Experiment 3: Multi-Model Quality Scores",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.quality.score{experiment:multi_model_selection} by {variant}",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Quality Score",
+          "scale": "linear",
+          "min": "0",
+          "max": "1",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 0.85",
+            "display_type": "ok dashed",
+            "label": "Quality Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 10,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "Experiment 3: Multi-Model Cost Comparison",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.experiments.llm.cost.usd{experiment:multi_model_selection} by {variant}",
+            "display_type": "line",
+            "style": {
+              "palette": "semantic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Cost per Request (USD)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 10,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "title": "Assignment Distribution by Experiment",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.assignments{*} by {experiment,variant}.as_count()"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 13,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "title": "Top Models by Usage",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.experiments.llm.interactions{*} by {model}.as_count(), 10, 'sum', 'desc')"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 13,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "title": "Token Usage by Experiment",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.llm.tokens.total{*} by {experiment}",
+            "display_type": "bars",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Total Tokens",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 16,
+        "width": 12,
+        "height": 3
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "title": "Guardrail Violations",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.guardrail_violations{*}.as_count()",
+            "aggregator": "sum",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 0,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": "<=",
+                "value": 0,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 0,
+        "y": 19,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "title": "Error Rate by Experiment",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.experiments.errors{*} by {experiment}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Errors",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        }
+      },
+      "layout": {
+        "x": 3,
+        "y": 19,
+        "width": 9,
+        "height": 2
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "experiment",
+      "default": "*",
+      "prefix": "experiment"
+    },
+    {
+      "name": "variant",
+      "default": "*",
+      "prefix": "variant"
+    },
+    {
+      "name": "env",
+      "default": "development",
+      "prefix": "env"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "reflow_type": "fixed"
+}
