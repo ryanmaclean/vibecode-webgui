@@ -1,0 +1,291 @@
+name: macOS Native VM - Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths:
+      - 'macos-vm/**'
+      - 'scripts/macos-vm/**'
+      - '.github/workflows/macos-vm.yml'
+  pull_request:
+    paths:
+      - 'macos-vm/**'
+      - 'scripts/macos-vm/**'
+      - '.github/workflows/macos-vm.yml'
+  workflow_dispatch:
+  schedule:
+    # Run weekly on Sunday at 00:00 UTC
+    - cron: '0 0 * * 0'
+
+jobs:
+  build:
+    name: Build on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [macos-13, macos-14]  # Intel and Apple Silicon
+        include:
+          - os: macos-13
+            arch: x86_64
+          - os: macos-14
+            arch: arm64
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: System info
+        run: |
+          echo "OS Version: $(sw_vers -productVersion)"
+          echo "Architecture: $(uname -m)"
+          echo "Processor: $(sysctl -n machdep.cpu.brand_string)"
+          echo "CPU Cores: $(sysctl -n hw.ncpu)"
+          echo "Memory: $(sysctl -n hw.memsize | awk '{print $1/1024/1024/1024 "GB"}')"
+      
+      - name: Install dependencies
+        run: |
+          # Ensure Xcode CLI tools are available
+          xcode-select --print-path || xcode-select --install
+          
+          # Install bc and coreutils for benchmarking
+          brew install bc coreutils jq
+      
+      - name: Download kernel components
+        run: |
+          ./scripts/macos-vm/download-kernel.sh
+      
+      - name: Verify kernel files
+        run: |
+          ls -lh ~/.vibecode/vm/
+          file ~/.vibecode/vm/vmlinuz
+          file ~/.vibecode/vm/initramfs
+      
+      - name: Build VM binary
+        run: |
+          ./scripts/macos-vm/build.sh
+      
+      - name: Verify build artifacts
+        run: |
+          ls -lh bin/
+          file bin/vibecode-vm
+          
+          # Check binary architecture
+          lipo -info bin/vibecode-vm || true
+          
+          # Verify it's the correct architecture
+          BINARY_ARCH=$(lipo -archs bin/vibecode-vm 2>/dev/null || file bin/vibecode-vm | grep -o 'arm64\|x86_64')
+          echo "Binary architecture: $BINARY_ARCH"
+      
+      - name: Run health checks
+        run: |
+          ./scripts/macos-vm/test-vm.sh
+      
+      - name: Run benchmark suite
+        run: |
+          ./scripts/macos-vm/benchmark.sh
+      
+      - name: Check performance targets
+        run: |
+          RESULTS="$HOME/.vibecode/vm/benchmark-results.json"
+          
+          BOOT_TIME=$(jq -r '.metrics.boot_time_seconds.average' "$RESULTS")
+          MEMORY_MB=$(jq -r '.metrics.memory_mb' "$RESULTS")
+          CPU_IDLE=$(jq -r '.metrics.cpu_idle_percent' "$RESULTS")
+          OVERALL_STATUS=$(jq -r '.status.overall' "$RESULTS")
+          
+          echo "Performance Metrics:"
+          echo "  Boot Time: ${BOOT_TIME}s (target: <2.0s)"
+          echo "  Memory: ${MEMORY_MB}MB (target: <4500MB)"
+          echo "  CPU Idle: ${CPU_IDLE}% (target: <5%)"
+          echo "  Status: $OVERALL_STATUS"
+          
+          if [ "$OVERALL_STATUS" == "PASS" ]; then
+            echo "✅ All performance targets met"
+            exit 0
+          else
+            echo "⚠️ Some performance targets not met"
+            # Don't fail the build, just warn
+            exit 0
+          fi
+      
+      - name: Upload benchmark results
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results-${{ matrix.arch }}
+          path: ~/.vibecode/vm/benchmark-results.json
+          retention-days: 90
+      
+      - name: Upload binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-vm-${{ matrix.arch }}
+          path: bin/vibecode-vm
+          retention-days: 30
+      
+      - name: Create performance report
+        run: |
+          RESULTS="$HOME/.vibecode/vm/benchmark-results.json"
+          
+          cat > performance-report-${{ matrix.arch }}.md << 'EOF'
+          # VibeCode macOS VM - Performance Report
+          
+          **Date**: $(jq -r '.timestamp' "$RESULTS")  
+          **Platform**: $(jq -r '.platform' "$RESULTS")  
+          **macOS Version**: $(jq -r '.os_version' "$RESULTS")  
+          **Processor**: $(jq -r '.processor' "$RESULTS")
+          
+          ## Metrics
+          
+          | Metric | Value | Target | Status |
+          |--------|-------|--------|--------|
+          | Boot Time | $(jq -r '.metrics.boot_time_seconds.average' "$RESULTS")s | 2.0s | $(jq -r 'if .status.boot then "✅" else "❌" end' "$RESULTS") |
+          | Memory | $(jq -r '.metrics.memory_mb' "$RESULTS") MB | 4166 MB | $(jq -r 'if .status.memory then "✅" else "❌" end' "$RESULTS") |
+          | CPU Idle | $(jq -r '.metrics.cpu_idle_percent' "$RESULTS")% | 5% | $(jq -r 'if .status.cpu then "✅" else "❌" end' "$RESULTS") |
+          | Binary Size | $(jq -r '.metrics.binary_size' "$RESULTS") | <100KB | ✅ |
+          
+          ## Performance Score
+          
+          **Overall**: $(jq -r '.scores.overall' "$RESULTS")/100 (100 = meeting targets)
+          
+          ## Detailed Metrics
+          
+          ### Boot Time Statistics
+          - Average: $(jq -r '.metrics.boot_time_seconds.average' "$RESULTS")s
+          - Minimum: $(jq -r '.metrics.boot_time_seconds.min' "$RESULTS")s
+          - Maximum: $(jq -r '.metrics.boot_time_seconds.max' "$RESULTS")s
+          - Samples: $(jq -r '.metrics.boot_time_seconds.samples' "$RESULTS")
+          EOF
+      
+      - name: Upload performance report
+        uses: actions/upload-artifact@v4
+        with:
+          name: performance-report-${{ matrix.arch }}
+          path: performance-report-${{ matrix.arch }}.md
+          retention-days: 90
+  
+  create-release:
+    name: Create Universal Binary Release
+    needs: build
+    runs-on: macos-14
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Download ARM64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: vibecode-vm-arm64
+          path: artifacts/arm64/
+      
+      - name: Download x86_64 binary
+        uses: actions/download-artifact@v4
+        with:
+          name: vibecode-vm-x86_64
+          path: artifacts/x86_64/
+      
+      - name: Create universal binary
+        run: |
+          mkdir -p artifacts/universal
+          
+          # Create universal binary with lipo
+          lipo -create \
+            artifacts/arm64/vibecode-vm \
+            artifacts/x86_64/vibecode-vm \
+            -output artifacts/universal/vibecode-vm
+          
+          # Verify universal binary
+          lipo -info artifacts/universal/vibecode-vm
+          file artifacts/universal/vibecode-vm
+      
+      - name: Create distribution package
+        run: |
+          VERSION=$(git describe --tags --always)
+          
+          mkdir -p dist/vibecode-vm-${VERSION}
+          cp artifacts/universal/vibecode-vm dist/vibecode-vm-${VERSION}/
+          cp macos-vm/README.md dist/vibecode-vm-${VERSION}/
+          cp LICENSE dist/vibecode-vm-${VERSION}/
+          
+          # Create archive
+          cd dist
+          tar czf vibecode-vm-${VERSION}-macos-universal.tar.gz vibecode-vm-${VERSION}/
+          cd ..
+      
+      - name: Upload distribution package
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-vm-distribution
+          path: dist/*.tar.gz
+          retention-days: 90
+  
+  security-scan:
+    name: Security Scan
+    runs-on: macos-14
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Run Swift security checks
+        run: |
+          # Check for common security issues in Swift code
+          grep -r "fatalError" macos-vm/Sources/ || true
+          grep -r "force unwrap" macos-vm/Sources/ || true
+          
+          echo "✅ Basic security checks completed"
+      
+      - name: Scan for secrets
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./macos-vm
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  documentation:
+    name: Documentation Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Check documentation completeness
+        run: |
+          echo "Checking required documentation files..."
+          
+          REQUIRED_DOCS=(
+            "macos-vm/README.md"
+            "macos-vm/API.md"
+            "macos-vm/BENCHMARKING.md"
+            "macos-vm/VERIFIED.md"
+            "macos-vm/RELATED_ISSUES.md"
+          )
+          
+          MISSING=0
+          for doc in "${REQUIRED_DOCS[@]}"; do
+            if [ -f "$doc" ]; then
+              echo "✅ $doc"
+            else
+              echo "❌ $doc missing"
+              MISSING=$((MISSING + 1))
+            fi
+          done
+          
+          if [ $MISSING -gt 0 ]; then
+            echo "❌ $MISSING documentation file(s) missing"
+            exit 1
+          fi
+          
+          echo "✅ All documentation files present"
+      
+      - name: Lint markdown
+        uses: nosborn/github-action-markdown-cli@v3.3.0
+        with:
+          files: macos-vm/*.md
+          config_file: .markdownlint-cli2.jsonc

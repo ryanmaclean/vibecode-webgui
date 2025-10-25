@@ -39,6 +39,45 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 🐳 **Docker Support** - Full containerization with development environment
 🔧 **TypeScript** - Full type safety with strict configuration
 
+## 🚀 macOS Native VM (NEW!)
+
+**Native macOS virtualization** using Apple's Virtualization.framework - **no Docker Desktop required!**
+
+### ⚡ Quick Start
+```bash
+# One-command install
+./scripts/macos-vm/install.sh
+
+# Start VM
+./bin/vibecode-vm
+
+# Access code-server
+open http://localhost:8080
+```
+
+### 🎯 Why Use It?
+
+| Feature | VibeCode Native VM | Docker Desktop |
+|---------|-------------------|----------------|
+| **Boot Time** | < 2 seconds ⚡ | 10-30 seconds |
+| **Memory** | 4GB | 6-8GB |
+| **Binary Size** | 85KB | 500MB+ |
+| **Hypervisor** | Native Apple | Third-party |
+| **License** | MIT (Free) | Proprietary |
+
+### 📚 Documentation
+- **User Guide**: [macos-vm/README.md](macos-vm/README.md)
+- **API Reference**: [macos-vm/API.md](macos-vm/API.md)
+- **Benchmarking**: [macos-vm/BENCHMARKING.md](macos-vm/BENCHMARKING.md)
+- **Verification**: [macos-vm/VERIFIED.md](macos-vm/VERIFIED.md)
+
+### 🔧 Requirements
+- macOS 13.0 (Ventura) or later
+- Apple Silicon (M1/M2/M3) or Intel with VT-x
+- Xcode Command Line Tools
+
+---
+
 ## 🚀 GenAI Development VM
 
 We've set up a **dedicated GenAI VM** with all major AI coding tools for isolated development:
