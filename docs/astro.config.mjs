@@ -124,6 +124,15 @@ export default defineConfig({
           ]
         },
         {
+          label: 'CLI Tools',
+          collapsed: true,
+          items: [
+            { label: 'Overview', link: '/cli-tools/' },
+            { label: 'User Guide', link: '/cli-tools/user-guide/' },
+            { label: 'Architecture', link: '/cli-tools/architecture/' }
+          ]
+        },
+        {
           label: 'Wiki & Sessions',
           collapsed: true,
           items: [
