@@ -42,6 +42,7 @@ fn main() {
             commands::start_mdns_service,
             commands::discover_vibecode_sessions,
             commands::stop_mdns_service,
+            commands::start_vfkit_vm,
             commands::start_containers,
             commands::stop_containers,
             commands::restart_containers,
@@ -53,12 +54,32 @@ fn main() {
                 eprintln!("Failed to create system tray: {}", e);
             }
 
-            // Start code-server automatically
+            // Try vfkit VM first, fallback to direct code-server
             let _app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
-                match commands::start_code_server().await {
-                    Ok(msg) => println!("{}", msg),
-                    Err(e) => eprintln!("Failed to start code-server: {}", e),
+                // Try to start vfkit VM with Datadog tracing
+                match commands::start_vfkit_vm().await {
+                    Ok(msg) => {
+                        println!("✅ {}", msg);
+                        // Wait for VM to boot (20 seconds as mentioned)
+                        tokio::time::sleep(tokio::time::Duration::from_secs(20)).await;
+                        
+                        // Start code-server after VM is ready
+                        match commands::start_code_server().await {
+                            Ok(msg) => println!("✅ {}", msg),
+                            Err(e) => eprintln!("❌ Failed to start code-server: {}", e),
+                        }
+                    },
+                    Err(e) => {
+                        println!("⚠️  vfkit VM not available: {}", e);
+                        println!("🔄 Falling back to direct code-server...");
+                        
+                        // Fallback to direct code-server if VM fails
+                        match commands::start_code_server().await {
+                            Ok(msg) => println!("✅ Fallback: {}", msg),
+                            Err(e) => eprintln!("❌ Failed to start code-server fallback: {}", e),
+                        }
+                    }
                 }
             });
 

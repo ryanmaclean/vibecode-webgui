@@ -13,6 +13,23 @@ import * as path from 'path';
 import * as os from 'os';
 
 const exec = promisify(execCallback);
+let __tracer: any;
+function getTracer() {
+  if (!__tracer) {
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-var-requires
+      const t = require('dd-trace');
+      if (!t._initialized) {
+        t.init({ service: process.env.DD_SERVICE || 'vibecode-webgui' });
+        t._initialized = true;
+      }
+      __tracer = t;
+    } catch {
+      __tracer = { startSpan: () => ({ setTag() {}, finish() {} }) };
+    }
+  }
+  return __tracer;
+}
 
 export class VfkitProvider implements VMProvider {
   name = 'vfkit';
@@ -33,23 +50,43 @@ export class VfkitProvider implements VMProvider {
   
   async create(config: VMConfig): Promise<VM> {
     logger.info('Creating vfkit VM', { name: config.name });
+    const span = getTracer().startSpan('vfkit.create');
+    span.setTag('vm.name', config.name);
     
     const vmDir = path.join(this.vmBaseDir, config.name);
     
     // Create directory structure
+    const sDirs = getTracer().startSpan('vfkit.create.directories');
     await this.createDirectories(vmDir);
+    sDirs.finish();
     
     // Download/ensure Alpine kernel
+    const sKernel = getTracer().startSpan('vfkit.create.ensureKernel');
     await this.ensureKernel(vmDir, config);
+    sKernel.finish();
     
     // Create rootfs
+    const sRootfs = getTracer().startSpan('vfkit.create.ensureRootfs');
     await this.ensureRootfs(vmDir, config);
+    sRootfs.finish();
     
     // Create disk image
+    const sDisk = getTracer().startSpan('vfkit.create.createDisk');
     await this.createDisk(vmDir, config.disk);
+    sDisk.finish();
     
     // Launch VM
-    return await this.launch(vmDir, config);
+    const sLaunch = getTracer().startSpan('vfkit.create.launch');
+    try {
+      const vm = await this.launch(vmDir, config);
+      sLaunch.finish();
+      span.finish();
+      return vm;
+    } catch (e) {
+      sLaunch.finish();
+      span.finish();
+      throw e;
+    }
   }
   
   async start(vmId: string): Promise<void> {
@@ -196,36 +233,41 @@ export class VfkitProvider implements VMProvider {
     } catch {
       // Need to download kernel
     }
-    
-    logger.info('Downloading Alpine 3.22 kernel...');
-    
-    const alpineVersion = '3.22.2';
-    const arch = config.arch || 'aarch64';
-    const isoUrl = `https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/${arch}/alpine-virt-${alpineVersion}-${arch}.iso`;
-    const isoPath = path.join(kernelDir, `alpine-virt-${alpineVersion}-${arch}.iso`);
-    
-    // Download ISO
-    await exec(`curl -L -o ${isoPath} ${isoUrl}`);
-    
-    // Extract kernel
-    const mountPoint = '/tmp/alpine-mount';
-    await exec(`mkdir -p ${mountPoint}`);
-    await exec(`hdiutil attach ${isoPath} -mountpoint ${mountPoint}`);
-    
+    const span = getTracer().startSpan('vfkit.ensureKernel');
+    logger.info('Downloading Alpine netboot kernel...');
+    const alpineVersion = 'v3.22';
+    const arch = (config.arch === 'x86_64' ? 'x86_64' : 'aarch64');
+    const baseUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/netboot`;
+    const vmlinuzUrl = `${baseUrl}/vmlinuz-virt`;
+    const initramfsUrl = `${baseUrl}/initramfs-virt`;
+    const vmlinuzPath = path.join(kernelDir, 'vmlinuz');
+    const initramfsPath = path.join(kernelDir, 'initramfs');
     try {
-      // Copy compressed kernel
-      await exec(`cp ${mountPoint}/boot/vmlinuz-virt ${path.join(kernelDir, 'vmlinuz')}`);
-      
-      // Decompress kernel (vfkit needs uncompressed)
-      await exec(`gunzip -c ${path.join(kernelDir, 'vmlinuz')} > ${vmlinuxPath}`);
-      
-      // Copy initramfs
-      await exec(`cp ${mountPoint}/boot/initramfs-virt ${path.join(kernelDir, 'initramfs')}`);
-    } finally {
-      await exec(`hdiutil detach ${mountPoint}`);
+      await exec(`curl -fL -o ${vmlinuzPath} ${vmlinuzUrl}`);
+      await exec(`curl -fL -o ${initramfsPath} ${initramfsUrl}`);
+      await exec(`gunzip -c ${vmlinuzPath} > ${vmlinuxPath} || cp ${vmlinuzPath} ${vmlinuxPath}`);
+      logger.info('Netboot kernel downloaded');
+      span.finish();
+      return;
+    } catch (e) {
+      logger.warn('Netboot fetch failed, falling back to ISO', { e });
+      const isoVer = '3.22.2';
+      const isoUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/alpine-virt-${isoVer}-${arch}.iso`;
+      const isoPath = path.join(kernelDir, `alpine-virt-${isoVer}-${arch}.iso`);
+      await exec(`curl -L -o ${isoPath} ${isoUrl}`);
+      const mountPoint = '/tmp/alpine-mount';
+      await exec(`mkdir -p ${mountPoint}`);
+      await exec(`hdiutil attach ${isoPath} -mountpoint ${mountPoint}`);
+      try {
+        await exec(`cp ${mountPoint}/boot/vmlinuz-virt ${vmlinuzPath}`);
+        await exec(`gunzip -c ${vmlinuzPath} > ${vmlinuxPath} || cp ${vmlinuzPath} ${vmlinuxPath}`);
+        await exec(`cp ${mountPoint}/boot/initramfs-virt ${initramfsPath}`);
+      } finally {
+        await exec(`hdiutil detach ${mountPoint}`);
+      }
+      span.finish();
+      logger.info('Kernel downloaded and extracted');
     }
-    
-    logger.info('Kernel downloaded and extracted');
   }
   
   /**
@@ -299,13 +341,14 @@ export class VfkitProvider implements VMProvider {
       '--device', 'virtio-net,nat',
       '--device', `virtio-serial,logFilePath=${consolePath}`,
       '--device', 'virtio-rng',
-      '--kernel-cmdline', 'console=hvc0 quiet'
+      '--kernel-cmdline', 'console=hvc0 random.trust_cpu=on ipv6.disable=1 net.ifnames=0 quiet'
     ];
     
     // Add port forwarding (if supported)
     // Note: vfkit doesn't natively support port forwarding
     // Would need SSH tunneling or other workaround
     
+    const span = getTracer().startSpan('vfkit.launch');
     // Spawn vfkit process
     const proc = spawn('vfkit', args, {
       detached: true,
@@ -322,8 +365,12 @@ export class VfkitProvider implements VMProvider {
     const configPath = path.join(vmDir, 'config.json');
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
     
-    // Wait for VM to boot
-    await new Promise(resolve => setTimeout(resolve, 3000));
+    const bootSpan = getTracer().startSpan('vfkit.boot.wait');
+    const waitStart = Date.now();
+    await new Promise(resolve => setTimeout(resolve, 2500));
+    bootSpan.setTag('boot.wait.ms', Date.now() - waitStart);
+    bootSpan.finish();
+    span.finish();
     
     return {
       id: config.name,
