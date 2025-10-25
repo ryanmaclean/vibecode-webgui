@@ -149,6 +149,9 @@ fast-openvscode-vm/rootfs/tmp/
 # Insiders VM - same pattern
 fast-openvscode-vm-insiders/
 
+# Benchmark kernel builds
+bench-images/
+
 # Build artifacts and work directories
 artifacts/
 

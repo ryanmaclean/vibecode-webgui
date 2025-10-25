@@ -1,0 +1,90 @@
+{
+  "timestamp": 1759457208.587394,
+  "runs": 3,
+  "results": [
+    {
+      "name": "busybox_initramfs",
+      "description": "Custom BusyBox initramfs (MiniVim x86_64 kernel)",
+      "runs": 3,
+      "avg_total_seconds": 4.383867267364015,
+      "avg_vi_seconds": 0.11336857592687011,
+      "min_total_seconds": 4.330910229124129,
+      "max_total_seconds": 4.477732105879113,
+      "min_vi_seconds": 0.11190470797009766,
+      "max_vi_seconds": 0.11411010194569826,
+      "totals": [
+        4.477732105879113,
+        4.342959467088804,
+        4.330910229124129
+      ],
+      "vi_samples": [
+        0.1140909178648144,
+        0.11190470797009766,
+        0.11411010194569826
+      ]
+    },
+    {
+      "name": "openwrt_busybox",
+      "description": "OpenWrt 23.05.4 x86_64 (BusyBox userland)",
+      "runs": 3,
+      "avg_total_seconds": 18.79985941333386,
+      "avg_vi_seconds": 0.0703107847366482,
+      "min_total_seconds": 18.578421999001876,
+      "max_total_seconds": 18.991762208053842,
+      "min_vi_seconds": 0.06585278711281717,
+      "max_vi_seconds": 0.07879838696680963,
+      "totals": [
+        18.578421999001876,
+        18.829394032945856,
+        18.991762208053842
+      ],
+      "vi_samples": [
+        0.06628118013031781,
+        0.06585278711281717,
+        0.07879838696680963
+      ]
+    },
+    {
+      "name": "tinycore",
+      "description": "TinyCore Linux 16.2 (serial autologin)",
+      "runs": 3,
+      "avg_total_seconds": 15.086920856342962,
+      "avg_vi_seconds": 0.13615064431602755,
+      "min_total_seconds": 14.99148429906927,
+      "max_total_seconds": 15.19611639692448,
+      "min_vi_seconds": 0.13525584596209228,
+      "max_vi_seconds": 0.13695248495787382,
+      "totals": [
+        14.99148429906927,
+        15.19611639692448,
+        15.073161873035133
+      ],
+      "vi_samples": [
+        0.13624360202811658,
+        0.13525584596209228,
+        0.13695248495787382
+      ]
+    },
+    {
+      "name": "yocto_core_image_minimal",
+      "description": "Yocto 5.2.3 core-image-minimal (qemux86-64)",
+      "runs": 3,
+      "avg_total_seconds": 12.89009607420303,
+      "avg_vi_seconds": 0.07590699071685474,
+      "min_total_seconds": 12.399059038842097,
+      "max_total_seconds": 13.65962086385116,
+      "min_vi_seconds": 0.07452546898275614,
+      "max_vi_seconds": 0.07819538004696369,
+      "totals": [
+        13.65962086385116,
+        12.611608319915831,
+        12.399059038842097
+      ],
+      "vi_samples": [
+        0.07819538004696369,
+        0.07452546898275614,
+        0.07500012312084436
+      ]
+    }
+  ]
+}
