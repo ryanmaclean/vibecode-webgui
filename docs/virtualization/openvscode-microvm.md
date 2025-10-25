@@ -94,8 +94,9 @@ Wire this into CI/nightlies so both tarballs and JSON metrics publish together.
 
 - The new `swift/lima-launcher` package wraps `limactl` via a Swift CLI so Intel
   hosts can boot the `vm-assets/ide-lima.yaml` profile without juggling the
-  larger bash toolkit.
-- Build it with `swift build` and run `swift run lima-launcher start --config vm-assets/ide-lima.yaml`.
-- Use `swift run lima-launcher forward --port 8080` to expose code-server inside
-  the Lima guest at `http://127.0.0.1:8080`—handy when testing Tauri or
-  hypervisor orchestration that expects the classic port 8080 workflow.
+  larger bash toolkit. You can call it directly (`swift run --package-path swift/lima-launcher lima-launcher …`) or via the npm scripts below.
+- Quick helpers:
+  - `npm run lima:start`
+  - `npm run lima:status`
+  - `npm run lima:stop`
+- Use `swift run --package-path swift/lima-launcher lima-launcher forward --port 8080` (or hand-wire an ssh tunnel) to expose code-server inside the Lima guest at `http://127.0.0.1:8080`—handy when testing Tauri or hypervisor orchestration that expects the classic port 8080 workflow.
