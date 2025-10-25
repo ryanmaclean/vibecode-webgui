@@ -68,6 +68,7 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 🐳 **Alpine VMs** - Lightweight ARM64 VMs with vfkit
 🔧 **TypeScript** - Full type safety with strict configuration
 
+**🌟 [Platform Overview](./docs/PLATFORM_OVERVIEW.md)** - Complete system overview  
 **📖 [Multi-Agent Workflow Complete](./docs/MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation  
 **📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview  
 **🛠️ [VibeCode CLI](./cli-tools/README.md)** - Unified development toolkit
