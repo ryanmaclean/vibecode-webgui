@@ -20,7 +20,7 @@ Run VibeCode in a lightweight Alpine Linux ARM64 VM using vfkit on macOS with Ap
 
 ⚠️ **Limitations:**
 - **VirtioFS file sharing** - Requires full Alpine installation (not available in initramfs-only mode)
-- **Services** - PostgreSQL, Redis need manual installation via `vm-setup-services.sh`
+- **Services** - PostgreSQL, Redis/Valkey need manual installation via `vm-setup-services.sh` or deployment scripts
 - **Port forwarding** - Not directly supported by vfkit (use SSH tunneling)
 
 📖 **See [QUICK_START.md](./QUICK_START.md) for detailed usage guide and workarounds**
@@ -528,4 +528,7 @@ rm -rf ~/.vfkit/vms/vibecode-alpine
 - [BOOT_TIME_COMPARISON.md](./BOOT_TIME_COMPARISON.md) - Boot performance analysis
 - [KERNEL_OPTIMIZATION_ANALYSIS.md](./KERNEL_OPTIMIZATION_ANALYSIS.md) - Kernel optimization details
 - [NODE_24_UPGRADE.md](./NODE_24_UPGRADE.md) - Node.js 24 upgrade process
+- [VALKEY_DEPLOYMENT.md](./VALKEY_DEPLOYMENT.md) - Valkey cache deployment guide
+- [VALKEY_QUICK_REFERENCE.md](./VALKEY_QUICK_REFERENCE.md) - Valkey quick reference
 - [WIKI.md](./WIKI.md) - Comprehensive wiki and troubleshooting
+- [INDEX.md](./INDEX.md) - Complete documentation index
