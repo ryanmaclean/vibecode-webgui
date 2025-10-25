@@ -46,6 +46,9 @@ fn main() {
             commands::start_containers,
             commands::stop_containers,
             commands::restart_containers,
+            commands::start_lima_vm,
+            commands::stop_lima_vm,
+            commands::status_lima_vm,
             commands::start_code_server,
         ])
         .setup(|app| {

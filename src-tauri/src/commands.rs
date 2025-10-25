@@ -1,6 +1,11 @@
 use crate::docker;
 use crate::mdns::{DiscoveredService, VibeCodeService};
+use std::process::{Command, Stdio};
 use tauri::command;
+
+const LIMA_PACKAGE_PATH: &str = "swift/lima-launcher";
+const LIMA_INSTANCE: &str = "ide-lima";
+const LIMA_CONFIG: &str = "vm-assets/ide-lima.yaml";
 
 #[command]
 pub fn greet(name: &str) -> String {
@@ -118,6 +123,44 @@ pub async fn stop_containers() -> Result<String, String> {
 #[command]
 pub async fn restart_containers() -> Result<String, String> {
     docker::restart_containers().await
+}
+
+fn run_lima_launcher(args: &[&str]) -> Result<String, String> {
+    let output = Command::new("swift")
+        .arg("run")
+        .arg("--package-path")
+        .arg(LIMA_PACKAGE_PATH)
+        .arg("lima-launcher")
+        .args(args)
+        .output()
+        .map_err(|e| format!("Failed to execute swift: {}", e))?;
+
+    if output.status.success() {
+        String::from_utf8(output.stdout).map_err(|e| e.to_string())
+    } else {
+        Err(String::from_utf8(output.stderr).unwrap_or_else(|_| "Unknown error".to_string()))
+    }
+}
+
+#[command]
+pub async fn start_lima_vm() -> Result<String, String> {
+    run_lima_launcher(&[
+        "start",
+        "--name",
+        LIMA_INSTANCE,
+        "--config",
+        LIMA_CONFIG,
+    ])
+}
+
+#[command]
+pub async fn stop_lima_vm() -> Result<String, String> {
+    run_lima_launcher(&["stop", "--name", LIMA_INSTANCE])
+}
+
+#[command]
+pub async fn status_lima_vm() -> Result<String, String> {
+    run_lima_launcher(&["status"])
 }
 
 #[command]

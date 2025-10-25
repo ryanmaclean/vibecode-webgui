@@ -11,6 +11,9 @@ export interface TauriCommands {
   greet: (name: string) => Promise<string>;
   checkDocker: () => Promise<boolean>;
   getDockerVersion: () => Promise<string>;
+  startLimaVm: () => Promise<string>;
+  stopLimaVm: () => Promise<string>;
+  statusLimaVm: () => Promise<string>;
 }
 
 /**
@@ -58,6 +61,15 @@ export const tauriCommands: TauriCommands = {
 
   getDockerVersion: () =>
     invokeTauri<string>('get_docker_version'),
+
+  startLimaVm: () =>
+    invokeTauri<string>('start_lima_vm'),
+
+  stopLimaVm: () =>
+    invokeTauri<string>('stop_lima_vm'),
+
+  statusLimaVm: () =>
+    invokeTauri<string>('status_lima_vm'),
 };
 
 /**
