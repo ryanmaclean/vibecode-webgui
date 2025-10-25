@@ -52,8 +52,16 @@ if [[ ! -d "$CHROME_APP" ]]; then
   exit 1
 fi
 
-log "Starting Lima VM via npm run lima:start"
-( cd "$REPO_ROOT" && npm run --silent lima:start ) >/dev/null
+start_lima_vm() {
+  if [[ -n "${LIMA_LAUNCHER_BIN:-}" && -x "$LIMA_LAUNCHER_BIN" ]]; then
+    "$LIMA_LAUNCHER_BIN" start --name "${LIMA_INSTANCE_NAME:-ide-lima}" --config "$REPO_ROOT/vm-assets/ide-lima.yaml" >/dev/null
+  else
+    ( cd "$REPO_ROOT" && npm run --silent lima:start ) >/dev/null
+  fi
+}
+
+log "Starting Lima VM via ${LIMA_LAUNCHER_BIN:-npm run lima:start}"
+start_lima_vm
 
 log "Ensuring code-server is installed and running inside ide-lima"
 limactl shell ide-lima -- sudo env CODE_SERVER_VERSION="'$CODE_SERVER_VERSION'" ash -c '
