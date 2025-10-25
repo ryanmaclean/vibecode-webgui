@@ -89,3 +89,13 @@ Wire this into CI/nightlies so both tarballs and JSON metrics publish together.
 - The initramfs directories (`fast-openvscode-vm*/`) stay outside git; regenerate
   them via `find .../rootfs | cpio --null -ov --format=newc | gzip` whenever the
   rootfs tree changes.
+
+## Swift helper for Lima (Intel macOS experimentation)
+
+- The new `swift/lima-launcher` package wraps `limactl` via a Swift CLI so Intel
+  hosts can boot the `vm-assets/ide-lima.yaml` profile without juggling the
+  larger bash toolkit.
+- Build it with `swift build` and run `swift run lima-launcher start --config vm-assets/ide-lima.yaml`.
+- Use `swift run lima-launcher forward --port 8080` to expose code-server inside
+  the Lima guest at `http://127.0.0.1:8080`—handy when testing Tauri or
+  hypervisor orchestration that expects the classic port 8080 workflow.
