@@ -104,19 +104,179 @@ impl AIManager {
         })
     }
 
-    /// OpenAI chat (stub for future implementation)
+    /// OpenAI chat
     async fn chat_openai(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
-        Err("OpenAI provider not yet implemented".to_string())
+        let url = "https://api.openai.com/v1/chat/completions";
+        
+        let openai_messages: Vec<serde_json::Value> = request
+            .messages
+            .iter()
+            .map(|msg| {
+                serde_json::json!({
+                    "role": msg.role,
+                    "content": msg.content,
+                })
+            })
+            .collect();
+
+        let openai_request = serde_json::json!({
+            "model": request.model,
+            "messages": openai_messages,
+            "temperature": request.temperature.unwrap_or(0.7),
+            "max_tokens": request.max_tokens.unwrap_or(2000),
+        });
+
+        let api_key = self.config.openai_key
+            .as_ref()
+            .ok_or("OpenAI API key not set (OPENAI_API_KEY)")?;
+
+        let response = self
+            .client
+            .post(url)
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("Content-Type", "application/json")
+            .json(&openai_request)
+            .send()
+            .await
+            .map_err(|e| format!("OpenAI request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("OpenAI error: {}", error_text));
+        }
+
+        let data: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse OpenAI response: {}", e))?;
+
+        Ok(AIChatResponse {
+            content: data["choices"][0]["message"]["content"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            model: request.model,
+            provider: "openai".to_string(),
+            tokens_used: data["usage"]["total_tokens"].as_u64().map(|t| t as u32),
+            cached: false,
+        })
     }
 
-    /// Anthropic chat (stub for future implementation)
+    /// Anthropic chat (Claude)
     async fn chat_anthropic(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
-        Err("Anthropic provider not yet implemented".to_string())
+        let url = "https://api.anthropic.com/v1/messages";
+        
+        let anthropic_messages: Vec<serde_json::Value> = request
+            .messages
+            .iter()
+            .map(|msg| {
+                serde_json::json!({
+                    "role": msg.role,
+                    "content": msg.content,
+                })
+            })
+            .collect();
+
+        let anthropic_request = serde_json::json!({
+            "model": request.model,
+            "messages": anthropic_messages,
+            "max_tokens": request.max_tokens.unwrap_or(2000),
+            "temperature": request.temperature.unwrap_or(0.7),
+        });
+
+        let api_key = self.config.anthropic_key
+            .as_ref()
+            .ok_or("Anthropic API key not set (ANTHROPIC_API_KEY)")?;
+
+        let response = self
+            .client
+            .post(url)
+            .header("x-api-key", api_key)
+            .header("anthropic-version", "2023-06-01")
+            .header("Content-Type", "application/json")
+            .json(&anthropic_request)
+            .send()
+            .await
+            .map_err(|e| format!("Anthropic request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("Anthropic error: {}", error_text));
+        }
+
+        let data: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse Anthropic response: {}", e))?;
+
+        Ok(AIChatResponse {
+            content: data["content"][0]["text"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            model: request.model,
+            provider: "anthropic".to_string(),
+            tokens_used: data["usage"]["output_tokens"].as_u64().map(|t| t as u32),
+            cached: false,
+        })
     }
 
-    /// OpenRouter chat (stub for future implementation)
+    /// OpenRouter chat (unified API for multiple models)
     async fn chat_openrouter(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
-        Err("OpenRouter provider not yet implemented".to_string())
+        let url = "https://openrouter.ai/api/v1/chat/completions";
+        
+        let openrouter_messages: Vec<serde_json::Value> = request
+            .messages
+            .iter()
+            .map(|msg| {
+                serde_json::json!({
+                    "role": msg.role,
+                    "content": msg.content,
+                })
+            })
+            .collect();
+
+        let openrouter_request = serde_json::json!({
+            "model": request.model,
+            "messages": openrouter_messages,
+            "temperature": request.temperature.unwrap_or(0.7),
+            "max_tokens": request.max_tokens.unwrap_or(2000),
+        });
+
+        let api_key = self.config.openrouter_key
+            .as_ref()
+            .ok_or("OpenRouter API key not set (OPENROUTER_API_KEY)")?;
+
+        let response = self
+            .client
+            .post(url)
+            .header("Authorization", format!("Bearer {}", api_key))
+            .header("Content-Type", "application/json")
+            .json(&openrouter_request)
+            .send()
+            .await
+            .map_err(|e| format!("OpenRouter request failed: {}", e))?;
+
+        if !response.status().is_success() {
+            let error_text = response.text().await.unwrap_or_default();
+            return Err(format!("OpenRouter error: {}", error_text));
+        }
+
+        let data: serde_json::Value = response
+            .json()
+            .await
+            .map_err(|e| format!("Failed to parse OpenRouter response: {}", e))?;
+
+        Ok(AIChatResponse {
+            content: data["choices"][0]["message"]["content"]
+                .as_str()
+                .unwrap_or("")
+                .to_string(),
+            model: request.model,
+            provider: "openrouter".to_string(),
+            tokens_used: data["usage"]["total_tokens"].as_u64().map(|t| t as u32),
+            cached: false,
+        })
     }
 
     /// Select best provider based on availability and preferences
