@@ -129,6 +129,12 @@ chmod +x VibeCode_*_amd64.AppImage
 - ✅ **System Integration** - Native menus, notifications, and tray icons
 - ✅ **Code Signed** - Signed and notarized for security
 
+### Compatibility
+
+- `code-server` is not supported on WebKit/Safari and cannot be embedded in Tauri.
+- Use a Chromium-based browser (Chrome, Edge, Brave) to access `code-server`.
+- Treat the Tauri desktop app as a separate distribution path (not a wrapper around `code-server`).
+
 ### Build from Source
 
 Want to build the desktop app yourself? See our comprehensive build guide:

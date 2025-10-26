@@ -1,5 +1,6 @@
 {
   "recommendations": [
     "vibecode.vibecode-ai-assistant"
-  ]
+  ],
+  "unwantedRecommendations": []
 }
