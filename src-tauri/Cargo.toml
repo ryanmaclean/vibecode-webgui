@@ -18,6 +18,8 @@ bollard = "0.18"
 mdns-sd = "0.11"
 hostname = "0.4"
 thiserror = "2"
+url = "2"
+dirs = "5"
 
 [profile.release]
 # optimize for small binary size

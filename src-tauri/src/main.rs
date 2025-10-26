@@ -1,6 +1,7 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod browser;
 mod commands;
 mod docker;
 mod mdns;
@@ -32,6 +33,8 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
         .invoke_handler(tauri::generate_handler![
+            browser::open_browser_window,
+            browser::navigate_to,
             commands::greet,
             commands::ping,
             commands::launch_browser,
