@@ -42,6 +42,7 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 ## Table of Contents
 
 - [Features](#features)
+- [Desktop Application](#desktop-application)
 - [Quick Start](#quick-start)
 - [Project Structure](#project-structure)
 - [API Documentation](#api-documentation)
@@ -68,10 +69,100 @@ A comprehensive AI-powered development platform with advanced monitoring, securi
 🐳 **Alpine VMs** - Lightweight ARM64 VMs with vfkit
 🔧 **TypeScript** - Full type safety with strict configuration
 
-**🌟 [Platform Overview](./docs/PLATFORM_OVERVIEW.md)** - Complete system overview  
-**📖 [Multi-Agent Workflow Complete](./docs/MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation  
-**📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview  
+**🌟 [Platform Overview](./docs/PLATFORM_OVERVIEW.md)** - Complete system overview
+**📖 [Multi-Agent Workflow Complete](./docs/MULTI_AGENT_WORKFLOW_COMPLETE.md)** - Full implementation
+**📖 [RAG System Architecture](./docs/ARCHITECTURE_RAG_SYSTEM.md)** - Complete technical overview
 **🛠️ [VibeCode CLI](./cli-tools/README.md)** - Unified development toolkit
+
+## 💻 Desktop Application
+
+VibeCode is available as a native desktop application for macOS, Linux, and Windows!
+
+### Download Latest Release
+
+**[📥 Download VibeCode Desktop](https://github.com/your-repo/releases/latest)**
+
+#### Available Platforms
+
+| Platform | Architectures | Package Formats |
+|----------|--------------|-----------------|
+| **macOS** | Universal (Intel + Apple Silicon) | `.dmg`, `.app` |
+| **Linux** | x86_64, ARM64 | `.deb`, `.AppImage`, `.rpm` |
+| **Windows** | x86_64 | `.msi`, `.exe` |
+
+### Quick Installation
+
+**macOS:**
+```bash
+# Download and install the DMG
+# Or use Homebrew (coming soon)
+brew install --cask vibecode
+```
+
+**Linux (Ubuntu/Debian):**
+```bash
+# x86_64
+sudo dpkg -i VibeCode_*_amd64.deb
+
+# ARM64
+sudo dpkg -i VibeCode_*_arm64.deb
+```
+
+**Linux (AppImage):**
+```bash
+chmod +x VibeCode_*_amd64.AppImage
+./VibeCode_*_amd64.AppImage
+```
+
+**Windows:**
+```powershell
+# Download and run the MSI or NSIS installer
+# Double-click to install
+```
+
+### Features
+
+- ✅ **Native Performance** - Built with Tauri and Rust
+- ✅ **Cross-Platform** - Consistent experience across all platforms
+- ✅ **Auto-Updates** - Automatic updates for new features and fixes
+- ✅ **Offline Support** - Full functionality without internet
+- ✅ **System Integration** - Native menus, notifications, and tray icons
+- ✅ **Code Signed** - Signed and notarized for security
+
+### Build from Source
+
+Want to build the desktop app yourself? See our comprehensive build guide:
+
+**📖 [Desktop Build Guide](./docs/DESKTOP_BUILD_GUIDE.md)**
+
+Quick build commands:
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build for your platform
+npm run tauri:build
+
+# Or use platform-specific scripts
+./scripts/desktop/build-macos.sh      # macOS
+./scripts/desktop/build-linux.sh      # Linux
+./scripts/desktop/build-windows.ps1   # Windows
+```
+
+### System Requirements
+
+**macOS:**
+- macOS 10.13 or later
+- Intel or Apple Silicon processor
+
+**Linux:**
+- Ubuntu 20.04+, Debian 11+, Fedora 35+, or similar
+- GLIBC 2.31+
+- x86_64 or ARM64 processor
+
+**Windows:**
+- Windows 10 (build 1809+) or Windows 11
+- x86_64 (64-bit) processor
 
 ## 🚀 GenAI Development VM
 

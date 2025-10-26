@@ -8,7 +8,7 @@ This page summarises the updated tooling for producing and verifying the `fast-o
 # defaults to the latest Gitpod tarball for now
 scripts/release/fetch-openvscode-server.sh
 # override if you need a specific tag
-OPENVSCODE_VERSION=openvscode-server-v1.103.1 scripts/release/fetch-openvscode-server.sh
+OPENVSCODE_VERSION=openvscode-server-v1.105.1 scripts/release/fetch-openvscode-server.sh
 ```
 
 - Downloads land in `fast-openvscode-vm/downloads/` with a matching `.sha256` file.

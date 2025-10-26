@@ -9,7 +9,7 @@ readiness in ~6.1 s and the port can now be fronted directly by MCP demos.
 ## What was built
 - BusyBox-based initramfs (`fast-openvscode-vm/openvscode-initramfs.cpio.gz`,
   ~69 MB gzipped) with manually copied glibc/libstdc++ and the
-  `openvscode-server-v1.103.1` payload.
+  `openvscode-server-v1.105.1` payload.
 - Custom `/init` script mounts proc/sys/dev/tmp, configures a static IP
   (10.0.2.15), launches OpenVSCode on port 3001, and starts an in-guest Node.js
   reverse proxy that serves `/healthz` / `/` with HTTP 200 responses before

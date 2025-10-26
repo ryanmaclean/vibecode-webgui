@@ -14,7 +14,7 @@ If no version is provided, the latest GitHub release is used.
 
 Examples:
   $0                # download latest release
-  $0 v1.103.1       # download an explicit tag
+  $0 v1.105.1       # download an explicit tag
 
 Environment variables:
   GITHUB_TOKEN      Optional token to increase GitHub API rate limits.
