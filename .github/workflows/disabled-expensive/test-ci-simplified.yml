@@ -30,12 +30,6 @@ jobs:
       DD_VERSION: ${{ github.sha }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_SITE: datadoghq.com
-      # Cloud Network Monitoring for GitHub Actions
-      DD_SYSTEM_PROBE_NETWORK_ENABLED: true
-      DD_PROCESS_AGENT_ENABLED: true
-      DD_NETWORK_CONFIG_ENABLE_EBPFLESS: true
-      DD_NETWORK_CONFIG_ENABLE_EBPF: false
-      DD_SYSTEM_PROBE_ENABLED: true
       # NODE_OPTIONS: -r dd-trace/ci/init  # Removed - dd-trace not installed in CI
       # Git metadata for Datadog CI Visibility
       DD_GIT_COMMIT_SHA: ${{ github.sha }}

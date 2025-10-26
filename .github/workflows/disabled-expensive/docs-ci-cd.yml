@@ -16,6 +16,7 @@ on:
 
 permissions:
   contents: read
+=======
 
 concurrency:
   group: docs-ci-${{ github.ref }}
@@ -63,8 +64,7 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./docs
-        run: npm ci
+        run: bash scripts/install-ci.sh --prefix docs
 
       - name: Run security audit
         working-directory: ./docs
@@ -104,8 +104,7 @@ jobs:
           cache-dependency-path: docs/package-lock.json
 
       - name: Install dependencies
-        working-directory: ./docs
-        run: npm ci
+        run: bash scripts/install-ci.sh --prefix docs
 
       - name: Lint documentation
         working-directory: ./docs
