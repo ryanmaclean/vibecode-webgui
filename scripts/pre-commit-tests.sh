@@ -6,6 +6,16 @@
 
 set -euox
 
+# Mode configuration
+# Light mode (default for local dev): skips heavy infra checks and audits
+# Strict mode (CI or PRECOMMIT_STRICT=true): enforce all checks
+STRICT=${PRECOMMIT_STRICT:-false}
+IS_CI=${CI:-false}
+LIGHT_MODE=true
+if [ "$STRICT" = "true" ] || [ "$IS_CI" = "true" ]; then
+  LIGHT_MODE=false
+fi
+
 echo "🚀 Running Pre-Commit Tests..."
 
 # Check if we're in a git repository
@@ -14,22 +24,39 @@ if ! git rev-parse --git-dir > /dev/null 2>&1; then
     exit 1
 fi
 
-# Check if Docker is running
+# Check if Docker is running (gate heavy checks)
+DOCKER_AVAILABLE=true
 if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running"
-    exit 1
+    if [ "$LIGHT_MODE" = "true" ]; then
+        echo "⚠️  Docker is not running - skipping Docker-dependent checks"
+        DOCKER_AVAILABLE=false
+    else
+        echo "❌ Docker is not running"
+        exit 1
+    fi
 fi
 
-# Check if KIND is installed
+# Check if KIND is installed (gate k8s checks)
+KIND_AVAILABLE=true
 if ! command -v kind > /dev/null 2>&1; then
-    echo "❌ KIND is not installed"
-    exit 1
+    if [ "$LIGHT_MODE" = "true" ]; then
+        echo "⚠️  KIND is not installed - skipping cluster checks"
+        KIND_AVAILABLE=false
+    else
+        echo "❌ KIND is not installed"
+        exit 1
+    fi
 fi
 
-# Check if kubectl is installed
+# Check if kubectl is installed (gate k8s checks)
 if ! command -v kubectl > /dev/null 2>&1; then
-    echo "❌ kubectl is not installed"
-    exit 1
+    if [ "$LIGHT_MODE" = "true" ]; then
+        echo "⚠️  kubectl is not installed - skipping cluster checks"
+        KIND_AVAILABLE=false
+    else
+        echo "❌ kubectl is not installed"
+        exit 1
+    fi
 fi
 
 echo "✅ Prerequisites validated"
@@ -47,29 +74,40 @@ tsc --project tsconfig.precommit.json || {
     exit 1
 }
 
-# Run all Jest tests
-echo "🧪 Running all Jest tests..."
-npm test || {
-    echo "❌ Jest tests failed. Aborting commit."
-    exit 1
-}
+# Run tests (quick subset in light mode)
+if [ "$LIGHT_MODE" = "true" ]; then
+  echo "🧪 Running quick unit tests..."
+  npm run quick-test || {
+      echo "❌ Quick tests failed. Aborting commit."
+      exit 1
+  }
+else
+  echo "🧪 Running all Jest tests..."
+  npm test || {
+      echo "❌ Jest tests failed. Aborting commit."
+      exit 1
+  }
+fi
 
 # Run root integration tests (quick subset)
 echo "🔧 Running root integration tests..."
-if npm run test:root:infrastructure; then
+if [ "$LIGHT_MODE" = "true" ]; then
+    echo "⚠️  Skipping root integration tests in light mode"
+else
+  if npm run test:root:infrastructure; then
     echo "✅ Infrastructure tests passed"
-else
+  else
     echo "⚠️  Infrastructure tests failed - continuing with commit"
-fi
-
-if npm run test:root:credentials; then
+  fi
+  if npm run test:root:credentials; then
     echo "✅ Credentials tests passed"
-else
+  else
     echo "⚠️  Credentials tests failed - continuing with commit"
+  fi
 fi
 
 # Check if KIND cluster exists and is healthy
-if kind get clusters | grep -q "vibecode-test"; then
+if [ "$KIND_AVAILABLE" = "true" ] && kind get clusters | grep -q "vibecode-test"; then
     echo "🎯 Validating KIND cluster health..."
     kubectl cluster-info --context kind-vibecode-test > /dev/null || {
         echo "❌ KIND cluster is not healthy"
@@ -84,7 +122,7 @@ if kind get clusters | grep -q "vibecode-test"; then
 
     echo "✅ KIND cluster is healthy"
 else
-    echo "⚠️  KIND cluster not found - skipping cluster validation"
+    echo "⚠️  KIND cluster not found or unavailable - skipping cluster validation"
 fi
 
 # Check for sensitive data in staged files
@@ -134,7 +172,7 @@ done
 
 # Additional BFG check for high-entropy strings that might be API keys
 echo "🔍 Running BFG Docker scan for high-entropy strings..."
-if command -v docker > /dev/null 2>&1; then
+if [ "$DOCKER_AVAILABLE" = "true" ]; then
     # Create temporary file with high-entropy patterns
     cat > /tmp/bfg-check-patterns.txt << 'EOF'
 # Common API key patterns
@@ -171,19 +209,27 @@ else
     echo "⚠️  Docker not available - skipping BFG scan"
 fi
 
-# Build application to ensure it compiles
-echo "🏗️ Building application..."
-npm run build || {
-    echo "❌ Build failed"
-    exit 1
-}
+# Build application to ensure it compiles (skip in light mode)
+if [ "$LIGHT_MODE" = "true" ]; then
+  echo "⚠️  Skipping build step in light mode"
+else
+  echo "🏗️ Building application..."
+  npm run build || {
+      echo "❌ Build failed"
+      exit 1
+  }
+fi
 
-# Run security audit
-echo "🛡️ Running security audit..."
-npm audit --audit-level=high || {
-    echo "❌ Security audit failed"
-    exit 1
-}
+# Run security audit (skip in light mode)
+if [ "$LIGHT_MODE" = "true" ]; then
+  echo "⚠️  Skipping security audit in light mode"
+else
+  echo "🛡️ Running security audit..."
+  npm audit --audit-level=high || {
+      echo "❌ Security audit failed"
+      exit 1
+  }
+fi
 
 echo "✅ All pre-commit tests passed!"
 echo "🎉 Ready for commit"

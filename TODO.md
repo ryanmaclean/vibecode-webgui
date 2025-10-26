@@ -11,6 +11,15 @@ description: Active project tasks and priorities
 **Session**: MCP Roundtable Multi-Agent Coordination Complete  
 **Result**: 2 PRs merged into main, all new code deployed
 
+### ⚙️ Operational Next Steps (VMs + Benchmarks + Camunda)
+- [ ] **VM capacity workaround**: Use 1 QEMU console microVM + 2 macOS VMs (Virtualization.framework enforces a hard concurrent VM limit).
+- [ ] **Launch alternate macOS VM via vfkit**: per-VM `aux.img` copy and unique PID file; install `code-server` (8080) and `openvscode-server` latest (8081); verify host/browser access.
+- [ ] **Node.js benchmarks**: Run Node 22/24/25 micro-benchmarks; record results and log timings to Datadog.
+- [ ] **Camunda 7 Run**: Deploy with a weekly timer BPMN; attach Node external task worker with idempotent retries; emit execution metrics to Datadog.
+- [ ] **Editor evaluation**: Test bleeding-edge `openvscode-server` vs `code-server` responsiveness under load.
+- [ ] **Git hygiene**: Fetch/prune remotes, review/merge pending PRs (e.g., #648), fast-forward `main`, and update this TODO accordingly.
+- [ ] **Compatibility note**: WebKit/Safari and Tauri do not work with `code-server`. Use Chromium-based browsers for `code-server`. Treat Tauri as a separate desktop distribution path (not tied to `code-server`).
+
 ### 🎉 RECENT ACCOMPLISHMENTS (Last 30 minutes):
 
 #### ✅ Logger Implementation (#657) - COMPLETE
@@ -1409,25 +1418,6 @@ The systematic E2E methodology has been successfully **validated across multiple
 - 🔄 **Agent 5 – Documentation Specialist**
   - [ ] Update `docker/code-server/DATADOG_INTEGRATION.md`, `docs/MCP_DATADOG_INTEGRATION.md`, and env examples with new wrappers & `DD_LLMOBS_PROJECT`.
   - [ ] Cross-link experiment reports and OpenRouter setup steps.
-- 🔄 **Agent 6 – Experiment Reporter**
-  - [ ] For each CLI, write a Datadog Experiment entry (API call log, latency, tokens).
-  - [ ] Summarize Day 1 & Day 2 findings and conclusions.
-- 📅 **Agent 7 – Observability Engineer**
-  - [ ] Create Datadog monitors + dashboards keyed on `service:*` and `project:vibecode-code-server-ai-cli`.
-  - [ ] Verify LLM Observability ingest shows latency/token charts per CLI.
-- 📅 **Agent 8 – Build & Release Engineer**
-  - [ ] Update Buildx pipelines to produce signed multi-arch images with the new CLIs.
-  - [ ] Coordinate QA, PR, and GitHub issue tracking once instrumentation is validated.
-- 🎯 **Agent 9 – Security & Compliance**
-  - [ ] Add checksum/signature verification for all downloaded binaries.
-  - [ ] Ensure OpenRouter API key sourcing follows secrets policy (no baked credentials).
-- 🎯 **Agent 10 – QA Automation**
-  - [ ] Extend CI to run each CLI inside the container, hit OpenRouter, assert Datadog spans.
-  - [ ] Gate releases on successful instrumentation tests (Day 2 validation).
-
-
-## 📚 Related Documentation
-
 - [CHANGELOG.md](./CHANGELOG.md) - Complete project history and achievements
 - [docs/](./docs/) - Comprehensive project documentation
 - [GitHub Issues](https://github.com/ryanmaclean/vibecode-webgui/issues) - Detailed task tracking

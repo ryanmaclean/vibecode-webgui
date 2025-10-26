@@ -1,36 +1,6 @@
 {
   "recommendations": [
-    "vibecode.vibecode-ai-assistant",
-    "Datadog.datadog-vscode",
-    "ms-vscode.vscode-typescript-next",
-    "ms-vscode.vscode-json",
-    "ms-vscode.vscode-eslint",
-    "ms-vscode.vscode-css-languagefeatures",
-    "ms-vscode.vscode-html-languagefeatures"
+    "vibecode.vibecode-ai-assistant"
   ],
-  "unwantedRecommendations": [
-    "ms-python.python",
-    "ms-vscode.cpptools",
-    "ms-vscode.powershell",
-    "ms-azuretools.vscode-docker",
-    "ms-vscode-remote.remote-containers",
-    "ms-vscode-remote.remote-ssh",
-    "ms-vscode-remote.remote-wsl",
-    "github.copilot",
-    "github.copilot-chat",
-    "ms-kubernetes-tools.vscode-kubernetes-tools",
-    "editorconfig.editorconfig",
-    "christian-kohler.path-intellisense",
-    "formulahendry.auto-rename-tag",
-    "eamodio.gitlens",
-    "aaron-bond.better-comments",
-    "bradlc.vscode-tailwindcss",
-    "esbenp.prettier-vscode",
-    "redhat.vscode-yaml",
-    "mikestead.dotenv",
-    "github.github-vscode-theme",
-    "pkief.material-icon-theme",
-    "coenraads.bracket-pair-colorizer-2",
-    "shan.code-settings-sync"
-  ]
+  "unwantedRecommendations": []
 }
