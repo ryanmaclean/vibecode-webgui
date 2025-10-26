@@ -58,7 +58,7 @@ That's it. Simple wrapper around code-server.
 
 ## Development
 
-See [Tauri README](./docs/tauri/README.md) for development setup.
+See 🛠️ [VibeCode CLI](./scripts/VIBECODE_CLI.md) - Unified development toolkit
 
 ## License
 
