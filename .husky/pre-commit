@@ -39,5 +39,4 @@ if [ ! -z "$DOC_FILES" ]; then
 fi
 
 # Run existing optimized pre-commit tests (light mode by default for local commits)
-SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true} \ 
-  ./scripts/pre-commit-tests-optimized.sh
+SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true} ./scripts/pre-commit-tests-optimized.sh
