@@ -1,5 +1,6 @@
 use crate::docker;
 use crate::mdns::{DiscoveredService, VibeCodeService};
+use crate::ml::commands as ml_commands;
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::command;
