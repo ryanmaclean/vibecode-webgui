@@ -1,17 +1,5 @@
 {
   "recommendations": [
-    "ms-azuretools.vscode-azurefunctions",
-    "Datadog.datadog-vscode",
-    "ms-kubernetes-tools.vscode-kubernetes-tools",
-    "ms-vscode.vscode-azure-account",
-    "ms-azuretools.vscode-docker",
-    "GoogleCloudTools.cloudcode",
-    "ms-vscode.vscode-json",
-    "ms-vscode.vscode-typescript-next",
-    "ms-vscode.vscode-eslint"
-  ],
-  "unwantedRecommendations": [
-    "github.copilot",
-    "github.copilot-chat"
+    "vibecode.vibecode-ai-assistant"
   ]
 }
