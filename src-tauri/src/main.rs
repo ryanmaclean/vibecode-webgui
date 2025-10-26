@@ -6,6 +6,7 @@ mod commands;
 mod docker;
 mod mdns;
 mod menu;
+mod tailscale;
 
 // use tauri::Manager; // Removed unused import
 
@@ -53,6 +54,13 @@ fn main() {
             commands::stop_lima_vm,
             commands::status_lima_vm,
             commands::start_code_server,
+            // Tailscale zero-trust commands
+            commands::check_tailscale,
+            commands::get_tailscale_status,
+            commands::get_tailscale_ip,
+            commands::get_secure_bind_addr,
+            commands::start_secure_code_server,
+            commands::verify_zero_trust,
         ])
         .setup(|app| {
             // Initialize system tray
