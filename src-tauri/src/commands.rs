@@ -167,19 +167,26 @@ pub async fn status_lima_vm() -> Result<String, String> {
 #[command]
 pub async fn start_vfkit_vm() -> Result<String, String> {
     use std::process::Command;
-    use std::path::Path;
     
-    // Get the path to vfkit (system installation)
-    let vfkit_path = "/opt/homebrew/bin/vfkit";
+    // Try multiple vfkit locations (ARM and Intel Macs)
+    let vfkit_paths = vec![
+        "/opt/homebrew/bin/vfkit",  // ARM Mac (Apple Silicon)
+        "/usr/local/bin/vfkit",      // Intel Mac
+        "vfkit",                     // PATH fallback
+    ];
     
-    // Check if vfkit is available
-    let vfkit_check = Command::new(vfkit_path)
-        .arg("--version")
-        .output();
-    
-    if vfkit_check.is_err() {
-        return Err("vfkit is not available. On fresh macOS systems, install with: brew install vfkit".to_string());
+    let mut vfkit_path = None;
+    for path in &vfkit_paths {
+        if Command::new(path).arg("--version").output().is_ok() {
+            vfkit_path = Some(*path);
+            break;
+        }
     }
+    
+    let vfkit_path = match vfkit_path {
+        Some(path) => path,
+        None => return Err("vfkit is not available. On fresh macOS systems, install with: brew install vfkit".to_string()),
+    };
     
     // Start vfkit VM with Datadog tracing
     let mut cmd = Command::new(vfkit_path);
