@@ -160,9 +160,9 @@ echo "$(uuidgen)" > MachineIdentifier
 
 ## Related Documentation
 
-- [VM Provider Abstraction](./vm-provider-abstraction-api-design)
-- [VFKit Features](./vfkit-features-investigation)
-- [CLI Tools](./cli-tools/user-guide)
+- [VM Provider Abstraction](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/vm-provider-migration-guide.md)
+- [VFKit Features](https://github.com/ryanmaclean/vibecode-webgui/blob/main/docs/vfkit-features-investigation.md)
+- [CLI Tools](../cli-tools/user-guide.md)
 
 ## References
 
