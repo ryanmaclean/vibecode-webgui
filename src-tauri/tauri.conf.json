@@ -39,11 +39,8 @@
         "language": "en-US"
       },
       "nsis": {
-        "license": null,
         "installerIcon": "icons/icon.ico",
-        "headerImage": null,
-        "sidebarImage": null,
-        "installMode": "perUser"
+        "installMode": "currentUser"
       }
     },
     "linux": {
