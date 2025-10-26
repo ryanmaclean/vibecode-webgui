@@ -73,6 +73,7 @@ Welcome to the comprehensive VibeCode documentation. This wiki provides complete
 ## 🔧 Development & Operations
 
 ### Development Workflow
+- **[VM Management](./wiki/vm-management/)** - Apple Silicon VM management
 - **[Authentication Summary](./authentication-summary/)** - Security implementation
 - **[Authentication Testing](./authentication-testing/)** - Security testing guide
 - **[Pre-commit Optimization](./precommit-optimization/)** - Development workflow optimization
