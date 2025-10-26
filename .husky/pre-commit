@@ -38,5 +38,6 @@ if [ ! -z "$DOC_FILES" ]; then
   echo "✅ Documentation validation complete"
 fi
 
-# Run existing optimized pre-commit tests
-./scripts/pre-commit-tests-optimized.sh
+# Run existing optimized pre-commit tests (light mode by default for local commits)
+SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true} \ 
+  ./scripts/pre-commit-tests-optimized.sh
