@@ -21,6 +21,9 @@ thiserror = "2"
 url = "2"
 dirs = "5"
 
+[target.'cfg(target_os = "macos")'.dependencies]
+libc = "0.2"
+
 [profile.release]
 # optimize for small binary size
 strip = true
@@ -28,3 +31,6 @@ lto = "thin"
 opt-level = "z"
 codegen-units = 1
 panic = "abort"
+
+[build]
+rustflags = ["-C", "link-arg=-undefined", "-C", "link-arg=dynamic_lookup"]

@@ -4188,6 +4188,7 @@ dependencies = [
  "bollard",
  "dirs 5.0.1",
  "hostname",
+ "libc",
  "mdns-sd",
  "serde",
  "serde_json",

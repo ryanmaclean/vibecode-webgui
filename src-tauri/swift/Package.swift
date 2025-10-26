@@ -17,10 +17,7 @@ let package = Package(
     targets: [
         .target(
             name: "VibeMLAccelerator",
-            dependencies: [],
-            resources: [
-                .process("MetalShaders")
-            ]
+            dependencies: []
         ),
         .testTarget(
             name: "VibeMLAcceleratorTests",

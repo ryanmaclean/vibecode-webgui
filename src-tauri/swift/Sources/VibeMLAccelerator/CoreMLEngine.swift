@@ -50,7 +50,7 @@ public actor CoreMLInferenceEngine {
                         try Task.checkCancellation()
 
                         // Prepare input
-                        let inputTokens = tokens + generatedTokens
+                        let inputTokens: [Int32] = tokens + generatedTokens.map { Int32($0) }
                         let input = try createMLInput(tokens: inputTokens)
 
                         // Run inference

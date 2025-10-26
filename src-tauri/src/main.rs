@@ -6,6 +6,7 @@ mod commands;
 mod docker;
 mod mdns;
 mod menu;
+mod ml;
 
 // use tauri::Manager; // Removed unused import
 
@@ -53,6 +54,11 @@ fn main() {
             commands::stop_lima_vm,
             commands::status_lima_vm,
             commands::start_code_server,
+            // ML commands
+            ml::commands::ml_is_available,
+            ml::commands::ml_get_device_info,
+            ml::commands::ml_get_capabilities,
+            ml::commands::ml_init,
         ])
         .setup(|app| {
             // Initialize system tray

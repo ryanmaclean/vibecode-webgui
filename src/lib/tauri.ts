@@ -14,6 +14,11 @@ export interface TauriCommands {
   startLimaVm: () => Promise<string>;
   stopLimaVm: () => Promise<string>;
   statusLimaVm: () => Promise<string>;
+  // ML commands
+  mlIsAvailable: () => Promise<boolean>;
+  mlGetDeviceInfo: () => Promise<any>;
+  mlGetCapabilities: () => Promise<any>;
+  mlInit: () => Promise<string>;
 }
 
 /**
@@ -70,6 +75,19 @@ export const tauriCommands: TauriCommands = {
 
   statusLimaVm: () =>
     invokeTauri<string>('status_lima_vm'),
+
+  // ML commands
+  mlIsAvailable: () =>
+    invokeTauri<boolean>('ml_is_available'),
+
+  mlGetDeviceInfo: () =>
+    invokeTauri<any>('ml_get_device_info'),
+
+  mlGetCapabilities: () =>
+    invokeTauri<any>('ml_get_capabilities'),
+
+  mlInit: () =>
+    invokeTauri<string>('ml_init'),
 };
 
 /**
