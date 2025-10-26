@@ -3,7 +3,7 @@
  * Advanced alerting with dynamic thresholds, anomaly detection, and smart notifications
  */
 
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { alertsManager, AlertConfig } from './alerts-configuration'
 import { performanceBaselines, PerformanceBaseline } from './performance-baselines'
 import { datadogMetrics } from './datadog-metrics'

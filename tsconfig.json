@@ -60,6 +60,7 @@
     "extensions/**/*",
     "**/*.stories.tsx",
     "tmp-*/**/*",
-    "src/components/terminal/**/*"
+    "src/components/terminal/**/*",
+    "types/@xterm/**/*"
   ]
 }

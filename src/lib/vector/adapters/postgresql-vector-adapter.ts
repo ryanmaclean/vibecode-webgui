@@ -26,7 +26,18 @@ import {
   VectorSearchOptions,
   VectorStoreStats
 } from '../interfaces/vector-types';
+import { VectorDbErrorHandler, VectorDbErrorType, VectorDbError } from '@/lib/vector-db/vector-db-error-handler';
 // import { logger } from '@/lib/logger';
+
+interface PostgreSQLVectorConfig extends VectorDatabaseConfig {
+  pgPoolSize?: number;
+  pgSchemaName?: string;
+  pgVectorExtensionName?: string;
+  pgSearchMethod?: 'cosine' | 'inner_product' | 'euclidean';
+  enableLogging?: boolean;
+  enableMetrics?: boolean;
+}
+
 export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   private errorHandler: VectorDbErrorHandler;

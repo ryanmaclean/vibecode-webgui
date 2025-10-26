@@ -7,6 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
 import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
+import { createErrorResponseFromError, createProblemResponse } from '@/lib/utils/api-response'
 // import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
@@ -78,43 +79,48 @@ export async function POST(request: NextRequest) {
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      return ErrorResponses.validationError(
-        'Invalid request format for workspace creation',
-        error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
-        requestId
-      )
+      return createProblemResponse({
+        title: 'Invalid request format for workspace creation',
+        status: 400,
+        detail: error.errors.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+        traceId: requestId
+      })
     }
 
     // Handle Kubernetes errors
     if (error instanceof Error) {
       if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
-        return ErrorResponses.forbidden(
-          'Insufficient permissions to create workspace',
-          requestId
-        )
+        return createProblemResponse({
+          title: 'Insufficient permissions to create workspace',
+          status: 403,
+          traceId: requestId
+        })
       }
 
       if (error.message.includes('timeout')) {
-        return ErrorResponses.badRequest(
-          'Workspace creation timed out. Please try again.',
-          requestId
-        )
+        return createProblemResponse({
+          title: 'Workspace creation timed out. Please try again.',
+          status: 400,
+          traceId: requestId
+        })
       }
 
       if (error.message.includes('quota') || error.message.includes('resource')) {
-        return ErrorResponses.serviceUnavailable(
-          'Insufficient cluster resources. Please try again later.',
-          requestId
-        )
+        return createProblemResponse({
+          title: 'Insufficient cluster resources. Please try again later.',
+          status: 503,
+          traceId: requestId
+        })
       }
     }
 
     // Generic error response
-    return createProblemDetailsFromError(error, 500, {
-      instance: `/api/workspaces`,
-      traceId: requestId,
-      fallbackTitle: 'Workspace creation failed'
-    })
+    return createErrorResponseFromError(
+      error,
+      500,
+      'Workspace creation failed',
+      requestId
+    )
   }
 }
 
@@ -154,14 +160,15 @@ export async function GET(request: NextRequest) {
 
       if (!workspace) {
         console.warn('Workspace not found', { ...logContext, workspaceId })
-        return ErrorResponses.notFound(
-          `Workspace with ID ${workspaceId} not found`,
-          requestId
-        )
+        return createProblemResponse({
+          title: `Workspace with ID ${workspaceId} not found`,
+          status: 404,
+          traceId: requestId
+        })
       }
 
       const responseTime = Date.now() - startTime
-      logger.performance('get-workspace', responseTime, logContext)
+      console.log('get-workspace performance', { responseTime, ...logContext })
 
       return NextResponse.json({
         success: true,
@@ -174,9 +181,10 @@ export async function GET(request: NextRequest) {
       const workspaces = await workspaceService.listWorkspaces()
 
       const responseTime = Date.now() - startTime
-      logger.performance('list-workspaces', responseTime, { 
-        ...logContext, 
-        workspaceCount: workspaces.length 
+      console.log('list-workspaces performance', {
+        responseTime,
+        ...logContext,
+        workspaceCount: workspaces.length
       })
 
       return NextResponse.json({
