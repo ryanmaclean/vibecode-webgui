@@ -1,5 +1,6 @@
 use crate::docker;
 use crate::mdns::{DiscoveredService, VibeCodeService};
+use crate::tailscale::{TailscaleManager, TailscaleStatus};
 use std::path::PathBuf;
 use std::process::{Command, Stdio};
 use tauri::command;
@@ -308,4 +309,44 @@ pub async fn start_vfkit_vm() -> Result<String, String> {
 
         cmd.spawn().map_err(|e| format!("Failed to start code-server: {}", e))?;
         Ok("code-server started successfully at http://127.0.0.1:8080".to_string())
+}
+
+// ============================================================================
+// Tailscale Zero-Trust Networking Commands
+// ============================================================================
+
+/// Check if Tailscale is installed
+#[command]
+pub fn check_tailscale() -> Result<bool, String> {
+    Ok(TailscaleManager::is_installed())
+}
+
+/// Get Tailscale connection status
+#[command]
+pub fn get_tailscale_status() -> Result<TailscaleStatus, String> {
+    TailscaleManager::status()
+}
+
+/// Get Tailscale IP address
+#[command]
+pub fn get_tailscale_ip() -> Result<String, String> {
+    TailscaleManager::get_ip()
+}
+
+/// Get secure bind address for a service (Tailscale IP only)
+#[command]
+pub fn get_secure_bind_addr(port: u16) -> Result<String, String> {
+    TailscaleManager::get_secure_bind_addr(port)
+}
+
+/// Start code-server on Tailscale IP ONLY (zero-trust, no public exposure)
+#[command]
+pub async fn start_secure_code_server(port: u16) -> Result<String, String> {
+    TailscaleManager::start_code_server_secure(port)
+}
+
+/// Verify zero-trust configuration
+#[command]
+pub fn verify_zero_trust() -> Result<Vec<String>, String> {
+    TailscaleManager::verify_zero_trust()
 }
