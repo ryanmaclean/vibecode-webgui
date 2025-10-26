@@ -3,10 +3,13 @@
  * Initializes Datadog tracing exactly once when running in the Node.js runtime.
  */
 
+type NodeCreateRequire = (typeof import('module'))['createRequire']
+let requireModule: ReturnType<NodeCreateRequire> | null = null
 let initializationPromise: Promise<void> | null = null
 
 const isNodeRuntime = () => !process.env.NEXT_RUNTIME || process.env.NEXT_RUNTIME === 'nodejs'
 const isDatadogDisabled = () => process.env.DD_ENABLED === 'false'
+const isPlaywrightRun = () => process.env.PLAYWRIGHT_TEST === 'true'
 
 const isModuleNotFoundError = (error: unknown, moduleName: string): boolean => {
   if (!error || typeof error !== 'object') {
@@ -18,11 +21,20 @@ const isModuleNotFoundError = (error: unknown, moduleName: string): boolean => {
   }
 
   const message = 'message' in error ? String((error as { message: unknown }).message) : ''
-  return message.includes(`Cannot find module '${moduleName}'`) || message.includes(`Cannot find module \"${moduleName}\"`)
+  return message.includes(`Cannot find module '${moduleName}'`) || message.includes(`Cannot find module "${moduleName}"`)
 }
 
 async function initializeDatadogTracer() {
+  if (process.env.NODE_ENV !== 'production') {
+    console.log('[src/instrumentation] runtime=%s playwright=%s env=%s', process.env.NEXT_RUNTIME, process.env.PLAYWRIGHT_TEST, process.env.NODE_ENV)
+  }
+
   if (!isNodeRuntime()) {
+    return
+  }
+
+  if (isPlaywrightRun()) {
+    console.log('🧪 Skipping Datadog instrumentation during Playwright runs')
     return
   }
 
@@ -31,8 +43,30 @@ async function initializeDatadogTracer() {
     return
   }
 
+  if (!requireModule) {
+    try {
+      const { createRequire } = await import(/* webpackIgnore: true */ 'node:module')
+      requireModule = createRequire(import.meta.url)
+    } catch (error) {
+      console.error('❌ Datadog tracer initialization failed', error)
+      return
+    }
+  }
+
   try {
-    const tracerModule = await import('dd-trace')
+    requireModule!.resolve('dd-trace')
+  } catch (error) {
+    if (isModuleNotFoundError(error, 'dd-trace')) {
+      console.warn('⚠️ dd-trace not installed; skipping Datadog instrumentation')
+      return
+    }
+
+    console.error('❌ Datadog tracer initialization failed', error)
+    return
+  }
+
+  try {
+    const tracerModule = await import(/* webpackIgnore: true */ 'dd-trace')
     const tracer = tracerModule.default
 
     tracer.init({
@@ -50,11 +84,6 @@ async function initializeDatadogTracer() {
 
     console.log('✅ Datadog tracer initialized in instrumentation.ts')
   } catch (error) {
-    if (isModuleNotFoundError(error, 'dd-trace')) {
-      console.warn('⚠️ dd-trace not installed; skipping Datadog instrumentation')
-      return
-    }
-
     console.error('❌ Datadog tracer initialization failed', error)
   }
 }
