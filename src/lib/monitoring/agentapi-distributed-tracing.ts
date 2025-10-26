@@ -5,7 +5,7 @@
 
 import { trace, context, propagation, type Span, SpanKind, SpanStatusCode } from '@opentelemetry/api';
 import { W3CTraceContextPropagator } from '@opentelemetry/core';
-// import { logger } from '@/lib/logger';
+
 const TRACER_NAME = 'agentapi-distributed-tracing';
 
 interface TraceContext {
@@ -42,10 +42,9 @@ class AgentAPIDistributedTracing {
 
       // Extract context from headers
       const extractedContext = propagation.extract(context.active(), carrier);
-      const span = trace.getSpan(extractedContext);
+      const spanContext = trace.getSpanContext(extractedContext);
 
-      if (span) {
-        const spanContext = span.spanContext();
+      if (spanContext && spanContext.traceId && spanContext.spanId) {
         return {
           traceId: spanContext.traceId,
           spanId: spanContext.spanId,
