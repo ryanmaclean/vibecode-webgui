@@ -456,10 +456,10 @@ Submit enhancement requests via:
 
 ## References
 
-- [Main CLI Documentation](../VIBECODE_CLI.md)
-- [Installation Guide](../vibecode-cli/install.sh)
-- [Project README](../../README.md)
-- [Development Docs](../../docs/)
+- [Main CLI Documentation](../../../../../scripts/VIBECODE_CLI.md)
+- [Installation Guide](../../../../../scripts/vibecode-cli/install.sh)
+- [Project README](../../../../../README.md)
+- [Development Docs](../../../../)
 
 ## Support
 

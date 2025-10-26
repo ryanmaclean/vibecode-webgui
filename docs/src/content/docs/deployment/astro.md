@@ -614,7 +614,7 @@ Astro automatically optimizes images in the `src/` directory:
 
 ```markdown
 <!-- Uses Astro's image optimization -->
-![Architecture diagram](../../assets/architecture.png)
+![Architecture diagram](../../../diagrams/code_server_diy_diagram.png)
 
 <!-- For external images -->
 ![External](https://example.com/image.png)
