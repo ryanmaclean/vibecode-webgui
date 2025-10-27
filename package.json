@@ -202,7 +202,7 @@
     "codemirror": "^6.0.2",
     "critters": "0.0.23",
     "dd-trace": "5.72.0",
-    "framer-motion": "12.23.22",
+    "framer-motion": "12.23.24",
     "gray-matter": "^4.0.3",
     "hot-shots": "11.2.0",
     "ioredis": "5.7.0",
