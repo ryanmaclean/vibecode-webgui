@@ -236,7 +236,7 @@
     "sonner": "^2.0.6",
     "speakeasy": "^2.0.0",
     "tailwind-merge": "^3.3.1",
-    "tailwindcss": "4.1.15",
+    "tailwindcss": "4.1.16",
     "tailwindcss-animate": "^1.0.7",
     "tiktoken": "^1.0.21",
     "weaviate-ts-client": "^2.2.0",
