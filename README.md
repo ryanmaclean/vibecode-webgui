@@ -1,4 +1,4 @@
-# VibeCode
+# VibeCode - DEMO GITHUB WORKFLOW REPOSITORY - APP BUILDS AS SAMPLES FOR TRACING
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
