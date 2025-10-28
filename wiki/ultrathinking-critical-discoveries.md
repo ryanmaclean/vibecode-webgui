@@ -232,6 +232,235 @@ After building 1200+ lines of vector database infrastructure, I discovered **I B
 ### IMMEDIATE CORRECTIVE ACTIONS:
 1. Address GitHub security vulnerabilities (REAL CRITICAL ISSUE)
 2. Integrate sharding concepts into existing EnhancedVectorStore
-3. Apply monitoring to ACTUAL vector operations 
+3. Apply monitoring to ACTUAL vector operations
 4. Enhance Prisma-based vector performance
 5. Connect Kubernetes infrastructure to real production architecture
+
+---
+
+# 🧹 REPOSITORY CLEANUP - OCTOBER 28, 2025
+
+## MAJOR INFRASTRUCTURE CLEANUP COMPLETED
+
+### Critical Issues Addressed:
+1. **Repository Size Reduction**: 775MB → 91MB (88% reduction)
+2. **GitHub Workflows Disabled**: All 58 CI/CD workflows moved to disabled-expensive/
+3. **Root Directory Cleanup**: 140+ files reorganized into proper subdirectories
+4. **Git History Cleanup**: Removed build artifacts and large blobs from history
+
+---
+
+## PHASE 1: Git History Cleanup
+
+### Issues Found:
+- Repository size: **1.2GB** (before any cleanup)
+- Large binary artifacts in git history:
+  - 76MB: `src-tauri/target/debug/` (Rust build artifacts)
+  - 69MB: `docs/node_modules/@pagefind/` (Node.js binaries)
+  - 23MB+: `artifacts/minivim/work/linux-6.17.4/` (Linux kernel headers)
+
+### Actions Taken:
+1. **Created multiple backups**:
+   - GitHub backup branch: `backup-before-cleanup`
+   - Local bundle: `~/vibecode-backup-large-blobs-*.bundle`
+   - Git safety tags
+
+2. **Removed from git history** (using git-filter-repo):
+   - `src-tauri/target/` - Rust build artifacts
+   - `docs/node_modules/` - Node.js binaries
+   - `artifacts/minivim/work/` - Linux kernel build artifacts
+
+3. **Results**:
+   - Before: 1.2GB → 601MB (50% reduction)
+   - After second pass: 775MB → 91MB (88% total reduction)
+   - All history rewritten and force-pushed to GitHub
+
+### Commits:
+- Git history cleanup (3,169 commits processed)
+
+---
+
+## PHASE 2: GitHub Workflows Disabled
+
+### Rationale:
+- Expensive CI/CD pipeline costs
+- Development focus on core functionality
+- Workflows can be re-enabled selectively when needed
+
+### Actions Taken:
+1. **Moved all workflows to disabled directory**:
+   - Source: `.github/workflows/*.yml`
+   - Destination: `.github/workflows/disabled-expensive/`
+   - Total: **58 workflow files disabled**
+
+2. **Current Status**:
+   - Active workflows: **0**
+   - Disabled workflows: **58**
+   - Location: `.github/workflows/disabled-expensive/`
+
+### Workflows Disabled Include:
+- CI/CD pipelines (ci.yml, ci-complex.yml, ci-simplified.yml)
+- Build workflows (build-and-push-image.yml, build-agentapi.yml)
+- Deployment workflows (azure-appservice-deploy.yml, azure-webgui-deploy.yml)
+- Testing workflows (desktop-build.yml, tauri-release.yml, tauri-test.yml)
+- Security workflows (security-audit.yml)
+- Automation (changelog.yml, claude-code-review.yml, claude.yml)
+
+### To Re-enable Workflows:
+```bash
+# Move specific workflow back
+mv .github/workflows/disabled-expensive/ci-simplified.yml .github/workflows/
+
+# Or re-enable all
+mv .github/workflows/disabled-expensive/*.yml .github/workflows/
+```
+
+### Commit:
+- `47dfb15ca` - "chore: disable all GitHub Actions workflows"
+
+---
+
+## PHASE 3: Root Directory Reorganization
+
+### Problem:
+- Root directory contained **140+ files**
+- Configuration files scattered everywhere
+- Multiple environment file duplicates
+- Test scripts, SQL files, and configs mixed together
+- Difficult to navigate and understand project structure
+
+### New Organized Structure:
+
+#### Configuration Files:
+- **config/env/** - 17 environment files (.env.*)
+- **config/alternatives/** - 19 alternative/backup config files
+- **config/jest/** - 5 Jest test configs
+- **config/lighthouse/** - 2 Lighthouse configs
+- **config/playwright/** - 2 Playwright configs
+
+#### Docker Files:
+- **docker/compose/** - 13 docker-compose files
+- Root: `docker-compose.yml` (one example file)
+
+#### Scripts:
+- **scripts/** - 18 shell scripts
+- **scripts/python/** - 5 Python scripts
+- **scripts/vm/** - 1 VM management script
+
+#### Monitoring:
+- **monitoring/datadog/** - 23 Datadog configuration files
+
+#### Database:
+- **database/sql/** - 5 SQL initialization and migration files
+
+#### Testing:
+- **tests/scripts/** - 6 test scripts
+
+#### Infrastructure:
+- **k8s/** - 4 Kubernetes configuration files
+
+#### Language-specific:
+- **go/** - 2 Go module files (go.mod, go.sum)
+- **swift/vm/** - 1 Swift VM file
+
+#### Documentation:
+- **docs/assets/** - 2 image/diagram files
+- **docs/index.html** - Documentation landing page
+
+### Root Directory After Cleanup:
+
+**19 Essential Files Only:**
+- Core config: package.json, tsconfig.json, next.config.mjs, tailwind.config.js, eslint.config.mjs, postcss.config.mjs
+- Docker: docker-compose.yml
+- Documentation: README.md, ARCHITECTURE.md, CHANGELOG.md, CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md
+- Build: Makefile, instrumentation.ts
+- Testing: playwright.config.ts
+- Other: LICENSE, next-env.d.ts, package-lock.json
+
+**77 Well-Organized Directories**
+
+### Statistics:
+- **140 files reorganized**
+- **12,792 deletions** (file moves registered as deletes)
+- **439 additions** (file moves registered as adds)
+- Cleanup completed in single atomic commit
+
+### Commit:
+- `acdbea6a7` - "chore: reorganize root directory for minimal structure"
+
+---
+
+## PHASE 4: File Cleanup
+
+### Test Scripts & Debug Files Removed:
+- 25 obsolete files removed from root:
+  - Test scripts: comprehensive-rag-test.ts, test-*.ts/js files (15 files)
+  - Debug scripts: debug-connection.ts, debug-*.js/ts files (5 files)
+  - Reports: migration-report.txt (334KB), TAURI_BUILD_REPORT.txt, LUCIDE_REACT_ERRORS.txt (3 files)
+  - Salvaged: health-route-test.salvage.ts, circular-deps.txt (2 files)
+
+### Duplicate & Backup Files Removed:
+- Conflict backups: `*.conflict-backup-*` files
+- Old backups: `TODO.md.backup` (88KB)
+- Duplicate configs removed
+
+### Commit:
+- `cce080cf4` - "chore: remove test scripts and debug files from root"
+
+---
+
+## FINAL STATUS
+
+### Repository Metrics:
+- **Git repository size**: 91MB (was 1.2GB initially, 775MB before final cleanup)
+- **Total size reduction**: 88%
+- **Active GitHub workflows**: 0 (58 disabled)
+- **Root directory files**: 19 essential files only
+- **Root directories**: 77 well-organized directories
+
+### GitHub Security Notices:
+- 5 vulnerabilities detected (2 high, 3 moderate)
+- Review at: https://github.com/ryanmaclean/vibecode-webgui/security/dependabot
+- **Note**: Not addressed in this cleanup phase
+
+### Backup Locations:
+1. **GitHub branch**: `backup-before-cleanup`
+2. **Local bundles**:
+   - `~/vibecode-backup-20251028-095700.bundle` (595MB)
+   - `~/vibecode-backup-large-blobs-*.bundle`
+3. **Git tags**: `safety-before-branch-reduction-20251024-023425`
+
+### Recovery Instructions:
+If needed, restore from backup:
+```bash
+# From GitHub branch
+git checkout backup-before-cleanup
+
+# From local bundle
+git clone ~/vibecode-backup-20251028-095700.bundle restored-repo
+```
+
+---
+
+## KEY LESSONS
+
+### Repository Maintenance Best Practices:
+1. **Regular git history audits** - Prevent large files from accumulating
+2. **Proper .gitignore configuration** - Exclude build artifacts and binaries
+3. **Organized directory structure** - Group related files logically
+4. **Selective CI/CD** - Disable expensive workflows when not needed
+5. **Multiple backup strategies** - Before destructive operations
+
+### File Organization Principles:
+1. **Root directory minimalism** - Only essential files at root level
+2. **Logical grouping** - Related files in appropriate subdirectories
+3. **One example maximum** - Keep one docker-compose.yml, move others
+4. **Config consolidation** - All configs in config/ subdirectory tree
+5. **Clear navigation** - Directory structure should be self-documenting
+
+### Future Maintenance:
+1. **Monitor repository size** - Regular audits using `du -sh .git`
+2. **Review workflows quarterly** - Re-enable only what's necessary
+3. **Clean up artifacts** - Remove test results, debug files regularly
+4. **Update documentation** - Keep wiki current with infrastructure changes
+5. **Backup before major changes** - Always create safety nets
