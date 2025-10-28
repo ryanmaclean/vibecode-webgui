@@ -68,16 +68,6 @@ setup_optimal_dns() {
     echo -e "${BLUE}=== Testing DNS Servers ===${NC}"
     echo ""
     
-    # DNS servers to test
-    declare -A dns_servers=(
-        ["Cloudflare"]="1.1.1.1"
-        ["Cloudflare_Alt"]="1.0.0.1"
-        ["Google"]="8.8.8.8"
-        ["Google_Alt"]="8.8.4.4"
-        ["Quad9"]="9.9.9.9"
-        ["OpenDNS"]="208.67.222.222"
-    )
-    
     local fastest_dns=""
     local fastest_time=9999
     local working_dns=()
@@ -85,8 +75,18 @@ setup_optimal_dns() {
     echo "Testing DNS servers for speed and reliability..."
     echo ""
     
-    for name in "${!dns_servers[@]}"; do
-        local server="${dns_servers[$name]}"
+    # Test DNS servers (name|server pairs)
+    local dns_list=(
+        "Cloudflare|1.1.1.1"
+        "Cloudflare_Alt|1.0.0.1"
+        "Google|8.8.8.8"
+        "Google_Alt|8.8.4.4"
+        "Quad9|9.9.9.9"
+        "OpenDNS|208.67.222.222"
+    )
+    
+    for entry in "${dns_list[@]}"; do
+        IFS='|' read -r name server <<< "$entry"
         
         if test_dns_server "$server"; then
             local avg_time=$(test_dns_performance "$server")
