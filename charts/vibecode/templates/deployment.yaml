@@ -1,0 +1,251 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vibecode.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+    {{- with .Values.podLabels }}
+    {{- toYaml . | nindent 4 }}
+    {{- end }}
+spec:
+  {{- if not .Values.autoscaling.enabled }}
+  replicas: {{ .Values.replicaCount }}
+  {{- end }}
+  selector:
+    matchLabels:
+      {{- include "vibecode.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+        checksum/config: {{ include (print $.Template.BasePath "/configmap.yaml") . | sha256sum }}
+        checksum/secret: {{ include (print $.Template.BasePath "/secret.yaml") . | sha256sum }}
+        {{- with .Values.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+      labels:
+        {{- include "vibecode.selectorLabels" . | nindent 8 }}
+        {{- with .Values.podLabels }}
+        {{- toYaml . | nindent 8 }}
+        {{- end }}
+    spec:
+      {{- with .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      serviceAccountName: {{ include "vibecode.serviceAccountName" . }}
+      securityContext:
+        {{- toYaml .Values.podSecurityContext | nindent 8 }}
+      
+      {{- if .Values.initContainers }}
+      initContainers:
+        {{- toYaml .Values.initContainers | nindent 8 }}
+      {{- end }}
+      
+      containers:
+        - name: {{ .Chart.Name }}
+          securityContext:
+            {{- toYaml .Values.securityContext | nindent 12 }}
+          image: "{{ include "vibecode.image" . }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          
+          ports:
+            - name: http
+              containerPort: 3000
+              protocol: TCP
+            {{- if .Values.monitoring.prometheus.enabled }}
+            - name: metrics
+              containerPort: {{ .Values.monitoring.prometheus.port }}
+              protocol: TCP
+            {{- end }}
+          
+          env:
+            # Application environment
+            - name: NODE_ENV
+              value: {{ .Values.env.NODE_ENV | quote }}
+            - name: PORT
+              value: "3000"
+            - name: HOSTNAME
+              value: "0.0.0.0"
+            
+            # Database configuration
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode.fullname" . }}-secrets
+                  key: database-url
+            
+            # Authentication
+            - name: NEXTAUTH_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode.fullname" . }}-secrets
+                  key: nextauth-secret
+            - name: NEXTAUTH_URL
+              value: "https://{{ (index .Values.ingress.hosts 0).host }}"
+            
+            # AI/ML Services
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode.fullname" . }}-secrets
+                  key: openrouter-api-key
+                  optional: true
+            - name: VIBECODE_DEFAULT_LLM_MODEL
+              value: {{ .Values.env.VIBECODE_DEFAULT_LLM_MODEL | quote }}
+            - name: FREE_LLM_MODELS
+              value: {{ .Values.env.FREE_LLM_MODELS | quote }}
+            {{- if .Values.freeModelUpdater.enabled }}
+            - name: FREE_LLM_MODELS_FILE
+              value: {{ .Values.freeModelUpdater.configMap.filePath | quote }}
+            {{- end }}
+            
+            # Redis/Valkey configuration
+            {{- if .Values.redis.enabled }}
+            - name: REDIS_URL
+              value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}"
+            - name: VALKEY_URL
+              value: "redis://{{ .Values.redis.host }}:{{ .Values.redis.port }}"
+            {{- end }}
+
+            - name: VECTOR_DB_CACHE_ENABLED
+              value: {{ (.Values.env.VECTOR_DB_CACHE_ENABLED | default "true") | quote }}
+            
+            # Datadog configuration
+            {{- if .Values.monitoring.datadog.enabled }}
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "vibecode.fullname" . }}-secrets
+                  key: dd-api-key
+                  optional: true
+            - name: DD_ENV
+              value: {{ .Values.env.DD_ENV | quote }}
+            - name: DD_SERVICE
+              value: {{ .Values.env.DD_SERVICE | quote }}
+            - name: DD_VERSION
+              value: {{ .Values.env.DD_VERSION | quote }}
+            - name: DD_TRACE_ENABLED
+              value: {{ .Values.env.DD_TRACE_ENABLED | quote }}
+            - name: DD_LOGS_INJECTION
+              value: {{ .Values.env.DD_LOGS_INJECTION | quote }}
+            - name: DD_IAST_ENABLED
+              value: {{ .Values.env.DD_IAST_ENABLED | quote }}
+            - name: DD_RUNTIME_METRICS_ENABLED
+              value: {{ .Values.env.DD_RUNTIME_METRICS_ENABLED | quote }}
+            - name: DD_DYNAMIC_INSTRUMENTATION_ENABLED
+              value: {{ .Values.env.DD_DYNAMIC_INSTRUMENTATION_ENABLED | quote }}
+            - name: DD_SOURCE_MAP
+              value: {{ .Values.env.DD_SOURCE_MAP | quote }}
+            - name: DD_PROFILING_ENABLED
+              value: {{ .Values.env.DD_PROFILING_ENABLED | quote }}
+            - name: DD_SITE
+              value: {{ .Values.env.DD_SITE | default "datadoghq.com" | quote }}
+            - name: DD_AGENT_HOST
+              value: {{ .Values.env.DD_AGENT_HOST | default "datadog.datadog.svc.cluster.local" | quote }}
+            - name: DD_TRACE_AGENT_PORT
+              value: {{ .Values.env.DD_TRACE_AGENT_PORT | default "8126" | quote }}
+            - name: DD_DOGSTATSD_HOST
+              value: {{ .Values.env.DD_DOGSTATSD_HOST | default "datadog.datadog.svc.cluster.local" | quote }}
+            - name: DD_DOGSTATSD_PORT
+              value: {{ .Values.env.DD_DOGSTATSD_PORT | default "8125" | quote }}
+            - name: DD_LLMOBS_ENABLED
+              value: {{ .Values.env.DD_LLMOBS_ENABLED | quote }}
+            - name: DD_LLMOBS_AGENTLESS_ENABLED
+              value: {{ .Values.env.DD_LLMOBS_AGENTLESS_ENABLED | quote }}
+            - name: DD_LLMOBS_ML_APP
+              value: {{ .Values.env.DD_LLMOBS_ML_APP | default "vibecode-ai" | quote }}
+            {{- end }}
+            
+            # Kubernetes metadata
+            - name: K8S_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: K8S_POD_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.name
+            - name: K8S_POD_NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: K8S_POD_IP
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+          
+          {{- if .Values.livenessProbe }}
+          livenessProbe:
+            {{- toYaml .Values.livenessProbe | nindent 12 }}
+          {{- end }}
+          
+          {{- if .Values.readinessProbe }}
+          readinessProbe:
+            {{- toYaml .Values.readinessProbe | nindent 12 }}
+          {{- end }}
+          
+          {{- if .Values.startupProbe }}
+          startupProbe:
+            {{- toYaml .Values.startupProbe | nindent 12 }}
+          {{- end }}
+          
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          
+          volumeMounts:
+            {{- if .Values.persistence.enabled }}
+            - name: uploads
+              mountPath: {{ .Values.persistence.mountPath }}
+            {{- end }}
+            {{- if .Values.freeModelUpdater.enabled }}
+            - name: free-llm-models
+              mountPath: {{ .Values.freeModelUpdater.configMap.mountPath }}
+              readOnly: true
+            {{- end }}
+            - name: tmp
+              mountPath: /tmp
+            - name: app-logs
+              mountPath: /app/logs
+      
+      volumes:
+        {{- if .Values.persistence.enabled }}
+        - name: uploads
+          persistentVolumeClaim:
+            claimName: {{ include "vibecode.fullname" . }}-uploads
+        {{- end }}
+        {{- if .Values.freeModelUpdater.enabled }}
+        - name: free-llm-models
+          configMap:
+            name: {{ include "vibecode.freeLlmConfigMapName" . }}
+        {{- end }}
+        - name: tmp
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: app-logs
+          emptyDir:
+            sizeLimit: 5Gi
+      
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      
+      # Graceful shutdown
+      terminationGracePeriodSeconds: 60
+      
+      # DNS configuration
+      dnsPolicy: ClusterFirst
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "2"
+          - name: edns0

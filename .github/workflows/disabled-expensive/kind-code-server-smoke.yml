@@ -1,0 +1,82 @@
+name: KinD Code-Server Smoke Test
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '45 07 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: kind-code-server-smoke
+  cancel-in-progress: false
+
+jobs:
+  smoke:
+    name: Monaco Code-Server Sanity
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      KIND_CLUSTER_NAME: vibecode-test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Mark start time
+        run: echo "SMOKE_START=$(date +%s)" >> "$GITHUB_ENV"
+
+      - name: Set up KinD cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: vibecode-test
+          wait: 120s
+          config: |
+            kind: Cluster
+            apiVersion: kind.x-k8s.io/v1alpha4
+            nodes:
+              - role: control-plane
+                extraPortMappings:
+                  - containerPort: 31080
+                    hostPort: 31080
+
+      - name: Smoke test code-server deployment
+        run: |
+          if [ ! -f "scripts/test-code-server-kind.sh" ]; then
+            echo "::error::Script not found: scripts/test-code-server-kind.sh"
+            exit 1
+          fi
+
+          if [ ! -f "k8s/code-server-kind.yaml" ]; then
+            echo "::error::Manifest not found: k8s/code-server-kind.yaml"
+            exit 1
+          fi
+
+          # Check if Dockerfile exists for local build
+          if [ ! -f "docker/code-server/Dockerfile.kind" ]; then
+            echo "::warning::Dockerfile.kind not found, skipping local build"
+            export SKIP_CODE_SERVER_BUILD=true
+          fi
+
+          chmod +x scripts/test-code-server-kind.sh
+          ./scripts/test-code-server-kind.sh
+
+      - name: Smoke test summary
+        if: always()
+        run: |
+          end=$(date +%s)
+          duration=$(( end - SMOKE_START ))
+          mins=$(( duration / 60 ))
+          secs=$(( duration % 60 ))
+          status='${{ job.status }}'
+          echo "### KinD Smoke Test" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Cluster: $KIND_CLUSTER_NAME" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Duration: ${duration}s (${mins}m ${secs}s)" >> "$GITHUB_STEP_SUMMARY"
+          echo "- Result: ${status}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Capture pod diagnostics
+        if: failure()
+        run: |
+          kubectl get pods -A
+          kubectl describe deployment/code-server-kind -n vibecode-platform || true
+          kubectl logs deployment/code-server-kind -n vibecode-platform --tail=200 || true

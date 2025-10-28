@@ -1,0 +1,83 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: code-server-config
+  namespace: vibecode
+data:
+  config.yaml: |
+    bind-addr: 0.0.0.0:8080
+    auth: none
+    cert: false
+    disable-telemetry: true
+    disable-update-check: true
+    disable-file-downloads: false
+    disable-workspace-trust: true
+    proxy-domain: localhost
+  settings.json: |
+    {
+      "workbench.startupEditor": "none",
+      "workbench.tips.enabled": false,
+      "workbench.welcome.enabled": false,
+      "workbench.colorTheme": "GitHub Dark Default",
+      "workbench.iconTheme": "vs-seti",
+      "editor.theme": "GitHub Dark Default",
+      "editor.fontFamily": "'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+      "editor.fontSize": 14,
+      "editor.lineHeight": 1.6,
+      "editor.minimap.enabled": true,
+      "editor.tabSize": 2,
+      "editor.insertSpaces": true,
+      "editor.detectIndentation": true,
+      "editor.renderWhitespace": "boundary",
+      "editor.rulers": [80, 120],
+      "editor.wordWrap": "on",
+      "editor.formatOnSave": true,
+      "editor.codeActionsOnSave": {
+        "source.fixAll": "explicit",
+        "source.organizeImports": "explicit"
+      },
+      "files.autoSave": "afterDelay",
+      "files.autoSaveDelay": 1000,
+      "files.trimTrailingWhitespace": true,
+      "files.insertFinalNewline": true,
+      "terminal.integrated.fontSize": 13,
+      "terminal.integrated.fontFamily": "'JetBrains Mono', 'Fira Code', 'Monaco', 'Menlo', 'Ubuntu Mono', monospace",
+      "terminal.integrated.defaultProfile.linux": "bash",
+      "workbench.activityBar.visible": true,
+      "workbench.statusBar.visible": true,
+      "workbench.sideBar.location": "left",
+      "explorer.confirmDelete": false,
+      "explorer.confirmDragAndDrop": false,
+      "typescript.preferences.quoteStyle": "single",
+      "javascript.preferences.quoteStyle": "single",
+      "emmet.includeLanguages": {
+        "typescript": "javascript",
+        "typescriptreact": "javascriptreact"
+      },
+      "git.enableSmartCommit": true,
+      "git.confirmSync": false,
+      "extensions.autoUpdate": false,
+      "extensions.autoCheckUpdates": false,
+      "update.mode": "none",
+      "telemetry.telemetryLevel": "off",
+      "security.workspace.trust.enabled": false,
+      "diffEditor.ignoreTrimWhitespace": false,
+      "workbench.editor.enablePreview": false,
+      "workbench.editor.enablePreviewFromQuickOpen": false,
+      "breadcrumbs.enabled": true,
+      "editor.bracketPairColorization.enabled": true,
+      "editor.guides.bracketPairs": true,
+      "workbench.tree.indent": 20,
+      "workbench.tree.renderIndentGuides": "always"
+    }
+  keybindings.json: |
+    [
+      {
+        "key": "ctrl+`",
+        "command": "workbench.action.terminal.toggleTerminal"
+      },
+      {
+        "key": "ctrl+shift+`",
+        "command": "workbench.action.terminal.new"
+      }
+    ]

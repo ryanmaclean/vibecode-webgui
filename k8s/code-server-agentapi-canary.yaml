@@ -1,0 +1,297 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: agentapi-canary-config
+  namespace: vibecode-prod
+data:
+  config.yaml: |
+    host: 127.0.0.1
+    port: 3284
+    terminal_dir: /tmp/terminals
+    allowed_origins:
+      - https://vibecode.io
+      - https://www.vibecode.io
+    agents:
+      - name: aider
+        command: aider
+        args: []
+      - name: goose
+        command: goose
+        args: []
+      - name: cline
+        command: npx
+        args: ["-y", "@cline/cli"]
+    max_concurrent_agents: 10
+    agent_timeout: 300
+    log_level: info
+    metrics:
+      enabled: true
+      port: 9090
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-workspace-canary
+  namespace: vibecode-prod
+  labels:
+    app: code-server
+    component: workspace
+    version: canary
+spec:
+  replicas: 1  # Start with 10% traffic
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  selector:
+    matchLabels:
+      app: code-server
+      component: workspace
+      version: canary
+  template:
+    metadata:
+      labels:
+        app: code-server
+        component: workspace
+        version: canary
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "9090"
+        prometheus.io/path: "/metrics"
+        datadog.io/tags: |
+          {
+            "env": "production",
+            "service": "vibecode-agentapi",
+            "version": "canary"
+          }
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+
+      initContainers:
+        - name: init-terminal-dir
+          image: busybox:latest
+          command: ['sh', '-c']
+          args:
+            - |
+              mkdir -p /tmp/terminals
+              chmod 755 /tmp/terminals
+              chown 1000:1000 /tmp/terminals
+          volumeMounts:
+            - name: terminal-data
+              mountPath: /tmp/terminals
+          securityContext:
+            runAsUser: 0
+            allowPrivilegeEscalation: false
+
+      containers:
+        - name: code-server
+          image: ghcr.io/ryanmaclean/vibecode-codeserver:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --bind-addr
+            - 0.0.0.0:8765
+            - --auth
+            - password
+            - /home/coder/workspace
+          ports:
+            - name: ide
+              containerPort: 8765
+              protocol: TCP
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: code-server-config
+                  key: password
+            - name: SHELL
+              value: /bin/bash
+            - name: AGENTAPI_HOST
+              value: "127.0.0.1"
+            - name: AGENTAPI_PORT
+              value: "3284"
+            - name: DD_ENV
+              value: "production"
+            - name: DD_SERVICE
+              value: "vibecode-codeserver"
+            - name: DD_VERSION
+              value: "canary"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 4Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: config
+              mountPath: /home/coder/.config
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            timeoutSeconds: 5
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8765
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+        - name: agentapi
+          image: ghcr.io/ryanmaclean/vibecode-agentapi:latest
+          imagePullPolicy: Always  # Always pull canary version
+          args:
+            - --config
+            - /etc/agentapi/config.yaml
+          ports:
+            - name: api
+              containerPort: 3284
+              protocol: TCP
+            - name: metrics
+              containerPort: 9090
+              protocol: TCP
+          env:
+            - name: AGENTAPI_HOST
+              value: "127.0.0.1"
+            - name: AGENTAPI_PORT
+              value: "3284"
+            - name: AGENTAPI_LOG_LEVEL
+              value: info
+            - name: AGENTAPI_MAX_CONCURRENT_AGENTS
+              value: "10"
+            - name: AGENTAPI_AGENT_TIMEOUT
+              value: "300"
+            - name: DD_ENV
+              value: "production"
+            - name: DD_SERVICE
+              value: "vibecode-agentapi"
+            - name: DD_VERSION
+              value: "canary"
+            - name: DD_AGENT_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_TRACE_ENABLED
+              value: "true"
+            - name: DD_PROFILING_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 250m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/workspace
+              readOnly: true
+            - name: terminal-data
+              mountPath: /tmp/terminals
+            - name: agentapi-canary-config
+              mountPath: /etc/agentapi
+          livenessProbe:
+            exec:
+              command:
+                - /bin/bash
+                - /etc/agentapi/health-check.sh
+            initialDelaySeconds: 15
+            periodSeconds: 30
+            timeoutSeconds: 10
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3284
+            initialDelaySeconds: 5
+            periodSeconds: 10
+            timeoutSeconds: 3
+            failureThreshold: 3
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            readOnlyRootFilesystem: false
+
+      volumes:
+        - name: workspace
+          persistentVolumeClaim:
+            claimName: code-server-workspace-pvc
+        - name: terminal-data
+          emptyDir:
+            sizeLimit: 1Gi
+        - name: config
+          emptyDir: {}
+        - name: agentapi-canary-config
+          configMap:
+            name: agentapi-canary-config
+            defaultMode: 0755
+
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+            - weight: 100
+              podAffinityTerm:
+                labelSelector:
+                  matchExpressions:
+                    - key: app
+                      operator: In
+                      values:
+                        - code-server
+                topologyKey: kubernetes.io/hostname
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-agentapi-canary
+  namespace: vibecode-prod
+  labels:
+    app: code-server
+    component: workspace
+    version: canary
+spec:
+  type: ClusterIP
+  selector:
+    app: code-server
+    component: workspace
+    version: canary
+  ports:
+    - name: ide
+      port: 8765
+      targetPort: 8765
+      protocol: TCP
+    - name: agentapi
+      port: 3284
+      targetPort: 3284
+      protocol: TCP
+    - name: metrics
+      port: 9090
+      targetPort: 9090
+      protocol: TCP

@@ -1,0 +1,318 @@
+[
+  {
+    "key": "ctrl+shift+p",
+    "command": "workbench.action.quickOpen"
+  },
+  {
+    "key": "ctrl+p",
+    "command": "workbench.action.quickOpen"
+  },
+  {
+    "key": "ctrl+shift+f",
+    "command": "workbench.action.findInFiles"
+  },
+  {
+    "key": "f5",
+    "command": "workbench.action.debug.start"
+  },
+  {
+    "key": "ctrl+shift+d",
+    "command": "workbench.view.debug"
+  },
+  {
+    "key": "ctrl+shift+x",
+    "command": "workbench.extensions.action.showInstalledExtensions"
+  },
+  {
+    "key": "ctrl+shift+u",
+    "command": "workbench.action.output.toggleOutput"
+  },
+  {
+    "key": "ctrl+`",
+    "command": "workbench.action.terminal.toggleTerminal"
+  },
+  {
+    "key": "ctrl+shift+`",
+    "command": "workbench.action.terminal.new"
+  },
+  {
+    "key": "ctrl+shift+c",
+    "command": "workbench.action.terminal.openNativeConsole"
+  },
+  {
+    "key": "ctrl+k ctrl+i",
+    "command": "editor.action.showHover"
+  },
+  {
+    "key": "f12",
+    "command": "editor.action.goToDeclaration"
+  },
+  {
+    "key": "alt+f12",
+    "command": "editor.action.previewDeclaration"
+  },
+  {
+    "key": "ctrl+shift+o",
+    "command": "workbench.action.gotoSymbol"
+  },
+  {
+    "key": "ctrl+t",
+    "command": "workbench.action.showAllSymbols"
+  },
+  {
+    "key": "ctrl+shift+\\",
+    "command": "workbench.action.navigateBack"
+  },
+  {
+    "key": "alt+left",
+    "command": "workbench.action.navigateBack"
+  },
+  {
+    "key": "alt+right",
+    "command": "workbench.action.navigateForward"
+  },
+  {
+    "key": "ctrl+k z",
+    "command": "workbench.action.toggleZenMode"
+  },
+  {
+    "key": "ctrl+b",
+    "command": "workbench.action.toggleSidebarVisibility"
+  },
+  {
+    "key": "ctrl+shift+e",
+    "command": "workbench.view.explorer"
+  },
+  {
+    "key": "ctrl+shift+g",
+    "command": "workbench.view.scm"
+  },
+  {
+    "key": "ctrl+shift+d",
+    "command": "workbench.view.debug"
+  },
+  {
+    "key": "ctrl+shift+x",
+    "command": "workbench.extensions.action.showInstalledExtensions"
+  },
+  {
+    "key": "ctrl+shift+u",
+    "command": "workbench.action.output.toggleOutput"
+  },
+  {
+    "key": "ctrl+shift+y",
+    "command": "workbench.action.togglePanel"
+  },
+  {
+    "key": "ctrl+k m",
+    "command": "workbench.action.editor.changeLanguageMode"
+  },
+  {
+    "key": "ctrl+k p",
+    "command": "copyFilePath"
+  },
+  {
+    "key": "ctrl+k r",
+    "command": "revealFileInOS"
+  },
+  {
+    "key": "ctrl+k o",
+    "command": "revealFileInOS"
+  },
+  {
+    "key": "ctrl+k ctrl+up",
+    "command": "editor.action.moveLinesUpAction"
+  },
+  {
+    "key": "ctrl+k ctrl+down",
+    "command": "editor.action.moveLinesDownAction"
+  },
+  {
+    "key": "ctrl+k ctrl+shift+up",
+    "command": "editor.action.copyLinesUpAction"
+  },
+  {
+    "key": "ctrl+k ctrl+shift+down",
+    "command": "editor.action.copyLinesDownAction"
+  },
+  {
+    "key": "ctrl+k ctrl+enter",
+    "command": "editor.action.insertLineAfter"
+  },
+  {
+    "key": "ctrl+shift+enter",
+    "command": "editor.action.insertLineBefore"
+  },
+  {
+    "key": "ctrl+shift+k",
+    "command": "editor.action.deleteLines"
+  },
+  {
+    "key": "ctrl+/",
+    "command": "editor.action.commentLine"
+  },
+  {
+    "key": "shift+alt+a",
+    "command": "editor.action.blockComment"
+  },
+  {
+    "key": "ctrl+shift+[/",
+    "command": ["editor.fold", "editor.unfold"]
+  },
+  {
+    "key": "ctrl+k ctrl+0",
+    "command": "editor.foldAll"
+  },
+  {
+    "key": "ctrl+k ctrl+j",
+    "command": "editor.unfoldAll"
+  },
+  {
+    "key": "ctrl+k ctrl+1",
+    "command": "editor.foldLevel1"
+  },
+  {
+    "key": "ctrl+k ctrl+2",
+    "command": "editor.foldLevel2"
+  },
+  {
+    "key": "ctrl+k ctrl+3",
+    "command": "editor.foldLevel3"
+  },
+  {
+    "key": "ctrl+k ctrl+4",
+    "command": "editor.foldLevel4"
+  },
+  {
+    "key": "ctrl+k ctrl+5",
+    "command": "editor.foldLevel5"
+  },
+  {
+    "key": "ctrl+k ctrl+6",
+    "command": "editor.foldLevel6"
+  },
+  {
+    "key": "ctrl+k ctrl+7",
+    "command": "editor.foldLevel7"
+  },
+  {
+    "key": "ctrl+k ctrl+8",
+    "command": "editor.foldLevel8"
+  },
+  {
+    "key": "ctrl+k ctrl+9",
+    "command": "editor.foldLevel9"
+  },
+  {
+    "key": "ctrl+k ctrl+[",
+    "command": "editor.fold"
+  },
+  {
+    "key": "ctrl+k ctrl+]",
+    "command": "editor.unfold"
+  },
+  {
+    "key": "ctrl+k ctrl+/",
+    "command": "editor.toggleFold"
+  },
+  {
+    "key": "ctrl+k ctrl+j",
+    "command": "editor.unfoldAll"
+  },
+  {
+    "key": "ctrl+k ctrl+0",
+    "command": "editor.foldAll"
+  },
+  {
+    "key": "ctrl+k ctrl+1",
+    "command": "editor.foldLevel1"
+  },
+  {
+    "key": "ctrl+k ctrl+2",
+    "command": "editor.foldLevel2"
+  },
+  {
+    "key": "ctrl+k ctrl+3",
+    "command": "editor.foldLevel3"
+  },
+  {
+    "key": "ctrl+k ctrl+4",
+    "command": "editor.foldLevel4"
+  },
+  {
+    "key": "ctrl+k ctrl+5",
+    "command": "editor.foldLevel5"
+  },
+  {
+    "key": "ctrl+k ctrl+6",
+    "command": "editor.foldLevel6"
+  },
+  {
+    "key": "ctrl+k ctrl+7",
+    "command": "editor.foldLevel7"
+  },
+  {
+    "key": "ctrl+k ctrl+8",
+    "command": "editor.foldLevel8"
+  },
+  {
+    "key": "ctrl+k ctrl+9",
+    "command": "editor.foldLevel9"
+  },
+  {
+    "key": "ctrl+k ctrl+k",
+    "command": "editor.foldAllExcept"
+  },
+  {
+    "key": "ctrl+k ctrl+l",
+    "command": "editor.toggleFold"
+  },
+  {
+    "key": "ctrl+k ctrl+o",
+    "command": "editor.unfoldAll"
+  },
+  {
+    "key": "ctrl+k ctrl+p",
+    "command": "editor.action.quickFix"
+  },
+  {
+    "key": "ctrl+k ctrl+q",
+    "command": "editor.action.quickFix"
+  },
+  {
+    "key": "ctrl+k ctrl+r",
+    "command": "editor.action.refactor"
+  },
+  {
+    "key": "ctrl+k ctrl+s",
+    "command": "workbench.action.files.saveAll"
+  },
+  {
+    "key": "ctrl+k ctrl+t",
+    "command": "workbench.action.selectTheme"
+  },
+  {
+    "key": "ctrl+k ctrl+u",
+    "command": "workbench.action.files.revert"
+  },
+  {
+    "key": "ctrl+k ctrl+v",
+    "command": "markdown.showPreview"
+  },
+  {
+    "key": "ctrl+k ctrl+w",
+    "command": "workbench.action.closeAllEditors"
+  },
+  {
+    "key": "ctrl+k ctrl+x",
+    "command": "workbench.action.toggleFullScreen"
+  },
+  {
+    "key": "ctrl+k ctrl+y",
+    "command": "workbench.action.terminal.toggleTerminal"
+  },
+  {
+    "key": "ctrl+k ctrl+z",
+    "command": "workbench.action.toggleZenMode"
+  }
+]

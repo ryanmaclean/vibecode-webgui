@@ -1,0 +1,22 @@
+images:
+- location: "https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/nocloud_alpine-3.22.0-x86_64-uefi-cloudinit-r0.qcow2"
+  arch: "x86_64"
+vmType: "qemu"
+cpus: 2
+memory: "2GiB"
+disk: "10GiB"
+containerd:
+  system: false
+  user: false
+mounts:
+- location: "~"
+  writable: true
+provision:
+- mode: system
+  script: |
+    apk update
+    apk add vim
+- mode: user
+  script: |
+    mkdir -p ~/Project
+    echo 'alias ide="vim ~/Project"' >> ~/.profile

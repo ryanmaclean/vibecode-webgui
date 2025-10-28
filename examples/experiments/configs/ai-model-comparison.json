@@ -1,0 +1,254 @@
+{
+  "key": "ai_model_comparison_gpt4_vs_claude",
+  "name": "GPT-4 vs Claude 3.5 Sonnet for Code Completion",
+  "hypothesis": "Claude 3.5 Sonnet will match GPT-4's quality while reducing costs by 50%",
+  "description": "Compare GPT-4 Turbo against Claude 3.5 Sonnet for our code completion feature. Claude has shown strong performance on coding tasks and costs half as much. We want to validate quality parity before switching.",
+  "type": "ab_test",
+  "status": "draft",
+  "config": {
+    "variants": [
+      {
+        "key": "gpt4",
+        "name": "GPT-4 Turbo (Current)",
+        "description": "OpenAI GPT-4 Turbo via OpenRouter",
+        "weight": 0.5,
+        "config": {
+          "model": "openai/gpt-4-turbo",
+          "temperature": 0.2,
+          "maxTokens": 500,
+          "topP": 0.95
+        }
+      },
+      {
+        "key": "claude",
+        "name": "Claude 3.5 Sonnet",
+        "description": "Anthropic Claude 3.5 Sonnet via OpenRouter",
+        "weight": 0.5,
+        "config": {
+          "model": "anthropic/claude-3.5-sonnet",
+          "temperature": 0.2,
+          "maxTokens": 500,
+          "topP": 0.95
+        }
+      }
+    ],
+    "metrics": [
+      {
+        "name": "acceptance_rate",
+        "type": "binary",
+        "description": "User accepted the suggested code completion",
+        "target": "maximize",
+        "isPrimary": true
+      },
+      {
+        "name": "latency_ms",
+        "type": "continuous",
+        "unit": "milliseconds",
+        "description": "Time from request to first token",
+        "target": "minimize",
+        "isPrimary": true
+      },
+      {
+        "name": "cost_per_request",
+        "type": "continuous",
+        "unit": "usd",
+        "description": "API cost per completion",
+        "target": "minimize",
+        "isPrimary": true
+      },
+      {
+        "name": "code_quality_score",
+        "type": "continuous",
+        "description": "Heuristic quality score (0-1) based on syntax, completeness, relevance",
+        "target": "maximize",
+        "isPrimary": false
+      },
+      {
+        "name": "user_satisfaction",
+        "type": "continuous",
+        "description": "Explicit user rating (1-5 stars)",
+        "target": "maximize",
+        "isPrimary": false
+      }
+    ],
+    "guardrails": [
+      {
+        "metric": "error_rate",
+        "operator": "<",
+        "threshold": 0.01,
+        "severity": "critical",
+        "description": "Pause if error rate exceeds 1%"
+      },
+      {
+        "metric": "p95_latency_ms",
+        "operator": "<",
+        "threshold": 5000,
+        "severity": "warning",
+        "description": "Alert if p95 latency exceeds 5 seconds"
+      },
+      {
+        "metric": "acceptance_rate",
+        "operator": ">",
+        "threshold": 0.30,
+        "severity": "critical",
+        "description": "Pause if acceptance rate drops below 30%"
+      },
+      {
+        "metric": "cost_per_request",
+        "operator": "<",
+        "threshold": 0.05,
+        "severity": "warning",
+        "description": "Alert if cost per request exceeds $0.05"
+      }
+    ],
+    "targetingRules": [
+      {
+        "attribute": "language",
+        "operator": "in",
+        "values": ["typescript", "javascript", "python", "go"],
+        "description": "Test on primary supported languages"
+      },
+      {
+        "attribute": "userTier",
+        "operator": "in",
+        "values": ["pro", "enterprise"],
+        "description": "Only paid users (not free tier)"
+      },
+      {
+        "attribute": "completionType",
+        "operator": "equals",
+        "value": "inline",
+        "description": "Inline completions only (not chat)"
+      }
+    ],
+    "trafficAllocation": {
+      "percentage": 1.0,
+      "rolloutStrategy": "immediate"
+    }
+  },
+  "sampleSize": {
+    "target": 5000,
+    "perVariant": 2500,
+    "estimatedDuration": "7 days",
+    "powerAnalysis": {
+      "baselineAcceptance": 0.45,
+      "minimumDetectableEffect": 0.10,
+      "statisticalPower": 0.85,
+      "significanceLevel": 0.05
+    }
+  },
+  "expectedResults": {
+    "description": "Claude 3.5 Sonnet has shown excellent coding capabilities in benchmarks. We expect it to match or slightly exceed GPT-4's quality while cutting costs in half. Latency should be similar or slightly better.",
+    "primaryMetric": {
+      "gpt4": {
+        "acceptanceRate": 0.45,
+        "latency": 1800,
+        "costPerRequest": 0.024
+      },
+      "claude": {
+        "acceptanceRate": 0.47,
+        "latency": 1600,
+        "costPerRequest": 0.012,
+        "qualityDelta": "+4%",
+        "latencyDelta": "-11%",
+        "costDelta": "-50%"
+      }
+    },
+    "costSavingsProjection": {
+      "currentMonthlyRequests": 500000,
+      "currentMonthlyCost": 12000,
+      "projectedMonthlyCost": 6000,
+      "annualSavings": 72000,
+      "description": "$72K annual savings if Claude matches quality"
+    }
+  },
+  "decisionCriteria": {
+    "conditions": [
+      {
+        "metric": "acceptance_rate",
+        "requirement": "Claude must be within 5% of GPT-4 (or better)",
+        "minAcceptable": 0.90,
+        "description": "Quality must be at least 90% of GPT-4"
+      },
+      {
+        "metric": "latency_ms",
+        "requirement": "Claude p95 latency must be < 5000ms",
+        "maxAcceptable": 5000,
+        "description": "Latency must remain acceptable"
+      },
+      {
+        "metric": "cost_per_request",
+        "requirement": "Claude should be significantly cheaper",
+        "minSavings": 0.30,
+        "description": "At least 30% cost reduction"
+      }
+    ],
+    "decisionMatrix": {
+      "ship_claude": "Quality within 5% of GPT-4, cost savings >30%, no guardrail violations",
+      "ship_gpt4": "Claude underperforms on quality by >5% or has reliability issues",
+      "test_hybrid": "Claude excels at some tasks but not others → build router",
+      "continue_testing": "Results inconclusive or need larger sample size"
+    }
+  },
+  "rolloutPlan": {
+    "strategy": "gradual_with_monitoring",
+    "stages": [
+      {
+        "name": "Canary Deployment",
+        "percentage": 0.05,
+        "duration": "1 day",
+        "checkpoints": ["No errors", "Latency acceptable", "Initial quality signals"]
+      },
+      {
+        "name": "Limited Rollout",
+        "percentage": 0.25,
+        "duration": "3 days",
+        "checkpoints": ["Guardrails passing", "Acceptance rate within 5% of GPT-4"]
+      },
+      {
+        "name": "Majority Rollout",
+        "percentage": 0.75,
+        "duration": "7 days",
+        "checkpoints": ["Statistical significance on quality", "Cost savings confirmed"]
+      },
+      {
+        "name": "Full Rollout",
+        "percentage": 1.0,
+        "duration": "permanent",
+        "checkpoints": ["All metrics stable", "Engineering team approval"]
+      }
+    ],
+    "rollbackTriggers": [
+      "Acceptance rate drops >10%",
+      "Error rate spikes",
+      "User complaints increase",
+      "p95 latency >5s"
+    ],
+    "monitoring": {
+      "frequency": "hourly",
+      "alerts": ["slack", "pagerduty"],
+      "dashboards": ["datadog_rum", "internal_experiments"]
+    }
+  },
+  "metadata": {
+    "owner": "ai_team",
+    "stakeholders": ["cto", "product_engineering", "finance"],
+    "priority": "critical",
+    "estimatedImpact": {
+      "annualCostSavings": "$72,000",
+      "qualityImpact": "neutral to slightly positive",
+      "engineeringEffort": "10 hours setup + ongoing monitoring",
+      "description": "Significant cost optimization opportunity with minimal risk if properly monitored"
+    },
+    "relatedExperiments": [
+      "ai_model_selection_multi_armed_bandit",
+      "code_completion_context_window_optimization"
+    ],
+    "references": [
+      "Claude 3.5 Sonnet announcement: https://anthropic.com/news/claude-3-5-sonnet",
+      "Internal benchmark: Claude vs GPT-4 on coding tasks (Aug 2025)",
+      "Cost analysis spreadsheet: /internal/ai-cost-optimization"
+    ],
+    "notes": "If results are positive, plan to extend to other coding features (chat, refactoring, documentation). Consider building a model router that selects GPT-4 for complex tasks and Claude for routine completions."
+  }
+}

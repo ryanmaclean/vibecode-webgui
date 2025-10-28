@@ -1,0 +1,44 @@
+name: Test Coverage (Focused)
+
+on:
+  pull_request:
+    branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/test-coverage.yml'
+  workflow_dispatch:
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run focused coverage
+        run: |
+          npm run test -- --coverage --runTestsByPath \
+            tests/unit/monitoring/connection-pool-alerts.test.ts \
+            tests/unit/db/vector-connection-pool.test.ts \
+            tests/unit/feature-flags.test.ts
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: unit-coverage
+          path: coverage
+          retention-days: 7

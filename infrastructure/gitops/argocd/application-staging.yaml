@@ -1,0 +1,108 @@
+# ArgoCD Application for Staging Environment
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vibecode-webgui-staging
+  namespace: argocd
+  labels:
+    app: vibecode-webgui
+    environment: staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "1"
+spec:
+  project: vibecode-platform
+  source:
+    repoURL: https://github.com/ryanmaclean/vibecode-webgui.git
+    targetRevision: develop
+    path: infrastructure/kubernetes/environments/staging
+    helm:
+      valueFiles:
+      - ../../../helm/values-staging.yaml
+      parameters:
+      - name: image.tag
+        value: "develop-latest"
+      - name: environment
+        value: "staging"
+      - name: replicas
+        value: "2"
+      - name: resources.requests.cpu
+        value: "200m"
+      - name: resources.requests.memory
+        value: "256Mi"
+      - name: resources.limits.cpu
+        value: "1000m"
+      - name: resources.limits.memory
+        value: "1Gi"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vibecode-webgui-staging
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+      allowEmpty: false
+    syncOptions:
+    - CreateNamespace=true
+    - PrunePropagationPolicy=foreground
+    - PruneLast=true
+    - ApplyOutOfSyncOnly=true
+    retry:
+      limit: 5
+      backoff:
+        duration: 5s
+        factor: 2
+        maxDuration: 3m
+  revisionHistoryLimit: 10
+  ignoreDifferences:
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /spec/replicas
+  - group: ""
+    kind: ConfigMap
+    jsonPointers:
+    - /data
+  info:
+  - name: Environment
+    value: Staging
+  - name: URL
+    value: https://vibecode-webgui-staging.yourdomain.com
+
+---
+# ArgoCD Application for Database Migration Job (Staging)
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: vibecode-db-migration-staging
+  namespace: argocd
+  labels:
+    app: vibecode-webgui
+    component: database
+    environment: staging
+  annotations:
+    argocd.argoproj.io/sync-wave: "0"
+spec:
+  project: vibecode-platform
+  source:
+    repoURL: https://github.com/ryanmaclean/vibecode-webgui.git
+    targetRevision: develop
+    path: infrastructure/kubernetes/jobs/database-migration
+    helm:
+      valueFiles:
+      - ../../../helm/values-staging.yaml
+      parameters:
+      - name: environment
+        value: "staging"
+      - name: database.name
+        value: "vibecode_staging"
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: vibecode-webgui-staging
+  syncPolicy:
+    automated:
+      prune: false
+      selfHeal: false
+    syncOptions:
+    - CreateNamespace=true
+    - Replace=true
+  revisionHistoryLimit: 5

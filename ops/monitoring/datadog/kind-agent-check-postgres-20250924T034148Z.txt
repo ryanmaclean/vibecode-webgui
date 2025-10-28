@@ -1,0 +1,4643 @@
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:845 in func1) | Using '/opt/datadog-agent/embedded' as Python home
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Starting to load the configuration
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_TRACE_SAMPLE_RATE
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_IAST_REQUEST_SAMPLING
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_PROFILING_ENABLED
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Unknown environment variable: DD_IAST_ENABLED
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Loading proxy settings
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Starting to resolve secrets
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/util/log/log.go:885 in func1) | Agent configuration relax permissions constraint on the secret backend cmd, Group can read and exec
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:840 in func1) | Finished resolving secrets
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:845 in func1) | Agent found cri socket at: /host/var/run/containerd/containerd.sock
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:845 in func1) | Agent did not find PodResources socket at /var/lib/kubelet/pod-resources/kubelet.sock
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/log/log.go:845 in func1) | 3 Features detected from environment: kubernetes,cri,containerd
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/tagger/impl/tagger.go:110 in NewComponent) | Tagger is created
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/aggregator/demultiplexer.go:194 in getDogStatsDWorkerAndPipelineCount) | Dogstatsd workers and pipelines count:  7  workers,  1  pipelines
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/aggregator/demultiplexer.go:143 in GetDogStatsDWorkerAndPipelineCount) | Dogstatsd configured to run with 7 workers and 1 pipelines
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/aggregator/time_sampler.go:54 in NewTimeSampler) | Creating TimeSampler #0
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/api/util/util.go:104 in CreateAndSetAuthToken) | starting to load the IPC auth primitives (timeout: 30s)
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/api/security/cert/cert_getter.go:32 in getCertFilepath) | IPC cert/key created or retrieved next to auth_token_file_path location: /etc/datadog-agent/auth/ipc_cert.pem
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/api/util/util.go:313 in printAuthSignature) | successfully loaded the IPC auth primitives (fingerprint: 746b965b529ceacb)
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:102 in start) | workloadmeta store initialized successfully
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/types.go:84 in Register) | Service listener factory cloudfoundry-bbs does not exist.
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/types.go:84 in Register) | Service listener factory kube_endpoints does not exist.
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/types.go:84 in Register) | Service listener factory kube_services does not exist.
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/api/api/apiimpl/server.go:32 in startServer) | Started HTTP server 'CMD API Server' on 127.0.0.1:44943
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/providers/config_reader.go:173 in read) | Searching for configuration files at: /etc/datadog-agent/conf.d
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/tagger/collectors/workloadmeta_main.go:155 in stream) | workloadmeta tagger collector started
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "nvml" could not start. error: component workloadmeta-nvml is disabled: Agent does not have NVML library available
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "process-collector" could not start. error: collector process-collector is not enabled
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "crio" could not start. error: component workloadmeta-crio is disabled: Crio not detected
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "cloudfoundry-container" could not start. error: component workloadmeta-cloudfoundry-container is disabled: Agent is not running on CloudFoundry
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/util/containerd/containerd_util.go:181 in connect) | Connected to containerd - Version v2.1.3/***********************************10486
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/providers/config_reader.go:249 in collectEntry) | Skipping 'auto_conf.yaml' for integration 'kubernetes_state'
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/providers/config_reader.go:173 in read) | Searching for configuration files at: /opt/datadog-agent/bin/agent/dist/conf.d
+2025-09-24 03:41:48 UTC | CORE | WARN | (comp/core/autodiscovery/providers/config_reader.go:177 in read) | Skipping, open /opt/datadog-agent/bin/agent/dist/conf.d: no such file or directory
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/providers/config_reader.go:173 in read) | Searching for configuration files at: 
+2025-09-24 03:41:48 UTC | CORE | WARN | (comp/core/autodiscovery/providers/config_reader.go:177 in read) | Skipping, open : no such file or directory
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/config/autodiscovery/autodiscovery.go:115 in DiscoverComponentsFromEnv) | Adding KubeContainer provider from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/config/autodiscovery/autodiscovery.go:125 in DiscoverComponentsFromEnv) | Adding Kubelet listener from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/autoconfig.go:592 in initListenerCandidates) | environment listener successfully started
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/autoconfig.go:592 in initListenerCandidates) | static config listener successfully started
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/autoconfig.go:592 in initListenerCandidates) | kubelet listener successfully started
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/workloadmeta.go:139 in Listen) | ad-kubeletlistener initialized successfully
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/config_poller.go:170 in collectOnce) | file provider: collected 66 new configurations, removed 0
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/environment.go:64 in createServices) | Listener created cri service from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/environment.go:64 in createServices) | Listener created containerd service from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/environment.go:64 in createServices) | Listener created kubelet service from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/listeners/environment.go:71 in createServices) | Listener created container service from environment
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/autoconfig.go:472 in LoadAndRun) | Started config provider "file"
+2025-09-24 03:41:48 UTC | CORE | INFO | (comp/core/autodiscovery/autodiscoveryimpl/autoconfig.go:472 in LoadAndRun) | Started config provider "kubernetes-container-allinone"
+2025-09-24 03:41:48 UTC | CORE | WARN | (pkg/collector/python/check_context.go:54 in initializeCheckContext) | Log receiver not provided. Logs from integrations will not be collected.
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/collector/python/init.go:327 in resolvePythonHome) | Using '/opt/datadog-agent/embedded' as Python home
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/collector/python/init.go:396 in Initialize) | Initializing rtloader with Python 3 /opt/datadog-agent/embedded
+2025-09-24 03:41:48 UTC | CORE | INFO | (pkg/collector/python/embed_python.go:21 in InitPython) | Embedding Python 3.12.9 (main, Jun  2 2025, 07:51:02) [GCC 12.3.0]
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:585 in startCandidates) | workloadmeta collector "containerd" started successfully
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "docker" could not start. error: component workloadmeta-docker is disabled: Agent is not running on Docker
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "cloudfoundry-vm" could not start. error: component workloadmeta-cloudfoundry-vm is disabled: Agent is not running on CloudFoundry
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "podman" could not start. error: component workloadmeta-podman is disabled: Podman not detected
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "ecs" could not start. error: component workloadmeta-ecs is disabled: Agent is not running on ECS EC2
+2025-09-24 03:41:49 UTC | CORE | INFO | (comp/core/workloadmeta/impl/store.go:588 in startCandidates) | workloadmeta collector "ecs_fargate" could not start. error: component workloadmeta-ecs_fargate is disabled: Agent is not running on ECS Fargate
+2025-09-24 03:41:49 UTC | CORE | WARN | (pkg/collector/python/datadog_agent.go:145 in LogMessage) | unknown | (core.py:261) | QueryManager initialized with no query
+2025-09-24 03:41:49 UTC | CORE | INFO | (pkg/util/containerd/containerd_util.go:181 in connect) | Connected to containerd - Version v2.1.3/***********************************10486
+2025-09-24 03:41:49 UTC | CORE | WARN | (pkg/util/cgroups/pid_mapper.go:108 in getPidMapper) | Usage of cgroupv2 detected but the Agent does not seem to run in host cgroup namespace. Make sure to run with --cgroupns=host, some feature may not work otherwise
+2025-09-24 03:41:50 UTC | CORE | ERROR | (pkg/collector/python/datadog_agent.go:143 in LogMessage) | postgres:e6034fa7fed95628 | (postgres.py:265) | Unhandled exception while using database connection vibecode
+Traceback (most recent call last):
+  File "/opt/datadog-agent/embedded/lib/python3.12/site-packages/datadog_checks/postgres/postgres.py", line 250, in db
+    yield self._db
+  File "/opt/datadog-agent/embedded/lib/python3.12/site-packages/datadog_checks/postgres/postgres.py", line 233, in execute_query_raw
+    cursor.execute(query)
+  File "/opt/datadog-agent/embedded/lib/python3.12/site-packages/datadog_checks/postgres/cursor.py", line 28, in execute
+    return super().execute(query, vars)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+psycopg2.errors.InsufficientPrivilege: permission denied for function pg_ls_waldir
+2025-09-24 03:41:50 UTC | CORE | ERROR | (pkg/collector/python/datadog_agent.go:143 in LogMessage) | - | (core.py:94) | Error querying wal_metrics: permission denied for function pg_ls_waldir
+2025-09-24 03:41:50 UTC | CORE | INFO | (pkg/collector/python/datadog_agent.go:147 in LogMessage) | postgres:e6034fa7fed95628 | (utils.py:335) | [component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,db:vibecode,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,job:query-metrics] Starting job loop
+2025-09-24 03:41:50 UTC | CORE | INFO | (pkg/collector/python/datadog_agent.go:147 in LogMessage) | postgres:e6034fa7fed95628 | (utils.py:335) | [component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,db:vibecode,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,job:query-samples] Starting job loop
+2025-09-24 03:41:50 UTC | CORE | INFO | (pkg/collector/python/datadog_agent.go:147 in LogMessage) | postgres:e6034fa7fed95628 | (utils.py:335) | [component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,db:vibecode,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,job:database-metadata] Starting job loop
+2025-09-24 03:41:50 UTC | CORE | WARN | (pkg/collector/python/datadog_agent.go:145 in LogMessage) | postgres:e6034fa7fed95628 | (statement_samples.py:659) | cannot collect execution plans due to invalid schema in dbname=vibecode: InvalidSchemaName('schema "datadog" does not exist\nLINE 1: ... DDIGNORE */ /* service=\'datadog-agent\' */ SELECT datadog.ex...\n                                                             ^\n')
+=== Series ===
+[
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.194549560546875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:slru_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.194549560546875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:slru_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.194549560546875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:slru_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:slru_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.194549560546875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:slru_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.6039142608642578
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:subscription_state_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.6039142608642578
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:subscription_state_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.6039142608642578
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:subscription_state_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:subscription_state_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.6039142608642578
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:subscription_state_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.1068115234375
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:report_postgres_metadata",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.1068115234375
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:report_postgres_metadata",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.1068115234375
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:report_postgres_metadata",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:report_postgres_metadata",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.1068115234375
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:report_postgres_metadata",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.running",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.control.checkpoint_delay_bytes",
+    "points": [
+      [
+        1758685310,
+        360128
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.286102294921875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:bgw_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.286102294921875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:bgw_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.286102294921875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:bgw_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:bgw_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.286102294921875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:bgw_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.snapshot.xip_count",
+    "points": [
+      [
+        1758685310,
+        0
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.database_size",
+    "points": [
+      [
+        1758685310,
+        7.950819e+06
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.before_xid_wraparound",
+    "points": [
+      [
+        1758685310,
+        2.147483613e+09
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:postgres",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.before_xid_wraparound",
+    "points": [
+      [
+        1758685310,
+        2.147483613e+09
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.7810592651367188
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.7810592651367188
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.7810592651367188
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.7810592651367188
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.19860267639160156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database_conflicts",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.19860267639160156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database_conflicts",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.19860267639160156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database_conflicts",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database_conflicts",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.19860267639160156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database_conflicts",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.max_connections",
+    "points": [
+      [
+        1758685310,
+        100
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.11920928955078125
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_uptime",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.11920928955078125
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_uptime",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.11920928955078125
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_uptime",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_uptime",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.11920928955078125
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_uptime",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        1.4770030975341797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots_stats",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        1.4770030975341797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots_stats",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        1.4770030975341797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots_stats",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots_stats",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        1.4770030975341797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots_stats",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.5538463592529297
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:count_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.5538463592529297
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:count_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.5538463592529297
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:count_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:count_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.5538463592529297
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:count_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.5767345428466797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:index_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.5767345428466797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:index_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.5767345428466797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:index_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:index_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.5767345428466797
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:index_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.snapshot.xmax",
+    "points": [
+      [
+        1758685310,
+        758
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.9987354278564453
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.9987354278564453
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.9987354278564453
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.9987354278564453
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        18.90420913696289
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        18.90420913696289
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        18.90420913696289
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        18.90420913696289
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.60272216796875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_io_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.60272216796875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_io_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.60272216796875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_io_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_io_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.60272216796875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_io_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.1468658447265625
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_control_checkpoint",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.1468658447265625
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_control_checkpoint",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.1468658447265625
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_control_checkpoint",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_control_checkpoint",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.1468658447265625
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_control_checkpoint",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        15.723466873168945
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        15.723466873168945
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        15.723466873168945
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        15.723466873168945
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:replication_stats_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        2.8150081634521484
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:instance_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        2.8150081634521484
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:instance_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        2.8150081634521484
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:instance_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:instance_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        2.8150081634521484
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:instance_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        9.639263153076172
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:cluster_vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        9.639263153076172
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:cluster_vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        9.639263153076172
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:cluster_vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:cluster_vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        9.639263153076172
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:cluster_vacuum_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        1.1796951293945312
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:connections_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        1.1796951293945312
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:connections_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        1.1796951293945312
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:connections_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:connections_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        1.1796951293945312
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:connections_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.4711151123046875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.4711151123046875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.4711151123046875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.4711151123046875
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_database",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.control.redo_delay_bytes",
+    "points": [
+      [
+        1758685310,
+        360128
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.db.count",
+    "points": [
+      [
+        1758685310,
+        2
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        1.1053085327148438
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_wal_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        1.1053085327148438
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_wal_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        1.1053085327148438
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_wal_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_wal_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        1.1053085327148438
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_wal_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.control.timeline_id",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.39696693420410156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.39696693420410156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.39696693420410156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.39696693420410156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_replication_slots",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.wal_receiver.connected",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "status:disconnected",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        2.2759437561035156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:analyze_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        2.2759437561035156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:analyze_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        2.2759437561035156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:analyze_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:analyze_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        2.2759437561035156
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:analyze_progress_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.database_size",
+    "points": [
+      [
+        1758685310,
+        7.664099e+06
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:postgres",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.percent_usage_connections",
+    "points": [
+      [
+        1758685310,
+        0.05
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.13375282287597656
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_wal_receiver",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.13375282287597656
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_wal_receiver",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.13375282287597656
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_wal_receiver",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_wal_receiver",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.13375282287597656
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_stat_wal_receiver",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.uptime",
+    "points": [
+      [
+        1758685310,
+        172
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.48422813415527344
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_snapshot",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.48422813415527344
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_snapshot",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.48422813415527344
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_snapshot",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_snapshot",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.48422813415527344
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:pg_snapshot",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        1.2409687042236328
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        1.2409687042236328
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        1.2409687042236328
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        1.2409687042236328
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:stat_subscription_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.max",
+    "points": [
+      [
+        1758685310,
+        0.09989738464355469
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:archiver_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.median",
+    "points": [
+      [
+        1758685310,
+        0.09989738464355469
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:archiver_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.avg",
+    "points": [
+      [
+        1758685310,
+        0.09989738464355469
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:archiver_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.count",
+    "points": [
+      [
+        1758685310,
+        1
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:archiver_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "rate",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "dd.postgres.operation.time.95percentile",
+    "points": [
+      [
+        1758685310,
+        0.09989738464355469
+      ]
+    ],
+    "tags": [
+      "agent_hostname:vibecode-kind-local",
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "operation:archiver_metrics",
+      "port:5432",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.control.checkpoint_delay",
+    "points": [
+      [
+        1758685310,
+        175.018548
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  },
+  {
+    "metric": "postgresql.snapshot.xmin",
+    "points": [
+      [
+        1758685310,
+        758
+      ]
+    ],
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ],
+    "host": "postgres-service.vibecode-platform.svc.cluster.local",
+    "type": "gauge",
+    "interval": 0,
+    "source_type_name": "System"
+  }
+]
+=== Service Checks ===
+[
+  {
+    "check": "postgres.can_connect",
+    "host_name": "postgres-service.vibecode-platform.svc.cluster.local",
+    "timestamp": 1758685310,
+    "status": 0,
+    "message": "",
+    "tags": [
+      "component:database",
+      "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "db:vibecode",
+      "dd.internal.resource:database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+      "env:local",
+      "port:5432",
+      "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+      "replication_role:master",
+      "server:postgres-service.vibecode-platform.svc.cluster.local",
+      "service:vibecode-postgres",
+      "system_identifier:7553495119424151594"
+    ]
+  }
+]
+=== Database Monitoring Metadata Samples ===
+[
+  {
+    "EventType": "dbm-metadata",
+    "UnmarshalledEvent": {
+      "agent_version": "7.66.1",
+      "cloud_metadata": {},
+      "collection_interval": 300,
+      "database_hostname": "postgres-service.vibecode-platform.svc.cluster.local",
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "dbms": "postgres",
+      "dbms_version": "v16.10.0",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "integration_version": "22.12.1",
+      "kind": "database_instance",
+      "metadata": {
+        "connection_host": "postgres-service.vibecode-platform.svc.cluster.local",
+        "dbm": true
+      },
+      "port": 5432,
+      "tags": [
+        "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+        "replication_role:master",
+        "service:vibecode-postgres",
+        "component:database",
+        "server:postgres-service.vibecode-platform.svc.cluster.local",
+        "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+        "port:5432",
+        "env:local",
+        "system_identifier:7553495119424151594",
+        "database_instance:postgres-service.vibecode-platform.svc.cluster.local"
+      ],
+      "timestamp": 1758685309976.7334
+    }
+  },
+  {
+    "EventType": "dbm-metadata",
+    "UnmarshalledEvent": {
+      "agent_version": "7.66.1",
+      "cloud_metadata": {},
+      "collection_interval": 300,
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "dbms": "postgres",
+      "dbms_version": "v16.10.0",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "kind": "pg_settings",
+      "metadata": null,
+      "tags": [
+        "component:database",
+        "env:local",
+        "service:vibecode-postgres",
+        "server:postgres-service.vibecode-platform.svc.cluster.local",
+        "port:5432",
+        "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+        "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+        "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+        "system_identifier:7553495119424151594",
+        "replication_role:master"
+      ],
+      "timestamp": 1758685310089.3645
+    }
+  },
+  {
+    "EventType": "dbm-metadata",
+    "UnmarshalledEvent": {
+      "agent_version": "7.66.1",
+      "cloud_metadata": {},
+      "collection_interval": 300,
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "dbms": "postgres",
+      "dbms_version": "v16.10.0",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "kind": "pg_settings",
+      "metadata": null,
+      "tags": [
+        "component:database",
+        "env:local",
+        "service:vibecode-postgres",
+        "server:postgres-service.vibecode-platform.svc.cluster.local",
+        "port:5432",
+        "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+        "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+        "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+        "system_identifier:7553495119424151594",
+        "replication_role:master"
+      ],
+      "timestamp": 1758685310099.9365
+    }
+  }
+]
+=== Database Monitoring Activity Samples ===
+[
+  {
+    "EventType": "dbm-activity",
+    "UnmarshalledEvent": {
+      "cloud_metadata": {},
+      "collection_interval": 10,
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "dbm_type": "activity",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": [
+        "component:database",
+        "env:local",
+        "service:vibecode-postgres",
+        "server:postgres-service.vibecode-platform.svc.cluster.local",
+        "port:5432",
+        "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+        "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+        "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+        "system_identifier:7553495119424151594",
+        "replication_role:master"
+      ],
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres_activity": [],
+      "postgres_connections": [
+        {
+          "application_name": "datadog-agent",
+          "connections": 5,
+          "datname": "vibecode",
+          "state": "idle",
+          "usename": "datadog"
+        }
+      ],
+      "service": "",
+      "timestamp": 1758685310123.818
+    }
+  }
+]
+=== Database Monitoring Query Metrics ===
+[
+  {
+    "EventType": "dbm-metrics",
+    "UnmarshalledEvent": {
+      "cloud_metadata": {},
+      "ddagenthostname": "vibecode-kind-local",
+      "ddagentversion": "7.66.1",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "min_collection_interval": 10,
+      "postgres_rows": [
+        {
+          "calls": 1,
+          "datname": "vibecode",
+          "dd_commands": [
+            "SELECT"
+          ],
+          "dd_comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "dd_tables": [
+            "pg_stat_activity"
+          ],
+          "local_blks_dirtied": 0,
+          "local_blks_hit": 0,
+          "local_blks_read": 0,
+          "local_blks_written": 0,
+          "max_plan_time": 0,
+          "mean_plan_time": 0,
+          "min_plan_time": 0,
+          "query": "SELECT application_name, state, usename, datname, count ( * ) as connections FROM pg_stat_activity WHERE pid != pg_backend_pid ( ) AND client_port IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? GROUP BY application_name, state, usename, datname",
+          "query_signature": "e26ac5dc61456765",
+          "queryid": -7264033440628016000,
+          "rolname": "datadog",
+          "rows": 1,
+          "shared_blks_dirtied": 0,
+          "shared_blks_hit": 17,
+          "shared_blks_read": 0,
+          "shared_blks_written": 0,
+          "stddev_plan_time": 0,
+          "temp_blks_read": 0,
+          "temp_blks_written": 0,
+          "total_exec_time": 0.08775099999999991,
+          "total_plan_time": 0,
+          "wal_bytes": 0,
+          "wal_fpi": 0,
+          "wal_records": 0
+        },
+        {
+          "calls": 1,
+          "datname": "vibecode",
+          "dd_commands": [
+            "SELECT"
+          ],
+          "dd_comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "dd_tables": [
+            "pg_stat_statements"
+          ],
+          "local_blks_dirtied": 0,
+          "local_blks_hit": 0,
+          "local_blks_read": 0,
+          "local_blks_written": 0,
+          "max_plan_time": 0,
+          "mean_plan_time": 0,
+          "min_plan_time": 0,
+          "query": "SELECT COUNT ( * ) FROM pg_stat_statements ( ? )",
+          "query_signature": "6d026219c69e5c7c",
+          "queryid": 3829578196409232400,
+          "rolname": "datadog",
+          "rows": 1,
+          "shared_blks_dirtied": 0,
+          "shared_blks_hit": 0,
+          "shared_blks_read": 0,
+          "shared_blks_written": 0,
+          "stddev_plan_time": 0,
+          "temp_blks_read": 0,
+          "temp_blks_written": 0,
+          "total_exec_time": 0.04995800000000017,
+          "total_plan_time": 0,
+          "wal_bytes": 0,
+          "wal_fpi": 0,
+          "wal_records": 0
+        },
+        {
+          "calls": 1,
+          "datname": "vibecode",
+          "dd_commands": [
+            "SELECT"
+          ],
+          "dd_comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "dd_tables": [
+            "pg_stat_activity"
+          ],
+          "local_blks_dirtied": 0,
+          "local_blks_hit": 0,
+          "local_blks_read": 0,
+          "local_blks_written": 0,
+          "max_plan_time": 0,
+          "mean_plan_time": 0,
+          "min_plan_time": 0,
+          "query": "SELECT clock_timestamp ( ) as now, datid, datname, pid, usesysid, usename, application_name, client_addr, client_hostname, client_port, backend_start, xact_start, query_start, state_change, wait_event_type, wait_event, state, backend_xid, backend_xmin, query, backend_type :: bytea as backend_type, pg_blocking_pids ( pid ) as blocking_pids FROM pg_stat_activity WHERE backend_type != ? OR ( coalesce ( TRIM ( query ), ? ) != ? AND pid != pg_backend_pid ( ) AND query_start IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? )",
+          "query_signature": "4948c1400360b18d",
+          "queryid": -6272645861969415000,
+          "rolname": "datadog",
+          "rows": 5,
+          "shared_blks_dirtied": 0,
+          "shared_blks_hit": 2,
+          "shared_blks_read": 0,
+          "shared_blks_written": 0,
+          "stddev_plan_time": 0,
+          "temp_blks_read": 0,
+          "temp_blks_written": 0,
+          "total_exec_time": 0.10866600000000004,
+          "total_plan_time": 0,
+          "wal_bytes": 0,
+          "wal_fpi": 0,
+          "wal_records": 0
+        },
+        {
+          "calls": 1,
+          "datname": "vibecode",
+          "dd_commands": [
+            "SELECT",
+            "JOIN"
+          ],
+          "dd_comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "dd_tables": [
+            "pg_stat_statements",
+            "pg_roles",
+            "pg_database"
+          ],
+          "local_blks_dirtied": 0,
+          "local_blks_hit": 0,
+          "local_blks_read": 0,
+          "local_blks_written": 0,
+          "max_plan_time": 0,
+          "mean_plan_time": 0,
+          "min_plan_time": 0,
+          "query": "SELECT calls, datname, local_blks_dirtied, local_blks_hit, local_blks_read, local_blks_written, max_plan_time, mean_plan_time, min_plan_time, query, queryid, rolname, rows, shared_blks_dirtied, shared_blks_hit, shared_blks_read, shared_blks_written, stddev_plan_time, temp_blks_read, temp_blks_written, total_exec_time, total_plan_time, wal_bytes, wal_fpi, wal_records FROM pg_stat_statements as pg_stat_statements LEFT JOIN pg_roles ON pg_stat_statements.userid = pg_roles.oid LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid WHERE query != ? AND query NOT LIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ?",
+          "query_signature": "52ef437f01dca6eb",
+          "queryid": -1192038929238159600,
+          "rolname": "datadog",
+          "rows": 42,
+          "shared_blks_dirtied": 0,
+          "shared_blks_hit": 2,
+          "shared_blks_read": 0,
+          "shared_blks_written": 0,
+          "stddev_plan_time": 0,
+          "temp_blks_read": 0,
+          "temp_blks_written": 0,
+          "total_exec_time": 0.2385850000000005,
+          "total_plan_time": 0,
+          "wal_bytes": 0,
+          "wal_fpi": 0,
+          "wal_records": 0
+        },
+        {
+          "calls": 1,
+          "datname": "vibecode",
+          "dd_commands": [
+            "SELECT"
+          ],
+          "dd_comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "dd_tables": [
+            "pg_stat_statements_info"
+          ],
+          "local_blks_dirtied": 0,
+          "local_blks_hit": 0,
+          "local_blks_read": 0,
+          "local_blks_written": 0,
+          "max_plan_time": 0,
+          "mean_plan_time": 0,
+          "min_plan_time": 0,
+          "query": "SELECT dealloc FROM pg_stat_statements_info",
+          "query_signature": "cff8aa96b79f7066",
+          "queryid": -8255880197452432000,
+          "rolname": "datadog",
+          "rows": 1,
+          "shared_blks_dirtied": 0,
+          "shared_blks_hit": 0,
+          "shared_blks_read": 0,
+          "shared_blks_written": 0,
+          "stddev_plan_time": 0,
+          "temp_blks_read": 0,
+          "temp_blks_written": 0,
+          "total_exec_time": 0.004249999999999865,
+          "total_plan_time": 0,
+          "wal_bytes": 0,
+          "wal_fpi": 0,
+          "wal_records": 0
+        }
+      ],
+      "postgres_version": "v16.10.0",
+      "service": "",
+      "tags": [
+        "component:database",
+        "env:local",
+        "service:vibecode-postgres",
+        "server:postgres-service.vibecode-platform.svc.cluster.local",
+        "port:5432",
+        "database_hostname:postgres-service.vibecode-platform.svc.cluster.local",
+        "database_instance:postgres-service.vibecode-platform.svc.cluster.local",
+        "postgresql_version:16.10 (Debian 16.10-1.pgdg12+1)",
+        "system_identifier:7553495119424151594",
+        "replication_role:master"
+      ],
+      "timestamp": 1758685310127.895
+    }
+  }
+]
+=== Database Monitoring Query Samples ===
+[
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "cloud_metadata": {},
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "application": "datadog-agent",
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_io"
+          ]
+        },
+        "plan": {
+          "collection_errors": [
+            {
+              "code": "invalid_schema",
+              "message": "\u003cclass 'psycopg2.errors.InvalidSchemaName'\u003e"
+            }
+          ],
+          "definition": null,
+          "signature": null
+        },
+        "query_signature": "4e169e100fd25b04",
+        "query_truncated": "not_truncated",
+        "resource_hash": "4e169e100fd25b04",
+        "statement": "SELECT backend_type, object, context, evictions, extend_time, extends, fsync_time, fsyncs, hits, read_time, reads, write_time, writes FROM pg_stat_io LIMIT ?",
+        "user": "datadog"
+      },
+      "dbm_type": "plan",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "db:vibecode,component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master",
+      "duration": 168000,
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "network": {
+        "client": {
+          "hostname": null,
+          "ip": "192.168.97.2",
+          "port": 60071
+        }
+      },
+      "postgres": {
+        "backend_start": "2025-09-24T03:39:54.586803+00:00",
+        "backend_type": "client backend",
+        "backend_xid": null,
+        "backend_xmin": null,
+        "blocking_pids": [],
+        "datid": 16384,
+        "dd_commands": [
+          "SELECT"
+        ],
+        "dd_comments": [
+          "/* service='datadog-agent' */"
+        ],
+        "dd_tables": [
+          "pg_stat_io"
+        ],
+        "now": "2025-09-24T03:41:50.104292+00:00",
+        "pid": 185,
+        "query_signature": "4e169e100fd25b04",
+        "query_start": "2025-09-24T03:41:38.631726+00:00",
+        "state": "idle",
+        "state_change": "2025-09-24T03:41:38.631894+00:00",
+        "statement": "SELECT backend_type, object, context, evictions, extend_time, extends, fsync_time, fsyncs, hits, read_time, reads, write_time, writes FROM pg_stat_io LIMIT ?",
+        "usesysid": 16744,
+        "wait_event": "ClientRead",
+        "wait_event_type": "Client",
+        "xact_start": null
+      },
+      "service": "",
+      "timestamp": 1758685298631.894
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "cloud_metadata": {},
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "application": "datadog-agent",
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_activity"
+          ]
+        },
+        "plan": {
+          "collection_errors": [
+            {
+              "code": "invalid_schema",
+              "message": "\u003cclass 'psycopg2.errors.InvalidSchemaName'\u003e"
+            }
+          ],
+          "definition": null,
+          "signature": null
+        },
+        "query_signature": "fb0cd91fca719d70",
+        "query_truncated": "not_truncated",
+        "resource_hash": "fb0cd91fca719d70",
+        "statement": "SELECT clock_timestamp ( ) as now, datid, datname, pid, usesysid, usename, application_name, client_addr, client_hostname, client_port, backend_start, xact_start, query_start, state_change, wait_event_type, wait_event, state, backend_xid, backend_xmin, query, backend_type :: bytea as backend_type FROM pg_stat_activity WHERE backend_type != ? OR ( coalesce ( TRIM ( query ), ? ) != ? AND pid != pg_backend_pid ( ) AND query_start IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND NOT ( query_start \u003c ? :: timestamptz AND state = ? ) )",
+        "user": "datadog"
+      },
+      "dbm_type": "plan",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "db:vibecode,component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master",
+      "duration": 5098000,
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "network": {
+        "client": {
+          "hostname": null,
+          "ip": "10.244.1.1",
+          "port": 44893
+        }
+      },
+      "postgres": {
+        "backend_start": "2025-09-24T03:40:36.186330+00:00",
+        "backend_type": "client backend",
+        "backend_xid": null,
+        "backend_xmin": null,
+        "blocking_pids": [],
+        "datid": 16384,
+        "dd_commands": [
+          "SELECT"
+        ],
+        "dd_comments": [
+          "/* service='datadog-agent' */"
+        ],
+        "dd_tables": [
+          "pg_stat_activity"
+        ],
+        "now": "2025-09-24T03:41:50.104313+00:00",
+        "pid": 287,
+        "query_signature": "fb0cd91fca719d70",
+        "query_start": "2025-09-24T03:41:49.742862+00:00",
+        "state": "idle",
+        "state_change": "2025-09-24T03:41:49.747960+00:00",
+        "statement": "SELECT clock_timestamp ( ) as now, datid, datname, pid, usesysid, usename, application_name, client_addr, client_hostname, client_port, backend_start, xact_start, query_start, state_change, wait_event_type, wait_event, state, backend_xid, backend_xmin, query, backend_type :: bytea as backend_type FROM pg_stat_activity WHERE backend_type != ? OR ( coalesce ( TRIM ( query ), ? ) != ? AND pid != pg_backend_pid ( ) AND query_start IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND NOT ( query_start \u003c ? :: timestamptz AND state = ? ) )",
+        "usesysid": 16744,
+        "wait_event": "ClientRead",
+        "wait_event_type": "Client",
+        "xact_start": null
+      },
+      "service": "",
+      "timestamp": 1758685309747.9602
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_activity"
+          ]
+        },
+        "query_signature": "e26ac5dc61456765",
+        "statement": "SELECT application_name, state, usename, datname, count ( * ) as connections FROM pg_stat_activity WHERE pid != pg_backend_pid ( ) AND client_port IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? GROUP BY application_name, state, usename, datname"
+      },
+      "dbm_type": "fqt",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,db:vibecode,rolname:datadog",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres": {
+        "datname": "vibecode",
+        "rolname": "datadog"
+      },
+      "service": "",
+      "timestamp": 1758685310127.7913
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_statements"
+          ]
+        },
+        "query_signature": "6d026219c69e5c7c",
+        "statement": "SELECT COUNT ( * ) FROM pg_stat_statements ( ? )"
+      },
+      "dbm_type": "fqt",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,db:vibecode,rolname:datadog",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres": {
+        "datname": "vibecode",
+        "rolname": "datadog"
+      },
+      "service": "",
+      "timestamp": 1758685310127.8564
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_activity"
+          ]
+        },
+        "query_signature": "4948c1400360b18d",
+        "statement": "SELECT clock_timestamp ( ) as now, datid, datname, pid, usesysid, usename, application_name, client_addr, client_hostname, client_port, backend_start, xact_start, query_start, state_change, wait_event_type, wait_event, state, backend_xid, backend_xmin, query, backend_type :: bytea as backend_type, pg_blocking_pids ( pid ) as blocking_pids FROM pg_stat_activity WHERE backend_type != ? OR ( coalesce ( TRIM ( query ), ? ) != ? AND pid != pg_backend_pid ( ) AND query_start IS NOT ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? AND datname NOT ILIKE ? )"
+      },
+      "dbm_type": "fqt",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,db:vibecode,rolname:datadog",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres": {
+        "datname": "vibecode",
+        "rolname": "datadog"
+      },
+      "service": "",
+      "timestamp": 1758685310127.8706
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT",
+            "JOIN"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_statements",
+            "pg_roles",
+            "pg_database"
+          ]
+        },
+        "query_signature": "52ef437f01dca6eb",
+        "statement": "SELECT calls, datname, local_blks_dirtied, local_blks_hit, local_blks_read, local_blks_written, max_plan_time, mean_plan_time, min_plan_time, query, queryid, rolname, rows, shared_blks_dirtied, shared_blks_hit, shared_blks_read, shared_blks_written, stddev_plan_time, temp_blks_read, temp_blks_written, total_exec_time, total_plan_time, wal_bytes, wal_fpi, wal_records FROM pg_stat_statements as pg_stat_statements LEFT JOIN pg_roles ON pg_stat_statements.userid = pg_roles.oid LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid WHERE query != ? AND query NOT LIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ? AND pg_database.datname NOT ILIKE ?"
+      },
+      "dbm_type": "fqt",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,db:vibecode,rolname:datadog",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres": {
+        "datname": "vibecode",
+        "rolname": "datadog"
+      },
+      "service": "",
+      "timestamp": 1758685310127.881
+    }
+  },
+  {
+    "EventType": "dbm-samples",
+    "UnmarshalledEvent": {
+      "database_instance": "postgres-service.vibecode-platform.svc.cluster.local",
+      "db": {
+        "instance": "vibecode",
+        "metadata": {
+          "commands": [
+            "SELECT"
+          ],
+          "comments": [
+            "/* service='datadog-agent' */"
+          ],
+          "tables": [
+            "pg_stat_statements_info"
+          ]
+        },
+        "query_signature": "cff8aa96b79f7066",
+        "statement": "SELECT dealloc FROM pg_stat_statements_info"
+      },
+      "dbm_type": "fqt",
+      "ddagentversion": "7.66.1",
+      "ddsource": "postgres",
+      "ddtags": "component:database,env:local,service:vibecode-postgres,server:postgres-service.vibecode-platform.svc.cluster.local,port:5432,database_hostname:postgres-service.vibecode-platform.svc.cluster.local,database_instance:postgres-service.vibecode-platform.svc.cluster.local,postgresql_version:16.10 (Debian 16.10-1.pgdg12+1),system_identifier:7553495119424151594,replication_role:master,db:vibecode,rolname:datadog",
+      "host": "postgres-service.vibecode-platform.svc.cluster.local",
+      "postgres": {
+        "datname": "vibecode",
+        "rolname": "datadog"
+      },
+      "service": "",
+      "timestamp": 1758685310127.8894
+    }
+  }
+]
+
+
+  Running Checks
+  ==============
+    
+    postgres (22.12.1)
+    ------------------
+      Instance ID: postgres:e6034fa7fed95628 [OK]
+      Configuration Source: file:/etc/datadog-agent/conf.d/postgres.yaml
+      Total Runs: 1
+      Metric Samples: Last Run: 403, Total: 403
+      Events: Last Run: 0, Total: 0
+      Database Monitoring Metadata Samples: Last Run: 2, Total: 2
+      Service Checks: Last Run: 1, Total: 1
+      Average Execution Time : 612ms
+      Last Execution Date : 2025-09-24 03:41:50 UTC (1758685310000)
+      Last Successful Execution Date : 2025-09-24 03:41:50 UTC (1758685310000)
+      
+
+  Metadata
+  ========
+    config.hash: postgres:e6034fa7fed95628
+    config.provider: file
+    version.patch: 0
+    version.raw: 16.10 (Debian 16.10-1.pgdg12+1)
+    version.scheme: semver
+    resolved_hostname: postgres-service.vibecode-platform.svc.cluster.local
+    version.major: 16
+    version.minor: 10
+Check has run only once, if some metrics are missing you can try again with --check-rate to see any other metric if available.
+This check type has 1 instances. If you're looking for a different check instance, try filtering on a specific one using the --instance-filter flag or set --discovery-min-instances to a higher value
+2025-09-24 03:41:50 UTC | CORE | INFO | (comp/api/api/apiimpl/server.go:40 in stopServer) | Stopped HTTP server 'CMD API Server'
+2025-09-24 03:41:50 UTC | CORE | INFO | (pkg/aggregator/aggregator.go:788 in run) | Stopping aggregator

@@ -1,0 +1,62 @@
+name: Close stale issues and PRs
+
+on:
+  schedule:
+    - cron: '30 4 * * *' # nightly UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  pull-requests: write
+
+jobs:
+  stale:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/stale@v9
+        with:
+          # Timing configuration
+          days-before-stale: 30
+          days-before-close: 14
+
+          # Stale messages
+          stale-issue-message: |
+            This issue has been marked as stale because it has had no activity for 30 days.
+            It will be closed in 14 days if no further activity occurs.
+
+            To keep this issue open:
+            - Add a comment with updates or context
+            - Apply the `pinned`, `security`, `triaged`, or `never-stale` label
+
+            If this issue is still relevant, please provide an update or apply an appropriate label.
+          stale-pr-message: |
+            This pull request has been marked as stale due to 30 days of inactivity.
+            It will be closed in 14 days if no further activity occurs.
+
+            To keep this PR open:
+            - Add a comment with status update
+            - Apply the `pinned`, `security`, `triaged`, or `never-stale` label
+            - Rebase or update the branch
+
+            If this PR is still relevant, please provide an update or apply an appropriate label.
+
+          # Close messages (optional but helpful)
+          close-issue-message: |
+            This issue was automatically closed due to inactivity.
+            If you believe this was closed in error, please reopen and provide context.
+          close-pr-message: |
+            This pull request was automatically closed due to inactivity.
+            If you'd like to revive this PR, please reopen and update the branch.
+
+          # Label configuration
+          stale-issue-label: 'stale'
+          stale-pr-label: 'stale'
+          exempt-issue-labels: 'pinned,security,never-stale,triaged,priority: p0,priority: p1'
+          exempt-pr-labels: 'pinned,security,never-stale,triaged,priority: p0,priority: p1'
+
+          # Behavior configuration
+          remove-stale-when-updated: true
+          operations-per-run: 200
+
+          # Close configuration
+          close-issue-reason: not_planned

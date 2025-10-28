@@ -1,0 +1,49 @@
+# VibeCode KIND Cluster Configuration
+# Multi-node cluster optimized for code-server deployment with Authelia authentication
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-cluster
+nodes:
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  # HTTP
+  - containerPort: 80
+    hostPort: 8090
+    protocol: TCP
+  # HTTPS
+  - containerPort: 443
+    hostPort: 8443
+    protocol: TCP
+  # Code-server development ports
+  - containerPort: 8080
+    hostPort: 8081
+    protocol: TCP
+  # Authelia authentication port
+  - containerPort: 9091
+    hostPort: 9091
+    protocol: TCP
+
+# Worker nodes for code-server workloads
+- role: worker
+  labels:
+    tier: code-server
+    workload: development
+
+# Worker node for authentication and monitoring
+- role: worker
+  labels:
+    tier: platform
+    workload: services
+
+# Worker node for database and persistence
+- role: worker
+  labels:
+    tier: database
+    workload: storage

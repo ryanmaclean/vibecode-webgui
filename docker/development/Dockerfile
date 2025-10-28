@@ -1,0 +1,32 @@
+# Development container for Next.js application
+FROM node:24-alpine
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Install dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git \
+    curl
+
+# Set working directory
+WORKDIR /app
+
+# Copy package files first
+COPY package*.json ./
+
+# Install dependencies using legacy peer deps to handle conflicts
+RUN npm cache clean --force && \
+    npm config set registry https://registry.npmjs.org/ && \
+    npm install --legacy-peer-deps --no-fund --no-audit --loglevel verbose || \
+    npm install --legacy-peer-deps --no-fund --no-audit --force
+
+# Copy source code
+COPY . .
+
+# Expose port
+EXPOSE 3000
+
+# Development command
+CMD ["npm", "run", "dev"]

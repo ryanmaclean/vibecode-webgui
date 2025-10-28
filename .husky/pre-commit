@@ -1,0 +1,42 @@
+#!/bin/sh
+
+# Block committing JUnit reports and other test artifacts
+BLOCKED_FILES=$(git diff --cached --name-only | grep -E '(^|/)test-results/.*\.xml$|(^|/)\.test-results/.*\.xml$|(^|/)junit\.xml$' || true)
+if [ ! -z "$BLOCKED_FILES" ]; then
+  echo "❌ Blocking commit: test result report files must not be committed:"
+  echo "$BLOCKED_FILES" | sed 's/^/ - /'
+  echo "Ensure test-results/ and .test-results/ are in .gitignore (already done) and remove these files from staging."
+  exit 1
+fi
+
+# Documentation validation and auto-fixing
+echo "🔍 Validating documentation..."
+
+# Check if documentation files have been modified
+DOC_FILES=$(git diff --cached --name-only | grep -E '\.(md|mdx)$')
+
+if [ ! -z "$DOC_FILES" ]; then
+  echo "📚 Documentation files modified, running validation..."
+  
+  # Auto-update README if package.json or source files changed
+  PACKAGE_CHANGED=$(git diff --cached --name-only | grep 'package.json')
+  SRC_CHANGED=$(git diff --cached --name-only | grep '^src/')
+  
+  if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -z "$SRC_CHANGED" ]; then
+    echo "📝 Auto-updating README and API docs..."
+    npm run docs:generate --silent 2>/dev/null || echo "⚠️ API doc generation skipped"
+    npm run docs:update --silent 2>/dev/null || echo "⚠️ README update skipped"
+    
+    # Stage the updated files if they exist
+    [ -f README.md ] && git add README.md
+    [ -f docs/API.md ] && git add docs/API.md
+  fi
+  
+  # Quick validation (skip full validation in pre-commit for speed)
+  npm run docs:stats --silent 2>/dev/null || echo "⚠️ Doc stats skipped"
+  
+  echo "✅ Documentation validation complete"
+fi
+
+# Run existing optimized pre-commit tests (light mode by default for local commits)
+SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true} ./scripts/pre-commit-tests-optimized.sh

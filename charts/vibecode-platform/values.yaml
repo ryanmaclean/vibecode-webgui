@@ -1,0 +1,481 @@
+# VibeCode Platform Configuration
+# Default values for vibecode-platform
+
+global:
+  domain: vibecode.dev
+  storageClass: standard
+
+  # Global pull secret for private registries.
+  # Create the secret using:
+  # kubectl create secret docker-registry regcred --docker-server=<your-registry-server> --docker-username=<your-name> --docker-password=<your-pword> --docker-email=<your-email>
+  imagePullSecrets:
+    - name: regcred
+
+# Web Application Configuration
+web:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ryanmaclean/web
+    tag: "latest"
+    pullPolicy: Always
+  # Set the application environment (e.g., development, production)
+  nodeEnv: "production"
+  resources: {}
+
+  # Datadog RUM configuration for the frontend
+  datadog:
+    rum:
+      # Enable to inject Datadog RUM variables into the web deployment
+      enabled: false
+      # The following values are typically sourced from a secret store in CI/CD
+      applicationId: ""
+      clientToken: ""
+      site: "datadoghq.com"
+
+# WebSocket Service Configuration
+websocket:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: ryanmaclean/websocket
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  resources: {}
+
+# Code-Server Configuration
+codeServer:
+  enabled: true
+  image:
+    repository: codercom/code-server
+    tag: "4.101.2"
+    pullPolicy: IfNotPresent
+
+  # Resource limits per workspace
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "2Gi"
+      cpu: "1000m"
+
+  # Persistent storage configuration
+  persistence:
+    enabled: true
+    workspace:
+      storageClass: ""
+      size: 10Gi
+    extensions:
+      storageClass: ""
+      size: 2Gi
+
+  # Security context
+  securityContext:
+    runAsNonRoot: true
+    runAsUser: 1000
+    runAsGroup: 1000
+    fsGroup: 1000
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+# User configuration (set via --set user.id=xxx)
+user:
+  id: ""
+  email: ""
+
+# --- Database and Cache --- #
+# Using custom manifests instead of chart dependencies for license compliance.
+
+postgresql:
+  enabled: true
+  image:
+    repository: pgvector/pgvector
+    tag: pg16
+  persistence:
+    size: 8Gi
+  pgStatStatements:
+    max: 5000
+    track: all
+    trackActivityQuerySize: 2048
+
+redis:
+  enabled: true
+  image:
+    repository: redis
+    tag: 7.2.4-alpine
+  commandArgs:
+    maxmemory: 256mb
+  persistence:
+    size: 1Gi
+  resources:
+    requests:
+      memory: "128Mi"
+      cpu: "100m"
+    limits:
+      memory: "256Mi"
+      cpu: "200m"
+
+# MongoDB configuration for chat-ui
+mongodb:
+  enabled: true
+  image:
+    repository: mongo
+    tag: 7.0.12
+  auth:
+    enabled: true
+    rootUsername: admin
+    rootPassword: ""  # Set via secret
+    database: chatui
+    username: chatui
+    password: ""  # Set via secret
+  persistence:
+    enabled: true
+    size: 20Gi
+    storageClass: ""
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  # Datadog integration
+  datadog:
+    enabled: true
+    configCheckName: "mongo"
+
+# Chat-UI Configuration
+chatui:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: vibecode/chat-ui
+    tag: "latest"
+    pullPolicy: Always
+  
+  # Environment configuration
+  config:
+    mongodbUrl: "mongodb://chatui:PASSWORD@mongodb:27017/chatui"
+    publicOrigin: "https://chat.vibecode.dev"
+    enableAssistants: true
+    enableAssistantsRag: true
+    
+  # Datadog configuration
+  datadog:
+    enabled: true
+    apm:
+      enabled: true
+      serviceName: "vibecode-chat-ui"
+    rum:
+      enabled: true
+      applicationId: ""
+      clientToken: ""
+      
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "250m"
+
+# Datadog Configuration - P0 Priority Observability
+datadog:
+  enabled: true
+  apiKey: ""  # Set via secret or environment
+  appKey: ""  # Set via secret or environment 
+  site: "datadoghq.com"  # or datadoghq.eu for EU customers
+  
+  # Core monitoring features
+  apm:
+    enabled: true
+    sampleRate: 1.0
+  logs:
+    enabled: true
+    containerCollectAll: true
+  metrics:
+    enabled: true
+    kubernetes: true
+    prometheus: true
+  security:
+    enabled: true
+    compliance: true
+    runtimeSecurity: true
+  networkMonitoring:
+    enabled: true
+  processMonitoring:
+    enabled: true
+  
+  # Database monitoring
+  dbm:
+    enabled: true
+    mongodb:
+      enabled: true
+      username: "datadog"
+      password: ""  # Set via secret
+    redis:
+      enabled: true
+  
+  # Azure integration
+  azure:
+    enabled: true
+    tenantName: ""
+    clientId: ""
+    clientSecret: ""  # Set via secret
+    
+  # Custom dashboards and alerts
+  dashboards:
+    aiWorkloads: true
+    chatPerformance: true
+    kubernetesOverview: true
+    securityOverview: true
+    
+  # RUM (Real User Monitoring) for frontend
+  rum:
+    enabled: true
+    applicationId: ""  # Set for each frontend app
+    clientToken: ""    # Set via secret
+    
+  # Synthetic monitoring
+  synthetics:
+    enabled: true
+    
+  # SIEM integration
+  siem:
+    enabled: true
+    logForwarding: true
+
+# Semantic Kernel Configuration
+semanticKernel:
+  enabled: true
+  replicaCount: 1
+  image:
+    repository: vibecode/semantic-kernel
+    tag: "latest"
+    pullPolicy: Always
+    
+  # Datadog configuration
+  datadog:
+    enabled: true
+    apm:
+      enabled: true
+      serviceName: "vibecode-semantic-kernel"
+      
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+# Chaos Engineering configuration
+chaosEngineering:
+  enabled: false
+  namespace: chaos-engineering
+  
+  image:
+    repository: datadog/chaos-controller
+    tag: "latest"
+    pullPolicy: IfNotPresent
+  
+  logLevel: "info"
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  
+  nodeSelector: {}
+  tolerations: []
+  affinity: {}
+  
+  networkPolicy:
+    enabled: true
+  
+  # Chaos experiment configurations
+  experiments:
+    # Chat-UI network stress testing
+    chatUI:
+      networkStress:
+        enabled: false
+        count: 1
+        duration: "5m"
+        packetDrop: 10
+        delay: "100ms"
+        corruption: 2
+    
+    # MongoDB resilience testing
+    mongodb:
+      cpuPressure:
+        enabled: false
+        count: 1
+        duration: "3m"
+        processes: 2
+    
+    # Semantic Kernel memory pressure testing
+    semanticKernel:
+      memoryPressure:
+        enabled: false
+        count: 1
+        duration: "5m"
+        processes: 1
+    
+    # Datadog agent disk pressure testing
+    datadogAgent:
+      diskPressure:
+        enabled: false
+        count: 1
+        duration: "3m"
+        path: "/var/log"
+        throttling:
+          read: "10MB"
+          write: "5MB"
+    
+    # Node failure simulation
+    nodeFailure:
+      enabled: false
+      count: 1
+      duration: "2m"
+      shutdown: false
+    
+    # Scheduled chaos experiments
+    scheduled:
+      enabled: false
+      schedule: "0 2 * * 1"  # Every Monday at 2 AM
+      nodeSelector: {}
+  
+  # Game day scenarios for comprehensive testing
+  gamedays:
+    enabled: false
+
+# Vector logging pipeline configuration
+vector:
+  enabled: false
+  namespace: observability-pipeline
+  
+  image:
+    repository: timberio/vector
+    tag: "0.34.0-distroless-libc"
+    pullPolicy: IfNotPresent
+  
+  api:
+    playground: false
+  
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "128Mi"
+    limits:
+      cpu: "1000m"
+      memory: "1Gi"
+  
+  tolerations: []
+  
+  networkPolicy:
+    enabled: true
+  
+  # Output sinks configuration
+  sinks:
+    datadog:
+      enabled: true
+    console:
+      enabled: false
+    prometheus:
+      enabled: true
+    elasticsearch:
+      enabled: false
+      endpoints: ["http://elasticsearch:9200"]
+
+# Global configuration
+global:
+  environment: "production"
+  cluster:
+    name: "vibecode-platform"
+
+# Security Audit configuration (MKAT)
+securityAudit:
+  namespace: security-audit
+  
+  mkat:
+    enabled: false
+    schedule: "0 3 * * 1"  # Weekly Monday at 3 AM
+    successfulJobsHistoryLimit: 3
+    failedJobsHistoryLimit: 3
+    retentionDays: 30
+    
+    image:
+      repository: ubuntu
+      tag: "22.04"
+      pullPolicy: IfNotPresent
+    
+    cloudProvider: "azure"  # or "aws"
+    
+    azure:
+      subscriptionId: ""
+      resourceGroup: ""
+      workloadIdentity:
+        enabled: false
+        clientId: ""
+        tenantId: ""
+        
+    aws:
+      region: "us-west-2"
+    
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+      limits:
+        cpu: "500m"
+        memory: "1Gi"
+        
+    persistence:
+      enabled: false
+      size: "5Gi"
+      storageClass: ""
+      
+    nodeSelector: {}
+    tolerations: []
+
+# Supply Chain Security configuration (GuardDog)
+supplyChainSecurity:
+  namespace: supply-chain-security
+  
+  guarddog:
+    enabled: false
+    schedule: "0 4 * * *"  # Daily at 4 AM
+    successfulJobsHistoryLimit: 7
+    failedJobsHistoryLimit: 7
+    failOnCritical: true
+    
+    image:
+      repository: python
+      tag: "3.11-slim"
+      pullPolicy: IfNotPresent
+      
+    resources:
+      requests:
+        cpu: "200m"
+        memory: "512Mi"
+      limits:
+        cpu: "1000m"
+        memory: "2Gi"
+        
+    persistence:
+      enabled: false
+      size: "10Gi"
+      storageClass: ""
+      
+    nodeSelector: {}
+    tolerations: []

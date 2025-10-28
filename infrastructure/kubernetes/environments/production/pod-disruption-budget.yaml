@@ -1,0 +1,59 @@
+# Pod Disruption Budget for Production
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vibecode-webgui-pdb
+  labels:
+    app: vibecode-webgui
+    environment: production
+spec:
+  minAvailable: 2
+  selector:
+    matchLabels:
+      app: vibecode-webgui
+      environment: production
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: postgresql-pdb
+  labels:
+    app: postgresql
+    environment: production
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      component: database
+      environment: production
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: redis-pdb
+  labels:
+    app: redis
+    environment: production
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      component: cache
+      environment: production
+
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: litellm-pdb
+  labels:
+    app: litellm
+    environment: production
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      component: ai-gateway
+      environment: production

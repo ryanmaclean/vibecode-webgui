@@ -1,0 +1,384 @@
+// VibeCode Database Schema - Test Version (without pgvector)
+// Simplified schema for testing without vector extensions
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Users and Authentication
+model User {
+  id          Int      @id @default(autoincrement())
+  email       String   @unique
+  name        String?
+  role        String   @default("user") // user, admin
+  avatar      String?
+  github_id   String?  @unique
+  google_id   String?  @unique
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  sessions    Session[]
+  workspaces  Workspace[]
+  projects    Project[]
+  files       File[]
+  uploads     Upload[]
+  ai_requests AIRequest[]
+  rag_chunks  RAGChunk[]
+
+  @@map("users")
+}
+
+model Session {
+  id            Int      @id @default(autoincrement())
+  session_token String   @unique
+  user_id       Int
+  expires       DateTime
+  created_at    DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [user_id], references: [id], onDelete: Cascade)
+
+  @@index([session_token])
+  @@index([user_id])
+  @@map("sessions")
+}
+
+// Workspaces and Projects
+model Workspace {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  user_id      Int
+  status       String   @default("active") // active, archived, deleting
+  workspace_id String   @unique // External workspace identifier
+  url          String?  // code-server URL
+  dbm_last_sample_at DateTime? // Tracks last time DBM sample was recorded
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects   Project[]
+  files      File[]
+  uploads    Upload[]
+  rag_chunks RAGChunk[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([status, user_id]) // Composite index for active workspace queries
+  @@index([user_id, status, updated_at]) // For sorting active workspaces by recent activity
+  @@index([workspace_id, status]) // For external workspace lookups with status filter
+  @@map("workspaces")
+}
+
+model Project {
+  id           Int      @id @default(autoincrement())
+  name         String
+  description  String?
+  user_id      Int
+  workspace_id Int?
+  language     String?  // typescript, javascript, python, etc.
+  framework    String?  // react, vue, express, fastapi, etc.
+  template     String?  // Template used to generate project
+  ai_prompt    String?  // Original AI prompt used for generation
+  status       String   @default("active") // active, archived, generating
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user        User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  files       File[]
+  ai_requests AIRequest[]
+  rag_chunks  RAGChunk[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([status, user_id]) // Composite index for active project queries
+  @@index([workspace_id, status, updated_at]) // For sorting workspace projects by recent activity
+  @@index([language, status]) // For filtering projects by language and status
+  @@index([framework, status]) // For filtering projects by framework and status
+  @@index([user_id, status, created_at]) // For sorting user projects by creation date
+  @@map("projects")
+}
+
+// Files and RAG System (simplified without vector embeddings)
+model File {
+  id           Int      @id @default(autoincrement())
+  name         String
+  path         String
+  content      String?  // File content for small files
+  size         Int?     // File size in bytes
+  mime_type    String?
+  language     String?  // Detected programming language
+  lines        Int?     // Number of lines
+  checksum     String?  // Content hash
+  user_id      Int
+  workspace_id Int?
+  project_id   Int?
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+
+  // Relations
+  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace  Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project    Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+  chunks     RAGChunk[] // Relation to RAG chunks
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@index([path])
+  @@index([workspace_id, project_id]) // Composite index for workspace-project file queries
+  @@index([mime_type, workspace_id]) // For filtering files by type within workspace
+  @@index([language, project_id]) // For filtering files by programming language
+  @@index([user_id, updated_at]) // For sorting user files by modification date
+  @@index([checksum]) // For duplicate file detection
+  @@index([size, mime_type]) // For file size analysis queries
+  @@map("files")
+}
+
+// RAG Chunks for vector search (simplified without pgvector)
+model RAGChunk {
+  id          Int      @id @default(autoincrement())
+  content     String   // Chunk text content
+  metadata    Json?    // Additional metadata
+  file_id     Int?
+  user_id     Int
+  workspace_id Int?
+  project_id  Int?
+  chunk_index Int?     // Position within file
+  token_count Int?     // Number of tokens
+  start_line  Int?     // Start line in file
+  end_line    Int?     // End line in file
+  tokens      Int?     // Token count (alias for token_count)
+  chunk_id    String?  // External chunk identifier
+  embedding   Unsupported("vector(1536)")?
+  created_at  DateTime @default(now())
+  updated_at  DateTime @updatedAt
+
+  // Relations
+  file      File?      @relation(fields: [file_id], references: [id], onDelete: Cascade)
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  project   Project?   @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([file_id])
+  @@index([workspace_id])
+  @@index([project_id])
+  @@index([workspace_id, project_id]) // Composite index for workspace-project chunk queries
+  @@index([file_id, chunk_index]) // For ordered chunk retrieval
+  @@index([user_id, workspace_id, created_at]) // For user workspace chunk queries with time sorting
+  @@index([token_count, workspace_id]) // For token analysis within workspace
+  @@index([chunk_id]) // For external chunk identifier lookups
+  @@index([start_line, end_line, file_id]) // For line-based chunk queries
+  @@map("rag_chunks")
+}
+
+model RAGIngestJob {
+  id          String   @id @default(uuid())
+  uploadId    Int?     @map("upload_id")
+  upload      Upload?  @relation(fields: [uploadId], references: [id], onDelete: SetNull)
+  blobName    String   @map("blob_name")
+  storageContainer String @map("storage_container")
+  originalFileName String @map("original_file_name")
+  size        Int
+  status      String   @default("queued")
+  queueName   String?  @map("queue_name")
+  userIdentifier      String? @map("user_identifier")
+  workspaceIdentifier String? @map("workspace_identifier")
+  projectIdentifier   String? @map("project_identifier")
+  chunkCount Int      @default(0) @map("chunk_count")
+  error       String?
+  requestedAt DateTime @default(now()) @map("requested_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([status])
+  @@index([requestedAt])
+  @@map("rag_ingest_jobs")
+}
+
+model Upload {
+  id           Int      @id @default(autoincrement())
+  original_name String
+  stored_name  String   @unique
+  path         String
+  size         Int
+  mime_type    String
+  user_id      Int
+  workspace_id Int?
+  status       String   @default("uploaded") // uploaded, processing, processed, error
+  metadata     Json?    // Additional metadata
+  created_at   DateTime @default(now())
+
+  // Relations
+  user        User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace   Workspace?     @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  ingestJobs  RAGIngestJob[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([stored_name])
+  @@map("uploads")
+}
+
+// AI Integration and Requests
+model AIRequest {
+  id           Int      @id @default(autoincrement())
+  user_id      Int
+  project_id   Int?
+  request_type String   // generate_project, chat, completion, etc.
+  prompt       String
+  model        String   // anthropic/claude-3.5-sonnet, etc.
+  provider     String   // openrouter, anthropic, openai
+  input_tokens Int?
+  output_tokens Int?
+  cost         Float?   // Cost in USD
+  duration_ms  Int?     // Request duration
+  status       String   @default("pending") // pending, completed, error, cancelled
+  response     Json?    // AI response data
+  error        String?  // Error message if failed
+  created_at   DateTime @default(now())
+  completed_at DateTime?
+
+  // Relations
+  user    User     @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  project Project? @relation(fields: [project_id], references: [id], onDelete: SetNull)
+
+  @@index([user_id])
+  @@index([project_id])
+  @@index([created_at])
+  @@index([request_type])
+  @@index([status, user_id]) // Composite index for filtering requests by status
+  @@index([user_id, created_at]) // For sorting user requests by creation date
+  @@index([provider, model, created_at]) // For provider/model usage analysis
+  @@index([request_type, status, created_at]) // For request type performance monitoring
+  @@index([project_id, status, created_at]) // For project-specific request tracking
+  @@index([duration_ms, created_at]) // For performance analysis queries
+  @@map("ai_requests")
+}
+
+// Monitoring and Analytics
+model Event {
+  id         Int      @id @default(autoincrement())
+  user_id    Int?
+  event_type String   // page_view, api_call, error, etc.
+  event_name String   // Specific event name
+  properties Json?    // Event properties
+  session_id String?
+  ip_address String?
+  user_agent String?
+  created_at DateTime @default(now())
+
+  @@index([user_id])
+  @@index([event_type])
+  @@index([created_at])
+  @@index([event_type, created_at]) // Composite index for event type time series queries
+  @@index([user_id, event_type, created_at]) // For user-specific event tracking
+  @@index([session_id, created_at]) // For session-based event analysis
+  @@map("events")
+}
+
+model SystemMetric {
+  id         Int      @id @default(autoincrement())
+  metric_name String  // cpu_usage, memory_usage, disk_usage, etc.
+  value      Float
+  unit       String?  // percentage, bytes, ms, etc.
+  tags       Json?    // Additional tags for filtering
+  created_at DateTime @default(now())
+
+  @@index([metric_name])
+  @@index([created_at])
+  @@index([metric_name, created_at]) // Composite index for metric time series queries
+  @@index([metric_name, value, created_at]) // For metric threshold analysis
+  @@map("system_metrics")
+}
+
+// Configuration and Settings
+model Setting {
+  id         Int      @id @default(autoincrement())
+  key        String   @unique
+  value      String
+  type       String   @default("string") // string, number, boolean, json
+  description String?
+  updated_at DateTime @updatedAt
+
+  @@map("settings")
+}
+
+// Experimentation Platform - Data Warehouse Layer
+model Experiment {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  status      ExperimentStatus @default(DRAFT)
+  config      Json     // Variants, traffic allocation, targeting rules
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  assignments ExperimentAssignment[]
+  metrics     ExperimentMetric[]
+
+  @@index([status, createdAt])
+  @@index([key])
+  @@map("experiments")
+}
+
+enum ExperimentStatus {
+  DRAFT
+  REVIEW
+  RUNNING
+  COMPLETED
+  ARCHIVED
+}
+
+model ExperimentAssignment {
+  id           String   @id @default(cuid())
+  experimentId String   @map("experiment_id")
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  userId       String   @map("user_id")
+  variantKey   String   @map("variant_key")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  metadata     Json?    // User properties, targeting context
+
+  metrics      ExperimentMetric[]
+
+  @@unique([experimentId, userId], name: "experiment_id_user_id")
+  @@index([experimentId, variantKey])
+  @@index([userId])
+  @@index([assignedAt])
+  @@map("experiment_assignments")
+}
+
+model ExperimentMetric {
+  id           String   @id @default(cuid())
+  experimentId String   @map("experiment_id")
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  assignmentId String   @map("assignment_id")
+  assignment   ExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  metricName   String   @map("metric_name")
+  metricValue  Float    @map("metric_value")
+  timestamp    DateTime @default(now())
+  metadata     Json?
+
+  @@index([experimentId, metricName])
+  @@index([assignmentId, metricName])
+  @@index([timestamp])
+  @@map("experiment_metrics")
+}

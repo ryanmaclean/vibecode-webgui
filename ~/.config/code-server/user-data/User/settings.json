@@ -1,0 +1,17 @@
+{
+  "workbench.startupEditor": "none",
+  "workbench.welcome.enabled": false,
+  "workbench.welcomePage.walkthroughs.openOnInstall": false,
+  "workbench.tips.enabled": false,
+  "workbench.colorTheme": "Dark+ (default dark)",
+  "workbench.firstRun": false,
+  "workbench.hideWelcomeOnLaunch": true,
+  "workbench.welcomePage.experimental.allowWalkthroughs": false,
+  "workbench.editor.showTabs": "multiple",
+  "workbench.editor.enablePreview": false,
+  "workbench.startup.editor": "none",
+  "workbench.preferredLightColorTheme": "Light+ (default light)",
+  "workbench.preferredDarkColorTheme": "Dark+ (default dark)",
+  "workbench.preferredHighContrastColorTheme": "Default High Contrast",
+  "workbench.preferredHighContrastLightColorTheme": "Default High Contrast Light"
+}

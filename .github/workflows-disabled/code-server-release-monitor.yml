@@ -1,0 +1,260 @@
+name: Code-Server Release Monitor
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Daily at 00:00 UTC
+  workflow_dispatch:
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Determine current code-server versions across all Dockerfiles
+        id: current
+        run: |
+          # Find all Dockerfiles in the code-server directory
+          DOCKERFILES=$(find docker/code-server -name "Dockerfile*" -type f)
+
+          # Extract versions from all Dockerfiles
+          echo "Scanning Dockerfiles for code-server versions..."
+          declare -A versions
+          for dockerfile in $DOCKERFILES; do
+            if grep -q "codercom/code-server:" "$dockerfile"; then
+              TAG=$(grep -oE 'codercom/code-server:[^ ]+' "$dockerfile" | head -n1 | cut -d: -f2)
+              VERSION=${TAG%%-*}
+              versions["$dockerfile"]="$TAG"
+              echo "  $dockerfile: $TAG (version: $VERSION)"
+            fi
+          done
+
+          # Get the primary version from main Dockerfile
+          PRIMARY_TAG=$(grep -oE 'codercom/code-server:[^ ]+' docker/code-server/Dockerfile | head -n1 | cut -d: -f2)
+          PRIMARY_VERSION=${PRIMARY_TAG%%-*}
+
+          # Create a JSON array of all Dockerfiles and their versions
+          DOCKERFILE_VERSIONS=$(jq -n '[]')
+          for dockerfile in "${!versions[@]}"; do
+            DOCKERFILE_VERSIONS=$(echo "$DOCKERFILE_VERSIONS" | jq --arg file "$dockerfile" --arg ver "${versions[$dockerfile]}" '. += [{"file": $file, "version": $ver}]')
+          done
+
+          echo "tag=$PRIMARY_TAG" >> "$GITHUB_OUTPUT"
+          echo "version=$PRIMARY_VERSION" >> "$GITHUB_OUTPUT"
+          echo "dockerfile_versions<<EOF" >> "$GITHUB_OUTPUT"
+          echo "$DOCKERFILE_VERSIONS" >> "$GITHUB_OUTPUT"
+          echo "EOF" >> "$GITHUB_OUTPUT"
+
+          echo "Primary version: $PRIMARY_VERSION (tag: $PRIMARY_TAG)"
+
+      - name: Fetch latest upstream release
+        id: latest
+        uses: actions/github-script@v7
+        with:
+          retries: 3
+          retry-exempt-status-codes: 404,403
+          script: |
+            try {
+              const { data } = await github.rest.repos.getLatestRelease({
+                owner: 'coder',
+                repo: 'code-server'
+              })
+              const tag = data.tag_name.replace(/^v/, '')
+              const releaseNotes = data.body || 'No release notes provided'
+              const releaseUrl = data.html_url
+              const publishedAt = data.published_at
+
+              core.setOutput('tag', tag)
+              core.setOutput('release_notes', releaseNotes)
+              core.setOutput('release_url', releaseUrl)
+              core.setOutput('published_at', publishedAt)
+              core.setOutput('fetch_success', 'true')
+
+              console.log(`Latest upstream version: ${tag}`)
+              console.log(`Release URL: ${releaseUrl}`)
+              console.log(`Published: ${publishedAt}`)
+            } catch (error) {
+              core.setFailed(`Failed to fetch latest release: ${error.message}`)
+              core.setOutput('fetch_success', 'false')
+              throw error
+            }
+
+      - name: Analyze version differences
+        id: analysis
+        if: steps.latest.outputs.fetch_success == 'true'
+        run: |
+          CURRENT_VERSION="${{ steps.current.outputs.version }}"
+          LATEST_VERSION="${{ steps.latest.outputs.tag }}"
+
+          echo "current_version=$CURRENT_VERSION" >> "$GITHUB_OUTPUT"
+          echo "latest_version=$LATEST_VERSION" >> "$GITHUB_OUTPUT"
+
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+            echo "update_needed=true" >> "$GITHUB_OUTPUT"
+            echo "Update needed: $CURRENT_VERSION → $LATEST_VERSION"
+          else
+            echo "update_needed=false" >> "$GITHUB_OUTPUT"
+            echo "Already on latest version: $CURRENT_VERSION"
+          fi
+
+      - name: Create comprehensive issue for new release
+        if: steps.analysis.outputs.update_needed == 'true'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const latest = process.env.LATEST_TAG
+            const currentTag = process.env.CURRENT_TAG
+            const releaseUrl = process.env.RELEASE_URL
+            const releaseNotes = process.env.RELEASE_NOTES
+            const publishedAt = process.env.PUBLISHED_AT
+            const dockerfileVersions = JSON.parse(process.env.DOCKERFILE_VERSIONS || '[]')
+
+            const title = `Update code-server to ${latest}`
+
+            // Truncate release notes if too long
+            const maxNotesLength = 2000
+            let notesSection = releaseNotes
+            if (notesSection.length > maxNotesLength) {
+              notesSection = notesSection.substring(0, maxNotesLength) + `\n\n... (truncated)\n\n[View full release notes](${releaseUrl})`
+            }
+
+            // Build Dockerfile update checklist
+            let dockerfileChecklist = ''
+            const uniqueDockerfiles = [...new Set(dockerfileVersions.map(d => d.file))]
+            for (const dockerfile of uniqueDockerfiles) {
+              const currentVer = dockerfileVersions.find(d => d.file === dockerfile)?.version || 'unknown'
+              dockerfileChecklist += `- [ ] Update \`${dockerfile}\` (currently: \`${currentVer}\`) to \`codercom/code-server:${latest}\`\n`
+            }
+
+            const body = `## Summary
+Upstream code-server **${latest}** has been released.
+
+**Release Date:** ${publishedAt}
+**Release URL:** ${releaseUrl}
+
+### Current Dockerfile Versions
+${dockerfileVersions.map(d => `- \`${d.file}\`: \`${d.version}\``).join('\n')}
+
+## Release Notes
+
+${notesSection}
+
+## Changelog
+View the full changelog: https://github.com/coder/code-server/releases/tag/v${latest}
+
+## Update Actions
+
+### 1. Update Dockerfiles
+${dockerfileChecklist}
+
+### 2. Build & Test
+- [ ] Test main Dockerfile locally: \`docker build -f docker/code-server/Dockerfile .\`
+- [ ] Test optimized Dockerfile: \`docker build -f docker/code-server/Dockerfile.optimized .\`
+- [ ] Test KinD Dockerfile: \`docker build -f docker/code-server/Dockerfile.kind .\`
+- [ ] Rebuild multi-arch image: \`scripts/build-codeserver-multiarch.sh\`
+- [ ] Push to container registry
+
+### 3. Integration Testing
+- [ ] Run KinD + Helm smoke tests: \`scripts/test-code-server-kind.sh\`
+- [ ] Test helm deployment: \`helm/code-server-cloud\`
+- [ ] Verify extensions load correctly
+- [ ] Test AI assistants (Claude, ChatGPT, GitHub Copilot)
+- [ ] Verify terminal functionality
+- [ ] Test file operations
+- [ ] Validate multi-arch builds (amd64, arm64)
+
+### 4. Documentation
+- [ ] Update version references in README
+- [ ] Update deployment documentation
+- [ ] Document rollout in \`docs/logs/issues/code-server-cloud-deployment.md\`
+- [ ] Update changelog
+
+## Monitoring
+After deployment, monitor:
+- Container startup time
+- Extension loading performance
+- Resource usage (CPU, memory)
+- User-reported issues
+
+---
+*This issue was created automatically by the [Code-Server Release Monitor](.github/workflows/code-server-release-monitor.yml) workflow.*
+*Triggered: ${new Date().toISOString()}*
+*Workflow Run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}*`
+
+            // Check if issue already exists
+            const existing = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              per_page: 100
+            })
+
+            const alreadyOpen = existing.data.find(issue => issue.title === title)
+            if (alreadyOpen) {
+              core.info(`Issue already exists: ${title} (#${alreadyOpen.number})`)
+
+              // Add a comment to existing issue with workflow run info
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: alreadyOpen.number,
+                body: `🔄 Release monitor check completed.\n\nStill on version \`${currentTag}\`. Target version: \`${latest}\`\n\nWorkflow run: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}`
+              })
+              return
+            }
+
+            // Create new issue
+            const issue = await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['enhancement', 'dependencies', 'automated', 'code-server']
+            })
+
+            core.info(`Created issue #${issue.data.number}: ${title}`)
+            core.setOutput('issue_number', issue.data.number)
+            core.setOutput('issue_url', issue.data.html_url)
+        env:
+          LATEST_TAG: ${{ steps.latest.outputs.tag }}
+          CURRENT_TAG: ${{ steps.current.outputs.tag }}
+          RELEASE_URL: ${{ steps.latest.outputs.release_url }}
+          RELEASE_NOTES: ${{ steps.latest.outputs.release_notes }}
+          PUBLISHED_AT: ${{ steps.latest.outputs.published_at }}
+          DOCKERFILE_VERSIONS: ${{ steps.current.outputs.dockerfile_versions }}
+
+      - name: Send notification summary
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const updateNeeded = '${{ steps.analysis.outputs.update_needed }}' === 'true'
+            const fetchSuccess = '${{ steps.latest.outputs.fetch_success }}' === 'true'
+            const currentVersion = '${{ steps.current.outputs.version }}'
+            const latestVersion = '${{ steps.latest.outputs.tag }}'
+
+            let summary = '# Code-Server Release Monitor Summary\n\n'
+
+            if (!fetchSuccess) {
+              summary += '⚠️ **Status**: Failed to fetch latest release\n\n'
+              summary += 'The workflow encountered an error while fetching the latest code-server release from GitHub.\n'
+            } else if (updateNeeded) {
+              summary += '🔄 **Status**: Update Available\n\n'
+              summary += `- **Current Version**: ${currentVersion}\n`
+              summary += `- **Latest Version**: ${latestVersion}\n`
+              summary += `- **Issue Created**: #${{ steps.create_issue.outputs.issue_number || 'See existing issue' }}\n`
+            } else {
+              summary += '✅ **Status**: Up to Date\n\n'
+              summary += `- **Version**: ${currentVersion}\n`
+              summary += '- **Action**: No update required\n'
+            }
+
+            summary += `\n**Workflow Run**: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}\n`
+
+            core.summary.addRaw(summary)
+            await core.summary.write()

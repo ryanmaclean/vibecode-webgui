@@ -1,0 +1,165 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadType</key>
+            <string>com.apple.TCC.configuration-profile-policy</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>PayloadIdentifier</key>
+            <string>com.vibecode.tcc-policy</string>
+            <key>PayloadUUID</key>
+            <string>A1B2C3D4-E5F6-7890-ABCD-EF1234567890</string>
+            <key>PayloadDisplayName</key>
+            <string>VibeCode Container TCC Policy</string>
+            <key>PayloadDescription</key>
+            <string>Privacy permissions for VibeCode container runtime (Agent 24)</string>
+
+            <key>Services</key>
+            <dict>
+                <!-- GRANT: Full Disk Access for container runtime -->
+                <key>SystemPolicyAllFiles</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>CodeRequirement</key>
+                        <string>identifier "com.vibecode.container-runtime" and anchor apple generic and certificate 1[field.1.2.840.113635.100.6.2.6] /* exists */ and certificate leaf[field.1.2.840.113635.100.6.1.13] /* exists */ and certificate leaf[subject.OU] = "TEAM_ID_PLACEHOLDER"</string>
+                        <key>Comment</key>
+                        <string>Container runtime needs FDA for volume management</string>
+                        <key>Allowed</key>
+                        <integer>1</integer>
+                        <key>StaticCode</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Camera access -->
+                <key>Camera</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access camera</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Microphone access -->
+                <key>Microphone</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access microphone</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Location services -->
+                <key>Location</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access location</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Automation/AppleScript access -->
+                <key>AppleEvents</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not control other apps</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Address Book access -->
+                <key>AddressBook</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access contacts</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Calendar access -->
+                <key>Calendar</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access calendar</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+
+                <!-- DENY: Photos access -->
+                <key>Photos</key>
+                <array>
+                    <dict>
+                        <key>Identifier</key>
+                        <string>com.vibecode.container-runtime</string>
+                        <key>IdentifierType</key>
+                        <string>bundleID</string>
+                        <key>Comment</key>
+                        <string>Containers should not access photos</string>
+                        <key>Allowed</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+            </dict>
+        </dict>
+    </array>
+
+    <key>PayloadDisplayName</key>
+    <string>VibeCode TCC Policy</string>
+    <key>PayloadIdentifier</key>
+    <string>com.vibecode.tcc-policy</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>B2C3D4E5-F6A7-8901-BCDE-F12345678901</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+    <key>PayloadOrganization</key>
+    <string>VibeCode</string>
+    <key>PayloadDescription</key>
+    <string>TCC privacy permissions for VibeCode container runtime</string>
+</dict>
+</plist>

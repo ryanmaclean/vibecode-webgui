@@ -1,0 +1,275 @@
+name: Test ARM64 Code-Server Build
+
+on:
+  workflow_dispatch:
+    inputs:
+      profile:
+        description: 'Build profile (minimal, standard, ai, full)'
+        required: false
+        default: 'minimal'
+        type: choice
+        options:
+          - minimal
+          - standard
+          - ai
+          - full
+      skip_push:
+        description: 'Skip pushing image to registry (dry-run)'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: vibecode-codeserver
+  CACHE_SCOPE: arm64-test
+
+concurrency:
+  group: test-arm64-${{ github.ref }}-${{ github.event.inputs.profile }}
+  cancel-in-progress: true
+
+jobs:
+  test-build:
+    name: ARM64 Build Test (${{ github.event.inputs.profile || 'minimal' }})
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          PROFILE="${{ github.event.inputs.profile || 'minimal' }}"
+          BUILD_TAG="test-arm64-${PROFILE}-${{ github.run_id }}"
+          IMAGE_TAG="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${BUILD_TAG}"
+          SHA_TAG="${{ env.REGISTRY }}/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:test-${PROFILE}-${{ github.sha }}"
+
+          echo "profile=${PROFILE}" >> "$GITHUB_OUTPUT"
+          echo "build_tag=${BUILD_TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_tag=${IMAGE_TAG}" >> "$GITHUB_OUTPUT"
+          echo "sha_tag=${SHA_TAG}" >> "$GITHUB_OUTPUT"
+          echo "build_date=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> "$GITHUB_OUTPUT"
+
+          echo "### ARM64 Build Configuration" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Profile**: ${PROFILE}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Platform**: linux/arm64" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image**: ${IMAGE_TAG}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **SHA Tag**: ${SHA_TAG}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Skip Push**: ${{ github.event.inputs.skip_push }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: linux/arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            network=host
+            image=moby/buildkit:latest
+          buildkitd-flags: --allow-insecure-entitlement=network.host
+
+      - name: Log in to GHCR
+        if: github.event.inputs.skip_push != 'true'
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate Dockerfile architecture handling
+        run: |
+          echo "### Dockerfile Architecture Validation" >> "$GITHUB_STEP_SUMMARY"
+
+          # Check for hardcoded architectures
+          if grep -n "amd64\|x86_64" docker/code-server/Dockerfile | grep -v "TARGETARCH\|BUILDPLATFORM"; then
+            echo "⚠️ **Warning**: Found potential hardcoded architecture references" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+            grep -n "amd64\|x86_64" docker/code-server/Dockerfile | grep -v "TARGETARCH\|BUILDPLATFORM" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "✅ No hardcoded architecture references found" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          # Verify TARGETARCH usage
+          if grep -q "TARGETARCH" docker/code-server/Dockerfile; then
+            echo "✅ Dockerfile uses TARGETARCH for cross-compilation" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "⚠️ **Warning**: TARGETARCH not found in Dockerfile" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Build ARM64 image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: docker/code-server/Dockerfile
+          platforms: linux/arm64
+          push: ${{ github.event.inputs.skip_push != 'true' }}
+          tags: |
+            ${{ steps.meta.outputs.image_tag }}
+            ${{ steps.meta.outputs.sha_tag }}
+          cache-from: |
+            type=gha,scope=${{ env.CACHE_SCOPE }}-${{ steps.meta.outputs.profile }}
+            type=gha,scope=${{ env.CACHE_SCOPE }}-base
+          cache-to: type=gha,scope=${{ env.CACHE_SCOPE }}-${{ steps.meta.outputs.profile }},mode=max
+          build-args: |
+            PROFILE=${{ steps.meta.outputs.profile }}
+            VERSION=${{ steps.meta.outputs.build_tag }}
+            BUILD_DATE=${{ steps.meta.outputs.build_date }}
+            GIT_COMMIT=${{ github.sha }}
+          outputs: type=image,name=${{ steps.meta.outputs.image_tag }},push=${{ github.event.inputs.skip_push != 'true' }},annotation-index.org.opencontainers.image.description=ARM64 test build
+
+      - name: Inspect built image
+        if: github.event.inputs.skip_push != 'true'
+        run: |
+          echo "### Image Inspection" >> "$GITHUB_STEP_SUMMARY"
+
+          # Inspect the image
+          docker buildx imagetools inspect ${{ steps.meta.outputs.image_tag }} > /tmp/image-inspect.txt
+
+          # Extract key information
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          cat /tmp/image-inspect.txt >> "$GITHUB_STEP_SUMMARY"
+          echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+
+          # Verify architecture
+          if grep -q "linux/arm64" /tmp/image-inspect.txt; then
+            echo "✅ **Architecture verified**: linux/arm64" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ **Architecture mismatch**: Expected linux/arm64" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Test image pull and basic verification
+        if: github.event.inputs.skip_push != 'true'
+        run: |
+          echo "### Image Verification Tests" >> "$GITHUB_STEP_SUMMARY"
+
+          # Pull the image
+          docker pull --platform linux/arm64 ${{ steps.meta.outputs.image_tag }}
+
+          # Test basic functionality
+          echo "#### Testing code-server binary" >> "$GITHUB_STEP_SUMMARY"
+          if docker run --rm --platform linux/arm64 ${{ steps.meta.outputs.image_tag }} code-server --version; then
+            echo "✅ code-server binary works" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ code-server binary failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          # Test Node.js
+          echo "#### Testing Node.js" >> "$GITHUB_STEP_SUMMARY"
+          if docker run --rm --platform linux/arm64 ${{ steps.meta.outputs.image_tag }} node --version; then
+            echo "✅ Node.js works" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Node.js failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          # Test Python
+          echo "#### Testing Python" >> "$GITHUB_STEP_SUMMARY"
+          if docker run --rm --platform linux/arm64 ${{ steps.meta.outputs.image_tag }} python3 --version; then
+            echo "✅ Python works" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ Python failed" >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+      - name: Test Go installation (if available)
+        if: github.event.inputs.skip_push != 'true' && (steps.meta.outputs.profile == 'standard' || steps.meta.outputs.profile == 'full')
+        continue-on-error: true
+        run: |
+          echo "#### Testing Go" >> "$GITHUB_STEP_SUMMARY"
+          if docker run --rm --platform linux/arm64 ${{ steps.meta.outputs.image_tag }} go version; then
+            echo "✅ Go works on ARM64" >> "$GITHUB_STEP_SUMMARY"
+
+            # Verify Go architecture
+            GO_ARCH=$(docker run --rm --platform linux/arm64 ${{ steps.meta.outputs.image_tag }} go env GOARCH)
+            if [ "$GO_ARCH" = "arm64" ]; then
+              echo "✅ Go architecture correct: ${GO_ARCH}" >> "$GITHUB_STEP_SUMMARY"
+            else
+              echo "⚠️ Go architecture mismatch: ${GO_ARCH} (expected: arm64)" >> "$GITHUB_STEP_SUMMARY"
+            fi
+          else
+            echo "⚠️ Go not available or failed" >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Collect build diagnostics
+        if: always()
+        run: |
+          mkdir -p /tmp/build-diagnostics
+
+          # Save build info
+          echo "Build ID: ${{ github.run_id }}" > /tmp/build-diagnostics/build-info.txt
+          echo "Profile: ${{ steps.meta.outputs.profile }}" >> /tmp/build-diagnostics/build-info.txt
+          echo "Image: ${{ steps.meta.outputs.image_tag }}" >> /tmp/build-diagnostics/build-info.txt
+          echo "Date: $(date -u)" >> /tmp/build-diagnostics/build-info.txt
+
+          # Save buildx info
+          docker buildx ls > /tmp/build-diagnostics/buildx-info.txt || true
+
+          # Save image layers (if pushed)
+          if [ "${{ github.event.inputs.skip_push }}" != "true" ]; then
+            docker buildx imagetools inspect ${{ steps.meta.outputs.image_tag }} > /tmp/build-diagnostics/image-layers.txt || true
+          fi
+
+      - name: Upload build diagnostics
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: arm64-build-diagnostics-${{ steps.meta.outputs.profile }}-${{ github.run_id }}
+          path: /tmp/build-diagnostics/
+          retention-days: 7
+
+      - name: Build summary
+        if: always()
+        run: |
+          echo "## Build Result" >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "${{ steps.build.outcome }}" = "success" ]; then
+            echo "✅ **Build Status**: Success" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Pull Command" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`bash" >> "$GITHUB_STEP_SUMMARY"
+            echo "docker pull --platform linux/arm64 ${{ steps.meta.outputs.image_tag }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "### Run Command" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`bash" >> "$GITHUB_STEP_SUMMARY"
+            echo "docker run -p 8080:8080 --platform linux/arm64 ${{ steps.meta.outputs.image_tag }}" >> "$GITHUB_STEP_SUMMARY"
+            echo "\`\`\`" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "❌ **Build Status**: Failed" >> "$GITHUB_STEP_SUMMARY"
+            echo "" >> "$GITHUB_STEP_SUMMARY"
+            echo "Check the build diagnostics artifact for details." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+          echo "" >> "$GITHUB_STEP_SUMMARY"
+          echo "### Build Metrics" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Build Duration**: ${{ steps.build.outputs.duration || 'N/A' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Image Digest**: ${{ steps.build.outputs.digest || 'N/A' }}" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Cache Hit**: ${{ steps.build.outputs.cache-hit || 'N/A' }}" >> "$GITHUB_STEP_SUMMARY"
+
+  notify:
+    name: Build Notification
+    needs: test-build
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify build result
+        run: |
+          if [ "${{ needs.test-build.result }}" = "success" ]; then
+            echo "✅ ARM64 build test completed successfully"
+          else
+            echo "❌ ARM64 build test failed"
+            exit 1
+          fi

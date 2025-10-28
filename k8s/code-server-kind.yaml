@@ -1,0 +1,148 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-agent-config
+  namespace: vibecode-platform
+data:
+  datadog.yaml: |
+    api_key: ${DD_API_KEY}
+    site: ${DD_SITE}
+    env: ${DD_ENV}
+    logs_enabled: true
+    apm_config:
+      enabled: true
+      env: ${DD_ENV:="development"}
+      apm_non_local_traffic: true
+      profiling_enabled: true
+    process_config:
+      enabled: true
+    network_config:
+      enabled: true
+    dogstatsd_config:
+      non_local_traffic: true
+    listeners:
+      - name: kubelet
+    config_providers:
+      - name: kubelet
+        polling: true
+    integrations:
+      http_check:
+        init_config:
+        instances:
+          - name: code-server-health
+            url: http://localhost:8765/healthz
+            timeout: 5
+            http_response_status_code: 200
+            tags:
+              - service:code-server
+              - component:ide
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: code-server-kind
+  namespace: vibecode-platform
+  labels:
+    app: code-server
+    tier: workspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: code-server
+      tier: workspace
+  template:
+    metadata:
+      labels:
+        app: code-server
+        tier: workspace
+    spec:
+      containers:
+        - name: code-server
+          image: ghcr.io/ryanmaclean/vibecode-codeserver:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - --bind-addr
+            - 0.0.0.0:8765
+            - --auth
+            - none
+          ports:
+            - containerPort: 8765
+              name: http
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 1Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/project
+        - name: datadog-agent
+          image: datadog/docker-dd-agent:latest-alpine
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+                  optional: true
+            - name: DD_SITE
+              value: datadoghq.com
+            - name: DD_ENV
+              value: development
+            - name: DD_SERVICE
+              value: code-server
+            - name: KUBERNETES
+              value: "true"
+            - name: DD_SKIP_SSL_VALIDATION
+              value: "true"
+          volumeMounts:
+            - name: datadog-config
+              mountPath: /etc/datadog-agent/datadog.yaml
+              subPath: datadog.yaml
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5555
+            initialDelaySeconds: 30
+            periodSeconds: 30
+            failureThreshold: 3
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5555
+            initialDelaySeconds: 10
+            periodSeconds: 10
+            failureThreshold: 3
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: datadog-config
+          configMap:
+            name: datadog-agent-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server-kind
+  namespace: vibecode-platform
+spec:
+  type: NodePort
+  selector:
+    app: code-server
+    tier: workspace
+  ports:
+    - name: http
+      port: 8765
+      targetPort: 8765
+      nodePort: 31765

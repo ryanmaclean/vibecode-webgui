@@ -1,0 +1,633 @@
+---
+# AI/ML Anomaly Detection Configuration for SkyWalking
+# Advanced statistical and machine learning models for real-time anomaly detection
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: skywalking-ai-config
+  namespace: skywalking
+  labels:
+    app.kubernetes.io/name: skywalking
+    app.kubernetes.io/component: ai-anomaly-detection
+data:
+  # Core AI/ML configuration
+  ai-config.yaml: |
+    # SkyWalking AI Anomaly Detection Configuration
+    # Detects anomalies in real-time using ML models and statistical analysis
+
+    # Baseline learning configuration
+    baseline:
+      # Learning period for establishing normal behavior
+      learningPeriod: 7d
+      # Minimum data points required for baseline
+      minDataPoints: 1000
+      # Confidence interval for baseline
+      confidenceInterval: 0.95
+      # Update frequency for baseline
+      updateInterval: 1h
+
+    # Statistical anomaly detection models
+    statistical:
+      # Z-Score based detection
+      zscore:
+        enabled: true
+        threshold: 3.0
+        windowSize: 100
+        metrics:
+          - service_response_time_p50
+          - service_response_time_p95
+          - service_response_time_p99
+
+      # IQR (Interquartile Range) based detection
+      iqr:
+        enabled: true
+        multiplier: 1.5
+        windowSize: 100
+        metrics:
+          - service_error_rate
+          - service_success_rate
+
+      # Moving average detection
+      movingAverage:
+        enabled: true
+        windowSize: 60
+        threshold: 2.0
+        metrics:
+          - service_throughput
+          - service_requests_per_second
+
+    # Machine learning models
+    machineLearning:
+      # Isolation Forest for outlier detection
+      isolationForest:
+        enabled: true
+        contamination: 0.1
+        nEstimators: 100
+        maxSamples: 256
+        metrics:
+          - service_response_time
+          - service_error_rate
+          - service_throughput
+
+      # LSTM for time-series prediction
+      lstm:
+        enabled: true
+        sequenceLength: 50
+        predictionHorizon: 10
+        threshold: 0.8
+        metrics:
+          - service_response_time
+          - service_throughput
+
+      # Autoencoder for reconstruction error
+      autoencoder:
+        enabled: true
+        encodingDim: 32
+        threshold: 0.7
+        metrics:
+          - service_response_time
+          - service_error_rate
+          - service_throughput
+          - service_memory_usage
+          - service_cpu_usage
+
+    # Anomaly scoring
+    scoring:
+      # Composite score calculation
+      algorithm: weighted_average
+      weights:
+        statistical: 0.3
+        machineLearning: 0.7
+      # Threshold for triggering alerts
+      alertThreshold: 0.8
+      # Threshold for critical alerts
+      criticalThreshold: 0.95
+
+    # Correlation analysis
+    correlation:
+      enabled: true
+      # Detect correlated anomalies across services
+      crossServiceAnalysis: true
+      # Time window for correlation
+      correlationWindow: 5m
+      # Minimum correlation coefficient
+      minCorrelation: 0.7
+
+    # Context-aware anomaly detection
+    contextual:
+      enabled: true
+      # Business hours vs off-hours
+      businessHoursAdjustment: true
+      # Day of week patterns
+      dayOfWeekAdjustment: true
+      # Seasonal adjustments
+      seasonalAdjustment: true
+      # Deployment awareness
+      deploymentAwarenessPeriod: 30m
+
+  # Anomaly detection models for specific metrics
+  models.yaml: |
+    # Response Time Anomaly Detection
+    responseTime:
+      name: response-time-anomaly
+      type: hybrid
+      models:
+        - type: zscore
+          weight: 0.3
+          threshold: 3.0
+        - type: isolationForest
+          weight: 0.4
+          contamination: 0.05
+        - type: lstm
+          weight: 0.3
+          sequenceLength: 50
+      features:
+        - service_response_time_p50
+        - service_response_time_p95
+        - service_response_time_p99
+        - service_throughput
+      sensitivity: medium
+      alertThreshold: 0.8
+
+    # Error Rate Anomaly Detection
+    errorRate:
+      name: error-rate-anomaly
+      type: statistical
+      models:
+        - type: iqr
+          weight: 0.5
+          multiplier: 1.5
+        - type: movingAverage
+          weight: 0.5
+          windowSize: 60
+      features:
+        - service_error_rate
+        - service_success_rate
+        - service_5xx_rate
+        - service_4xx_rate
+      sensitivity: high
+      alertThreshold: 0.7
+
+    # Throughput Anomaly Detection
+    throughput:
+      name: throughput-anomaly
+      type: hybrid
+      models:
+        - type: zscore
+          weight: 0.3
+          threshold: 3.0
+        - type: isolationForest
+          weight: 0.4
+          contamination: 0.1
+        - type: lstm
+          weight: 0.3
+          sequenceLength: 30
+      features:
+        - service_throughput
+        - service_requests_per_second
+        - service_active_connections
+      sensitivity: medium
+      alertThreshold: 0.8
+
+    # Resource Usage Anomaly Detection
+    resourceUsage:
+      name: resource-usage-anomaly
+      type: hybrid
+      models:
+        - type: autoencoder
+          weight: 0.6
+          encodingDim: 32
+        - type: isolationForest
+          weight: 0.4
+          contamination: 0.1
+      features:
+        - service_cpu_usage
+        - service_memory_usage
+        - service_disk_io
+        - service_network_io
+      sensitivity: medium
+      alertThreshold: 0.85
+
+    # Agent Task Anomaly Detection (VibeCode-specific)
+    agentTask:
+      name: agent-task-anomaly
+      type: hybrid
+      models:
+        - type: zscore
+          weight: 0.3
+          threshold: 3.0
+        - type: isolationForest
+          weight: 0.4
+          contamination: 0.05
+        - type: lstm
+          weight: 0.3
+          sequenceLength: 20
+      features:
+        - agent_task_duration
+        - agent_task_queue_depth
+        - agent_task_success_rate
+        - agent_task_error_rate
+        - agent_output_lines
+        - agent_memory_usage
+      sensitivity: high
+      alertThreshold: 0.75
+      customAttributes:
+        - agent_id
+        - agent_type
+        - task_type
+
+  # Alerting rules configuration
+  alerting-rules.yaml: |
+    # Alert rules for AI-detected anomalies
+    groups:
+      - name: skywalking-ai-anomalies
+        interval: 30s
+        rules:
+          # Response Time Anomaly
+          - alert: HighResponseTimeAnomaly
+            expr: |
+              (skywalking_anomaly_score{metric="response_time"} > 0.8)
+              and (service_response_time_p99 > service_response_time_p99_baseline * 2)
+            for: 2m
+            labels:
+              severity: warning
+              component: skywalking
+              type: anomaly
+              category: performance
+            annotations:
+              summary: "High response time anomaly detected"
+              description: "Service {{ $labels.service }} has abnormal response time (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/response-time-anomaly"
+
+          - alert: CriticalResponseTimeAnomaly
+            expr: |
+              (skywalking_anomaly_score{metric="response_time"} > 0.95)
+              and (service_response_time_p99 > service_response_time_p99_baseline * 3)
+            for: 1m
+            labels:
+              severity: critical
+              component: skywalking
+              type: anomaly
+              category: performance
+            annotations:
+              summary: "Critical response time anomaly detected"
+              description: "Service {{ $labels.service }} has critical response time anomaly (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/critical-response-time-anomaly"
+
+          # Error Rate Anomaly
+          - alert: ErrorRateSpike
+            expr: |
+              (skywalking_anomaly_score{metric="error_rate"} > 0.7)
+              and (service_error_rate > service_error_rate_baseline * 3)
+            for: 1m
+            labels:
+              severity: critical
+              component: skywalking
+              type: anomaly
+              category: reliability
+            annotations:
+              summary: "Error rate spike detected"
+              description: "Service {{ $labels.service }} has abnormal error rate (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/error-rate-spike"
+
+          # Throughput Anomaly
+          - alert: ThroughputDrop
+            expr: |
+              (skywalking_anomaly_score{metric="throughput"} > 0.8)
+              and (service_throughput < service_throughput_baseline * 0.5)
+            for: 5m
+            labels:
+              severity: warning
+              component: skywalking
+              type: anomaly
+              category: performance
+            annotations:
+              summary: "Throughput drop detected"
+              description: "Service {{ $labels.service }} has abnormal throughput drop (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/throughput-drop"
+
+          # Resource Usage Anomaly
+          - alert: ResourceUsageAnomaly
+            expr: |
+              (skywalking_anomaly_score{metric="resource_usage"} > 0.85)
+            for: 3m
+            labels:
+              severity: warning
+              component: skywalking
+              type: anomaly
+              category: resource
+            annotations:
+              summary: "Resource usage anomaly detected"
+              description: "Service {{ $labels.service }} has abnormal resource usage (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/resource-usage-anomaly"
+
+          # Agent Task Anomaly (VibeCode-specific)
+          - alert: AgentTaskAnomaly
+            expr: |
+              (skywalking_anomaly_score{metric="agent_task"} > 0.75)
+            for: 2m
+            labels:
+              severity: warning
+              component: skywalking
+              type: anomaly
+              category: agent
+            annotations:
+              summary: "Agent task anomaly detected"
+              description: "Agent {{ $labels.agent_id }} (type: {{ $labels.agent_type }}) has abnormal behavior (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/agent-task-anomaly"
+
+          - alert: AgentTaskCriticalAnomaly
+            expr: |
+              (skywalking_anomaly_score{metric="agent_task"} > 0.9)
+            for: 1m
+            labels:
+              severity: critical
+              component: skywalking
+              type: anomaly
+              category: agent
+            annotations:
+              summary: "Critical agent task anomaly detected"
+              description: "Agent {{ $labels.agent_id }} (type: {{ $labels.agent_type }}) has critical anomaly (anomaly score: {{ $value }})"
+              runbook: "https://docs.vibecode.io/runbooks/agent-task-critical-anomaly"
+
+          # Correlated Anomalies
+          - alert: CorrelatedServiceAnomalies
+            expr: |
+              count(skywalking_anomaly_score > 0.8) by (namespace) > 2
+            for: 2m
+            labels:
+              severity: critical
+              component: skywalking
+              type: anomaly
+              category: correlation
+            annotations:
+              summary: "Correlated service anomalies detected"
+              description: "Multiple services in namespace {{ $labels.namespace }} showing anomalies"
+              runbook: "https://docs.vibecode.io/runbooks/correlated-anomalies"
+
+  # Dashboard configuration for anomaly visualization
+  dashboard.json: |
+    {
+      "dashboard": {
+        "title": "SkyWalking AI Anomaly Detection",
+        "rows": [
+          {
+            "title": "Anomaly Scores",
+            "panels": [
+              {
+                "title": "Real-time Anomaly Scores",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "skywalking_anomaly_score",
+                    "legendFormat": "{{service}} - {{metric}}"
+                  }
+                ],
+                "yAxis": {
+                  "min": 0,
+                  "max": 1
+                },
+                "thresholds": [
+                  {
+                    "value": 0.8,
+                    "color": "orange"
+                  },
+                  {
+                    "value": 0.95,
+                    "color": "red"
+                  }
+                ]
+              },
+              {
+                "title": "Anomaly Count by Severity",
+                "type": "stat",
+                "targets": [
+                  {
+                    "expr": "count(skywalking_anomaly_score{severity='warning'} > 0.8)",
+                    "legendFormat": "Warning"
+                  },
+                  {
+                    "expr": "count(skywalking_anomaly_score{severity='critical'} > 0.95)",
+                    "legendFormat": "Critical"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Service Performance Anomalies",
+            "panels": [
+              {
+                "title": "Response Time Anomalies",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "service_response_time_p99",
+                    "legendFormat": "{{service}} - P99"
+                  },
+                  {
+                    "expr": "service_response_time_p99_baseline",
+                    "legendFormat": "{{service}} - Baseline"
+                  },
+                  {
+                    "expr": "skywalking_anomaly_score{metric='response_time'}",
+                    "legendFormat": "{{service}} - Anomaly Score",
+                    "yAxisIndex": 1
+                  }
+                ]
+              },
+              {
+                "title": "Error Rate Anomalies",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "service_error_rate",
+                    "legendFormat": "{{service}} - Error Rate"
+                  },
+                  {
+                    "expr": "service_error_rate_baseline",
+                    "legendFormat": "{{service}} - Baseline"
+                  },
+                  {
+                    "expr": "skywalking_anomaly_score{metric='error_rate'}",
+                    "legendFormat": "{{service}} - Anomaly Score",
+                    "yAxisIndex": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Agent Task Anomalies",
+            "panels": [
+              {
+                "title": "Agent Task Duration Anomalies",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "agent_task_duration",
+                    "legendFormat": "{{agent_id}} - {{task_type}}"
+                  },
+                  {
+                    "expr": "agent_task_duration_baseline",
+                    "legendFormat": "{{agent_id}} - Baseline"
+                  },
+                  {
+                    "expr": "skywalking_anomaly_score{metric='agent_task'}",
+                    "legendFormat": "{{agent_id}} - Anomaly Score",
+                    "yAxisIndex": 1
+                  }
+                ]
+              },
+              {
+                "title": "Agent Task Success Rate",
+                "type": "graph",
+                "targets": [
+                  {
+                    "expr": "agent_task_success_rate",
+                    "legendFormat": "{{agent_id}} - {{agent_type}}"
+                  },
+                  {
+                    "expr": "skywalking_anomaly_score{metric='agent_task',feature='success_rate'}",
+                    "legendFormat": "{{agent_id}} - Anomaly Score",
+                    "yAxisIndex": 1
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "title": "Correlation Analysis",
+            "panels": [
+              {
+                "title": "Service Correlation Heatmap",
+                "type": "heatmap",
+                "targets": [
+                  {
+                    "expr": "skywalking_anomaly_correlation",
+                    "legendFormat": "{{service_a}} <-> {{service_b}}"
+                  }
+                ]
+              },
+              {
+                "title": "Correlated Anomaly Events",
+                "type": "table",
+                "targets": [
+                  {
+                    "expr": "skywalking_correlated_anomalies",
+                    "legendFormat": ""
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    }
+
+---
+# CronJob for baseline model training
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: skywalking-baseline-training
+  namespace: skywalking
+  labels:
+    app.kubernetes.io/name: skywalking
+    app.kubernetes.io/component: ai-training
+spec:
+  # Run every day at 2 AM
+  schedule: "0 2 * * *"
+  successfulJobsHistoryLimit: 3
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            app: skywalking-training
+        spec:
+          restartPolicy: OnFailure
+          containers:
+          - name: baseline-trainer
+            image: apache/skywalking-oap-server:10.3.0
+            command:
+            - /bin/sh
+            - -c
+            - |
+              echo "Starting baseline model training..."
+
+              # Connect to OAP and trigger baseline recalculation
+              curl -X POST http://oap:12800/graphql \
+                -H "Content-Type: application/json" \
+                -d '{
+                  "query": "mutation { trainBaselineModels(period: \"7d\") { success message } }"
+                }'
+
+              echo "Baseline training complete"
+            env:
+            - name: SW_STORAGE
+              value: banyandb
+            - name: SW_STORAGE_BANYANDB_TARGETS
+              value: banyandb:17912
+            resources:
+              requests:
+                cpu: 500m
+                memory: 1Gi
+              limits:
+                cpu: 1000m
+                memory: 2Gi
+
+---
+# Job for initial model training
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: skywalking-initial-training
+  namespace: skywalking
+  labels:
+    app.kubernetes.io/name: skywalking
+    app.kubernetes.io/component: ai-training
+spec:
+  backoffLimit: 3
+  template:
+    metadata:
+      labels:
+        app: skywalking-training
+    spec:
+      restartPolicy: OnFailure
+      containers:
+      - name: initial-trainer
+        image: apache/skywalking-oap-server:10.3.0
+        command:
+        - /bin/sh
+        - -c
+        - |
+          echo "Waiting for OAP to be ready..."
+          until curl -f http://oap:12800/internal/l7check; do
+            sleep 5
+          done
+
+          echo "Starting initial model training..."
+
+          # Initialize baseline models with historical data
+          curl -X POST http://oap:12800/graphql \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "mutation { initializeBaselineModels(period: \"7d\", confidence: 0.95) { success message } }"
+            }'
+
+          echo "Initial training complete"
+        env:
+        - name: SW_STORAGE
+          value: banyandb
+        - name: SW_STORAGE_BANYANDB_TARGETS
+          value: banyandb:17912
+        resources:
+          requests:
+            cpu: 1000m
+            memory: 2Gi
+          limits:
+            cpu: 2000m
+            memory: 4Gi

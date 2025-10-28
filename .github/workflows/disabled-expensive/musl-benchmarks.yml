@@ -1,0 +1,361 @@
+name: Musl Build Benchmarks
+
+on:
+  push:
+    branches: [main, musl-optimization]
+    paths:
+      - 'scripts/benchmarks/**'
+      - 'docker/**'
+      - '.github/workflows/musl-benchmarks.yml'
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run weekly to track upstream changes
+    - cron: '0 2 * * 1'  # Every Monday at 2 AM UTC
+  workflow_dispatch:
+    inputs:
+      busybox_version:
+        description: 'BusyBox version to build'
+        required: false
+        default: '1.36.1'
+      upload_artifacts:
+        description: 'Upload build artifacts'
+        type: boolean
+        default: true
+
+env:
+  DD_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+  DD_SITE: datadoghq.com
+  DD_ENV: ci
+  DD_SERVICE: vibecode-benchmarks
+
+jobs:
+  busybox-musl-build:
+    name: BusyBox musl Build
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up build environment (Linux)
+        if: matrix.platform == 'linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential \
+            bc \
+            curl \
+            bzip2 \
+            cpio \
+            gzip \
+            python3
+
+      - name: Set up build environment (macOS)
+        if: matrix.platform == 'macos'
+        run: |
+          brew install coreutils bc gnu-tar
+          # Try to install musl-cross if available
+          brew tap filosottile/musl-cross || true
+          brew install musl-cross || echo "musl-cross not available, using native compiler"
+
+      - name: Build BusyBox with musl
+        id: build
+        env:
+          BUSYBOX_VERSION: ${{ github.event.inputs.busybox_version || '1.36.1' }}
+        run: |
+          ./scripts/benchmarks/build-busybox-musl.sh
+
+          # Extract metrics for GitHub outputs
+          METADATA=$(cat bench-images/busybox/busybox-*-musl-*.json | tail -1)
+          echo "binary_size=$(echo $METADATA | jq -r '.binary_size_mb')" >> $GITHUB_OUTPUT
+          echo "build_duration=$(echo $METADATA | jq -r '.build_duration_seconds')" >> $GITHUB_OUTPUT
+          echo "static_linked=$(echo $METADATA | jq -r '.static_linked')" >> $GITHUB_OUTPUT
+
+      - name: Run BusyBox tests
+        run: |
+          BUSYBOX_BIN=$(find bench-images/busybox -name "busybox-*-musl-*" -type f ! -name "*.json" ! -name "*.gz" | head -1)
+          echo "Testing: $BUSYBOX_BIN"
+
+          # Basic functionality tests
+          $BUSYBOX_BIN --help > /dev/null
+          $BUSYBOX_BIN echo "Hello from BusyBox musl!"
+          $BUSYBOX_BIN ls /tmp > /dev/null
+
+          # Verify static linking
+          if file "$BUSYBOX_BIN" | grep -q "statically linked"; then
+            echo "✓ Binary is statically linked"
+          else
+            echo "✗ Binary is NOT statically linked"
+            exit 1
+          fi
+
+      - name: Send metrics to Datadog
+        if: env.DD_API_KEY != ''
+        run: |
+          METADATA=$(cat bench-images/busybox/busybox-*-musl-*.json | tail -1)
+
+          # Send build metrics
+          curl -X POST "https://api.${DD_SITE}/api/v2/series" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: ${DD_API_KEY}" \
+            -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "busybox.build.duration",
+                "type": 1,
+                "points": [
+                  {
+                    "timestamp": $(date +%s),
+                    "value": $(echo $METADATA | jq '.build_duration_seconds')
+                  }
+                ],
+                "tags": [
+                  "platform:${{ matrix.platform }}",
+                  "libc:musl",
+                  "version:$(echo $METADATA | jq -r '.version')",
+                  "ci:true"
+                ]
+              },
+              {
+                "metric": "busybox.binary.size",
+                "type": 1,
+                "points": [
+                  {
+                    "timestamp": $(date +%s),
+                    "value": $(echo $METADATA | jq '.binary_size_bytes')
+                  }
+                ],
+                "tags": [
+                  "platform:${{ matrix.platform }}",
+                  "libc:musl",
+                  "version:$(echo $METADATA | jq -r '.version')",
+                  "ci:true"
+                ]
+              }
+            ]
+          }
+          EOF
+
+      - name: Upload artifacts
+        if: ${{ github.event.inputs.upload_artifacts == 'true' || github.event.inputs.upload_artifacts == '' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: busybox-musl-${{ matrix.platform }}
+          path: |
+            bench-images/busybox/busybox-*-musl-*
+            !bench-images/busybox/busybox-*-musl-latest
+          retention-days: 30
+
+      - name: Create summary
+        run: |
+          METADATA=$(cat bench-images/busybox/busybox-*-musl-*.json | tail -1)
+
+          cat >> $GITHUB_STEP_SUMMARY << EOF
+          ## BusyBox musl Build - ${{ matrix.platform }}
+
+          - **Version**: $(echo $METADATA | jq -r '.version')
+          - **Binary Size**: ${{ steps.build.outputs.binary_size }} MB
+          - **Build Time**: ${{ steps.build.outputs.build_duration }}s
+          - **Static Linked**: ${{ steps.build.outputs.static_linked }}
+          - **Platform**: ${{ matrix.platform }}
+
+          ### Build Details
+          \`\`\`json
+          $(echo $METADATA | jq)
+          \`\`\`
+          EOF
+
+  docker-musl-comparison:
+    name: Docker musl vs glibc
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq bc python3
+
+      - name: Run musl vs glibc comparison
+        id: comparison
+        run: |
+          ./scripts/benchmarks/docker-musl-vs-glibc.sh
+
+          # Extract results
+          RESULTS=$(find performance-results/docker-builds -name "musl-vs-glibc-*.json" | tail -1)
+          echo "results_file=$RESULTS" >> $GITHUB_OUTPUT
+
+          if [ -f "$RESULTS" ]; then
+            echo "musl_size=$(jq -r '.builds.musl.image_size_mb // "0"' $RESULTS)" >> $GITHUB_OUTPUT
+            echo "glibc_size=$(jq -r '.builds.glibc.image_size_mb // "0"' $RESULTS)" >> $GITHUB_OUTPUT
+            echo "size_reduction=$(jq -r '.comparison.image_size_reduction_percent // "0"' $RESULTS)" >> $GITHUB_OUTPUT
+            echo "build_speedup=$(jq -r '.comparison.build_speedup_percent // "0"' $RESULTS)" >> $GITHUB_OUTPUT
+            echo "start_speedup=$(jq -r '.comparison.cold_start_speedup_percent // "0"' $RESULTS)" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Send Docker metrics to Datadog
+        if: env.DD_API_KEY != ''
+        run: |
+          RESULTS=$(find performance-results/docker-builds -name "musl-vs-glibc-*.json" | tail -1)
+
+          if [ ! -f "$RESULTS" ]; then
+            echo "No results file found, skipping metrics"
+            exit 0
+          fi
+
+          # Send comprehensive metrics
+          for variant in musl glibc; do
+            BUILD_TIME=$(jq -r ".builds.$variant.build_duration_seconds // 0" $RESULTS)
+            IMAGE_SIZE=$(jq -r ".builds.$variant.image_size_bytes // 0" $RESULTS)
+            COLD_START=$(jq -r ".builds.$variant.cold_start_seconds // 0" $RESULTS)
+            MEMORY=$(jq -r ".builds.$variant.memory_usage_mb // 0" $RESULTS)
+            LAYERS=$(jq -r ".builds.$variant.layer_count // 0" $RESULTS)
+
+            curl -X POST "https://api.${DD_SITE}/api/v2/series" \
+              -H "Content-Type: application/json" \
+              -H "DD-API-KEY: ${DD_API_KEY}" \
+              -d @- << EOF
+          {
+            "series": [
+              {
+                "metric": "docker.build.duration",
+                "type": 1,
+                "points": [{"timestamp": $(date +%s), "value": $BUILD_TIME}],
+                "tags": ["variant:$variant", "libc:$variant", "ci:true"]
+              },
+              {
+                "metric": "docker.image.size",
+                "type": 1,
+                "points": [{"timestamp": $(date +%s), "value": $IMAGE_SIZE}],
+                "tags": ["variant:$variant", "libc:$variant", "ci:true"]
+              },
+              {
+                "metric": "docker.coldstart.duration",
+                "type": 1,
+                "points": [{"timestamp": $(date +%s), "value": $COLD_START}],
+                "tags": ["variant:$variant", "libc:$variant", "ci:true"]
+              },
+              {
+                "metric": "docker.memory.usage",
+                "type": 1,
+                "points": [{"timestamp": $(date +%s), "value": $MEMORY}],
+                "tags": ["variant:$variant", "libc:$variant", "ci:true"]
+              },
+              {
+                "metric": "docker.layers.count",
+                "type": 1,
+                "points": [{"timestamp": $(date +%s), "value": $LAYERS}],
+                "tags": ["variant:$variant", "libc:$variant", "ci:true"]
+              }
+            ]
+          }
+          EOF
+          done
+
+      - name: Upload comparison results
+        uses: actions/upload-artifact@v4
+        with:
+          name: docker-comparison-results
+          path: performance-results/docker-builds/
+          retention-days: 90
+
+      - name: Create comparison summary
+        run: |
+          RESULTS=$(find performance-results/docker-builds -name "musl-vs-glibc-*.json" | tail -1)
+
+          cat >> $GITHUB_STEP_SUMMARY << 'EOF'
+          ## Docker Build Comparison: musl vs glibc
+
+          | Metric | musl (Alpine) | glibc (Debian) | Improvement |
+          |--------|---------------|----------------|-------------|
+          EOF
+
+          if [ -f "$RESULTS" ]; then
+            MUSL_SIZE=$(jq -r '.builds.musl.image_size_mb // "N/A"' $RESULTS)
+            GLIBC_SIZE=$(jq -r '.builds.glibc.image_size_mb // "N/A"' $RESULTS)
+            SIZE_REDUCTION=$(jq -r '.comparison.image_size_reduction_percent // "N/A"' $RESULTS)
+
+            MUSL_BUILD=$(jq -r '.builds.musl.build_duration_seconds // "N/A"' $RESULTS)
+            GLIBC_BUILD=$(jq -r '.builds.glibc.build_duration_seconds // "N/A"' $RESULTS)
+            BUILD_SPEEDUP=$(jq -r '.comparison.build_speedup_percent // "N/A"' $RESULTS)
+
+            MUSL_START=$(jq -r '.builds.musl.cold_start_seconds // "N/A"' $RESULTS)
+            GLIBC_START=$(jq -r '.builds.glibc.cold_start_seconds // "N/A"' $RESULTS)
+            START_SPEEDUP=$(jq -r '.comparison.cold_start_speedup_percent // "N/A"' $RESULTS)
+
+            MUSL_MEM=$(jq -r '.builds.musl.memory_usage_mb // "N/A"' $RESULTS)
+            GLIBC_MEM=$(jq -r '.builds.glibc.memory_usage_mb // "N/A"' $RESULTS)
+            MEM_REDUCTION=$(jq -r '.comparison.memory_reduction_percent // "N/A"' $RESULTS)
+
+            cat >> $GITHUB_STEP_SUMMARY << EOF
+          | Image Size | ${MUSL_SIZE} MB | ${GLIBC_SIZE} MB | **${SIZE_REDUCTION}%** |
+          | Build Time | ${MUSL_BUILD}s | ${GLIBC_BUILD}s | **${BUILD_SPEEDUP}%** |
+          | Cold Start | ${MUSL_START}s | ${GLIBC_START}s | **${START_SPEEDUP}%** |
+          | Memory Usage | ${MUSL_MEM} MB | ${GLIBC_MEM} MB | **${MEM_REDUCTION}%** |
+
+          ### Full Results
+          \`\`\`json
+          $(cat $RESULTS | jq)
+          \`\`\`
+          EOF
+          fi
+
+  create-release:
+    name: Create musl Release
+    runs-on: ubuntu-latest
+    needs: [busybox-musl-build, docker-musl-comparison]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: Create release tag
+        id: tag
+        run: |
+          TAG="musl-build-$(date +%Y%m%d-%H%M%S)"
+          echo "tag=$TAG" >> $GITHUB_OUTPUT
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git tag -a "$TAG" -m "Automated musl build"
+          git push origin "$TAG" || echo "Tag already exists"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v1
+        with:
+          tag_name: ${{ steps.tag.outputs.tag }}
+          name: Musl Build ${{ steps.tag.outputs.tag }}
+          body: |
+            Automated musl libc build artifacts
+
+            - BusyBox musl static binaries (Linux + macOS builds)
+            - Docker comparison results (musl vs glibc)
+            - Performance metrics sent to Datadog
+
+            See workflow run for detailed comparison results.
+          files: |
+            artifacts/**/*
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

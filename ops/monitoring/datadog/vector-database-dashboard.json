@@ -1,0 +1,224 @@
+{
+  "title": "Vector Database Performance - Production",
+  "description": "Comprehensive monitoring of vector database operations and performance",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "title": "Vector Search Latency (P95/P99)",
+        "requests": [
+          {
+            "q": "max:vector_db.search.duration.p95{$env} by {service,instance}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "max:vector_db.search.duration.p99{$env} by {service,instance}",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Latency (ms)",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto",
+          "include_zero": true
+        },
+        "markers": [
+          {
+            "value": "y = 200",
+            "display_type": "warning dashed",
+            "label": "Warning Threshold"
+          },
+          {
+            "value": "y = 500",
+            "display_type": "error dashed", 
+            "label": "Critical Threshold"
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "query_value",
+        "title": "Vector Store Performance", 
+        "requests": [
+          {
+            "q": "sum:http.request.count{$env,service:vibecode-webgui,resource_name:/api/health/vector-metrics}.as_rate()",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 1000,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 500,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 500,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "per second",
+        "precision": 1
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "title": "Database Connection Pool Utilization",
+        "requests": [
+          {
+            "q": "avg:vector_db.pool.active_connections{$env} by {instance}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid"
+            }
+          },
+          {
+            "q": "avg:vector_db.pool.max_connections{$env} by {instance}",
+            "display_type": "line",
+            "style": {
+              "palette": "grey",
+              "line_type": "dashed"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Connections",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "heatmap",
+        "title": "Query Response Time Distribution",
+        "requests": [
+          {
+            "q": "avg:vector_db.query.duration{$env} by {query_type}",
+            "style": {
+              "palette": "dog_classic"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Response Time (ms)",
+          "scale": "linear"
+        }
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "query_value",
+        "title": "Database Error Rate",
+        "requests": [
+          {
+            "q": "(sum:vector_db.query.errors{$env}.as_rate() / sum:vector_db.query.total{$env}.as_rate()) * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">=",
+                "value": 1,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<",
+                "value": 1,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "custom_unit": "%",
+        "precision": 2
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "title": "Vector Index Performance",
+        "requests": [
+          {
+            "q": "avg:vector_db.index.search_time{$env} by {index_type}",
+            "display_type": "line"
+          },
+          {
+            "q": "avg:vector_db.index.recall_rate{$env} by {index_type}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "toplist",
+        "title": "Top Collections by Query Volume",
+        "requests": [
+          {
+            "q": "top(sum:vector_db.collection.queries{$env} by {collection}, 10, 'mean', 'desc')"
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "title": "Shard Health and Distribution",
+        "requests": [
+          {
+            "q": "avg:vector_db.shard.healthy{$env} by {shard_id}",
+            "display_type": "bars"
+          },
+          {
+            "q": "avg:vector_db.shard.document_count{$env} by {shard_id}",
+            "display_type": "line"
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "*",
+      "prefix": "env"
+    },
+    {
+      "name": "service",
+      "default": "*", 
+      "prefix": "service"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_template": true
+}

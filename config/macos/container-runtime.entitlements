@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- VibeCode Container Runtime Entitlements -->
+    <!-- Agent 24: macOS Security Engineer -->
+
+    <!-- REQUIRED: Virtualization.framework for Apple Container -->
+    <key>com.apple.security.virtualization</key>
+    <true/>
+
+    <!-- REQUIRED: App Sandbox for process isolation -->
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+
+    <!-- REQUIRED: File system access for container volumes -->
+    <key>com.apple.security.files.user-selected.read-write</key>
+    <true/>
+
+    <!-- REQUIRED: Temporary file access -->
+    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
+    <array>
+        <string>/tmp/</string>
+        <string>/private/tmp/</string>
+        <string>~/Library/Caches/com.vibecode.containers/</string>
+    </array>
+
+    <!-- REQUIRED: Network access for container networking -->
+    <key>com.apple.security.network.client</key>
+    <true/>
+    <key>com.apple.security.network.server</key>
+    <true/>
+
+    <!-- REQUIRED: IPC for container orchestration -->
+    <key>com.apple.security.application-groups</key>
+    <array>
+        <string>$(TeamIdentifierPrefix)com.vibecode.containers</string>
+    </array>
+
+    <!-- REQUIRED: XPC service communication -->
+    <key>com.apple.security.app-sandbox.service-helper</key>
+    <true/>
+
+    <!-- SECURITY: Code signing enforcement -->
+    <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+    <false/>
+    <key>com.apple.security.cs.disable-library-validation</key>
+    <false/>
+    <key>com.apple.security.cs.allow-jit</key>
+    <false/>
+
+    <!-- SECURITY: Deny camera access -->
+    <!-- Explicitly NOT included - containers should not access camera -->
+
+    <!-- SECURITY: Deny microphone access -->
+    <!-- Explicitly NOT included - containers should not access microphone -->
+
+    <!-- SECURITY: Deny location services -->
+    <!-- Explicitly NOT included - containers should not access location -->
+
+    <!-- OPTIONAL: Debugging (remove for production) -->
+    <!-- <key>com.apple.security.get-task-allow</key> -->
+    <!-- <true/> -->
+
+    <!-- OPTIONAL: Printing (if needed) -->
+    <!-- <key>com.apple.security.print</key> -->
+    <!-- <true/> -->
+</dict>
+</plist>

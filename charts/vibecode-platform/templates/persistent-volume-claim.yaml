@@ -1,0 +1,40 @@
+# Persistent Volume Claims for Code-Server Workspaces
+{{- if .Values.codeServer.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: workspace-{{ .Values.user.id | default "default" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: code-server
+    user: {{ .Values.user.id | default "default" }}
+    component: workspace-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.codeServer.persistence.workspace.size }}
+  {{- if .Values.codeServer.persistence.workspace.storageClass }}
+  storageClassName: {{ .Values.codeServer.persistence.workspace.storageClass }}
+  {{- end }}
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: extensions-{{ .Values.user.id | default "default" }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app: code-server
+    user: {{ .Values.user.id | default "default" }}
+    component: extensions-storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.codeServer.persistence.extensions.size }}
+  {{- if .Values.codeServer.persistence.extensions.storageClass }}
+  storageClassName: {{ .Values.codeServer.persistence.extensions.storageClass }}
+  {{- end }}
+{{- end }}

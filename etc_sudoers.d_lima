@@ -1,0 +1,19 @@
+%everyone ALL=(root:wheel) NOPASSWD:NOSETENV: /bin/mkdir -m 775 -p /private/var/run/lima
+
+# Manage "bridged" network daemons
+
+%everyone ALL=(root:wheel) NOPASSWD:NOSETENV: \
+    /opt/socket_vmnet/bin/socket_vmnet --pidfile=/private/var/run/lima/bridged_socket_vmnet.pid --socket-group=everyone --vmnet-mode=bridged --vmnet-interface=en0 /private/var/run/lima/socket_vmnet.bridged, \
+    /usr/bin/pkill -F /private/var/run/lima/bridged_socket_vmnet.pid
+
+# Manage "host" network daemons
+
+%everyone ALL=(root:wheel) NOPASSWD:NOSETENV: \
+    /opt/socket_vmnet/bin/socket_vmnet --pidfile=/private/var/run/lima/host_socket_vmnet.pid --socket-group=everyone --vmnet-mode=host --vmnet-gateway=192.168.106.1 --vmnet-dhcp-end=192.168.106.254 --vmnet-mask=255.255.255.0 /private/var/run/lima/socket_vmnet.host, \
+    /usr/bin/pkill -F /private/var/run/lima/host_socket_vmnet.pid
+
+# Manage "shared" network daemons
+
+%everyone ALL=(root:wheel) NOPASSWD:NOSETENV: \
+    /opt/socket_vmnet/bin/socket_vmnet --pidfile=/private/var/run/lima/shared_socket_vmnet.pid --socket-group=everyone --vmnet-mode=shared --vmnet-gateway=192.168.105.1 --vmnet-dhcp-end=192.168.105.254 --vmnet-mask=255.255.255.0 /private/var/run/lima/socket_vmnet.shared, \
+    /usr/bin/pkill -F /private/var/run/lima/shared_socket_vmnet.pid
