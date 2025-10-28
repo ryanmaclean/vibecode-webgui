@@ -1,0 +1,22 @@
+{{- if .Values.aiGateway.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vibecode.aiGateway.fullname" . }}
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode.aiGateway.labels" . | nindent 4 }}
+  {{- with .Values.aiGateway.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.aiGateway.service.type | default "ClusterIP" }}
+  selector:
+    {{- include "vibecode.aiGateway.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: http
+      port: {{ .Values.aiGateway.service.port | default 3001 }}
+      targetPort: {{ .Values.aiGateway.service.targetPort | default 3001 }}
+      protocol: TCP
+{{- end }}

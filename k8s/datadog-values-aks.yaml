@@ -1,0 +1,286 @@
+# Datadog Helm Values for AKS Production Deployment
+# Production-grade configuration with Azure-specific optimizations
+
+datadog:
+  # Use existing secrets created by OpenTofu
+  apiKeyExistingSecret: datadog-secret
+  appKeyExistingSecret: datadog-secret
+  
+  # Datadog site configuration
+  site: "datadoghq.com"
+  
+  # Cluster name for identification (set by OpenTofu)
+  clusterName: "vibecode-aks-prod"
+  
+  # Production resource configuration
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "500m"
+      memory: "1Gi"
+  
+  # Enable comprehensive monitoring features
+  logs:
+    enabled: true
+    containerCollectAll: true
+    configMapName: "datadog-logs"
+    containerCollectUsingFiles: true
+  
+  # Enable APM for application tracing with Dynamic Instrumentation
+  apm:
+    enabled: true
+    portEnabled: true
+    socketEnabled: false
+
+  dogstatsd:
+    socketEnabled: false
+  
+  # Enable process monitoring
+  processAgent:
+    enabled: true
+    
+  # Enable network monitoring for AKS
+  networkMonitoring:
+    enabled: true
+  
+  # Collect cluster events and Kubernetes state metrics
+  collectEvents: true
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+    
+  # Enable Database Monitoring (modern key)
+  databaseMonitoring:
+    enabled: true
+
+  # Keep AKS Postgres via Autodiscovery annotations.
+  # Add a static conf for an external Azure Flexible Server Postgres instance.
+  confd:
+    postgres.yaml: |
+      init_config:
+      instances:
+        - host: "%%env_AZURE_PG_HOST%%"
+          port: 5432
+          username: "%%env_DD_AZURE_POSTGRES_USERNAME%%"
+          password: "%%env_DD_AZURE_POSTGRES_PASSWORD%%"
+          dbname: "%%env_AZURE_PG_DB%%"
+          ssl: 'require'
+          dbm: true
+          query_metrics:
+            enabled: true
+            run_sync: true
+            collection_interval: 15
+          query_samples:
+            enabled: false
+          query_activity:
+            enabled: true
+            collection_interval: 10
+          collect_schemas:
+            enabled: true
+            collection_interval: 60
+          collect_settings:
+            enabled: true
+            collection_interval: 60
+          tags:
+            - env:production
+            - cloud:azure
+            - service:vibecode-azure-pg
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          password: ${DD_VALKEY_PASSWORD:-${DATADOG_VALKEY_PASSWORD}}
+          tags:
+            - env:production
+            - service:vibecode-valkey
+            - component:cache
+    
+  # Enable orchestrator explorer for AKS
+  orchestratorExplorer:
+    enabled: true
+    
+  # Production tags for AKS
+  tags:
+    - "env:production"
+    - "provider:azure"
+    - "cluster:aks"
+    - "project:vibecode"
+    - "region:eastus2"
+
+  env:
+    - name: DD_ENV
+      value: "production"
+    - name: DD_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: username
+    - name: DD_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-postgres
+          key: password
+    # Azure Flexible Server Postgres for DBM (confd-driven)
+    - name: AZURE_PG_HOST
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: host
+    - name: AZURE_PG_DB
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: db
+    - name: DD_AZURE_POSTGRES_USERNAME
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: username
+    - name: DD_AZURE_POSTGRES_PASSWORD
+      valueFrom:
+        secretKeyRef:
+          name: datadog-azure-postgres
+          key: password
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_IAST_REQUEST_SAMPLING
+      value: "1.0"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_SAMPLE_RATE
+      value: "1"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_APM_ENABLED
+      value: "true"
+    - name: DD_APM_NON_LOCAL_TRAFFIC
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+# Cluster Agent configuration for AKS
+clusterAgent:
+  enabled: true
+  replicas: 2
+  pdb:
+    create: true
+    minAvailable: 1
+  image:
+    tag: "7.66.1"
+  
+  # Production resources for Cluster Agent
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  
+  # Enable metrics provider for HPA
+  metricsProvider:
+    enabled: true
+    
+  # Enable cluster checks
+  clusterChecks:
+    enabled: true
+    
+  # Enable external metrics for autoscaling
+  externalMetrics:
+    enabled: true
+    
+  # Azure-specific configurations
+  tolerations:
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+
+# Node Agent configuration for AKS
+agents:
+  image:
+    tag: "7.66.1"
+  pdb:
+    create: true
+    minAvailable: 1
+  apm:
+    enabled: true
+    hostPort: 8126
+    
+  # Production resources for Node Agents
+  resources:
+    requests:
+      cpu: "200m"
+      memory: "512Mi"
+    limits:
+      cpu: "1000m"
+      memory: "2Gi"
+      
+  # Azure-specific configurations
+  tolerations:
+    - key: "kubernetes.azure.com/scalesetpriority"
+      operator: "Equal"
+      value: "spot"
+      effect: "NoSchedule"
+    - key: "CriticalAddonsOnly"
+      operator: "Exists"
+      
+  # Use host network for better performance on AKS
+  useHostNetwork: true
+  
+
+# System Probe for network monitoring (AKS-optimized)
+systemProbe:
+  enabled: true
+  # Enable network security monitoring
+  seccomp: "runtime/default"
+  appArmor: "runtime/default"
+  enableTCPQueueLength: true
+  enableOOMKill: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
+  
+# Security Agent for runtime security
+securityAgent:
+  enabled: true
+  runtime:
+    enabled: true
+  compliance:
+    enabled: true
+    
+# Additional AKS-specific configurations
+nodeSelector:
+  kubernetes.io/os: linux
+
+# Pod Disruption Budget for high availability
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1
+
+# Service Account with Azure RBAC
+serviceAccount:
+  create: true
+  annotations:
+    azure.workload.identity/client-id: "" # Will be set by OpenTofu
+    
+# Ingress for Datadog Agent (if needed)
+ingress:
+  enabled: false # Typically not needed for agents
+
+# Azure Monitor integration
+azureMonitor:
+  enabled: true
+  workspace:
+    # Will be configured by OpenTofu
+    id: ""
+    key: ""

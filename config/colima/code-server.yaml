@@ -1,0 +1,34 @@
+# Colima Profile: x86 Docker code-server
+# Issue #559: Colima code-server launch profile (x86 Docker)
+# Usage: colima start --profile code-server
+
+# VM configuration
+cpu: 4
+memory: 8
+disk: 50
+arch: x86_64
+
+# Use Docker runtime
+runtime: docker
+
+# Mount workspace
+mounts:
+  - location: ~
+    writable: true
+
+# Auto-start code-server container
+autoStart:
+  - docker run -d \
+      --name code-server \
+      -p 8080:8080 \
+      -v "$HOME:/home/coder/workspace" \
+      -e PASSWORD=vibecode \
+      codercom/code-server:latest
+
+# Network configuration
+network:
+  address: true
+
+# DNS
+dns:
+  - 8.8.8.8

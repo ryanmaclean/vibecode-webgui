@@ -1,0 +1,6 @@
+semantic-kernel
+python-dotenv
+GitPython
+chromadb
+markdown
+beautifulsoup4

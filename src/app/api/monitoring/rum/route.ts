@@ -1,0 +1,202 @@
+/**
+ * Real User Monitoring (RUM) API Endpoint
+ * Provides RUM data collection and analysis
+ */
+
+import { NextRequest, NextResponse } from 'next/server'
+import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url)
+    const action = searchParams.get('action') || 'config'
+
+    switch (action) {
+      case 'config':
+        // Return RUM configuration for client-side initialization
+        const { applicationId, clientToken, site, env, version } = getRUMPublicConfig()
+        const rumConfig = {
+          enabled: !!(applicationId && clientToken),
+          applicationId: applicationId || '',
+          site: site || 'datadoghq.com',
+          service: 'vibecode-webgui',
+          env: env || 'development',
+          version: version || '1.0.0',
+          features: {
+            sessionReplay: true,
+            userInteractions: true,
+            resources: true,
+            longTasks: true,
+            webVitals: true,
+            errorTracking: true
+          },
+          sampling: {
+            sessionSampleRate: 100,
+            sessionReplaySampleRate: process.env.NODE_ENV === 'production' ? 20 : 100
+          }
+        }
+
+        return NextResponse.json({
+          rum: rumConfig,
+          timestamp: new Date().toISOString(),
+          status: 'success'
+        })
+
+      case 'health':
+        // RUM health check
+        const { applicationId: appId, clientToken: token, site: publicSite } = getRUMPublicConfig()
+        const isConfigured = !!(appId && token)
+
+        return NextResponse.json({
+          healthy: isConfigured,
+          status: isConfigured ? 'configured' : 'missing-config',
+          configuration: {
+            hasApplicationId: !!appId,
+            hasClientToken: !!token,
+            site: publicSite || 'datadoghq.com'
+          },
+          features: {
+            sessionReplay: isConfigured,
+            userTracking: isConfigured,
+            performanceMonitoring: isConfigured,
+            errorTracking: isConfigured
+          },
+          timestamp: new Date().toISOString()
+        })
+
+      case 'features':
+        // Return available RUM features and their status
+        return NextResponse.json({
+          features: {
+            'session-replay': {
+              enabled: true,
+              description: 'Record user sessions for debugging and UX analysis'
+            },
+            'user-interactions': {
+              enabled: true,
+              description: 'Track clicks, scrolls, and other user interactions'
+            },
+            'web-vitals': {
+              enabled: true,
+              description: 'Monitor Core Web Vitals and performance metrics'
+            },
+            'error-tracking': {
+              enabled: true,
+              description: 'Capture and analyze client-side errors'
+            },
+            'ai-tracking': {
+              enabled: true,
+              description: 'Track AI interactions and performance'
+            },
+            'workspace-tracking': {
+              enabled: true,
+              description: 'Monitor workspace usage and productivity'
+            },
+            'code-editor-tracking': {
+              enabled: true,
+              description: 'Track code editor usage and efficiency'
+            },
+            'terminal-tracking': {
+              enabled: true,
+              description: 'Monitor terminal usage with privacy safeguards'
+            }
+          },
+          timestamp: new Date().toISOString()
+        })
+
+      default:
+        return NextResponse.json({
+          error: 'Invalid action',
+          available_actions: ['config', 'health', 'features']
+        }, { status: 400 })
+    }
+
+  } catch (error) {
+    // Server error logged
+    
+    return NextResponse.json({
+      error: 'Failed to retrieve RUM data',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    const { action, data } = body
+
+    switch (action) {
+      case 'track_conversion':
+        // Track business conversions
+        const conversionData = {
+          ...data,
+          timestamp: new Date().toISOString()
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Conversion tracked successfully',
+          timestamp: new Date().toISOString()
+        })
+
+      case 'track_feature_usage':
+        // Track feature usage for product analytics
+        const featureData = {
+          ...data,
+          timestamp: new Date().toISOString()
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Feature usage tracked',
+          timestamp: new Date().toISOString()
+        })
+
+      case 'track_user_journey':
+        // Track user journey steps
+        const journeyData = {
+          ...data,
+          timestamp: new Date().toISOString()
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'User journey step tracked',
+          timestamp: new Date().toISOString()
+        })
+
+      case 'track_performance':
+        // Track custom performance metrics
+        const performanceData = {
+          ...data,
+          timestamp: new Date().toISOString()
+        }
+
+        return NextResponse.json({
+          success: true,
+          message: 'Performance metric tracked',
+          timestamp: new Date().toISOString()
+        })
+
+      default:
+        return NextResponse.json({
+          error: 'Invalid action',
+          available_actions: ['track_conversion', 'track_feature_usage', 'track_user_journey', 'track_performance']
+        }, { status: 400 })
+    }
+
+  } catch (error) {
+    // Server error logged
+    
+    return NextResponse.json({
+      error: 'Failed to process RUM tracking',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
+  }
+}

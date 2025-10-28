@@ -1,0 +1,31 @@
+{{- if .Values.backup.enabled }}
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "vibecode.fullname" . }}-backup
+  namespace: {{ .Release.Namespace }}
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.backup.schedule | quote }}
+  jobTemplate:
+    spec:
+      template:
+        metadata:
+          labels:
+            {{- include "vibecode.selectorLabels" . | nindent 12 }}
+        spec:
+          restartPolicy: OnFailure
+          containers:
+            - name: backup
+              image: {{ include "vibecode.image" . }}
+              command:
+                - /bin/sh
+                - -c
+                - "echo Backup placeholder; exit 0"
+              env:
+                - name: BACKUP_STORAGE_ACCOUNT
+                  value: {{ .Values.backup.storageAccount | quote }}
+                - name: BACKUP_CONTAINER
+                  value: {{ .Values.backup.containerName | quote }}
+{{- end }}

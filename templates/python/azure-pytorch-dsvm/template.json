@@ -1,0 +1,16 @@
+{
+  "name": "Azure PyTorch DSVM Starter",
+  "description": "A starter template for PyTorch development, inspired by the Azure Data Science Virtual Machine. Includes PyTorch, Jupyter, and ONNX Runtime.",
+  "author": "VibeCode",
+  "tags": ["python", "pytorch", "azure", "ai", "dsvm", "machine-learning"],
+  "icon": "azure-pytorch",
+  "version": "1.0.0",
+  "type": "application",
+  "language": "python",
+  "framework": "pytorch",
+  "files": [
+    "main.py",
+    "requirements.txt",
+    "README.md"
+  ]
+}

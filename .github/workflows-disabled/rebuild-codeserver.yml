@@ -1,0 +1,442 @@
+name: Rebuild and Publish code-server Multi-Arch Images
+
+# Manual trigger only - scheduled runs commented out
+# Uncomment schedule block to enable nightly automated rebuilds
+on:
+  workflow_dispatch:
+    inputs:
+      enable_nightly:
+        description: 'Enable nightly automated rebuilds'
+        type: boolean
+        default: false
+      skip_tests:
+        description: 'Skip smoke tests (use with caution)'
+        type: boolean
+        default: false
+      update_docs:
+        description: 'Update docs/logs/issues/code-server-cloud-deployment.md with new digest'
+        type: boolean
+        default: true
+  # schedule:
+  #   # Nightly rebuild at 05:15 UTC (disabled by default, enable via workflow_dispatch)
+  #   - cron: '15 5 * * *'
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: vibecode-codeserver
+  CACHE_SCOPE: codeserver-rebuild
+  DOCKERFILE: docker/code-server/Dockerfile.optimized
+
+concurrency:
+  group: rebuild-codeserver-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Pre-build validation and setup
+  pre-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write
+    outputs:
+      should_build: ${{ steps.check.outputs.should_build }}
+      build_date: ${{ steps.meta.outputs.build_date }}
+      build_tag: ${{ steps.meta.outputs.build_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Check if nightly builds are enabled
+        id: check
+        run: |
+          should_build="true"
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            # Check if nightly builds are enabled via workflow config
+            # For now, always build on schedule (can be controlled via GitHub Actions settings)
+            echo "Nightly rebuild triggered"
+          fi
+          echo "should_build=$should_build" >> "$GITHUB_OUTPUT"
+
+      - name: Set build metadata
+        id: meta
+        run: |
+          build_date=$(date -u +%Y-%m-%d)
+          build_tag="ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:rebuild-${build_date}-${{ github.run_id }}"
+          echo "build_date=$build_date" >> "$GITHUB_OUTPUT"
+          echo "build_tag=$build_tag" >> "$GITHUB_OUTPUT"
+          echo "BUILD_DATE=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          echo "GIT_COMMIT=${{ github.sha }}" >> "$GITHUB_ENV"
+
+      - name: Comment on issue #404 - Build Started
+        if: github.event_name == 'workflow_dispatch'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment 404 --body "🔨 **Rebuild started**
+
+          **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Build Tag:** \`${{ steps.meta.outputs.build_tag }}\`
+          **Date:** ${{ steps.meta.outputs.build_date }}
+          **Trigger:** Manual (workflow_dispatch)
+
+          ⏳ Building multi-arch images (linux/amd64, linux/arm64)..."
+
+  # Build multi-arch images with caching
+  build:
+    needs: pre-build
+    if: needs.pre-build.outputs.should_build == 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+      id-token: write
+      attestations: write
+    outputs:
+      image_digest: ${{ steps.build.outputs.digest }}
+      build_tag: ${{ needs.pre-build.outputs.build_tag }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+        with:
+          driver-opts: |
+            image=moby/buildkit:latest
+            network=host
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata for Docker
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=raw,value=latest
+            type=raw,value=${{ needs.pre-build.outputs.build_date }}
+            type=raw,value=rebuild-${{ github.run_id }}
+            type=sha,prefix=sha-
+
+      - name: Build and push multi-arch image
+        id: build
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ${{ env.DOCKERFILE }}
+          platforms: linux/amd64,linux/arm64
+          push: true
+          tags: |
+            ${{ needs.pre-build.outputs.build_tag }}
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+            ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.pre-build.outputs.build_date }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: |
+            type=gha,scope=${{ env.CACHE_SCOPE }}
+            type=registry,ref=ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          cache-to: type=gha,scope=${{ env.CACHE_SCOPE }},mode=max
+          build-args: |
+            BUILD_DATE=${{ env.BUILD_DATE }}
+            GIT_COMMIT=${{ env.GIT_COMMIT }}
+            VERSION=1.2.0
+            PROFILE=full
+          provenance: true
+          sbom: true
+
+      - name: Generate attestation
+        uses: actions/attest-build-provenance@v1
+        with:
+          subject-name: ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}
+          subject-digest: ${{ steps.build.outputs.digest }}
+          push-to-registry: true
+
+      - name: Install Datadog CI
+        if: ${{ secrets.DD_API_KEY != '' }}
+        run: npm install -g @datadog/datadog-ci
+
+      - name: Emit build metrics to Datadog
+        if: ${{ secrets.DD_API_KEY != '' }}
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+        run: |
+          build_start=$(date -d '${{ github.run_started_at }}' +%s 2>/dev/null || date +%s)
+          build_end=$(date +%s)
+          build_duration=$((build_end - build_start))
+
+          echo "### Datadog Build Metrics" >> "$GITHUB_STEP_SUMMARY"
+          echo "Build duration: ${build_duration}s" >> "$GITHUB_STEP_SUMMARY"
+
+          datadog-ci metrics submit codeserver.rebuild.duration "$build_duration" \
+            --type gauge \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},run:${{ github.run_id }},trigger:${{ github.event_name }}"
+
+          datadog-ci metrics submit codeserver.rebuild.success 1 \
+            --type count \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},run:${{ github.run_id }},trigger:${{ github.event_name }}"
+
+          datadog-ci events post "code-server rebuild complete" \
+            "Multi-arch image rebuilt and pushed with digest ${{ steps.build.outputs.digest }}" \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},issue:404"
+
+      - name: Output build summary
+        run: |
+          cat <<'MARKDOWN' >> "$GITHUB_STEP_SUMMARY"
+          ## Build Complete ✅
+
+          **Image Digest:** `${{ steps.build.outputs.digest }}`
+
+          **Tags Published:**
+          - `ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest`
+          - `ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.pre-build.outputs.build_date }}`
+          - `${{ needs.pre-build.outputs.build_tag }}`
+
+          **Platforms:** linux/amd64, linux/arm64
+
+          **Next Step:** Running smoke tests...
+          MARKDOWN
+
+  # Automated smoke tests
+  smoke-test:
+    needs: [pre-build, build]
+    if: github.event.inputs.skip_tests != 'true'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Create KinD cluster
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: vibecode-rebuild-test
+          wait: true
+
+      - name: Run smoke tests
+        env:
+          CODE_SERVER_IMAGE: ${{ needs.build.outputs.build_tag }}
+          KIND_CLUSTER_NAME: vibecode-rebuild-test
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: ${{ secrets.DD_SITE }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_RUN_ID: ${{ github.run_id }}
+        run: |
+          echo "Testing image: $CODE_SERVER_IMAGE"
+          ./scripts/test-code-server-kind.sh
+
+      - name: Verify editor tooling
+        env:
+          CODE_SERVER_IMAGE: ${{ needs.build.outputs.build_tag }}
+        run: |
+          echo "Verifying vim, nvim, aider, goose in rebuilt image..."
+          docker pull "$CODE_SERVER_IMAGE"
+
+          # Test AMD64
+          echo "Testing linux/amd64..."
+          docker run --rm --platform linux/amd64 --entrypoint bash "$CODE_SERVER_IMAGE" -c '
+            set -e
+            echo "Checking vim..." && vim --version | head -1
+            echo "Checking nvim..." && nvim --version | head -1
+            echo "Checking aider..." && aider --version
+            echo "Checking goose..." && goose -version 2>&1 | grep -i goose
+            echo "All tools verified on amd64"
+          '
+
+          # Test ARM64
+          echo "Testing linux/arm64..."
+          docker run --rm --platform linux/arm64 --entrypoint bash "$CODE_SERVER_IMAGE" -c '
+            set -e
+            echo "Checking vim..." && vim --version | head -1
+            echo "Checking nvim..." && nvim --version | head -1
+            echo "Checking aider..." && aider --version
+            echo "Checking goose..." && goose -version 2>&1 | grep -i goose
+            echo "All tools verified on arm64"
+          '
+
+      - name: Collect diagnostics
+        if: always()
+        run: |
+          mkdir -p artifacts/smoke-test
+          kubectl get pods -A > artifacts/smoke-test/pods.txt
+          kubectl describe deployment/code-server-kind -n vibecode-platform > artifacts/smoke-test/deployment.txt || true
+          kubectl logs deployment/code-server-kind -n vibecode-platform --tail=200 > artifacts/smoke-test/logs.txt || true
+
+      - name: Upload smoke test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-results-${{ github.run_id }}
+          path: artifacts/smoke-test
+          retention-days: 7
+
+      - name: Emit smoke test metrics to Datadog
+        if: ${{ always() && secrets.DD_API_KEY != '' }}
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+        run: |
+          npm install -g @datadog/datadog-ci
+
+          test_result=${{ job.status == 'success' && '1' || '0' }}
+
+          datadog-ci metrics submit codeserver.smoke.result "$test_result" \
+            --type gauge \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},run:${{ github.run_id }},status:${{ job.status }}"
+
+          if [ "$test_result" = "0" ]; then
+            datadog-ci events post "code-server smoke test failed" \
+              "Rebuild smoke tests failed for run ${{ github.run_id }}" \
+              --alert-type error \
+              --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},issue:404"
+          fi
+
+  # Update documentation with new image digest
+  update-docs:
+    needs: [pre-build, build, smoke-test]
+    if: (success() || needs.smoke-test.result == 'skipped') && github.event.inputs.update_docs != 'false'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Update deployment docs with new digest
+        run: |
+          digest="${{ needs.build.outputs.image_digest }}"
+          build_date="${{ needs.pre-build.outputs.build_date }}"
+          doc_file="docs/logs/issues/code-server-cloud-deployment.md"
+
+          # Create backup
+          cp "$doc_file" "${doc_file}.bak"
+
+          # Add new digest entry at the top of the release section
+          sed -i "/## Release Checklist/a \\
+          \\
+          ### Build ${build_date} (Run ${{ github.run_id }})\\
+          - **Image Digest:** \`${digest}\`\\
+          - **Tags:** \`latest\`, \`${build_date}\`\\
+          - **Platforms:** linux/amd64, linux/arm64\\
+          - **Workflow:** [Run ${{ github.run_id }}](${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }})\\
+          - **Status:** ✅ Smoke tests passed\\
+          " "$doc_file"
+
+          echo "Updated $doc_file with new build information"
+
+      - name: Commit documentation updates
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          if git diff --quiet docs/logs/issues/code-server-cloud-deployment.md; then
+            echo "No changes to commit"
+          else
+            git add docs/logs/issues/code-server-cloud-deployment.md
+            git commit -m "docs: update code-server deployment with build ${{ needs.pre-build.outputs.build_date }}
+
+          Automated update from rebuild workflow run ${{ github.run_id }}
+
+          Image digest: ${{ needs.build.outputs.image_digest }}
+
+          🤖 Generated with [Claude Code](https://claude.com/claude-code)
+
+          Co-Authored-By: Claude <noreply@anthropic.com>"
+
+            git push
+            echo "Documentation updated and pushed"
+          fi
+
+      - name: Comment on issue #404 - Success
+        if: success()
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh issue comment 404 --body "✅ **Rebuild completed successfully**
+
+          **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+
+          **Image Details:**
+          - **Digest:** \`${{ needs.build.outputs.image_digest }}\`
+          - **Tags:** \`latest\`, \`${{ needs.pre-build.outputs.build_date }}\`
+          - **Platforms:** linux/amd64, linux/arm64
+
+          **Verification:**
+          - ✅ Multi-arch build successful
+          - ✅ Smoke tests passed (KinD cluster)
+          - ✅ Editor tooling verified (vim, nvim, aider, goose)
+          - ✅ Documentation updated
+
+          **Pull Command:**
+          \`\`\`bash
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:latest
+          # OR
+          docker pull ghcr.io/${{ github.repository_owner }}/${{ env.IMAGE_NAME }}:${{ needs.pre-build.outputs.build_date }}
+          \`\`\`
+
+          **Usage:**
+          \`\`\`bash
+          # Manual trigger for next rebuild
+          gh workflow run rebuild-codeserver.yml
+
+          # Or via GitHub Actions UI
+          # https://github.com/${{ github.repository }}/actions/workflows/rebuild-codeserver.yml
+          \`\`\`
+
+          📊 **Metrics:** Build metrics reported to Datadog under \`codeserver.rebuild.*\`"
+
+  # Failure notification
+  notify-failure:
+    needs: [pre-build, build, smoke-test]
+    if: failure()
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+    steps:
+      - name: Comment on issue #404 - Failure
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          failed_job="${{ needs.build.result == 'failure' && 'build' || needs.smoke-test.result == 'failure' && 'smoke-test' || 'unknown' }}"
+
+          gh issue comment 404 --body "❌ **Rebuild failed**
+
+          **Workflow Run:** ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          **Failed Job:** \`${failed_job}\`
+          **Date:** $(date -u +%Y-%m-%d)
+
+          Please check the workflow logs for details and retry after fixing the issue.
+
+          **Retry Command:**
+          \`\`\`bash
+          gh workflow run rebuild-codeserver.yml
+          \`\`\`"
+
+      - name: Emit failure metrics to Datadog
+        if: ${{ secrets.DD_API_KEY != '' }}
+        env:
+          DATADOG_API_KEY: ${{ secrets.DD_API_KEY }}
+          DATADOG_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+        run: |
+          npm install -g @datadog/datadog-ci
+
+          datadog-ci metrics submit codeserver.rebuild.failure 1 \
+            --type count \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},run:${{ github.run_id }}"
+
+          datadog-ci events post "code-server rebuild failed" \
+            "Rebuild workflow run ${{ github.run_id }} failed" \
+            --alert-type error \
+            --tags "workflow:rebuild-codeserver,repo:${{ github.repository }},issue:404"

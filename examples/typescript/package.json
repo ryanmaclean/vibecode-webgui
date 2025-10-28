@@ -1,0 +1,22 @@
+{
+  "name": "vibecode-examples-typescript",
+  "version": "1.0.0",
+  "description": "TypeScript examples for VibeCode API SDK",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "basic": "tsx basic-usage.ts",
+    "chat": "tsx ai-chat.ts",
+    "search": "tsx vector-search.ts",
+    "mfa": "tsx mfa-setup.ts",
+    "all": "npm run basic && npm run chat && npm run search"
+  },
+  "dependencies": {
+    "@vibecode/client": "file:../../clients/typescript"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.0.0"
+  }
+}

@@ -1,0 +1,40 @@
+# KIND Cluster Configuration for Integration Tests
+# Uses different ports to avoid conflicts with other clusters
+
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-test-cluster
+
+nodes:
+# Control plane node with ingress support
+- role: control-plane
+  kubeadmConfigPatches:
+  - |
+    kind: InitConfiguration
+    nodeRegistration:
+      kubeletExtraArgs:
+        node-labels: "ingress-ready=true"
+  extraPortMappings:
+  - containerPort: 80
+<<<<<<< HEAD
+    hostPort: 0  # Use dynamic port allocation
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 0  # Use dynamic port allocation
+=======
+    hostPort: 8080
+    protocol: TCP
+  - containerPort: 443
+    hostPort: 8443
+>>>>>>> merge-conflict-cleanup
+    protocol: TCP
+
+# Worker node for code-server workloads
+- role: worker
+  labels:
+    tier: "code-server"
+
+# Worker node for monitoring and infrastructure
+- role: worker
+  labels:
+    tier: "monitoring"

@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-10-22T23:15:00Z",
+  "vm": "fast-openvscode",
+  "build": "stable",
+  "metrics": {
+    "boot_latency_ms": 420,
+    "handshake_success": 1,
+    "handshake_failure": 0,
+    "benchmark_duration_ms": 3800
+  }
+}

@@ -1,0 +1,89 @@
+# vfkit VM: PostgreSQL Database
+# Alpine ARM64 - Minimal database VM for VibeCode demo
+# Usage: vfkit --config demo-postgresql.yaml
+
+name: vibecode-db
+vcpus: 2
+memory: 2048  # 2GB
+
+# Alpine ARM64 kernel and initrd
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  - path: /opt/vibecode/disks/db-vm.img
+    size: 50G
+    format: raw
+  - path: /opt/vibecode/disks/db-data.img
+    size: 100G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:57"
+    forward:
+      - host_port: 5432
+        guest_port: 5432
+
+# Serial console
+serial:
+  - stdio
+
+# Resource limits
+limits:
+  cpu_percent: 60
+  io_weight: 800  # Higher I/O priority for database
+
+# PostgreSQL setup script
+setup: |
+  #!/bin/sh
+  # Update and install PostgreSQL
+  apk update
+  apk add --no-cache \
+    postgresql \
+    postgresql-contrib \
+    postgresql-client
+  
+  # Initialize PostgreSQL
+  mkdir -p /var/lib/postgresql/data
+  chown -R postgres:postgres /var/lib/postgresql
+  
+  # Mount data disk
+  mkfs.ext4 /dev/vdb
+  mount /dev/vdb /var/lib/postgresql/data
+  chown -R postgres:postgres /var/lib/postgresql/data
+  
+  # Initialize database
+  su - postgres -c "initdb -D /var/lib/postgresql/data"
+  
+  # Configure PostgreSQL
+  cat >> /var/lib/postgresql/data/postgresql.conf <<EOF
+listen_addresses = '*'
+max_connections = 100
+shared_buffers = 512MB
+effective_cache_size = 1536MB
+work_mem = 16MB
+maintenance_work_mem = 128MB
+EOF
+  
+  # Allow connections
+  cat >> /var/lib/postgresql/data/pg_hba.conf <<EOF
+host    all             all             0.0.0.0/0               md5
+EOF
+  
+  # Start PostgreSQL
+  su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/log/postgresql.log start"
+  
+  # Create vibecode database and user
+  sleep 2
+  su - postgres -c "psql -c \"CREATE USER vibecode WITH PASSWORD 'vibecode';\""
+  su - postgres -c "psql -c \"CREATE DATABASE vibecode OWNER vibecode;\""
+  su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode;\""
+  
+  echo "PostgreSQL ready at localhost:5432"
+  echo "Database: vibecode"
+  echo "User: vibecode"
+  echo "Password: vibecode"

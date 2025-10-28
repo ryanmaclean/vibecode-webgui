@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: datadog
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+    spec:
+      serviceAccountName: datadog-agent
+      tolerations:
+        - operator: Exists
+      containers:
+        - name: datadog-agent
+          image: datadog/docker-dd-agent:latest-alpine
+          imagePullPolicy: Always
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+            - name: DD_SITE
+              value: datadoghq.com
+            - name: DD_ENV
+              value: production
+            - name: DD_SERVICE
+              value: vibecode-webgui
+            - name: DD_VERSION
+              value: latest
+            - name: KUBERNETES
+              value: "true"
+            - name: DD_CLUSTER_NAME
+              value: vibecode-cluster
+            - name: DD_APM_ENABLED
+              value: "false"
+            - name: DD_LOGS_ENABLED
+              value: "false"
+            - name: DD_PROCESS_AGENT_ENABLED
+              value: "false"
+            - name: DD_RUNTIME_SECURITY_CONFIG_ENABLED
+              value: "false"
+            - name: DD_COMPLIANCE_CONFIG_ENABLED
+              value: "false"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi

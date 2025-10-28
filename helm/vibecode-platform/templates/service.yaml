@@ -1,0 +1,53 @@
+{{/*
+This template creates per-user services for code-server instances
+It should be used with Helm template functions to generate services for each user
+*/}}
+{{- define "vibecode-platform.service" }}
+{{- $userId := .userId | required "userId is required for service" }}
+{{- $root := .root }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "vibecode-platform.codeServerName" . }}
+  namespace: {{ $root.Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: service
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+    {{- if $root.Values.monitoring.prometheus.enabled }}
+    prometheus.io/scrape: "true"
+    prometheus.io/port: "{{ $root.Values.monitoring.prometheus.port }}"
+    prometheus.io/path: "{{ $root.Values.monitoring.prometheus.path }}"
+    {{- end }}
+spec:
+  type: {{ $root.Values.codeServer.service.type }}
+  ports:
+  - port: {{ $root.Values.codeServer.service.port }}
+    targetPort: {{ $root.Values.codeServer.service.targetPort }}
+    protocol: TCP
+    name: http
+  {{- if $root.Values.monitoring.prometheus.enabled }}
+  - port: {{ $root.Values.monitoring.prometheus.port }}
+    targetPort: {{ $root.Values.monitoring.prometheus.port }}
+    protocol: TCP
+    name: metrics
+  {{- end }}
+  {{- if $root.Values.aiIntegration.mcp.enabled }}
+  - port: {{ $root.Values.aiIntegration.mcp.serverPort }}
+    targetPort: {{ $root.Values.aiIntegration.mcp.serverPort }}
+    protocol: TCP
+    name: mcp
+  {{- end }}
+  selector:
+    {{- include "vibecode-platform.codeServerSelectorLabels" . | nindent 4 }}
+{{- end }}
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create a service for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.service" $context }}
+{{- end }}

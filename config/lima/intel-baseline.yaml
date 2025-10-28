@@ -1,0 +1,49 @@
+# Lima VM Profile: ARM64 IDE Baseline for M-Series
+# Issue #558: ARM Lima IDE baseline (M-Series macOS)
+# Usage: limactl start --name=vibecode-arm64 intel-baseline.yaml
+
+vmType: "vz"
+os: "Linux"
+arch: "aarch64"
+
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/22.04/release/ubuntu-22.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+    digest: "sha256:..."
+
+cpus: 4
+memory: "8GiB"
+disk: "50GiB"
+
+mounts:
+  - location: "~"
+    writable: true
+  - location: "/tmp/lima"
+    writable: true
+
+networks:
+  - lima: shared
+
+dns:
+  - 8.8.8.8
+
+# Install code-server
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux
+      apt-get update
+      apt-get install -y curl git build-essential
+      curl -fsSL https://code-server.dev/install.sh | sh
+      systemctl enable --now code-server@$USER
+
+portForwards:
+  - guestPort: 8080
+    hostPort: 8080
+
+probes:
+  - script: |
+      #!/bin/bash
+      curl -f http://localhost:8080
+    hint: code-server not ready

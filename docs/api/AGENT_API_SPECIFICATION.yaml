@@ -1,0 +1,1190 @@
+openapi: 3.0.3
+info:
+  title: VibeCode Agent API
+  version: 1.0.0
+  description: |
+    RESTful API for managing AI coding agents (Aider, Goose, Cline) with real-time
+    streaming capabilities. This API wraps the agentapi HTTP server endpoints and
+    provides a unified interface for Next.js frontend integration.
+
+    ## Features
+    - Start/stop/monitor AI coding agents
+    - Real-time output streaming via Server-Sent Events (SSE)
+    - WebSocket support for bidirectional communication
+    - Rate limiting and concurrent agent management
+    - Prometheus metrics integration
+    - Multi-provider model support
+
+    ## Rate Limiting
+    All endpoints include rate limiting headers:
+    - X-RateLimit-Limit: Maximum requests per window
+    - X-RateLimit-Remaining: Remaining requests in current window
+    - X-RateLimit-Reset: Time when rate limit resets (Unix timestamp)
+
+  contact:
+    name: VibeCode Platform Team
+    url: https://vibecode.eastus2.cloudapp.azure.com
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: http://localhost:3000/api
+    description: Development server
+  - url: https://vibecode.eastus2.cloudapp.azure.com/api
+    description: Production server
+
+security:
+  - nextAuthSession: []
+  - apiKeyHeader: []
+
+tags:
+  - name: Agents
+    description: Agent lifecycle management operations
+  - name: Streaming
+    description: Real-time agent output streaming
+  - name: Health
+    description: Health and monitoring endpoints
+  - name: Metrics
+    description: Operational metrics and observability
+
+paths:
+  /agents:
+    post:
+      tags:
+        - Agents
+      summary: Start a new agent
+      description: |
+        Creates and starts a new AI coding agent instance. Returns immediately
+        with agent metadata. Use the events endpoint to monitor agent output.
+
+        **Constraints:**
+        - Maximum 5 concurrent agents per user (configurable)
+        - Maximum 20 concurrent agents globally
+        - Agent timeout: 300 seconds (5 minutes)
+
+        **Response time target:** <200ms (P95)
+      operationId: startAgent
+      security:
+        - nextAuthSession: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/StartAgentRequest'
+            examples:
+              aiderBasic:
+                summary: Start Aider with single file
+                value:
+                  agent_type: aider
+                  workspace: /home/coder/workspace/my-project
+                  files:
+                    - src/main.py
+                  model: claude-3-5-sonnet-20241022
+                  task: Add error handling to the login function
+              gooseSession:
+                summary: Start Goose session
+                value:
+                  agent_type: goose
+                  workspace: /home/coder/workspace
+                  model: gpt-4o
+                  task: Review code for security vulnerabilities
+              clineTask:
+                summary: Start Cline with task
+                value:
+                  agent_type: cline
+                  workspace: /home/coder/workspace/frontend
+                  files:
+                    - src/components/Dashboard.tsx
+                  model: claude-3-5-sonnet-20241022
+                  task: Refactor dashboard component to use React hooks
+      responses:
+        '201':
+          description: Agent started successfully
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+            Location:
+              schema:
+                type: string
+                format: uri
+              description: URI of the created agent resource
+              example: /api/agents/aider-a1b2c3d4
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/TooManyRequests'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '503':
+          $ref: '#/components/responses/ServiceUnavailable'
+
+    get:
+      tags:
+        - Agents
+      summary: List all agents
+      description: |
+        Returns a list of all agents for the authenticated user. Includes
+        active, completed, and failed agents.
+
+        **Pagination:** Results are paginated with default limit of 50.
+        **Response time target:** <200ms (P95)
+      operationId: listAgents
+      security:
+        - nextAuthSession: []
+      parameters:
+        - name: status
+          in: query
+          description: Filter by agent status
+          required: false
+          schema:
+            type: string
+            enum:
+              - running
+              - completed
+              - failed
+              - stopped
+              - error
+          example: running
+        - name: agent_type
+          in: query
+          description: Filter by agent type
+          required: false
+          schema:
+            type: string
+            enum:
+              - aider
+              - goose
+              - cline
+          example: aider
+        - $ref: '#/components/parameters/PageParam'
+        - $ref: '#/components/parameters/LimitParam'
+      responses:
+        '200':
+          description: List of agents
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+            Link:
+              schema:
+                type: string
+              description: Pagination links (RFC 8288)
+              example: '</api/agents?page=2>; rel="next", </api/agents?page=10>; rel="last"'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /agents/{agentId}:
+    get:
+      tags:
+        - Agents
+      summary: Get agent status
+      description: |
+        Returns detailed status information for a specific agent, including
+        current state, uptime, resource usage, and recent output.
+
+        **Response time target:** <100ms (P95)
+      operationId: getAgentStatus
+      security:
+        - nextAuthSession: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      responses:
+        '200':
+          description: Agent status details
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+            ETag:
+              schema:
+                type: string
+              description: Entity tag for caching
+              example: "33a64df551425fcc55e4d42a148795d9f25f89d4"
+            Cache-Control:
+              schema:
+                type: string
+              description: Cache control directives
+              example: "private, max-age=5"
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AgentStatusResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+    delete:
+      tags:
+        - Agents
+      summary: Stop agent
+      description: |
+        Gracefully stops a running agent. Sends SIGTERM and waits up to 5
+        seconds for graceful shutdown. If agent doesn't stop, sends SIGKILL.
+
+        **Idempotency:** Safe to call multiple times on same agent.
+        **Response time target:** <100ms for non-running agents, <5s for running agents
+      operationId: stopAgent
+      security:
+        - nextAuthSession: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+        - name: force
+          in: query
+          description: Force immediate termination (SIGKILL) without graceful shutdown
+          required: false
+          schema:
+            type: boolean
+            default: false
+          example: false
+      responses:
+        '200':
+          description: Agent stopped successfully
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StopAgentResponse'
+        '400':
+          description: Agent is not running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: https://vibecode.io/problems/agent-not-running
+                title: Agent Not Running
+                status: 400
+                detail: Agent aider-a1b2c3d4 is not running (status: completed)
+                instance: /api/agents/aider-a1b2c3d4
+                agent_id: aider-a1b2c3d4
+                current_status: completed
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /agents/{agentId}/message:
+    post:
+      tags:
+        - Agents
+      summary: Send message to agent
+      description: |
+        Sends an interactive message to a running agent. Used for agents that
+        support bidirectional communication (e.g., Aider's interactive mode).
+
+        **Note:** Not all agent types support interactive messaging.
+        **Response time target:** <200ms (P95)
+      operationId: sendAgentMessage
+      security:
+        - nextAuthSession: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AgentMessageRequest'
+            examples:
+              userMessage:
+                summary: User message to agent
+                value:
+                  message: "Yes, apply the changes"
+                  type: user
+              systemMessage:
+                summary: System instruction
+                value:
+                  message: "Use --yes flag for all confirmations"
+                  type: system
+      responses:
+        '200':
+          description: Message sent successfully
+          headers:
+            X-RateLimit-Limit:
+              $ref: '#/components/headers/X-RateLimit-Limit'
+            X-RateLimit-Remaining:
+              $ref: '#/components/headers/X-RateLimit-Remaining'
+            X-RateLimit-Reset:
+              $ref: '#/components/headers/X-RateLimit-Reset'
+          content:
+            application/json:
+              schema:
+                type: object
+                required:
+                  - message_id
+                  - status
+                  - timestamp
+                properties:
+                  message_id:
+                    type: string
+                    format: uuid
+                    description: Unique identifier for the message
+                  status:
+                    type: string
+                    enum:
+                      - sent
+                      - queued
+                      - failed
+                    description: Message delivery status
+                  timestamp:
+                    type: string
+                    format: date-time
+                    description: When the message was sent
+        '400':
+          description: Invalid message or agent doesn't support messaging
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+
+  /agents/{agentId}/events:
+    get:
+      tags:
+        - Streaming
+      summary: Stream agent events (SSE)
+      description: |
+        Establishes a Server-Sent Events (SSE) stream for real-time agent
+        output. Events include agent output, status changes, and completion.
+
+        **Protocol:** Server-Sent Events (text/event-stream)
+        **Connection:** Long-lived (until agent completes or client disconnects)
+        **Heartbeat:** Sent every 30 seconds to keep connection alive
+
+        **Event Types:**
+        - `output`: Agent terminal output
+        - `status`: Agent status changes
+        - `error`: Error messages
+        - `complete`: Agent completed successfully
+        - `heartbeat`: Keep-alive ping
+      operationId: streamAgentEvents
+      security:
+        - nextAuthSession: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+        - name: from_sequence
+          in: query
+          description: Resume stream from specific sequence number
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          example: 42
+      responses:
+        '200':
+          description: Event stream established
+          headers:
+            Cache-Control:
+              schema:
+                type: string
+              description: Disable caching for event streams
+              example: "no-cache"
+            Connection:
+              schema:
+                type: string
+              description: Keep connection alive
+              example: "keep-alive"
+            X-Accel-Buffering:
+              schema:
+                type: string
+              description: Disable proxy buffering
+              example: "no"
+          content:
+            text/event-stream:
+              schema:
+                type: string
+                description: SSE event stream
+              examples:
+                outputEvent:
+                  summary: Agent output event
+                  value: |
+                    id: 1
+                    event: output
+                    data: {"timestamp":"2025-10-02T10:30:00Z","line":"Processing file: src/main.py"}
+
+                statusEvent:
+                  summary: Status change event
+                  value: |
+                    id: 2
+                    event: status
+                    data: {"timestamp":"2025-10-02T10:30:05Z","status":"running","progress":0.45}
+
+                completeEvent:
+                  summary: Completion event
+                  value: |
+                    id: 3
+                    event: complete
+                    data: {"timestamp":"2025-10-02T10:35:00Z","status":"completed","exit_code":0}
+
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '410':
+          description: Agent output stream no longer available
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProblemDetails'
+              example:
+                type: https://vibecode.io/problems/stream-expired
+                title: Stream Expired
+                status: 410
+                detail: Output stream for agent aider-a1b2c3d4 has expired (completed 2 hours ago)
+                instance: /api/agents/aider-a1b2c3d4/events
+
+  /agents/{agentId}/ws:
+    get:
+      tags:
+        - Streaming
+      summary: WebSocket connection for bidirectional communication
+      description: |
+        Establishes a WebSocket connection for bidirectional agent communication.
+        Supports both receiving agent output and sending messages to the agent.
+
+        **Protocol:** WebSocket (RFC 6455)
+        **Subprotocol:** agent-v1
+        **Ping/Pong:** Server sends ping every 30 seconds
+
+        **Client -> Server Messages:**
+        - `{"type": "message", "content": "text"}` - Send message to agent
+        - `{"type": "ping"}` - Manual keepalive ping
+
+        **Server -> Client Messages:**
+        - `{"type": "output", "content": "text", "timestamp": "..."}` - Agent output
+        - `{"type": "status", "status": "running", "progress": 0.5}` - Status update
+        - `{"type": "error", "error": "message"}` - Error occurred
+        - `{"type": "complete", "exit_code": 0}` - Agent completed
+        - `{"type": "pong"}` - Response to ping
+      operationId: connectAgentWebSocket
+      security:
+        - nextAuthSession: []
+      parameters:
+        - $ref: '#/components/parameters/AgentIdParam'
+      responses:
+        '101':
+          description: Switching Protocols - WebSocket connection established
+          headers:
+            Upgrade:
+              schema:
+                type: string
+              example: websocket
+            Connection:
+              schema:
+                type: string
+              example: Upgrade
+            Sec-WebSocket-Accept:
+              schema:
+                type: string
+              description: WebSocket acceptance hash
+            Sec-WebSocket-Protocol:
+              schema:
+                type: string
+              example: agent-v1
+        '400':
+          description: Bad Request - Invalid WebSocket upgrade
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /agents/health:
+    get:
+      tags:
+        - Health
+      summary: Agent service health check
+      description: |
+        Returns health status of the agent service, including backend agentapi
+        connectivity, resource availability, and system constraints.
+
+        **Use for:** Load balancer health checks, monitoring, alerting
+        **Response time target:** <50ms (P95)
+      operationId: getAgentHealth
+      security: []
+      responses:
+        '200':
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                healthy:
+                  summary: Healthy service
+                  value:
+                    status: healthy
+                    version: 1.0.0
+                    timestamp: "2025-10-02T10:30:00Z"
+                    checks:
+                      agentapi:
+                        status: pass
+                        response_time_ms: 12
+                      database:
+                        status: pass
+                        response_time_ms: 8
+                      redis:
+                        status: pass
+                        response_time_ms: 5
+                    agents:
+                      active: 3
+                      max_concurrent: 20
+                      user_limit: 5
+                    uptime_seconds: 3600
+        '503':
+          description: Service is unhealthy
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthResponse'
+              examples:
+                unhealthy:
+                  summary: Unhealthy service
+                  value:
+                    status: unhealthy
+                    version: 1.0.0
+                    timestamp: "2025-10-02T10:30:00Z"
+                    checks:
+                      agentapi:
+                        status: fail
+                        response_time_ms: 5000
+                        error: Connection timeout
+                      database:
+                        status: pass
+                        response_time_ms: 10
+                      redis:
+                        status: warn
+                        response_time_ms: 150
+                    agents:
+                      active: 0
+                      max_concurrent: 20
+                      user_limit: 5
+                    uptime_seconds: 3600
+
+  /agents/metrics:
+    get:
+      tags:
+        - Metrics
+      summary: Prometheus metrics
+      description: |
+        Returns operational metrics in Prometheus text exposition format.
+
+        **Metrics include:**
+        - `vibecode_agents_active` - Current active agents by type
+        - `vibecode_agents_total` - Total agents started (counter)
+        - `vibecode_agent_duration_seconds` - Agent execution duration histogram
+        - `vibecode_agent_errors_total` - Agent failures (counter)
+        - `vibecode_api_requests_total` - API request counter by endpoint
+        - `vibecode_api_duration_seconds` - API response time histogram
+      operationId: getAgentMetrics
+      security:
+        - apiKeyHeader: []
+      responses:
+        '200':
+          description: Prometheus metrics
+          content:
+            text/plain:
+              schema:
+                type: string
+              example: |
+                # HELP vibecode_agents_active Number of currently active agents
+                # TYPE vibecode_agents_active gauge
+                vibecode_agents_active{type="aider"} 2
+                vibecode_agents_active{type="goose"} 1
+                vibecode_agents_active{type="cline"} 0
+
+                # HELP vibecode_agents_total Total number of agents started
+                # TYPE vibecode_agents_total counter
+                vibecode_agents_total{type="aider"} 45
+                vibecode_agents_total{type="goose"} 23
+                vibecode_agents_total{type="cline"} 12
+
+                # HELP vibecode_agent_duration_seconds Agent execution duration
+                # TYPE vibecode_agent_duration_seconds histogram
+                vibecode_agent_duration_seconds_bucket{type="aider",le="10"} 5
+                vibecode_agent_duration_seconds_bucket{type="aider",le="30"} 15
+                vibecode_agent_duration_seconds_bucket{type="aider",le="60"} 35
+                vibecode_agent_duration_seconds_bucket{type="aider",le="+Inf"} 45
+                vibecode_agent_duration_seconds_sum{type="aider"} 1234.5
+                vibecode_agent_duration_seconds_count{type="aider"} 45
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  securitySchemes:
+    nextAuthSession:
+      type: apiKey
+      in: cookie
+      name: next-auth.session-token
+      description: NextAuth session cookie for authenticated requests
+
+    apiKeyHeader:
+      type: apiKey
+      in: header
+      name: X-API-Key
+      description: API key for machine-to-machine access (e.g., Prometheus)
+
+  parameters:
+    AgentIdParam:
+      name: agentId
+      in: path
+      required: true
+      description: Unique identifier for the agent
+      schema:
+        type: string
+        pattern: '^(aider|goose|cline)-[a-f0-9]{8}$'
+      example: aider-a1b2c3d4
+
+    PageParam:
+      name: page
+      in: query
+      description: Page number (1-indexed)
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+      example: 1
+
+    LimitParam:
+      name: limit
+      in: query
+      description: Number of items per page
+      required: false
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 50
+      example: 50
+
+  headers:
+    X-RateLimit-Limit:
+      schema:
+        type: integer
+      description: Maximum requests per time window
+      example: 100
+
+    X-RateLimit-Remaining:
+      schema:
+        type: integer
+      description: Remaining requests in current window
+      example: 95
+
+    X-RateLimit-Reset:
+      schema:
+        type: integer
+      description: Time when rate limit resets (Unix timestamp)
+      example: 1696248000
+
+  schemas:
+    StartAgentRequest:
+      type: object
+      required:
+        - agent_type
+        - workspace
+        - model
+        - task
+      properties:
+        agent_type:
+          type: string
+          enum:
+            - aider
+            - goose
+            - cline
+          description: Type of agent to start
+          example: aider
+        workspace:
+          type: string
+          description: Absolute path to workspace directory
+          pattern: '^/home/coder/workspace(/.*)?$'
+          example: /home/coder/workspace/my-project
+        files:
+          type: array
+          description: Files for agent to work on (relative to workspace)
+          items:
+            type: string
+          maxItems: 50
+          example:
+            - src/main.py
+            - tests/test_main.py
+        model:
+          type: string
+          description: LLM model identifier
+          example: claude-3-5-sonnet-20241022
+          enum:
+            - claude-3-5-sonnet-20241022
+            - claude-3-5-haiku-20241022
+            - gpt-4o
+            - gpt-4o-mini
+            - deepseek-chat
+        task:
+          type: string
+          description: Task description for the agent
+          minLength: 10
+          maxLength: 2000
+          example: Add error handling to the login function
+        metadata:
+          type: object
+          description: Additional metadata for tracking
+          additionalProperties: true
+          example:
+            user_id: user-123
+            session_id: session-456
+            source: web-ui
+
+    AgentResponse:
+      type: object
+      required:
+        - agent_id
+        - status
+        - terminal_id
+        - created_at
+      properties:
+        agent_id:
+          type: string
+          pattern: '^(aider|goose|cline)-[a-f0-9]{8}$'
+          description: Unique identifier for the agent
+          example: aider-a1b2c3d4
+        status:
+          type: string
+          enum:
+            - running
+            - completed
+            - failed
+            - stopped
+            - error
+          description: Current agent status
+          example: running
+        terminal_id:
+          type: string
+          description: Associated terminal session ID
+          example: term-b2c3d4e5
+        pid:
+          type: integer
+          description: Process ID of the agent
+          example: 12345
+        command:
+          type: string
+          description: Command used to start the agent
+          example: aider --model claude-3-5-sonnet-20241022 --yes src/main.py
+        created_at:
+          type: string
+          format: date-time
+          description: When the agent was created
+          example: "2025-10-02T10:30:00Z"
+        stream_url:
+          type: string
+          format: uri
+          description: URL for SSE event stream
+          example: /api/agents/aider-a1b2c3d4/events
+        ws_url:
+          type: string
+          format: uri
+          description: URL for WebSocket connection
+          example: wss://vibecode.eastus2.cloudapp.azure.com/api/agents/aider-a1b2c3d4/ws
+
+    AgentStatusResponse:
+      allOf:
+        - $ref: '#/components/schemas/AgentResponse'
+        - type: object
+          properties:
+            agent_type:
+              type: string
+              enum:
+                - aider
+                - goose
+                - cline
+              example: aider
+            workspace:
+              type: string
+              example: /home/coder/workspace/my-project
+            uptime_seconds:
+              type: number
+              format: double
+              description: How long the agent has been running
+              example: 42.5
+            exit_code:
+              type: integer
+              nullable: true
+              description: Exit code (null if still running)
+              example: 0
+            resource_usage:
+              type: object
+              description: Resource consumption metrics
+              properties:
+                cpu_percent:
+                  type: number
+                  format: float
+                  example: 15.3
+                memory_mb:
+                  type: number
+                  format: float
+                  example: 256.7
+                disk_io_mb:
+                  type: number
+                  format: float
+                  example: 12.4
+            output_lines:
+              type: integer
+              description: Number of output lines captured
+              example: 127
+            last_output:
+              type: string
+              description: Most recent output line
+              example: "Successfully applied changes to src/main.py"
+            last_output_at:
+              type: string
+              format: date-time
+              nullable: true
+              description: Timestamp of last output
+              example: "2025-10-02T10:35:00Z"
+
+    AgentListResponse:
+      type: object
+      required:
+        - agents
+        - pagination
+      properties:
+        agents:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgentStatusResponse'
+        pagination:
+          type: object
+          required:
+            - page
+            - limit
+            - total
+            - pages
+          properties:
+            page:
+              type: integer
+              description: Current page number
+              example: 1
+            limit:
+              type: integer
+              description: Items per page
+              example: 50
+            total:
+              type: integer
+              description: Total number of agents
+              example: 127
+            pages:
+              type: integer
+              description: Total number of pages
+              example: 3
+        summary:
+          type: object
+          description: Summary statistics
+          properties:
+            active:
+              type: integer
+              description: Number of running agents
+              example: 3
+            completed:
+              type: integer
+              example: 120
+            failed:
+              type: integer
+              example: 4
+            by_type:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                aider: 80
+                goose: 35
+                cline: 12
+
+    StopAgentResponse:
+      type: object
+      required:
+        - agent_id
+        - status
+        - message
+        - stopped_at
+      properties:
+        agent_id:
+          type: string
+          example: aider-a1b2c3d4
+        status:
+          type: string
+          enum:
+            - stopped
+          example: stopped
+        message:
+          type: string
+          example: Agent stopped successfully
+        stopped_at:
+          type: string
+          format: date-time
+          example: "2025-10-02T10:35:00Z"
+        exit_code:
+          type: integer
+          nullable: true
+          description: Exit code if graceful shutdown
+          example: 0
+        forced:
+          type: boolean
+          description: Whether force termination (SIGKILL) was used
+          example: false
+
+    AgentMessageRequest:
+      type: object
+      required:
+        - message
+      properties:
+        message:
+          type: string
+          description: Message content to send to agent
+          minLength: 1
+          maxLength: 5000
+          example: "Yes, apply the changes"
+        type:
+          type: string
+          enum:
+            - user
+            - system
+          default: user
+          description: Message type
+          example: user
+
+    HealthResponse:
+      type: object
+      required:
+        - status
+        - version
+        - timestamp
+      properties:
+        status:
+          type: string
+          enum:
+            - healthy
+            - degraded
+            - unhealthy
+          description: Overall health status
+          example: healthy
+        version:
+          type: string
+          description: API version
+          example: 1.0.0
+        timestamp:
+          type: string
+          format: date-time
+          description: Health check timestamp
+          example: "2025-10-02T10:30:00Z"
+        checks:
+          type: object
+          description: Individual component health checks
+          additionalProperties:
+            type: object
+            properties:
+              status:
+                type: string
+                enum:
+                  - pass
+                  - warn
+                  - fail
+              response_time_ms:
+                type: number
+                format: double
+              error:
+                type: string
+        agents:
+          type: object
+          properties:
+            active:
+              type: integer
+            max_concurrent:
+              type: integer
+            user_limit:
+              type: integer
+        uptime_seconds:
+          type: number
+          format: double
+
+    ProblemDetails:
+      type: object
+      description: RFC 7807 Problem Details for HTTP APIs
+      required:
+        - type
+        - title
+        - status
+      properties:
+        type:
+          type: string
+          format: uri
+          description: URI reference identifying the problem type
+          example: https://vibecode.io/problems/agent-not-found
+        title:
+          type: string
+          description: Short, human-readable summary
+          example: Agent Not Found
+        status:
+          type: integer
+          description: HTTP status code
+          example: 404
+        detail:
+          type: string
+          description: Human-readable explanation specific to this occurrence
+          example: Agent with ID aider-a1b2c3d4 was not found
+        instance:
+          type: string
+          format: uri
+          description: URI reference identifying the specific occurrence
+          example: /api/agents/aider-a1b2c3d4
+        trace_id:
+          type: string
+          description: Distributed tracing ID for debugging
+          example: 1234567890abcdef
+
+  responses:
+    BadRequest:
+      description: Bad Request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://vibecode.io/problems/validation-error
+            title: Validation Error
+            status: 400
+            detail: Invalid agent_type. Supported types are aider, goose, cline
+            instance: /api/agents
+            errors:
+              - field: agent_type
+                message: Must be one of aider, goose, cline
+                code: enum
+
+    Unauthorized:
+      description: Unauthorized - Authentication required
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://vibecode.io/problems/unauthorized
+            title: Unauthorized
+            status: 401
+            detail: Authentication required. Please sign in to access this resource.
+            instance: /api/agents
+
+    NotFound:
+      description: Not Found - Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://vibecode.io/problems/agent-not-found
+            title: Agent Not Found
+            status: 404
+            detail: Agent with ID aider-a1b2c3d4 was not found
+            instance: /api/agents/aider-a1b2c3d4
+
+    TooManyRequests:
+      description: Too Many Requests - Rate limit exceeded
+      headers:
+        X-RateLimit-Limit:
+          $ref: '#/components/headers/X-RateLimit-Limit'
+        X-RateLimit-Remaining:
+          $ref: '#/components/headers/X-RateLimit-Remaining'
+        X-RateLimit-Reset:
+          $ref: '#/components/headers/X-RateLimit-Reset'
+        Retry-After:
+          schema:
+            type: integer
+          description: Seconds until rate limit resets
+          example: 60
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          examples:
+            rateLimitExceeded:
+              summary: Rate limit exceeded
+              value:
+                type: https://vibecode.io/problems/rate-limit-exceeded
+                title: Rate Limit Exceeded
+                status: 429
+                detail: Maximum concurrent agents reached (5/5). Please stop an existing agent or wait for completion.
+                instance: /api/agents
+                retry_after: 60
+            concurrentLimitReached:
+              summary: Concurrent agent limit reached
+              value:
+                type: https://vibecode.io/problems/concurrent-limit-reached
+                title: Concurrent Limit Reached
+                status: 429
+                detail: Maximum concurrent agents per user reached (5/5)
+                instance: /api/agents
+                current_agents: 5
+                max_concurrent: 5
+
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://vibecode.io/problems/internal-server-error
+            title: Internal Server Error
+            status: 500
+            detail: An unexpected error occurred while processing your request
+            instance: /api/agents/aider-a1b2c3d4
+            trace_id: 1234567890abcdef
+
+    ServiceUnavailable:
+      description: Service Unavailable - Backend agentapi unavailable
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ProblemDetails'
+          example:
+            type: https://vibecode.io/problems/service-unavailable
+            title: Service Unavailable
+            status: 503
+            detail: Backend agent service is currently unavailable. Please try again in a few moments.
+            instance: /api/agents
+            retry_after: 30

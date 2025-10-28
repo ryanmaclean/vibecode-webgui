@@ -1,0 +1,400 @@
+[
+  {
+    "fileId": "1754895024087-zwjd4d4ai",
+    "chunks": [
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-0",
+        "content": "{\n  \"name\": \"vibecode-webgui\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">=18.18.0 <25.0.0\",\n    \"npm\": \">=9.0.0\"\n  },\n  \"scripts\": {\n    \"setup\": \"node scripts/setup-development.js\",\n    \"dev\": \"node --require ./src/instrument.ts node_modules/.bin/next dev\",\n    \"dev:simple\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"start:dd\": \"node --require ./src/instrument.ts node_modules/.bin/next start\",\n    \"lint\": \"next lint\",\n    \"type-check\": \"tsc --noEmit\",\n    \"test\": \"jest\",\n    \"test:watch\": \"jest --watch\",\n    \"test:coverage\": \"jest --coverage\",\n    \"test:unit\": \"jest --testPathPatterns=tests/unit\",\n    \"test:integration\": \"jest --testPathPatterns=tests/integration\",\n    \"test:ws\": \"jest --testPathPatterns=tests/integration/websocket\",\n    \"test:e2e\": \"playwright test\",\n    \"test:e2e:headed\": \"playwright test --headed\",\n    \"test:k8s\": \"jest --testPathPatterns=tests/k8s\",",
+        "metadata": {
+          "startLine": 1,
+          "endLine": 27,
+          "tokens": 240
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-1",
+        "content": "\"test:k8s:quick\": \"jest --testPathPatterns=tests/k8s/kind-cluster-validation\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:k8s:helm\": \"jest --testPathPatterns=tests/k8s/helm-chart-deployment\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:k8s:provisioning\": \"jest --testPathPatterns=tests/integration/user-provisioning-integration\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:monitoring\": \"jest --testPathPatterns=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$ --testPathPatterns=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:unit\": \"jest --testPathPatterns=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:integration\": \"jest --testPathPatterns=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:e2e\": \"playwright test tests/e2e/monitoring-dashboard.test.ts\",\n    \"test:monitoring:k8s\": \"jest --testPathPatterns=tests/k8s/monitoring-deployment\\\\.test\\\\.(ts|js)$\",",
+        "metadata": {
+          "startLine": 28,
+          "endLine": 35,
+          "tokens": 229
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-2",
+        "content": "\"test:monitoring:security\": \"jest --testPathPatterns=tests/security/monitoring-security\\\\.test\\\\.(ts|js)$\",\n    \"test:complete\": \"jest --testPathPatterns=tests/complete\",\n    \"test:pre-commit\": \"./scripts/pre-commit-tests.sh\",\n    \"test:synthetics\": \"datadog-ci synthetics run-tests -c datadog-synthetics.json\",\n    \"test:monitoring:production\": \"jest --testPathPatterns=tests/production/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:health\": \"jest --testPathPatterns=tests/unit/health-check.test.ts\",\n    \"test:security\": \"jest --testPathPatterns=\\\"tests/security/.*\\\\.test\\\\.(ts|tsx|js|jsx)$\\\"\",\n    \"test:fix\": \"npm run setup && npm install --legacy-peer-deps\",\n    \"dev:cdn\": \"./scripts/setup-tailwind-mode.sh cdn && npm run dev\",\n    \"dev:docker\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build\",\n    \"dev:docker:detached\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build -d\",",
+        "metadata": {
+          "startLine": 36,
+          "endLine": 46,
+          "tokens": 248
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-3",
+        "content": "\"tailwind:cdn\": \"./scripts/setup-tailwind-mode.sh cdn\",\n    \"tailwind:docker\": \"./scripts/setup-tailwind-mode.sh docker\",\n    \"tailwind:restore\": \"./scripts/setup-tailwind-mode.sh restore\",\n    \"monitoring:setup\": \"npx tsx scripts/setup-datadog-monitoring.ts\",\n    \"monitoring:health\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'\",\n    \"monitoring:metrics\": \"curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq\",\n    \"test:performance\": \"node scripts/run-performance-tests.js\",\n    \"test:performance:synthetic\": \"npx @datadog/datadog-ci synthetics run-tests --config datadog-synthetics.json\",\n    \"test:performance:lighthouse\": \"npx lighthouse-ci autorun\",\n    \"test:performance:ci\": \"BASE_URL=http://localhost:3000 npm run test:performance\",\n    \"performance:synthetic\": \"BASE_URL=http://localhost:3000 npm run test:performance:synthetic\",\n    \"performance:monitor\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.performance'\",",
+        "metadata": {
+          "startLine": 47,
+          "endLine": 58,
+          "tokens": 249
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-4",
+        "content": "\"otel:setup\": \"npx tsx scripts/setup-opentelemetry.ts\",\n    \"otel:config\": \"curl -s http://localhost:3000/api/monitoring/otel-config | jq\",\n    \"otel:health\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq\",\n    \"otel:metrics\": \"curl -s http://localhost:9090/metrics\",\n    \"otel:test\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq\",\n    \"docs:validate\": \"npx tsx scripts/validate-documentation.ts\",\n    \"docs:stats\": \"npx tsx scripts/validate-documentation.ts stats\",\n    \"docs:generate\": \"npx tsx scripts/generate-api-docs.ts\",\n    \"docs:update\": \"npx tsx scripts/auto-update-readme.ts\",\n    \"docs:fix\": \"npx tsx scripts/fix-documentation-examples.ts\",\n    \"docs:build\": \"npm run docs:generate && npm run docs:update && npm run docs:fix && npm run docs:validate\",\n    \"docs:index\": \"echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'\",",
+        "metadata": {
+          "startLine": 59,
+          "endLine": 70,
+          "tokens": 230
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-5",
+        "content": "\"docs:consolidated\": \"echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'\",\n    \"security:test\": \"./scripts/security-test.sh\",\n    \"security:audit\": \"npm audit --audit-level=moderate\",\n    \"security:fix\": \"npm audit fix\",\n    \"security:monitor\": \"./scripts/security-monitoring.sh\",\n    \"security:scan\": \"npm audit --audit-level=high && ./scripts/security-test.sh\",\n    \"security:headers\": \"curl -I http://localhost:3000 | grep -E '(X-|Content-Security|Strict-Transport)'\",\n    \"security:status\": \"curl -s http://localhost:3000/api/monitoring/security | jq\",\n    \"perf:monitor\": \"curl -s http://localhost:3000/api/monitoring/performance | jq\",\n    \"perf:health\": \"curl -s http://localhost:3000/api/monitoring/performance?action=health | jq\",\n    \"perf:detailed\": \"curl -s http://localhost:3000/api/monitoring/performance?action=detailed | jq\",\n    \"perf:cache\": \"curl -s http://localhost:3000/api/monitoring/performance?action=cache | jq\",",
+        "metadata": {
+          "startLine": 71,
+          "endLine": 82,
+          "tokens": 243
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-6",
+        "content": "\"perf:database\": \"curl -s http://localhost:3000/api/monitoring/performance?action=database | jq\",\n    \"ai:status\": \"curl -s http://localhost:3000/api/ai/management?action=health | jq\",\n    \"ai:models\": \"curl -s http://localhost:3000/api/ai/management?action=models | jq\",\n    \"ai:usage\": \"curl -s http://localhost:3000/api/ai/management?action=usage | jq\",\n    \"ai:costs\": \"curl -s http://localhost:3000/api/ai/management?action=costs | jq\",\n    \"ai:performance\": \"curl -s http://localhost:3000/api/ai/management?action=performance | jq\",\n    \"db:validate\": \"./scripts/validate-database-config.sh\",\n    \"db:migrate\": \"./scripts/deploy-database-migrations.sh\",\n    \"db:setup\": \"psql $DATABASE_URL -f database/production-setup.sql\",\n    \"db:status\": \"npx prisma migrate status\",\n    \"db:generate\": \"npx prisma generate\",\n    \"db:push\": \"npx prisma db push\",\n    \"db:reset\": \"npx prisma migrate reset\",\n    \"db:seed\": \"npx prisma db seed\"\n  },\n  \"dependencies\": {\n    \"@ai-sdk/openai\": \"1.3.23\",",
+        "metadata": {
+          "startLine": 83,
+          "endLine": 99,
+          "tokens": 249
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-7",
+        "content": "\"@codemirror/lang-javascript\": \"^6.2.4\",\n    \"@codemirror/lang-python\": \"^6.2.1\",\n    \"@datadog/browser-logs\": \"6.16.0\",\n    \"@datadog/datadog-api-client\": \"1.40.0\",\n    \"@emotion/react\": \"^11.14.0\",\n    \"@emotion/styled\": \"^11.14.1\",\n    \"@langchain/community\": \"^0.3.49\",\n    \"@langchain/core\": \"^0.3.66\",\n    \"@langchain/openai\": \"^0.2.1\",\n    \"@monaco-editor/react\": \"4.7.0\",\n    \"@mui/material\": \"^7.2.0\",\n    \"@mui/x-charts\": \"^8.9.0\",\n    \"@opentelemetry/api\": \"1.9.0\",\n    \"@opentelemetry/auto-instrumentations-node\": \"0.62.0\",\n    \"@opentelemetry/core\": \"2.0.1\",\n    \"@opentelemetry/exporter-otlp-http\": \"0.26.0\",\n    \"@opentelemetry/exporter-prometheus\": \"0.203.0\",\n    \"@opentelemetry/instrumentation\": \"0.203.0\",\n    \"@opentelemetry/instrumentation-express\": \"0.52.0\",\n    \"@opentelemetry/instrumentation-fs\": \"0.23.0\",\n    \"@opentelemetry/instrumentation-http\": \"0.203.0\",\n    \"@opentelemetry/sdk-node\": \"0.203.0\",\n    \"@radix-ui/react-label\": \"2.1.7\",",
+        "metadata": {
+          "startLine": 100,
+          "endLine": 122,
+          "tokens": 243
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-8",
+        "content": "\"@radix-ui/react-progress\": \"1.1.7\",\n    \"@radix-ui/react-scroll-area\": \"1.2.9\",\n    \"@radix-ui/react-select\": \"2.2.5\",\n    \"@radix-ui/react-slot\": \"^1.2.3\",\n    \"@radix-ui/react-switch\": \"1.2.5\",\n    \"@radix-ui/react-tabs\": \"1.1.12\",\n    \"@tailwindcss/postcss\": \"4.1.11\",\n    \"@tremor/react\": \"^3.18.7\",\n    \"@uiw/react-codemirror\": \"^4.24.1\",\n    \"@upstash/ratelimit\": \"2.0.5\",\n    \"@upstash/redis\": \"1.35.1\",\n    \"@vercel/analytics\": \"^1.5.0\",\n    \"@vercel/kv\": \"^3.0.0\",\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@xterm/addon-fit\": \"^0.10.0\",\n    \"@xterm/addon-web-links\": \"^0.11.0\",\n    \"@xterm/xterm\": \"^5.5.0\",\n    \"ai\": \"^4.3.19\",\n    \"async-mutex\": \"0.5.0\",\n    \"autoprefixer\": \"10.4.21\",\n    \"axios\": \"^1.10.0\",\n    \"bcryptjs\": \"^3.0.2\",\n    \"chokidar\": \"^4.0.3\",\n    \"chroma-js\": \"^2.4.2\",\n    \"chromadb\": \"^3.0.10\",\n    \"class-variance-authority\": \"^0.7.1\",\n    \"clsx\": \"^2.1.1\",\n    \"cmdk\": \"^1.1.1\",\n    \"codemirror\": \"^6.0.2\",\n    \"dd-trace\": \"5.61.1\",\n    \"gray-matter\": \"^4.0.3\",",
+        "metadata": {
+          "startLine": 123,
+          "endLine": 153,
+          "tokens": 250
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-9",
+        "content": "\"ioredis\": \"5.7.0\",\n    \"isomorphic-dompurify\": \"^2.16.0\",\n    \"js-cookie\": \"^3.0.5\",\n    \"jsonwebtoken\": \"^9.0.2\",\n    \"langchain\": \"^0.3.30\",\n    \"lightningcss\": \"1.30.1\",\n    \"lucide-react\": \"^0.525.0\",\n    \"marked\": \"^16.1.1\",\n    \"monaco-editor\": \"^0.52.2\",\n    \"next\": \"15.4.4\",\n    \"next-auth\": \"^4.24.11\",\n    \"next-themes\": \"^0.4.6\",\n    \"node-pty\": \"^1.0.0\",\n    \"node-statsd\": \"^0.1.1\",\n    \"openai\": \"^4.104.0\",\n    \"pg\": \"^8.16.3\",\n    \"postcss\": \"8.5.6\",\n    \"react\": \"19.1.1\",\n    \"react-dom\": \"19.1.1\",\n    \"react-hook-form\": \"^7.60.0\",\n    \"react-resizable-panels\": \"^3.0.3\",\n    \"redis\": \"5.6.1\",\n    \"sonner\": \"^2.0.6\",\n    \"tailwind-merge\": \"^3.3.1\",\n    \"tailwindcss\": \"4.0.0\",\n    \"tailwindcss-animate\": \"^1.0.7\",\n    \"tiktoken\": \"^1.0.21\",\n    \"winston\": \"3.17.0\",\n    \"ws\": \"^8.18.3\",\n    \"zod\": \"^3.23.8\"\n  },\n  \"overrides\": {\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@vercel/kv\": \"^3.0.0\",\n    \"ignore\": \"^7.0.5\",\n    \"tmp\": \"^0.2.4\",\n    \"sharp\": false,",
+        "metadata": {
+          "startLine": 154,
+          "endLine": 190,
+          "tokens": 246
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-10",
+        "content": "\"@img/sharp-libvips-darwin-arm64\": false,\n    \"@img/sharp-libvips-linux-x64\": false,\n    \"@img/sharp-libvips-win32-x64\": false\n  },\n  \"resolutions\": {\n    \"sharp\": false\n  },\n  \"devDependencies\": {\n    \"@axe-core/playwright\": \"4.10.2\",\n    \"@babel/preset-env\": \"7.28.0\",\n    \"@babel/preset-react\": \"7.27.1\",\n    \"@babel/preset-typescript\": \"7.27.1\",\n    \"@datadog/browser-rum\": \"6.16.0\",\n    \"@datadog/datadog-ci\": \"3.17.0\",\n    \"@eslint/eslintrc\": \"3.3.1\",\n    \"@next-auth/prisma-adapter\": \"1.0.7\",\n    \"@playwright/test\": \"1.54.1\",\n    \"@prisma/client\": \"6.12.0\",\n    \"@testcontainers/postgresql\": \"^11.3.1\",\n    \"@testcontainers/redis\": \"^11.3.1\",\n    \"@testing-library/dom\": \"10.4.1\",\n    \"@testing-library/jest-dom\": \"6.6.3\",\n    \"@testing-library/react\": \"16.3.0\",\n    \"@testing-library/user-event\": \"^14.6.1\",\n    \"@types/chroma-js\": \"3.1.1\",\n    \"@types/express\": \"^5.0.3\",\n    \"@types/glob\": \"8.1.0\",\n    \"@types/jest\": \"30.0.0\",\n    \"@types/jsonwebtoken\": \"^9.0.10\",",
+        "metadata": {
+          "startLine": 191,
+          "endLine": 219,
+          "tokens": 245
+        }
+      },
+      {
+        "id": "1754895024087-zwjd4d4ai-chunk-11",
+        "content": "\"@types/node\": \"24.1.0\",\n    \"@types/pg\": \"^8.15.4\",\n    \"@types/react\": \"^19\",\n    \"@types/react-dom\": \"^19\",\n    \"@types/supertest\": \"^6.0.3\",\n    \"@types/ws\": \"^8.18.1\",\n    \"autoprefixer\": \"^10.4.19\",\n    \"babel-jest\": \"30.0.4\",\n    \"chrome-launcher\": \"1.2.0\",\n    \"dotenv\": \"17.2.0\",\n    \"eslint\": \"^9\",\n    \"eslint-config-next\": \"15.4.4\",\n    \"eslint-plugin-jsx-a11y\": \"6.10.2\",\n    \"glob\": \"11.0.3\",\n    \"globals\": \"16.3.0\",\n    \"husky\": \"9.1.7\",\n    \"jest\": \"^30.0.4\",\n    \"jest-axe\": \"10.0.0\",\n    \"jest-environment-jsdom\": \"^30.0.4\",\n    \"lighthouse\": \"12.8.1\",\n    \"msw\": \"^2.10.4\",\n    \"postcss\": \"^8.4.38\",\n    \"prisma\": \"^6.12.0\",\n    \"socket.io-client\": \"^4.8.1\",\n    \"supertest\": \"^7.1.3\",\n    \"testcontainers\": \"^11.3.1\",\n    \"ts-node\": \"10.9.2\",\n    \"typescript\": \"5.8.3\"\n  }\n}",
+        "metadata": {
+          "startLine": 220,
+          "endLine": 250,
+          "tokens": 200
+        }
+      }
+    ]
+  },
+  {
+    "fileId": "1756957948565-j7s641f97",
+    "chunks": [
+      {
+        "id": "1756957948565-j7s641f97-chunk-0",
+        "content": "{\n  \"name\": \"vibecode-webgui\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">=18.18.0 <25.0.0\",\n    \"npm\": \">=9.0.0\"\n  },\n  \"scripts\": {\n    \"setup\": \"node scripts/setup-development.js\",\n    \"dev\": \"node --require ./src/instrument.cjs node_modules/.bin/next dev\",\n    \"dev:simple\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"start:dd\": \"node --require ./src/instrument.ts node_modules/.bin/next start\",\n    \"lint\": \"next lint\",\n    \"type-check\": \"tsc --noEmit\",\n    \"test\": \"tsx node_modules/.bin/jest\",\n    \"test:watch\": \"jest --watch\",\n    \"test:coverage\": \"jest --coverage\",\n    \"test:unit\": \"jest --testPathPatterns=tests/unit\",\n    \"test:integration\": \"jest --testPathPatterns=tests/integration\",\n    \"test:ws\": \"jest --testPathPatterns=tests/integration/websocket\",\n    \"test:e2e\": \"playwright test\",\n    \"test:e2e:ui\": \"playwright test --ui\",\n    \"test:e2e:headed\": \"playwright test --headed\",",
+        "metadata": {
+          "startLine": 1,
+          "endLine": 28,
+          "tokens": 248
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-1",
+        "content": "\"test:e2e:auth\": \"playwright test tests/e2e/auth-flow.test.ts\",\n    \"test:e2e:ai\": \"playwright test tests/e2e/ai-features.test.ts\",\n    \"test:e2e:workspace\": \"playwright test tests/e2e/workspace-management.test.ts\",\n    \"test:e2e:responsive\": \"playwright test tests/e2e/ui-responsiveness.test.ts\",\n    \"test:e2e:journeys\": \"playwright test tests/e2e/critical-user-journeys.test.ts\",\n    \"test:e2e:a11y\": \"playwright test tests/e2e/accessibility.test.ts\",\n    \"test:e2e:debug\": \"playwright test --debug\",\n    \"test:e2e:report\": \"playwright show-report\",\n    \"test:e2e:install\": \"playwright install\",\n    \"test:k8s\": \"jest --testPathPattern=tests/k8s\",\n    \"test:k8s:quick\": \"jest --testPathPattern=tests/k8s/kind-cluster-validation\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:k8s:helm\": \"jest --testPathPattern=tests/k8s/helm-chart-deployment\\\\.test\\\\.ts$ --maxWorkers=1\",",
+        "metadata": {
+          "startLine": 29,
+          "endLine": 40,
+          "tokens": 218
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-2",
+        "content": "\"test:k8s:provisioning\": \"jest --testPathPattern=tests/integration/user-provisioning-integration\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:monitoring\": \"jest --testPathPattern=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$ --testPathPattern=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:unit\": \"jest --testPathPattern=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:integration\": \"jest --testPathPattern=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:e2e\": \"playwright test tests/e2e/monitoring-dashboard.test.ts\",\n    \"test:monitoring:k8s\": \"jest --testPathPatterns=tests/k8s/monitoring-deployment\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:security\": \"jest --testPathPatterns=tests/security/monitoring-security\\\\.test\\\\.(ts|js)$\",\n    \"test:complete\": \"jest --testPathPatterns=tests/complete\",\n    \"test:pre-commit\": \"./scripts/pre-commit-tests.sh\",",
+        "metadata": {
+          "startLine": 41,
+          "endLine": 49,
+          "tokens": 231
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-3",
+        "content": "\"test:synthetics\": \"datadog-ci synthetics run-tests -c datadog-synthetics.json\",\n    \"test:monitoring:production\": \"jest --testPathPatterns=tests/production/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:health\": \"jest --testPathPatterns=tests/unit/health-check.test.ts\",\n    \"test:security\": \"jest --testPathPatterns=\\\"tests/security/.*\\\\.test\\\\.(ts|tsx|js|jsx)$\\\"\",\n    \"test:fix\": \"npm run setup && npm install --legacy-peer-deps\",\n    \"dev:cdn\": \"./scripts/setup-tailwind-mode.sh cdn && npm run dev\",\n    \"dev:docker\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build\",\n    \"dev:docker:detached\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build -d\",\n    \"tailwind:cdn\": \"./scripts/setup-tailwind-mode.sh cdn\",\n    \"tailwind:docker\": \"./scripts/setup-tailwind-mode.sh docker\",\n    \"tailwind:restore\": \"./scripts/setup-tailwind-mode.sh restore\",",
+        "metadata": {
+          "startLine": 50,
+          "endLine": 60,
+          "tokens": 239
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-4",
+        "content": "\"monitoring:setup\": \"npx tsx scripts/setup-datadog-monitoring.ts\",\n    \"monitoring:health\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'\",\n    \"monitoring:metrics\": \"curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq\",\n    \"test:performance\": \"jest tests/performance/\",\n    \"test:performance:regression\": \"jest tests/performance/performance-regression.test.ts\",\n    \"test:performance:report\": \"jest tests/performance/performance-regression.test.ts --verbose\",\n    \"test:performance:synthetic\": \"npx @datadog/datadog-ci synthetics run-tests --config datadog-synthetics.json\",\n    \"test:performance:lighthouse\": \"npx lighthouse-ci autorun\",\n    \"test:performance:ci\": \"BASE_URL=http://localhost:3000 npm run test:performance\",\n    \"performance:synthetic\": \"BASE_URL=http://localhost:3000 npm run test:performance:synthetic\",\n    \"performance:monitor\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.performance'\",",
+        "metadata": {
+          "startLine": 61,
+          "endLine": 71,
+          "tokens": 244
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-5",
+        "content": "\"otel:setup\": \"npx tsx scripts/setup-opentelemetry.ts\",\n    \"otel:config\": \"curl -s http://localhost:3000/api/monitoring/otel-config | jq\",\n    \"otel:health\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq\",\n    \"otel:metrics\": \"curl -s http://localhost:9090/metrics\",\n    \"otel:test\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq\",\n    \"docs:validate\": \"node scripts/validate-documentation.js\",\n    \"docs:generate\": \"npx tsx scripts/generate-api-docs.ts && node scripts/enhance-docs.js\",\n    \"docs:build\": \"cd docs && npm run build\",\n    \"docs:dev\": \"cd docs && npm run dev\",\n    \"docs:stats\": \"node scripts/validate-documentation.js stats\",\n    \"docs:index\": \"echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'\",\n    \"docs:consolidated\": \"echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'\",\n    \"security:test\": \"./scripts/security-test.sh\",",
+        "metadata": {
+          "startLine": 72,
+          "endLine": 84,
+          "tokens": 240
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-6",
+        "content": "\"security:audit\": \"npm audit --audit-level=moderate\",\n    \"security:fix\": \"npm audit fix\",\n    \"mcp:start\": \"node docker/mcp-servers/servers/filesystem/server.js\",\n    \"mcp:dev\": \"nodemon docker/mcp-servers/servers/filesystem/server.js\",\n    \"docker:up\": \"docker compose up -d\",\n    \"docker:down\": \"docker compose down\",\n    \"docker:logs\": \"docker compose logs -f\",\n    \"health:check\": \"curl -s http://localhost:3000/api/health | jq .\",\n    \"db:test\": \"node test-db-connection.js\",\n    \"valkey:test\": \"node test-redis-connection.js\"\n  },\n  \"dependencies\": {\n    \"@ai-sdk/openai\": \"1.3.23\",\n    \"@browserbasehq/stagehand\": \"1.14.0\",\n    \"@codemirror/lang-javascript\": \"^6.2.4\",\n    \"@codemirror/lang-python\": \"^6.2.1\",\n    \"@datadog/browser-logs\": \"6.18.1\",\n    \"@datadog/datadog-api-client\": \"1.40.0\",\n    \"@emotion/react\": \"^11.14.0\",\n    \"@emotion/styled\": \"^11.14.1\",\n    \"@heroicons/react\": \"2.2.0\",\n    \"@huggingface/inference\": \"4.7.0\",\n    \"@langchain/community\": \"^0.3.49\",",
+        "metadata": {
+          "startLine": 85,
+          "endLine": 107,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-7",
+        "content": "\"@langchain/core\": \"^0.3.66\",\n    \"@langchain/openai\": \"^0.2.1\",\n    \"@langchain/weaviate\": \"^0.2.1\",\n    \"@monaco-editor/react\": \"4.7.0\",\n    \"@mui/material\": \"^7.2.0\",\n    \"@mui/x-charts\": \"^8.9.0\",\n    \"@octokit/rest\": \"22.0.0\",\n    \"@opentelemetry/api\": \"1.9.0\",\n    \"@opentelemetry/auto-instrumentations-node\": \"0.62.0\",\n    \"@opentelemetry/core\": \"2.0.1\",\n    \"@opentelemetry/exporter-otlp-http\": \"0.26.0\",\n    \"@opentelemetry/exporter-prometheus\": \"0.203.0\",\n    \"@opentelemetry/instrumentation\": \"0.203.0\",\n    \"@opentelemetry/instrumentation-express\": \"0.52.0\",\n    \"@opentelemetry/instrumentation-fs\": \"0.23.0\",\n    \"@opentelemetry/instrumentation-http\": \"0.203.0\",\n    \"@opentelemetry/sdk-node\": \"0.203.0\",\n    \"@opentelemetry/semantic-conventions\": \"1.27.0\",\n    \"@prisma/client\": \"6.12.0\",\n    \"@radix-ui/react-label\": \"2.1.7\",\n    \"@radix-ui/react-progress\": \"1.1.7\",\n    \"@radix-ui/react-scroll-area\": \"1.2.9\",\n    \"@radix-ui/react-select\": \"2.2.5\",",
+        "metadata": {
+          "startLine": 108,
+          "endLine": 130,
+          "tokens": 242
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-8",
+        "content": "\"@radix-ui/react-slot\": \"^1.2.3\",\n    \"@radix-ui/react-switch\": \"1.2.5\",\n    \"@radix-ui/react-tabs\": \"1.1.12\",\n    \"@tremor/react\": \"^3.18.7\",\n    \"@types/mongodb\": \"4.0.6\",\n    \"@types/qrcode\": \"1.5.5\",\n    \"@types/speakeasy\": \"2.0.10\",\n    \"@uiw/react-codemirror\": \"^4.24.1\",\n    \"@upstash/ratelimit\": \"2.0.6\",\n    \"@upstash/redis\": \"1.35.1\",\n    \"@vercel/analytics\": \"^1.5.0\",\n    \"@vercel/kv\": \"^3.0.0\",\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@xterm/addon-fit\": \"^0.10.0\",\n    \"@xterm/addon-web-links\": \"^0.11.0\",\n    \"@xterm/xterm\": \"^5.5.0\",\n    \"ai\": \"^4.3.19\",\n    \"async-mutex\": \"0.5.0\",\n    \"autoprefixer\": \"10.4.21\",\n    \"axios\": \"^1.10.0\",\n    \"bcryptjs\": \"^3.0.2\",\n    \"chokidar\": \"^4.0.3\",\n    \"chroma-js\": \"^2.4.2\",\n    \"chromadb\": \"^3.0.10\",\n    \"class-variance-authority\": \"^0.7.1\",\n    \"clsx\": \"^2.1.1\",\n    \"cmdk\": \"^1.1.1\",\n    \"codemirror\": \"^6.0.2\",\n    \"dd-trace\": \"5.61.1\",\n    \"framer-motion\": \"12.23.12\",\n    \"gray-matter\": \"^4.0.3\",\n    \"ioredis\": \"5.7.0\",",
+        "metadata": {
+          "startLine": 131,
+          "endLine": 162,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-9",
+        "content": "\"isomorphic-dompurify\": \"^2.16.0\",\n    \"js-cookie\": \"^3.0.5\",\n    \"jsonwebtoken\": \"^9.0.2\",\n    \"langchain\": \"^0.3.30\",\n    \"lucide-react\": \"^0.525.0\",\n    \"marked\": \"^16.1.1\",\n    \"monaco-editor\": \"^0.52.2\",\n    \"mongodb\": \"6.18.0\",\n    \"next\": \"15.5.2\",\n    \"next-auth\": \"^4.24.11\",\n    \"next-themes\": \"^0.4.6\",\n    \"node-pty\": \"^1.0.0\",\n    \"node-statsd\": \"^0.1.1\",\n    \"openai\": \"^4.104.0\",\n    \"pg\": \"8.16.3\",\n    \"postcss\": \"8.5.6\",\n    \"qrcode\": \"1.5.4\",\n    \"react\": \"19.1.1\",\n    \"react-dom\": \"19.1.1\",\n    \"react-hook-form\": \"^7.60.0\",\n    \"react-resizable-panels\": \"^3.0.3\",\n    \"redis\": \"5.6.1\",\n    \"socket.io\": \"4.8.1\",\n    \"sonner\": \"^2.0.6\",\n    \"speakeasy\": \"2.0.0\",\n    \"tailwind-merge\": \"^3.3.1\",\n    \"tailwindcss\": \"^3.4.0\",\n    \"tailwindcss-animate\": \"^1.0.7\",\n    \"tiktoken\": \"^1.0.21\",\n    \"weaviate-ts-client\": \"^2.2.0\",\n    \"winston\": \"3.17.0\",\n    \"ws\": \"^8.18.3\",\n    \"zod\": \"3.25.76\"\n  },\n  \"overrides\": {\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@vercel/kv\": \"^3.0.0\",",
+        "metadata": {
+          "startLine": 163,
+          "endLine": 199,
+          "tokens": 250
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-10",
+        "content": "\"ignore\": \"^7.0.5\",\n    \"tmp\": \"^0.2.4\"\n  },\n  \"devDependencies\": {\n    \"@axe-core/playwright\": \"4.10.2\",\n    \"@babel/core\": \"7.28.3\",\n    \"@babel/plugin-proposal-class-properties\": \"7.18.6\",\n    \"@babel/plugin-proposal-decorators\": \"7.28.0\",\n    \"@babel/plugin-proposal-private-methods\": \"7.18.6\",\n    \"@babel/plugin-proposal-private-property-in-object\": \"7.21.11\",\n    \"@babel/plugin-transform-modules-commonjs\": \"7.27.1\",\n    \"@babel/plugin-transform-runtime\": \"7.28.3\",\n    \"@babel/preset-env\": \"7.28.0\",\n    \"@babel/preset-react\": \"7.27.1\",\n    \"@babel/preset-typescript\": \"7.27.1\",\n    \"@datadog/browser-rum\": \"6.18.1\",\n    \"@datadog/datadog-ci\": \"3.18.0\",\n    \"@eslint/eslintrc\": \"3.3.1\",\n    \"@next-auth/prisma-adapter\": \"1.0.7\",\n    \"@opentelemetry/exporter-jaeger\": \"2.0.1\",\n    \"@opentelemetry/winston-transport\": \"0.14.0\",\n    \"@playwright/test\": \"1.54.1\",\n    \"@testing-library/dom\": \"10.4.1\",\n    \"@testing-library/jest-dom\": \"6.6.4\",\n    \"@testing-library/react\": \"16.3.0\",",
+        "metadata": {
+          "startLine": 200,
+          "endLine": 224,
+          "tokens": 248
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-11",
+        "content": "\"@testing-library/user-event\": \"14.6.1\",\n    \"@types/chroma-js\": \"3.1.1\",\n    \"@types/express\": \"^5.0.3\",\n    \"@types/jest\": \"30.0.0\",\n    \"@types/jsdom\": \"21.1.7\",\n    \"@types/jsonwebtoken\": \"^9.0.10\",\n    \"@types/lodash\": \"4.17.20\",\n    \"@types/node\": \"24.1.0\",\n    \"@types/pg\": \"8.15.5\",\n    \"@types/react\": \"^19\",\n    \"@types/react-dom\": \"^19\",\n    \"@types/supertest\": \"^6.0.3\",\n    \"@types/testing-library__jest-dom\": \"5.14.9\",\n    \"@types/testing-library__react\": \"10.0.1\",\n    \"@types/testing-library__user-event\": \"4.1.1\",\n    \"@types/ws\": \"^8.18.1\",\n    \"@vitest/ui\": \"3.2.4\",\n    \"autoprefixer\": \"^10.4.19\",\n    \"babel-jest\": \"30.0.4\",\n    \"chrome-launcher\": \"1.2.0\",\n    \"dotenv\": \"16.6.1\",\n    \"eslint\": \"^9\",\n    \"eslint-config-next\": \"15.4.4\",\n    \"eslint-plugin-jsx-a11y\": \"6.10.2\",\n    \"globals\": \"16.3.0\",\n    \"husky\": \"9.1.7\",\n    \"jest\": \"^30.0.4\",\n    \"jest-axe\": \"10.0.0\",\n    \"jest-environment-jsdom\": \"^30.0.4\",\n    \"lighthouse\": \"12.8.1\",\n    \"msw\": \"^2.10.4\",",
+        "metadata": {
+          "startLine": 225,
+          "endLine": 255,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957948565-j7s641f97-chunk-12",
+        "content": "\"postcss\": \"^8.4.38\",\n    \"prisma\": \"^6.12.0\",\n    \"socket.io-client\": \"4.8.1\",\n    \"supertest\": \"^7.1.3\",\n    \"testcontainers\": \"^11.3.1\",\n    \"ts-node\": \"10.9.2\",\n    \"typescript\": \"5.8.3\",\n    \"y-websocket\": \"3.0.0\",\n    \"yjs\": \"13.6.27\"\n  }\n}",
+        "metadata": {
+          "startLine": 256,
+          "endLine": 267,
+          "tokens": 63
+        },
+        "embedding": []
+      }
+    ]
+  },
+  {
+    "fileId": "1756957968339-kslwd5l0j",
+    "chunks": [
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-0",
+        "content": "{\n  \"name\": \"vibecode-webgui\",\n  \"version\": \"0.1.0\",\n  \"private\": true,\n  \"type\": \"module\",\n  \"license\": \"MIT\",\n  \"engines\": {\n    \"node\": \">=18.18.0 <25.0.0\",\n    \"npm\": \">=9.0.0\"\n  },\n  \"scripts\": {\n    \"setup\": \"node scripts/setup-development.js\",\n    \"dev\": \"node --require ./src/instrument.cjs node_modules/.bin/next dev\",\n    \"dev:simple\": \"next dev\",\n    \"build\": \"next build\",\n    \"start\": \"next start\",\n    \"start:dd\": \"node --require ./src/instrument.ts node_modules/.bin/next start\",\n    \"lint\": \"next lint\",\n    \"type-check\": \"tsc --noEmit\",\n    \"test\": \"tsx node_modules/.bin/jest\",\n    \"test:watch\": \"jest --watch\",\n    \"test:coverage\": \"jest --coverage\",\n    \"test:unit\": \"jest --testPathPatterns=tests/unit\",\n    \"test:integration\": \"jest --testPathPatterns=tests/integration\",\n    \"test:ws\": \"jest --testPathPatterns=tests/integration/websocket\",\n    \"test:e2e\": \"playwright test\",\n    \"test:e2e:ui\": \"playwright test --ui\",\n    \"test:e2e:headed\": \"playwright test --headed\",",
+        "metadata": {
+          "startLine": 1,
+          "endLine": 28,
+          "tokens": 248
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-1",
+        "content": "\"test:e2e:auth\": \"playwright test tests/e2e/auth-flow.test.ts\",\n    \"test:e2e:ai\": \"playwright test tests/e2e/ai-features.test.ts\",\n    \"test:e2e:workspace\": \"playwright test tests/e2e/workspace-management.test.ts\",\n    \"test:e2e:responsive\": \"playwright test tests/e2e/ui-responsiveness.test.ts\",\n    \"test:e2e:journeys\": \"playwright test tests/e2e/critical-user-journeys.test.ts\",\n    \"test:e2e:a11y\": \"playwright test tests/e2e/accessibility.test.ts\",\n    \"test:e2e:debug\": \"playwright test --debug\",\n    \"test:e2e:report\": \"playwright show-report\",\n    \"test:e2e:install\": \"playwright install\",\n    \"test:k8s\": \"jest --testPathPattern=tests/k8s\",\n    \"test:k8s:quick\": \"jest --testPathPattern=tests/k8s/kind-cluster-validation\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:k8s:helm\": \"jest --testPathPattern=tests/k8s/helm-chart-deployment\\\\.test\\\\.ts$ --maxWorkers=1\",",
+        "metadata": {
+          "startLine": 29,
+          "endLine": 40,
+          "tokens": 218
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-2",
+        "content": "\"test:k8s:provisioning\": \"jest --testPathPattern=tests/integration/user-provisioning-integration\\\\.test\\\\.ts$ --maxWorkers=1\",\n    \"test:monitoring\": \"jest --testPathPattern=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$ --testPathPattern=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:unit\": \"jest --testPathPattern=tests/unit/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:integration\": \"jest --testPathPattern=tests/integration/monitoring-api\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:e2e\": \"playwright test tests/e2e/monitoring-dashboard.test.ts\",\n    \"test:monitoring:k8s\": \"jest --testPathPatterns=tests/k8s/monitoring-deployment\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:security\": \"jest --testPathPatterns=tests/security/monitoring-security\\\\.test\\\\.(ts|js)$\",\n    \"test:complete\": \"jest --testPathPatterns=tests/complete\",\n    \"test:pre-commit\": \"./scripts/pre-commit-tests.sh\",",
+        "metadata": {
+          "startLine": 41,
+          "endLine": 49,
+          "tokens": 231
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-3",
+        "content": "\"test:synthetics\": \"datadog-ci synthetics run-tests -c datadog-synthetics.json\",\n    \"test:monitoring:production\": \"jest --testPathPatterns=tests/production/.*monitoring.*\\\\.test\\\\.(ts|js)$\",\n    \"test:monitoring:health\": \"jest --testPathPatterns=tests/unit/health-check.test.ts\",\n    \"test:security\": \"jest --testPathPatterns=\\\"tests/security/.*\\\\.test\\\\.(ts|tsx|js|jsx)$\\\"\",\n    \"test:fix\": \"npm run setup && npm install --legacy-peer-deps\",\n    \"dev:cdn\": \"./scripts/setup-tailwind-mode.sh cdn && npm run dev\",\n    \"dev:docker\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build\",\n    \"dev:docker:detached\": \"./scripts/setup-tailwind-mode.sh docker && docker-compose -f docker-compose.dev.yml up --build -d\",\n    \"tailwind:cdn\": \"./scripts/setup-tailwind-mode.sh cdn\",\n    \"tailwind:docker\": \"./scripts/setup-tailwind-mode.sh docker\",\n    \"tailwind:restore\": \"./scripts/setup-tailwind-mode.sh restore\",",
+        "metadata": {
+          "startLine": 50,
+          "endLine": 60,
+          "tokens": 239
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-4",
+        "content": "\"monitoring:setup\": \"npx tsx scripts/setup-datadog-monitoring.ts\",\n    \"monitoring:health\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.health'\",\n    \"monitoring:metrics\": \"curl -s http://localhost:3000/api/monitoring/metrics?config=true | jq\",\n    \"test:performance\": \"jest tests/performance/\",\n    \"test:performance:regression\": \"jest tests/performance/performance-regression.test.ts\",\n    \"test:performance:report\": \"jest tests/performance/performance-regression.test.ts --verbose\",\n    \"test:performance:synthetic\": \"npx @datadog/datadog-ci synthetics run-tests --config datadog-synthetics.json\",\n    \"test:performance:lighthouse\": \"npx lighthouse-ci autorun\",\n    \"test:performance:ci\": \"BASE_URL=http://localhost:3000 npm run test:performance\",\n    \"performance:synthetic\": \"BASE_URL=http://localhost:3000 npm run test:performance:synthetic\",\n    \"performance:monitor\": \"curl -s http://localhost:3000/api/monitoring/dashboard | jq '.performance'\",",
+        "metadata": {
+          "startLine": 61,
+          "endLine": 71,
+          "tokens": 244
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-5",
+        "content": "\"otel:setup\": \"npx tsx scripts/setup-opentelemetry.ts\",\n    \"otel:config\": \"curl -s http://localhost:3000/api/monitoring/otel-config | jq\",\n    \"otel:health\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=health | jq\",\n    \"otel:metrics\": \"curl -s http://localhost:9090/metrics\",\n    \"otel:test\": \"curl -s http://localhost:3000/api/monitoring/otel-config?action=status | jq\",\n    \"docs:validate\": \"node scripts/validate-documentation.js\",\n    \"docs:generate\": \"npx tsx scripts/generate-api-docs.ts && node scripts/enhance-docs.js\",\n    \"docs:build\": \"cd docs && npm run build\",\n    \"docs:dev\": \"cd docs && npm run dev\",\n    \"docs:stats\": \"node scripts/validate-documentation.js stats\",\n    \"docs:index\": \"echo 'Documentation index available at docs/DOCUMENTATION_INDEX.md'\",\n    \"docs:consolidated\": \"echo 'Consolidated documentation available at docs/CONSOLIDATED_DOCUMENTATION.md'\",\n    \"security:test\": \"./scripts/security-test.sh\",",
+        "metadata": {
+          "startLine": 72,
+          "endLine": 84,
+          "tokens": 240
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-6",
+        "content": "\"security:audit\": \"npm audit --audit-level=moderate\",\n    \"security:fix\": \"npm audit fix\",\n    \"mcp:start\": \"node docker/mcp-servers/servers/filesystem/server.js\",\n    \"mcp:dev\": \"nodemon docker/mcp-servers/servers/filesystem/server.js\",\n    \"docker:up\": \"docker compose up -d\",\n    \"docker:down\": \"docker compose down\",\n    \"docker:logs\": \"docker compose logs -f\",\n    \"health:check\": \"curl -s http://localhost:3000/api/health | jq .\",\n    \"db:test\": \"node test-db-connection.js\",\n    \"valkey:test\": \"node test-redis-connection.js\"\n  },\n  \"dependencies\": {\n    \"@ai-sdk/openai\": \"1.3.23\",\n    \"@browserbasehq/stagehand\": \"1.14.0\",\n    \"@codemirror/lang-javascript\": \"^6.2.4\",\n    \"@codemirror/lang-python\": \"^6.2.1\",\n    \"@datadog/browser-logs\": \"6.18.1\",\n    \"@datadog/datadog-api-client\": \"1.40.0\",\n    \"@emotion/react\": \"^11.14.0\",\n    \"@emotion/styled\": \"^11.14.1\",\n    \"@heroicons/react\": \"2.2.0\",\n    \"@huggingface/inference\": \"4.7.0\",\n    \"@langchain/community\": \"^0.3.49\",",
+        "metadata": {
+          "startLine": 85,
+          "endLine": 107,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-7",
+        "content": "\"@langchain/core\": \"^0.3.66\",\n    \"@langchain/openai\": \"^0.2.1\",\n    \"@langchain/weaviate\": \"^0.2.1\",\n    \"@monaco-editor/react\": \"4.7.0\",\n    \"@mui/material\": \"^7.2.0\",\n    \"@mui/x-charts\": \"^8.9.0\",\n    \"@octokit/rest\": \"22.0.0\",\n    \"@opentelemetry/api\": \"1.9.0\",\n    \"@opentelemetry/auto-instrumentations-node\": \"0.62.0\",\n    \"@opentelemetry/core\": \"2.0.1\",\n    \"@opentelemetry/exporter-otlp-http\": \"0.26.0\",\n    \"@opentelemetry/exporter-prometheus\": \"0.203.0\",\n    \"@opentelemetry/instrumentation\": \"0.203.0\",\n    \"@opentelemetry/instrumentation-express\": \"0.52.0\",\n    \"@opentelemetry/instrumentation-fs\": \"0.23.0\",\n    \"@opentelemetry/instrumentation-http\": \"0.203.0\",\n    \"@opentelemetry/sdk-node\": \"0.203.0\",\n    \"@opentelemetry/semantic-conventions\": \"1.27.0\",\n    \"@prisma/client\": \"6.12.0\",\n    \"@radix-ui/react-label\": \"2.1.7\",\n    \"@radix-ui/react-progress\": \"1.1.7\",\n    \"@radix-ui/react-scroll-area\": \"1.2.9\",\n    \"@radix-ui/react-select\": \"2.2.5\",",
+        "metadata": {
+          "startLine": 108,
+          "endLine": 130,
+          "tokens": 242
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-8",
+        "content": "\"@radix-ui/react-slot\": \"^1.2.3\",\n    \"@radix-ui/react-switch\": \"1.2.5\",\n    \"@radix-ui/react-tabs\": \"1.1.12\",\n    \"@tremor/react\": \"^3.18.7\",\n    \"@types/mongodb\": \"4.0.6\",\n    \"@types/qrcode\": \"1.5.5\",\n    \"@types/speakeasy\": \"2.0.10\",\n    \"@uiw/react-codemirror\": \"^4.24.1\",\n    \"@upstash/ratelimit\": \"2.0.6\",\n    \"@upstash/redis\": \"1.35.1\",\n    \"@vercel/analytics\": \"^1.5.0\",\n    \"@vercel/kv\": \"^3.0.0\",\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@xterm/addon-fit\": \"^0.10.0\",\n    \"@xterm/addon-web-links\": \"^0.11.0\",\n    \"@xterm/xterm\": \"^5.5.0\",\n    \"ai\": \"^4.3.19\",\n    \"async-mutex\": \"0.5.0\",\n    \"autoprefixer\": \"10.4.21\",\n    \"axios\": \"^1.10.0\",\n    \"bcryptjs\": \"^3.0.2\",\n    \"chokidar\": \"^4.0.3\",\n    \"chroma-js\": \"^2.4.2\",\n    \"chromadb\": \"^3.0.10\",\n    \"class-variance-authority\": \"^0.7.1\",\n    \"clsx\": \"^2.1.1\",\n    \"cmdk\": \"^1.1.1\",\n    \"codemirror\": \"^6.0.2\",\n    \"dd-trace\": \"5.61.1\",\n    \"framer-motion\": \"12.23.12\",\n    \"gray-matter\": \"^4.0.3\",\n    \"ioredis\": \"5.7.0\",",
+        "metadata": {
+          "startLine": 131,
+          "endLine": 162,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-9",
+        "content": "\"isomorphic-dompurify\": \"^2.16.0\",\n    \"js-cookie\": \"^3.0.5\",\n    \"jsonwebtoken\": \"^9.0.2\",\n    \"langchain\": \"^0.3.30\",\n    \"lucide-react\": \"^0.525.0\",\n    \"marked\": \"^16.1.1\",\n    \"monaco-editor\": \"^0.52.2\",\n    \"mongodb\": \"6.18.0\",\n    \"next\": \"15.5.2\",\n    \"next-auth\": \"^4.24.11\",\n    \"next-themes\": \"^0.4.6\",\n    \"node-pty\": \"^1.0.0\",\n    \"node-statsd\": \"^0.1.1\",\n    \"openai\": \"^4.104.0\",\n    \"pg\": \"8.16.3\",\n    \"postcss\": \"8.5.6\",\n    \"qrcode\": \"1.5.4\",\n    \"react\": \"19.1.1\",\n    \"react-dom\": \"19.1.1\",\n    \"react-hook-form\": \"^7.60.0\",\n    \"react-resizable-panels\": \"^3.0.3\",\n    \"redis\": \"5.6.1\",\n    \"socket.io\": \"4.8.1\",\n    \"sonner\": \"^2.0.6\",\n    \"speakeasy\": \"2.0.0\",\n    \"tailwind-merge\": \"^3.3.1\",\n    \"tailwindcss\": \"^3.4.0\",\n    \"tailwindcss-animate\": \"^1.0.7\",\n    \"tiktoken\": \"^1.0.21\",\n    \"weaviate-ts-client\": \"^2.2.0\",\n    \"winston\": \"3.17.0\",\n    \"ws\": \"^8.18.3\",\n    \"zod\": \"3.25.76\"\n  },\n  \"overrides\": {\n    \"@vercel/postgres\": \"^0.10.0\",\n    \"@vercel/kv\": \"^3.0.0\",",
+        "metadata": {
+          "startLine": 163,
+          "endLine": 199,
+          "tokens": 250
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-10",
+        "content": "\"ignore\": \"^7.0.5\",\n    \"tmp\": \"^0.2.4\"\n  },\n  \"devDependencies\": {\n    \"@axe-core/playwright\": \"4.10.2\",\n    \"@babel/core\": \"7.28.3\",\n    \"@babel/plugin-proposal-class-properties\": \"7.18.6\",\n    \"@babel/plugin-proposal-decorators\": \"7.28.0\",\n    \"@babel/plugin-proposal-private-methods\": \"7.18.6\",\n    \"@babel/plugin-proposal-private-property-in-object\": \"7.21.11\",\n    \"@babel/plugin-transform-modules-commonjs\": \"7.27.1\",\n    \"@babel/plugin-transform-runtime\": \"7.28.3\",\n    \"@babel/preset-env\": \"7.28.0\",\n    \"@babel/preset-react\": \"7.27.1\",\n    \"@babel/preset-typescript\": \"7.27.1\",\n    \"@datadog/browser-rum\": \"6.18.1\",\n    \"@datadog/datadog-ci\": \"3.18.0\",\n    \"@eslint/eslintrc\": \"3.3.1\",\n    \"@next-auth/prisma-adapter\": \"1.0.7\",\n    \"@opentelemetry/exporter-jaeger\": \"2.0.1\",\n    \"@opentelemetry/winston-transport\": \"0.14.0\",\n    \"@playwright/test\": \"1.54.1\",\n    \"@testing-library/dom\": \"10.4.1\",\n    \"@testing-library/jest-dom\": \"6.6.4\",\n    \"@testing-library/react\": \"16.3.0\",",
+        "metadata": {
+          "startLine": 200,
+          "endLine": 224,
+          "tokens": 248
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-11",
+        "content": "\"@testing-library/user-event\": \"14.6.1\",\n    \"@types/chroma-js\": \"3.1.1\",\n    \"@types/express\": \"^5.0.3\",\n    \"@types/jest\": \"30.0.0\",\n    \"@types/jsdom\": \"21.1.7\",\n    \"@types/jsonwebtoken\": \"^9.0.10\",\n    \"@types/lodash\": \"4.17.20\",\n    \"@types/node\": \"24.1.0\",\n    \"@types/pg\": \"8.15.5\",\n    \"@types/react\": \"^19\",\n    \"@types/react-dom\": \"^19\",\n    \"@types/supertest\": \"^6.0.3\",\n    \"@types/testing-library__jest-dom\": \"5.14.9\",\n    \"@types/testing-library__react\": \"10.0.1\",\n    \"@types/testing-library__user-event\": \"4.1.1\",\n    \"@types/ws\": \"^8.18.1\",\n    \"@vitest/ui\": \"3.2.4\",\n    \"autoprefixer\": \"^10.4.19\",\n    \"babel-jest\": \"30.0.4\",\n    \"chrome-launcher\": \"1.2.0\",\n    \"dotenv\": \"16.6.1\",\n    \"eslint\": \"^9\",\n    \"eslint-config-next\": \"15.4.4\",\n    \"eslint-plugin-jsx-a11y\": \"6.10.2\",\n    \"globals\": \"16.3.0\",\n    \"husky\": \"9.1.7\",\n    \"jest\": \"^30.0.4\",\n    \"jest-axe\": \"10.0.0\",\n    \"jest-environment-jsdom\": \"^30.0.4\",\n    \"lighthouse\": \"12.8.1\",\n    \"msw\": \"^2.10.4\",",
+        "metadata": {
+          "startLine": 225,
+          "endLine": 255,
+          "tokens": 247
+        },
+        "embedding": []
+      },
+      {
+        "id": "1756957968339-kslwd5l0j-chunk-12",
+        "content": "\"postcss\": \"^8.4.38\",\n    \"prisma\": \"^6.12.0\",\n    \"socket.io-client\": \"4.8.1\",\n    \"supertest\": \"^7.1.3\",\n    \"testcontainers\": \"^11.3.1\",\n    \"ts-node\": \"10.9.2\",\n    \"typescript\": \"5.8.3\",\n    \"y-websocket\": \"3.0.0\",\n    \"yjs\": \"13.6.27\"\n  }\n}",
+        "metadata": {
+          "startLine": 256,
+          "endLine": 267,
+          "tokens": 63
+        },
+        "embedding": []
+      }
+    ]
+  },
+  {
+    "fileId": "1756959204587-ahv154dqj",
+    "chunks": [
+      {
+        "id": "1756959204587-ahv154dqj-chunk-0",
+        "content": "Test file for embedding upload",
+        "metadata": {
+          "startLine": 1,
+          "endLine": 2,
+          "tokens": 8
+        },
+        "embedding": []
+      }
+    ]
+  }
+]

@@ -1,0 +1,125 @@
+/* Custom styles for VibeCode documentation */
+
+:root {
+  --sl-color-accent-low: #1e293b;
+  --sl-color-accent: #3b82f6;
+  --sl-color-accent-high: #60a5fa;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f8fafc;
+  --sl-color-gray-2: #f1f5f9;
+  --sl-color-gray-3: #e2e8f0;
+  --sl-color-gray-4: #cbd5e1;
+  --sl-color-gray-5: #94a3b8;
+  --sl-color-gray-6: #64748b;
+  --sl-color-black: #0f172a;
+}
+
+/* Custom hero section styling */
+.hero {
+  background: linear-gradient(135deg, var(--sl-color-accent-low) 0%, var(--sl-color-accent) 100%);
+}
+
+/* Code block improvements */
+.expressive-code {
+  margin: 1.5rem 0;
+  border-radius: 0.5rem;
+  overflow: hidden;
+  box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+}
+
+/* Badge styling for licenses */
+.license-badge {
+  display: inline-block;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  border-radius: 9999px;
+  background-color: var(--sl-color-accent);
+  color: white;
+  margin: 0.25rem;
+}
+
+/* Monitoring stack visualization */
+.monitoring-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.monitoring-card {
+  border: 1px solid var(--sl-color-gray-3);
+  border-radius: 0.5rem;
+  padding: 1.5rem;
+  background: var(--sl-color-gray-1);
+}
+
+.monitoring-card h3 {
+  margin-top: 0;
+  color: var(--sl-color-accent);
+}
+
+/* Architecture diagram container */
+.architecture-diagram {
+  background: white;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 2rem 0;
+  border: 1px solid var(--sl-color-gray-3);
+}
+
+/* Feature highlight boxes */
+.feature-highlight {
+  border-left: 4px solid var(--sl-color-accent);
+  background: var(--sl-color-gray-1);
+  padding: 1rem 1.5rem;
+  margin: 1rem 0;
+  border-radius: 0 0.25rem 0.25rem 0;
+}
+
+.feature-highlight h4 {
+  margin-top: 0;
+  color: var(--sl-color-accent);
+}
+
+/* Status indicators */
+.status-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.875rem;
+  font-weight: 500;
+}
+
+.status-working {
+  background-color: #dcfce7;
+  color: #166534;
+}
+
+.status-warning {
+  background-color: #fef3c7;
+  color: #92400e;
+}
+
+.status-error {
+  background-color: #fee2e2;
+  color: #991b1b;
+}
+
+/* Navigation improvements */
+.sidebar-content {
+  scroll-behavior: smooth;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .monitoring-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .architecture-diagram {
+    overflow-x: auto;
+  }
+}

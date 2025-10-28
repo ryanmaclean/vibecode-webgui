@@ -1,0 +1,24 @@
+{
+  "name": "vibecode-portable-codeserver",
+  "version": "1.0.0",
+  "description": "Portable code-server for VibeCode",
+  "main": "code-server-portable.js",
+  "bin": {
+    "code-server-portable": "./code-server-portable.js"
+  },
+  "pkg": {
+    "assets": [
+      "code-server/**/*"
+    ],
+    "targets": [
+      "node18-macos-arm64"
+    ],
+    "outputPath": "dist"
+  },
+  "scripts": {
+    "build": "pkg . --out-path dist"
+  },
+  "dependencies": {
+    "code-server": "4.105.1"
+  }
+}

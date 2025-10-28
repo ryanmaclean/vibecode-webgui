@@ -1,0 +1,198 @@
+# VibeCode Code-Server - FAST BUILD VARIANT
+# Optimized for minimal build time with PROFILE=minimal support
+# Target: <5 min build time vs 15-20 min for full build
+#
+# Optimization Strategy:
+# 1. Multi-stage build: Separate download/compile from runtime
+# 2. Parallel downloads: Use BuildKit parallelism
+# 3. Aggressive caching: Layer ordering by change frequency
+# 4. Minimal profile only: Skip optional tools
+# 5. Pre-compiled binaries: Avoid Go installs when possible
+
+FROM codercom/code-server:4.104.2 AS base
+
+ARG TARGETPLATFORM
+ARG TARGETARCH
+ARG PROFILE=minimal
+ARG VERSION=1.2.0-fast
+
+# Metadata
+LABEL org.opencontainers.image.title="VibeCode Code-Server (Fast)" \
+      org.opencontainers.image.description="Fast-building minimal code-server with AI assistants" \
+      org.opencontainers.image.version="${VERSION}" \
+      org.opencontainers.image.profile="${PROFILE}" \
+      org.opencontainers.image.variant="fast-build"
+
+USER root
+
+# ============================================================================
+# STAGE 1: Download all external binaries in parallel (BuildKit parallelism)
+# ============================================================================
+FROM base AS downloader
+
+ARG TARGETPLATFORM
+ARG LAZYGIT_VERSION=0.55.1
+ARG STARSHIP_VERSION=1.23.0
+ARG NODE_VERSION=18.18.0
+
+RUN mkdir -p /downloads
+
+# Determine architectures once
+RUN case "$TARGETPLATFORM" in \
+      "linux/amd64") \
+        echo "LAZYGIT_ARCH=Linux_x86_64" >> /tmp/arch.env; \
+        echo "STARSHIP_ARCH=x86_64-unknown-linux-musl" >> /tmp/arch.env; \
+        echo "NODE_ARCH=x64" >> /tmp/arch.env; \
+        ;; \
+      "linux/arm64") \
+        echo "LAZYGIT_ARCH=Linux_arm64" >> /tmp/arch.env; \
+        echo "STARSHIP_ARCH=aarch64-unknown-linux-musl" >> /tmp/arch.env; \
+        echo "NODE_ARCH=arm64" >> /tmp/arch.env; \
+        ;; \
+    esac
+
+# Download lazygit (parallel)
+RUN . /tmp/arch.env && \
+    curl -fsSL "https://github.com/jesseduffield/lazygit/releases/download/v${LAZYGIT_VERSION}/lazygit_${LAZYGIT_VERSION}_${LAZYGIT_ARCH}.tar.gz" \
+    -o /downloads/lazygit.tar.gz && \
+    tar -xf /downloads/lazygit.tar.gz -C /downloads
+
+# Download starship (parallel)
+RUN . /tmp/arch.env && \
+    curl -fsSL "https://github.com/starship/starship/releases/download/v${STARSHIP_VERSION}/starship-${STARSHIP_ARCH}.tar.gz" \
+    -o /downloads/starship.tar.gz && \
+    tar -xf /downloads/starship.tar.gz -C /downloads
+
+# Download Node.js (parallel)
+RUN . /tmp/arch.env && \
+    NODE_TARBALL="node-v${NODE_VERSION}-linux-${NODE_ARCH}.tar.xz" && \
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/${NODE_TARBALL}" -o /downloads/node.tar.xz && \
+    curl -fsSL "https://nodejs.org/dist/v${NODE_VERSION}/SHASUMS256.txt" -o /downloads/node.sha256 && \
+    grep "${NODE_TARBALL}" /downloads/node.sha256 | sha256sum --check --strict -
+
+# ============================================================================
+# STAGE 2: Runtime image with minimal dependencies
+# ============================================================================
+FROM base AS runtime
+
+ARG TARGETPLATFORM
+ARG PROFILE=minimal
+ARG NODE_VERSION=18.18.0
+
+USER root
+
+# Layer 1: System dependencies (most cacheable - rarely changes)
+# Only install ESSENTIAL packages for minimal profile
+RUN set -ex && \
+    apt-get update && \
+    apt-get install -y --no-install-recommends \
+        ca-certificates \
+        curl \
+        git \
+        bash-completion \
+        vim \
+        ripgrep \
+        jq \
+        fzf \
+        bat \
+        fd-find \
+        unzip \
+        python3-pip \
+        python3-venv && \
+    rm -rf /var/lib/apt/lists/* && \
+    chmod 755 /usr/bin/code-server /usr/lib/code-server/bin/code-server && \
+    ln -sf /usr/bin/fdfind /usr/local/bin/fd
+
+# Layer 2: Copy pre-downloaded binaries from downloader stage
+COPY --from=downloader /downloads/lazygit /usr/local/bin/lazygit
+COPY --from=downloader /downloads/starship /usr/local/bin/starship
+COPY --from=downloader /downloads/node.tar.xz /tmp/node.tar.xz
+
+RUN set -eux && \
+    chmod 755 /usr/local/bin/lazygit /usr/local/bin/starship && \
+    # Install Node.js
+    mkdir -p /usr/local/lib/nodejs && \
+    tar -xJf /tmp/node.tar.xz -C /usr/local/lib/nodejs --strip-components=1 && \
+    ln -sf /usr/local/lib/nodejs/bin/node /usr/local/bin/node && \
+    ln -sf /usr/local/lib/nodejs/bin/npm /usr/local/bin/npm && \
+    ln -sf /usr/local/lib/nodejs/bin/npx /usr/local/bin/npx && \
+    rm -f /tmp/node.tar.xz && \
+    node --version && npm --version
+
+# Layer 3: Install npm packages (high-value, moderately cacheable)
+# Only install ESSENTIAL npm packages for development
+RUN npm install -g \
+    typescript \
+    prettier \
+    eslint \
+    typescript-language-server
+
+# Layer 4: Install Python packages (essential AI tools only)
+# Use --break-system-packages for faster install, no isolation needed
+RUN pip3 install --break-system-packages --no-cache-dir \
+    aider-chat \
+    'python-lsp-server[all]'
+
+# Layer 5: Minimal workspace setup
+WORKDIR /home/coder/workspace
+RUN chown -R coder:coder /home/coder
+
+# Switch to coder user for extension installation
+USER coder
+ENV PATH="/home/coder/.local/bin:${PATH}"
+ENV NODE_PATH=/usr/local/lib/node_modules
+
+# Layer 6: VSCode directories
+RUN mkdir -p /home/coder/.local/share/code-server/User/ && \
+    mkdir -p /home/coder/.vscode/extensions/
+
+# Layer 7: Install MINIMAL extensions only (5 extensions = ~5 min vs 20+ min)
+# Use BuildKit cache mount for extension downloads
+COPY --chown=coder:coder docker/code-server/profiles/${PROFILE}.txt /tmp/extensions-list.txt
+
+RUN --mount=type=cache,target=/home/coder/.cache/code-server,uid=1000,gid=1000 \
+    echo "📦 Installing extensions for profile: ${PROFILE}" && \
+    # Filter and install only uncommented extensions
+    grep -v '^#' /tmp/extensions-list.txt | grep -v '^$' | while read -r extension; do \
+        if [ -n "$extension" ]; then \
+            echo "Installing: $extension" && \
+            /usr/bin/code-server --install-extension "$extension" --force || \
+            echo "⚠️  Failed to install $extension, skipping"; \
+        fi; \
+    done && \
+    rm -f /tmp/extensions-list.txt && \
+    echo "✅ Extension installation complete for profile: ${PROFILE}"
+
+# Layer 8: Patch extensions for code-server compatibility
+RUN for ext_dir in /home/coder/.local/share/code-server/extensions/anthropic.claude-code* \
+                   /home/coder/.local/share/code-server/extensions/codeium.codeium*; do \
+    if [ -d "$ext_dir" ]; then \
+        sed -i 's/"extensionKind":\s*\["ui"\]/"extensionKind": ["ui", "workspace"]/g' "$ext_dir/package.json" 2>/dev/null || true; \
+        echo "Patched $(basename $ext_dir) for code-server compatibility"; \
+    fi; \
+done
+
+# Layer 9: Copy VSCode settings (least cacheable - changes frequently)
+COPY --chown=coder:coder docker/code-server/settings.json /home/coder/.local/share/code-server/User/settings.json
+COPY --chown=coder:coder docker/code-server/keybindings.json /home/coder/.local/share/code-server/User/keybindings.json
+
+# Layer 10: Verify minimal tool installation
+RUN echo "🔍 Verifying minimal tools..." && \
+    command -v vim >/dev/null && echo "✅ vim" || { echo "❌ vim"; exit 1; } && \
+    command -v git >/dev/null && echo "✅ git" || { echo "❌ git"; exit 1; } && \
+    command -v node >/dev/null && echo "✅ node" || { echo "❌ node"; exit 1; } && \
+    command -v npm >/dev/null && echo "✅ npm" || { echo "❌ npm"; exit 1; } && \
+    command -v lazygit >/dev/null && echo "✅ lazygit" || { echo "❌ lazygit"; exit 1; } && \
+    command -v starship >/dev/null && echo "✅ starship" || { echo "❌ starship"; exit 1; } && \
+    aider --version >/dev/null && echo "✅ aider" || { echo "❌ aider"; exit 1; } && \
+    echo "✅ All minimal tools verified!"
+
+ENV SHELL=/bin/bash
+WORKDIR /home/coder/workspace
+
+EXPOSE 8765
+
+HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
+    CMD curl -f http://localhost:8765/healthz || exit 1
+
+CMD ["code-server", "--bind-addr", "0.0.0.0:8765", "--auth", "none", "/home/coder/workspace"]

@@ -1,0 +1,274 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vibecode-config
+  namespace: vibecode-platform
+data:
+  DATABASE_URL: "postgresql://vibecode:vibecode_password@postgres-service:5432/vibecode"
+  REDIS_URL: "redis://valkey-service:6379"
+  NEXTAUTH_URL: "http://localhost:3000"
+  NEXTAUTH_URL_INTERNAL: "http://0.0.0.0:3000"
+  NODE_ENV: "production"
+  HOSTNAME: "0.0.0.0"
+  PORT: "3000"
+  DD_SITE: "datadoghq.com"
+  DD_SERVICE: "vibecode-webgui"
+  DD_VERSION: "1.0.0"
+  DD_ENV: "kind-test"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-webgui
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vibecode-webgui
+  template:
+    metadata:
+      labels:
+        app: vibecode-webgui
+    spec:
+      initContainers:
+      - name: wait-for-postgres
+        image: pgvector/pgvector:pg16
+        command:
+          - sh
+          - -c
+          - |
+            until pg_isready -h postgres-service -p 5432 -U vibecode; do
+              echo "Waiting for PostgreSQL..."
+              sleep 2
+            done
+            echo "PostgreSQL is ready!"
+      - name: wait-for-valkey
+        image: valkey/valkey:7-alpine
+        command:
+          - sh
+          - -c
+          - |
+            until valkey-cli -h valkey-service -p 6379 ping; do
+              echo "Waiting for Valkey..."
+              sleep 2
+            done
+            echo "Valkey is ready!"
+      containers:
+      - name: vibecode-webgui
+        image: vibecode-webgui:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 3000
+        env:
+        # ConfigMap-based variables
+        - name: DATABASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DATABASE_URL
+        - name: REDIS_URL
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: REDIS_URL
+        - name: NEXTAUTH_URL_INTERNAL
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: NEXTAUTH_URL_INTERNAL
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
+        - name: HOSTNAME
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: HOSTNAME
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: PORT
+        - name: DD_SITE
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_SITE
+        - name: DD_SERVICE
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_SERVICE
+        - name: DD_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_VERSION
+        - name: DD_ENV
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_ENV
+        - name: DD_LLMOBS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_ENABLED
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_AGENTLESS_ENABLED
+        - name: DD_LLMOBS_ML_APP
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_LLMOBS_ML_APP
+        - name: DD_IAST_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_IAST_ENABLED
+        # vibecode-secrets-based variables (including dev login)
+
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: DD_API_KEY
+        - name: DATADOG_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: DD_API_KEY
+        - name: DD_APP_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: DD_APP_KEY
+        - name: NEXT_PUBLIC_DD_APPLICATION_ID
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: NEXT_PUBLIC_DD_APPLICATION_ID
+        - name: NEXT_PUBLIC_DD_CLIENT_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: NEXT_PUBLIC_DD_CLIENT_TOKEN
+        - name: NEXT_PUBLIC_DD_SITE
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: NEXT_PUBLIC_DD_SITE
+        - name: OPENROUTER_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: OPENROUTER_API_KEY
+        - name: ADMIN_EMAIL
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: ADMIN_EMAIL
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: ADMIN_PASSWORD
+        - name: NODE_ENV
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-secrets
+              key: NODE_ENV
+        # OAuth Providers Configuration (oauth-secrets-based)
+        - name: GITHUB_ID
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: GITHUB_ID
+        - name: GITHUB_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: GITHUB_SECRET
+        - name: GOOGLE_ID
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: GOOGLE_ID
+        - name: GOOGLE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: GOOGLE_SECRET
+        - name: NEXTAUTH_URL
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: NEXTAUTH_URL
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: oauth-secrets
+              key: NEXTAUTH_SECRET
+        startupProbe:
+          httpGet:
+            path: /vibecode-webgui/api/health/simple
+            port: 3000
+            scheme: HTTP
+          failureThreshold: 30  # Allow up to 5 minutes for startup (30 * 10s)
+          periodSeconds: 10
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /vibecode-webgui/api/health/simple
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /vibecode-webgui/api/health/simple
+            port: 3000
+            scheme: HTTP
+          initialDelaySeconds: 30
+          periodSeconds: 30
+          timeoutSeconds: 10
+          successThreshold: 1
+          failureThreshold: 3
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-service
+  namespace: vibecode-platform
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+    - name: http
+      port: 3000
+      protocol: TCP
+      targetPort: 3000
+      nodePort: 30000
+  type: NodePort
+  publishNotReadyAddresses: false
+  sessionAffinity: None
+  ipFamilies:
+    - IPv4
+  ipFamilyPolicy: SingleStack

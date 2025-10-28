@@ -1,0 +1,50 @@
+{
+  "apiKey": "${DD_API_KEY}",
+  "appKey": "${DD_APP_KEY}",
+  "site": "datadoghq.com",
+  "sast": {
+    "enabled": true,
+    "rules": [
+      {
+        "id": "javascript-security",
+        "enabled": true,
+        "severity": "high"
+      },
+      {
+        "id": "typescript-security",
+        "enabled": true,
+        "severity": "high"
+      },
+      {
+        "id": "react-security",
+        "enabled": true,
+        "severity": "medium"
+      }
+    ],
+    "excludes": [
+      "node_modules/**",
+      "dist/**",
+      "build/**",
+      ".next/**"
+    ]
+  },
+  "sca": {
+    "enabled": true,
+    "failOn": "high",
+    "includeDev": false,
+    "licenseCheck": {
+      "enabled": true,
+      "allowedLicenses": [
+        "MIT",
+        "BSD-2-Clause",
+        "BSD-3-Clause",
+        "Apache-2.0",
+        "ISC",
+        "Unlicense",
+        "CC0-1.0",
+        "0BSD",
+        "CC-BY-4.0"
+      ]
+    }
+  }
+}

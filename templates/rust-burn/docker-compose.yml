@@ -1,0 +1,280 @@
+# Docker Compose for Rust + Burn + Phi Models Development
+# Complete AI workbench setup for VibeCode platform
+
+version: '3.8'
+
+services:
+  # Main development environment with VS Code Server
+  rust-burn-dev:
+    build:
+      context: ../../docker/rust-burn
+      target: vscode-dev
+      dockerfile: Dockerfile
+    container_name: vibecode-rust-burn-dev
+    ports:
+      - "8080:8080"    # VS Code Server
+      - "3000:3000"    # Application dev server
+      - "8000:8000"    # Alternative dev server
+    volumes:
+      # Mount project workspace
+      - .:/workspace/current-project:cached
+      - ../..:/workspace/vibecode-platform:cached
+      
+      # Persistent data volumes
+      - rust-cargo-cache:/home/developer/.cargo
+      - rust-target-cache:/workspace/target
+      - burn-models-cache:/workspace/models
+      - burn-cache:/workspace/cache
+      
+      # Git configuration
+      - ~/.gitconfig:/home/developer/.gitconfig:ro
+      - ~/.ssh:/home/developer/.ssh:ro
+      
+      # Docker socket for Docker-in-Docker (if needed)
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      # Rust environment
+      - RUST_BACKTRACE=1
+      - RUST_LOG=info
+      - CARGO_NET_GIT_FETCH_WITH_CLI=true
+      
+      # Burn framework configuration
+      - BURN_BACKEND=ndarray
+      - BURN_CACHE_DIR=/workspace/cache
+      - BURN_LOG_LEVEL=info
+      
+      # Development settings
+      - NODE_ENV=development
+      - ENVIRONMENT=development
+      
+      # AI model configuration
+      - HF_HOME=/workspace/cache/huggingface
+      - TRANSFORMERS_CACHE=/workspace/cache/transformers
+      - TOKENIZERS_PARALLELISM=false
+      
+      # VS Code settings
+      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+      - SUDO_PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+    working_dir: /workspace/current-project
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - vibecode-network
+
+  # Standalone Phi model inference service
+  phi-inference:
+    build:
+      context: .
+      dockerfile: phi-local-llm/Dockerfile
+      target: production
+    container_name: vibecode-phi-inference
+    ports:
+      - "8001:8000"    # Inference API
+    volumes:
+      - burn-models-cache:/app/models
+      - burn-cache:/app/cache
+    environment:
+      - RUST_LOG=info
+      - BURN_BACKEND=ndarray
+      - BURN_CACHE_DIR=/app/cache
+      - PHI_MODEL=phi3
+      - MAX_TOKENS=512
+      - TEMPERATURE=0.7
+      - API_HOST=0.0.0.0
+      - API_PORT=8000
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - vibecode-network
+
+  # Model download and management service
+  model-manager:
+    build:
+      context: .
+      dockerfile: phi-local-llm/Dockerfile
+      target: model-manager
+    container_name: vibecode-model-manager
+    volumes:
+      - burn-models-cache:/app/models
+      - burn-cache:/app/cache
+    environment:
+      - RUST_LOG=info
+      - HF_HOME=/app/cache/huggingface
+      - MODEL_CACHE_DIR=/app/models
+    command: ["./download-phi", "--model", "phi3", "--cache-dir", "/app/models"]
+    restart: "no"
+    networks:
+      - vibecode-network
+
+  # GPU-enabled development environment (optional)
+  rust-burn-gpu:
+    build:
+      context: ../../docker/rust-burn
+      target: vscode-dev
+      dockerfile: Dockerfile
+    container_name: vibecode-rust-burn-gpu
+    ports:
+      - "8081:8080"    # VS Code Server (GPU variant)
+    volumes:
+      - .:/workspace/current-project:cached
+      - rust-cargo-cache-gpu:/home/developer/.cargo
+      - rust-target-cache-gpu:/workspace/target
+      - burn-models-cache:/workspace/models
+      - burn-cache-gpu:/workspace/cache
+    environment:
+      - RUST_BACKTRACE=1
+      - RUST_LOG=info
+      - BURN_BACKEND=cuda
+      - BURN_CACHE_DIR=/workspace/cache
+      - NVIDIA_VISIBLE_DEVICES=all
+      - NVIDIA_DRIVER_CAPABILITIES=compute,utility
+    runtime: nvidia  # Requires nvidia-docker
+    profiles:
+      - gpu  # Only start with --profile gpu
+    networks:
+      - vibecode-network
+
+  # Jupyter notebook for experimentation (optional)
+  jupyter-rust:
+    image: jupyter/minimal-notebook:latest
+    container_name: vibecode-jupyter-rust
+    ports:
+      - "8888:8888"
+    volumes:
+      - .:/home/jovyan/work
+      - jupyter-data:/home/jovyan/.jupyter
+    environment:
+      - JUPYTER_ENABLE_LAB=yes
+      - JUPYTER_TOKEN=${JUPYTER_TOKEN:-vibecode123}
+    command: start-notebook.sh --NotebookApp.token=${JUPYTER_TOKEN:-vibecode123}
+    profiles:
+      - jupyter  # Only start with --profile jupyter
+    networks:
+      - vibecode-network
+
+  # Redis for caching and session management
+  redis:
+    image: redis:7-alpine
+    container_name: vibecode-redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis-data:/data
+    command: redis-server --appendonly yes
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    networks:
+      - vibecode-network
+
+  # PostgreSQL for metadata and user data
+  postgres:
+    image: postgres:16-alpine
+    container_name: vibecode-postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+    environment:
+      - POSTGRES_DB=vibecode_burn
+      - POSTGRES_USER=vibecode
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
+      - POSTGRES_INITDB_ARGS=--encoding=UTF-8
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecode -d vibecode_burn"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - vibecode-network
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: vibecode-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--web.enable-lifecycle'
+    restart: unless-stopped
+    networks:
+      - vibecode-network
+
+volumes:
+  # Rust development caches
+  rust-cargo-cache:
+    driver: local
+  rust-target-cache:
+    driver: local
+  rust-cargo-cache-gpu:
+    driver: local
+  rust-target-cache-gpu:
+    driver: local
+  
+  # AI model and framework caches
+  burn-models-cache:
+    driver: local
+  burn-cache:
+    driver: local
+  burn-cache-gpu:
+    driver: local
+  
+  # Data persistence
+  postgres-data:
+    driver: local
+  redis-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  jupyter-data:
+    driver: local
+
+networks:
+  vibecode-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+
+# Usage examples:
+#
+# Development environment:
+#   docker-compose up rust-burn-dev
+#   # Access VS Code at http://localhost:8080
+#
+# GPU development (requires nvidia-docker):
+#   docker-compose --profile gpu up rust-burn-gpu
+#   # Access GPU-enabled VS Code at http://localhost:8081
+#
+# Full stack with inference service:
+#   docker-compose up rust-burn-dev phi-inference redis postgres
+#
+# Jupyter experimentation:
+#   docker-compose --profile jupyter up jupyter-rust
+#   # Access Jupyter at http://localhost:8888
+#
+# Download models:
+#   docker-compose run model-manager
+#
+# Clean rebuild:
+#   docker-compose down -v && docker-compose build --no-cache

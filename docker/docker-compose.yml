@@ -1,0 +1,159 @@
+# Version declaration removed - Docker Compose v2+ automatically detects format
+
+services:
+  # VibeCode WebGUI Application
+  webgui:
+    build: .
+    image: vibecode-webgui-local
+    ports:
+      - "3000:3000"
+    environment:
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/vibecode
+      - NEXTAUTH_SECRET=your-nextauth-secret-here
+      - NEXTAUTH_URL=http://localhost:3000
+      - NODE_ENV=production
+      - DD_IAST_ENABLED=true
+      - DD_DBM_PROPAGATION_MODE=full
+      - DD_SERVICE=vibecode-webgui
+      - DD_ENV=staging
+      - DD_VERSION=0.1.0-staging
+      - FREE_LLM_MODELS_FILE=/app/runtime/free-llm-models/models.txt
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    restart: unless-stopped
+    volumes:
+      - free-llm-models:/app/runtime/free-llm-models
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16
+    environment:
+      - POSTGRES_DB=vibecode
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vibecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./prisma/schema.prisma:/docker-entrypoint-initdb.d/schema.prisma
+    ports:
+      - "5432:5432"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d vibecode"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  # Redis for caching and sessions
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+
+  # Nginx reverse proxy
+  nginx:
+    image: nginx:alpine
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - ./ssl:/etc/nginx/ssl
+    depends_on:
+      webgui:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Periodic updater for OpenRouter free model catalogue
+  free-llm-model-updater:
+    image: vibecode-webgui-local
+    build: .
+    command: >
+      sh -c "mkdir -p /app/runtime/free-llm-models && while true; do node -r dd-trace/init scripts/jobs/update-openrouter-free-models.js && sleep 43200; done"
+    environment:
+      - OUTPUT_JSON_PATH=/app/runtime/free-llm-models/models.json
+      - OUTPUT_TEXT_PATH=/app/runtime/free-llm-models/models.txt
+      - ENABLE_CONFIGMAP_SYNC=false
+      - MAX_FREE_MODELS=10
+      - MIN_WORKING_MODELS=3
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY:-}
+      - OPENROUTER_HTTP_REFERER=${OPENROUTER_HTTP_REFERER:-}
+      - OPENROUTER_APP_TITLE=${OPENROUTER_APP_TITLE:-}
+      - DD_API_KEY=${DD_API_KEY:-}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_ENV=${DD_ENV:-staging}
+      - DD_DBM_PROPAGATION_MODE=full
+      - DD_SERVICE=vibecode-webgui
+      - DD_VERSION=0.1.0-staging
+      - DATADOG_METRIC_TAGS=environment:staging
+    healthcheck:
+      test: ["CMD", "test", "-f", "/app/runtime/free-llm-models/models.txt"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 120s
+    volumes:
+      - free-llm-models:/app/runtime/free-llm-models
+    depends_on:
+      webgui:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "sh", "-c", "test -f /app/runtime/free-llm-models/models.txt"]
+      interval: 60s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+volumes:
+  postgres_data:
+  redis_data:
+  free-llm-models:

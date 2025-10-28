@@ -1,0 +1,58 @@
+{
+  "mcpServers": {
+    "puppeteer": {
+      "command": "/bin/bash",
+      "args": [
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && node scripts/mcp-wrapper.js puppeteer @modelcontextprotocol/server-puppeteer"
+      ],
+      "env": {
+        "DD_AGENT_HOST": "localhost",
+        "DD_TRACE_AGENT_PORT": "8126",
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0"
+      }
+    },
+    "sequential-thinking": {
+      "command": "/bin/bash",
+      "args": [
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && node scripts/mcp-wrapper.js sequential-thinking @modelcontextprotocol/server-sequential-thinking"
+      ],
+      "env": {
+        "DD_AGENT_HOST": "localhost",
+        "DD_TRACE_AGENT_PORT": "8126",
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0"
+      }
+    },
+    "roundtable-ai": {
+      "command": "/bin/bash",
+      "args": [
+        "-lc",
+        "cd \"${CLI_MCP_WORKING_DIR:-$HOME/vibecode-webgui}\" && \"${PYTHON_CMD:-python3.13}\" scripts/roundtable-mcp-wrapper.py"
+      ],
+      "env": {
+        "CLI_MCP_SUBAGENTS": "codex,cursor,gemini",
+        "DD_AGENT_HOST": "localhost",
+        "DD_TRACE_AGENT_PORT": "8126",
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0",
+        "PYTHON_CMD": "/opt/homebrew/opt/python@3.13/bin/python3.13"
+      }
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ],
+      "env": {
+        "DD_AGENT_HOST": "localhost",
+        "DD_TRACE_AGENT_PORT": "8126",
+        "DD_ENV": "development",
+        "DD_VERSION": "1.0.0"
+      }
+    }
+  }
+}

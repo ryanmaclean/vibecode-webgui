@@ -1,0 +1,61 @@
+{{- if .Values.chatUi.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-chat-ui-config
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: chat-ui
+data:
+  # Chat-UI specific configuration
+  MODELS: |
+    {{- toYaml .Values.chatUi.models | nindent 4 }}
+  
+  # Application settings
+  APP_NAME: {{ .Values.chatUi.appName | quote }}
+  APP_DESCRIPTION: {{ .Values.chatUi.appDescription | quote }}
+  
+  # Features
+  ENABLE_ASSISTANTS: {{ .Values.chatUi.features.assistants | quote }}
+  ENABLE_ASSISTANTS_RAG: {{ .Values.chatUi.features.assistantsRag | quote }}
+  ENABLE_WEB_SEARCH: {{ .Values.chatUi.features.webSearch | quote }}
+  ENABLE_COMMUNITY_SHARING: {{ .Values.chatUi.features.communitySharing | quote }}
+  
+  # File upload settings
+  MAX_FILE_SIZE: {{ .Values.chatUi.uploads.maxFileSize | quote }}
+  ALLOWED_FILE_TYPES: {{ .Values.chatUi.uploads.allowedTypes | join "," | quote }}
+  
+  # Rate limiting
+  RATE_LIMIT_WINDOW: {{ .Values.chatUi.rateLimit.window | quote }}
+  RATE_LIMIT_MAX_REQUESTS: {{ .Values.chatUi.rateLimit.maxRequests | quote }}
+  
+  # Search settings
+  WEB_SEARCH_ENABLED: {{ .Values.chatUi.webSearch.enabled | quote }}
+  WEB_SEARCH_ENGINE: {{ .Values.chatUi.webSearch.engine | quote }}
+  WEB_SEARCH_MAX_RESULTS: {{ .Values.chatUi.webSearch.maxResults | quote }}
+  
+  # Vector database settings (for RAG)
+  VECTOR_DB_TYPE: {{ .Values.chatUi.vectorDb.type | quote }}
+  VECTOR_DB_DIMENSION: {{ .Values.chatUi.vectorDb.dimension | quote }}
+  
+  # Monitoring and observability
+  METRICS_ENABLED: {{ .Values.chatUi.metrics.enabled | quote }}
+  METRICS_PORT: {{ .Values.chatUi.metrics.port | quote }}
+  LOG_LEVEL: {{ .Values.chatUi.logging.level | quote }}
+  LOG_FORMAT: {{ .Values.chatUi.logging.format | quote }}
+  
+  # Security settings
+  CORS_ORIGINS: {{ .Values.chatUi.security.corsOrigins | join "," | quote }}
+  TRUST_PROXY: {{ .Values.chatUi.security.trustProxy | quote }}
+  
+  # Integration with VibeCode platform
+  VIBECODE_API_ENDPOINT: {{ .Values.global.apiEndpoint | quote }}
+  VIBECODE_WORKSPACE_SERVICE: {{ printf "%s-workspaces" (include "vibecode-platform.fullname" .) | quote }}
+  VIBECODE_FILE_UPLOAD_SERVICE: {{ printf "%s-api" (include "vibecode-platform.fullname" .) | quote }}
+  
+  {{- if .Values.chatUi.extraConfig }}
+  {{- with .Values.chatUi.extraConfig }}
+  {{- toYaml . | nindent 2 }}
+  {{- end }}
+  {{- end }}
+{{- end }}

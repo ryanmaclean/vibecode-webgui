@@ -1,0 +1,15 @@
+import { NextRequest, NextResponse } from 'next/server';
+
+// Simple middleware that just passes through requests
+// Temporarily simplified to avoid compilation issues
+export function middleware(request: NextRequest) {
+  // Skip middleware logic for now to get the server running
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    // Skip static files and API routes that don't need middleware
+    '/((?!_next/static|_next/image|favicon.ico|api/).*)',
+  ],
+};

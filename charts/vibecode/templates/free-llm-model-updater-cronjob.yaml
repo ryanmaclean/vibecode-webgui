@@ -1,0 +1,136 @@
+{{- if .Values.freeModelUpdater.enabled }}
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: {{ include "vibecode.fullname" . }}-free-llm-updater
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+---
+{{- if .Values.freeModelUpdater.syncConfigMap }}
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: {{ include "vibecode.fullname" . }}-free-llm-updater
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames:
+      - {{ include "vibecode.freeLlmConfigMapName" . }}
+    verbs: ["get", "update", "patch"]
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    verbs: ["create"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: {{ include "vibecode.fullname" . }}-free-llm-updater
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: {{ include "vibecode.fullname" . }}-free-llm-updater
+subjects:
+  - kind: ServiceAccount
+    name: {{ include "vibecode.fullname" . }}-free-llm-updater
+{{- end }}
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: {{ include "vibecode.fullname" . }}-free-llm-updater
+  labels:
+    {{- include "vibecode.labels" . | nindent 4 }}
+spec:
+  schedule: {{ .Values.freeModelUpdater.schedule | quote }}
+  concurrencyPolicy: {{ .Values.freeModelUpdater.concurrencyPolicy | default "Forbid" }}
+  successfulJobsHistoryLimit: {{ .Values.freeModelUpdater.successfulJobsHistoryLimit | default 1 }}
+  failedJobsHistoryLimit: {{ .Values.freeModelUpdater.failedJobsHistoryLimit | default 3 }}
+  jobTemplate:
+    spec:
+      backoffLimit: {{ .Values.freeModelUpdater.backoffLimit | default 1 }}
+      {{- if .Values.freeModelUpdater.ttlSecondsAfterFinished }}
+      ttlSecondsAfterFinished: {{ .Values.freeModelUpdater.ttlSecondsAfterFinished }}
+      {{- end }}
+      template:
+        metadata:
+          labels:
+            {{- include "vibecode.labels" . | nindent 12 }}
+            app.kubernetes.io/component: free-llm-updater
+          {{- if .Values.freeModelUpdater.podAnnotations }}
+          annotations:
+            {{- toYaml .Values.freeModelUpdater.podAnnotations | nindent 12 }}
+          {{- end }}
+        spec:
+          serviceAccountName: {{ include "vibecode.fullname" . }}-free-llm-updater
+          restartPolicy: OnFailure
+          containers:
+            - name: free-llm-updater
+              image: {{ include "vibecode.image" . }}
+              imagePullPolicy: {{ .Values.image.pullPolicy | default "IfNotPresent" }}
+              command:
+                - node
+                - -r
+                - dd-trace/init
+                - /app/scripts/jobs/update-openrouter-free-models.js
+              env:
+                - name: OUTPUT_JSON_PATH
+                  value: /tmp/free-llm-models.json
+                - name: OUTPUT_TEXT_PATH
+                  value: /tmp/free-llm-models.txt
+                - name: MAX_FREE_MODELS
+                  value: {{ .Values.freeModelUpdater.maxFreeModels | quote }}
+                - name: MIN_WORKING_MODELS
+                  value: {{ .Values.freeModelUpdater.minWorkingModels | quote }}
+                - name: ENABLE_CONFIGMAP_SYNC
+                  value: {{ ternary "true" "false" .Values.freeModelUpdater.syncConfigMap | quote }}
+                - name: CONFIGMAP_NAME
+                  value: {{ include "vibecode.freeLlmConfigMapName" . | quote }}
+                - name: CONFIGMAP_KEY_JSON
+                  value: {{ .Values.freeModelUpdater.configMap.jsonKey | quote }}
+                - name: CONFIGMAP_KEY_TEXT
+                  value: {{ .Values.freeModelUpdater.configMap.textKey | quote }}
+                - name: K8S_NAMESPACE
+                  valueFrom:
+                    fieldRef:
+                      fieldPath: metadata.namespace
+                - name: DD_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "vibecode.fullname" . }}-secrets
+                      key: dd-api-key
+                      optional: true
+                - name: DD_SITE
+                  value: {{ .Values.env.DD_SITE | default "datadoghq.com" | quote }}
+                - name: DD_ENV
+                  value: {{ .Values.env.DD_ENV | default "production" | quote }}
+                - name: DATADOG_METRIC_TAGS
+                  value: {{ printf "release:%s,namespace:%s" .Release.Name .Release.Namespace | quote }}
+                - name: OPENROUTER_TEST_PROMPT
+                  value: {{ default "Reply with a single sentence describing what VibeCode does." .Values.freeModelUpdater.testPrompt | quote }}
+                - name: OPENROUTER_TEST_TIMEOUT_MS
+                  value: {{ default 15000 .Values.freeModelUpdater.testTimeoutMs | quote }}
+                - name: OPENROUTER_TEST_SLEEP_MS
+                  value: {{ default 500 .Values.freeModelUpdater.testSleepMs | quote }}
+                - name: OPENROUTER_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: {{ include "vibecode.fullname" . }}-secrets
+                      key: openrouter-api-key
+                      optional: true
+                {{- if .Values.env.OPENROUTER_HTTP_REFERER }}
+                - name: OPENROUTER_HTTP_REFERER
+                  value: {{ .Values.env.OPENROUTER_HTTP_REFERER | quote }}
+                {{- end }}
+                {{- if .Values.env.OPENROUTER_APP_TITLE }}
+                - name: OPENROUTER_APP_TITLE
+                  value: {{ .Values.env.OPENROUTER_APP_TITLE | quote }}
+                {{- end }}
+              {{- if .Values.freeModelUpdater.resources }}
+              resources:
+                {{- toYaml .Values.freeModelUpdater.resources | nindent 16 }}
+              {{- end }}
+{{- end }}

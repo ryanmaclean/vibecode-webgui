@@ -1,0 +1,24 @@
+{
+  "mcpServers": {
+    "sequentialthinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ],
+      "alwaysAllow": [
+        "sequentialthinking"
+      ]
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ],
+      "alwaysAllow": [
+        "zen"
+      ]
+    }
+  }
+}

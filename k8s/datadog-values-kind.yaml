@@ -1,0 +1,81 @@
+# Datadog Helm values for KIND bootstrap
+
+global:
+  clusterName: vibecode-kind-local
+
+logLevel: INFO
+
+datadog:
+  site: datadoghq.com
+  apiKeyExistingSecret: datadog-secret
+  clusterName: vibecode-kind-local
+  logs:
+    enabled: true
+    containerCollectAll: true
+  apm:
+    enabled: true
+    env: local
+  processAgent:
+    enabled: true
+  orchestratorExplorer:
+    enabled: true
+  kubelet:
+    tlsVerify: false
+  networkMonitoring:
+    enabled: false
+  securityAgent:
+    runtime:
+      enabled: false
+    compliance:
+      enabled: false
+
+agents:
+  tolerations:
+    - operator: Exists
+  image:
+    tag: 7.66.1
+  apm:
+    useSocketVolume: true
+  useHostNetwork: false
+  containers:
+    agent:
+      env:
+        - name: DD_CLUSTER_AGENT_USE_TLS
+          value: "false"
+        - name: DD_CLUSTER_AGENT_CMD_PORT
+          value: "5005"
+
+clusterAgent:
+  enabled: true
+  image:
+    tag: 7.66.1
+  replicas: 1
+  orchestratorExplorer:
+    enabled: true
+  metricsProvider:
+    enabled: true
+  admissionController:
+    enabled: false
+  rbac:
+    create: true
+  env:
+    - name: DD_CLUSTER_AGENT_USE_TLS
+      value: "false"
+    - name: DD_CLUSTER_AGENT_CMD_PORT
+      value: "5005"
+    - name: DD_COLLECT_KUBERNETES_EVENTS
+      value: "false"
+    - name: DD_CLUSTER_AGENT_ENABLE_LEADER_ELECTION
+      value: "true"
+
+clusterChecksRunner:
+  enabled: false
+
+kubeStateMetrics:
+  enabled: false
+
+kube-state-metrics:
+  enabled: false
+
+apiService:
+  create: false

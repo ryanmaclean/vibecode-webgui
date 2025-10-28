@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-code-server
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-code-server
+    component: ide
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vibecode-code-server
+  template:
+    metadata:
+      labels:
+        app: vibecode-code-server
+        component: ide
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+      - name: code-server
+        image: vibecode/code-server:latest
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: code-server-secrets
+              key: password
+        - name: USER
+          value: coder
+        - name: HOME
+          value: /home/coder
+        volumeMounts:
+        - name: workspace
+          mountPath: /home/coder/workspace
+        - name: config
+          mountPath: /home/coder/.config
+        resources:
+          requests:
+            cpu: "500m"
+            memory: "1Gi"
+          limits:
+            cpu: "2"
+            memory: "4Gi"
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
+      volumes:
+      - name: workspace
+        persistentVolumeClaim:
+          claimName: code-server-workspace
+      - name: config
+        emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: code-server
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-code-server
+    component: ide
+spec:
+  ports:
+  - port: 80
+    targetPort: 8080
+    name: http
+  selector:
+    app: vibecode-code-server
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: code-server
+  namespace: vibecode-platform
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-body-size: "0"
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-prod"
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: code.vibecode.example.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: code-server
+            port:
+              number: 80
+  tls:
+  - hosts:
+    - code.vibecode.example.com
+    secretName: code-server-tls

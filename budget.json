@@ -1,0 +1,79 @@
+{
+  "budgets": [
+    {
+      "path": "/_next/static/chunks/*.js",
+      "resourceSizes": [
+        {
+          "resourceType": "script",
+          "budget": 500
+        }
+      ],
+      "resourceCounts": [
+        {
+          "resourceType": "script",
+          "budget": 20
+        }
+      ]
+    },
+    {
+      "path": "/_next/static/css/*.css",
+      "resourceSizes": [
+        {
+          "resourceType": "stylesheet",
+          "budget": 50
+        }
+      ]
+    },
+    {
+      "path": "/",
+      "resourceSizes": [
+        {
+          "resourceType": "document",
+          "budget": 100
+        },
+        {
+          "resourceType": "script",
+          "budget": 500
+        },
+        {
+          "resourceType": "stylesheet",
+          "budget": 50
+        },
+        {
+          "resourceType": "image",
+          "budget": 200
+        },
+        {
+          "resourceType": "font",
+          "budget": 100
+        },
+        {
+          "resourceType": "total",
+          "budget": 1024
+        }
+      ]
+    },
+    {
+      "path": "/monitoring",
+      "resourceSizes": [
+        {
+          "resourceType": "total",
+          "budget": 1200
+        }
+      ]
+    },
+    {
+      "path": "/workspace/*",
+      "resourceSizes": [
+        {
+          "resourceType": "script",
+          "budget": 800
+        },
+        {
+          "resourceType": "total",
+          "budget": 1500
+        }
+      ]
+    }
+  ]
+}

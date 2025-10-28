@@ -1,0 +1,33 @@
+{{- if .Values.websocket.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "vibecode-platform.fullname" . }}-websocket
+  labels:
+    {{- include "vibecode-platform.labels" . | nindent 4 }}
+    app.kubernetes.io/component: websocket
+spec:
+  replicas: {{ .Values.websocket.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "vibecode-platform.selectorLabels" . | nindent 6 }}
+      app.kubernetes.io/component: websocket
+  template:
+    metadata:
+      labels:
+        {{- include "vibecode-platform.selectorLabels" . | nindent 8 }}
+        app.kubernetes.io/component: websocket
+    spec:
+      imagePullSecrets:
+        {{- toYaml .Values.global.imagePullSecrets | nindent 8 }}
+      containers:
+        - name: websocket
+          image: "{{ .Values.websocket.image.repository }}:{{ .Values.websocket.image.tag }}"
+          imagePullPolicy: {{ .Values.websocket.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: 3001
+              protocol: TCP
+          resources:
+            {{- toYaml .Values.websocket.resources | nindent 12 }}
+{{- end }}

@@ -1,0 +1,114 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-webgui
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+    component: frontend
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: vibecode-webgui
+  template:
+    metadata:
+      labels:
+        app: vibecode-webgui
+        component: frontend
+      annotations:
+        # Datadog annotations for monitoring
+        ad.datadoghq.com/vibecode-webgui.check_names: '["http_check"]'
+        ad.datadoghq.com/vibecode-webgui.init_configs: '[{}]'
+        ad.datadoghq.com/vibecode-webgui.instances: '[{"name": "vibecode-webgui", "url": "http://%%host%%:3000/api/health", "timeout": 5}]'
+        ad.datadoghq.com/vibecode-webgui.logs: '[{"source": "nextjs", "service": "vibecode-webgui"}]'
+    spec:
+      containers:
+      - name: vibecode-webgui
+        image: node:20-alpine
+        command: ["/bin/sh"]
+        args: ["-c", "echo 'Starting VibeCode WebGUI...' && npm init -y && npm install express && echo 'const express = require(\"express\"); const app = express(); app.get(\"/\", (req, res) => res.send(\"<h1>VibeCode WebGUI</h1><p>Running on AKS!</p><p>Status: Operational</p>\")); app.get(\"/api/health\", (req, res) => res.json({status: \"ok\", service: \"vibecode-webgui\", timestamp: new Date().toISOString()})); app.listen(3000, () => console.log(\"Server running on port 3000\"));' > server.js && node server.js"]
+        ports:
+        - containerPort: 3000
+          name: http
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: NEXT_TELEMETRY_DISABLED
+          value: "1"
+        - name: PORT
+          value: "3000"
+        - name: DD_SERVICE
+          value: "vibecode-webgui"
+        - name: DD_ENV
+          value: "aks-production"
+        - name: DD_VERSION
+          value: "1.0.0"
+        - name: DD_SITE
+          value: "datadoghq.com"
+        - name: DD_LLMOBS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_AGENTLESS_ENABLED
+          value: "1"
+        - name: DD_LLMOBS_ML_APP
+          value: "vibecode-ai"
+        - name: DD_IAST_ENABLED
+          value: "true"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 10
+          periodSeconds: 5
+      restartPolicy: Always
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-webgui-service
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+    name: http
+  type: ClusterIP
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-webgui-nodeport
+  namespace: vibecode-platform
+  labels:
+    app: vibecode-webgui
+spec:
+  selector:
+    app: vibecode-webgui
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30001
+    protocol: TCP
+    name: http
+  type: NodePort

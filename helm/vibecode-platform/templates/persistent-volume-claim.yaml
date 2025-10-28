@@ -1,0 +1,40 @@
+{{/*
+This template creates per-user PVCs for workspace storage
+It should be used with Helm template functions to generate PVCs for each user
+*/}}
+{{- define "vibecode-platform.persistentVolumeClaim" }}
+{{- $userId := .userId | required "userId is required for PVC" }}
+{{- $root := .root }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vibecode-platform.pvcName" . }}
+  namespace: {{ $root.Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+    vibecode.dev/created-at: {{ now | date "2006-01-02T15:04:05Z" | quote }}
+    {{- if $root.Values.codeServer.persistence.storageClass }}
+    volume.beta.kubernetes.io/storage-class: {{ $root.Values.codeServer.persistence.storageClass | quote }}
+    {{- end }}
+spec:
+  accessModes:
+    - {{ $root.Values.codeServer.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ $root.Values.codeServer.persistence.size }}
+  {{- if $root.Values.codeServer.persistence.storageClass }}
+  storageClassName: {{ $root.Values.codeServer.persistence.storageClass | quote }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create a PVC for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.persistentVolumeClaim" $context }}
+{{- end }}

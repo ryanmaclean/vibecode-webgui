@@ -1,0 +1,209 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: vector-db-operator
+  namespace: vibecode
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: vector-db-operator
+rules:
+- apiGroups: [""]
+  resources: ["pods", "services", "configmaps", "secrets", "persistentvolumeclaims"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["apps"]
+  resources: ["statefulsets", "deployments"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["storage.k8s.io"]
+  resources: ["storageclasses"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["monitoring.coreos.com"]
+  resources: ["servicemonitors"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+- apiGroups: ["vibecode.io"]
+  resources: ["vectordatabases"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete", "deletecollection"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: vector-db-operator
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: vector-db-operator
+subjects:
+- kind: ServiceAccount
+  name: vector-db-operator
+  namespace: vibecode
+---
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: vectordatabases.vibecode.io
+spec:
+  group: vibecode.io
+  versions:
+  - name: v1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              replicas:
+                type: integer
+                minimum: 1
+                maximum: 10
+                default: 3
+              resources:
+                type: object
+                properties:
+                  requests:
+                    type: object
+                    properties:
+                      memory:
+                        type: string
+                        default: "2Gi"
+                      cpu:
+                        type: string
+                        default: "500m"
+                  limits:
+                    type: object
+                    properties:
+                      memory:
+                        type: string
+                        default: "4Gi"
+                      cpu:
+                        type: string
+                        default: "2"
+              storage:
+                type: object
+                properties:
+                  size:
+                    type: string
+                    default: "100Gi"
+                  storageClassName:
+                    type: string
+                    default: "fast-ssd"
+              backup:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: true
+                  schedule:
+                    type: string
+                    default: "0 2 * * *"
+                  retention:
+                    type: string
+                    default: "30d"
+              monitoring:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: true
+                  prometheus:
+                    type: boolean
+                    default: true
+                  datadog:
+                    type: boolean
+                    default: true
+              sharding:
+                type: object
+                properties:
+                  enabled:
+                    type: boolean
+                    default: false
+                  shardCount:
+                    type: integer
+                    minimum: 1
+                    maximum: 16
+                    default: 3
+          status:
+            type: object
+            properties:
+              phase:
+                type: string
+                enum: ["Pending", "Running", "Failed", "Scaling"]
+              replicas:
+                type: integer
+              readyReplicas:
+                type: integer
+              conditions:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    type:
+                      type: string
+                    status:
+                      type: string
+                    lastTransitionTime:
+                      type: string
+                    reason:
+                      type: string
+                    message:
+                      type: string
+  scope: Namespaced
+  names:
+    plural: vectordatabases
+    singular: vectordatabase
+    kind: VectorDatabase
+    shortNames: ["vdb"]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vector-db-operator
+  namespace: vibecode
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vector-db-operator
+  template:
+    metadata:
+      labels:
+        app: vector-db-operator
+    spec:
+      serviceAccountName: vector-db-operator
+      containers:
+      - name: operator
+        image: vibecode/vector-db-operator:latest
+        ports:
+        - containerPort: 8080
+          name: metrics
+        env:
+        - name: WATCH_NAMESPACE
+          value: ""
+        - name: POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: OPERATOR_NAME
+          value: "vector-db-operator"
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /readyz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 5
