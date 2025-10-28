@@ -186,7 +186,7 @@ The platform includes comprehensive Datadog monitoring:
 
 ### Key Dashboards
 
-1. **AI Gateway Observability** - `/monitoring/datadog/dashboards/ai-gateway-observability.json`
+1. **AI Gateway Observability** - `/datadog/dashboards/ai-gateway-observability.json`
 2. **PostgreSQL Performance** - Database monitoring built-in
 3. **Application Performance** - APM automatic dashboards
 4. **Infrastructure Health** - Kubernetes integration

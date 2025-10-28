@@ -54,8 +54,8 @@ Scanned static output in `docs/dist/` after `npm run build`. Detected links that
 
 ## Sample missing links
 - `../../helm/` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/helm/index.html`
-- `../../helm/vibecode-platform/` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/helm/vibecode-platform/index.html`
-- `../../helm/vibecode-platform/README.md` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/helm/vibecode-platform/README.md`
+- `../../charts/vibecode-platform/` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/charts/vibecode-platform/index.html`
+- `../../charts/vibecode-platform/README.md` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/charts/vibecode-platform/README.md`
 - `../../infrastructure/terraform/` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/infrastructure/terraform/index.html`
 - `../../infrastructure/terraform/azure/` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/infrastructure/terraform/azure/index.html`
 - `../../infrastructure/terraform/azure/README.md` -> `/Users/ryan.maclean/vibecode-webgui/docs/dist/wiki-archive/infrastructure/terraform/azure/README.md`

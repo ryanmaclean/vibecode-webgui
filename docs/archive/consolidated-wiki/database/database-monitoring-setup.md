@@ -441,8 +441,8 @@ echo "Keys configured: $([ -n \"$DD_API_KEY\" ] || [ -n \"$DATADOG_API_KEY\" ] &
 
 ```bash
 # Deploy with secrets from environment
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev \
   --create-namespace \
   --set datadog.apiKey="${DD_API_KEY:-$DATADOG_API_KEY}" \
@@ -454,8 +454,8 @@ helm install vibecode-dev ./helm/vibecode-platform \
 
 ```bash
 # Production deployment with enhanced monitoring
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --namespace vibecode-production \
   --create-namespace \
   --set datadog.apiKey="${DD_API_KEY:-$DATADOG_API_KEY}" \

@@ -277,7 +277,7 @@ docker-compose -f docker-compose.prod.yml up -d
 
 ```bash
 # Using Helm
-helm install vibecode ./helm/vibecode \
+helm install vibecode ./charts/vibecode \
   --namespace vibecode-production \
   --values values.production.yaml
 

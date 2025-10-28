@@ -122,7 +122,7 @@ component-name/
 │   ├── service.yaml
 │   ├── configmap.yaml
 │   └── secret.yaml
-├── helm/
+├── charts/
 │   ├── Chart.yaml
 │   ├── values.yaml
 │   ├── values-prod.yaml

@@ -647,7 +647,7 @@ gcloud container clusters create vibecode \
   --max-nodes 10
 
 # Deploy with Helm
-helm install vibecode ./helm/vibecode \
+helm install vibecode ./charts/vibecode \
   --namespace vibecode-production \
   --create-namespace \
   --values values.gcp.yaml

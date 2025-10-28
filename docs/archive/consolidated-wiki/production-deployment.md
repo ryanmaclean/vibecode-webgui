@@ -71,10 +71,10 @@ helm repo add vibecode https://charts.vibecode.com
 helm install vibecode-prod vibecode/vibecode-platform \
   --namespace production \
   --create-namespace \
-  --values helm/vibecode-platform/values-production.yaml
+  --values charts/vibecode-platform/values-production.yaml
 
 # 3. Configure monitoring
-kubectl apply -f monitoring/datadog/
+kubectl apply -f datadog/
 kubectl apply -f monitoring/prometheus/
 ```
 
@@ -188,9 +188,9 @@ kubectl apply -f k8s/jobs/database-migration.yaml
 
 ```bash
 # Deploy main application
-helm install vibecode-platform ./helm/vibecode-platform \
+helm install vibecode-platform ./charts/vibecode-platform \
   --namespace production \
-  --values helm/vibecode-platform/values-production.yaml \
+  --values charts/vibecode-platform/values-production.yaml \
   --set image.tag=latest \
   --set ingress.host=vibecode.com
 
@@ -202,7 +202,7 @@ kubectl apply -f k8s/services/
 
 ```bash
 # Deploy Datadog agent
-kubectl apply -f monitoring/datadog/
+kubectl apply -f datadog/
 
 # Deploy Prometheus stack
 helm install prometheus prometheus-community/kube-prometheus-stack \

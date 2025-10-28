@@ -54,7 +54,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 
 **📖 Documentation**: [DEPLOYMENT.md](./DEPLOYMENT.md#kubernetes-deployment)
 **📁 Manifests**: [`/k8s/`](../../k8s/)
-**📦 Helm Charts**: [`/helm/vibecode-platform/`](../../helm/vibecode-platform/)
+**📦 Helm Charts**: [`/charts/vibecode-platform/`](../../charts/vibecode-platform/)
 
 ### 3. **Docker (Development/Testing)**
 - **Single container** for simple deployments
@@ -107,8 +107,8 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **Dependency management** and updates
 - **Production-ready** configurations
 
-**📁 Charts**: [`/helm/`](../../helm/)
-**📖 Documentation**: [Platform Chart README](../../helm/vibecode-platform/README.md)
+**📁 Charts**: [`/charts/`](../../charts/)
+**📖 Documentation**: [Platform Chart README](../../charts/vibecode-platform/README.md)
 
 ### Kubernetes Manifests
 - **Raw YAML** configurations
@@ -251,7 +251,7 @@ VibeCode is designed as a **cloud-native, scalable platform** that can be deploy
 - **[DATADOG_MONITORING.md](./DATADOG_MONITORING.md)** - Monitoring setup
 - **[OPENTELEMETRY_INTEGRATION.md](./OPENTELEMETRY_INTEGRATION.md)** - Observability
 - **[CONSOLIDATED_DOCUMENTATION.md](./CONSOLIDATED_DOCUMENTATION.md)** - General documentation
-- **[Helm Chart README](../../helm/vibecode-platform/README.md)** - Helm deployment
+- **[Helm Chart README](../../charts/vibecode-platform/README.md)** - Helm deployment
 - **[Azure Infrastructure README](../../infrastructure/terraform/azure/README.md)** - Cloud setup
 
 ## 📞 Support & Resources

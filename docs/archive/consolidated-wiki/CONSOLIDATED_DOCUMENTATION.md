@@ -369,7 +369,7 @@ npm run dev      # Standard mode
 1. **Kubernetes with Helm**
    ```bash
    # Deploy with Helm
-   helm install vibecode ./helm/vibecode-platform \
+   helm install vibecode ./charts/vibecode-platform \
      --namespace vibecode \
      --set ingress.host=your-domain.com
    ```

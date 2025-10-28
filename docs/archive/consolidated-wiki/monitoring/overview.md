@@ -80,7 +80,7 @@ source .env.local
 
 ## Next Steps
 
-- [Datadog Setup](/monitoring/datadog/) - Configure enterprise monitoring
+- [Datadog Setup](/datadog/) - Configure enterprise monitoring
 - [Prometheus Configuration](/monitoring/prometheus/) - Set up open source metrics
 - [Vector Pipeline](/monitoring/vector/) - Configure data routing
 - [OpenTelemetry Integration](/monitoring/opentelemetry/) - Add vendor-neutral telemetry

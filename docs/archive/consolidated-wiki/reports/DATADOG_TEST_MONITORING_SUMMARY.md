@@ -22,9 +22,9 @@ description: Auto-generated placeholder. Update as needed.
    - ✅ Integrated with GitHub Actions CI/CD pipeline
 
 3. **Created Datadog Monitoring Infrastructure**
-   - ✅ Test monitoring configuration (`monitoring/datadog/test-monitoring.yaml`)
-   - ✅ Comprehensive dashboard (`monitoring/datadog/test-dashboard.json`)
-   - ✅ Alert definitions (`monitoring/datadog/test-alerts.json`)
+   - ✅ Test monitoring configuration (`datadog/test-monitoring.yaml`)
+   - ✅ Comprehensive dashboard (`datadog/test-dashboard.json`)
+   - ✅ Alert definitions (`datadog/test-alerts.json`)
    - ✅ CI/CD integration with proper environment variables
 
 ### 🔍 **Test Results Being Monitored**
