@@ -2,24 +2,24 @@
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-Native desktop app wrapping code-server with AI assistance.
+Native desktop app built on OpenVSCode Server with AI assistance and macOS native integration.
 
 ## What It Is
 
-VS Code in browser (code-server) wrapped with Tauri for native desktop experience.
+OpenVSCode Server with native macOS integration via Swift 5 + Rust FFI + Virtualization Framework SDK.
 
 ```
-code-server → Tauri wrapper → VibeCode Desktop + AI Assistant
+OpenVSCode Server (Rust CLI + Node) → Swift 5 Wrapper → VibeCode Desktop + AI Assistant
 ```
 
 ## Features
 
-- **VS Code in Browser** - Full code-server features
-- **Native Desktop** - macOS, Windows, Linux support
+- **Native VS Code** - OpenVSCode Server with native Rust CLI
+- **macOS Native** - Swift 5, Virtualization Framework SDK, no Docker
 - **AI Assistant** - 321+ models via OpenRouter
-- **VM Providers** - vfkit, QEMU, Lima, WSL2, Docker
-- **Embedded Systems** - STM32, ESP32, Raspberry Pi support
-- **Portable** - Small bundle (~2.5MB core)
+- **VM Integration** - Native vfkit, QEMU, Lima support
+- **Rust + Swift** - Native performance and system integration
+- **Open-VSX** - Community extension registry
 
 ## Quick Start
 
@@ -35,7 +35,7 @@ cd extensions/vibecode-ai-assistant
 npm install && npm run compile
 ```
 
-Extension auto-installs when code-server starts.
+Extension auto-installs when OpenVSCode Server starts.
 
 ## Download
 

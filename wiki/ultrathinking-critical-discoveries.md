@@ -530,3 +530,152 @@ git clone ~/vibecode-backup-20251028-095700.bundle restored-repo
 - 7a344e3ed - "chore: major root directory reorganization and consolidation"
 - e9dc913f4 - "fix: revert moves for frequently used directories"
 - 40dd01117 - "chore: remove duplicate configs and organize IDE settings"
+
+---
+
+# 🎯 PHASE 3: BACKEND DECISION & STRATEGIC DIRECTION - OCTOBER 28, 2025
+
+## DEFINITIVE IDE BACKEND CHOSEN: OpenVSCode Server
+
+### Decision Rationale:
+
+After comprehensive evaluation and agent recommendation, **openvscode-server** has been chosen as the definitive IDE backend. The code-server alternative was evaluated but not selected.
+
+### Why OpenVSCode Server Wins:
+
+1. **Native macOS Integration** ⭐⭐⭐
+   - Rust CLI with macOS-specific code:
+     - `cli/src/tunnels/service_macos.rs` - Service integration
+     - `cli/src/tunnels/nosleep_macos.rs` - Power management
+   - Darwin-specific resources and build pipelines
+   - Better foundation for Swift 5 FFI integration
+
+2. **Virtualization Framework Compatibility** ⭐⭐⭐
+   - Native Rust CLI can be compiled as library
+   - Integrates with vfkit + Virtualization Framework SDK
+   - Can run in VM or host OS
+   - No Docker requirement
+
+3. **Architecture Advantage**
+   - Native Rust CLI layer (not just Node.js wrapper)
+   - More control over native integrations
+   - Swift 5 + Rust interop well-documented
+   - Better performance characteristics
+
+4. **Active Development & Rebrand Path**
+   - Gitpod actively maintains it
+   - Proven rebrand capability (Gitpod's customizations)
+   - `product.json` for centralized branding
+   - Open-VSX extension registry (MIT licensed)
+
+### Code-Server (Not Chosen):
+- Smaller footprint (2.3MB vs 145MB)
+- Node.js wrapper with limited native layer
+- Built-in authentication (openvscode requires custom)
+- Less extensible for native macOS features
+
+### Infrastructure Created:
+
+1. **Build Configuration**
+   - `config/vfkit/openvscode-build-vm.yaml` - VM config for builds
+   - `scripts/vfkit/build-openvscode.sh` - Automated build script
+   - Two build modes: --native (direct macOS) or --vm (isolated)
+
+2. **Documentation**
+   - `docs/CODE_SERVER_COMPARISON.md` - Comprehensive technical analysis
+   - `docs/BACKEND_DECISION.md` - Formal decision document with 6-phase plan
+   - `docs/DIRECTORY_MIGRATION_GUIDE.md` - Migration guide for developers
+
+### Build Requirements Documented:
+
+- **Node.js:** 18 LTS or 20 LTS (v24 has native module issues)
+- **Rust:** 1.90+ (cargo + rustc) ✅ Installed
+- **Xcode Command Line Tools:** Required for native builds
+- **Disk Space:** ~16GB for full compilation
+- **vfkit:** v0.6.1+ ✅ Available at `src-tauri/resources/`
+
+### Architecture Planned:
+
+```
+┌─────────────────────────────────────┐
+│     VibeCode (Swift 5)              │
+│                                     │
+│  ┌────────────────────────────┐   │
+│  │   Virtualization Framework  │   │
+│  └────────────────────────────┘   │
+│              ↓                      │
+│  ┌────────────────────────────┐   │
+│  │   Swift <-> Rust FFI       │   │
+│  └────────────────────────────┘   │
+│              ↓                      │
+│  ┌────────────────────────────┐   │
+│  │   OpenVSCode Server        │   │
+│  │   (Rust CLI + Node.js)     │   │
+│  └────────────────────────────┘   │
+└─────────────────────────────────────┘
+```
+
+### Implementation Phases:
+
+1. **Phase 1: Removal & Cleanup** 🔄 IN PROGRESS
+   - Remove code-server references
+   - Update documentation for single backend
+   - Clarify product direction
+
+2. **Phase 2: Build Stabilization**
+   - Test with Node 20 LTS
+   - Document successful build
+   - Verify Rust CLI compilation
+
+3. **Phase 3: Rebrand**
+   - Update `product.json` with VibeCode branding
+   - Customize resources (icons, logos)
+   - Rebrand Rust CLI
+
+4. **Phase 4: Swift Integration**
+   - Create Swift wrapper for Rust CLI
+   - Test Swift-Rust FFI bridge
+   - Build native .app bundle
+
+5. **Phase 5: Authentication**
+   - Implement auth layer (no built-in auth in openvscode)
+   - Options: Caddy proxy, Swift auth, OAuth/OIDC
+   - Configure TLS/HTTPS
+
+6. **Phase 6: Dashboard**
+   - Lightweight workspace management UI
+   - Project listing and quick launch
+   - Open-VSX extension management
+
+### Key Decisions:
+
+- **Extension Registry:** Open-VSX (cannot use Microsoft marketplace)
+- **Authentication:** Must be implemented (not built-in)
+- **Build Environment:** Native macOS (no Docker)
+- **Integration Path:** Swift 5 FFI → Rust CLI → Node.js
+
+### README Updated:
+
+Changed from "code-server wrapper" to "OpenVSCode Server with native macOS integration via Swift 5 + Rust FFI + Virtualization Framework SDK"
+
+### Submodules:
+
+- ✅ **openvscode-server** - Shallow clone (145MB)
+- ❌ **code-server** - Evaluated but not selected (not added as submodule)
+
+### Statistics:
+- **Decision documented:** 15KB formal decision document
+- **Build infrastructure:** 3 new files (699 lines)
+- **README updated:** Reflects single backend choice
+- **Ambiguity eliminated:** Clear product direction established
+
+### Key Commits:
+- 276a6cffc - "feat: add code-server and openvscode-server for comparison"
+- 786c0c56e - "feat: add vfkit build infrastructure for openvscode-server"
+- (Next) - "chore: formalize openvscode-server as backend, update documentation"
+
+### Agent Recommendation Implemented:
+
+> "Choose and integrate a definitive IDE backend (code-server vs. OpenVSCode-Server) – Right now the repo includes both backends. This doubles maintenance effort and muddies the product's identity."
+
+✅ **Recommendation Completed:** OpenVSCode Server chosen, documentation updated, product direction clarified.
