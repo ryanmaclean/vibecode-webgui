@@ -1,22 +1,37 @@
 apiVersion: v2
 name: vibecode-platform
-description: Cloud-native development platform with code-server, AI integration, and Hugging Face chat-ui
+description: A Helm chart for VibeCode platform with per-user code-server deployments
 type: application
-version: 0.2.0
-appVersion: "1.1.0"
+version: 0.1.0
+appVersion: "1.0.0"
+home: https://github.com/vibecode/vibecode-platform
+icon: https://raw.githubusercontent.com/vibecode/vibecode-platform/main/docs/logo.png
+sources:
+  - https://github.com/vibecode/vibecode-platform
 maintainers:
   - name: VibeCode Team
-    email: platform@vibecode.dev
+    email: team@vibecode.dev
+keywords:
+  - development
+  - code-server
+  - vscode
+  - kubernetes
+  - ai
+annotations:
+  category: Development
+
 dependencies:
+  - name: datadog
+    version: "3.60.0"  # Latest version with 2025 best practices
+    repository: "https://helm.datadoghq.com"
+    alias: datadog
+    condition: datadog.enabled
+    
   - name: mongodb
-    version: "~15.6.0"
+    version: "14.0.0"  # Latest stable MongoDB chart version
     repository: "https://charts.bitnami.com/bitnami"
     condition: mongodb.enabled
-keywords:
-  - ai
-  - development
-  - kubernetes
-  - chat-ui
-  - semantic-kernel
-  - mongodb
-  - huggingface
+    tags:
+      - mongodb
+      - database
+      - nosql

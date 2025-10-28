@@ -1,71 +1,103 @@
-# VibeCode Demos
+# GenAI with PostgreSQL and Datadog Demo
 
-This directory collects the various demo entrypoints used during GenAI and monitoring walkthroughs. Each script assumes you have the dependencies installed (`npm install`) and any required services (PostgreSQL, Datadog) available locally or via Docker.
+This demo showcases how to monitor GenAI workloads using PostgreSQL with pgvector and Datadog. It includes:
 
-## Contents
+- Storing and querying vector embeddings
+- Performing similarity searches
+- Implementing Retrieval-Augmented Generation (RAG)
+- Monitoring performance with Datadog
 
-| File | Description |
-| --- | --- |
-| `genai-workflow.ts` | TypeScript workflow that exercises end-to-end GenAI with PostgreSQL pgvector and Datadog monitoring. |
-| `easy-mode-postgres-genai.sh` | Shell quickstart script that bootstraps the GenAI demo against a local Docker Compose environment. |
-| `simple-vector-demo.cjs` | Minimal CommonJS script showing basic vector operations for onboarding workshops. |
-| `web-interface.html` | Static walkthrough to manually validate the demo UI from a browser. |
+## Prerequisites
 
-## Running the TypeScript workflow
+1. Node.js 18+
+2. Docker and Docker Compose
+3. PostgreSQL 15+ with pgvector
+4. OpenAI API key
+5. Datadog API key (optional for monitoring)
+
+## Setup
+
+1. Clone the repository:
+   ```bash
+   git clone <repository-url>
+   cd vibecode-webgui
+   ```
+
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+3. Copy the example environment file:
+   ```bash
+   cp .env.example .env
+   ```
+
+4. Update `.env` with your configuration:
+   ```env
+   # Database
+   DATABASE_URL="postgresql://vibecode:password@localhost:5432/vibecode"
+   
+   # OpenAI
+   OPENAI_API_KEY=your-openai-api-key
+   
+   # Datadog (optional)
+   DD_API_KEY=your-datadog-api-key
+   DD_SITE=datadoghq.com
+   ```
+
+## Running the Demo
+
+1. Start the database:
+   ```bash
+   docker-compose up -d db
+   ```
+
+2. Run database migrations:
+   ```bash
+   npx prisma migrate deploy
+   ```
+
+3. Run the demo script:
+   ```bash
+   cd demo
+   npx ts-node genai-workflow.ts
+   ```
+
+## Monitoring with Datadog
+
+1. Enable PostgreSQL integration in Datadog
+2. Import the provided dashboard:
+   ```bash
+   # Install Datadog CLI
+   npm install -g @datadog/datadog-ci
+   
+   # Import dashboard
+   datadog-ci dashboards push --source monitoring/datadog/
+   ```
+
+## Key Features Demonstrated
+
+1. **Vector Embeddings**: Store and query document embeddings
+2. **Similarity Search**: Find similar documents using vector similarity
+3. **RAG**: Implement Retrieval-Augmented Generation
+4. **Monitoring**: Track performance with Datadog
+
+## Troubleshooting
+
+- Ensure PostgreSQL is running and accessible
+- Verify your OpenAI API key is valid
+- Check Datadog agent logs for monitoring issues
+- For performance issues, check the database indexes and query plans
+
+## Cleanup
+
+To stop and remove all containers:
 
 ```bash
-# from repository root
-npm install
-npm run dev # optional: if you want the UI running in parallel
-cd demos
-npx ts-node genai-workflow.ts
+docker-compose down -v
 ```
 
-## Shell quickstart
+## License
 
-```bash
-./demos/easy-mode-postgres-genai.sh
-```
-
-This script expects Docker Compose to be available and will launch the required services for you.
-
-## Simple vector demo
-
-```bash
-node demos/simple-vector-demo.cjs
-```
-
-## Static walkthrough
-
-You can open the HTML helper directly in a browser:
-
-```bash
-open demos/web-interface.html
-```
-
-## Monitoring assets
-
-Datadog dashboards, values files, and supporting assets now live under `ops/monitoring/`. Import the dashboards with `datadog-ci` per `docs/DATADOG_MONITORING_CONFIGURATION.md`.
-
-## Fast OpenVSCode microVM
-
-The prebuilt OpenVSCode microVM used for instant IDE boot is packaged as a GitHub Release asset:
-
-- Release tag: [`fast-openvscode-vm-v0.1.0`](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/fast-openvscode-vm-v0.1.0)
-- Archive contents: kernel (`vmlinuz-host`), initramfs, rootfs, and helper downloads.
-
-To rebuild the package locally, run:
-
-```bash
-scripts/release/fetch-openvscode-server.sh   # latest Gitpod OpenVSCode tarball
-scripts/release/package-fast-openvscode-vm.sh
-```
-
-This creates a timestamped archive in `dist/` along with a SHA256 checksum. Upload the generated files to a new release via:
-
-```bash
-gh release create fast-openvscode-vm-v<new-version> dist/fast-openvscode-vm-*.tar.gz dist/fast-openvscode-vm-*.tar.gz.sha256 \
-  --title "Fast OpenVSCode VM v<new-version>" --notes "<summary>"
-```
-
-The packaging script intentionally ignores the VM sources via `.gitignore`, so the repository remains lightweight for other collaborators.
+MIT
