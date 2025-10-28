@@ -62,7 +62,7 @@ Files Created:
   - docker-compose.litellm.yml              // Complete Docker stack
   - litellm/config.yaml                     // Multi-provider config
   - litellm/init-litellm-db.sql            // Database setup
-  - monitoring/datadog/conf.d/litellm.d/   // Datadog integration
+  - datadog/conf.d/litellm.d/   // Datadog integration
 ```
 
 ### **✅ Testing & Documentation**

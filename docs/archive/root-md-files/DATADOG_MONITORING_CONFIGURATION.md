@@ -212,7 +212,7 @@ NEXT_PUBLIC_ENABLE_RUM_IN_DEV=false
   - `charts/vibecode-platform/templates/datadog-agent.yaml`
 - __Secrets__:
   - `k8s/datadog-secret.yaml` (local/dev example)
-  - `helm/vibecode-platform/templates/datadog-secret-hook.yaml` (Helm hook)
+  - `charts/vibecode-platform/templates/datadog-secret-hook.yaml` (Helm hook)
 - __Database Monitoring (DBM)__:
   - `kubernetes/datadog/datadog-dbm-config.yaml`
   - `kubernetes/datadog/datadog-db-secret.yaml`

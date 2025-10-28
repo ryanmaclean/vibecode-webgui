@@ -40,8 +40,8 @@ kind create cluster --name vibecode-simple
 
 ### 2. Deploy to Development
 ```bash
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev \
   --create-namespace
 ```
@@ -58,8 +58,8 @@ helm test vibecode-dev -n vibecode-dev
 
 **Purpose**: Local development, testing, minimal cost
 ```bash
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev \
   --create-namespace \
   --set monitoring.enabled=false \
@@ -77,8 +77,8 @@ helm install vibecode-dev ./helm/vibecode-platform \
 
 **Purpose**: Production-like testing, QA validation
 ```bash
-helm install vibecode-staging ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-staging.yaml \
+helm install vibecode-staging ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-staging.yaml \
   --namespace vibecode-staging \
   --create-namespace \
   --set certManager.issuer.server=https://acme-staging-v02.api.letsencrypt.org/directory
@@ -95,8 +95,8 @@ helm install vibecode-staging ./helm/vibecode-platform \
 
 **Purpose**: Enterprise scale, high availability, full security
 ```bash
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --namespace vibecode-production \
   --create-namespace \
   --set backup.enabled=true \
@@ -167,8 +167,8 @@ export GITHUB_CLIENT_ID="your-github-app-id"
 export GITHUB_CLIENT_SECRET="your-github-secret"
 
 # Deploy with secrets
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --namespace vibecode-production \
   --create-namespace \
   --set aiIntegration.openRouter.apiKey="$OPENROUTER_API_KEY" \
@@ -190,8 +190,8 @@ monitoring:
 EOF
 
 # Deploy with custom values
-helm install vibecode-custom ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-custom ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   -f custom-values.yaml \
   --namespace vibecode-custom \
   --create-namespace
@@ -202,13 +202,13 @@ helm install vibecode-custom ./helm/vibecode-platform \
 ### Helm Template Testing
 ```bash
 # Test template rendering
-helm template vibecode-test ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm template vibecode-test ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --dry-run
 
 # Validate against Kubernetes API
-helm install vibecode-test ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-test ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-test \
   --create-namespace \
   --dry-run
@@ -240,8 +240,8 @@ df -h # On worker nodes
 ### Rolling Updates
 ```bash
 # Update with new values
-helm upgrade vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm upgrade vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev
 
 # Check rollout status
@@ -268,8 +268,8 @@ helm rollback vibecode-dev 1 -n vibecode-dev --timeout=300s
 kubectl scale deployment vibecode-webgui --replicas=5 -n vibecode-production
 
 # Update Helm values for permanent scaling
-helm upgrade vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm upgrade vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --set autoscaling.minReplicas=5 \
   --set autoscaling.maxReplicas=20 \
   --namespace vibecode-production
@@ -351,8 +351,8 @@ kubectl patch resourcequota vibecode-dev-global -n vibecode-dev \
   --patch='{"spec":{"hard":{"requests.cpu":"4","requests.memory":"8Gi"}}}'
 
 # Or update via Helm
-helm upgrade vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm upgrade vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --set resourceQuota.hard.requests.cpu="4" \
   --set resourceQuota.hard.requests.memory="8Gi"
 ```

@@ -71,10 +71,10 @@ VALIDATION SUMMARY:
 ### **Core Scripts**
 - `scripts/setup-secrets.sh` - Automated secret creation with multi-environment support
 - `scripts/validate-complete-setup.sh` - Comprehensive validation and testing
-- `helm/vibecode-platform/templates/datadog-secret-hook.yaml` - Helm pre-install hooks
+- `charts/vibecode-platform/templates/datadog-secret-hook.yaml` - Helm pre-install hooks
 
 ### **Configuration Files**
-- `helm/vibecode-platform/values-dev.yaml` - Development environment with DBM
+- `charts/vibecode-platform/values-dev.yaml` - Development environment with DBM
 - `k8s/external-secrets/external-secret-datadog.yaml` - External Secrets Operator
 - `database/init-dbm.sql` - Database monitoring initialization
 - `database/postgresql-dbm.conf` - PostgreSQL configuration for monitoring
@@ -95,8 +95,8 @@ source .env.local
 ./scripts/setup-secrets.sh
 
 # 3. Deploy with Helm
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace=vibecode-dev
 ```
 
@@ -111,8 +111,8 @@ export DATADOG_POSTGRES_PASSWORD="secure-datadog-password"
 ./scripts/setup-secrets.sh vibecode-prod
 
 # 3. Deploy to production
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --namespace=vibecode-prod
 ```
 
@@ -130,8 +130,8 @@ steps:
   - name: Deploy with Helm
     run: |
       helm upgrade --install vibecode-${{ env.ENVIRONMENT }} \
-        ./helm/vibecode-platform \
-        -f ./helm/vibecode-platform/values-${{ env.ENVIRONMENT }}.yaml \
+        ./charts/vibecode-platform \
+        -f ./charts/vibecode-platform/values-${{ env.ENVIRONMENT }}.yaml \
         --namespace=vibecode-${{ env.ENVIRONMENT }}
 ```
 

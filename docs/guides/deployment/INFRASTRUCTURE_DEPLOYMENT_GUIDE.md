@@ -177,10 +177,10 @@ helm repo add bitnami https://charts.bitnami.com/bitnami
 helm repo update
 
 # Install chart
-helm upgrade --install agentapi ./helm/agentapi \
+helm upgrade --install agentapi ./charts/agentapi \
   --namespace vibecode-platform \
   --create-namespace \
-  --values ./helm/agentapi/values-dev.yaml \
+  --values ./charts/agentapi/values-dev.yaml \
   --wait
 
 # Verify deployment
@@ -418,7 +418,7 @@ kubectl scale deployment agentapi -n vibecode-platform --replicas=5
 
 ```bash
 # Update image tag
-helm upgrade agentapi ./helm/agentapi \
+helm upgrade agentapi ./charts/agentapi \
   --namespace vibecode-platform \
   --set codeserver.image.tag=v1.1.0 \
   --set agentapi.image.tag=v0.2.0 \
@@ -558,7 +558,7 @@ terraform apply -var="cloud_provider=azure" -var="region=westus2"
 ## Support
 
 - Documentation: `/claudedocs/agent9-iac-strategy.md`
-- Helm Chart README: `/helm/agentapi/README.md`
+- Helm Chart README: `/charts/agentapi/README.md`
 - Issues: https://github.com/vibecode/vibecode-webgui/issues
 - Email: devops@vibecode.dev
 

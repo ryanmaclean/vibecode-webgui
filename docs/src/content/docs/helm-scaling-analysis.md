@@ -143,8 +143,8 @@ limits:
 
 ### Development Environment
 ```bash
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace vibecode-dev \
   --create-namespace \
   --set monitoring.enabled=false \
@@ -153,8 +153,8 @@ helm install vibecode-dev ./helm/vibecode-platform \
 
 ### Staging Environment
 ```bash
-helm install vibecode-staging ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-staging.yaml \
+helm install vibecode-staging ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-staging.yaml \
   --namespace vibecode-staging \
   --create-namespace \
   --set certManager.issuer.server=https://acme-staging-v02.api.letsencrypt.org/directory
@@ -162,8 +162,8 @@ helm install vibecode-staging ./helm/vibecode-platform \
 
 ### Production Environment
 ```bash
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --namespace vibecode-production \
   --create-namespace \
   --set backup.enabled=true \
@@ -324,18 +324,18 @@ monitoring:
 ### Rolling Updates
 ```bash
 # Update development
-helm upgrade vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm upgrade vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --set codeServer.resources.requests.cpu="200m"
 
 # Update staging (test production changes)
-helm upgrade vibecode-staging ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-staging.yaml \
+helm upgrade vibecode-staging ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-staging.yaml \
   --set autoscaling.maxReplicas=8
 
 # Update production (after staging validation)
-helm upgrade vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm upgrade vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --set autoscaling.maxReplicas=75
 ```
 

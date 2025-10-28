@@ -192,8 +192,8 @@ save 60 10000
    ```
 
 3. **Import Dashboards**
-   - Application Dashboard: `monitoring/datadog/application-dashboard.json`
-   - Infrastructure Dashboard: `monitoring/datadog/infrastructure-dashboard.json`
+   - Application Dashboard: `datadog/application-dashboard.json`
+   - Infrastructure Dashboard: `datadog/infrastructure-dashboard.json`
 
 ### Health Checks
 

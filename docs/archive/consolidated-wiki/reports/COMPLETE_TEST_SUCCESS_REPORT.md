@@ -139,9 +139,9 @@ DD_CI_VISIBILITY_ENABLED=true npm run test:root:azure
 ### 🚀 **Test Monitoring Infrastructure**
 
 **Files Created:**
-- `monitoring/datadog/test-monitoring.yaml` - Test monitoring configuration
-- `monitoring/datadog/test-dashboard.json` - Comprehensive dashboard with widgets
-- `monitoring/datadog/test-alerts.json` - Alert definitions for test failures
+- `datadog/test-monitoring.yaml` - Test monitoring configuration
+- `datadog/test-dashboard.json` - Comprehensive dashboard with widgets
+- `datadog/test-alerts.json` - Alert definitions for test failures
 - `DATADOG_TEST_MONITORING_SUMMARY.md` - Complete documentation
 - `TEST_SUCCESS_REPORT.md` - Implementation summary
 - `FINAL_TEST_SUCCESS_REPORT.md` - This comprehensive report

@@ -25,7 +25,7 @@ vibecode-webgui/
 ├── examples/            # Code examples and samples
 ├── extensions/          # VSCode extensions and tools
 ├── external/            # External dependencies and integrations
-├── helm/                # Helm chart configurations
+├── charts/                # Helm chart configurations
 ├── infrastructure/      # Infrastructure as Code (Terraform, ARM)
 ├── k8s/                 # Kubernetes deployment manifests
 ├── kubernetes/          # Additional Kubernetes configurations
@@ -86,7 +86,7 @@ Infrastructure and deployment:
 - **`infrastructure/`** - Terraform and ARM templates
 - **`k8s/`** - Kubernetes manifests
 - **`kubernetes/`** - Additional K8s configurations
-- **`helm/`** - Helm charts
+- **`charts/`** - Helm charts
 - **`charts/`** - Additional Helm charts
 
 ### Monitoring (`monitoring/`, `datadog/`)
@@ -147,7 +147,7 @@ Project templates for code generation:
 ### Infrastructure Changes
 1. **Kubernetes**: Update manifests in `k8s/`
 2. **Terraform**: Update files in `infrastructure/`
-3. **Helm**: Update charts in `helm/`
+3. **Helm**: Update charts in `charts/`
 
 ## Key Configuration Files
 

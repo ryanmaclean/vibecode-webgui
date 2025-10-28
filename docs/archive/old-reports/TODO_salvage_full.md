@@ -909,7 +909,7 @@ The systematic E2E methodology has been successfully **validated across multiple
     - Resource cleanup issues - deployments disappearing unexpectedly
     - KIND cluster instability requiring manual recreation
   - Kubernetes & Helm Validation (current session):
-    - Implemented real provisioning readiness in `helm/vibecode-platform/templates/tests/test-provisioning.yaml`:
+    - Implemented real provisioning readiness in `charts/vibecode-platform/templates/tests/test-provisioning.yaml`:
       - Added PVC creation + short-lived binder Pod to trigger binding on `WaitForFirstConsumer` StorageClasses
       - Waits up to 5 minutes for PVC phase `Bound`, then cleans up Pod and PVC
       - Wrote manifests to temp files and applied with retries (fixes heredoc/apply stdin flake)
@@ -918,7 +918,7 @@ The systematic E2E methodology has been successfully **validated across multiple
       - Installs Rancher `local-path-provisioner` if none exists and sets it as default
       - Selects default StorageClass (falls back safely) and injects into test values
     - KIND-specific values now disable NetworkPolicies to avoid egress flakes in test Pod only
-    - RBAC verified in `helm/vibecode-platform/templates/rbac.yaml`:
+    - RBAC verified in `charts/vibecode-platform/templates/rbac.yaml`:
       - Namespace `Role` grants `pods` and `persistentvolumeclaims` create/delete, bound to chart `ServiceAccount`
     - Bounded timeouts everywhere (helm `--timeout`, kubectl `--request-timeout`, finite polling loops)
   - Next steps to go green:

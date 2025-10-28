@@ -96,9 +96,9 @@ DD_CI_VISIBILITY_ENABLED=true DATABASE_URL=postgresql://test:test@localhost:5432
 ### 🔍 **Datadog Monitoring Setup**
 
 **Files Created:**
-- `monitoring/datadog/test-monitoring.yaml` - Test monitoring configuration
-- `monitoring/datadog/test-dashboard.json` - Comprehensive dashboard
-- `monitoring/datadog/test-alerts.json` - Alert definitions
+- `datadog/test-monitoring.yaml` - Test monitoring configuration
+- `datadog/test-dashboard.json` - Comprehensive dashboard
+- `datadog/test-alerts.json` - Alert definitions
 - `DATADOG_TEST_MONITORING_SUMMARY.md` - Complete documentation
 
 **CI/CD Integration:**

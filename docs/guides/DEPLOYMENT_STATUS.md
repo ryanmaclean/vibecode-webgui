@@ -78,7 +78,7 @@ kubectl apply -f k8s/datadog-values.yaml
 #### **Option 2: Helm Deployment**
 ```bash
 # Deploy using Helm charts
-helm upgrade --install vibecode-platform ./helm/vibecode-platform \
+helm upgrade --install vibecode-platform ./charts/vibecode-platform \
   --namespace vibecode-platform \
   --set datadog.apiKey=$DD_API_KEY \
   --set datadog.env=production \

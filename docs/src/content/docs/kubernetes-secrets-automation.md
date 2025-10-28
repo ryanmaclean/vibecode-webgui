@@ -61,7 +61,7 @@ Implemented comprehensive Kubernetes secrets automation for the VibeCode platfor
 - `POSTGRES_PASSWORD` - PostgreSQL admin password
 - `DD_POSTGRES_PASSWORD` - Datadog database user password (preferred; legacy `DATADOG_POSTGRES_PASSWORD` supported as fallback)
 
-### 2. **Helm Pre-Install Hooks** (`helm/vibecode-platform/templates/datadog-secret-hook.yaml`)
+### 2. **Helm Pre-Install Hooks** (`charts/vibecode-platform/templates/datadog-secret-hook.yaml`)
 
 **2025 Best Practices Features:**
 - **Pre-Install Automation**: Secrets created before application deployment
@@ -223,8 +223,8 @@ source .env.local
 ./scripts/setup-secrets.sh
 
 # 3. Deploy with Helm
-helm install vibecode-dev ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-dev.yaml \
+helm install vibecode-dev ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-dev.yaml \
   --namespace=vibecode-dev
 ```
 
@@ -242,8 +242,8 @@ steps:
   - name: Deploy with Helm
     run: |
       helm upgrade --install vibecode-${{ env.ENVIRONMENT }} \
-        ./helm/vibecode-platform \
-        -f ./helm/vibecode-platform/values-${{ env.ENVIRONMENT }}.yaml \
+        ./charts/vibecode-platform \
+        -f ./charts/vibecode-platform/values-${{ env.ENVIRONMENT }}.yaml \
         --namespace=vibecode-${{ env.ENVIRONMENT }}
 ```
 
@@ -257,8 +257,8 @@ helm install external-secrets external-secrets/external-secrets \
 kubectl apply -f k8s/external-secrets/external-secret-datadog.yaml
 
 # 3. Deploy platform (secrets automatically synced)
-helm install vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml
+helm install vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml
 ```
 
 ## Results Summary
