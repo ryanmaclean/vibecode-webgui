@@ -464,3 +464,69 @@ git clone ~/vibecode-backup-20251028-095700.bundle restored-repo
 3. **Clean up artifacts** - Remove test results, debug files regularly
 4. **Update documentation** - Keep wiki current with infrastructure changes
 5. **Backup before major changes** - Always create safety nets
+
+---
+
+# 🗂️ REPOSITORY REORGANIZATION PHASE 2 - OCTOBER 28, 2025
+
+## COMPREHENSIVE DIRECTORY CONSOLIDATION COMPLETED
+
+### Major Consolidations:
+1. **Merged kubernetes/ → k8s/** (87 files)
+   - Eliminated duplicate K8s directory
+   - All manifests now in k8s/
+
+2. **Merged helm/ → charts/** (69 files)
+   - Consolidated all Helm charts
+   - Unified chart management
+
+3. **Merged configs/ → config/** (65 files)
+   - Single configuration directory
+   - Removed duplicate postcss and babel configs
+
+4. **Merged demo/ → demos/**
+   - Consolidated demo examples
+
+5. **Consolidated macOS directories → platforms/macos/**
+   - macos-fleet-orchestration → platforms/macos/fleet-orchestration
+   - macos-native-build → platforms/macos/native-build
+   - macos-services → platforms/macos/services
+   - macos-vm → platforms/macos/vm
+
+6. **Organized Test Artifacts:**
+   - test-results/ → tests/results/
+   - performance-results/ → tests/performance/
+   - playwright-report/ → tests/playwright-reports/
+
+7. **Security & Reports:**
+   - audit-results → security/
+   - reports/ → docs/reports/
+   - releases → docs/releases/
+
+8. **Old Project Variants → docs/archive/old-builds/**
+   - vibecode-optimized, vibecode-pgvector, vibecode-v1.4a-package
+
+9. **IDE Configs Organized:**
+   - .opencode/ → config/ide/
+   - .markdownlint-cli2.jsonc → config/
+
+### Kept at Root (Frequently Used):
+- datadog/ - Extensively used monitoring
+- claudedocs/ - Claude-generated documentation
+- electron-vibecode/ - Next development hurdle
+
+### Removed Duplicates:
+- config/postcss/ (3 duplicate configs)
+- config/babel.config.js
+- .backup/ directory
+- scripts-consolidated/ (incomplete project)
+
+### Statistics:
+- **696 files reorganized**
+- **Zero duplicate directories remaining**
+- **3 commits**: Major reorganization, revert frequently-used dirs, config cleanup
+
+### Key Commits:
+- 7a344e3ed - "chore: major root directory reorganization and consolidation"
+- e9dc913f4 - "fix: revert moves for frequently used directories"
+- 40dd01117 - "chore: remove duplicate configs and organize IDE settings"
