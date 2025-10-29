@@ -1,0 +1,241 @@
+# Lima VM: Valkey Session Storage
+# Alpine ARM64 - Production-ready Valkey for VibeCode authentication
+# Usage: limactl start --name=vibecode-valkey config/lima/valkey-vm.yaml
+#
+# LICENSE NOTE: Valkey is BSD-3-Clause licensed (Linux Foundation)
+# This replaces Redis which changed to restrictive RSAL/SSPL license
+# Valkey is 100% Redis-compatible fork maintained by Linux Foundation
+
+# VM Configuration
+vmType: "vz"  # Use Apple Virtualization.framework (faster on ARM64)
+arch: "aarch64"
+cpus: 2
+memory: "1GiB"  # 1GB (512MB for Valkey + 512MB OS)
+disk: "10GiB"
+
+# OS Image - Alpine Linux 3.22 ARM64
+images:
+  - location: "https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/nocloud_alpine-3.22.0-aarch64-uefi-cloudinit-r0.qcow2"
+    arch: "aarch64"
+    digest: "sha512:30b347397387926eeb939d93c926e09833f5b49c6c6de5cc225ccdfe6e54aba88251c71da264c7e4260e78132b50e34b93409c8b4da2e843e68a4dc35fc6b155"
+
+# No mounts needed - Valkey runs entirely in VM
+mounts: []
+
+# Disable containerd - Alpine uses OpenRC, not systemd
+containerd:
+  system: false
+  user: false
+
+# Port Forwarding
+portForwards:
+  - guestPort: 6379
+    hostPort: 6379
+    proto: tcp
+  - guestPort: 6380
+    hostPort: 6380
+    proto: tcp
+
+# Provisioning script - Install and configure Valkey
+provision:
+  - mode: system
+    script: |
+      #!/bin/sh
+      set -e
+
+      echo "=== Valkey VM Setup for VibeCode ==="
+      echo "Alpine ARM64 + Valkey 7.2.6+ (BSD-3-Clause)"
+
+      # Update package index
+      apk update
+
+      # Install Valkey and dependencies
+      # Note: Alpine 3.20+ includes valkey package
+      apk add --no-cache \
+        valkey \
+        valkey-cli \
+        openssl \
+        ca-certificates \
+        curl
+
+      # Create Valkey directories
+      mkdir -p /var/lib/valkey
+      mkdir -p /var/log/valkey
+      mkdir -p /etc/valkey/certs
+
+      # Set proper ownership
+      chown -R valkey:valkey /var/lib/valkey
+      chown -R valkey:valkey /var/log/valkey
+      chown -R valkey:valkey /etc/valkey
+
+      # Generate production Valkey configuration
+      cat > /etc/valkey/valkey.conf <<'EOF'
+      # Valkey Production Configuration for VibeCode
+      # License: BSD-3-Clause (Linux Foundation)
+      # Compatible with Redis 7.2+ protocol
+
+      # NETWORK CONFIGURATION
+      bind 0.0.0.0
+      port 6379
+      tcp-backlog 511
+      timeout 0
+      tcp-keepalive 300
+
+      # SECURITY
+      requirepass VibeCodeChangeMe2025
+      protected-mode yes
+
+      # Disable dangerous commands
+      rename-command FLUSHALL ""
+      rename-command FLUSHDB ""
+      rename-command CONFIG ""
+      rename-command SHUTDOWN SHUTDOWN_SAFE
+
+      # MEMORY MANAGEMENT
+      maxmemory 512mb
+      maxmemory-policy allkeys-lru
+      maxmemory-samples 5
+
+      # PERSISTENCE (AOF + RDB)
+      save 900 1
+      save 300 10
+      save 60 10000
+      stop-writes-on-bgsave-error yes
+      rdbcompression yes
+      rdbchecksum yes
+      dbfilename dump.rdb
+      dir /var/lib/valkey
+
+      appendonly yes
+      appendfilename "appendonly.aof"
+      appendfsync everysec
+      no-appendfsync-on-rewrite no
+      auto-aof-rewrite-percentage 100
+      auto-aof-rewrite-min-size 64mb
+      aof-load-truncated yes
+      aof-use-rdb-preamble yes
+
+      # SESSION STORAGE OPTIMIZATION
+      databases 16
+      lazyfree-lazy-eviction yes
+      lazyfree-lazy-expire yes
+      lazyfree-lazy-server-del yes
+
+      # LOGGING
+      loglevel notice
+      logfile /var/log/valkey/valkey.log
+      syslog-enabled no
+
+      # MONITORING
+      slowlog-log-slower-than 10000
+      slowlog-max-len 128
+      latency-monitor-threshold 100
+
+      # LIMITS
+      maxclients 10000
+      client-output-buffer-limit normal 0 0 0
+      client-output-buffer-limit replica 256mb 64mb 60
+      client-output-buffer-limit pubsub 32mb 8mb 60
+
+      # ADVANCED
+      hash-max-listpack-entries 512
+      hash-max-listpack-value 64
+      list-max-listpack-size -2
+      set-max-intset-entries 512
+      zset-max-listpack-entries 128
+      zset-max-listpack-value 64
+      activerehashing yes
+      hz 10
+      dynamic-hz yes
+      aof-rewrite-incremental-fsync yes
+      rdb-save-incremental-fsync yes
+      EOF
+
+      # Create OpenRC service file
+      cat > /etc/init.d/valkey <<'EORC'
+      #!/sbin/openrc-run
+
+      name="Valkey"
+      description="Valkey key-value store"
+      command="/usr/bin/valkey-server"
+      command_args="/etc/valkey/valkey.conf"
+      command_user="valkey:valkey"
+      command_background="yes"
+      pidfile="/run/valkey/valkey.pid"
+      start_stop_daemon_args="--chdir /var/lib/valkey"
+
+      depend() {
+          need net
+          use logger
+      }
+
+      start_pre() {
+          checkpath -d -m 0755 -o valkey:valkey /run/valkey
+      }
+      EORC
+
+      chmod +x /etc/init.d/valkey
+
+      # Enable and start Valkey
+      rc-update add valkey default
+      rc-service valkey start
+
+      # Wait for Valkey to start
+      sleep 3
+
+      # Verify Valkey is running
+      if valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG; then
+        echo "✓ Valkey is running successfully"
+      else
+        echo "✗ Valkey failed to start"
+        exit 1
+      fi
+
+      echo ""
+      echo "=== Valkey VM Setup Complete ==="
+      echo "Host: 0.0.0.0"
+      echo "Port: 6379"
+      echo "Password: VibeCodeChangeMe2025 (CHANGE IN PRODUCTION!)"
+      echo ""
+      echo "Test from host:"
+      echo "  valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+      echo "  redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+
+# Probes - Health checks
+probes:
+  - mode: readiness
+    description: "valkey"
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG
+    hint: |
+      The VM is not running Valkey yet.
+      Run `limactl shell vibecode-valkey` to enter the VM and check logs with:
+      tail -f /var/log/valkey/valkey.log
+
+# Message shown after VM starts
+message: |
+  ========================================
+  VibeCode Valkey VM is ready!
+  ========================================
+
+  Connection from host:
+    Host: localhost
+    Port: 6379
+    Password: VibeCodeChangeMe2025
+
+  Test connection:
+    valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+    redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping
+
+  Access VM shell:
+    limactl shell vibecode-valkey
+
+  View logs:
+    limactl shell vibecode-valkey tail -f /var/log/valkey/valkey.log
+
+  Stop VM:
+    limactl stop vibecode-valkey
+
+  ========================================
