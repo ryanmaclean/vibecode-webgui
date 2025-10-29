@@ -118,10 +118,14 @@ INIT_AUTO
     
     # Repack rootfs
     echo "  📦 Repacking rootfs..."
+    mkdir -p "${vm_dir}/rootfs"
     find . | cpio -o -H newc 2>/dev/null | gzip > "${vm_dir}/rootfs/auto-exec.cpio.gz"
     
-    # Update VM launch script
+    # Update VM launch script to use local rootfs
     if [[ -f "${vm_dir}/launch.sh" ]]; then
+        # Fix the initrd path to point to the VM's own rootfs directory
+        sed -i '' "s|${VM_BASE}/vibecode-alpine/rootfs/alpine-vibecode-rootfs.cpio.gz|${vm_dir}/rootfs/auto-exec.cpio.gz|g" "${vm_dir}/launch.sh"
+        # Also handle if it was already using a relative path
         sed -i '' 's|alpine-vibecode-rootfs\.cpio\.gz|auto-exec.cpio.gz|g' "${vm_dir}/launch.sh"
     fi
     
