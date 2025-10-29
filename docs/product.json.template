@@ -1,0 +1,464 @@
+{
+  "nameShort": "VibeCode",
+  "nameLong": "VibeCode",
+  "applicationName": "vibecode",
+  "dataFolderName": ".vibecode",
+  "win32MutexName": "vibecode",
+  "licenseName": "MIT",
+  "licenseUrl": "https://github.com/YOUR_ORG/vibecode-webgui/blob/main/LICENSE.txt",
+  "serverLicenseUrl": "https://github.com/YOUR_ORG/vibecode-webgui/blob/main/LICENSE.txt",
+  "serverGreeting": [],
+  "serverLicense": [],
+  "serverLicensePrompt": "",
+  "serverApplicationName": "vibecode-server",
+  "serverDataFolderName": ".vibecode-server",
+  "tunnelApplicationName": "vibecode-tunnel",
+  "win32DirName": "VibeCode",
+  "win32NameVersion": "VibeCode",
+  "win32RegValueName": "VibeCode",
+  "win32x64AppId": "{{GENERATE_NEW_GUID_1}}",
+  "win32arm64AppId": "{{GENERATE_NEW_GUID_2}}",
+  "win32x64UserAppId": "{{GENERATE_NEW_GUID_3}}",
+  "win32arm64UserAppId": "{{GENERATE_NEW_GUID_4}}",
+  "win32AppUserModelId": "VibeCode",
+  "win32ShellNameShort": "VibeC&ode",
+  "win32TunnelServiceMutex": "vibecode.server-tunnelservice",
+  "win32TunnelMutex": "vibecode.server-tunnel",
+  "darwinBundleIdentifier": "com.vibecode.ide",
+  "darwinProfileUUID": "{{GENERATE_NEW_UUID_1}}",
+  "darwinProfilePayloadUUID": "{{GENERATE_NEW_UUID_2}}",
+  "linuxIconName": "vibecode",
+  "licenseFileName": "LICENSE.txt",
+  "twitterUrl": "https://twitter.com/YOUR_TWITTER_HANDLE",
+  "reportIssueUrl": "https://github.com/YOUR_ORG/vibecode-webgui/issues/new",
+  "requestFeatureUrl": "https://github.com/YOUR_ORG/vibecode-webgui/issues",
+  "reportMarketplaceIssueUrl": "https://github.com/eclipse/openvsx/issues",
+  "sendASmile": {
+    "reportIssueUrl": "https://github.com/YOUR_ORG/vibecode-webgui/issues/new",
+    "requestFeatureUrl": "https://github.com/YOUR_ORG/vibecode-webgui/issues"
+  },
+  "nodejsRepository": "https://nodejs.org",
+  "urlProtocol": "vibecode",
+  "embedderIdentifier": "vibecode",
+  "webviewContentExternalBaseUrlTemplate": "https://{{uuid}}.vscode-cdn.net/insider/ef65ac1ba57f57f2a3961bfe94aa20481caca4c6/out/vs/workbench/contrib/webview/browser/pre/",
+  "extensionRecommendations": {
+    "muhammad-sammy.csharp": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.cs,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln}",
+          "important": true
+        },
+        {
+          "languages": [
+            "csharp"
+          ],
+          "important": true
+        },
+        {
+          "pathGlob": "{**/project.json,**/appsettings.json}"
+        }
+      ]
+    },
+    "ms-python.python": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.py}",
+          "important": true
+        },
+        {
+          "languages": [
+            "python"
+          ],
+          "important": true
+        },
+        {
+          "pathGlob": "{**/*.ipynb}"
+        }
+      ]
+    },
+    "ms-toolsai.jupyter": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.py}",
+          "contentPattern": "^#\\s*%%$",
+          "important": true,
+          "whenInstalled": [
+            "ms-python.python"
+          ]
+        },
+        {
+          "pathGlob": "{**/*.ipynb}"
+        }
+      ]
+    },
+    "golang.Go": {
+      "onFileOpen": [
+        {
+          "pathGlob": "**/*.go",
+          "important": true
+        },
+        {
+          "languages": [
+            "go"
+          ],
+          "important": true
+        }
+      ]
+    },
+    "vscjava.vscode-java-pack": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.java}",
+          "important": true,
+          "whenNotInstalled": [
+            "ASF.apache-netbeans-java",
+            "Oracle.oracle-java"
+          ]
+        },
+        {
+          "languages": [
+            "java"
+          ],
+          "important": true,
+          "whenNotInstalled": [
+            "ASF.apache-netbeans-java",
+            "Oracle.oracle-java"
+          ]
+        }
+      ]
+    },
+    "ms-vscode.PowerShell": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.ps1,**/*.psd1,**/*.psm1}",
+          "important": true
+        },
+        {
+          "languages": [
+            "powershell"
+          ],
+          "important": true
+        },
+        {
+          "pathGlob": "{**/*.ps.config,**/*.ps1.config}"
+        }
+      ]
+    },
+    "ms-azuretools.vscode-docker": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/dockerfile,**/Dockerfile,**/docker-compose.yml,**/docker-compose.*.yml}",
+          "important": true
+        },
+        {
+          "languages": [
+            "dockerfile"
+          ],
+          "important": true
+        },
+        {
+          "pathGlob": "{**/*.cs,**/project.json,**/global.json,**/*.csproj,**/*.cshtml,**/*.sln,**/appsettings.json,**/*.py,**/*.ipynb,**/*.js,**/*.ts,**/package.json}"
+        }
+      ]
+    },
+    "vue.volar": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.vue}",
+          "important": true
+        },
+        {
+          "languages": [
+            "vue"
+          ],
+          "important": true
+        }
+      ]
+    },
+    "GitHub.copilot": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.ts,**/*.tsx,**/*.js,**/*.py,**/*.go,**/*.rb}"
+        }
+      ],
+      "onSettingsEditorOpen": {}
+    },
+    "rust-lang.rust-analyzer": {
+      "onFileOpen": [
+        {
+          "pathGlob": "{**/*.rs,**/*.rslib}"
+        }
+      ]
+    }
+  },
+  "commonlyUsedSettings": [
+    "files.autoSave",
+    "editor.fontSize",
+    "editor.fontFamily",
+    "GitHub.copilot.manageExtension",
+    "editor.tabSize",
+    "editor.renderWhitespace",
+    "editor.cursorStyle",
+    "editor.multiCursorModifier",
+    "editor.insertSpaces",
+    "editor.wordWrap",
+    "files.exclude",
+    "files.associations",
+    "workbench.editor.enablePreview"
+  ],
+  "keymapExtensionTips": [
+    "vscodevim.vim",
+    "ms-vscode.sublime-keybindings",
+    "ms-vscode.atom-keybindings",
+    "ms-vscode.brackets-keybindings",
+    "ms-vscode.vs-keybindings",
+    "ms-vscode.notepadplusplus-keybindings",
+    "k--kato.intellij-idea-keybindings",
+    "lfs.vscode-emacs-friendly",
+    "alphabotsec.vscode-eclipse-keybindings",
+    "alefragnani.delphi-keybindings"
+  ],
+  "languageExtensionTips": [
+    "ms-python.python",
+    "muhammad-sammy.csharp",
+    "ms-toolsai.jupyter",
+    "vscjava.vscode-java-pack",
+    "ecmel.vscode-html-css",
+    "vue.volar",
+    "bmewburn.vscode-intelephense-client",
+    "dsznajder.es7-react-js-snippets",
+    "golang.go",
+    "ms-vscode.powershell",
+    "dart-code.dart-code",
+    "rust-lang.rust-analyzer",
+    "Shopify.ruby-lsp"
+  ],
+  "configBasedExtensionTips": {
+    "git": {
+      "configPath": ".git/config",
+      "configName": "Git",
+      "recommendations": {
+        "github.vscode-pull-request-github": {
+          "name": "GitHub Pull Request",
+          "contentPattern": "^\\s*url\\s*=\\s*https:\\/\\/github\\.com.*$"
+        },
+        "eamodio.gitlens": {
+          "name": "GitLens"
+        }
+      }
+    },
+    "maven": {
+      "configPath": "pom.xml",
+      "configName": "Maven",
+      "recommendations": {
+        "vscjava.vscode-java-pack": {
+          "name": "Java",
+          "important": true,
+          "isExtensionPack": true,
+          "whenNotInstalled": [
+            "ASF.apache-netbeans-java"
+          ]
+        },
+        "vmware.vscode-boot-dev-pack": {
+          "name": "Spring Boot Extension Pack",
+          "isExtensionPack": true
+        }
+      }
+    }
+  },
+  "commandPaletteSuggestedCommandIds": [
+    "workbench.action.files.openFile",
+    "workbench.action.files.openFileFolder",
+    "workbench.action.files.openFolder",
+    "workbench.action.remote.showMenu",
+    "editor.action.formatDocument",
+    "editor.action.commentLine",
+    "workbench.action.tasks.runTask",
+    "workbench.action.openSettings2",
+    "workbench.action.selectTheme",
+    "workbench.action.openWalkthrough",
+    "workbench.action.openIssueReporter"
+  ],
+  "extensionKeywords": {
+    "md": [
+      "Markdown"
+    ],
+    "js": [
+      "JavaScript"
+    ],
+    "ts": [
+      "TypeScript"
+    ],
+    "py": [
+      "Python"
+    ],
+    "java": [
+      "Java"
+    ],
+    "go": [
+      "Go"
+    ],
+    "rs": [
+      "Rust"
+    ],
+    "rb": [
+      "Ruby"
+    ]
+  },
+  "extensionAllowedBadgeProviders": [
+    "api.bintray.com",
+    "api.travis-ci.com",
+    "api.travis-ci.org",
+    "app.fossa.io",
+    "badge.buildkite.com",
+    "badge.fury.io",
+    "badge.waffle.io",
+    "badgen.net",
+    "badges.frapsoft.com",
+    "badges.gitter.im",
+    "badges.greenkeeper.io",
+    "cdn.travis-ci.com",
+    "cdn.travis-ci.org",
+    "ci.appveyor.com",
+    "circleci.com",
+    "cla.opensource.microsoft.com",
+    "codacy.com",
+    "codeclimate.com",
+    "codecov.io",
+    "coveralls.io",
+    "david-dm.org",
+    "deepscan.io",
+    "dev.azure.com",
+    "docs.rs",
+    "flat.badgen.net",
+    "gemnasium.com",
+    "githost.io",
+    "gitlab.com",
+    "godoc.org",
+    "goreportcard.com",
+    "img.shields.io",
+    "isitmaintained.com",
+    "marketplace.visualstudio.com",
+    "nodesecurity.io",
+    "opencollective.com",
+    "snyk.io",
+    "travis-ci.com",
+    "travis-ci.org",
+    "visualstudio.com",
+    "vsmarketplacebadge.apphb.com",
+    "www.bithound.io",
+    "www.versioneye.com"
+  ],
+  "extensionAllowedBadgeProvidersRegex": [
+    "^https:\\/\\/github\\.com\\/[^/]+\\/[^/]+\\/(actions\\/)?workflows\\/.*badge\\.svg"
+  ],
+  "extensionKind": {
+    "Shan.code-settings-sync": [
+      "ui"
+    ],
+    "shalldie.background": [
+      "ui"
+    ],
+    "techer.open-in-browser": [
+      "ui"
+    ],
+    "CoenraadS.bracket-pair-colorizer-2": [
+      "ui"
+    ],
+    "CoenraadS.bracket-pair-colorizer": [
+      "ui",
+      "workspace"
+    ],
+    "hiro-sun.vscode-emacs": [
+      "ui",
+      "workspace"
+    ],
+    "hnw.vscode-auto-open-markdown-preview": [
+      "ui",
+      "workspace"
+    ],
+    "wayou.vscode-todo-highlight": [
+      "ui",
+      "workspace"
+    ],
+    "aaron-bond.better-comments": [
+      "ui",
+      "workspace"
+    ],
+    "vscodevim.vim": [
+      "ui"
+    ],
+    "ollyhayes.colmak-vim": [
+      "ui"
+    ]
+  },
+  "extensionPointExtensionKind": {
+    "typescriptServerPlugins": [
+      "workspace"
+    ]
+  },
+  "builtInExtensions": [
+    {
+      "name": "ms-vscode.js-debug-companion",
+      "version": "1.1.3",
+      "sha256": "7380a890787452f14b2db7835dfa94de538caf358ebc263f9d46dd68ac52de93",
+      "repo": "https://github.com/microsoft/vscode-js-debug-companion",
+      "metadata": {
+        "id": "99cb0b7f-7354-4278-b8da-6cc79972169d",
+        "publisherId": {
+          "publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+          "publisherName": "ms-vscode",
+          "displayName": "Microsoft",
+          "flags": "verified"
+        },
+        "publisherDisplayName": "Microsoft"
+      }
+    },
+    {
+      "name": "ms-vscode.js-debug",
+      "version": "1.105.0",
+      "sha256": "0c45b90342e8aafd4ff2963b4006de64208ca58c2fd01fea7a710fe61dcfd12a",
+      "repo": "https://github.com/microsoft/vscode-js-debug",
+      "metadata": {
+        "id": "25629058-ddac-4e17-abba-74678e126c5d",
+        "publisherId": {
+          "publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+          "publisherName": "ms-vscode",
+          "displayName": "Microsoft",
+          "flags": "verified"
+        },
+        "publisherDisplayName": "Microsoft"
+      }
+    },
+    {
+      "name": "ms-vscode.vscode-js-profile-table",
+      "version": "1.0.10",
+      "sha256": "7361748ddf9fd09d8a2ed1f2a2d7376a2cf9aae708692820b799708385c38e08",
+      "repo": "https://github.com/microsoft/vscode-js-profile-visualizer",
+      "metadata": {
+        "id": "7e52b41b-71ad-457b-ab7e-0620f1fc4feb",
+        "publisherId": {
+          "publisherId": "5f5636e7-69ed-4afe-b5d6-8d231fb3d3ee",
+          "publisherName": "ms-vscode",
+          "displayName": "Microsoft",
+          "flags": "verified"
+        },
+        "publisherDisplayName": "Microsoft"
+      }
+    }
+  ],
+  "extensionsGallery": {
+    "serviceUrl": "https://open-vsx.org/vscode/gallery",
+    "itemUrl": "https://open-vsx.org/vscode/item",
+    "resourceUrlTemplate": "https://open-vsx.org/vscode/unpkg/{publisher}/{name}/{version}/{path}",
+    "extensionUrlTemplate": "https://open-vsx.org/vscode/gallery/{publisher}/{name}/latest",
+    "controlUrl": "",
+    "recommendationsUrl": "",
+    "nlsBaseUrl": "",
+    "publisherUrl": ""
+  },
+  "linkProtectionTrustedDomains": [
+    "https://open-vsx.org",
+    "https://vibecode.io"
+  ]
+}
