@@ -1,0 +1,299 @@
+# vfkit VM: Valkey Session Storage
+# Alpine ARM64 - Production-ready Valkey for VibeCode authentication
+# Usage: vfkit --config valkey-vm.yaml
+#
+# LICENSE NOTE: Valkey is BSD-3-Clause licensed (Linux Foundation)
+# This replaces Redis which changed to restrictive RSAL/SSPL license
+# Valkey is 100% Redis-compatible fork maintained by Linux Foundation
+
+name: vibecode-valkey
+vcpus: 2
+memory: 1024  # 1GB (512MB for Valkey + 512MB OS)
+
+# Alpine ARM64 kernel and initrd
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  - path: /opt/vibecode/disks/valkey-vm.img
+    size: 10G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:59"
+    forward:
+      # Valkey port (Redis-compatible)
+      - host_port: 6379
+        guest_port: 6379
+      # Optional: TLS/SSL port
+      - host_port: 6380
+        guest_port: 6380
+
+# Serial console
+serial:
+  - stdio
+
+# Resource limits
+limits:
+  cpu_percent: 30
+  io_weight: 200
+
+# Services setup script
+setup: |
+  #!/bin/sh
+  set -e
+
+  echo "=== Valkey VM Setup for VibeCode ==="
+  echo "Alpine ARM64 + Valkey 7.2.6+ (BSD-3-Clause)"
+
+  # Update package index
+  apk update
+
+  # Install Valkey and dependencies
+  # Note: Alpine 3.20+ includes valkey package
+  apk add --no-cache \
+    valkey \
+    valkey-cli \
+    openssl \
+    ca-certificates \
+    curl
+
+  # Create Valkey directories
+  mkdir -p /var/lib/valkey
+  mkdir -p /var/log/valkey
+  mkdir -p /etc/valkey/certs
+
+  # Set proper ownership
+  chown -R valkey:valkey /var/lib/valkey
+  chown -R valkey:valkey /var/log/valkey
+  chown -R valkey:valkey /etc/valkey
+
+  # Generate production Valkey configuration
+  cat > /etc/valkey/valkey.conf <<EOF
+# Valkey Production Configuration for VibeCode
+# License: BSD-3-Clause (Linux Foundation)
+# Compatible with Redis 7.2+ protocol
+
+# ============================================
+# NETWORK CONFIGURATION
+# ============================================
+bind 0.0.0.0
+port 6379
+tcp-backlog 511
+timeout 0
+tcp-keepalive 300
+
+# ============================================
+# SECURITY
+# ============================================
+# IMPORTANT: Set requirepass in production!
+# Generate with: openssl rand -base64 32
+requirepass VibeCodeChangeMe2025
+protected-mode yes
+
+# Disable dangerous commands
+rename-command FLUSHALL ""
+rename-command FLUSHDB ""
+rename-command CONFIG ""
+rename-command SHUTDOWN SHUTDOWN_SAFE
+
+# ============================================
+# MEMORY MANAGEMENT
+# ============================================
+maxmemory 512mb
+maxmemory-policy allkeys-lru
+maxmemory-samples 5
+
+# ============================================
+# PERSISTENCE (AOF + RDB)
+# ============================================
+
+# RDB Snapshots (backup strategy)
+save 900 1       # After 900 sec (15 min) if at least 1 key changed
+save 300 10      # After 300 sec (5 min) if at least 10 keys changed
+save 60 10000    # After 60 sec if at least 10000 keys changed
+
+stop-writes-on-bgsave-error yes
+rdbcompression yes
+rdbchecksum yes
+dbfilename dump.rdb
+dir /var/lib/valkey
+
+# AOF (Append-Only File) - Primary persistence
+appendonly yes
+appendfilename "appendonly.aof"
+appendfsync everysec
+no-appendfsync-on-rewrite no
+auto-aof-rewrite-percentage 100
+auto-aof-rewrite-min-size 64mb
+aof-load-truncated yes
+aof-use-rdb-preamble yes
+
+# ============================================
+# SESSION STORAGE OPTIMIZATION
+# ============================================
+databases 16
+lazyfree-lazy-eviction yes
+lazyfree-lazy-expire yes
+lazyfree-lazy-server-del yes
+
+# ============================================
+# LOGGING
+# ============================================
+loglevel notice
+logfile /var/log/valkey/valkey.log
+syslog-enabled no
+
+# ============================================
+# MONITORING
+# ============================================
+slowlog-log-slower-than 10000  # 10ms
+slowlog-max-len 128
+latency-monitor-threshold 100
+
+# ============================================
+# LIMITS
+# ============================================
+maxclients 10000
+client-output-buffer-limit normal 0 0 0
+client-output-buffer-limit replica 256mb 64mb 60
+client-output-buffer-limit pubsub 32mb 8mb 60
+
+# ============================================
+# ADVANCED
+# ============================================
+hash-max-listpack-entries 512
+hash-max-listpack-value 64
+list-max-listpack-size -2
+set-max-intset-entries 512
+zset-max-listpack-entries 128
+zset-max-listpack-value 64
+hll-sparse-max-bytes 3000
+stream-node-max-bytes 4096
+stream-node-max-entries 100
+activerehashing yes
+hz 10
+dynamic-hz yes
+aof-rewrite-incremental-fsync yes
+rdb-save-incremental-fsync yes
+
+# ============================================
+# REPLICATION (for future HA setup)
+# ============================================
+# Uncomment for replica configuration:
+# replicaof <masterip> <masterport>
+# masterauth <master-password>
+
+# ============================================
+# TLS/SSL CONFIGURATION
+# ============================================
+# Uncomment to enable TLS (requires certificates)
+# port 0
+# tls-port 6380
+# tls-cert-file /etc/valkey/certs/valkey.crt
+# tls-key-file /etc/valkey/certs/valkey.key
+# tls-ca-cert-file /etc/valkey/certs/ca.crt
+# tls-auth-clients no
+# tls-replication yes
+# tls-cluster yes
+EOF
+
+  # Create development configuration (less restrictive)
+  cat > /etc/valkey/valkey-dev.conf <<EOF
+# Valkey Development Configuration for VibeCode
+# License: BSD-3-Clause
+# WARNING: DO NOT USE IN PRODUCTION
+
+include /etc/valkey/valkey.conf
+
+# Override production settings for development
+protected-mode no
+requirepass ""
+save ""
+appendonly no
+maxmemory 256mb
+loglevel debug
+slowlog-log-slower-than 1000
+EOF
+
+  # Create systemd service file
+  cat > /etc/init.d/valkey <<'EOF'
+#!/sbin/openrc-run
+
+name="Valkey"
+description="Valkey key-value store"
+command="/usr/bin/valkey-server"
+command_args="/etc/valkey/valkey.conf"
+command_user="valkey:valkey"
+command_background="yes"
+pidfile="/run/valkey/valkey.pid"
+start_stop_daemon_args="--chdir /var/lib/valkey"
+
+depend() {
+    need net
+    use logger
+}
+
+start_pre() {
+    checkpath -d -m 0755 -o valkey:valkey /run/valkey
+}
+EOF
+
+  chmod +x /etc/init.d/valkey
+
+  # Enable and start Valkey
+  rc-update add valkey default
+  rc-service valkey start
+
+  # Wait for Valkey to start
+  sleep 3
+
+  # Verify Valkey is running
+  if valkey-cli -a VibeCodeChangeMe2025 ping | grep -q PONG; then
+    echo "✓ Valkey is running successfully"
+  else
+    echo "✗ Valkey failed to start"
+    exit 1
+  fi
+
+  # Test session storage
+  valkey-cli -a VibeCodeChangeMe2025 SET test:session:1 "user_session_data" EX 3600
+  valkey-cli -a VibeCodeChangeMe2025 GET test:session:1
+
+  # Show Valkey info
+  echo ""
+  echo "=== Valkey Information ==="
+  valkey-cli -a VibeCodeChangeMe2025 INFO server | grep -E "valkey_version|valkey_mode|os|arch"
+
+  echo ""
+  echo "=== Valkey Memory Usage ==="
+  valkey-cli -a VibeCodeChangeMe2025 INFO memory | grep -E "used_memory_human|maxmemory_human"
+
+  echo ""
+  echo "=== Valkey Configuration ==="
+  echo "Host: 0.0.0.0"
+  echo "Port: 6379"
+  echo "Password: VibeCodeChangeMe2025 (CHANGE IN PRODUCTION!)"
+  echo "Persistence: AOF + RDB"
+  echo "Max Memory: 512MB"
+  echo "Max Clients: 10000"
+
+  echo ""
+  echo "=== Connection Test from Host ==="
+  echo "Test with: valkey-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+  echo "Or: redis-cli -h localhost -p 6379 -a VibeCodeChangeMe2025 ping"
+  echo "(Valkey is 100% Redis protocol compatible)"
+
+  echo ""
+  echo "=== License Information ==="
+  echo "Valkey: BSD-3-Clause (Linux Foundation)"
+  echo "Redis compatibility: 7.2+"
+  echo "Why Valkey? Redis changed to restrictive RSAL/SSPL license"
+  echo "Valkey is community-driven, open-source fork"
+
+  echo ""
+  echo "✓ Valkey VM setup complete!"

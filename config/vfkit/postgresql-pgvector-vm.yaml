@@ -1,0 +1,442 @@
+# vfkit VM: PostgreSQL 16 + pgvector Production Database
+# Alpine ARM64 - Optimized for vector embeddings and AI/RAG workloads
+# Usage: vfkit --config postgresql-pgvector-vm.yaml
+#
+# Features:
+# - PostgreSQL 16+ with pgvector 0.6.0+ extension
+# - Optimized for vector similarity search (HNSW, IVFFlat indexes)
+# - SSL/TLS enabled
+# - Production-ready with backup support
+# - Dedicated 100GB data volume
+# - Resource allocation optimized for vector workloads
+
+name: vibecode-pgvector-db
+vcpus: 4  # More CPUs for parallel vector operations
+memory: 8192  # 8GB RAM for vector workload optimization
+
+# Alpine ARM64 kernel and initrd
+# Note: Ensure these paths exist or adjust to your kernel/initrd location
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  # Root filesystem (20GB - OS and PostgreSQL binaries)
+  - path: /opt/vibecode/disks/pgvector-vm.img
+    size: 20G
+    format: raw
+
+  # PostgreSQL data volume (100GB - databases, WAL, and indexes)
+  - path: /opt/vibecode/disks/pgvector-data.img
+    size: 100G
+    format: raw
+
+  # Backup volume (50GB - automated backups)
+  - path: /opt/vibecode/disks/pgvector-backup.img
+    size: 50G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:58"
+    forward:
+      # PostgreSQL standard port
+      - host_port: 5432
+        guest_port: 5432
+      # PostgreSQL metrics exporter (optional)
+      - host_port: 9187
+        guest_port: 9187
+
+# Serial console for debugging
+serial:
+  - stdio
+
+# Resource limits optimized for database workload
+limits:
+  cpu_percent: 80  # Higher CPU allocation for vector operations
+  io_weight: 900   # Highest I/O priority for database performance
+
+# PostgreSQL + pgvector setup script
+# This script runs on first boot to configure the database
+setup: |
+  #!/bin/sh
+  set -e
+
+  echo "=========================================="
+  echo "VibeCode PostgreSQL + pgvector Setup"
+  echo "=========================================="
+
+  # Update system and install dependencies
+  echo "[1/10] Updating system packages..."
+  apk update
+  apk upgrade
+
+  # Install PostgreSQL 16 and required packages
+  echo "[2/10] Installing PostgreSQL 16 and dependencies..."
+  apk add --no-cache \
+    postgresql16 \
+    postgresql16-contrib \
+    postgresql16-client \
+    postgresql16-dev \
+    build-base \
+    git \
+    cmake \
+    clang \
+    llvm \
+    openssl \
+    openssl-dev \
+    ca-certificates \
+    curl \
+    bash \
+    shadow
+
+  # Install pgvector from source (Alpine doesn't have pre-built package for ARM64)
+  echo "[3/10] Building and installing pgvector 0.7.4..."
+  cd /tmp
+  git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git
+  cd pgvector
+  make USE_PGXS=1
+  make install USE_PGXS=1
+  cd /
+  rm -rf /tmp/pgvector
+
+  # Create PostgreSQL system user if not exists
+  echo "[4/10] Setting up PostgreSQL user and directories..."
+  if ! id -u postgres > /dev/null 2>&1; then
+    addgroup -S postgres 2>/dev/null || true
+    adduser -S -G postgres -H -h /var/lib/postgresql -s /bin/sh postgres 2>/dev/null || true
+  fi
+
+  # Set up directory structure
+  mkdir -p /var/lib/postgresql
+  mkdir -p /var/log/postgresql
+  mkdir -p /etc/postgresql
+  mkdir -p /mnt/backup
+  chown -R postgres:postgres /var/lib/postgresql
+  chown -R postgres:postgres /var/log/postgresql
+  chown -R postgres:postgres /etc/postgresql
+
+  # Mount data and backup disks
+  echo "[5/10] Mounting data and backup volumes..."
+
+  # Format and mount data disk if not already formatted
+  if ! blkid /dev/vdb | grep -q ext4; then
+    echo "Formatting data disk /dev/vdb..."
+    mkfs.ext4 -L pgdata /dev/vdb
+  fi
+  mount /dev/vdb /var/lib/postgresql
+
+  # Format and mount backup disk if not already formatted
+  if ! blkid /dev/vdc | grep -q ext4; then
+    echo "Formatting backup disk /dev/vdc..."
+    mkfs.ext4 -L pgbackup /dev/vdc
+  fi
+  mount /dev/vdc /mnt/backup
+
+  # Set ownership after mounting
+  chown -R postgres:postgres /var/lib/postgresql
+  chown -R postgres:postgres /mnt/backup
+
+  # Add to fstab for automatic mounting
+  if ! grep -q "/dev/vdb" /etc/fstab; then
+    echo "/dev/vdb  /var/lib/postgresql  ext4  defaults,noatime  0  2" >> /etc/fstab
+    echo "/dev/vdc  /mnt/backup           ext4  defaults,noatime  0  2" >> /etc/fstab
+  fi
+
+  # Initialize PostgreSQL cluster if not already initialized
+  echo "[6/10] Initializing PostgreSQL cluster..."
+  if [ ! -d "/var/lib/postgresql/data" ]; then
+    su - postgres -c "initdb -D /var/lib/postgresql/data --encoding=UTF8 --locale=C"
+    echo "PostgreSQL cluster initialized successfully"
+  else
+    echo "PostgreSQL cluster already exists, skipping initialization"
+  fi
+
+  # Copy optimized postgresql.conf
+  echo "[7/10] Configuring PostgreSQL for vector workloads..."
+  cat > /var/lib/postgresql/data/postgresql.conf <<'PGCONF'
+# VibeCode PostgreSQL Configuration - Optimized for pgvector
+# Generated for production vector workloads
+
+#------------------------------------------------------------------------------
+# CONNECTIONS AND AUTHENTICATION
+#------------------------------------------------------------------------------
+listen_addresses = '*'
+port = 5432
+max_connections = 100
+superuser_reserved_connections = 3
+
+#------------------------------------------------------------------------------
+# RESOURCE USAGE (Optimized for 8GB RAM + Vector Workloads)
+#------------------------------------------------------------------------------
+# Memory Configuration
+shared_buffers = 2GB                    # 25% of RAM for shared buffers
+effective_cache_size = 6GB              # 75% of RAM for OS cache estimation
+work_mem = 64MB                         # Higher for vector operations (sorting, hashing)
+maintenance_work_mem = 512MB            # For VACUUM, CREATE INDEX, pgvector index building
+temp_buffers = 32MB                     # Temporary tables
+
+# Background Writer
+bgwriter_delay = 200ms
+bgwriter_lru_maxpages = 100
+bgwriter_lru_multiplier = 2.0
+
+# Checkpoint Configuration
+checkpoint_timeout = 15min
+checkpoint_completion_target = 0.9
+max_wal_size = 4GB
+min_wal_size = 1GB
+
+# Async I/O
+effective_io_concurrency = 200          # For SSDs (parallel I/O operations)
+max_worker_processes = 4
+max_parallel_workers_per_gather = 2
+max_parallel_maintenance_workers = 2
+max_parallel_workers = 4
+
+#------------------------------------------------------------------------------
+# WRITE-AHEAD LOG (WAL)
+#------------------------------------------------------------------------------
+wal_level = replica                     # Enable for replication/backup
+wal_buffers = 16MB
+wal_compression = on                    # Compress WAL data
+wal_log_hints = on                      # For pg_rewind support
+
+# Archive settings (enable for production backups)
+archive_mode = on
+archive_command = 'test ! -f /mnt/backup/wal/%f && cp %p /mnt/backup/wal/%f'
+
+#------------------------------------------------------------------------------
+# REPLICATION
+#------------------------------------------------------------------------------
+# Enable for standby servers
+max_wal_senders = 3
+wal_keep_size = 1GB
+hot_standby = on
+
+#------------------------------------------------------------------------------
+# QUERY TUNING
+#------------------------------------------------------------------------------
+# Cost-based optimizer
+random_page_cost = 1.1                  # Lower for SSD (1.0-1.5 recommended)
+effective_cache_size = 6GB
+cpu_tuple_cost = 0.01
+cpu_index_tuple_cost = 0.005
+cpu_operator_cost = 0.0025
+
+# Query planning
+default_statistics_target = 100         # Default is 100, higher for better estimates
+constraint_exclusion = partition
+from_collapse_limit = 8
+join_collapse_limit = 8
+
+#------------------------------------------------------------------------------
+# LOGGING
+#------------------------------------------------------------------------------
+logging_collector = on
+log_directory = '/var/log/postgresql'
+log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_truncate_on_rotation = on
+
+# What to log
+log_min_duration_statement = 1000       # Log slow queries (>1s)
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_duration = off
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_lock_waits = on
+log_statement = 'ddl'                   # Log DDL statements
+log_temp_files = 0                      # Log all temp files
+
+# Performance analysis
+log_autovacuum_min_duration = 0
+log_error_verbosity = default
+
+#------------------------------------------------------------------------------
+# AUTOVACUUM (Critical for pgvector)
+#------------------------------------------------------------------------------
+autovacuum = on
+autovacuum_max_workers = 3
+autovacuum_naptime = 30s                # More frequent for high-write workloads
+autovacuum_vacuum_threshold = 50
+autovacuum_vacuum_scale_factor = 0.05   # VACUUM when 5% of rows change
+autovacuum_analyze_threshold = 50
+autovacuum_analyze_scale_factor = 0.05  # ANALYZE when 5% of rows change
+autovacuum_vacuum_cost_delay = 2ms
+autovacuum_vacuum_cost_limit = 400
+
+#------------------------------------------------------------------------------
+# CLIENT CONNECTION DEFAULTS
+#------------------------------------------------------------------------------
+timezone = 'UTC'
+lc_messages = 'C'
+lc_monetary = 'C'
+lc_numeric = 'C'
+lc_time = 'C'
+default_text_search_config = 'pg_catalog.english'
+
+#------------------------------------------------------------------------------
+# LOCK MANAGEMENT
+#------------------------------------------------------------------------------
+max_locks_per_transaction = 64
+max_pred_locks_per_transaction = 64
+
+#------------------------------------------------------------------------------
+# SSL/TLS CONFIGURATION
+#------------------------------------------------------------------------------
+ssl = on
+ssl_cert_file = '/var/lib/postgresql/data/server.crt'
+ssl_key_file = '/var/lib/postgresql/data/server.key'
+ssl_ca_file = '/var/lib/postgresql/data/root.crt'
+ssl_min_protocol_version = 'TLSv1.2'
+ssl_prefer_server_ciphers = on
+
+#------------------------------------------------------------------------------
+# SHARED PRELOAD LIBRARIES
+#------------------------------------------------------------------------------
+shared_preload_libraries = 'pg_stat_statements'
+
+#------------------------------------------------------------------------------
+# EXTENSION CONFIGURATION
+#------------------------------------------------------------------------------
+# pg_stat_statements for query performance monitoring
+pg_stat_statements.max = 10000
+pg_stat_statements.track = all
+PGCONF
+
+  chown postgres:postgres /var/lib/postgresql/data/postgresql.conf
+
+  # Configure host-based authentication (pg_hba.conf)
+  echo "[8/10] Configuring authentication (pg_hba.conf)..."
+  cat > /var/lib/postgresql/data/pg_hba.conf <<'PGHBA'
+# VibeCode PostgreSQL pg_hba.conf
+# Host-Based Authentication Configuration
+
+# TYPE  DATABASE        USER            ADDRESS                 METHOD
+
+# Local connections (Unix socket)
+local   all             postgres                                peer
+local   all             all                                     scram-sha-256
+
+# IPv4 local connections
+host    all             all             127.0.0.1/32            scram-sha-256
+
+# IPv6 local connections
+host    all             all             ::1/128                 scram-sha-256
+
+# Allow connections from host machine (NAT network)
+host    all             all             10.0.2.0/24             scram-sha-256
+host    all             all             192.168.64.0/24         scram-sha-256
+host    all             all             172.16.0.0/12           scram-sha-256
+
+# Replication connections
+host    replication     all             10.0.2.0/24             scram-sha-256
+host    replication     all             192.168.64.0/24         scram-sha-256
+
+# Development: Allow connections from any host (REMOVE IN PRODUCTION!)
+host    all             all             0.0.0.0/0               scram-sha-256
+host    all             all             ::/0                    scram-sha-256
+PGHBA
+
+  chown postgres:postgres /var/lib/postgresql/data/pg_hba.conf
+
+  # Generate self-signed SSL certificates
+  echo "[9/10] Generating SSL certificates..."
+  cd /var/lib/postgresql/data
+  if [ ! -f server.key ]; then
+    openssl req -new -x509 -days 365 -nodes -text \
+      -out server.crt \
+      -keyout server.key \
+      -subj "/C=US/ST=California/L=San Francisco/O=VibeCode/OU=Database/CN=vibecode-db"
+
+    cp server.crt root.crt
+    chmod 600 server.key
+    chmod 644 server.crt root.crt
+    chown postgres:postgres server.key server.crt root.crt
+  fi
+
+  # Create WAL archive directory
+  mkdir -p /mnt/backup/wal
+  chown -R postgres:postgres /mnt/backup/wal
+
+  # Start PostgreSQL
+  echo "[10/10] Starting PostgreSQL..."
+  su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/log/postgresql/postgresql.log start"
+
+  # Wait for PostgreSQL to be ready
+  echo "Waiting for PostgreSQL to start..."
+  sleep 5
+
+  # Check if PostgreSQL is running
+  if ! su - postgres -c "pg_isready -h localhost -p 5432" > /dev/null 2>&1; then
+    echo "ERROR: PostgreSQL failed to start. Checking logs..."
+    tail -n 50 /var/log/postgresql/postgresql.log
+    exit 1
+  fi
+
+  echo "PostgreSQL is running!"
+
+  # Run initialization SQL
+  echo "Running database initialization..."
+  su - postgres -c "psql -f /etc/postgresql/init.sql"
+
+  echo "=========================================="
+  echo "PostgreSQL + pgvector Setup Complete!"
+  echo "=========================================="
+  echo ""
+  echo "Connection Details:"
+  echo "  Host:     localhost (from host machine)"
+  echo "  Port:     5432"
+  echo "  Database: vibecode"
+  echo "  User:     vibecode"
+  echo "  Password: vibecode_prod_2024"
+  echo ""
+  echo "Admin Credentials:"
+  echo "  User:     postgres"
+  echo "  Password: postgres_admin_2024"
+  echo ""
+  echo "SSL/TLS:  Enabled (self-signed certificate)"
+  echo "pgvector: Installed and ready"
+  echo ""
+  echo "Data Directory:   /var/lib/postgresql/data"
+  echo "Backup Directory: /mnt/backup"
+  echo "Logs:            /var/log/postgresql/"
+  echo ""
+  echo "Next Steps:"
+  echo "  1. Connect from host: psql -h localhost -p 5432 -U vibecode -d vibecode"
+  echo "  2. Update your .env: DATABASE_URL=postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require"
+  echo "  3. Run Prisma migrations: npx prisma migrate deploy"
+  echo "=========================================="
+
+  # Keep container running
+  tail -f /var/log/postgresql/postgresql.log
+
+# Environment variables for PostgreSQL
+environment:
+  POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=C"
+  PGDATA: "/var/lib/postgresql/data"
+  POSTGRES_PASSWORD: "postgres_admin_2024"
+  TZ: "UTC"
+
+# Health check
+health_check:
+  command: ["pg_isready", "-h", "localhost", "-p", "5432", "-U", "postgres"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+  start_period: 60s
+
+# Restart policy
+restart: unless-stopped
+
+# Labels for organization
+labels:
+  - "com.vibecode.service=postgresql"
+  - "com.vibecode.version=16"
+  - "com.vibecode.extension=pgvector-0.7.4"
+  - "com.vibecode.environment=production"
