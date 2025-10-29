@@ -1,6 +1,6 @@
 # VM Testing Results
 
-**Generated:** 2025-10-29 00:50:07 UTC
+**Generated:** 2025-10-29 01:05:53 UTC
 **Platform:** macOS ARM64
 **Repository:** /Users/ryan.maclean/vibecode-webgui
 
@@ -22,7 +22,7 @@ This report documents the comprehensive testing of the VibeCode VM infrastructur
 | **Passed** | 0 |
 | **Failed** | 4 |
 | **Skipped** | 0 |
-| **Total Duration** | 0s |
+| **Total Duration** | 11s |
 | **Success Rate** | 0% |
 
 ---
@@ -47,6 +47,8 @@ This report documents the comprehensive testing of the VibeCode VM infrastructur
 [0;34m[INFO][0m Test 2: Validating YAML syntax...
 Traceback (most recent call last):
   File "<string>", line 1, in <module>
+    import yaml; yaml.safe_load(open('/Users/ryan.maclean/vibecode-webgui/config/vfkit/valkey-vm.yaml'))
+    ^^^^^^^^^^^
 ModuleNotFoundError: No module named 'yaml'
 [0;31m✗[0m FAIL: YAML syntax validation
   Command: false
@@ -72,6 +74,8 @@ ModuleNotFoundError: No module named 'yaml'
 [0;34m[INFO][0m Test 2: Validating YAML syntax...
 Traceback (most recent call last):
   File "<string>", line 1, in <module>
+    import yaml; yaml.safe_load(open('/Users/ryan.maclean/vibecode-webgui/config/vfkit/postgresql-vm.yaml'))
+    ^^^^^^^^^^^
 ModuleNotFoundError: No module named 'yaml'
 [0;31m✗[0m FAIL: YAML syntax validation
   Command: false
@@ -97,6 +101,8 @@ ModuleNotFoundError: No module named 'yaml'
 [0;34m[INFO][0m Test 2: Validating YAML syntax...
 Traceback (most recent call last):
   File "<string>", line 1, in <module>
+    import yaml; yaml.safe_load(open('/Users/ryan.maclean/vibecode-webgui/config/vfkit/nodejs-dev-vm.yaml'))
+    ^^^^^^^^^^^
 ModuleNotFoundError: No module named 'yaml'
 [0;31m✗[0m FAIL: YAML syntax validation
   Command: false
@@ -107,14 +113,92 @@ ModuleNotFoundError: No module named 'yaml'
 ### Integration Tests
 
 **Status:** FAILED
-**Duration:** 0s
+**Duration:** 11s
 
 <details>
 <summary>View detailed test output</summary>
 
 ```
-/Users/ryan.maclean/vibecode-webgui/tests/vm/integration-tests.sh: line 33: declare: -A: invalid option
-declare: usage: declare [-afFirtx] [-p] [name[=value] ...]
+[0;34m========================================[0m
+[0;34mStarting Test Suite: VM Integration Tests[0m
+[0;34m========================================[0m
+
+[0;34m[INFO][0m Test 1: Checking all VM configurations...
+[0;32m[SUCCESS][0m Valkey config found
+[0;32m[SUCCESS][0m PostgreSQL config found
+[0;32m[SUCCESS][0m Node.js config found
+[0;32m✓[0m PASS: All VM configurations exist
+[0;34m[INFO][0m Test 2: Starting all VMs...
+[0;34m[INFO][0m Starting vibecode-valkey...
+[0;31m[ERROR][0m vibecode-valkey failed to start. Log:
+  vfkit [flags]
+
+Flags:
+  -b, --bootloader strings      bootloader configuration (default [])
+      --cloud-init strings      path to user-data and meta-data cloud-init configuration files (default [])
+  -c, --cpus uint               number of virtual CPUs (default 1)
+  -d, --device stringArray      devices
+      --gui                     display the contents of the virtual machine onto a graphical user interface
+  -h, --help                    help for vfkit
+      --ignition string         path to the ignition file
+  -i, --initrd string           path to the virtual machine initrd
+  -k, --kernel string           path to the virtual machine Linux kernel
+  -C, --kernel-cmdline string   Linux kernel command line
+      --log-level string        set log level
+  -m, --memory uint             virtual machine RAM size in mibibytes (default 512)
+      --restful-uri string      URI address for RESTful services (default "none://")
+  -t, --timesync string         sync guest time when host wakes up from sleep
+  -v, --version                 version for vfkit
+
+unknown flag: --config
+[0;34m[INFO][0m Starting vibecode-postgresql...
+[0;31m[ERROR][0m vibecode-postgresql failed to start. Log:
+  vfkit [flags]
+
+Flags:
+  -b, --bootloader strings      bootloader configuration (default [])
+      --cloud-init strings      path to user-data and meta-data cloud-init configuration files (default [])
+  -c, --cpus uint               number of virtual CPUs (default 1)
+  -d, --device stringArray      devices
+      --gui                     display the contents of the virtual machine onto a graphical user interface
+  -h, --help                    help for vfkit
+      --ignition string         path to the ignition file
+  -i, --initrd string           path to the virtual machine initrd
+  -k, --kernel string           path to the virtual machine Linux kernel
+  -C, --kernel-cmdline string   Linux kernel command line
+      --log-level string        set log level
+  -m, --memory uint             virtual machine RAM size in mibibytes (default 512)
+      --restful-uri string      URI address for RESTful services (default "none://")
+  -t, --timesync string         sync guest time when host wakes up from sleep
+  -v, --version                 version for vfkit
+
+unknown flag: --config
+[0;34m[INFO][0m Starting vibecode-nodejs-dev...
+[0;31m[ERROR][0m vibecode-nodejs-dev failed to start. Log:
+  vfkit [flags]
+
+Flags:
+  -b, --bootloader strings      bootloader configuration (default [])
+      --cloud-init strings      path to user-data and meta-data cloud-init configuration files (default [])
+  -c, --cpus uint               number of virtual CPUs (default 1)
+  -d, --device stringArray      devices
+      --gui                     display the contents of the virtual machine onto a graphical user interface
+  -h, --help                    help for vfkit
+      --ignition string         path to the ignition file
+  -i, --initrd string           path to the virtual machine initrd
+  -k, --kernel string           path to the virtual machine Linux kernel
+  -C, --kernel-cmdline string   Linux kernel command line
+      --log-level string        set log level
+  -m, --memory uint             virtual machine RAM size in mibibytes (default 512)
+      --restful-uri string      URI address for RESTful services (default "none://")
+  -t, --timesync string         sync guest time when host wakes up from sleep
+  -v, --version                 version for vfkit
+
+unknown flag: --config
+[0;31m✗[0m FAIL: All VMs started successfully
+  Expected: 3
+  Actual: 0
+[0;34m[INFO][0m Cleaning up all VMs...
 ```
 </details>
 
