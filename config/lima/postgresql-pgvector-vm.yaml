@@ -1,0 +1,368 @@
+# Lima VM: PostgreSQL 16 + pgvector Production Database
+# Ubuntu 24.04 ARM64 - Optimized for vector embeddings and AI/RAG workloads
+# Usage: limactl start --name=vibecode-pgvector config/lima/postgresql-pgvector-vm.yaml
+#
+# Features:
+# - PostgreSQL 16+ with pgvector 0.7.4+ extension
+# - Optimized for vector similarity search (HNSW, IVFFlat indexes)
+# - SSL/TLS enabled
+# - Production-ready with backup support
+# - Multiple disk volumes
+# - Resource allocation optimized for vector workloads
+
+# VM Configuration
+vmType: "vz"  # Use Apple Virtualization.framework (faster on ARM64)
+arch: "aarch64"
+cpus: 4  # More CPUs for parallel vector operations
+memory: "8GiB"  # 8GB RAM for vector workload optimization
+disk: "20GiB"  # Root disk
+
+# Additional disks for data and backups
+additionalDisks:
+  - name: "pgdata"
+    size: "100GiB"
+  - name: "pgbackup"
+    size: "50GiB"
+
+# OS Image - Ubuntu 24.04 LTS ARM64
+images:
+  - location: "https://cloud-images.ubuntu.com/releases/noble/release/ubuntu-24.04-server-cloudimg-arm64.img"
+    arch: "aarch64"
+
+# No mounts needed - PostgreSQL runs entirely in VM
+mounts: []
+
+# Port Forwarding
+portForwards:
+  - guestPort: 5432
+    hostPort: 5432
+    proto: tcp
+  - guestPort: 9187
+    hostPort: 9187
+    proto: tcp
+
+# Provisioning script - Install and configure PostgreSQL + pgvector
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -e
+
+      echo "=========================================="
+      echo "VibeCode PostgreSQL + pgvector Setup"
+      echo "=========================================="
+
+      # Update system
+      echo "[1/10] Updating system packages..."
+      apt-get update
+      apt-get upgrade -y
+
+      # Install PostgreSQL 16 repository
+      echo "[2/10] Adding PostgreSQL 16 repository..."
+      apt-get install -y wget gnupg2 lsb-release
+      wget --quiet -O - https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add -
+      echo "deb http://apt.postgresql.org/pub/repos/apt $(lsb_release -cs)-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+      apt-get update
+
+      # Install PostgreSQL 16 and required packages
+      echo "[3/10] Installing PostgreSQL 16 and dependencies..."
+      apt-get install -y \
+        postgresql-16 \
+        postgresql-server-dev-16 \
+        postgresql-contrib-16 \
+        postgresql-client-16 \
+        build-essential \
+        git \
+        cmake \
+        clang \
+        llvm \
+        libssl-dev \
+        ca-certificates \
+        curl
+
+      # Install pgvector from source
+      echo "[4/10] Building and installing pgvector 0.7.4..."
+      cd /tmp
+      git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git
+      cd pgvector
+      make USE_PGXS=1
+      make install USE_PGXS=1
+      cd /
+      rm -rf /tmp/pgvector
+
+      # Format and mount additional disks
+      echo "[5/10] Mounting data and backup volumes..."
+
+      # Stop PostgreSQL before moving data
+      systemctl stop postgresql
+
+      # Mount data disk
+      mkdir -p /mnt/pgdata
+      if ! blkid /dev/disk/by-id/lima-pgdata | grep -q ext4; then
+        echo "Formatting data disk..."
+        mkfs.ext4 -L pgdata /dev/disk/by-id/lima-pgdata
+      fi
+      mount /dev/disk/by-id/lima-pgdata /mnt/pgdata
+
+      # Mount backup disk
+      mkdir -p /mnt/backup
+      if ! blkid /dev/disk/by-id/lima-pgbackup | grep -q ext4; then
+        echo "Formatting backup disk..."
+        mkfs.ext4 -L pgbackup /dev/disk/by-id/lima-pgbackup
+      fi
+      mount /dev/disk/by-id/lima-pgbackup /mnt/backup
+
+      # Add to fstab for automatic mounting
+      if ! grep -q "lima-pgdata" /etc/fstab; then
+        echo "/dev/disk/by-id/lima-pgdata  /mnt/pgdata   ext4  defaults,noatime  0  2" >> /etc/fstab
+        echo "/dev/disk/by-id/lima-pgbackup /mnt/backup  ext4  defaults,noatime  0  2" >> /etc/fstab
+      fi
+
+      # Move PostgreSQL data directory
+      echo "[6/10] Moving PostgreSQL data to dedicated volume..."
+      if [ -d "/var/lib/postgresql/16" ]; then
+        rsync -av /var/lib/postgresql/16/ /mnt/pgdata/
+      fi
+      chown -R postgres:postgres /mnt/pgdata
+      chown -R postgres:postgres /mnt/backup
+
+      # Update PostgreSQL data directory
+      sed -i "s|/var/lib/postgresql/16/main|/mnt/pgdata/main|g" /etc/postgresql/16/main/postgresql.conf
+
+      # Copy optimized postgresql.conf
+      echo "[7/10] Configuring PostgreSQL for vector workloads..."
+      cat > /etc/postgresql/16/main/postgresql.conf <<'PGCONF'
+      # VibeCode PostgreSQL Configuration - Optimized for pgvector
+
+      # CONNECTIONS AND AUTHENTICATION
+      listen_addresses = '*'
+      port = 5432
+      max_connections = 100
+      superuser_reserved_connections = 3
+
+      # RESOURCE USAGE (8GB RAM + Vector Workloads)
+      shared_buffers = 2GB
+      effective_cache_size = 6GB
+      work_mem = 64MB
+      maintenance_work_mem = 512MB
+      temp_buffers = 32MB
+
+      # Background Writer
+      bgwriter_delay = 200ms
+      bgwriter_lru_maxpages = 100
+      bgwriter_lru_multiplier = 2.0
+
+      # Checkpoint Configuration
+      checkpoint_timeout = 15min
+      checkpoint_completion_target = 0.9
+      max_wal_size = 4GB
+      min_wal_size = 1GB
+
+      # Async I/O
+      effective_io_concurrency = 200
+      max_worker_processes = 4
+      max_parallel_workers_per_gather = 2
+      max_parallel_maintenance_workers = 2
+      max_parallel_workers = 4
+
+      # WRITE-AHEAD LOG (WAL)
+      wal_level = replica
+      wal_buffers = 16MB
+      wal_compression = on
+      wal_log_hints = on
+      archive_mode = on
+      archive_command = 'test ! -f /mnt/backup/wal/%f && cp %p /mnt/backup/wal/%f'
+
+      # REPLICATION
+      max_wal_senders = 3
+      wal_keep_size = 1GB
+      hot_standby = on
+
+      # QUERY TUNING
+      random_page_cost = 1.1
+      cpu_tuple_cost = 0.01
+      cpu_index_tuple_cost = 0.005
+      cpu_operator_cost = 0.0025
+      default_statistics_target = 100
+      constraint_exclusion = partition
+
+      # LOGGING
+      logging_collector = on
+      log_directory = '/var/log/postgresql'
+      log_filename = 'postgresql-%Y-%m-%d_%H%M%S.log'
+      log_rotation_age = 1d
+      log_rotation_size = 100MB
+      log_truncate_on_rotation = on
+      log_min_duration_statement = 1000
+      log_checkpoints = on
+      log_connections = on
+      log_disconnections = on
+      log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+      log_lock_waits = on
+      log_statement = 'ddl'
+      log_temp_files = 0
+      log_autovacuum_min_duration = 0
+
+      # AUTOVACUUM (Critical for pgvector)
+      autovacuum = on
+      autovacuum_max_workers = 3
+      autovacuum_naptime = 30s
+      autovacuum_vacuum_threshold = 50
+      autovacuum_vacuum_scale_factor = 0.05
+      autovacuum_analyze_threshold = 50
+      autovacuum_analyze_scale_factor = 0.05
+      autovacuum_vacuum_cost_delay = 2ms
+      autovacuum_vacuum_cost_limit = 400
+
+      # CLIENT CONNECTION DEFAULTS
+      timezone = 'UTC'
+      lc_messages = 'en_US.UTF-8'
+      lc_monetary = 'en_US.UTF-8'
+      lc_numeric = 'en_US.UTF-8'
+      lc_time = 'en_US.UTF-8'
+      default_text_search_config = 'pg_catalog.english'
+
+      # LOCK MANAGEMENT
+      max_locks_per_transaction = 64
+      max_pred_locks_per_transaction = 64
+
+      # SSL/TLS CONFIGURATION
+      ssl = on
+      ssl_cert_file = '/etc/ssl/certs/ssl-cert-snakeoil.pem'
+      ssl_key_file = '/etc/ssl/private/ssl-cert-snakeoil.key'
+      ssl_min_protocol_version = 'TLSv1.2'
+      ssl_prefer_server_ciphers = on
+
+      # SHARED PRELOAD LIBRARIES
+      shared_preload_libraries = 'pg_stat_statements'
+
+      # EXTENSION CONFIGURATION
+      pg_stat_statements.max = 10000
+      pg_stat_statements.track = all
+
+      # DATA DIRECTORY
+      data_directory = '/mnt/pgdata/main'
+      PGCONF
+
+      # Configure host-based authentication
+      echo "[8/10] Configuring authentication (pg_hba.conf)..."
+      cat > /etc/postgresql/16/main/pg_hba.conf <<'PGHBA'
+      # VibeCode PostgreSQL pg_hba.conf
+
+      # TYPE  DATABASE        USER            ADDRESS                 METHOD
+      local   all             postgres                                peer
+      local   all             all                                     scram-sha-256
+      host    all             all             127.0.0.1/32            scram-sha-256
+      host    all             all             ::1/128                 scram-sha-256
+      host    all             all             10.0.2.0/24             scram-sha-256
+      host    all             all             192.168.5.0/24          scram-sha-256
+      host    all             all             0.0.0.0/0               scram-sha-256
+      host    all             all             ::/0                    scram-sha-256
+      host    replication     all             10.0.2.0/24             scram-sha-256
+      host    replication     all             192.168.5.0/24          scram-sha-256
+      PGHBA
+
+      # Create WAL archive directory
+      mkdir -p /mnt/backup/wal
+      chown -R postgres:postgres /mnt/backup/wal
+
+      # Start PostgreSQL
+      echo "[9/10] Starting PostgreSQL..."
+      systemctl start postgresql
+      systemctl enable postgresql
+
+      # Wait for PostgreSQL to be ready
+      echo "Waiting for PostgreSQL to start..."
+      sleep 5
+
+      # Check if PostgreSQL is running
+      if ! sudo -u postgres pg_isready -h localhost -p 5432 > /dev/null 2>&1; then
+        echo "ERROR: PostgreSQL failed to start. Checking logs..."
+        tail -n 50 /var/log/postgresql/postgresql-*.log
+        exit 1
+      fi
+
+      echo "PostgreSQL is running!"
+
+      # Create database and user
+      echo "[10/10] Creating VibeCode database and user..."
+      sudo -u postgres psql <<SQL
+      CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+      CREATE EXTENSION IF NOT EXISTS pgvector;
+
+      ALTER USER postgres WITH PASSWORD 'postgres_admin_2024';
+
+      CREATE USER vibecode WITH PASSWORD 'vibecode_prod_2024';
+      CREATE DATABASE vibecode OWNER vibecode;
+
+      \c vibecode
+      CREATE EXTENSION IF NOT EXISTS pgvector;
+      GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode;
+
+      \dx
+      SQL
+
+      echo "=========================================="
+      echo "PostgreSQL + pgvector Setup Complete!"
+      echo "=========================================="
+      echo ""
+      echo "Connection Details:"
+      echo "  Host:     localhost"
+      echo "  Port:     5432"
+      echo "  Database: vibecode"
+      echo "  User:     vibecode"
+      echo "  Password: vibecode_prod_2024"
+      echo ""
+      echo "Admin Credentials:"
+      echo "  User:     postgres"
+      echo "  Password: postgres_admin_2024"
+      echo ""
+      echo "SSL/TLS:  Enabled"
+      echo "pgvector: Installed and ready"
+      echo ""
+      echo "Data Directory:   /mnt/pgdata"
+      echo "Backup Directory: /mnt/backup"
+      echo "=========================================="
+
+# Probes - Health checks
+probes:
+  - mode: readiness
+    description: "postgresql"
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+      sudo -u postgres pg_isready -h localhost -p 5432
+    hint: |
+      PostgreSQL is not ready yet.
+      Run `limactl shell vibecode-pgvector` to check logs with:
+      tail -f /var/log/postgresql/postgresql-*.log
+
+# Message shown after VM starts
+message: |
+  ========================================
+  VibeCode PostgreSQL + pgvector VM is ready!
+  ========================================
+
+  Connection from host:
+    Host: localhost
+    Port: 5432
+    Database: vibecode
+    User: vibecode
+    Password: vibecode_prod_2024
+
+  Connection string:
+    postgresql://vibecode:vibecode_prod_2024@localhost:5432/vibecode?sslmode=require
+
+  Test connection:
+    psql -h localhost -p 5432 -U vibecode -d vibecode
+
+  Access VM shell:
+    limactl shell vibecode-pgvector
+
+  View logs:
+    limactl shell vibecode-pgvector tail -f /var/log/postgresql/postgresql-*.log
+
+  Stop VM:
+    limactl stop vibecode-pgvector
+
+  ========================================
