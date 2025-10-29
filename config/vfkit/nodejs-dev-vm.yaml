@@ -7,16 +7,16 @@ name: vibecode-nodejs-dev
 vcpus: 4
 memory: 8192  # 8GB RAM for npm/pnpm builds and native modules
 
-# Debian 12 (Bookworm) ARM64 - Stable base with excellent package support
-# Alternative: Alpine 3.22 for minimal footprint (see comments at end)
-kernel: /opt/vibecode/kernels/debian-arm64-virt
-initrd: /opt/vibecode/initrd/debian-arm64-initramfs
+# Alpine 3.19+ ARM64 - Lightweight base with excellent package support
+# Using existing Alpine VM kernel and creating new disk for Node.js dev
+kernel: /Users/ryan.maclean/.vfkit/vms/vibecode-alpine/kernel/vmlinuz
+initrd: /Users/ryan.maclean/.vfkit/vms/vibecode-alpine/kernel/initramfs
 cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
 
 # Disk configuration
 disks:
-  - path: /opt/vibecode/disks/nodejs-dev-vm.img
-    size: 40G  # Generous space for Node.js, Rust, and npm cache
+  - path: /Users/ryan.maclean/.vfkit/vms/vibecode-nodejs-dev/disk/root.img
+    size: 50G  # Generous space for Node.js, Rust, and npm cache
     format: raw
 
 # Network: NAT with port forwarding for development servers

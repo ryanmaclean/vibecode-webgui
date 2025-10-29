@@ -1,0 +1,66 @@
+client:
+  name: basic
+  file-system: device-agnostic
+tools: {}
+targets:
+  "NodeJSVM-arm64-apple-macosx15.0-release.module": ["<NodeJSVM-arm64-apple-macosx15.0-release.module>"]
+  "PackageStructure": ["<PackageStructure>"]
+  "main": ["<NodeJSVM-arm64-apple-macosx15.0-release.module>","<nodejs-vm-arm64-apple-macosx15.0-release.exe>"]
+  "nodejs-vm-arm64-apple-macosx15.0-release.exe": ["<nodejs-vm-arm64-apple-macosx15.0-release.exe>"]
+  "test": ["<NodeJSVM-arm64-apple-macosx15.0-release.module>","<nodejs-vm-arm64-apple-macosx15.0-release.exe>"]
+default: "main"
+nodes:
+  "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/":
+    is-directory-structure: true
+    content-exclusion-patterns: [".git",".build"]
+commands:
+  "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources":
+    tool: write-auxiliary-file
+    inputs: ["<sources-file-list>","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift"]
+    outputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources"]
+    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources"
+
+  "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList":
+    tool: write-auxiliary-file
+    inputs: ["<link-file-list>","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o"]
+    outputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList"]
+    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList"
+
+  "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt":
+    tool: write-auxiliary-file
+    inputs: ["<swift-get-version>","/Library/Developer/CommandLineTools/usr/bin/swiftc"]
+    outputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"]
+    always-out-of-date: "true"
+    description: "Write auxiliary file /Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"
+
+  "<NodeJSVM-arm64-apple-macosx15.0-release.module>":
+    tool: phony
+    inputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules/NodeJSVM.swiftmodule"]
+    outputs: ["<NodeJSVM-arm64-apple-macosx15.0-release.module>"]
+
+  "<nodejs-vm-arm64-apple-macosx15.0-release.exe>":
+    tool: phony
+    inputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm"]
+    outputs: ["<nodejs-vm-arm64-apple-macosx15.0-release.exe>"]
+
+  "C.NodeJSVM-arm64-apple-macosx15.0-release.module":
+    tool: shell
+    inputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources"]
+    outputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules/NodeJSVM.swiftmodule"]
+    description: "Compiling Swift Module 'NodeJSVM' (1 sources)"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-module-name","NodeJSVM","-emit-dependencies","-emit-module","-emit-module-path","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules/NodeJSVM.swiftmodule","-output-file-map","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/output-file-map.json","-whole-module-optimization","-num-threads","16","-c","@/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources","-I","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules","-target","arm64-apple-macosx14.0","-whole-module-optimization","-num-threads","16","-serialize-diagnostics","-O","-j16","-DSWIFT_PACKAGE","-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE","-module-cache-path","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/ModuleCache","-parseable-output","-Xfrontend","-entry-point-function-name","-Xfrontend","NodeJSVM_main","-parse-as-library","-swift-version","5","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g","-Xcc","-isysroot","-Xcc","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-Xcc","-fPIC","-Xcc","-g","-package-name","nodejs_vm"]
+
+  "C.nodejs-vm-arm64-apple-macosx15.0-release.exe":
+    tool: shell
+    inputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList"]
+    outputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm"]
+    description: "Linking ./.build/arm64-apple-macosx/release/nodejs-vm"
+    args: ["/Library/Developer/CommandLineTools/usr/bin/swiftc","-L","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release","-o","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm","-module-name","nodejs_vm","-Xlinker","-no_warn_duplicate_libraries","-emit-executable","-Xlinker","-dead_strip","-Xlinker","-alias","-Xlinker","_NodeJSVM_main","-Xlinker","_main","-Xlinker","-rpath","-Xlinker","@loader_path","@/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList","-target","arm64-apple-macosx14.0","-I","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-L","/Library/Developer/CommandLineTools/Library/Developer/Frameworks","-plugin-path","/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing","-sdk","/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk","-g"]
+
+  "PackageStructure":
+    tool: package-structure-tool
+    inputs: ["/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Package.swift","/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Package.resolved"]
+    outputs: ["<PackageStructure>"]
+    description: "Planning build"
+    allow-missing-inputs: true
+

@@ -16,8 +16,8 @@ NODEJS_APP_PORT="${NODEJS_APP_PORT:-3000}"
 VM_NAME="vibecode-nodejs-dev"
 VFKIT_BIN="/Users/ryan.maclean/vibecode-webgui/src-tauri/resources/vfkit-aarch64-apple-darwin"
 
-# Expected Node.js version
-EXPECTED_NODE_VERSION="24"
+# Expected Node.js version (v22 LTS - proven stable with OpenVSCode Server)
+EXPECTED_NODE_VERSION="22"
 
 # Test project directory
 TEST_PROJECT_DIR="/tmp/nodejs-vm-test-project-$(date +%s)"
