@@ -272,7 +272,7 @@
     "@opentelemetry/winston-transport": "0.14.0",
     "@playwright/test": "1.56.1",
     "@swc/core": "1.13.5",
-    "@tailwindcss/postcss": "4.1.13",
+    "@tailwindcss/postcss": "4.1.16",
     "@tauri-apps/cli": "2.9.1",
     "@testing-library/dom": "10.4.1",
     "@testing-library/jest-dom": "6.9.1",
