@@ -211,7 +211,7 @@
     "js-cookie": "^3.0.5",
     "jsonwebtoken": "^9.0.2",
     "langchain": "1.0.1",
-    "lightningcss": "1.19.0",
+    "lightningcss": "1.30.2",
     "lucide-react": "0.395.0",
     "marked": "^16.1.1",
     "monaco-editor": "0.53.0",
