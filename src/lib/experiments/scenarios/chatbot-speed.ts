@@ -128,7 +128,7 @@ export async function createChatSession(
   const isPreloaded = variantKey === 'preload'
 
   // Log assignment to warehouse
-  await experimentWarehouse.logAssignment(
+  await warehouse.logAssignment(
     CHATBOT_EXPERIMENT.experimentKey,
     userId,
     variantKey,
@@ -196,7 +196,7 @@ export async function endChatSession(sessionId: string): Promise<void> {
   session.metadata.engagementScore = engagementScore
 
   // Log final session metrics
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     session.userId,
     'session_message_count',
@@ -204,7 +204,7 @@ export async function endChatSession(sessionId: string): Promise<void> {
     { sessionId, variantKey: session.variantKey }
   )
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     session.userId,
     'engagement_score',
@@ -212,7 +212,7 @@ export async function endChatSession(sessionId: string): Promise<void> {
     { sessionId, variantKey: session.variantKey }
   )
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     session.userId,
     'session_duration_ms',
@@ -284,7 +284,7 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
   session.metadata.totalMessages = session.messages.filter(m => m.role === 'user').length
 
   // Log metrics to warehouse
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     userId,
     'ttft_ms',
@@ -292,7 +292,7 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
     { sessionId, variantKey: session.variantKey, messageIndex: session.metadata.totalMessages }
   )
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     userId,
     'total_response_ms',
@@ -301,7 +301,7 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
   )
 
   if (isFirstMessage && coldStartMs > 0) {
-    await experimentWarehouse.logMetric(
+    await warehouse.logMetric(
       CHATBOT_EXPERIMENT.experimentKey,
       userId,
       'cold_start_ms',
@@ -310,7 +310,7 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
     )
   }
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     CHATBOT_EXPERIMENT.experimentKey,
     userId,
     'tokens_generated',
@@ -457,7 +457,7 @@ export async function getChatbotExperimentSummary(): Promise<{
   status: string
 }> {
   // Get experiment results from warehouse
-  const results = await experimentWarehouse.getExperimentResults(CHATBOT_EXPERIMENT.experimentKey)
+  const results = await warehouse.getExperimentResults(CHATBOT_EXPERIMENT.experimentKey)
 
   // Extract variant-specific metrics
   const lazyLoadMetrics = {
@@ -475,10 +475,10 @@ export async function getChatbotExperimentSummary(): Promise<{
   }
 
   // Get raw metrics
-  const ttftMetrics = await experimentWarehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'ttft_ms')
-  const sessionMetrics = await experimentWarehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'session_message_count')
-  const engagementMetrics = await experimentWarehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'engagement_score')
-  const coldStartMetrics = await experimentWarehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'cold_start_ms')
+  const ttftMetrics = await warehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'ttft_ms')
+  const sessionMetrics = await warehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'session_message_count')
+  const engagementMetrics = await warehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'engagement_score')
+  const coldStartMetrics = await warehouse.getMetrics(CHATBOT_EXPERIMENT.experimentKey, 'cold_start_ms')
 
   // Group by variant
   for (const metric of ttftMetrics) {

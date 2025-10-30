@@ -5,7 +5,7 @@
  * cost, and accuracy metrics for both GPT-4 and GPT-4.1 variants.
  */
 
-import { experimentWarehouse } from '../warehouse';
+import { warehouse } from '../warehouse';
 import { SPEECH_TO_TEXT_EXPERIMENT } from './speech-to-text';
 
 // ==================== TYPES ====================
@@ -144,7 +144,7 @@ export async function generateSyntheticData(count: number): Promise<void> {
   }
 
   // Flush all pending data
-  await experimentWarehouse.flush();
+  await warehouse.flush();
 
   console.log(`Successfully generated ${count} synthetic records`);
 }
@@ -175,30 +175,30 @@ async function generateBatch(
 
     // Log assignment
     promises.push(
-      experimentWarehouse.logAssignment(experimentKey, userId, variantKey)
+      warehouse.logAssignment(experimentKey, userId, variantKey)
     );
 
     // Log metrics
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'latency_ms', metrics.latencyMs)
+      warehouse.logMetric(experimentKey, userId, 'latency_ms', metrics.latencyMs)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'ttft_ms', metrics.ttftMs)
+      warehouse.logMetric(experimentKey, userId, 'ttft_ms', metrics.ttftMs)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'cost_per_request', metrics.costUsd)
+      warehouse.logMetric(experimentKey, userId, 'cost_per_request', metrics.costUsd)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'word_error_rate', metrics.wordErrorRate)
+      warehouse.logMetric(experimentKey, userId, 'word_error_rate', metrics.wordErrorRate)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'confidence_score', metrics.confidenceScore)
+      warehouse.logMetric(experimentKey, userId, 'confidence_score', metrics.confidenceScore)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'tokens_used', metrics.tokensUsed)
+      warehouse.logMetric(experimentKey, userId, 'tokens_used', metrics.tokensUsed)
     );
     promises.push(
-      experimentWarehouse.logMetric(experimentKey, userId, 'transcript_length', metrics.transcriptLength)
+      warehouse.logMetric(experimentKey, userId, 'transcript_length', metrics.transcriptLength)
     );
   }
 

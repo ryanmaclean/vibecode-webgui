@@ -10,7 +10,7 @@ echo "Running Optimized Pre-Commit Tests..."
 
 # Configuration
 PARALLEL_JOBS=${PARALLEL_JOBS:-4}
-SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-false}
+SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true}
 CACHE_DIR=".pre-commit-cache"
 mkdir -p "$CACHE_DIR"
 

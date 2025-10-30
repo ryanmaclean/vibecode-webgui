@@ -207,7 +207,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
   console.log(`Generating ${count} synthetic chat sessions...`)
 
   // Ensure experiment exists
-  await experimentWarehouse.upsertExperiment(
+  await warehouse.upsertExperiment(
     CHATBOT_EXPERIMENT.experimentKey,
     CHATBOT_EXPERIMENT.name,
     {
@@ -232,7 +232,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
         : Math.floor(Math.random() * 3) + 5 // 5-7 messages (6% of sessions)
 
     // Log assignment
-    await experimentWarehouse.logAssignment(
+    await warehouse.logAssignment(
       CHATBOT_EXPERIMENT.experimentKey,
       userId,
       variant,
@@ -257,7 +257,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
     const engagement = Math.min(1, Math.max(0, engagementBase + (Math.random() * 0.2 - 0.1)))
 
     // Log metrics
-    await experimentWarehouse.logMetric(
+    await warehouse.logMetric(
       CHATBOT_EXPERIMENT.experimentKey,
       userId,
       'ttft_ms',
@@ -266,7 +266,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
     )
 
     if (coldStart > 0) {
-      await experimentWarehouse.logMetric(
+      await warehouse.logMetric(
         CHATBOT_EXPERIMENT.experimentKey,
         userId,
         'cold_start_ms',
@@ -275,7 +275,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
       )
     }
 
-    await experimentWarehouse.logMetric(
+    await warehouse.logMetric(
       CHATBOT_EXPERIMENT.experimentKey,
       userId,
       'session_message_count',
@@ -283,7 +283,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
       { sessionId, variant_key: variant }
     )
 
-    await experimentWarehouse.logMetric(
+    await warehouse.logMetric(
       CHATBOT_EXPERIMENT.experimentKey,
       userId,
       'engagement_score',
@@ -294,7 +294,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
     // Log per-message metrics
     for (let msgIdx = 0; msgIdx < sessionLength; msgIdx++) {
       const totalResponseMs = ttft + Math.random() * 500
-      await experimentWarehouse.logMetric(
+      await warehouse.logMetric(
         CHATBOT_EXPERIMENT.experimentKey,
         userId,
         'total_response_ms',
@@ -303,7 +303,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
       )
 
       const tokensGenerated = Math.floor(Math.random() * 100) + 50
-      await experimentWarehouse.logMetric(
+      await warehouse.logMetric(
         CHATBOT_EXPERIMENT.experimentKey,
         userId,
         'tokens_generated',
@@ -319,7 +319,7 @@ export async function generateChatbotSyntheticData(count: number): Promise<void>
   }
 
   // Flush all metrics
-  await experimentWarehouse.flush()
+  await warehouse.flush()
 
   console.log(`✓ Successfully generated ${count} synthetic chat sessions`)
 }

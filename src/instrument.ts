@@ -58,9 +58,9 @@ function getTracer() {
     }
     
     const envModuleCandidates = [
+      '@/lib/monitoring/datadog-env.shared.js',
       './lib/monitoring/datadog-env.shared.js',
-      path.join(__dirname ?? '.', 'lib', 'monitoring', 'datadog-env.shared.js'),
-      path.join(__dirname ?? '.', 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
+      path.join(__dirname ?? '.', '..', 'lib', 'monitoring', 'datadog-env.shared.js'),
       path.join(process.cwd(), 'src', 'lib', 'monitoring', 'datadog-env.shared.js'),
     ];
 

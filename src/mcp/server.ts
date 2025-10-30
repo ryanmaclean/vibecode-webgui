@@ -30,6 +30,7 @@ import { runTests } from './tools/testing.js';
 import { deployProject } from './tools/deployment.js';
 import { searchCode, analyzeCode } from './tools/code-analysis.js';
 import { generateCode } from './tools/code-generation.js';
+import { createVM, startVM, stopVM, listVMs, getVMStatus } from './tools/vm-management.js';
 
 // Type validation schemas
 import {

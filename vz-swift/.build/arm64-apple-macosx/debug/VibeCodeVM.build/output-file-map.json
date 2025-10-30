@@ -1,0 +1,47 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/master.swiftdeps"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/LinuxGUIVM.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MacOSVM.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/OllamaVM.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/WindowsVM.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/main.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.dia"
+  }
+}

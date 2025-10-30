@@ -12,7 +12,7 @@
  */
 
 import { OpenRouter } from '@/lib/openrouter-client';
-import { experimentWarehouse } from '../warehouse';
+import { warehouse } from '../warehouse';
 import { tTest } from '../statistics';
 import { detectSampleRatioMismatch } from '../srm-detector';
 import type { Guardrail } from '../guardrails';
@@ -203,7 +203,7 @@ export async function runSpeechToTextExperiment(
   const variant = SPEECH_TO_TEXT_EXPERIMENT.variants[variantKey];
 
   // 2. Log assignment
-  await experimentWarehouse.logAssignment(
+  await warehouse.logAssignment(
     experimentKey,
     request.userId,
     variantKey
@@ -230,7 +230,7 @@ export async function runSpeechToTextExperiment(
 
   } catch (error) {
     // Log error metric
-    await experimentWarehouse.logMetric(
+    await warehouse.logMetric(
       experimentKey,
       request.userId,
       'error_rate',
@@ -439,7 +439,7 @@ async function logMetrics(
   // Log all metrics
   await Promise.all(
     metricEntries.map(({ name, value }) =>
-      experimentWarehouse.logMetric(experimentKey, userId, name, value)
+      warehouse.logMetric(experimentKey, userId, name, value)
     )
   );
 }
@@ -453,10 +453,10 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   const { experimentKey } = SPEECH_TO_TEXT_EXPERIMENT;
 
   // Get raw results from warehouse
-  const results = await experimentWarehouse.getExperimentResults(experimentKey);
+  const results = await warehouse.getExperimentResults(experimentKey);
 
   // Get assignments for SRM check
-  const assignments = await experimentWarehouse.getAssignments(experimentKey);
+  const assignments = await warehouse.getAssignments(experimentKey);
 
   // Calculate variant distribution
   const variantDistribution = results.variantDistribution;
@@ -476,7 +476,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   const gpt41Accuracy = results.metrics['gpt41_word_error_rate'];
 
   // Calculate statistical significance for latency
-  const latencyMetrics = await experimentWarehouse.getMetrics(experimentKey, 'latency_ms');
+  const latencyMetrics = await warehouse.getMetrics(experimentKey, 'latency_ms');
   const gpt4LatencyValues = latencyMetrics
     .filter(m => (m as any).variant_key === 'gpt4')
     .map(m => m.value);
@@ -490,7 +490,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     : 0;
 
   // Calculate statistical significance for cost
-  const costMetrics = await experimentWarehouse.getMetrics(experimentKey, 'cost_per_request');
+  const costMetrics = await warehouse.getMetrics(experimentKey, 'cost_per_request');
   const gpt4CostValues = costMetrics
     .filter(m => (m as any).variant_key === 'gpt4')
     .map(m => m.value);
@@ -504,7 +504,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     : 0;
 
   // Calculate statistical significance for accuracy
-  const accuracyMetrics = await experimentWarehouse.getMetrics(experimentKey, 'word_error_rate');
+  const accuracyMetrics = await warehouse.getMetrics(experimentKey, 'word_error_rate');
   const gpt4AccuracyValues = accuracyMetrics
     .filter(m => (m as any).variant_key === 'gpt4')
     .map(m => m.value);
@@ -607,7 +607,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
 export async function initializeSpeechExperiment(): Promise<void> {
   const { experimentKey, hypothesis, variants, metrics, guardrails } = SPEECH_TO_TEXT_EXPERIMENT;
 
-  await experimentWarehouse.upsertExperiment(
+  await warehouse.upsertExperiment(
     experimentKey,
     'GPT-4 vs GPT-4.1 Speech Transcription',
     {

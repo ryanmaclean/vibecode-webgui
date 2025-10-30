@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { GET, collectHealthSnapshot } from '../route';
+import { GET } from '../route';
 import { monitoring } from '@/lib/monitoring';
 
 // Mock the monitoring module

@@ -199,7 +199,7 @@ export async function askMultiModel(
   const selectedArm = selection.selectedArm;
 
   // Log assignment
-  await experimentWarehouse.logAssignment(
+  await warehouse.logAssignment(
     DEFAULT_EXPERIMENT.experimentKey,
     request.userId,
     selectedArm.key,
@@ -273,7 +273,7 @@ export async function askMultiModel(
   }
 
   // 7. Log metrics
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     DEFAULT_EXPERIMENT.experimentKey,
     request.userId,
     'reward',
@@ -281,21 +281,21 @@ export async function askMultiModel(
     metrics
   );
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     DEFAULT_EXPERIMENT.experimentKey,
     request.userId,
     'quality_score',
     qualityEvaluation.score
   );
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     DEFAULT_EXPERIMENT.experimentKey,
     request.userId,
     'latency_ms',
     latencyMs
   );
 
-  await experimentWarehouse.logMetric(
+  await warehouse.logMetric(
     DEFAULT_EXPERIMENT.experimentKey,
     request.userId,
     'cost_usd',
@@ -355,7 +355,7 @@ export async function getModelLeaderboard(): Promise<{
   const regret = calculateRegret(banditArms, totalRequests, optimalReward);
 
   // Get metrics from warehouse
-  const results = await experimentWarehouse.getExperimentResults(
+  const results = await warehouse.getExperimentResults(
     DEFAULT_EXPERIMENT.experimentKey
   );
 

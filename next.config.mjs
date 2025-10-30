@@ -79,6 +79,11 @@ const serverExternalPackages = [
   '@datadog/pprof',
   'ansi-color',
   '@opentelemetry/exporter-jaeger',
+  // Exclude Node.js built-ins from client bundles
+  'child_process',
+  'fs',
+  'path',
+  'os',
 ]
 
 // Exclude dd-trace from ignore plugin since we're aliasing it to a stub
@@ -158,6 +163,9 @@ const nextConfig = {
     DD_VERSION: process.env.DD_VERSION || '1.0.0',
   },
   poweredByHeader: false,
+  // Empty turbopack config to silence Next.js 16 webpack config warning
+  // Our webpack config is required for dd-trace stubbing and other customizations
+  turbopack: {},
   serverExternalPackages,
   async headers() {
     return [

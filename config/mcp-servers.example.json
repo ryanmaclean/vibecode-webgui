@@ -5,11 +5,13 @@
     {
       "id": "vibecode-workspace",
       "name": "VibeCode Workspace Tools",
-      "description": "MCP server providing workspace management tools for VibeCode",
+      "description": "MCP server providing workspace management and VM control for VibeCode",
       "enabled": true,
       "transport": "stdio",
       "command": "node",
       "args": [
+        "--loader",
+        "ts-node/esm",
         "${VIBECODE_ROOT}/src/mcp/server.ts"
       ],
       "env": {
@@ -26,8 +28,33 @@
         "list_workspaces",
         "delete_workspace",
         "get_workspace_files",
-        "execute_in_workspace"
-      ]
+        "execute_in_workspace",
+        "create_vm",
+        "start_vm",
+        "stop_vm",
+        "list_vms",
+        "get_vm_status"
+      ],
+      "entitlements": {
+        "virtualization": true,
+        "hypervisor": true,
+        "network": true,
+        "fileAccess": "user-selected"
+      },
+      "setup": {
+        "required": [
+          "Swift 5.9+ (for VM framework)",
+          "Xcode Command Line Tools",
+          "Node.js 20+"
+        ],
+        "build": [
+          "cd vz-swift && swift build",
+          "bash scripts/sign-mcp-server.sh"
+        ],
+        "verify": [
+          "codesign --display --entitlements - $(which node)"
+        ]
+      }
     },
     {
       "id": "roundtable-ai",
@@ -83,7 +110,8 @@
       "permissions": {
         "allowed_directories": [
           "${WORKSPACE_ROOT}",
-          "${HOME}/Documents"
+          "${HOME}/Documents",
+          "${HOME}/.vfkit/vms"
         ],
         "denied_patterns": [
           ".git/**",
@@ -91,52 +119,6 @@
           ".env*"
         ]
       }
-    },
-    {
-      "id": "github",
-      "name": "GitHub Integration",
-      "description": "GitHub API operations via MCP",
-      "enabled": false,
-      "transport": "stdio",
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-github"
-      ],
-      "env": {
-        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
-      },
-      "capabilities": [
-        "tools",
-        "resources"
-      ],
-      "tools": [
-        "create_issue",
-        "list_issues",
-        "create_pull_request",
-        "search_repositories",
-        "get_file_contents"
-      ]
-    },
-    {
-      "id": "web-search",
-      "name": "Web Search",
-      "description": "Web search capabilities for AI agents",
-      "enabled": false,
-      "transport": "stdio",
-      "command": "npx",
-      "args": [
-        "@modelcontextprotocol/server-brave-search"
-      ],
-      "env": {
-        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
-      },
-      "capabilities": [
-        "tools"
-      ],
-      "tools": [
-        "web_search",
-        "local_search"
-      ]
     }
   ],
   "global_settings": {
@@ -150,13 +132,32 @@
     "require_confirmation_for": [
       "write_file",
       "delete_file",
-      "execute_in_workspace"
+      "execute_in_workspace",
+      "start_vm",
+      "stop_vm"
     ],
-    "sandbox_mode": true,
+    "sandbox_mode": false,
     "allowed_network_hosts": [
       "api.github.com",
       "api.openai.com",
       "api.anthropic.com"
+    ]
+  },
+  "virtualization": {
+    "enabled": true,
+    "framework": "Apple Virtualization.framework",
+    "entitlements_required": [
+      "com.apple.security.virtualization",
+      "com.apple.security.hypervisor",
+      "com.apple.security.network.client",
+      "com.apple.security.network.server"
+    ],
+    "setup_guide": "https://developer.apple.com/documentation/virtualization/adding-the-virtualization-entitlement-to-your-project",
+    "vm_types_supported": [
+      "linux",
+      "linux-gui",
+      "windows",
+      "macos"
     ]
   }
 }

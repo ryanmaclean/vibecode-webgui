@@ -4,7 +4,7 @@
  */
 
 import { PrismaClient } from '@prisma/client';
-import { AzureEmbeddingService } from './azureEmbeddingService';
+import { AzureEmbeddingService } from './azure-embedding-service';
 import { EmbeddingService } from './embeddingService';
 import { OpenRouterBYOKEmbeddingService } from './openrouter-byok-embedding-service';
 

@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     }
 
     // Validate request body
-    const validation = await validateRequestBody(req, createEnhancedContainerSchema)
+    const validation = await validateRequestBody(req, createContainerSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
