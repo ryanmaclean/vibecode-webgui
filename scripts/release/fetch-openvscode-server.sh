@@ -18,11 +18,28 @@ Examples:
 
 Environment variables:
   GITHUB_TOKEN      Optional token to increase GitHub API rate limits.
+  ARCH              Architecture to download (x64 or arm64, default: auto-detect)
 USAGE
 }
 
 API_BASE="https://api.github.com/repos/gitpod-io/openvscode-server"
 VERSION_INPUT=${1:-${OPENVSCODE_VERSION:-latest}}
+
+# Auto-detect architecture
+if [[ -z "${ARCH:-}" ]]; then
+  case "$(uname -m)" in
+    arm64|aarch64)
+      ARCH="arm64"
+      ;;
+    x86_64|amd64)
+      ARCH="x64"
+      ;;
+    *)
+      echo "error: unsupported architecture $(uname -m)" >&2
+      exit 1
+      ;;
+  esac
+fi
 
 fetch_release_json() {
   local endpoint
@@ -49,6 +66,7 @@ fi
 
 release_json=$(fetch_release_json)
 export RELEASE_JSON="$release_json"
+export ARCH_ENV="$ARCH"
 read -r resolved_version download_url < <(python3 - "$VERSION_INPUT" <<'PY'
 import json
 import os
@@ -56,6 +74,7 @@ import sys
 
 version_arg = sys.argv[1]
 release = json.loads(os.environ['RELEASE_JSON'])
+arch = os.environ.get('ARCH_ENV', 'x64')
 
 if version_arg == 'latest':
     tag = release.get('tag_name')
@@ -68,7 +87,7 @@ if not tag:
     raise SystemExit('error: unable to determine release tag')
 
 version_suffix = tag.replace('openvscode-server-', '', 1)
-asset_name = f"openvscode-server-{version_suffix}-linux-x64.tar.gz"
+asset_name = f"openvscode-server-{version_suffix}-linux-{arch}.tar.gz"
 assets = release.get('assets') or []
 for asset in assets:
     if asset.get('name') == asset_name:
@@ -83,19 +102,20 @@ else:
 PY
 )
 unset RELEASE_JSON
+unset ARCH_ENV
 
 if [[ -z "$resolved_version" || -z "$download_url" ]]; then
   echo "error: failed to resolve release asset" >&2
   exit 1
 fi
 
-tarball="openvscode-server-${resolved_version}-linux-x64.tar.gz"
+tarball="openvscode-server-${resolved_version}-linux-${ARCH}.tar.gz"
 output_path="$DOWNLOAD_DIR/$tarball"
 
 if [[ -f "$output_path" ]]; then
   echo "info: $tarball already exists; skipping download"
 else
-  echo "Downloading $tarball"
+  echo "Downloading $tarball (${ARCH})..."
   curl -L "$download_url" -o "$output_path"
 fi
 

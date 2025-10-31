@@ -8,6 +8,13 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 VM_DIR="${HOME}/.vfkit/vms/vibecode-alpine"
 KERNEL_DIR="${VM_DIR}/kernel"
 
+# Source network utilities
+if [[ -f "${SCRIPT_DIR}/network-utils.sh" ]]; then
+    source "${SCRIPT_DIR}/network-utils.sh"
+else
+    echo "⚠️  network-utils.sh not found, using fallback downloads"
+fi
+
 # Alpine version - latest stable
 ALPINE_VERSION="3.19"
 ALPINE_RELEASE="3.19.1"
@@ -20,6 +27,12 @@ ALPINE_ISO_URL="${ALPINE_BASE_URL}/${ALPINE_ISO}"
 
 echo "=== Downloading Alpine Linux ARM64 Kernel ==="
 echo ""
+
+# Test network connectivity
+if command -v test_connectivity &>/dev/null; then
+    test_connectivity
+fi
+
 echo "Alpine Version: ${ALPINE_RELEASE}"
 echo "Architecture: ${ALPINE_ARCH}"
 echo "Variant: virt (optimized for virtualization)"
@@ -37,12 +50,25 @@ else
     echo "   URL: ${ALPINE_ISO_URL}"
     echo ""
 
-    if curl -L -o "${ALPINE_ISO}" "${ALPINE_ISO_URL}"; then
+    # Use aria2c if available, fallback to curl
+    if command -v fast_download &>/dev/null; then
+        fast_download "${ALPINE_ISO_URL}" "${ALPINE_ISO}" 16
+    elif command -v aria2c &>/dev/null; then
+        aria2c --max-connection-per-server=16 --split=16 \
+            --file-allocation=none --continue=true \
+            --dir="." --out="${ALPINE_ISO}" \
+            "${ALPINE_ISO_URL}"
+    elif curl -L -o "${ALPINE_ISO}" "${ALPINE_ISO_URL}"; then
         ISO_SIZE=$(du -h "${ALPINE_ISO}" | cut -f1)
         echo "✅ Downloaded: ${ALPINE_ISO} (${ISO_SIZE})"
     else
         echo "❌ Failed to download Alpine ISO"
         exit 1
+    fi
+    
+    if [[ -f "${ALPINE_ISO}" ]]; then
+        ISO_SIZE=$(du -h "${ALPINE_ISO}" | cut -f1)
+        echo "✅ Downloaded: ${ALPINE_ISO} (${ISO_SIZE})"
     fi
 fi
 

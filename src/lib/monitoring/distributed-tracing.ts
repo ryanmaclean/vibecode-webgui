@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 
 export interface TracingOptions {
   operation?: string
@@ -77,36 +77,28 @@ export function withTracing<T extends any[]>(
 
     try {
       // Start the trace
-      const result = await logger.trace(
-        traceContext.operation,
-        async () => {
-          return await handler(request, ...args)
-        },
-        {
-          traceId: traceContext.traceId,
-          spanId: traceContext.spanId,
-          service: traceContext.service,
-          operation: traceContext.operation,
-          ...traceContext.tags
-        }
-      )
+      logger.info(`Starting trace: ${traceContext.operation}`, {
+        traceId: traceContext.traceId,
+        spanId: traceContext.spanId,
+        service: traceContext.service,
+        operation: traceContext.operation,
+        ...traceContext.tags
+      })
+
+      const result = await handler(request, ...args)
 
       const duration = Date.now() - traceContext.startTime
-      
+
       // Log successful completion
-      logger.http(
-        request.method,
-        request.url,
-        result.status,
+      logger.info(`HTTP ${request.method} ${request.url}`, {
+        status: result.status,
         duration,
-        {
-          traceId: traceContext.traceId,
-          spanId: traceContext.spanId,
-          service: traceContext.service,
-          operation: traceContext.operation,
-          success: true
-        }
-      )
+        traceId: traceContext.traceId,
+        spanId: traceContext.spanId,
+        service: traceContext.service,
+        operation: traceContext.operation,
+        success: true
+      })
 
       // Add trace headers to the response
       const newHeaders = new Headers(result.headers)
@@ -138,7 +130,8 @@ export function withTracing<T extends any[]>(
       })
 
       // Record error metrics
-      logger.counter('vibecode.errors.total', 1, {
+      logger.error('vibecode.errors.total', {
+        count: 1,
         operation: traceContext.operation,
         service: traceContext.service,
         error_type: error instanceof Error ? error.name : 'Unknown'
@@ -187,8 +180,9 @@ export function withPerformanceMonitoring<T extends any[], R>(
       const duration = Date.now() - startTime
       
       // Log performance metric
-      logger.performance(operation, duration, {
+      logger.info(`Performance: ${operation}`, {
         operation,
+        duration,
         success: true,
         ...options.tags
       })
@@ -211,7 +205,8 @@ export function withPerformanceMonitoring<T extends any[], R>(
       }
       
       // Submit performance metrics
-      logger.gauge(`vibecode.performance.${operation}`, duration, {
+      logger.info(`vibecode.performance.${operation}`, {
+        duration,
         operation,
         success: 'true',
         ...options.tags
@@ -234,7 +229,8 @@ export function withPerformanceMonitoring<T extends any[], R>(
       })
       
       // Submit error metrics
-      logger.gauge(`vibecode.performance.${operation}`, duration, {
+      logger.error(`vibecode.performance.${operation}`, {
+        duration,
         operation,
         success: 'false',
         error_type: error instanceof Error ? error.name : 'Unknown',

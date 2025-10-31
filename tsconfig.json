@@ -22,7 +22,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "preserve",
+    "jsx": "react-jsx",
     "incremental": true,
     "baseUrl": ".",
     "typeRoots": [
@@ -60,6 +60,7 @@
     "extensions/**/*",
     "**/*.stories.tsx",
     "tmp-*/**/*",
-    "src/components/terminal/**/*"
+    "src/components/terminal/**/*",
+    "types/@xterm/**/*"
   ]
 }

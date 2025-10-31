@@ -191,14 +191,14 @@ df -h /var/lib/kubelet/pods/*/volumes/kubernetes.io~csi/*/mount
 ### 2. Implement Gradual Migration
 ```bash
 # Start with conservative limits
-helm upgrade vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm upgrade vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --set userManagement.workspace.defaultSize=10Gi \
   --set userManagement.workspace.maxSize=30Gi
 
 # Monitor for 2 weeks, then adjust
-helm upgrade vibecode-prod ./helm/vibecode-platform \
-  -f ./helm/vibecode-platform/values-prod.yaml \
+helm upgrade vibecode-prod ./charts/vibecode-platform \
+  -f ./charts/vibecode-platform/values-prod.yaml \
   --set userManagement.workspace.maxSize=50Gi
 ```
 

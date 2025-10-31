@@ -1,78 +1,102 @@
 # VibeCode Desktop Performance Benchmarks
 
-> **Last Updated**: October 25, 2025
-> **Version**: 1.0.0
-> **Platform**: macOS (Apple Silicon / Intel)
+> **Last Updated**: October 27, 2025 (Updated with actual measurements)
+> **Version**: 1.1.0
+> **Platform**: macOS 15.6 (Apple M2 Ultra)
+> **Benchmark Run**: October 27, 2025 03:57 UTC
 
 ## Executive Summary
 
 This document provides comprehensive performance benchmarks for the VibeCode Tauri desktop application, comparing it against the web version and industry-leading IDEs. Our goal is to achieve native-like performance while maintaining the full VS Code extension ecosystem.
 
-### Quick Stats
+**Note**: This document has been updated with **actual measured values** from automated benchmarking runs. See [Benchmark Summary](./BENCHMARK_SUMMARY.md) for the executive summary.
 
-| Metric | Current | Target | Status |
-|--------|---------|--------|--------|
-| **Cold Start** | 2.8s | <3s | ✅ Met |
-| **Memory (Idle)** | 385MB | <500MB | ✅ Met |
-| **Memory (Loaded)** | 720MB | <2GB | ✅ Met |
-| **Binary Size** | 12.3MB | <15MB | ✅ Met |
-| **CPU (Idle)** | 3.2% | <5% | ✅ Met |
-| **CPU (Active)** | 18.5% | <30% | ✅ Met |
+### Quick Stats (Actual Measurements)
+
+| Metric | Measured | Target | Status |
+|--------|----------|--------|--------|
+| **Cold Start** | 3.01s | <3s | ⚠️ At threshold |
+| **Memory (Idle RSS)** | 69.76 MB | <500 MB | ✅ Excellent (86% under) |
+| **Binary Size** | 5.8 MB | <15 MB | ✅ Outstanding (61% under) |
+| **App Bundle** | 4.9 MB | N/A | 🏆 98.7% smaller than VS Code |
+| **CPU (Idle)** | 1.74% | <5% | ✅ Excellent (65% under) |
+
+**Key Achievement**: 5.8 MB binary is **98.4% smaller** than VS Code's 369 MB app size.
 
 ## Test Environment
 
-### Hardware Configuration
+### Hardware Configuration (Actual Test Platform)
 
-- **CPU**: Apple M3 Pro (11-core, 3.5 GHz) / Intel i7-12700K (12-core, 3.6 GHz)
-- **RAM**: 32 GB unified memory / DDR4-3200
+- **CPU**: Apple M2 Ultra (24-core, 3.49 GHz)
+- **RAM**: 64 GB unified memory
 - **Storage**: 1TB NVMe SSD
-- **GPU**: Integrated Apple GPU / NVIDIA RTX 3070
-- **Display**: 2560x1440 @ 120Hz
+- **GPU**: Integrated Apple M2 Ultra GPU (76-core)
+- **Display**: Various configurations tested
+- **OS**: macOS 15.6 Sequoia
 
-### Software Versions
+### Software Versions (Actual)
 
-- **macOS**: 14.6 (Sonoma)
+- **macOS**: 15.6 (Sequoia)
 - **Tauri**: 2.9.1
 - **Rust**: 1.82.0
 - **Node.js**: 22.11.0
 - **Next.js**: 15.5.3
-- **code-server**: 4.104.2
+- **code-server**: Latest integrated version
 
 ## Benchmark Methodology
 
-All benchmarks were run using the automated script at `scripts/benchmark-desktop.sh`:
+All benchmarks were run using automated scripts in `/scripts/`:
 
 ```bash
-# Run complete benchmark suite
+# Simple benchmark (recommended, actual measurements)
+./scripts/benchmark-desktop-simple.sh
+
+# Full benchmark suite (requires UI automation)
 ./scripts/benchmark-desktop.sh --runs 5 --output markdown
 
-# Compare with web version
-./scripts/benchmark-desktop.sh --web-comparison
+# Compare with VS Code
+./scripts/compare-with-vscode.sh
 ```
 
-Each test was run **5 times** and the median value is reported to minimize variance.
+**Actual Test Run**: October 27, 2025 at 03:57 UTC
+- **3 runs** per test for startup time
+- **5 samples** for CPU measurements
+- **Single measurement** after 5s stabilization for memory
+- Results saved to `performance-results/desktop/benchmark_20251027_035716.json`
 
 ---
 
 ## 1. Startup Time Benchmarks
 
-### Cold Start (App Launch to Ready)
+### Cold Start (App Launch to Ready) - ACTUAL MEASUREMENTS
 
-Time from clicking the app icon to fully interactive editor.
+Time from process launch to stabilized state (3s measurement window).
 
-| Platform | Median | Average | Min | Max |
-|----------|--------|---------|-----|-----|
-| **VibeCode Desktop (Tauri)** | 2.8s | 2.9s | 2.5s | 3.2s |
-| VibeCode Web | 4.2s | 4.4s | 3.8s | 5.1s |
-| VS Code Desktop | 2.3s | 2.5s | 2.1s | 2.9s |
-| Cursor | 3.1s | 3.3s | 2.8s | 3.7s |
-| JetBrains IDEs | 8.5s | 9.2s | 7.8s | 10.5s |
-| Sublime Text | 0.7s | 0.8s | 0.6s | 1.0s |
+**VibeCode Desktop (Tauri) - Actual Data**:
+| Run | Time (seconds) |
+|-----|----------------|
+| 1 | 3.013397 |
+| 2 | 3.012674 |
+| 3 | 3.015034 |
+| **Average** | **3.01s** |
+
+**Comparison with Competitors** (VibeCode actual, others estimated):
+
+| Platform | Startup Time | Notes |
+|----------|--------------|-------|
+| **VibeCode Desktop (Tauri)** | **3.01s** | ⚠️ Actual measured |
+| VibeCode Web | ~4-5s | Estimated (needs measurement) |
+| VS Code Desktop | ~2-3s | Typical observed |
+| Cursor | ~3-4s | Electron-based |
+| JetBrains IDEs | ~8-10s | Java-based |
+| Sublime Text | ~0.7s | Native C++ |
+| Zed | ~0.2s | Native Rust |
+| Helix | ~0.08s | Native Rust (minimal) |
 
 **Analysis**:
-- ✅ **34% faster than web version** (2.8s vs 4.2s)
-- ⚠️ Slightly slower than VS Code Desktop (2.8s vs 2.3s) - acceptable tradeoff for Rust security
-- 🎯 Meets target of <3s cold start
+- ⚠️ **Right at the 3.0s target threshold** - needs optimization
+- Consistent across runs (variance < 0.003s)
+- 🎯 Target for optimization: **2.2-2.5s** (see [Optimization Recommendations](./OPTIMIZATION_RECOMMENDATIONS.md))
 
 ### Warm Start (App Already Cached)
 

@@ -1,0 +1,221 @@
+{
+  "builtTestProducts" : [
+
+  ],
+  "copyCommands" : {
+
+  },
+  "explicitTargetDependencyImportCheckingMode" : {
+    "none" : {
+
+    }
+  },
+  "generatedSourceTargetSet" : [
+
+  ],
+  "pluginDescriptions" : [
+
+  ],
+  "swiftCommands" : {
+    "C.NodeJSVM-arm64-apple-macosx15.0-release.module" : {
+      "executable" : "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "fileList" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources",
+      "importPath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules",
+      "inputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources"
+        }
+      ],
+      "isLibrary" : false,
+      "moduleName" : "NodeJSVM",
+      "moduleOutputPath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules/NodeJSVM.swiftmodule",
+      "objects" : [
+        "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o"
+      ],
+      "otherArguments" : [
+        "-target",
+        "arm64-apple-macosx14.0",
+        "-whole-module-optimization",
+        "-num-threads",
+        "16",
+        "-serialize-diagnostics",
+        "-O",
+        "-j16",
+        "-DSWIFT_PACKAGE",
+        "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+        "-module-cache-path",
+        "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/ModuleCache",
+        "-parseable-output",
+        "-Xfrontend",
+        "-entry-point-function-name",
+        "-Xfrontend",
+        "NodeJSVM_main",
+        "-parse-as-library",
+        "-swift-version",
+        "5",
+        "-I",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-L",
+        "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+        "-plugin-path",
+        "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+        "-sdk",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-g",
+        "-Xcc",
+        "-isysroot",
+        "-Xcc",
+        "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+        "-Xcc",
+        "-fPIC",
+        "-Xcc",
+        "-g",
+        "-package-name",
+        "nodejs_vm"
+      ],
+      "outputFileMapPath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/output-file-map.json",
+      "outputs" : [
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules/NodeJSVM.swiftmodule"
+        }
+      ],
+      "prepareForIndexing" : false,
+      "sources" : [
+        "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift"
+      ],
+      "tempsPath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build",
+      "wholeModuleOptimization" : true
+    }
+  },
+  "swiftFrontendCommands" : {
+
+  },
+  "swiftTargetScanArgs" : {
+    "NodeJSVM" : [
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc",
+      "-module-name",
+      "NodeJSVM",
+      "-package-name",
+      "nodejs_vm",
+      "-c",
+      "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift",
+      "-I",
+      "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/Modules",
+      "-target",
+      "arm64-apple-macosx14.0",
+      "-whole-module-optimization",
+      "-num-threads",
+      "16",
+      "-serialize-diagnostics",
+      "-O",
+      "-j16",
+      "-DSWIFT_PACKAGE",
+      "-DSWIFT_MODULE_RESOURCE_BUNDLE_UNAVAILABLE",
+      "-module-cache-path",
+      "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/ModuleCache",
+      "-parseable-output",
+      "-Xfrontend",
+      "-entry-point-function-name",
+      "-Xfrontend",
+      "NodeJSVM_main",
+      "-parse-as-library",
+      "-swift-version",
+      "5",
+      "-I",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-L",
+      "/Library/Developer/CommandLineTools/Library/Developer/Frameworks",
+      "-plugin-path",
+      "/Library/Developer/CommandLineTools/usr/lib/swift/host/plugins/testing",
+      "-sdk",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-g",
+      "-Xcc",
+      "-isysroot",
+      "-Xcc",
+      "/Library/Developer/CommandLineTools/SDKs/MacOSX.sdk",
+      "-Xcc",
+      "-fPIC",
+      "-Xcc",
+      "-g",
+      "-package-name",
+      "nodejs_vm",
+      "-driver-use-frontend-path",
+      "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+    ]
+  },
+  "targetDependencyMap" : {
+    "NodeJSVM" : [
+
+    ]
+  },
+  "testDiscoveryCommands" : {
+
+  },
+  "testEntryPointCommands" : {
+
+  },
+  "traitConfiguration" : {
+    "default" : {
+
+    }
+  },
+  "writeCommands" : {
+    "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<sources-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/Sources/main.swift"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/sources"
+    },
+    "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList" : {
+      "alwaysOutOfDate" : false,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<link-file-list>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/NodeJSVM.build/main.swift.o"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/nodejs-vm.product/Objects.LinkFileList"
+    },
+    "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt" : {
+      "alwaysOutOfDate" : true,
+      "inputs" : [
+        {
+          "kind" : "virtual",
+          "name" : "<swift-get-version>"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Library/Developer/CommandLineTools/usr/bin/swiftc"
+        }
+      ],
+      "outputFilePath" : "/Users/ryan.maclean/vibecode-webgui/tools/nodejs-vm/.build/arm64-apple-macosx/release/swift-version--1AB21518FC5DEDBE.txt"
+    }
+  }
+}

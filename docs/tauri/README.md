@@ -69,12 +69,22 @@ Tauri is a framework for building desktop applications with web technologies. Un
 
 ## Documentation Structure
 
+### Desktop Application
 - **[Getting Started](GETTING_STARTED.md)** - Setup, installation, and first run
 - **[Architecture](ARCHITECTURE.md)** - Technical architecture and design decisions
 - **[Development Guide](DEVELOPMENT.md)** - Building, testing, and debugging
 - **[API Reference](API_REFERENCE.md)** - Tauri commands and frontend integration
 - **[Deployment](DEPLOYMENT.md)** - Building releases, code signing, distribution
 - **[Troubleshooting](TROUBLESHOOTING.md)** - Common issues and solutions
+
+### Embedded Systems
+- **[Embedded Systems Guide](EMBEDDED_SYSTEMS.md)** - Comprehensive guide to Tauri on embedded hardware
+- **[STM32 Implementation](STM32_EMBEDDED.md)** - Bare-metal Tauri on ARM Cortex-M microcontrollers
+- **[Serial Communication](SERIAL_COMMUNICATION.md)** - Serial port support for IoT and embedded devices
+- **[Serial Automation](../infrastructure/SERIAL_CONSOLE_AUTOMATION.md)** - Device provisioning pattern
+
+### Strategic
+- **[Embedded VibeCode Vision](../concepts/EMBEDDED_VIBECODE.md)** - Strategic vision and market opportunity
 
 ## Quick Links
 

@@ -681,7 +681,7 @@ export const useAgentStore = create<AgentStore>()(
         onRehydrateStorage: () => (state) => {
           if (state) {
             // Convert sessions array back to Map
-            const sessions = new Map(state.sessions as [string, AgentSession][]);
+            const sessions = new Map(state.sessions as unknown as [string, AgentSession][]);
             state.sessions = sessions;
             state.updateStats();
           }

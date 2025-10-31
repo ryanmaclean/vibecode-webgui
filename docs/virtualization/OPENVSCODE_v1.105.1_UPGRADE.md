@@ -211,7 +211,23 @@ Both are open-source VS Code server implementations but serve different purposes
 - [x] Verify v1.105.1 in all vfkit scripts (already done)
 - [x] Update documentation references (3 files updated)
 - [x] Create migration notes (this document)
-- [x] Comment on Issue #652
+- [x] Update fetch-openvscode-server.sh with ARM64 auto-detection
+- [x] Download and verify v1.105.1 ARM64 binary (SHA256 verified)
+- [x] Validate tarball contents and structure
+
+### Additional Improvements Made
+
+**Enhanced ARM64 Support** (October 27, 2025):
+- Updated `scripts/release/fetch-openvscode-server.sh` to auto-detect architecture
+- Added support for both ARM64 and x64 platforms
+- Automatic architecture selection based on `uname -m` (arm64/aarch64 vs x86_64/amd64)
+- Manual override available via `ARCH` environment variable
+
+**Download Verification**:
+- Successfully downloaded openvscode-server-v1.105.1-linux-arm64.tar.gz (67 MB)
+- Verified SHA256: `c4a048a4cb46714c890aa4fc4d8aae419661424ee368db24c10075a9542b46c6`
+- Confirmed tarball structure and binary presence
+- Stored in: `/fast-openvscode-vm/downloads/`
 
 ### Future Monitoring
 

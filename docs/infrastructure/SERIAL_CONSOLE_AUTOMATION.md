@@ -429,6 +429,14 @@ ws.onmessage = (event) => console.log(event.data);
 - Connect devices
 - Automated provisioning at scale
 
+## See Also
+
+**VibeCode Embedded Documentation**:
+- **[Embedded Systems Guide](../tauri/EMBEDDED_SYSTEMS.md)** - Comprehensive guide to Tauri on embedded hardware
+- **[STM32 Implementation](../tauri/STM32_EMBEDDED.md)** - Bare-metal Tauri with serial provisioning integration
+- **[Serial Communication](../tauri/SERIAL_COMMUNICATION.md)** - Tauri serial port support
+- **[Embedded VibeCode Vision](../concepts/EMBEDDED_VIBECODE.md)** - Strategic vision and market opportunity
+
 ## References
 
 - OmniOS ARM64 automation: `scripts/omnios-arm64-automation/`
@@ -440,4 +448,4 @@ ws.onmessage = (event) => console.log(event.data);
 
 **Status**: Production-ready pattern for VM, bare metal, and embedded automation
 
-**Next**: Explore Tauri on embedded as potential VibeCode deployment target
+**Next**: ✅ **COMPLETE** - Tauri on embedded is now fully documented and ready for implementation

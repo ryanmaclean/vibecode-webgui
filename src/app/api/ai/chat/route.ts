@@ -10,6 +10,7 @@ import { validateAIQuery } from '@/lib/security/input-validator'
 // import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { createErrorResponseFromError } from '@/lib/utils/api-response'
 import * as crypto from 'crypto'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -357,11 +358,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       });
     }
 
-    return createProblemDetailsFromError(error, 500, {
-      instance: '/api/ai/chat',
-      traceId: requestId,
-      fallbackTitle: 'AI chat request failed'
-    });
+    return createErrorResponseFromError(
+      error,
+      500,
+      'AI chat request failed',
+      requestId
+    );
   }
 }
 

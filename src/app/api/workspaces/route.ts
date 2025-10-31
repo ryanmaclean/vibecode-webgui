@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
 import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
   projectName: z.string(),
@@ -161,7 +161,7 @@ export async function GET(request: NextRequest) {
       }
 
       const responseTime = Date.now() - startTime
-      logger.performance('get-workspace', responseTime, logContext)
+      logger.info('get-workspace', { ...logContext, responseTime })
 
       return NextResponse.json({
         success: true,
@@ -174,9 +174,10 @@ export async function GET(request: NextRequest) {
       const workspaces = await workspaceService.listWorkspaces()
 
       const responseTime = Date.now() - startTime
-      logger.performance('list-workspaces', responseTime, { 
-        ...logContext, 
-        workspaceCount: workspaces.length 
+      logger.info('list-workspaces', {
+        ...logContext,
+        responseTime,
+        workspaceCount: workspaces.length
       })
 
       return NextResponse.json({

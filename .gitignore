@@ -122,6 +122,8 @@ extensions/vibecode-ai-assistant/*.vsix
 *.tgz
 macos-vm/.build/
 src-tauri/swift/.build/
+src-tauri/resources/vfkit*
+src-tauri/release-artifacts/
 infrastructure/**/secrets/
 k8s/secrets/
 
@@ -245,3 +247,28 @@ machine-id
 simple-macos-vm-demo/
 swift-vfkit-macos/
 services/*/node_modules/
+
+# Release artifacts (should only be in GitHub Releases, not in repo)
+release-artifacts/
+dist-pkg/
+pkg-build/
+releases/
+
+# Test artifacts (videos, screenshots, etc)
+*.webm
+test-failed*.png
+.archive/
+
+# Build caches
+.serena/cache/
+docs/.astro/
+
+# Large binaries
+bin/apple-container-runtime
+scripts/vibecode-demo
+
+# Package files
+*.pkg
+*.app.zip
+*.tar.gz
+!src/**/*.tar.gz

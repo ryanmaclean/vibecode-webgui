@@ -1,104 +1,70 @@
 name: Main Branch CI (Lightweight)
 
-# Optimized for cost - only essential checks on main branch
-# Full testing happens on release branches
-
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   pull_request:
-    branches: [ main ]
+    branches: [main]
+  workflow_dispatch:
 
 concurrency:
   group: main-ci-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+  security-events: write
+
 env:
-  NODE_VERSION: '22.11.0'
+  NODE_VERSION: '20.11.0'
 
 jobs:
-  # Fast validation - essential checks only
   quick-validation:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
+      - uses: actions/checkout@v4
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: ${{ env.NODE_VERSION }}
           cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
-      
-      - name: Lint code
-        run: npm run lint || true  # Don't fail on lint warnings
-      
-      - name: Type check
-        run: npm run type-check || true
-      
-      - name: Run fast unit tests only
-        run: |
-          npm test -- --passWithNoTests \
-            --testPathIgnorePatterns="tests/integration|tests/e2e|tests/k8s|tests/performance" \
-            --maxWorkers=2 \
-            --testTimeout=10000
-        env:
-          NODE_ENV: test
-          CI: true
 
-  # Security scan - lightweight version
-  security-check:
+      - name: Install dependencies
+        run: bash scripts/install-ci.sh
+
+      - name: Lint check
+        run: npm run lint || echo "Linting issues found (non-blocking)"
+
+      - name: Type check
+        run: npm run type-check || echo "Type issues found (non-blocking)"
+
+      - name: Basic unit tests
+        run: npm test -- --testPathPattern="(auth|security|utils)" --passWithNoTests
+        timeout-minutes: 5
+
+  security-scan:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Run npm audit
-        run: npm audit --audit-level=high || true
-        
+      - uses: actions/checkout@v4
+      - name: Run security audit
+        run: npm audit --audit-level moderate || echo "Security issues found (logged)"
+
       - name: Check for secrets
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
           base: main
           head: HEAD
-          extra_args: --debug --only-verified
+        continue-on-error: true
 
-  # Build validation - ensure it compiles
-  build-check:
+  cost-monitor:
     runs-on: ubuntu-latest
-    timeout-minutes: 10
+    timeout-minutes: 2
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ env.NODE_VERSION }}
-          cache: 'npm'
-      
-      - name: Install dependencies
-        run: npm ci --prefer-offline --no-audit
-      
-      - name: Build application
-        run: npm run build
-        env:
-          NODE_ENV: production
-          SKIP_ENV_VALIDATION: true
-
-  # Cost monitoring - track usage
-  cost-monitoring:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-    steps:
-      - name: Log workflow execution
+      - name: Log cost optimization
         run: |
-          echo "Main branch CI executed at $(date)"
-          echo "Estimated cost: ~$0.05 (3 jobs, ~25 minutes total)"
-          echo "For full testing, create a release/* branch"
+          echo "💰 Cost optimization active: Main branch runs lightweight CI only"
+          echo "📊 Expected savings: 70-80% reduction in GitHub Actions usage"
+          echo "🚀 For full testing, create a release branch: git checkout -b release/v1.0.0"

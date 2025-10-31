@@ -1,0 +1,35 @@
+# VibeCode Apple Container Stack
+# Usage: ./run-stack.sh
+
+version: "1.0"
+name: vibecode
+
+containers:
+  code-server:
+    image: codercom/code-server:latest
+    ports:
+      - "8080:8080"
+    environment:
+      - PASSWORD=${CODE_SERVER_PASSWORD:-vibecode123}
+    volumes:
+      - vibecode-data:/home/coder
+    restart: unless-stopped
+    
+  datadog-agent:
+    image: datadog/agent:latest
+    ports:
+      - "8126:8126"
+    environment:
+      - DD_API_KEY=${DD_API_KEY}
+      - DD_SITE=${DD_SITE:-datadoghq.com}
+      - DD_HOSTNAME=${HOSTNAME:-vibecode-macos}
+      - DD_TAGS=platform:macos,runtime:apple_container
+      - DD_APM_ENABLED=true
+      - DD_LOGS_ENABLED=true
+    volumes:
+      - /var/run/container.sock:/var/run/docker.sock:ro
+    restart: unless-stopped
+
+volumes:
+  vibecode-data:
+    driver: local

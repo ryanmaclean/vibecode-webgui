@@ -3,7 +3,7 @@
  * Establishes performance baselines and monitors deviations
  */
 
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { datadogMetrics } from './datadog-metrics'
 
 export interface PerformanceBaseline {

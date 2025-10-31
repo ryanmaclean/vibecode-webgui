@@ -1,0 +1,226 @@
+{
+  "$schema": "./ai-providers.schema.json",
+  "version": "1.0",
+  "providers": {
+    "ollama": {
+      "enabled": true,
+      "endpoint": "http://localhost:11434",
+      "models": [
+        {
+          "id": "qwen2.5-coder:1.5b",
+          "name": "Qwen 2.5 Coder 1.5B",
+          "capabilities": ["code", "completion"],
+          "priority": 1,
+          "use_for": ["code_completion", "quick_chat"]
+        },
+        {
+          "id": "llama3.2:1b",
+          "name": "Llama 3.2 1B",
+          "capabilities": ["chat", "general"],
+          "priority": 2,
+          "use_for": ["chat", "general_questions"]
+        },
+        {
+          "id": "deepseek-coder:6.7b",
+          "name": "DeepSeek Coder 6.7B",
+          "capabilities": ["code", "completion", "generation"],
+          "priority": 3,
+          "use_for": ["code_generation", "refactoring", "analysis"]
+        }
+      ],
+      "options": {
+        "timeout_ms": 30000,
+        "retry_attempts": 3,
+        "stream": true
+      }
+    },
+    "openrouter": {
+      "enabled": true,
+      "api_key_env": "OPENROUTER_API_KEY",
+      "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+      "models": [
+        {
+          "id": "google/gemini-flash-1.5",
+          "name": "Google Gemini Flash 1.5",
+          "capabilities": ["chat", "code", "fast"],
+          "priority": 1,
+          "use_for": ["quick_chat", "code_completion"],
+          "cost_per_1m_tokens": {
+            "input": 0.075,
+            "output": 0.30
+          }
+        },
+        {
+          "id": "anthropic/claude-3.5-sonnet",
+          "name": "Claude 3.5 Sonnet",
+          "capabilities": ["chat", "code", "analysis", "reasoning"],
+          "priority": 2,
+          "use_for": ["complex_code", "architecture", "refactoring"],
+          "cost_per_1m_tokens": {
+            "input": 3.0,
+            "output": 15.0
+          }
+        },
+        {
+          "id": "openai/gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "capabilities": ["chat", "code", "general"],
+          "priority": 3,
+          "use_for": ["general_chat", "code_help"],
+          "cost_per_1m_tokens": {
+            "input": 0.15,
+            "output": 0.60
+          }
+        },
+        {
+          "id": "meta-llama/llama-3.1-70b-instruct",
+          "name": "Llama 3.1 70B",
+          "capabilities": ["chat", "code", "reasoning"],
+          "priority": 4,
+          "use_for": ["complex_tasks", "reasoning"],
+          "cost_per_1m_tokens": {
+            "input": 0.52,
+            "output": 0.75
+          }
+        }
+      ],
+      "options": {
+        "timeout_ms": 60000,
+        "retry_attempts": 2,
+        "stream": true
+      }
+    },
+    "openai": {
+      "enabled": false,
+      "api_key_env": "OPENAI_API_KEY",
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "models": [
+        {
+          "id": "gpt-4o",
+          "name": "GPT-4o",
+          "capabilities": ["chat", "code", "vision", "reasoning"],
+          "priority": 1,
+          "use_for": ["complex_code", "architecture"],
+          "cost_per_1m_tokens": {
+            "input": 5.0,
+            "output": 15.0
+          }
+        },
+        {
+          "id": "gpt-4o-mini",
+          "name": "GPT-4o Mini",
+          "capabilities": ["chat", "code", "general"],
+          "priority": 2,
+          "use_for": ["general_chat", "quick_code"],
+          "cost_per_1m_tokens": {
+            "input": 0.15,
+            "output": 0.60
+          }
+        },
+        {
+          "id": "gpt-3.5-turbo",
+          "name": "GPT-3.5 Turbo",
+          "capabilities": ["chat", "code"],
+          "priority": 3,
+          "use_for": ["simple_tasks", "completion"],
+          "cost_per_1m_tokens": {
+            "input": 0.50,
+            "output": 1.50
+          }
+        }
+      ],
+      "options": {
+        "timeout_ms": 60000,
+        "retry_attempts": 2,
+        "stream": true
+      }
+    },
+    "anthropic": {
+      "enabled": false,
+      "api_key_env": "ANTHROPIC_API_KEY",
+      "endpoint": "https://api.anthropic.com/v1/messages",
+      "models": [
+        {
+          "id": "claude-3-5-sonnet-20241022",
+          "name": "Claude 3.5 Sonnet",
+          "capabilities": ["chat", "code", "analysis", "reasoning"],
+          "priority": 1,
+          "use_for": ["complex_code", "architecture", "refactoring"],
+          "cost_per_1m_tokens": {
+            "input": 3.0,
+            "output": 15.0
+          }
+        },
+        {
+          "id": "claude-3-haiku-20240307",
+          "name": "Claude 3 Haiku",
+          "capabilities": ["chat", "code", "fast"],
+          "priority": 2,
+          "use_for": ["quick_tasks", "completion"],
+          "cost_per_1m_tokens": {
+            "input": 0.25,
+            "output": 1.25
+          }
+        }
+      ],
+      "options": {
+        "timeout_ms": 60000,
+        "retry_attempts": 2,
+        "stream": true,
+        "anthropic_version": "2023-06-01"
+      }
+    }
+  },
+  "fallback_chain": [
+    {
+      "provider": "ollama",
+      "condition": "local_available"
+    },
+    {
+      "provider": "openrouter",
+      "condition": "api_key_set"
+    },
+    {
+      "provider": "openai",
+      "condition": "api_key_set"
+    },
+    {
+      "provider": "anthropic",
+      "condition": "api_key_set"
+    }
+  ],
+  "preferences": {
+    "prefer_local": true,
+    "max_cost_per_request": 0.10,
+    "max_context_tokens": 8000,
+    "default_temperature": 0.7,
+    "default_max_tokens": 2000,
+    "stream_responses": true,
+    "cache_responses": true,
+    "cache_ttl_seconds": 3600
+  },
+  "rate_limits": {
+    "ollama": {
+      "requests_per_minute": 60,
+      "concurrent_requests": 4
+    },
+    "openrouter": {
+      "requests_per_minute": 20,
+      "concurrent_requests": 2
+    },
+    "openai": {
+      "requests_per_minute": 10,
+      "concurrent_requests": 2
+    },
+    "anthropic": {
+      "requests_per_minute": 10,
+      "concurrent_requests": 2
+    }
+  },
+  "usage_tracking": {
+    "enabled": true,
+    "track_costs": true,
+    "daily_budget": 5.00,
+    "alert_at_percentage": 80
+  }
+}

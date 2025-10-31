@@ -1,0 +1,57 @@
+#!/bin/bash
+
+# VibeCode v1.4a - ZFS Optimized Startup Script
+# Implements latest ZFS research for maximum performance
+
+echo "🚀 Starting VibeCode v1.4a with ZFS Optimizations"
+echo "================================================="
+
+# Check if ZFS pool exists
+if ! zpool list vibecode-pool >/dev/null 2>&1; then
+    echo "❌ ZFS pool 'vibecode-pool' not found"
+    echo "   Run: sudo ./scripts/implement-zfs-v1.4a.sh"
+    exit 1
+fi
+
+# Set ZFS optimizations
+export ZFS_ARC_MAX=1073741824  # 1GB ARC
+export ZFS_ARC_MIN=268435456   # 256MB ARC
+
+# Check if code-server is already running
+if lsof -ti:8080 >/dev/null 2>&1; then
+    echo "✅ code-server already running on port 8080"
+    echo "🌐 Access at: http://localhost:8080"
+    exit 0
+fi
+
+# Start code-server with ZFS optimizations
+echo "🔧 Starting code-server with ZFS optimizations..."
+
+code-server \
+    --bind-addr 0.0.0.0:8080 \
+    --auth none \
+    --disable-telemetry \
+    --disable-update-check \
+    --disable-workspace-trust \
+    --disable-getting-started-override \
+    --user-data-dir ~/.config/code-server/user-data \
+    --extensions-dir ~/.config/code-server/extensions \
+    --log trace \
+    --verbose \
+    . &
+
+# Wait for code-server to start
+sleep 3
+
+# Check if code-server started successfully
+if lsof -ti:8080 >/dev/null 2>&1; then
+    echo "✅ VibeCode v1.4a started successfully"
+    echo "🌐 Access at: http://localhost:8080"
+    echo "📊 Monitor performance: vibecode-monitor"
+    echo "🔄 Manage snapshots: vibecode-snapshots"
+    echo "⚡ Manage L2ARC: vibecode-l2arc"
+else
+    echo "❌ Failed to start code-server"
+    echo "   Check logs for details"
+    exit 1
+fi

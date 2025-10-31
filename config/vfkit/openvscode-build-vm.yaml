@@ -1,0 +1,87 @@
+# vfkit VM: OpenVSCode Server Build Environment
+# macOS ARM64 - Native build testing for VibeCode
+# Purpose: Test openvscode-server native macOS builds without Docker
+# Usage: ../scripts/vfkit/build-openvscode.sh
+
+name: vibecode-openvscode-builder
+vcpus: 8
+memory: 16384  # 16GB for Node.js + Rust compilation
+
+# macOS VM (requires existing macOS VM image)
+# Create with: ipsw download ipsw --device "Mac (Virtualized)" --version latest
+# Or use existing macOS Disk.img from vfkit-boot/
+disk_image: /opt/vibecode/macos-vms/build-vm.img
+aux_storage: /opt/vibecode/macos-vms/build-vm-aux.img
+hardware_model: /opt/vibecode/macos-vms/HardwareModel
+
+# Alternative: Linux build VM (faster, smaller)
+# kernel: /opt/vibecode/kernels/linux-arm64-virt
+# initrd: /opt/vibecode/initrd/ubuntu-arm64-initramfs
+# cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disks
+disks:
+  - path: /opt/vibecode/disks/openvscode-build.img
+    size: 50G  # Need space for Node.js modules + Rust target
+    format: raw
+
+# Network: NAT with port forwards for access
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:57"
+    forwards:
+      - host_port: 3000
+        guest_port: 3000  # Dev server
+      - host_port: 8081
+        guest_port: 8081  # OpenVSCode server
+
+# Shared directories for source code
+shares:
+  - source: ./openvscode-server
+    target: /mnt/openvscode
+    readonly: false
+  - source: ./build-output
+    target: /mnt/output
+    readonly: false
+
+# Serial console for build logs
+serial:
+  - stdio
+
+# Resource limits (build needs CPU)
+limits:
+  cpu_percent: 100  # Use all available CPU for builds
+  io_weight: 1000   # Max I/O for npm/cargo
+
+# Environment for build
+env:
+  NODE_OPTIONS: "--max-old-space-size=8192"
+  CARGO_BUILD_JOBS: "8"
+  RUSTFLAGS: "-C target-cpu=native"
+
+# Build VM setup commands (run on first boot)
+# These would be in a cloud-init or startup script:
+#
+# 1. Install build dependencies:
+#    - Homebrew (macOS) or apt (Linux)
+#    - Node.js 18+ (via nvm or homebrew)
+#    - Rust toolchain (rustup)
+#    - Xcode Command Line Tools (macOS)
+#    - Python 3, Git
+#
+# 2. Clone openvscode-server:
+#    git clone --depth 1 https://github.com/gitpod-io/openvscode-server.git /mnt/openvscode
+#
+# 3. Install dependencies:
+#    cd /mnt/openvscode
+#    npm install
+#
+# 4. Build:
+#    npm run compile
+#    cd cli && cargo build --release
+#
+# 5. Test:
+#    ./cli/target/release/code serve-web --port 8081
+#
+# 6. Package:
+#    npm run gulp vscode-darwin-arm64

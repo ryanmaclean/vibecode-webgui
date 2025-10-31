@@ -94,7 +94,7 @@ vibecode-webgui/
 ├── docker/               # Docker configurations
 │   └── code-server/      # code-server multi-profile images
 ├── k8s/                  # Kubernetes manifests
-├── helm/                 # Helm charts
+├── charts/               # Helm charts
 ├── docs/                 # Documentation
 └── .github/workflows/    # CI/CD workflows
 ```
