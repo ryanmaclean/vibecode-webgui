@@ -8,6 +8,7 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod service;
 mod tailscale;
 
 // use tauri::Manager; // Removed unused import
@@ -78,6 +79,24 @@ fn main() {
             // tailscale::commands::tailscale_get_ip,
         ])
         .setup(|app| {
+            // Check if running in service mode (for Electron)
+            let service_mode = std::env::var("VIBECODE_SERVICE_MODE").is_ok();
+            
+            if service_mode {
+                // Start HTTP service in background
+                let port = std::env::var("VIBECODE_SERVICE_PORT")
+                    .unwrap_or_else(|_| "3030".to_string())
+                    .parse::<u16>()
+                    .unwrap_or(3030);
+                
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = service::start_service(port).await {
+                        eprintln!("Failed to start HTTP service: {}", e);
+                    }
+                });
+            }
+            
             // Initialize system tray
             if let Err(e) = menu::create_system_tray(app.handle()) {
                 eprintln!("Failed to create system tray: {}", e);
