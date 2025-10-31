@@ -1,64 +1,119 @@
-# VibeCode
+# VibeCode - DEMO GITHUB WORKFLOW REPOSITORY - APP BUILDS AS SAMPLES FOR TRACING
 
-Native desktop app wrapping code-server with AI assistance.
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**Simple**: VS Code in the browser, wrapped with Tauri for native desktop.
+Native desktop app built on OpenVSCode Server with AI assistance and macOS native integration.
 
 ## What It Is
 
-VibeCode wraps code-server (VS Code in browser) with a native Tauri app to provide a desktop experience.
+OpenVSCode Server with native macOS integration via Swift 5 + Rust FFI + Virtualization Framework SDK.
 
-### Features
+```
+OpenVSCode Server (Rust CLI + Node) → Swift 5 Wrapper → VibeCode Desktop + AI Assistant
+```
 
-- ✅ **VS Code in Browser** - code-server with full VS Code features
-- ✅ **Native Desktop** - Tauri wrapper for macOS/Windows/Linux
-- ✅ **AI Assistant Extension** - Multi-provider AI coding assistance
-- ✅ **Portable** - Small bundle size (~2.5MB)
+## Features
+
+- **Native VS Code** - OpenVSCode Server with native Rust CLI
+- **macOS Native** - Swift 5, Virtualization Framework SDK, no Docker
+- **AI Assistant** - 321+ models via OpenRouter
+- **VM Integration** - Native vfkit, QEMU, Lima support
+- **Rust + Swift** - Native performance and system integration
+- **Open-VSX** - Community extension registry
 
 ## Quick Start
 
-### Install Extension
-
-```bash
-# Already compiled and ready
-cd extensions/vibecode-ai-assistant
-npm install
-npm run compile
-```
-
 ### Run Desktop App
-
 ```bash
+npm install --legacy-peer-deps
 npm run tauri:dev
 ```
 
-### Use Extension
-
-Extension is already installed in code-server when it starts.
-
-## Architecture
-
-```
-code-server (VS Code in browser)
-    ↓
-Wrapped with Tauri (native desktop)
-    ↓
-VibeCode AI Assistant extension
+### Install AI Extension
+```bash
+cd extensions/vibecode-ai-assistant
+npm install && npm run compile
 ```
 
-That's it. Simple wrapper around code-server.
+Extension auto-installs when OpenVSCode Server starts.
 
-## Extension Features
+## Download
 
-- AI Code Generation
-- 321+ AI Models via OpenRouter
-- Project Templates
-- Cloud Deployment
-- Real-time Collaboration
+**[Latest Releases](https://github.com/ryanmaclean/vibecode-webgui/releases/latest)**
 
-## Development
+| Platform | Formats | Architectures |
+|----------|---------|---------------|
+| macOS | `.dmg`, `.app` | Intel, Apple Silicon, Universal |
+| Linux | `.deb`, `.AppImage`, `.rpm` | x86_64, ARM64 |
+| Windows | `.msi`, `.exe` | x86_64 |
 
-See 🛠️ [VibeCode CLI](./scripts/VIBECODE_CLI.md) - Unified development toolkit
+## Implementation Status
+
+### Phase Progress
+
+| Phase | Status | Completion | Documentation |
+|-------|--------|------------|---------------|
+| **Phase 1: Backend Decision** | ✅ Complete | 100% | [BACKEND_DECISION.md](./docs/BACKEND_DECISION.md) |
+| **Phase 2: Build Stabilization** | ✅ Complete | 100% | [BUILD_STATUS.md](./docs/BUILD_STATUS.md) |
+| **Phase 3: Rebrand** | 🔄 In Progress | ~30% | REBRAND_PLAN.md (TBD) |
+| **Phase 4: Swift Integration** | 🔄 In Progress | ~20% | SWIFT_RUST_FFI_INTEGRATION.md (TBD) |
+| **Phase 5: Authentication Strategy** | ✅ Design Complete | 100% | [AUTHENTICATION_STRATEGY.md](./security/AUTHENTICATION_STRATEGY.md) |
+| **Phase 6: Dashboard Design** | ✅ Design Complete | 100% | [DASHBOARD_DESIGN.md](./docs/DASHBOARD_DESIGN.md) |
+
+**Master Roadmap:** [IMPLEMENTATION_ROADMAP.md](./docs/IMPLEMENTATION_ROADMAP.md)
+
+### Key Achievements
+- ✅ **OpenVSCode Server** chosen as definitive backend (no Docker required)
+- ✅ **Native ARM64 build** successful in 4 minutes 17 seconds
+- ✅ **Comprehensive authentication** architecture designed (hybrid Swift + Caddy)
+- ✅ **Dashboard design** complete with React + Zustand + Tauri
+- 🔄 **Rebranding** in progress (VibeCode identity)
+- 🔄 **Swift-Rust FFI** bridge under development
+
+### Quick Links
+- [Quick Start Guide](./docs/QUICKSTART.md) - Get started in 5 minutes
+- [Architecture Diagram](./docs/ARCHITECTURE_DIAGRAM.md) - System overview
+- [Documentation Index](./docs/README.md) - Complete doc catalog
+
+---
+
+## Documentation
+
+### Core
+- [Desktop Build](./docs/DESKTOP_BUILD_GUIDE.md) - Build from source
+- [Testing](./docs/DESKTOP_BUILD_TESTING.md) - QA procedures
+- [CLI Tools](./scripts/VIBECODE_CLI.md) - Development toolkit
+
+### Advanced
+- [VM Providers](./docs/vm-provider-abstraction-api-design.md) - API specification
+- [Embedded Systems](./docs/tauri/EMBEDDED_SYSTEMS.md) - STM32, ESP32, Raspberry Pi
+- [Serial Automation](./docs/infrastructure/SERIAL_CONSOLE_AUTOMATION.md) - Device provisioning
+
+### Architecture
+- [Cross-Platform](./docs/ISSUE_686_CROSS_PLATFORM_BUILDS.md) - Build system
+- [Implementation Guide](./docs/vm-provider-implementation-guide.md) - Add VM providers
+- [Strategic Vision](./docs/concepts/EMBEDDED_VIBECODE.md) - Embedded roadmap
+
+## System Requirements
+
+- **macOS**: 10.13+ (High Sierra)
+- **Linux**: Ubuntu 20.04+, Debian 11+, Fedora 35+
+- **Windows**: 10 (build 1809+) or 11
+
+## Build from Source
+
+```bash
+# Install dependencies
+npm install --legacy-peer-deps
+
+# Build desktop app
+npm run tauri:build
+
+# Platform-specific scripts
+./scripts/desktop/build-macos.sh      # macOS
+./scripts/desktop/build-linux.sh      # Linux
+.\scripts\desktop\build-windows.ps1   # Windows
+```
 
 ## License
 

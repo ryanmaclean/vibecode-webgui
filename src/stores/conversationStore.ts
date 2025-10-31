@@ -663,9 +663,9 @@ export const useConversationStore = create<ConversationStore>()(
         onRehydrateStorage: () => (state) => {
           if (state) {
             // Convert arrays back to Maps
-            state.messages = new Map(state.messages as [string, Message[]][]);
-            state.pagination = new Map(state.pagination as [string, PaginationState][]);
-            state.lastSync = new Map(state.lastSync as [string, string][]);
+            state.messages = new Map(state.messages as unknown as [string, Message[]][]);
+            state.pagination = new Map(state.pagination as unknown as [string, PaginationState][]);
+            state.lastSync = new Map(state.lastSync as unknown as [string, string][]);
 
             // Recalculate metadata
             state.messages.forEach((_, agentId) => {

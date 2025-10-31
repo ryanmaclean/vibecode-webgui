@@ -1,0 +1,7 @@
+{
+  "timestamp": "2025-10-03T01:05:00Z",
+  "microvm_measure_ms": [6018, 6239, 6196],
+  "https_healthz_time_s": [0.012965, 0.005202, 0.019819, 0.005145, 0.020580],
+  "http_healthz_time_s": [0.001665, 0.001316, 0.001371, 0.001444, 0.001565],
+  "notes": "HTTPS proxy adds ~10-20ms vs direct HTTP; required for Safari extension testing."
+}

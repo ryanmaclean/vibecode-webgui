@@ -276,6 +276,13 @@ try {
 }
 ```
 
+## See Also
+
+- **[Embedded Systems Guide](EMBEDDED_SYSTEMS.md)** - Comprehensive embedded systems documentation
+- **[STM32 Embedded](STM32_EMBEDDED.md)** - Tauri on STM32 microcontrollers with serial provisioning
+- **[Serial Console Automation](../infrastructure/SERIAL_CONSOLE_AUTOMATION.md)** - Universal device provisioning pattern
+- **[Embedded VibeCode Vision](../concepts/EMBEDDED_VIBECODE.md)** - Strategic vision for embedded deployment
+
 ## References
 
 - **serialport-rs**: https://docs.rs/serialport/

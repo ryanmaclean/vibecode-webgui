@@ -1,0 +1,40 @@
+{
+  // Markdownlint CLI 2 configuration generated to keep docs consistent
+  "config": {
+    "default": true,
+    "MD012": false,
+    "MD013": false,
+    "MD022": false,
+    "MD024": false,
+    "MD026": false,
+    "MD031": false,
+    "MD032": false,
+    "MD033": false,
+    "MD034": false,
+    "MD041": false,
+    "MD047": false
+  },
+  "globs": [
+    "README.md",
+    "docs/NAS_DEPLOYMENT.md",
+    "docs/wiki/**/*.md",
+    "docs/logs/**/*.md",
+    "docker/code-server/README.md",
+    "docker/code-server/DEPLOYMENT_GUIDE.md",
+    "TODO.md",
+    ".archive/**/*.md",
+    ".backup/**/*.md"
+  ],
+  "ignores": [
+    "node_modules",
+    "coverage",
+    ".next",
+    "dist",
+    "build",
+    "playwright-report",
+    "public",
+    "docs/generated",
+    "CHANGELOG.md",
+    "**/snapshots/**"
+  ]
+}

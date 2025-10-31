@@ -1,40 +1,40 @@
-# Persistent Volume Claims for Code-Server Workspaces
-{{- if .Values.codeServer.persistence.enabled }}
+{{/*
+This template creates per-user PVCs for workspace storage
+It should be used with Helm template functions to generate PVCs for each user
+*/}}
+{{- define "vibecode-platform.persistentVolumeClaim" }}
+{{- $userId := .userId | required "userId is required for PVC" }}
+{{- $root := .root }}
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: workspace-{{ .Values.user.id | default "default" }}
-  namespace: {{ .Release.Namespace }}
+  name: {{ include "vibecode-platform.pvcName" . }}
+  namespace: {{ $root.Values.global.namespace }}
   labels:
-    app: code-server
-    user: {{ .Values.user.id | default "default" }}
-    component: workspace-storage
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+    vibecode.dev/created-at: {{ now | date "2006-01-02T15:04:05Z" | quote }}
+    {{- if $root.Values.codeServer.persistence.storageClass }}
+    volume.beta.kubernetes.io/storage-class: {{ $root.Values.codeServer.persistence.storageClass | quote }}
+    {{- end }}
 spec:
   accessModes:
-    - ReadWriteOnce
+    - {{ $root.Values.codeServer.persistence.accessMode }}
   resources:
     requests:
-      storage: {{ .Values.codeServer.persistence.workspace.size }}
-  {{- if .Values.codeServer.persistence.workspace.storageClass }}
-  storageClassName: {{ .Values.codeServer.persistence.workspace.storageClass }}
+      storage: {{ $root.Values.codeServer.persistence.size }}
+  {{- if $root.Values.codeServer.persistence.storageClass }}
+  storageClassName: {{ $root.Values.codeServer.persistence.storageClass | quote }}
   {{- end }}
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: extensions-{{ .Values.user.id | default "default" }}
-  namespace: {{ .Release.Namespace }}
-  labels:
-    app: code-server
-    user: {{ .Values.user.id | default "default" }}
-    component: extensions-storage
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: {{ .Values.codeServer.persistence.extensions.size }}
-  {{- if .Values.codeServer.persistence.extensions.storageClass }}
-  storageClassName: {{ .Values.codeServer.persistence.extensions.storageClass }}
-  {{- end }}
+{{- end }}
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create a PVC for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.persistentVolumeClaim" $context }}
 {{- end }}

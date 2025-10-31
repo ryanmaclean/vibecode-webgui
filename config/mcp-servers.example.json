@@ -1,0 +1,162 @@
+{
+  "$schema": "./mcp-servers.schema.json",
+  "version": "1.0",
+  "servers": [
+    {
+      "id": "vibecode-workspace",
+      "name": "VibeCode Workspace Tools",
+      "description": "MCP server providing workspace management tools for VibeCode",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "node",
+      "args": [
+        "${VIBECODE_ROOT}/src/mcp/server.ts"
+      ],
+      "env": {
+        "NODE_ENV": "production",
+        "NEXTAUTH_SECRET": "${NEXTAUTH_SECRET}",
+        "DATABASE_URL": "${DATABASE_URL}"
+      },
+      "capabilities": [
+        "tools",
+        "resources"
+      ],
+      "tools": [
+        "create_workspace",
+        "list_workspaces",
+        "delete_workspace",
+        "get_workspace_files",
+        "execute_in_workspace"
+      ]
+    },
+    {
+      "id": "roundtable-ai",
+      "name": "Roundtable Multi-Agent Orchestration",
+      "description": "MCP server for coordinating multiple AI agents on complex tasks",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "python",
+      "args": [
+        "-m",
+        "scripts.roundtable-mcp-wrapper"
+      ],
+      "env": {
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "ANTHROPIC_API_KEY": "${ANTHROPIC_API_KEY}"
+      },
+      "capabilities": [
+        "tools",
+        "prompts"
+      ],
+      "tools": [
+        "orchestrate_agents",
+        "create_agent",
+        "list_agents",
+        "get_agent_status",
+        "cancel_agent_task"
+      ]
+    },
+    {
+      "id": "filesystem",
+      "name": "Filesystem Tools",
+      "description": "Safe filesystem operations for AI agents",
+      "enabled": true,
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-filesystem",
+        "${WORKSPACE_ROOT}"
+      ],
+      "env": {},
+      "capabilities": [
+        "tools",
+        "resources"
+      ],
+      "tools": [
+        "read_file",
+        "write_file",
+        "list_directory",
+        "search_files",
+        "get_file_info"
+      ],
+      "permissions": {
+        "allowed_directories": [
+          "${WORKSPACE_ROOT}",
+          "${HOME}/Documents"
+        ],
+        "denied_patterns": [
+          ".git/**",
+          "node_modules/**",
+          ".env*"
+        ]
+      }
+    },
+    {
+      "id": "github",
+      "name": "GitHub Integration",
+      "description": "GitHub API operations via MCP",
+      "enabled": false,
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-github"
+      ],
+      "env": {
+        "GITHUB_TOKEN": "${GITHUB_TOKEN}"
+      },
+      "capabilities": [
+        "tools",
+        "resources"
+      ],
+      "tools": [
+        "create_issue",
+        "list_issues",
+        "create_pull_request",
+        "search_repositories",
+        "get_file_contents"
+      ]
+    },
+    {
+      "id": "web-search",
+      "name": "Web Search",
+      "description": "Web search capabilities for AI agents",
+      "enabled": false,
+      "transport": "stdio",
+      "command": "npx",
+      "args": [
+        "@modelcontextprotocol/server-brave-search"
+      ],
+      "env": {
+        "BRAVE_API_KEY": "${BRAVE_API_KEY}"
+      },
+      "capabilities": [
+        "tools"
+      ],
+      "tools": [
+        "web_search",
+        "local_search"
+      ]
+    }
+  ],
+  "global_settings": {
+    "auto_connect_on_startup": true,
+    "reconnect_on_failure": true,
+    "max_reconnect_attempts": 3,
+    "connection_timeout_ms": 5000,
+    "request_timeout_ms": 30000
+  },
+  "security": {
+    "require_confirmation_for": [
+      "write_file",
+      "delete_file",
+      "execute_in_workspace"
+    ],
+    "sandbox_mode": true,
+    "allowed_network_hosts": [
+      "api.github.com",
+      "api.openai.com",
+      "api.anthropic.com"
+    ]
+  }
+}

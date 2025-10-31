@@ -1,0 +1,37 @@
+# vfkit VM: Valkey Session Storage (Test Configuration)
+# Alpine ARM64 - Production-ready Valkey for VibeCode authentication
+# Uses existing VM infrastructure at ~/.vfkit/vms/vibecode-alpine
+#
+# LICENSE NOTE: Valkey is BSD-3-Clause licensed (Linux Foundation)
+# This replaces Redis which changed to restrictive RSAL/SSPL license
+# Valkey is 100% Redis-compatible fork maintained by Linux Foundation
+
+name: vibecode-valkey-test
+vcpus: 2
+memory: 1024  # 1GB (512MB for Valkey + 512MB OS)
+
+# Alpine ARM64 kernel and initrd (using existing infrastructure)
+kernel: /Users/ryan.maclean/.vfkit/vms/vibecode-alpine/kernel/vmlinux
+initrd: /Users/ryan.maclean/.vfkit/vms/vibecode-alpine/kernel/initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration (using existing disk)
+disks:
+  - path: /Users/ryan.maclean/.vfkit/vms/vibecode-alpine/disk/root.img
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:59"
+    forward:
+      # Valkey port (Redis-compatible)
+      - host_port: 6379
+        guest_port: 6379
+      # Optional: TLS/SSL port
+      - host_port: 6380
+        guest_port: 6380
+
+# Serial console
+serial:
+  - stdio

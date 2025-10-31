@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  openvscode:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: vibecode/openvscode-server:1.95.3
+    container_name: vibecode-openvscode
+    hostname: vibecode-openvscode
+
+    ports:
+      - "3000:3000"  # OpenVSCode Server
+
+    environment:
+      # OpenVSCode Server Configuration
+      - VSCODE_PORT=3000
+      - VSCODE_HOST=0.0.0.0
+      - WORKSPACE_DIR=/workspace
+      - NODE_ENV=production
+
+      # Datadog Configuration (optional)
+      - DATADOG_API_KEY=${DATADOG_API_KEY:-}
+      - DATADOG_SITE=${DATADOG_SITE:-datadoghq.com}
+
+      # Additional environment variables
+      - TZ=${TZ:-UTC}
+
+    volumes:
+      # Workspace persistence
+      - workspace:/workspace
+
+      # OpenVSCode Server extensions and settings
+      - vscode-extensions:/home/openvscode/.openvscode-server
+
+      # MCP servers (mount custom servers here)
+      - ./mcp-servers:/opt/mcp-servers:ro
+
+      # Optional: Git config
+      - ~/.gitconfig:/home/openvscode/.gitconfig:ro
+
+      # Optional: SSH keys for git operations
+      # - ~/.ssh:/home/openvscode/.ssh:ro
+
+    restart: unless-stopped
+
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+    # Resource limits
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+    # Security
+    security_opt:
+      - no-new-privileges:true
+
+    # Network
+    networks:
+      - vibecode-network
+
+networks:
+  vibecode-network:
+    driver: bridge
+
+volumes:
+  workspace:
+    driver: local
+  vscode-extensions:
+    driver: local

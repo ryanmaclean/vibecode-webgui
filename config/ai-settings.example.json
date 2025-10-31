@@ -1,0 +1,160 @@
+{
+  "$schema": "./ai-settings.schema.json",
+  "version": "1.0",
+  "description": "AI feature settings for VibeCode Desktop",
+
+  "code_completion": {
+    "enabled": true,
+    "provider": "auto",
+    "model": "auto",
+    "trigger_characters": [".", "::", "->", "=>"],
+    "auto_trigger_delay_ms": 300,
+    "min_trigger_length": 2,
+    "max_suggestions": 5,
+    "inline_preview": true,
+    "ghost_text": true,
+    "prefer_local": true,
+    "context_lines_before": 20,
+    "context_lines_after": 5,
+    "max_completion_length": 500
+  },
+
+  "chat": {
+    "enabled": true,
+    "provider": "auto",
+    "model": "auto",
+    "show_in_sidebar": true,
+    "default_position": "right",
+    "width_px": 400,
+    "max_conversation_length": 50,
+    "auto_trim_at_tokens": 8000,
+    "include_file_context": true,
+    "include_project_context": true,
+    "system_prompt": "You are an expert programming assistant integrated into VibeCode. Provide concise, accurate code help.",
+    "temperature": 0.7,
+    "max_tokens": 2000,
+    "stream_responses": true
+  },
+
+  "code_analysis": {
+    "enabled": true,
+    "auto_analyze": false,
+    "analyze_on_save": false,
+    "provider": "auto",
+    "model": "auto",
+    "checks": {
+      "security": true,
+      "performance": true,
+      "best_practices": true,
+      "code_smells": true,
+      "complexity": true
+    },
+    "severity_levels": ["error", "warning", "info"]
+  },
+
+  "refactoring": {
+    "enabled": true,
+    "provider": "auto",
+    "model": "auto",
+    "suggest_improvements": true,
+    "auto_format": false,
+    "preserve_comments": true,
+    "max_changes_per_action": 100
+  },
+
+  "agents": {
+    "enabled": true,
+    "max_concurrent_agents": 5,
+    "default_coordination": "parallel",
+    "timeout_seconds": 300,
+    "auto_integration_report": true,
+    "conflict_resolution": "ask_user",
+    "available_personas": [
+      "typescript_expert",
+      "rust_expert",
+      "python_expert",
+      "devops_specialist",
+      "quality_engineer",
+      "security_analyst",
+      "performance_optimizer",
+      "architecture_reviewer"
+    ]
+  },
+
+  "context_management": {
+    "max_context_tokens": 8000,
+    "auto_include_related_files": true,
+    "max_related_files": 5,
+    "include_imports": true,
+    "include_readme": true,
+    "include_tests": false,
+    "privacy_mode": false,
+    "exclude_patterns": [
+      "node_modules/**",
+      ".git/**",
+      "dist/**",
+      "build/**",
+      "*.min.js",
+      "*.map"
+    ]
+  },
+
+  "performance": {
+    "cache_enabled": true,
+    "cache_ttl_seconds": 3600,
+    "cache_max_size_mb": 100,
+    "parallel_requests": true,
+    "max_concurrent_requests": 4,
+    "request_timeout_ms": 30000,
+    "retry_failed_requests": true,
+    "max_retries": 3,
+    "streaming_chunk_size": 1024
+  },
+
+  "privacy": {
+    "telemetry_enabled": false,
+    "send_diagnostics": false,
+    "share_usage_stats": false,
+    "log_requests": false,
+    "anonymize_code": false,
+    "prefer_local_models": true,
+    "never_send": [
+      "api_keys",
+      "passwords",
+      "tokens",
+      "secrets",
+      ".env files"
+    ]
+  },
+
+  "ui": {
+    "show_provider_badge": true,
+    "show_model_name": true,
+    "show_latency": true,
+    "show_token_usage": true,
+    "show_cost_estimates": true,
+    "dark_mode": "auto",
+    "compact_mode": false,
+    "animations": true,
+    "sound_effects": false
+  },
+
+  "keyboard_shortcuts": {
+    "trigger_completion": "Ctrl+Space",
+    "accept_suggestion": "Tab",
+    "reject_suggestion": "Esc",
+    "open_chat": "Ctrl+Shift+L",
+    "ask_about_selection": "Ctrl+Shift+K",
+    "explain_code": "Ctrl+Shift+E",
+    "refactor_code": "Ctrl+Shift+R",
+    "analyze_code": "Ctrl+Shift+A"
+  },
+
+  "experimental": {
+    "multi_line_completion": true,
+    "function_signature_help": true,
+    "auto_documentation": false,
+    "predictive_editing": false,
+    "voice_input": false
+  }
+}

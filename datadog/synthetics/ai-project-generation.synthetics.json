@@ -1,0 +1,70 @@
+{
+  "config": {
+    "assertions": [
+      {
+        "operator": "is",
+        "type": "statusCode",
+        "target": 200
+      },
+      {
+        "operator": "lessThan",
+        "type": "responseTime",
+        "target": 30000
+      },
+      {
+        "operator": "is",
+        "property": "content-type",
+        "type": "header",
+        "target": "application/json; charset=utf-8"
+      },
+      {
+        "operator": "validates",
+        "type": "body",
+        "target": {
+          "jsonPath": "$.workspaceUrl",
+          "operator": "isPresent"
+        }
+      }
+    ],
+    "configVariables": [
+      {
+        "example": "your-session-token",
+        "name": "VIBECODE_SESSION_TOKEN",
+        "pattern": ".*",
+        "type": "secret"
+      }
+    ],
+    "request": {
+      "method": "POST",
+      "url": "https://app.vibecode.com/api/ai/generate-project",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cookie": "next-auth.session-token={{ VIBECODE_SESSION_TOKEN }}"
+      },
+      "body": "{\"prompt\":\"Create a simple React app with a single button that shows an alert when clicked.\"}",
+      "bodyType": "raw"
+    }
+  },
+  "locations": [
+    "aws:us-east-1"
+  ],
+  "message": "Monitor the performance and availability of the AI project generation endpoint. Notifies @slack-vibecode-alerts if the endpoint is slow or returns an error.",
+  "name": "AI Project Generation - Performance Test",
+  "options": {
+    "min_failure_duration": 120,
+    "min_location_failed": 1,
+    "monitor_options": {
+      "renotify_interval": 0
+    },
+    "tick_every": 3600
+  },
+  "public_id": "vib-ecd-aig-perf",
+  "subtype": "http",
+  "tags": [
+    "env:production",
+    "team:platform",
+    "service:ai-gateway",
+    "critical:true"
+  ],
+  "type": "api"
+}

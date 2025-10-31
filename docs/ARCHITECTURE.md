@@ -254,7 +254,7 @@ Kubernetes as primary deployment target with Docker fallback
 - **Negative**: Operational complexity, learning curve
 - **Mitigation**: Helm charts simplify deployment, KinD for local testing
 
-**Implementation**: `k8s/`, `helm/`, `docker-compose.yml`
+**Implementation**: `k8s/`, `charts/`, `docker-compose.yml`
 
 ### ADR-006: Monitoring Strategy - Datadog
 
@@ -1147,7 +1147,7 @@ spec:
 
 **Chart Structure**:
 ```
-helm/vibecode-platform/
+charts/vibecode-platform/
 ├── Chart.yaml
 ├── values.yaml
 ├── templates/
@@ -1166,7 +1166,7 @@ helm/vibecode-platform/
 
 **Installation**:
 ```bash
-helm install vibecode ./helm/vibecode-platform \
+helm install vibecode ./charts/vibecode-platform \
   --namespace vibecode \
   --create-namespace \
   --values values/production.yaml
@@ -1197,7 +1197,7 @@ az aks create \
   --generate-ssh-keys
 
 # Deploy with Helm
-helm install vibecode ./helm/vibecode-platform \
+helm install vibecode ./charts/vibecode-platform \
   --set ingress.className=azure-application-gateway
 ```
 
@@ -1220,7 +1220,7 @@ gcloud container clusters create vibecode-gke \
   --max-nodes 10
 
 # Deploy with Helm
-helm install vibecode ./helm/vibecode-platform \
+helm install vibecode ./charts/vibecode-platform \
   --set ingress.className=gce
 ```
 
@@ -1244,7 +1244,7 @@ eksctl create cluster \
   --nodes-max 10
 
 # Deploy with Helm
-helm install vibecode ./helm/vibecode-platform \
+helm install vibecode ./charts/vibecode-platform \
   --set ingress.className=alb
 ```
 
@@ -1269,7 +1269,7 @@ helm install vibecode ./helm/vibecode-platform \
 - `scripts/cloud/gcp/*` - GCP VM management
 - `scripts/cloud/aws/*` - AWS EC2 management
 - `scripts/cloud/docker/*` - Local Compose bundle
-- `helm/code-server-cloud/` - Kubernetes Helm chart
+- `charts/code-server-cloud/` - Kubernetes Helm chart
 
 ---
 

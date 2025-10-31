@@ -315,3 +315,70 @@ model Setting {
 
   @@map("settings")
 }
+
+// Experimentation Platform - Data Warehouse Layer
+model Experiment {
+  id          String   @id @default(cuid())
+  key         String   @unique
+  name        String
+  description String?
+  status      ExperimentStatus @default(DRAFT)
+  config      Json     // Variants, traffic allocation, targeting rules
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  startedAt   DateTime? @map("started_at")
+  completedAt DateTime? @map("completed_at")
+
+  assignments ExperimentAssignment[]
+  metrics     ExperimentMetric[]
+
+  @@index([status, createdAt])
+  @@index([key])
+  @@map("experiments")
+}
+
+enum ExperimentStatus {
+  DRAFT
+  REVIEW
+  RUNNING
+  COMPLETED
+  ARCHIVED
+}
+
+model ExperimentAssignment {
+  id           String   @id @default(cuid())
+  experimentId String   @map("experiment_id")
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  userId       String   @map("user_id")
+  variantKey   String   @map("variant_key")
+  assignedAt   DateTime @default(now()) @map("assigned_at")
+  metadata     Json?    // User properties, targeting context
+
+  metrics      ExperimentMetric[]
+
+  @@unique([experimentId, userId], name: "experiment_id_user_id")
+  @@index([experimentId, variantKey])
+  @@index([userId])
+  @@index([assignedAt])
+  @@map("experiment_assignments")
+}
+
+model ExperimentMetric {
+  id           String   @id @default(cuid())
+  experimentId String   @map("experiment_id")
+  experiment   Experiment @relation(fields: [experimentId], references: [id], onDelete: Cascade)
+
+  assignmentId String   @map("assignment_id")
+  assignment   ExperimentAssignment @relation(fields: [assignmentId], references: [id], onDelete: Cascade)
+
+  metricName   String   @map("metric_name")
+  metricValue  Float    @map("metric_value")
+  timestamp    DateTime @default(now())
+  metadata     Json?
+
+  @@index([experimentId, metricName])
+  @@index([assignmentId, metricName])
+  @@index([timestamp])
+  @@map("experiment_metrics")
+}

@@ -3,7 +3,7 @@
  * Initializes all monitoring components for production deployment
  */
 
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { monitoring } from './datadog-client'
 import { alertsManager } from './alerts-configuration'
 import { enhancedAlerting } from './enhanced-alerting'

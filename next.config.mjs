@@ -122,7 +122,7 @@ const nextConfig = {
   images: {
     domains: ['localhost'],
     formats: ['image/webp', 'image/avif'],
-    unoptimized: false,
+    unoptimized: true,
   },
   // Enable compression for production builds
   compress: true,

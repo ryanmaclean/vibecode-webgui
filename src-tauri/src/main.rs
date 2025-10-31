@@ -1,12 +1,14 @@
 // Prevents additional console window on Windows in release
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
 
+mod ai;
 mod browser;
 mod commands;
 mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod tailscale;
 
 // use tauri::Manager; // Removed unused import
 
@@ -59,6 +61,21 @@ fn main() {
             ml::commands::ml_get_device_info,
             ml::commands::ml_get_capabilities,
             ml::commands::ml_init,
+            // AI commands
+            ai::ai_chat,
+            ai::ai_complete,
+            ai::ai_check_local_models,
+            ai::ai_list_models,
+            ai::ai_chat_stream,
+            ai::mcp_connect,
+            ai::mcp_list_tools,
+            ai::mcp_call_tool,
+            ai::agent_create_task,
+            ai::agent_get_status,
+            ai::agent_cancel_task,
+            // Tailscale commands (if implemented)
+            // tailscale::commands::tailscale_status,
+            // tailscale::commands::tailscale_get_ip,
         ])
         .setup(|app| {
             // Initialize system tray

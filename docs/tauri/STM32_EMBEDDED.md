@@ -261,10 +261,36 @@ fn create_ui(screen: &mut lvgl::Screen) {
 
 ## Serial Communication Integration
 
-```rust
-// Combine Tauri + Serial for STM32
-use stm32h7xx_hal::serial;
+### Integration with VibeCode Serial Automation
 
+VibeCode's proven serial console automation pattern (see [SERIAL_CONSOLE_AUTOMATION.md](/Users/studio/Documents/vibecode-webgui/docs/infrastructure/SERIAL_CONSOLE_AUTOMATION.md)) can be used to provision STM32 devices at scale.
+
+#### Serial Provisioning Pattern
+
+```bash
+# Universal STM32 provisioning via serial console
+(
+  echo "reboot bootloader"
+  sleep 2
+  echo "flash firmware.bin 0x08000000"
+  sleep 5
+  echo "config set device_id STM32-${RANDOM}"
+  sleep 1
+  echo "config set server_url https://vibecode.io"
+  sleep 1
+  echo "boot"
+) > /dev/ttyUSB0
+```
+
+### Tauri Serial Commands for STM32
+
+```rust
+// src-tauri/src/stm32_serial.rs
+use stm32h7xx_hal::serial;
+use serialport::SerialPort;
+use std::time::Duration;
+
+/// Read from external device via UART
 #[tauri::command]
 fn read_external_device() -> Result<Vec<u8>, String> {
     let mut uart = UART1.lock().unwrap();
@@ -278,7 +304,143 @@ fn read_external_device() -> Result<Vec<u8>, String> {
 
     Ok(buf[..n].to_vec())
 }
+
+/// Provision STM32 device via serial console (from host PC)
+#[tauri::command]
+pub async fn provision_stm32_device(
+    port: String,
+    firmware_path: String,
+    device_config: DeviceConfig,
+) -> Result<String, String> {
+    let mut port = serialport::new(&port, 115200)
+        .timeout(Duration::from_millis(100))
+        .open()
+        .map_err(|e| format!("Failed to open port: {}", e))?;
+
+    // Step 1: Enter bootloader
+    port.write_all(b"reboot bootloader\r\n")?;
+    tokio::time::sleep(Duration::from_secs(2)).await;
+
+    // Step 2: Flash firmware
+    let firmware = std::fs::read(&firmware_path)
+        .map_err(|e| format!("Failed to read firmware: {}", e))?;
+
+    port.write_all(format!("flash {} 0x08000000\r\n", firmware_path).as_bytes())?;
+    tokio::time::sleep(Duration::from_secs(5)).await;
+
+    // Step 3: Configure device
+    port.write_all(format!("config set device_id {}\r\n", device_config.device_id).as_bytes())?;
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    port.write_all(format!("config set server_url {}\r\n", device_config.server_url).as_bytes())?;
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    // Step 4: Boot application
+    port.write_all(b"boot\r\n")?;
+    tokio::time::sleep(Duration::from_secs(1)).await;
+
+    // Step 5: Verify
+    port.write_all(b"status\r\n")?;
+    let mut buffer = vec![0; 1024];
+    let n = port.read(&mut buffer)?;
+    let response = String::from_utf8_lossy(&buffer[0..n]);
+
+    if response.contains("RUNNING") {
+        Ok(format!("Device {} provisioned successfully", device_config.device_id))
+    } else {
+        Err(format!("Provisioning failed: {}", response))
+    }
+}
+
+/// Mass provision multiple STM32 devices in parallel
+#[tauri::command]
+pub async fn provision_stm32_batch(
+    devices: Vec<DeviceProvisionRequest>,
+) -> Result<Vec<ProvisionResult>, String> {
+    let mut handles = vec![];
+
+    for device in devices {
+        let handle = tokio::spawn(async move {
+            match provision_stm32_device(
+                device.port,
+                device.firmware_path,
+                device.config,
+            ).await {
+                Ok(msg) => ProvisionResult {
+                    device_id: device.config.device_id,
+                    status: "success".to_string(),
+                    message: msg,
+                },
+                Err(e) => ProvisionResult {
+                    device_id: device.config.device_id,
+                    status: "failed".to_string(),
+                    message: e,
+                },
+            }
+        });
+        handles.push(handle);
+    }
+
+    let results = futures::future::join_all(handles).await;
+    Ok(results.into_iter().filter_map(|r| r.ok()).collect())
+}
+
+#[derive(serde::Deserialize)]
+pub struct DeviceConfig {
+    pub device_id: String,
+    pub server_url: String,
+}
+
+#[derive(serde::Deserialize)]
+pub struct DeviceProvisionRequest {
+    pub port: String,
+    pub firmware_path: String,
+    pub config: DeviceConfig,
+}
+
+#[derive(serde::Serialize)]
+pub struct ProvisionResult {
+    pub device_id: String,
+    pub status: String,
+    pub message: String,
+}
 ```
+
+### Frontend Integration
+
+```typescript
+// Provision single STM32 device
+import { invoke } from '@tauri-apps/api/core';
+
+async function provisionDevice() {
+  const result = await invoke('provision_stm32_device', {
+    port: '/dev/ttyUSB0',
+    firmwarePath: '/path/to/firmware.bin',
+    deviceConfig: {
+      device_id: 'STM32-12345',
+      server_url: 'https://api.vibecode.io'
+    }
+  });
+  console.log('Provisioning result:', result);
+}
+
+// Mass provision 100 devices
+async function provisionBatch() {
+  const devices = [];
+  for (let i = 0; i < 100; i++) {
+    devices.push({
+      port: `/dev/ttyUSB${i}`,
+      firmwarePath: '/path/to/firmware.bin',
+      config: {
+        device_id: `STM32-BATCH-${i}`,
+        server_url: 'https://api.vibecode.io'
+      }
+    });
+  }
+
+  const results = await invoke('provision_stm32_batch', { devices });
+  console.log(`Provisioned ${results.filter(r => r.status === 'success').length} devices`);
+}
 
 ## Use Cases
 

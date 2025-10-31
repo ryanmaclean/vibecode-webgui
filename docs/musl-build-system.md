@@ -169,7 +169,7 @@ Automated CI/CD workflow that:
 
 ## Datadog Dashboard
 
-### `configs/datadog/musl-build-dashboard.json`
+### `config/datadog/musl-build-dashboard.json`
 
 Comprehensive dashboard tracking:
 
@@ -193,13 +193,13 @@ Comprehensive dashboard tracking:
 
 ```bash
 # Using Datadog CLI
-datadog-ci dashboard import configs/datadog/musl-build-dashboard.json
+datadog-ci dashboard import config/datadog/musl-build-dashboard.json
 
 # Or via API
 curl -X POST "https://api.datadoghq.com/api/v1/dashboard" \
   -H "Content-Type: application/json" \
   -H "DD-API-KEY: ${DD_API_KEY}" \
-  -d @configs/datadog/musl-build-dashboard.json
+  -d @config/datadog/musl-build-dashboard.json
 ```
 
 ---

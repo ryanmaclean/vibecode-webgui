@@ -1,0 +1,151 @@
+# vfkit VM: PostgreSQL Database with pgvector
+# Alpine ARM64 - Advanced database with vector search for VibeCode
+# Usage: vfkit --config postgresql-vm.yaml
+
+name: vibecode-postgresql
+vcpus: 2
+memory: 2048  # 2GB
+
+# Alpine ARM64 kernel and initrd
+kernel: /opt/vibecode/kernels/alpine-arm64-virt
+initrd: /opt/vibecode/initrd/alpine-arm64-initramfs
+cmdline: "console=hvc0 root=/dev/vda modules=sd-mod,usb-storage,ext4 quiet rootfstype=ext4"
+
+# Disk configuration
+disks:
+  - path: /opt/vibecode/disks/postgresql-vm.img
+    size: 20G
+    format: raw
+  - path: /opt/vibecode/disks/postgresql-data.img
+    size: 50G
+    format: raw
+
+# Network configuration
+network:
+  - mode: nat
+    mac: "52:54:00:12:34:60"
+    forward:
+      - host_port: 5432
+        guest_port: 5432
+
+# Serial console
+serial:
+  - stdio
+
+# Resource limits
+limits:
+  cpu_percent: 60
+  io_weight: 800  # Higher I/O priority for database
+
+# PostgreSQL with pgvector setup script
+setup: |
+  #!/bin/sh
+  # Update and install PostgreSQL
+  apk update
+  apk add --no-cache \
+    postgresql \
+    postgresql-contrib \
+    postgresql-client \
+    postgresql-dev \
+    build-base \
+    git \
+    curl \
+    procps
+
+  # Initialize PostgreSQL data directory
+  mkdir -p /var/lib/postgresql/data
+  chown -R postgres:postgres /var/lib/postgresql
+
+  # Check if second disk exists and mount it
+  if [ -b /dev/vdb ]; then
+    echo "Formatting and mounting data disk..."
+    mkfs.ext4 -F /dev/vdb
+    mount /dev/vdb /var/lib/postgresql/data
+    chown -R postgres:postgres /var/lib/postgresql/data
+  fi
+
+  # Initialize database cluster
+  su - postgres -c "initdb -D /var/lib/postgresql/data"
+
+  # Configure PostgreSQL
+  cat >> /var/lib/postgresql/data/postgresql.conf <<EOF
+# Network
+listen_addresses = '*'
+port = 5432
+
+# Connections
+max_connections = 100
+superuser_reserved_connections = 3
+
+# Memory
+shared_buffers = 512MB
+effective_cache_size = 1536MB
+work_mem = 16MB
+maintenance_work_mem = 128MB
+
+# WAL
+wal_buffers = 16MB
+checkpoint_completion_target = 0.9
+
+# Query Tuning
+random_page_cost = 1.1
+effective_io_concurrency = 200
+
+# Logging
+logging_collector = on
+log_directory = '/var/log/postgresql'
+log_filename = 'postgresql-%Y-%m-%d.log'
+log_rotation_age = 1d
+log_rotation_size = 100MB
+log_line_prefix = '%t [%p]: [%l-1] user=%u,db=%d,app=%a,client=%h '
+log_checkpoints = on
+log_connections = on
+log_disconnections = on
+log_duration = off
+log_lock_waits = on
+EOF
+
+  # Allow remote connections
+  cat >> /var/lib/postgresql/data/pg_hba.conf <<EOF
+# Allow connections from Docker network
+host    all             all             0.0.0.0/0               md5
+host    all             all             ::/0                    md5
+EOF
+
+  # Create log directory
+  mkdir -p /var/log/postgresql
+  chown -R postgres:postgres /var/log/postgresql
+
+  # Start PostgreSQL
+  su - postgres -c "pg_ctl -D /var/lib/postgresql/data -l /var/log/postgresql/postgresql.log start"
+
+  # Wait for PostgreSQL to start
+  sleep 3
+
+  # Create vibecode database and user
+  su - postgres -c "psql -c \"CREATE USER vibecode WITH PASSWORD 'vibecode';\""
+  su - postgres -c "psql -c \"CREATE DATABASE vibecode OWNER vibecode;\""
+  su - postgres -c "psql -c \"GRANT ALL PRIVILEGES ON DATABASE vibecode TO vibecode;\""
+
+  # Install pgvector extension (if available)
+  su - postgres -c "psql -d vibecode -c \"CREATE EXTENSION IF NOT EXISTS vector;\"" 2>/dev/null || \
+    echo "Note: pgvector extension not available in Alpine repos, skipping"
+
+  # Create test table
+  su - postgres -c "psql -d vibecode -c \"
+    CREATE TABLE IF NOT EXISTS health_check (
+      id SERIAL PRIMARY KEY,
+      checked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      status TEXT
+    );
+    INSERT INTO health_check (status) VALUES ('initialized');
+  \""
+
+  echo "PostgreSQL ready at localhost:5432"
+  echo "Database: vibecode"
+  echo "User: vibecode"
+  echo "Password: vibecode"
+  echo "Connection string: postgresql://vibecode:vibecode@localhost:5432/vibecode"
+
+  # Keep container running and show logs
+  tail -f /var/log/postgresql/postgresql.log
