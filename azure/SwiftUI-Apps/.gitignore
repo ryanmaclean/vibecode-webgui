@@ -1,0 +1,22 @@
+# Environment variables (contains secrets)
+.env.local
+
+# Build artifacts
+LiquidGlassVibeCode
+*.app
+*.dSYM
+*.zip
+*.dmg
+*.pkg
+
+# Large binary files (use GitHub Releases instead)
+*.cpio.gz
+*.img
+vmlinux-*
+
+# Logs
+*.log
+logs/
+
+# macOS
+.DS_Store

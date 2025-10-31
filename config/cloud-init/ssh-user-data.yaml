@@ -1,0 +1,22 @@
+#cloud-config
+
+# SSH Configuration for VibeCode VMs
+users:
+  - name: vibecode
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/ash
+    ssh_authorized_keys:
+      - ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIKN8CTte5n1dKpcUBBjgf03zGqF0JI+zyi190nntv/KZ vibecode-vm-access
+
+# Install and configure SSH
+packages:
+  - openssh
+  - openssh-server
+
+runcmd:
+  - rc-update add sshd default
+  - rc-service sshd start
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - echo "PasswordAuthentication no" >> /etc/ssh/sshd_config
+  - rc-service sshd restart

@@ -1,0 +1,39 @@
+Add E2E GUI testing with Datadog integration
+
+Major Features:
+- DogStatsDClient for native Datadog metrics (UDP to localhost:8125)
+- Comprehensive E2E test suite covering GUI interactions
+- AppleScript automation for button-click testing
+- Full Datadog instrumentation in VMManager
+
+Testing Infrastructure:
+- test-gui.sh: GUI launch and entitlement verification
+- test-gui-interactions.sh: AppleScript-based UI automation
+- test-e2e-with-datadog.sh: Full workflow with metrics validation
+- service-tests.sh: Port connectivity checks
+- functional-tests.sh: VM boot verification
+- regression-tests.sh: Build and infrastructure checks
+
+Datadog Metrics:
+- vibecode.vm.discovered_count
+- vibecode.vm.start.attempt
+- vibecode.vm.start.success
+- vibecode.vm.start.failure
+- vibecode.vm.start.duration
+- vibecode.vm.running_count
+- Events for all VM lifecycle changes
+- All metrics tagged with vm_name, vm_id, errors
+
+Infrastructure:
+- Updated developer menu with all test options
+- GitHub Actions CI/CD with full test suite
+- Proper code signing with entitlements
+- Parallel build/test support
+
+Test Results:
+- GUI launches without entitlement errors
+- All 6 VMs discovered and startable
+- Services accessible (PostgreSQL, Valkey, Node.js, VSCode)
+- Datadog metrics working
+- App stability confirmed
+

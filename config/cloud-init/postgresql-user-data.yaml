@@ -1,0 +1,61 @@
+#cloud-config
+
+# PostgreSQL VM Configuration
+hostname: vibecode-postgresql
+
+packages:
+  - postgresql
+  - postgresql-client
+  - postgresql-contrib
+  - openssh
+  - curl
+  - bash
+
+# Create vibecode user with SSH access
+users:
+  - name: vibecode
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/ash
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+# Initialize and configure PostgreSQL
+runcmd:
+  # Initialize PostgreSQL
+  - rc-update add postgresql default
+  - mkdir -p /run/postgresql
+  - chown postgres:postgres /run/postgresql
+  - su - postgres -c "initdb -D /var/lib/postgresql/data"
+  
+  # Configure PostgreSQL to listen on all interfaces
+  - echo "listen_addresses = '*'" >> /var/lib/postgresql/data/postgresql.conf
+  - echo "host all all 0.0.0.0/0 md5" >> /var/lib/postgresql/data/pg_hba.conf
+  - echo "host all all ::0/0 md5" >> /var/lib/postgresql/data/pg_hba.conf
+  
+  # Set postgres password
+  - rc-service postgresql start
+  - sleep 5
+  - su - postgres -c "psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
+  
+  # Create test database
+  - su - postgres -c "psql -c \"CREATE DATABASE vibecode;\""
+  
+  # Configure SSH
+  - rc-update add sshd default
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+  - rc-service sshd start
+  
+  # Log completion
+  - echo "PostgreSQL VM setup complete" > /var/log/vibecode-setup.log
+  - echo "PostgreSQL listening on port 5432" >> /var/log/vibecode-setup.log
+
+write_files:
+  - path: /etc/motd
+    content: |
+      VibeCode PostgreSQL VM
+      PostgreSQL Server Ready
+      Connect: psql -h <vm-ip> -U postgres -d vibecode
+      Password: postgres
+

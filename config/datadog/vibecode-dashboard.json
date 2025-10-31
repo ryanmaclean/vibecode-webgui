@@ -1,0 +1,115 @@
+{
+  "title": "VibeCode VM Monitoring",
+  "description": "Real-time monitoring of VibeCode virtual machines",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "VM Start Success Rate",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:vibecode.vm.start.success{*}.as_count() / sum:vibecode.vm.start.attempt{*}.as_count()) * 100",
+            "aggregator": "avg"
+          }
+        ],
+        "custom_unit": "%",
+        "precision": 2
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "VM Boot Duration (p95)",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "p95:vibecode.vm.start.duration{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "custom_unit": "ms"
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Running VMs",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "max:vibecode.vm.running.count{*}",
+            "aggregator": "last"
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "VM Start Attempts Over Time",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.vm.start.attempt{*}.as_count()",
+            "display_type": "bars"
+          },
+          {
+            "q": "sum:vibecode.vm.start.success{*}.as_count()",
+            "display_type": "bars"
+          },
+          {
+            "q": "sum:vibecode.vm.start.failure{*}.as_count()",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "VM Boot Duration Distribution",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.vm.start.duration{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "p95:vibecode.vm.start.duration{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "max:vibecode.vm.start.duration{*}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "VMs by Status",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(max:vibecode.vm.running.count{*} by {vm_name}, 10, 'mean', 'desc')"
+          }
+        ]
+      }
+    }
+  ],
+  "layout_type": "ordered",
+  "template_variables": [
+    {
+      "name": "vm_name",
+      "default": "*",
+      "prefix": "vm_name"
+    },
+    {
+      "name": "host",
+      "default": "*",
+      "prefix": "host"
+    }
+  ]
+}

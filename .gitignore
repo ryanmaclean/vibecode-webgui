@@ -1,274 +1,58 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# Dependency directories
+# Dependencies
 node_modules/
-docs/node_modules/
-extensions/vibecode-ai-assistant/node_modules/
-.pnp
-.pnp.*
-.yarn/
-.npm/
-jspm_packages/
-bower_components/
-
-# Package manager artefacts
-package-lock.json.merge
-yarn-error.log*
-npm-debug.log*
+.pnpm-store/
 
 # Build outputs
+dist/
 .next/
 out/
-dist/
 build/
-public/
-.nuxt/
-.vuepress/dist/
-.serverless/
-playwright-report/
-playwright-output/
-coverage/
-*.lcov
+.build/
+target/
 
-# Generated docs and assets
-docs/dist/
-.github/workflows.backup.*/
-
-# Temporary or cached data
-.cache/
-.parcel-cache/
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-.eslintcache
-.nyc_output
-.dynamodb/
-.fusebox/
-.tern-port
-.node_repl_history
-.yarn/cache
-.yarn/unplugged
-.yarn/build-state.yml
-.yarn/install-state.gz
-
-# Local tooling artefacts
-tmp/
-temp/
-.pre-commit-cache/
-.test-results/
-# Logs & diagnostics
-logs/
-!docs/logs/
+# Environment
+.env
+.env.local
+.env.*.local
 *.log
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-lerna-debug.log*
-.pnpm-debug.log*
-report.[0-9]*.[0-9]*.[0-9]*.[0-9]*.json
-runtime/
-pids
-*.pid
-*.pid.lock
-.vscode-test/
-.vscode/
-.idea/
-_tools/
 
-# OS generated files
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
 .DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
 Thumbs.db
 
-# Environment files
-.env
-.env.*
-
-# Node.js dependencies & build artefacts
-lib-cov
-coverage/
-*.lcov
-.nyc_output
-.grunt
-bower_components/
-web_modules/
-build/Release
-.npm
-.eslintcache
-.parcel-cache
-.rpt2_cache/
-.rts2_cache_cjs/
-.rts2_cache_es/
-.rts2_cache_umd/
-.pnpm-store/
-.yarn-integrity
-
-# Extension build outputs
-extensions/vibecode-ai-assistant/out/
-extensions/vibecode-ai-assistant/*.vsix
-
-# Repo specific temp data
-.temp/
-# Backup / logs / archives
-*.bak
-*.log
-!docs/logs/*.log
-.archive/
-*.tgz
-macos-vm/.build/
-src-tauri/swift/.build/
-src-tauri/resources/vfkit*
-src-tauri/release-artifacts/
-infrastructure/**/secrets/
-k8s/secrets/
-
-# VM directories - exclude large binaries but keep source files
-# Package with scripts/release/package-fast-openvscode-vm.sh and upload to releases
-fast-openvscode-vm/*.cpio.gz
-fast-openvscode-vm/*.tar.gz
-fast-openvscode-vm/vmlinuz-*
-fast-openvscode-vm/qemu.log
-fast-openvscode-vm/downloads/
-fast-openvscode-vm/rootfs/bin/
-fast-openvscode-vm/rootfs//lib/
-fast-openvscode-vm/rootfs/lib64/
-fast-openvscode-vm/rootfs/opt/
-fast-openvscode-vm/rootfs/usr/
-fast-openvscode-vm/rootfs/var/
-fast-openvscode-vm/rootfs/home/
-fast-openvscode-vm/rootfs/proc/
-fast-openvscode-vm/rootfs/sys/
-fast-openvscode-vm/rootfs/dev/
-fast-openvscode-vm/rootfs/run/
-fast-openvscode-vm/rootfs/tmp/
-# Keep: rootfs/init, rootfs/etc/*, and all scripts in scripts/
-
-# Insiders VM - same pattern
-fast-openvscode-vm-insiders/
-
-# Benchmark kernel builds
-bench-images/
-
-# Build artifacts and work directories
-artifacts/
-
-# Terraform and IaC artefacts
-*.tfvars
-*.tfplan
-*.terraform.lock.hcl
-.terraform/
-**/.terraform/
-
-# Build metadata
-*.tsbuildinfo
-typecheck.log
-
-# Python artefacts
-__pycache__/
-*.py[cod]
-*$py.class
-.Python
-build/
-develop-eggs/
-downloads/
-eggs/
-.eggs/
-/lib/
-lib64/
-parts/
-sdist/
-var/
-*.egg-info/
-*.egg
-pip-log.txt
-pip-delete-this-directory.txt
-htmlcov/
-.tox/
-.nox/
-.coverage
-.coverage.*
-.pytest_cache/
-nosetests.xml
-coverage.xml
-*.cover
-*.py,cover
-.hypothesis/
-.ipynb_checkpoints
-.venv/
-venv/
-ENV/
-env/
-env.bak/
-venv.bak/
-.envrc
-local_settings.py
-db.sqlite3
-db.sqlite3-journal
-
-# Visual Studio artefacts
-.vs/
-[Bb]in/
-[Oo]bj/
-*.suo
-*.user
-*.userosscache
-*.sln.docstates
-*.vcxproj.user
-*.pdb
-*.cache
-*.aps
-*.ncb
-*.opendb
-.VC.db
-node_modules/
-docs/node_modules/
-node_modules/
-docs/node_modules/
-services/*/node_modules/
-
-ipsw-archive/
-*.ipsw
+# VM images and data
+dist/vm-images/*.img
+dist/vm-images/*-efi.nvram
 *.qcow2
-*.dmg
-vfkit-*/
-vfkit-boot/
-vibecode-macos-vfkit.qcow2
-screenshot-*.png
-screenshot-*.jpg
-initrd
-vmlinuz
-hardware-model
-machine-id
-simple-macos-vm-demo/
-swift-vfkit-macos/
-services/*/node_modules/
+*.iso
 
-# Release artifacts (should only be in GitHub Releases, not in repo)
-release-artifacts/
-dist-pkg/
-pkg-build/
-releases/
+# Temporary files
+/tmp/
+*.tmp
+*-debug.log
 
-# Test artifacts (videos, screenshots, etc)
-*.webm
-test-failed*.png
-.archive/
+# Datadog
+DATADOG_SOLUTIONS_VERIFIED.md
+DATADOG_SOLUTIONS_SUMMARY.md
 
-# Build caches
-.serena/cache/
-docs/.astro/
+# Documentation drafts
+docs/research/
 
-# Large binaries
-bin/apple-container-runtime
-scripts/vibecode-demo
+# macOS specific
+*.app
+*.dSYM
+xcuserdata/
+DerivedData/
 
-# Package files
-*.pkg
-*.app.zip
-*.tar.gz
-!src/**/*.tar.gz
+# Lima VMs
+.lima/
+
+# Rust
+Cargo.lock

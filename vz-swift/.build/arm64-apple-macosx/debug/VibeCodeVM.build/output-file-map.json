@@ -16,6 +16,13 @@
     "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.swiftdeps",
     "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.dia"
   },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MinimalTest.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.dia"
+  },
   "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift": {
     "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.d",
     "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swift.o",
@@ -29,6 +36,13 @@
     "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM~partial.swiftmodule",
     "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swiftdeps",
     "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.dia"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/TestWithDisk.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.dia"
   },
   "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/WindowsVM.swift": {
     "dependencies": "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.d",

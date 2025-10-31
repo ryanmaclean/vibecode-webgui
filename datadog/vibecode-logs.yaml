@@ -1,0 +1,18 @@
+# Datadog log collection for VibeCode
+# Copy this file to: /opt/datadog-agent/etc/conf.d/vibecode.d/conf.yaml
+# Then run: sudo launchctl stop com.datadoghq.agent && sudo launchctl start com.datadoghq.agent
+logs:
+  - type: file
+    path: /Users/ryan.maclean/vibecode-webgui/logs/vibecode.log
+    service: vibecode
+    source: swift
+    sourcecategory: application
+    tags:
+      - env:development
+      - app:vibecode
+      - platform:macos
+    log_processing_rules:
+      - type: multi_line
+        name: json_log_lines
+        pattern: ^\{
+

@@ -1,0 +1,126 @@
+# Lima VM Configuration for Valkey with Datadog Agent
+# Agent: Platform Engineer
+
+vmType: "vz"
+os: "Linux"
+arch: "aarch64"
+
+images:
+  - location: "https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/cloud/nocloud_alpine-3.22.0-aarch64-uefi-cloudinit-r0.qcow2"
+    arch: "aarch64"
+    digest: "sha512:30b347397387926eeb939d93c926e09833f5b49c6c6de5cc225ccdfe6e54aba88251c71da264c7e4260e78132b50e34b93409c8b4da2e843e68a4dc35fc6b155"
+
+cpus: 2
+memory: "1GiB"
+disk: "10GiB"
+
+mounts:
+  - location: "~"
+    writable: false
+  - location: "/tmp/lima"
+    writable: true
+
+# SSH configuration
+ssh:
+  localPort: 0
+  loadDotSSHPubKeys: true
+  forwardAgent: true
+
+# Port forwarding for Valkey
+portForwards:
+  - guestPort: 6379
+    hostPort: 6379
+    proto: tcp
+
+# Provision script with Datadog
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -e
+      
+      echo "=== Provisioning Valkey VM with Datadog ==="
+      
+      # Update packages
+      apk update
+      apk add --no-cache curl bash python3 valkey
+      
+      # Install Datadog agent
+      echo "Installing Datadog agent..."
+      DD_API_KEY="${DD_API_KEY}" \
+      DD_SITE="${DD_SITE:-datadoghq.com}" \
+      bash -c "$(curl -L https://s3.amazonaws.com/dd-agent/scripts/install_script_agent7.sh)" || {
+        echo "⚠️  Datadog install failed - continuing without it"
+      }
+      
+      # Configure Datadog if installed
+      if [ -d /etc/datadog-agent ]; then
+        cat > /etc/datadog-agent/datadog.yaml <<EOF
+      api_key: ${DD_API_KEY}
+      site: ${DD_SITE:-datadoghq.com}
+      hostname: vibecode-valkey-lima
+      tags:
+        - env:vibecode
+        - vm:valkey
+        - service:valkey
+        - platform:lima-vz
+      
+      logs_enabled: true
+      
+      apm_config:
+        enabled: true
+        apm_non_local_traffic: true
+      
+      dogstatsd_config:
+        non_local_traffic: true
+      EOF
+        
+        # Start Datadog
+        rc-update add datadog-agent default || true
+        service datadog-agent start || true
+        echo "✅ Datadog agent configured and started"
+      fi
+      
+      # Configure Valkey
+      echo "Configuring Valkey..."
+      cat > /etc/valkey/valkey.conf <<EOF
+      bind 0.0.0.0
+      port 6379
+      protected-mode no
+      maxmemory 512mb
+      maxmemory-policy allkeys-lru
+      save 900 1
+      save 300 10
+      save 60 10000
+      EOF
+      
+      # Start Valkey
+      rc-update add valkey default
+      service valkey start
+      
+      echo "✅ Valkey VM provisioned with Datadog"
+
+probes:
+  - description: "Valkey ready"
+    script: |
+      #!/bin/bash
+      valkey-cli ping | grep -q PONG
+    hint: |
+      Valkey is not responding. Check:
+        limactl shell valkey-vm-datadog service valkey status
+
+message: |
+  ✅ Valkey VM with Datadog is ready!
+  
+  🔗 Connect to Valkey:
+     redis-cli -h localhost -p 6379
+  
+  📊 Datadog Dashboard:
+     https://app.datadoghq.com/infrastructure
+  
+  🔍 SSH into VM:
+     limactl shell valkey-vm-datadog
+  
+  📋 Check Datadog status:
+     limactl shell valkey-vm-datadog datadog-agent status
+

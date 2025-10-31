@@ -32,11 +32,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MinimalTest.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift"
         },
         {
           "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/OllamaVM.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/TestWithDisk.swift"
         },
         {
           "kind" : "file",
@@ -61,8 +69,10 @@
       "objects" : [
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/LinuxGUIVM.swift.o",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MacOSVM.swift.o",
+        "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.swift.o",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swift.o",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swift.o",
+        "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.swift.o",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/WindowsVM.swift.o",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/main.swift.o"
       ],
@@ -122,11 +132,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swift.o"
         },
         {
           "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.swift.o"
         },
         {
           "kind" : "file",
@@ -145,8 +163,10 @@
       "sources" : [
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/LinuxGUIVM.swift",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MacOSVM.swift",
+        "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MinimalTest.swift",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/OllamaVM.swift",
+        "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/TestWithDisk.swift",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/WindowsVM.swift",
         "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/main.swift"
       ],
@@ -167,8 +187,10 @@
       "-c",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/LinuxGUIVM.swift",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MacOSVM.swift",
+      "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MinimalTest.swift",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/OllamaVM.swift",
+      "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/TestWithDisk.swift",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/WindowsVM.swift",
       "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/main.swift",
       "-I",
@@ -253,11 +275,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/MinimalTest.swift"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/NetworkConfig.swift"
         },
         {
           "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/OllamaVM.swift"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/Sources/VibeCodeVM/TestWithDisk.swift"
         },
         {
           "kind" : "file",
@@ -315,11 +345,19 @@
         },
         {
           "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/MinimalTest.swift.o"
+        },
+        {
+          "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/NetworkConfig.swift.o"
         },
         {
           "kind" : "file",
           "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/OllamaVM.swift.o"
+        },
+        {
+          "kind" : "file",
+          "name" : "/Users/ryan.maclean/vibecode-webgui/vz-swift/.build/arm64-apple-macosx/debug/VibeCodeVM.build/TestWithDisk.swift.o"
         },
         {
           "kind" : "file",

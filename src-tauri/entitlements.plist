@@ -27,5 +27,9 @@
   <true/>
   <key>com.apple.security.files.downloads.read-write</key>
   <true/>
+
+  <!-- Virtualization.framework access (REQUIRED for VM management) -->
+  <key>com.apple.security.virtualization</key>
+  <true/>
 </dict>
 </plist>

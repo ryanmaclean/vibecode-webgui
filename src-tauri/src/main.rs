@@ -8,6 +8,7 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod vm;
 
 // use tauri::Manager; // Removed unused import
 
@@ -72,6 +73,12 @@ fn main() {
             ai::agent_create_task,
             ai::agent_get_status,
             ai::agent_cancel_task,
+            // VM commands
+            vm::vm_list,
+            vm::vm_start,
+            vm::vm_stop,
+            vm::vm_status,
+            vm::vm_setup_first_run,
         ])
         .setup(|app| {
             // Initialize system tray

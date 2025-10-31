@@ -1,0 +1,22 @@
+{
+  "name": "VibeCode VM Availability",
+  "description": "VM start success rate should be > 99%",
+  "type": "metric",
+  "thresholds": [
+    {
+      "timeframe": "7d",
+      "target": 99.0,
+      "warning": 99.5
+    },
+    {
+      "timeframe": "30d",
+      "target": 99.5,
+      "warning": 99.9
+    }
+  ],
+  "query": {
+    "numerator": "sum:vibecode.vm.start.success{*}.as_count()",
+    "denominator": "sum:vibecode.vm.start.attempt{*}.as_count()"
+  },
+  "tags": ["service:vibecode", "slo:vm-availability"]
+}

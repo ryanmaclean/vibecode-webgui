@@ -1,0 +1,50 @@
+#cloud-config
+
+# Valkey VM Configuration
+hostname: vibecode-valkey
+
+packages:
+  - redis
+  - openssh
+  - curl
+  - bash
+
+users:
+  - name: vibecode
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/ash
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+runcmd:
+  # Configure Redis/Valkey to listen on all interfaces
+  - sed -i 's/bind 127.0.0.1/bind 0.0.0.0/' /etc/redis.conf
+  - sed -i 's/protected-mode yes/protected-mode no/' /etc/redis.conf
+  
+  # Enable and start Redis
+  - rc-update add redis default
+  - rc-service redis start
+  
+  # Configure SSH
+  - rc-update add sshd default
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+  - rc-service sshd start
+  
+  # Test Redis
+  - sleep 3
+  - redis-cli PING
+  
+  # Log completion
+  - echo "Valkey VM setup complete" > /var/log/vibecode-setup.log
+  - echo "Redis listening on port 6379" >> /var/log/vibecode-setup.log
+
+write_files:
+  - path: /etc/motd
+    content: |
+      VibeCode Valkey (Redis) VM
+      Redis Server Ready
+      Connect: redis-cli -h <vm-ip>
+      Test: redis-cli -h <vm-ip> PING
+

@@ -1,0 +1,67 @@
+#cloud-config
+
+# Node.js VM Configuration
+hostname: vibecode-nodejs
+
+packages:
+  - nodejs
+  - npm
+  - openssh
+  - curl
+  - bash
+  - git
+
+users:
+  - name: vibecode
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/ash
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+runcmd:
+  # Create test Node.js app
+  - mkdir -p /opt/vibecode
+  - chown vibecode:vibecode /opt/vibecode
+  
+  # Configure SSH
+  - rc-update add sshd default
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+  - rc-service sshd start
+  
+  # Log completion
+  - echo "Node.js VM setup complete" > /var/log/vibecode-setup.log
+  - node --version >> /var/log/vibecode-setup.log
+  - npm --version >> /var/log/vibecode-setup.log
+
+write_files:
+  - path: /etc/motd
+    content: |
+      VibeCode Node.js VM
+      Node.js Runtime Ready
+      Node version: (check with: node --version)
+      NPM version: (check with: npm --version)
+      
+  - path: /opt/vibecode/server.js
+    content: |
+      const http = require('http');
+      const port = 3000;
+      
+      const server = http.createServer((req, res) => {
+        res.writeHead(200, {'Content-Type': 'text/plain'});
+        res.end('VibeCode Node.js VM - Ready\n');
+      });
+      
+      server.listen(port, '0.0.0.0', () => {
+        console.log(`Server running at http://0.0.0.0:${port}/`);
+      });
+    owner: vibecode:vibecode
+    permissions: '0755'
+  
+  - path: /etc/local.d/start-node-server.start
+    content: |
+      #!/bin/sh
+      su - vibecode -c "node /opt/vibecode/server.js > /var/log/node-server.log 2>&1 &"
+    permissions: '0755'
+

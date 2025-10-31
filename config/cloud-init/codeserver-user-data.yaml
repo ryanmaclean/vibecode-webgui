@@ -1,0 +1,67 @@
+#cloud-config
+
+# OpenVSCode Server VM Configuration
+hostname: vibecode-codeserver
+
+packages:
+  - nodejs
+  - npm
+  - openssh
+  - curl
+  - bash
+  - git
+  - python3
+  - build-base
+
+users:
+  - name: vibecode
+    groups: wheel
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/ash
+    ssh_authorized_keys:
+      - __SSH_PUBKEY__
+
+runcmd:
+  # Install code-server
+  - mkdir -p /opt/code-server
+  - cd /opt/code-server
+  - curl -fsSL https://code-server.dev/install.sh | sh || echo "code-server install may have failed"
+  
+  # Configure code-server
+  - mkdir -p /home/vibecode/.config/code-server
+  - chown -R vibecode:vibecode /home/vibecode/.config
+  
+  # Configure SSH
+  - rc-update add sshd default
+  - echo "PermitRootLogin yes" >> /etc/ssh/sshd_config
+  - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
+  - rc-service sshd start
+  
+  # Start code-server
+  - rc-update add local default
+  
+  # Log completion
+  - echo "OpenVSCode VM setup complete" > /var/log/vibecode-setup.log
+
+write_files:
+  - path: /etc/motd
+    content: |
+      VibeCode OpenVSCode Server VM
+      VSCode Server Ready
+      Access: http://<vm-ip>:8080
+      Password: vibecode
+  
+  - path: /home/vibecode/.config/code-server/config.yaml
+    content: |
+      bind-addr: 0.0.0.0:8080
+      auth: password
+      password: vibecode
+      cert: false
+    owner: vibecode:vibecode
+  
+  - path: /etc/local.d/start-code-server.start
+    content: |
+      #!/bin/sh
+      su - vibecode -c "code-server --config /home/vibecode/.config/code-server/config.yaml > /var/log/code-server.log 2>&1 &"
+    permissions: '0755'
+
