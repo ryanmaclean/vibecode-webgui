@@ -4,7 +4,7 @@
  * Now with proper authentication and security measures
  */
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
@@ -101,7 +101,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     if (!stream && temperature <= 0.3) {
       cacheKey = generateAIChatCacheKey(messages, model, temperature, maxTokens);
       
-      const cached = await cache.get<any>(cacheKey);
+      const cached = await cache.get<{choices: Array<{message: {content: string}}>, [key: string]: unknown}>(cacheKey);
       if (cached) {
         logAIInteraction(request, 'chat_response', {
           model,

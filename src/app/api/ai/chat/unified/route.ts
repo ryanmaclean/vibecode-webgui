@@ -1,7 +1,7 @@
 // Unified AI Chat API - Next generation multi-provider chat with LiteLLM-inspired architecture
 // Supports OpenRouter, direct providers, local models, and fallback chains
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'

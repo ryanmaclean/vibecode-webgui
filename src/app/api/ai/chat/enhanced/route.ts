@@ -1,7 +1,7 @@
 // Enhanced AI Chat API using Vercel AI SDK
 // Multi-provider support with standardized streaming and tool calling
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
