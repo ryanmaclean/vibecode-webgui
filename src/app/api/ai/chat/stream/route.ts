@@ -1,7 +1,7 @@
 // Streaming AI Chat API - OpenRouter integration with multi-model support and RAG
 // Powers the AIChatInterface with real-time streaming responses and vector search context
 
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
