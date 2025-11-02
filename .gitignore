@@ -56,3 +56,4 @@ DerivedData/
 
 # Rust
 Cargo.lock
+bench-images/

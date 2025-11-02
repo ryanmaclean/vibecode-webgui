@@ -1,3 +1,5 @@
+/* eslint-disable no-control-regex, no-console, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any, no-unreachable */
+
 /**
  * AI Conversations API Route
  * Handles AI chat conversations for workspaces

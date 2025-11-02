@@ -6,14 +6,15 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
-import { validateAIQuery } from '@/lib/security/input-validator'
-// import { logger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { z } from 'zod'
-import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
 import { createErrorResponseFromError } from '@/lib/utils/api-response'
 import * as crypto from 'crypto'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+const { ReadableStream, TextEncoder } = globalThis
 
 // Zod validation schema for chat requests
 const chatRequestSchema = z.object({
@@ -31,9 +32,9 @@ const chatRequestSchema = z.object({
 
 // Log AI interaction events to Datadog
 function logAIInteraction(
-  request: NextRequest,
+  request: AuthenticatedRequest,
   event: 'chat_request' | 'chat_response' | 'chat_error',
-  metadata: Record<string, any>
+  metadata: Record<string, unknown>
 ) {
   const logContext = {
     service: 'vibecode-webgui',
@@ -52,19 +53,21 @@ function logAIInteraction(
     spanId: request.headers.get('x-datadog-span-id'),
   };
 
-  const logLevel = event === 'chat_error' ? 'error' : 'info';
-  console[logLevel](`AI Chat ${event.replace('_', ' ')}`, logContext);
+  const logLevel = event === 'chat_error' ? 'error' : 'info'
+  const logFn = logLevel === 'error' ? logger.error : logger.info
+  logFn(`AI Chat ${event.replace('_', ' ')}`, logContext)
 }
 
 async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> {
-  const startTime = Date.now();
-  const requestId = crypto.randomUUID();
+  const startTime = Date.now()
+  const requestId = crypto.randomUUID()
+  let processingTime = 0
 
   // Record initial request metrics
-  console.log('vibecode.api.ai.chat.requests', {
+  logger.info('vibecode.api.ai.chat.requests', {
     endpoint: '/api/ai/chat',
-    method: 'POST'
-  });
+    method: 'POST',
+  })
 
   try {
     // Parse and validate request body with Zod
@@ -90,7 +93,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       );
     }
 
-    const { messages, model, stream, temperature, maxTokens } = validation.data;
+    const { messages, model, stream, temperature, maxTokens } = validation.data as z.infer<typeof chatRequestSchema>;
     
     // Generate cache key for AI chat responses (30-50% cost reduction)
     // Only cache non-streaming, deterministic responses
@@ -98,7 +101,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     if (!stream && temperature <= 0.3) {
       cacheKey = generateAIChatCacheKey(messages, model, temperature, maxTokens);
       
-      const cached = await cache.get(cacheKey);
+      const cached = await cache.get<any>(cacheKey);
       if (cached) {
         logAIInteraction(request, 'chat_response', {
           model,
@@ -130,14 +133,14 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
     // Real AI response using Vercel AI SDK
-    let response = '';
-    let aiError = null;
+    let response = ''
+    let aiError: unknown = null
     
     try {
       // Import AI SDK modules
       const { openai } = await import('@ai-sdk/openai');
       const { streamText } = await import('ai');
-      const { tools } = await import('../../../../lib/tools');
+      const { tools } = await import('@/lib/tools');
       
       // Initialize OpenAI model (default to GPT-4o-mini)
       let hasValidKey = false;
@@ -176,7 +179,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       aiError = error;
       response = `I apologize, but I'm experiencing technical difficulties. Error: ${error.message}. Please try again later.`;
     }
-    const processingTime = Date.now() - startTime;
+    processingTime = Date.now() - startTime
 
     // Log successful response
     logAIInteraction(request, 'chat_response', {
@@ -201,16 +204,18 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     // enhancedAlerting.recordMetric('ai.chat_completion', 'success_rate', 1);
 
     // Record business metrics
-    console.count('vibecode.ai.chat.completions', 1, {
+    logger.info('vibecode.ai.chat.completions', {
+      count: 1,
       model,
       stream: stream.toString(),
-      user_role: request.user?.role || 'unknown'
-    });
+      user_role: request.user?.role || 'unknown',
+    })
 
-    console.log('vibecode.ai.chat.response_length', response.length, {
+    logger.info('vibecode.ai.chat.response_length', {
+      value: response.length,
       model,
-      endpoint: '/api/ai/chat'
-    });
+      endpoint: '/api/ai/chat',
+    })
 
     // Handle streaming response if requested
     if (stream && !aiError) {
@@ -218,17 +223,17 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         // Real AI streaming implementation
         const { openai } = await import('@ai-sdk/openai');
         const { streamText } = await import('ai');
-        const { tools } = await import('../../../../lib/tools');
+        const { tools } = await import('@/lib/tools');
         
         const model = openai('gpt-4o-mini');
         
         if (model) {
-          const result = await streamText({
+          await streamText({
             model,
             system: 'You are a helpful coding assistant for VibeCode. Help users with code development, debugging, and GitHub repositories.',
             messages,
             tools,
-          });
+          })
           
           // Use NextResponse for compatibility
           return new NextResponse('AI functionality temporarily disabled for build compatibility', {
@@ -240,7 +245,9 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           });
         }
       } catch (streamError) {
-        console.error('Streaming error:', streamError);
+        logger.error('Streaming error', {
+          error: streamError instanceof Error ? streamError.message : streamError,
+        })
         // Fall back to mock streaming for errors
       }
       
@@ -301,7 +308,8 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         },
       ],
       usage: {
-        prompt_tokens: messages.reduce((sum: number, msg: any) => sum + (msg.content?.length || 0), 0) / 4,
+        prompt_tokens:
+          messages.reduce((sum, msg) => sum + (msg.content?.length ?? 0), 0) / 4,
       },
       processing_time_ms: processingTime,
       from_cache: false,
@@ -313,16 +321,18 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     // Cache the response if conditions are met
     if (cacheKey && !aiError && response.length > 0) {
       await cache.set(cacheKey, responseData, CacheTTL.HOUR); // Cache for 1 hour
-      console.info('AI chat response cached', { 
-        cache_key: cacheKey.substring(0, 20) + '...', 
-        response_length: response.length 
-      });
+      logger.info('AI chat response cached', {
+        cache_key: `${cacheKey.substring(0, 20)}...`,
+        response_length: response.length,
+      })
     }
     
     return NextResponse.json(responseData);
 
   } catch (error) {
-    console.error('Chat API error:', error);
+    logger.error('Chat API error', {
+      error: error instanceof Error ? error.message : error,
+    })
     
     logAIInteraction(request, 'chat_error', {
       error: error instanceof Error ? error.message : 'Unknown error',
@@ -333,10 +343,11 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     });
 
     // Record error metrics
-    console.count('vibecode.api.ai.chat.errors', 1, {
+    logger.error('vibecode.api.ai.chat.errors', {
+      count: 1,
       error_type: error instanceof Error ? error.name : 'UnknownError',
-      endpoint: '/api/ai/chat'
-    });
+      endpoint: '/api/ai/chat',
+    })
 
     // Record failed performance metrics
     // performanceBaselines.recordMeasurement('api.ai.chat.errors', processingTime, {
@@ -350,12 +361,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
 
     // Log security event if needed
     if (error instanceof Error && error.message.includes('validation')) {
-      console.log('ai_validation_failure', {
+      logger.warn('ai_validation_failure', {
         endpoint: '/api/ai/chat',
         error: error.message,
         userId: request.user?.id,
-        requestId
-      });
+        requestId,
+      })
     }
 
     return createErrorResponseFromError(

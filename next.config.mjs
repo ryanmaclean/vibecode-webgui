@@ -150,6 +150,8 @@ const nextConfig = {
       // common utilities; safely modularize when present
       'date-fns',
       'lodash-es',
+      // Monaco Editor - ensure proper code splitting
+      '@monaco-editor/react',
     ],
   },
   trailingSlash: false,

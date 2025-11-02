@@ -3,6 +3,10 @@ set -euo pipefail
 
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 ARCH=${MICROVM_ARCH:-x86_64}
+RUNTIME=${MICROVM_RUNTIME:-qemu}
+
+DEFAULT_CPUS=4
+DEFAULT_MEMORY_MB=2048
 
 case "$ARCH" in
   x86_64)
@@ -12,9 +16,11 @@ case "$ARCH" in
       DEFAULT_KERNEL="$VM_DIR/vmlinuz-host"
     fi
     PORT=${MICROVM_PORT:-3600}
-    HOST=127.0.0.1
+    HOST=${MICROVM_HOST:-127.0.0.1}
     QEMU_BIN=${QEMU_BIN:-qemu-system-x86_64}
-    MACHINE_OPTS=("-machine" "accel=hvf,type=pc" "-cpu" "max" "-smp" "4" "-m" "2048")
+    DEFAULT_CPUS=4
+    DEFAULT_MEMORY_MB=2048
+    MACHINE_OPTS=("-machine" "accel=hvf,type=pc" "-cpu" "max")
     NET_OPTS=("-device" "virtio-net,netdev=n0" "-netdev" "user,id=n0,hostfwd=tcp::${PORT}-:3000")
     APPEND="rdinit=/init console=ttyS0 quiet"
     ;;
@@ -25,9 +31,11 @@ case "$ARCH" in
       DEFAULT_KERNEL="$VM_DIR"/vmlinuz-6.1.0-40-arm64
     fi
     PORT=${MICROVM_PORT:-4600}
-    HOST=127.0.0.1
+    HOST=${MICROVM_HOST:-127.0.0.1}
     QEMU_BIN=${QEMU_BIN:-qemu-system-aarch64}
-    MACHINE_OPTS=("-machine" "virt,virtualization=on,highmem=off" "-cpu" "cortex-a72" "-smp" "4" "-m" "2048")
+    DEFAULT_CPUS=4
+    DEFAULT_MEMORY_MB=2048
+    MACHINE_OPTS=("-machine" "virt,virtualization=on,highmem=off" "-cpu" "cortex-a72")
     NET_OPTS=("-device" "virtio-net-pci,netdev=n0" "-netdev" "user,id=n0,hostfwd=tcp::${PORT}-:3000")
     APPEND="rdinit=/init console=ttyAMA0"
     ;;
@@ -37,8 +45,17 @@ case "$ARCH" in
     ;;
 esac
 
+if [[ -n ${MICROVM_CMDLINE_EXTRA:-} ]]; then
+  APPEND+=" ${MICROVM_CMDLINE_EXTRA}"
+fi
+
+CPUS=${MICROVM_CPUS:-$DEFAULT_CPUS}
+MEMORY_MB=${MICROVM_MEMORY_MB:-$DEFAULT_MEMORY_MB}
+
+MACHINE_OPTS+=("-smp" "$CPUS" "-m" "$MEMORY_MB")
+
 KERNEL="${MICROVM_KERNEL:-$DEFAULT_KERNEL}"
-INITRD="$VM_DIR/openvscode-initramfs.cpio.gz"
+INITRD="${MICROVM_INITRD:-$VM_DIR/openvscode-initramfs.cpio.gz}"
 PID_FILE="$VM_DIR/.microvm.pid"
 SERIAL_LOG="$VM_DIR/qemu-console.log"
 COMMON_OPTS=("-kernel" "$KERNEL" "-initrd" "$INITRD" "-append" "$APPEND" "-display" "none")
@@ -59,6 +76,72 @@ vm_running() {
   [[ -f "$PID_FILE" ]] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null
 }
 
+start_qemu() {
+  "${QEMU_BIN}" "${MACHINE_OPTS[@]}" "${COMMON_OPTS[@]}" "${NET_OPTS[@]}" -pidfile "$PID_FILE" -serial "file:$SERIAL_LOG" -daemonize
+}
+
+resolve_applevf_launcher() {
+  if [[ -n ${MICROVM_APPLEVF_CMD:-} ]]; then
+    echo "$MICROVM_APPLEVF_CMD"
+    return 0
+  fi
+  local candidate
+  for candidate in vz-run vzctl vz macvz vfkit; do
+    if command -v "$candidate" >/dev/null 2>&1; then
+      echo "$candidate"
+      return 0
+    fi
+  done
+  return 1
+}
+
+start_applevf() {
+  local launcher
+  if ! launcher=$(resolve_applevf_launcher); then
+    cat <<'EOF' >&2
+error: Apple Virtualization runtime not configured.
+
+Set MICROVM_APPLEVF_CMD to a launcher script/binary that knows how to boot the
+kernel via Virtualization.framework, or install a supported CLI (e.g. vz-run,
+macvz, vfkit) and ensure it is on PATH. See docs/virtualization/openvscode-microvm.md
+for wiring examples.
+EOF
+    exit 1
+  fi
+
+  if [[ ! -x "$launcher" ]] && ! command -v "$launcher" >/dev/null 2>&1; then
+    echo "error: MICROVM_APPLEVF_CMD '$launcher' not executable" >&2
+    exit 1
+  fi
+
+  mkdir -p "$(dirname "$SERIAL_LOG")"
+  : >"$SERIAL_LOG"
+
+  local env_vars=(
+    "MICROVM_KERNEL=$KERNEL"
+    "MICROVM_INITRD=$INITRD"
+    "MICROVM_CMDLINE=$APPEND"
+    "MICROVM_CPUS=$CPUS"
+    "MICROVM_MEMORY_MB=$MEMORY_MB"
+    "MICROVM_HOST=$HOST"
+    "MICROVM_PORT=$PORT"
+    "MICROVM_PID_FILE=$PID_FILE"
+    "MICROVM_SERIAL_LOG=$SERIAL_LOG"
+    "MICROVM_RUNTIME_DIR=$VM_DIR"
+    "MICROVM_EXTRA_ARGS=${MICROVM_EXTRA_APPLEVF_ARGS:-}"
+  )
+
+  if [[ -n ${MICROVM_APPLEVF_FOREGROUND:-} ]]; then
+    env "${env_vars[@]}" "$launcher"
+    return $?
+  fi
+
+  env "${env_vars[@]}" "$launcher" >>"$SERIAL_LOG" 2>&1 &
+  local pid=$!
+  echo "$pid" >"$PID_FILE"
+  disown "$pid" 2>/dev/null || true
+}
+
 start_vm() {
   if vm_running; then
     echo "microVM already running (pid $(cat "$PID_FILE"))"
@@ -66,7 +149,18 @@ start_vm() {
   fi
   require_vm_assets
   rm -f "$SERIAL_LOG"
-  "${QEMU_BIN}" "${MACHINE_OPTS[@]}" "${COMMON_OPTS[@]}" "${NET_OPTS[@]}" -pidfile "$PID_FILE" -serial "file:$SERIAL_LOG" -daemonize
+  case "$RUNTIME" in
+    qemu)
+      start_qemu
+      ;;
+    applevf|vf)
+      start_applevf
+      ;;
+    *)
+      echo "error: unsupported MICROVM_RUNTIME '$RUNTIME'" >&2
+      exit 1
+      ;;
+  esac
   local elapsed
   elapsed=$(wait_for_ready 20) || {
     echo "error: microVM failed readiness check" >&2
@@ -159,20 +253,8 @@ case ${1:-help} in
     iterations=${2:-5}
     measure_latency "$iterations"
     ;;
-  restart)
-    stop_vm >/dev/null 2>&1 || true
-    start_vm
-    ;;
-  *)
-    cat <<USAGE
-Usage: $0 <command>
-Commands:
-  start            Launch the OpenVSCode microVM and wait for readiness
-  stop             Terminate the running microVM (if any)
-  restart          Restart the microVM
-  status           Print whether the microVM is running
-  measure [n]      Measure readiness latency over n iterations (default 5) and emit JSON
-USAGE
-    exit 1
+  help|*)
+    echo "usage: $0 {start|stop|status|measure [n]}"
+    echo "environment variables: MICROVM_ARCH, MICROVM_RUNTIME (qemu|applevf), MICROVM_DIR, MICROVM_KERNEL, MICROVM_PORT"
     ;;
 esac

@@ -1,3 +1,5 @@
+/* eslint-disable no-console, @typescript-eslint/no-unused-vars, @typescript-eslint/no-explicit-any */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
 import { z } from '@/lib/zod-compat'

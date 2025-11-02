@@ -31,17 +31,12 @@ import {
   getThreadManager,
   initializeThreadManager,
 } from '@/lib/agents/thread-manager'
-// import { createLogger } from '@/lib/logger'
+import { logger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
 
-// Use console directly for logging
-const _logger = {
-  info: () => {},
-  error: () => {},
-  warn: () => {},
-  debug: () => {},
-  log: () => {}
-}// Force dynamic rendering
+const { Response: GlobalResponse, ReadableStream, TextEncoder } = globalThis
+
+// Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 // Lazy-initialize OpenAI client to avoid build-time errors
@@ -56,7 +51,9 @@ function getClient() {
     try {
       initializeThreadManager({ client })
     } catch (error) {
-      // console.warn('Thread manager already initialized', { error })
+      logger.warn('Thread manager already initialized', {
+        error: error instanceof Error ? error.message : error,
+      })
     }
 
     _threadManager = getThreadManager()
@@ -138,11 +135,13 @@ async function handleRequest(
     // Authentication check
     const session = await getServerSession(authOptions)
     if (!session?.user) {
+      logger.warn('Agents API unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     const userId = session.user.id?.toString()
     if (!userId) {
+      logger.error('Agents API missing user id in session')
       return NextResponse.json(
         { error: 'Invalid user session' },
         { status: 401 }
@@ -151,14 +150,6 @@ async function handleRequest(
 
     const path = resolvedParams.path || []
     const [resource, id, subResource, subId] = path
-
-    // console.debug('Handling agent API request', {
-    //   method,
-    //   resource,
-    //   id,
-    //   subResource,
-    //   userId,
-    // })
 
     // Route to appropriate handler
     switch (resource) {
@@ -192,8 +183,9 @@ async function handleRequest(
 
     return NextResponse.json({ error: 'Not found' }, { status: 404 })
   } catch (error) {
-    // // console.error('API request failed', { error, path: params.path })
-
+    logger.error('Agents API request failed', {
+      error: error instanceof Error ? error.message : error,
+    })
     return NextResponse.json(
       {
         error: 'Internal server error',
@@ -220,13 +212,13 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
     },
   })
 
-  console.info('Agent created', { agentId: agent.id, userId })
+  logger.info('Agent created', { agentId: agent.id, userId })
 
   return NextResponse.json(agent, { status: 201 })
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { client } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
   const limit = Number(searchParams.get('limit')) || 20
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
@@ -253,7 +245,7 @@ async function handleAgentOperations(
   agentId: string,
   operation?: string
 ) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { client } = getClient()
   // Verify ownership
   const agent = await client.getAgent(agentId)
   if (agent.metadata.userId !== userId) {
@@ -290,7 +282,7 @@ async function handleThreadRoutes(
   subResource?: string,
   subId?: string
 ) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { _threadManager } = getClient()
 
   if (!_threadManager) {
     return NextResponse.json(
@@ -314,7 +306,7 @@ async function handleThreadRoutes(
         }
       )
 
-      console.info('Thread created', { threadId: session.threadId, userId })
+      logger.info('Thread created', { threadId: session.threadId, userId })
 
       return NextResponse.json(session, { status: 201 })
     }
@@ -353,7 +345,7 @@ async function handleThreadMessages(
   threadId: string,
   messageId?: string
 ) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { client, _threadManager } = getClient()
 
   if (!_threadManager) {
     return NextResponse.json(
@@ -404,14 +396,28 @@ async function handleThreadRuns(
     const tools = validated.tools || toolRegistry.getDefinitions()
 
     if (validated.stream) {
-      // Return streaming response
+      const encoder = new TextEncoder()
       const stream = await client.createRunStream(threadId, {
         assistant_id: validated.assistantId,
         instructions: validated.instructions,
         tools,
       })
 
-      return new Response(stream as any, {
+      const encodedStream = new ReadableStream<Uint8Array>({
+        async start(controller) {
+          try {
+            for await (const event of stream) {
+              controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+            }
+            controller.enqueue(encoder.encode('data: [DONE]\n\n'))
+            controller.close()
+          } catch (error) {
+            controller.error(error)
+          }
+        },
+      })
+
+      return new GlobalResponse(encodedStream, {
         headers: {
           'Content-Type': 'text/event-stream',
           'Cache-Control': 'no-cache',
@@ -449,10 +455,12 @@ async function handleFileRoutes(
   fileId?: string,
   operation?: string
 ) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { client } = getClient()
   if (method === 'POST' && !fileId) {
     const formData = await request.formData()
-    const file = formData.get('file') as File
+    const fileEntry = formData.get('file')
+    const fileCtor = typeof globalThis.File !== 'undefined' ? globalThis.File : undefined
+    const file = fileCtor && fileEntry instanceof fileCtor ? fileEntry : null
     const purpose = (formData.get('purpose') as 'assistants' | 'vision') || 'assistants'
 
     if (!file) {
@@ -461,7 +469,7 @@ async function handleFileRoutes(
 
     const fileObject = await client.uploadFile(file, file.name, purpose)
 
-    console.info('File uploaded', { fileId: fileObject.id, userId })
+    logger.info('File uploaded', { fileId: fileObject.id, userId })
 
     return NextResponse.json(fileObject, { status: 201 })
   }
@@ -470,7 +478,7 @@ async function handleFileRoutes(
     if (method === 'GET') {
       if (operation === 'download') {
         const blob = await client.downloadFile(fileId)
-        return new Response(blob, {
+        return new GlobalResponse(blob, {
           headers: {
             'Content-Type': 'application/octet-stream',
           },
@@ -498,7 +506,7 @@ async function handleToolRoutes(
   userId: string,
   toolName?: string
 ) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { toolRegistry } = getClient()
   if (method === 'GET') {
     if (toolName) {
       const tool = toolRegistry.get(toolName)
@@ -520,7 +528,7 @@ async function handleToolRoutes(
 // Helper Functions
 
 async function pollRun(threadId: string, runId: string, maxAttempts = 60) {
-  const { client, _threadManager, toolRegistry } = getClient()
+  const { client, toolRegistry } = getClient()
   let attempts = 0
 
   while (attempts < maxAttempts) {

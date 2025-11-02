@@ -1,7 +1,7 @@
 // Enhanced AI Chat API using Vercel AI SDK
 // Multi-provider support with standardized streaming and tool calling
 
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
@@ -9,6 +9,8 @@ import { prisma } from '@/lib/prisma'
 import OpenAI from 'openai'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { logger } from '@/lib/logger'
+import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -48,8 +50,15 @@ interface _EnhancedChatRequest {
 }
 
 // Zod validation schema for enhanced chat requests
+const ASCII_CONTROL_PATTERN = '^[^\\u0000-\\u001F\\u007F]*$'
+const asciiControlRegex = new RegExp(ASCII_CONTROL_PATTERN, 'u')
+
 const enhancedChatRequestSchema = z.object({
-  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  message: z
+    .string()
+    .min(1)
+    .max(4000)
+    .regex(asciiControlRegex, 'Message contains invalid characters'),
   model: z.enum(['gpt-4', 'gpt-4-turbo', 'gpt-3.5-turbo', 'claude-3-opus', 'claude-3-sonnet', 'claude-3-haiku', 'gemini-pro', 'gemini-1.5-pro', 'llama-3.1-70b', 'mistral-large']),
   context: z.object({
     workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
@@ -94,7 +103,10 @@ async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, u
 
     return null
   } catch (error) {
-    // Server error logged
+    logger.error('Enhanced RAG context build failed', {
+      error: error instanceof Error ? error.message : error,
+      workspaceId,
+    })
     return null
   }
 }
@@ -114,28 +126,39 @@ function getToolCapabilities(enableTools: boolean): string {
 When you need to use these capabilities, mention them explicitly in your response.`
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: AuthenticatedRequest) {
   try {
     // Authentication check
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
-      return Response.json({ error: 'Unauthorized' }, { status: 401 })
+    const session = (await getServerSession(authOptions)) as {
+      user?: {
+        id?: string
+        role?: string
+        email?: string
+      }
+    } | null
+    if (!session?.user?.id) {
+      logger.warn('Enhanced chat unauthorized access attempt')
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Validate request body
     const validation = await validateRequestBody(request, enhancedChatRequestSchema)
     if (!validation.success) {
-      return Response.json(
+      logger.warn('Enhanced chat validation failed', {
+        errors: validation.error,
+      })
+      return NextResponse.json(
         { error: 'Invalid request data', details: validation.error },
         { status: 400 }
       )
     }
 
-    const { message, model, context, enableTools = true } = validation.data
+    const { message, model, context, enableTools = true } = validation.data as z.infer<typeof enhancedChatRequestSchema>
+    const selectedModel = model as SupportedModel
 
     // Validate model
-    if (!SUPPORTED_MODELS[model]) {
-      return Response.json({ 
+    if (!SUPPORTED_MODELS[selectedModel]) {
+      return NextResponse.json({ 
         error: `Unsupported model: ${model}. Supported models: ${Object.keys(SUPPORTED_MODELS).join(', ')}` 
       }, { status: 400 })
     }
@@ -146,6 +169,12 @@ export async function POST(request: NextRequest) {
       message, 
       session.user.id
     )
+
+    if (!ragResult) {
+      logger.info('Enhanced chat proceeding without RAG context', {
+        workspaceId: context.workspaceId,
+      })
+    }
 
     // Enhanced OpenRouter setup with model selection
     const openrouter = new OpenAI({
@@ -162,7 +191,7 @@ export async function POST(request: NextRequest) {
 
 **Current Context:**
 - Workspace: ${context.workspaceId}
-- Model: ${model} (${SUPPORTED_MODELS[model]})
+- Model: ${selectedModel} (${SUPPORTED_MODELS[selectedModel]})
 - RAG Status: ${ragResult ? `Active (${ragResult.relevanceScore} relevance)` : 'Disabled'}
 - Provider: Enhanced OpenRouter Multi-Model Support
 
@@ -183,7 +212,7 @@ ${getToolCapabilities(enableTools)}
 - Provide production-ready, secure code solutions
 - Explain reasoning, trade-offs, and alternative approaches
 - Use modern patterns consistent with the existing codebase
-- Leverage the selected model's strengths (${model})
+- Leverage the selected model's strengths (${selectedModel})
 - Ask clarifying questions when requirements are unclear`
 
     // Prepare messages for AI SDK
@@ -195,7 +224,7 @@ ${getToolCapabilities(enableTools)}
 
     // Create enhanced streaming response
     const stream = await openrouter.chat.completions.create({
-      model: SUPPORTED_MODELS[model],
+      model: SUPPORTED_MODELS[selectedModel],
       messages,
       stream: true,
       temperature: 0.7,
@@ -206,6 +235,7 @@ ${getToolCapabilities(enableTools)}
     })
 
     // Enhanced Server-Sent Events with metadata
+    const { ReadableStream, TextEncoder } = globalThis
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
       async start(controller) {
@@ -248,22 +278,26 @@ ${getToolCapabilities(enableTools)}
           // Debug log removed, tokens: ~${tokenCount}, RAG: ${ragResult ? ragResult.relevanceScore : 'none'}`)
           
         } catch (error) {
-          // Server error logged
+          logger.error('Enhanced chat streaming error', {
+            error: error instanceof Error ? error.message : error,
+          })
           controller.error(error)
         }
       }
     })
 
-    return new globalThis.Response(customReadable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
+    const { Response: GlobalResponse } = globalThis
+
+      return new GlobalResponse(customReadable, {
+        headers: {
+          'Content-Type': 'text/event-stream',
+          'Cache-Control': 'no-cache',
+          'Connection': 'keep-alive',
+          'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
         'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'X-Model-Used': model,
-        'X-Provider': SUPPORTED_MODELS[model],
+        'X-Model-Used': selectedModel,
+        'X-Provider': SUPPORTED_MODELS[selectedModel],
         'X-RAG-Status': ragResult ? 'active' : 'inactive',
         'X-Tools-Enabled': enableTools.toString(),
         'X-Enhanced-Features': 'multi-provider,rag,context-aware'
@@ -271,9 +305,11 @@ ${getToolCapabilities(enableTools)}
     })
 
   } catch (error) {
-    // Server error logged
-    
-    return Response.json({
+    logger.error('Enhanced chat request failed', {
+      error: error instanceof Error ? error.message : error,
+    })
+
+    return NextResponse.json({
       error: 'Failed to process enhanced chat request',
       details: error instanceof Error ? error.message : 'Unknown error'
     }, { status: 500 })
@@ -282,7 +318,8 @@ ${getToolCapabilities(enableTools)}
 
 // CORS support
 export async function OPTIONS() {
-  return new globalThis.Response(null, {
+  const { Response: GlobalResponse } = globalThis
+  return new GlobalResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

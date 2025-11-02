@@ -10,7 +10,7 @@
  * functions will throw with a helpful error message.
  */
 
-import * as monaco from 'monaco-editor';
+import type * as monaco from 'monaco-editor';
 
 // Dynamic import for optional monacopilot dependency
 type RegisterCompletionOptions = {
