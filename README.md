@@ -1,6 +1,11 @@
 # VibeCode - DEMO GITHUB WORKFLOW REPOSITORY - APP BUILDS AS SAMPLES FOR TRACING
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![CI](https://github.com/ryanmaclean/vibecode-webgui/workflows/CI/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml)
+[![Build macOS](https://github.com/ryanmaclean/vibecode-webgui/workflows/Build%20macOS/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/build-macos.yml)
+[![Release](https://img.shields.io/github/v/release/ryanmaclean/vibecode-webgui)](https://github.com/ryanmaclean/vibecode-webgui/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases/latest)
+[![codecov](https://codecov.io/gh/ryanmaclean/vibecode-webgui/branch/main/graph/badge.svg)](https://codecov.io/gh/ryanmaclean/vibecode-webgui)
 
 Native desktop app built on OpenVSCode Server with AI assistance and macOS native integration.
 
@@ -71,7 +76,10 @@ Extension auto-installs when OpenVSCode Server starts.
 - 🔄 **Swift-Rust FFI** bridge under development
 
 ### Quick Links
-- [Quick Start Guide](./docs/QUICKSTART.md) - Get started in 5 minutes
+- [Quick Start Guide](./QUICKSTART.md) - Get started in 5 minutes
+- [Installation Guide](./INSTALL.md) - Complete installation instructions
+- [User Guide](./USER_GUIDE.md) - Full user documentation
+- [Release Notes](./RELEASE_NOTES.md) - What's new in v1.5.0
 - [Architecture Diagram](./docs/ARCHITECTURE_DIAGRAM.md) - System overview
 - [Documentation Index](./docs/README.md) - Complete doc catalog
 
