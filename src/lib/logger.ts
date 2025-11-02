@@ -32,11 +32,17 @@ interface LoggerConfig {
 
 function getLoggerConfig(): LoggerConfig {
   const isServer = typeof window === 'undefined';
-  
+
+  // Detect if we're in a build phase (not runtime)
+  // During build, Next.js sets NEXT_PHASE or we can detect by checking if we're generating static pages
+  const isBuildTime = process.env.NEXT_PHASE === 'phase-production-build' ||
+                      process.env.npm_lifecycle_event === 'build' ||
+                      process.env.BUILDING === 'true';
+
   return {
     level: process.env.LOG_LEVEL || process.env.NODE_ENV === 'production' ? 'info' : 'debug',
-    prettyPrint: process.env.NODE_ENV !== 'production',
-    datadogEnabled: isServer && !!process.env.DD_API_KEY,
+    prettyPrint: process.env.NODE_ENV !== 'production' && !isBuildTime,
+    datadogEnabled: isServer && !!process.env.DD_API_KEY && !isBuildTime,
     datadogApiKey: process.env.DD_API_KEY,
     datadogSite: process.env.DD_SITE || 'datadoghq.com',
     serviceName: process.env.DD_SERVICE || 'vibecode-webgui',
@@ -63,9 +69,11 @@ const pinoOptions: pino.LoggerOptions = {
 };
 
 // Transport configuration
+// NOTE: Transports use worker threads which cause "write after end" errors
+// during Next.js build static generation phase. We disable them during build.
 const transports: Array<pino.TransportTargetOptions> = [];
 
-// Pretty print for development
+// Pretty print for development (disabled during build)
 if (config.prettyPrint) {
   transports.push({
     target: 'pino-pretty',
@@ -78,7 +86,7 @@ if (config.prettyPrint) {
   });
 }
 
-// Datadog transport for production
+// Datadog transport for production (disabled during build)
 if (config.datadogEnabled && config.datadogApiKey) {
   transports.push({
     target: 'pino-datadog',

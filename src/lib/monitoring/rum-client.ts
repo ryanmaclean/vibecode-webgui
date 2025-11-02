@@ -350,35 +350,132 @@ class RUMMonitoring {
   }
 
   /**
-   * Set up enhanced Web Vitals tracking
+   * Set up enhanced Web Vitals tracking with Datadog addTiming
    */
   static setupWebVitalsTracking() {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined' || !this.initialized) return;
 
-    // Track Web Vitals with enhanced context
-    const observer = new PerformanceObserver((list) => {
-      list.getEntries().forEach((entry) => {
-        // Track Core Web Vitals
-        if (entry.entryType === 'largest-contentful-paint') {
-          this.trackPerformance({ largestContentfulPaint: entry.startTime });
-        }
-        
-        if (entry.entryType === 'layout-shift' && !(entry as any).hadRecentInput) {
-          this.trackPerformance({ cumulativeLayoutShift: (entry as any).value });
-        }
-        
-        if (entry.entryType === 'first-input') {
-          this.addAttribute('performance.firstInputDelay', (entry as any).processingStart - entry.startTime);
+    console.info('[RUM] Setting up Core Web Vitals tracking...');
+
+    // Track LCP (Largest Contentful Paint)
+    try {
+      const lcpObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1] as PerformanceEntry;
+
+        if (lastEntry) {
+          const lcpValue = lastEntry.startTime;
+          console.info('[RUM] LCP measured:', lcpValue.toFixed(2), 'ms');
+
+          // Send to Datadog using addTiming for proper metric aggregation
+          datadogRum.addTiming('lcp', lcpValue);
+
+          // Also track as performance metric for compatibility
+          this.trackPerformance({ largestContentfulPaint: lcpValue });
+
+          // Add context
+          this.addAttribute('performance.lcp.element', (lastEntry as any).element?.tagName || 'unknown');
         }
       });
-    });
 
-    // Observe various performance metrics
-    try {
-      observer.observe({ entryTypes: ['largest-contentful-paint', 'layout-shift', 'first-input'] });
+      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+      console.info('[RUM] LCP observer initialized');
     } catch (error) {
-      console.warn('[RUM] Performance observer not supported:', error);
+      console.warn('[RUM] LCP tracking not supported:', error);
     }
+
+    // Track FID (First Input Delay)
+    try {
+      const fidObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          const fidValue = (entry as any).processingStart - entry.startTime;
+          console.info('[RUM] FID measured:', fidValue.toFixed(2), 'ms');
+
+          // Send to Datadog using addTiming
+          datadogRum.addTiming('fid', fidValue);
+
+          // Also track as attribute for compatibility
+          this.addAttribute('performance.firstInputDelay', fidValue);
+        });
+      });
+
+      fidObserver.observe({ type: 'first-input', buffered: true });
+      console.info('[RUM] FID observer initialized');
+    } catch (error) {
+      console.warn('[RUM] FID tracking not supported:', error);
+    }
+
+    // Track CLS (Cumulative Layout Shift)
+    let clsValue = 0;
+    try {
+      const clsObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          // Only count layout shifts without recent user input
+          if (!(entry as any).hadRecentInput) {
+            clsValue += (entry as any).value;
+          }
+        });
+      });
+
+      clsObserver.observe({ type: 'layout-shift', buffered: true });
+
+      // Report CLS on page hide/unload
+      const reportCLS = () => {
+        if (clsValue > 0) {
+          console.info('[RUM] CLS measured:', clsValue.toFixed(4));
+
+          // Send to Datadog using addTiming
+          datadogRum.addTiming('cls', clsValue);
+
+          // Also track as performance metric
+          this.trackPerformance({ cumulativeLayoutShift: clsValue });
+        }
+      };
+
+      // Report on visibility change and page unload
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          reportCLS();
+        }
+      });
+
+      window.addEventListener('beforeunload', reportCLS);
+
+      console.info('[RUM] CLS observer initialized');
+    } catch (error) {
+      console.warn('[RUM] CLS tracking not supported:', error);
+    }
+
+    // Track additional performance metrics
+    try {
+      // Track navigation timing
+      if (window.performance && window.performance.timing) {
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            const timing = window.performance.timing;
+            const pageLoad = timing.loadEventEnd - timing.navigationStart;
+            const domContentLoaded = timing.domContentLoadedEventEnd - timing.navigationStart;
+            const firstContentfulPaint = performance.getEntriesByName('first-contentful-paint')[0]?.startTime || 0;
+
+            console.info('[RUM] Performance metrics:', {
+              pageLoad: pageLoad.toFixed(2),
+              domContentLoaded: domContentLoaded.toFixed(2),
+              firstContentfulPaint: firstContentfulPaint.toFixed(2)
+            });
+
+            this.trackPerformance({
+              pageLoad,
+              domContentLoaded,
+              firstContentfulPaint
+            });
+          }, 0);
+        });
+      }
+    } catch (error) {
+      console.warn('[RUM] Navigation timing not supported:', error);
+    }
+
+    console.info('[RUM] Core Web Vitals tracking setup complete');
   }
 
   /**

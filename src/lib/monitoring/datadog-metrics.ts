@@ -347,5 +347,18 @@ class DatadogMetricsService {
 // Export singleton instance
 export const datadogMetrics = new DatadogMetricsService()
 
+// Export convenience functions for common operations
+export function increment(metricName: string, value: number = 1, options?: MetricOptions): void {
+  datadogMetrics.increment(metricName, value, options);
+}
+
+export function gauge(metricName: string, value: number, options?: MetricOptions): void {
+  datadogMetrics.histogram(metricName, value, options);
+}
+
+export function histogram(metricName: string, value: number, options?: MetricOptions): void {
+  datadogMetrics.histogram(metricName, value, options);
+}
+
 // Export types for external use
 export type { DatadogTags, MetricOptions }
