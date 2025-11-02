@@ -1,6 +1,6 @@
 "use client";
 
-import { editor } from 'monaco-editor';
+import type { editor } from 'monaco-editor';
 import dynamic from 'next/dynamic';
 import { useTheme } from 'next-themes';
 import { ComponentProps } from 'react';

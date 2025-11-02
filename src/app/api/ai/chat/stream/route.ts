@@ -9,6 +9,8 @@ import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { logger } from '@/lib/logger'
+import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -19,24 +21,16 @@ interface ChatMessage {
   content: string
 }
 
-interface RawMessage {
-  type: 'user' | 'assistant';
-  content: string;
-}
-
-interface ChatRequest {
-  message: string
-  model: string
-  context: {
-    workspaceId: string
-    files: string[]
-    previousMessages: RawMessage[]
-  }
-}
-
 // Zod validation schema for streaming chat requests
+const ASCII_CONTROL_PATTERN = '^[^\\u0000-\\u001F\\u007F]*$'
+const asciiControlRegex = new RegExp(ASCII_CONTROL_PATTERN, 'u')
+
 const streamingChatRequestSchema = z.object({
-  message: z.string().min(1).max(4000).regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
+  message: z
+    .string()
+    .min(1)
+    .max(4000)
+    .regex(asciiControlRegex, 'Message contains invalid characters'),
   model: z.string().min(1).max(100),
   context: z.object({
     workspaceId: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
@@ -74,13 +68,16 @@ async function buildRAGContext(workspaceId: string, userQuery: string, userId: s
 
     return ''
   } catch (error) {
-    // Server error logged
+    logger.error('Streaming chat RAG context failed', {
+      error: error instanceof Error ? error.message : error,
+      workspaceId,
+    })
     return ''
   }
 }
 
 // Helper to build basic workspace context (fallback)
-async function buildWorkspaceContext(_workspaceId: string, files: string[]) {
+async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   try {
     // Get file contents for context (limit to recent/relevant files)
     const contextFiles = files.slice(0, 5) // Limit context to prevent token overflow
@@ -93,34 +90,45 @@ async function buildWorkspaceContext(_workspaceId: string, files: string[]) {
         // based on the workspaceId and file path.
         contextContent += `\n--- File: ${file} ---\n// ... content of ${file} ...\n`
       } catch (error) {
-        // Server error logged
+        logger.warn('Streaming chat file context load failed', {
+          error: error instanceof Error ? error.message : error,
+          workspaceId,
+          file,
+        })
       }
     }
 
     return contextContent
   } catch (error) {
-    // Server error logged
+    logger.error('Streaming chat workspace context failed', {
+      error: error instanceof Error ? error.message : error,
+      workspaceId,
+    })
     return ''
   }
 }
 
-export async function POST(req: NextRequest) {
+export async function POST(req: AuthenticatedRequest) {
   try {
-    const session = await getServerSession(authOptions)
-    if (!session || !session.user || !session.user.id) {
+    const session = (await getServerSession(authOptions)) as { user?: { id?: string } } | null
+    if (!session?.user?.id) {
+      logger.warn('Streaming chat unauthorized access attempt')
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Validate request body
     const validation = await validateRequestBody(req, streamingChatRequestSchema)
     if (!validation.success) {
+      logger.warn('Streaming chat validation failed', {
+        errors: validation.error,
+      })
       return NextResponse.json(
         { error: 'Invalid request data', details: validation.error },
         { status: 400 }
       )
     }
 
-    const { message, model, context } = validation.data
+    const { message, model, context } = validation.data as z.infer<typeof streamingChatRequestSchema>
 
     // Initialize OpenRouter client
     const openrouter = new OpenAI({
@@ -167,6 +175,7 @@ export async function POST(req: NextRequest) {
     })
 
     // Set up Server-Sent Events headers
+    const { ReadableStream, TextEncoder, Response: GlobalResponse } = globalThis
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
       async start(controller) {
@@ -189,13 +198,15 @@ export async function POST(req: NextRequest) {
           controller.enqueue(encoder.encode(`data: {"done": true}\n\n`))
           controller.close()
         } catch (error) {
-          // Server error logged
+          logger.error('Streaming chat SSE error', {
+            error: error instanceof Error ? error.message : error,
+          })
           controller.error(error)
         }
       }
     })
 
-    return new Response(customReadable, {
+    return new GlobalResponse(customReadable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -207,7 +218,9 @@ export async function POST(req: NextRequest) {
     })
 
   } catch (error) {
-    // Server error logged
+    logger.error('Streaming chat request failed', {
+      error: error instanceof Error ? error.message : error,
+    })
 
     return NextResponse.json(
       {
@@ -221,7 +234,8 @@ export async function POST(req: NextRequest) {
 
 // Handle preflight requests for CORS
 export async function OPTIONS() {
-  return new Response(null, {
+  const { Response: GlobalResponse } = globalThis
+  return new GlobalResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

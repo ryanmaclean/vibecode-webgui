@@ -7,7 +7,8 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
-// import { logger } from '@/lib/logger';
+import { logger } from '@/lib/logger'
+import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
@@ -80,7 +81,10 @@ async function buildAdvancedRAGContext(workspaceId: string, userQuery: string, u
       totalLength: combinedContext.length
     }
   } catch (error) {
-    console.error('Advanced RAG context error:', error)
+    logger.error('Advanced RAG context error', {
+      error: error instanceof Error ? error.message : error,
+      workspaceId,
+    })
     return null
   }
 }
@@ -105,18 +109,23 @@ ${availableProviders.map(p => `- ${p}: Available`).join('\n')}
 When you need specific capabilities, I'll automatically use the most appropriate tools and providers.`
 }
 
-export async function POST(request: NextRequest) {
+export async function POST(request: AuthenticatedRequest) {
   try {
     // Authentication check
-    const session = await getServerSession(authOptions)
-    if (!session?.user) {
+    const session = (await getServerSession(authOptions)) as {
+      user?: {
+        id?: string
+        email?: string
+      }
+    } | null
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
       )
     }
 
-    const body: UnifiedChatRequest = await request.json()
+    const body = (await request.json()) as UnifiedChatRequest
     const { 
       message, 
       model, 
@@ -130,10 +139,14 @@ export async function POST(request: NextRequest) {
     const aiClient = new UnifiedAIClient(userApiKeys)
     
     // Get available providers and models
-    const availableProviders = aiClient.getAvailableProviders().map(p => p.name)
+    const availableProviders = aiClient
+      .getAvailableProviders()
+      .map((provider) => provider.name)
     const providerHealth = await aiClient.getProviderHealth()
     
-    console.info('Provider health check:', providerHealth)
+    logger.info('Unified AI provider health check', {
+      providerHealth,
+    })
 
     // Build advanced RAG context
     const ragResult = await buildAdvancedRAGContext(
@@ -189,6 +202,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     ]
 
     // Enhanced streaming response with unified client
+    const { ReadableStream, TextEncoder } = globalThis
     const encoder = new TextEncoder()
     const customReadable = new ReadableStream({
       async start(controller) {
@@ -233,7 +247,7 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           }
 
           // Send enhanced completion signal
-          const completionData = JSON.stringify({
+    const completionData = JSON.stringify({
             done: true,
             finalTokenCount: tokenCount,
             model,
@@ -252,11 +266,17 @@ ${generateToolCapabilities(enableTools, availableProviders)}
           controller.enqueue(encoder.encode(`data: ${completionData}\n\n`))
           controller.close()
 
-          // Enhanced completion analytics
-          console.info(`Unified AI completion: ${model}, tokens: ${tokenCount}, providers: ${availableProviders.length}, RAG: ${ragResult?.relevanceScore || 'none'}`)
+          logger.info('Unified AI completion', {
+            model,
+            tokenCount,
+            providerCount: availableProviders.length,
+            ragRelevance: ragResult?.relevanceScore ?? 'none',
+          })
 
         } catch (error) {
-          console.error('Unified streaming error:', error)
+          logger.error('Unified streaming error', {
+            error: error instanceof Error ? error.message : error,
+          })
           
           // Send error with fallback suggestions
           const errorData = JSON.stringify({
@@ -278,7 +298,9 @@ ${generateToolCapabilities(enableTools, availableProviders)}
       }
     })
 
-    return new Response(customReadable, {
+    const { Response: GlobalResponse } = globalThis
+
+    return new GlobalResponse(customReadable, {
       headers: {
         'Content-Type': 'text/event-stream',
         'Cache-Control': 'no-cache',
@@ -295,7 +317,9 @@ ${generateToolCapabilities(enableTools, availableProviders)}
     })
 
   } catch (error) {
-    console.error('Unified chat API error:', error)
+    logger.error('Unified chat API error', {
+      error: error instanceof Error ? error.message : error,
+    })
 
     return NextResponse.json(
       {
@@ -315,7 +339,8 @@ ${generateToolCapabilities(enableTools, availableProviders)}
 
 // Enhanced CORS support
 export async function OPTIONS() {
-  return new Response(null, {
+  const { Response: GlobalResponse } = globalThis
+  return new GlobalResponse(null, {
     status: 200,
     headers: {
       'Access-Control-Allow-Origin': '*',

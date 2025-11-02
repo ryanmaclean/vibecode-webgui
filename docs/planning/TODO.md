@@ -18,6 +18,8 @@ description: Active project tasks and priorities
 - [ ] **[P1] LiteLLM + Ollama API routes**: Add `/api/litellm/*` and `/api/ollama/*` proxies using existing clients with Zod validation and Datadog metrics.
 - [ ] **[P1] Claude Code CLI verification**: Install CLI and add a smoke script to validate AI endpoints and capture timings.
 - [ ] **[Info] Sandbox binaries pinned**: Reproduce with the exact versions/URLs recorded in `docs/testing/sandbox-binaries.md`.
+- [ ] **[P0] Apple VF micro-VM fast boot experiment**: Trim BusyBox initramfs + EFI-stub kernel, update `scripts/benchmarks/vscode_microvm.sh` for `MICROVM_ARCH=arm64`, measure cold boot to `/healthz`, and document in `docs/virtualization/openvscode-microvm.md`. Coordinate with other agents to reuse existing kernel configs and benchmark scripts.
+  - _Note_: Run `experiments/microvm/build-kernel.sh` inside a Docker/Colima environment; the script fails if the Docker daemon is not running.
 
 ### 🎉 RECENT ACCOMPLISHMENTS (Last 30 minutes):
 
@@ -1539,4 +1541,3 @@ main branch:
 - **TypeScript errors fixed** - Restored `npm run type-check`
 - **Accessibility tests fixed** - Automated a11y testing working
 - **Dependency upgrades** - Resolved security vulnerabilities
-

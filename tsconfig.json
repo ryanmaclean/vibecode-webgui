@@ -47,8 +47,8 @@
     "src/**/*.ts",
     "src/**/*.tsx",
     "src/types/**/*.d.ts",
-    ".next/types/**/*.ts",
     "types/**/*.d.ts",
+    ".next/types/**/*.ts",
     ".next/dev/types/**/*.ts"
   ],
   "exclude": [
@@ -61,6 +61,7 @@
     "**/*.stories.tsx",
     "tmp-*/**/*",
     "src/components/terminal/**/*",
-    "types/@xterm/**/*"
+    "types/@xterm/**/*",
+    ".next/"
   ]
 }

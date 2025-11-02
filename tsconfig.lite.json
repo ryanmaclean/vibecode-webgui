@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["types/stubs/*"]
+    }
+  },
+  "include": [
+    "src/app/api/ai/chat/**/*.ts",
+    "src/app/api/ai/chat/enhanced/**/*.ts",
+    "src/app/api/ai/chat/unified/**/*.ts",
+    "src/app/api/ai/chat/stream/**/*.ts",
+    "types/stubs/**/*.d.ts"
+  ],
+  "exclude": [
+    "src/app/api/ai/**/*.disabled/**/*",
+    "src/**/__tests__/**",
+    "src/**/__mocks__/**",
+    "**/*.stories.tsx",
+    ".next/**"
+  ]
+}

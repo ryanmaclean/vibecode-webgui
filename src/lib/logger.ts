@@ -58,11 +58,8 @@ const pinoOptions: pino.LoggerOptions = {
     env: config.environment,
   },
   timestamp: pino.stdTimeFunctions.isoTime,
-  formatters: {
-    level: (label) => {
-      return { level: label };
-    },
-  },
+  // Custom formatters removed - they conflict with transport targets
+  // (pino-datadog does not allow custom level formatters)
 };
 
 // Transport configuration

@@ -10,11 +10,30 @@
 'use client'
 
 import { useEffect, useRef, useState } from 'react'
-import Editor, { Monaco } from '@monaco-editor/react'
+import dynamic from 'next/dynamic'
+import type { Monaco } from '@monaco-editor/react'
 import type * as monaco from 'monaco-editor'
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
 import { cn } from '@/lib/utils'
 // import { logger } from '@/lib/logger';
+
+// Dynamic import of Monaco Editor to reduce initial bundle size
+const Editor = dynamic(() => import('@monaco-editor/react'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full w-full items-center justify-center bg-muted/30 animate-pulse">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-12 w-12 rounded-lg bg-muted-foreground/20 animate-bounce"></div>
+        <span className="text-sm text-muted-foreground">Loading Monaco Editor...</span>
+        <div className="flex gap-2">
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-pulse"></div>
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-pulse [animation-delay:0.2s]"></div>
+          <div className="h-2 w-2 rounded-full bg-muted-foreground/40 animate-pulse [animation-delay:0.4s]"></div>
+        </div>
+      </div>
+    </div>
+  ),
+})
 // ============================================================================
 // Types
 // ============================================================================

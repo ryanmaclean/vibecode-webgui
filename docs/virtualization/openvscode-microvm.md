@@ -38,11 +38,38 @@ npm run microvm:https   # -> proxies https://127.0.0.1:3443 to the microVM
 
 ### arm64 guest
 ```bash
-MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh start
+# Build or copy the Apple VF artifacts into bench-images/apple-vf/
+# (run these from the `kernel-builder` Lima VM or a Debian container)
+lima kernel-builder -- ./scripts/benchmarks/build-minivim-kernel.sh arm64 6.12.10
+lima kernel-builder -- ./scripts/benchmarks/build-busybox-musl.sh arm64
+# (optional) assemble initramfs
+cd bench-images/apple-vf
+find rootfs -print0 | cpio --null -ov --format=newc | gzip -9 > openvscode-initramfs.cpio.gz
+
+# Launch via QEMU
+MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh start
 curl -s http://127.0.0.1:4600/healthz   # -> ok
 curl -I http://127.0.0.1:4600/          # -> HTTP/1.1 200 OK
-MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh stop
+MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh stop
+
+# Launch via Apple Virtualization Framework (experimental)
+# 1. Point MICROVM_APPLEVF_CMD at a launcher that calls `vz`, `macvz`, `vfkit`, etc.
+#    The helper exports these env vars for the launcher:
+#      MICROVM_KERNEL, MICROVM_INITRD, MICROVM_CMDLINE
+#      MICROVM_CPUS, MICROVM_MEMORY_MB
+#      MICROVM_HOST, MICROVM_PORT
+#      MICROVM_PID_FILE, MICROVM_SERIAL_LOG
+# 2. Ensure the launcher keeps running until the VM exits and writes its PID to
+#    MICROVM_PID_FILE (optional, but enables `stop` / `measure`).
+MICROVM_ARCH=arm64 MICROVM_RUNTIME=applevf \
+  MICROVM_APPLEVF_CMD=./path/to/applevf-launcher.sh \
+  scripts/benchmarks/vscode_microvm.sh start
 ```
+
+The launcher can be a thin bash script that shells out to `vz`, `macvz`, or
+`vfkit`. Read the exported environment variables to build the command line,
+keep the VM process running, and record the background PID in
+`$MICROVM_PID_FILE` so the `stop` helper can terminate it cleanly.
 
 The helper script records a PID file in `${TARGET_DIR}/.microvm.pid` and
 captures console output in `${TARGET_DIR}/qemu-console.log` for debugging.
