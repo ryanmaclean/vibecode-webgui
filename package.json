@@ -133,7 +133,7 @@
     "lint:markdown": "markdownlint-cli2"
   },
   "dependencies": {
-    "@ai-sdk/openai": "2.0.52",
+    "@ai-sdk/openai": "2.0.59",
     "@ai-sdk/react": "1.2.12",
     "@azure/cosmos": "4.5.1",
     "@azure/storage-blob": "^12.18.0",
