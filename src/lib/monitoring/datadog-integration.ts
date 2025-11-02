@@ -423,7 +423,7 @@ export class DatadogIntegration {
         },
         {
           definition: {
-            type: "timeseries", 
+            type: "timeseries",
             title: "Embedding Latency (P95)",
             requests: [
               {
@@ -497,3 +497,25 @@ export class DatadogIntegration {
     };
   }
 }
+
+// Singleton instance
+const datadogIntegration = new DatadogIntegration();
+
+// Export convenience functions
+export function initDatadog(config?: DatadogConfig): void {
+  // Initialization happens in constructor, this is just for API compatibility
+  if (config?.host || config?.port) {
+    // Would reinitialize with new config
+    console.info('Datadog integration initialized', config);
+  }
+}
+
+export function isDatadogEnabled(): boolean {
+  return Boolean(process.env.DD_API_KEY || process.env.DATADOG_API_KEY);
+}
+
+// Export types
+export type { DatadogConfig, EmbeddingMetrics, PoolMetrics, DatabaseMetrics };
+
+// Export the singleton instance as default
+export default datadogIntegration;

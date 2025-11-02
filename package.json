@@ -12,7 +12,7 @@
     "setup": "node scripts/setup-development.js",
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:simple": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
-    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
+    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build --webpack",
     "start": "cross-env NEXT_TELEMETRY_DISABLED=1 next start",
     "start:dd": "cross-env NEXT_TELEMETRY_DISABLED=1 node --require ./src/instrument.ts node_modules/.bin/next start",
     "lint": "eslint --ext .ts,.tsx src/app/api/agents src/app/api/ai/chat src/app/api/ai/chat/enhanced src/app/api/ai/chat/unified src/app/api/ai/chat/stream --ignore-pattern '**/*.js' --ignore-pattern '**/*.cjs'",

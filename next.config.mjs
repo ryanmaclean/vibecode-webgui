@@ -10,7 +10,8 @@ const webpack = require('webpack')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : 'standalone'
+// Temporarily disable standalone to save disk space during build
+const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : undefined
 if (process.env.NEXT_OUTPUT_MODE === 'export') {
   console.info('[next.config] output mode: export')
 }
@@ -165,9 +166,9 @@ const nextConfig = {
     DD_VERSION: process.env.DD_VERSION || '1.0.0',
   },
   poweredByHeader: false,
-  // Empty turbopack config to silence Next.js 16 webpack config warning
-  // Our webpack config is required for dd-trace stubbing and other customizations
-  turbopack: {},
+  // Disable Turbopack for production builds - use Webpack for reliable builds
+  // Turbopack in Next.js 16 has tree-shaking issues with worker threads
+  turbopack: process.env.NODE_ENV === 'development' ? {} : undefined,
   serverExternalPackages,
   async headers() {
     return [
@@ -308,12 +309,12 @@ const nextConfig = {
       config.externals = externals
     }
 
-    // Keep minification disabled since we removed MinifyPlugin
-    // Build will be larger but functional until Next.js fixes the bug
+    // Re-enable minification now that MinifyPlugin is removed
+    // SWC minifier handles this automatically in Next.js
     if (!dev && !isServer) {
       config.optimization = {
         ...config.optimization,
-        minimize: false,
+        minimize: true,
       }
     }
 

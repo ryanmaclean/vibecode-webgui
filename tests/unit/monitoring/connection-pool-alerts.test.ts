@@ -15,7 +15,7 @@ describe('ConnectionPoolAlertService dynamic module loading', () => {
 
   const resetServiceState = () => {
     (service as unknown as { stopMonitoring: () => void }).stopMonitoring();
-    (service as unknown as { activeAlerts: Map<string, unknown> }).activeAlerts.clear();
+    (service as unknown as { activeAlerts: unknown[] }).activeAlerts = [];
     (service as unknown as { alertHistory: unknown[] }).alertHistory = [];
     (service as unknown as { lastAlertTimes: Map<string, number> }).lastAlertTimes.clear();
     (service as unknown as { lastTimeoutCount: number }).lastTimeoutCount = 0;

@@ -7,6 +7,7 @@ import Providers from './providers';
 import Script from 'next/script';
 import { TauriMenuBarProvider } from '@/components/TauriMenuBarProvider';
 import { TauriIdeBootstrapper } from '@/components/TauriIdeBootstrapper';
+import RUMInitializer from '@/components/RUMInitializer';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -72,6 +73,7 @@ export default function RootLayout({
       <body
         className="antialiased"
       >
+        <RUMInitializer />
         <Providers>
           <TauriMenuBarProvider />
           <TauriIdeBootstrapper />

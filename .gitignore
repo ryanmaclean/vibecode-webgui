@@ -9,6 +9,8 @@ out/
 build/
 .build/
 target/
+bin/
+vendor/
 
 # Environment
 .env
@@ -38,12 +40,29 @@ dist/vm-images/*-efi.nvram
 *.tmp
 *-debug.log
 
+# Test coverage (auto-generated)
+coverage/
+.test-results/
+*.lcov
+
+# Session worklogs and agent reports
+*_REPORT.md
+*_STATUS.md
+*_SUMMARY.md
+*_COMPLETE.md
+*_RESULTS.md
+AGENT_*.md
+TEAM*.md
+BUILD_*.md
+BUILDS_*.md
+
 # Datadog
 DATADOG_SOLUTIONS_VERIFIED.md
 DATADOG_SOLUTIONS_SUMMARY.md
 
 # Documentation drafts
 docs/research/
+docs/sessions/archive-worklogs/
 
 # macOS specific
 *.app
