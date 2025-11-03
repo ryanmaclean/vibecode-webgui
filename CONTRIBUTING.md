@@ -1,157 +1,213 @@
-# Contributing to VibeCode Platform
+# Contributing to VibeCode
 
-Thanks for your interest in contributing! This project demonstrates **pgvector + PostgreSQL + Kubernetes + Datadog DBM** monitoring.
+Thanks for considering contributing. This project is in early stages and could use help.
 
-## 📋 Code of Conduct
+## Current State
 
-This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you agree to uphold this code. Please report any violations to conduct@vibecode.dev.
+Honestly: The infrastructure is solid but only 2 of 6 VMs work, and no services are installed yet. There's real work to do if you're interested.
 
-## 🚀 Quick Start for Contributors
+## Where Help Is Needed
 
-1. **Try the demo first**: `./DEMO.sh`
-2. **Fork and clone** the repository
-3. **Run tests**: `npm test`
-4. **Make your changes**
-5. **Test the demo still works**: `./DEMO.sh`
+### High Priority
 
-## 🤝 Coordinate Before You Ship
+1. **Fix bootloader issues** - 4 VMs won't boot
+   - Problem: EFI configuration for fresh Alpine images
+   - Impact: Blocks most functionality
+   - Skills: Familiarity with UEFI, VZ framework
+   
+2. **Service installation** - VMs have no applications
+   - Problem: Need PostgreSQL, Valkey, Node.js, code-server in VMs
+   - Impact: Users can't actually use the VMs
+   - Skills: Linux system administration, cloud-init
 
-- **Read [`TODO.md`](./TODO.md)** to see which work areas are already claimed and follow the live coordination protocol.
-- **Scan [`docs/logs/`](./docs/logs/)** for the latest activity, decision, and friction logs so you don't redo or conflict with recent work.
-- If you're planning large file moves or automation changes, document your intent in `TODO.md` first so other agents can adjust.
+3. **Testing actual services** - No validation yet
+   - Problem: Haven't tested if services work when installed
+   - Impact: Don't know if the whole thing works end-to-end
+   - Skills: QA, integration testing
 
-## 🎯 What We're Looking For
+### Medium Priority
 
-### High-Priority Contributions
-- **More vector database examples** (Qdrant, Weaviate, etc.)
-- **Additional monitoring integrations** (Prometheus, Grafana)
-- **Performance optimizations** for vector searches
-- **Documentation improvements** (especially troubleshooting)
+4. Auto-start mechanism debugging
+5. SSH configuration
+6. Performance benchmarking
+7. Datadog metrics validation
 
-### Demo Improvements
-- **Better sample data** for vector demonstrations
-- **More realistic query patterns**
-- **Additional Datadog dashboard examples**
-- **Cross-platform compatibility** fixes
+### Nice to Have
 
-## 🔧 Development Setup
+8. Tauri integration
+9. Additional VMs
+10. macOS Tahoe ASIF format testing
+
+## How to Contribute
+
+### Before You Start
+
+1. Read VMS_WORKING_STATUS.md to understand current state
+2. Check existing issues (if any)
+3. Maybe open an issue to discuss your approach
+4. No pressure - contribute what you can when you can
+
+### Development Setup
 
 ```bash
-# 1. Clone and setup
 git clone https://github.com/ryanmaclean/vibecode-webgui.git
 cd vibecode-webgui
-npm install
 
-# 2. Start local development
-npm run dev
+# Build the app
+cd VibeCodeSwift
+swift build -c debug
 
-# 3. Test the demo
-./DEMO.sh
-
-# 4. Run tests
-npm test
+# Run tests
+cd ..
+./scripts/staff-level-test-suite.sh
 ```
 
-## 📋 Contribution Guidelines
+### Making Changes
 
-### Code Style
-- **TypeScript** for new code
-- **ESLint** configuration provided
-- **Prettier** for formatting
-- **Clear variable names** and comments
+1. **Branch naming**: `fix/bootloader-issue` or `feature/ssh-config`
+2. **Commits**: Be descriptive but don't overthink it
+3. **Tests**: Add tests if you can, but we understand if you can't
+4. **Documentation**: Update if relevant
 
-### Testing Requirements
-- **Add tests** for new features
-- **Ensure demo works** after changes
-- **Test on multiple platforms** if possible
-- **Document breaking changes**
+### Pull Request Process
 
-### Commit Messages
+1. **Fork and branch** - Standard GitHub workflow
+2. **Make your changes** - Do what makes sense
+3. **Test locally** - Run `./scripts/staff-level-test-suite.sh`
+4. **Open PR** - Describe what you did and why
+5. **Be patient** - Reviews take time
+
+No strict requirements. We'd rather have imperfect contributions than no contributions.
+
+## Code Style
+
+### Swift
+
+Follow standard Swift conventions:
+- 4 spaces for indentation
+- Clear variable names
+- Comments where logic is complex
+
+Don't stress about perfection - working code is better than perfect code.
+
+### Shell Scripts
+
+- Use `#!/bin/bash`
+- Comment non-obvious parts
+- Handle errors (`set -e` is good)
+
+### Documentation
+
+- Markdown files
+- Plain language (avoid jargon when possible)
+- Be honest about limitations
+
+## Testing
+
+### Run the test suite
+
+```bash
+./scripts/staff-level-test-suite.sh
 ```
-feat: add support for Qdrant vector database
-fix: resolve Datadog connection timeout
-docs: update troubleshooting guide
-demo: improve vector activity generation
-```
 
-## 🐛 Bug Reports
+Currently 27 of 33 tests pass. If your change doesn't break existing tests and ideally adds new ones, that's great.
 
-When reporting bugs, please include:
+### Manual testing
 
-1. **Steps to reproduce**
-2. **Expected vs actual behavior**
-3. **Environment details** (OS, Kubernetes version, etc.)
-4. **Demo output** (if applicable)
-5. **Relevant logs**
+Since services aren't installed:
+- Test that VMs still discover correctly
+- Test that working VMs (Pgvector, Ide) still boot
+- Test that you didn't break the build
 
-Use our [bug report template](.github/ISSUE_TEMPLATE/bug_report.md).
+## Communication
 
-## 💡 Feature Requests
+### Be Nice
 
-We welcome suggestions for:
-- **New vector database integrations**
-- **Additional monitoring tools**
-- **Performance improvements**
-- **Documentation enhancements**
+- Assume good intentions
+- Be patient with each other
+- It's okay to disagree
+- Be constructive
 
-Use our [feature request template](.github/ISSUE_TEMPLATE/feature_request.md).
+### Be Honest
 
-## 🔍 Code Review Process
+- If something doesn't work, say so
+- If you're not sure, admit it
+- If you need help, ask
 
-1. **Fork** the repository
-2. **Create feature branch**: `git checkout -b feature/amazing-feature`
-3. **Make changes** and add tests
-4. **Test demo works**: `./DEMO.sh`
-5. **Push branch**: `git push origin feature/amazing-feature`
-6. **Create Pull Request**
+### No Pressure
 
-### PR Requirements
-- [ ] Demo still works (`./DEMO.sh`)
-- [ ] Tests pass (`npm test`)
-- [ ] Documentation updated
-- [ ] Clear description of changes
-- [ ] Related issue linked (if applicable)
+- Contribute when you have time
+- No deadlines unless you set them
+- It's fine to abandon work if life gets busy
+- We appreciate any effort
 
-## 🎯 Specific Areas for Contribution
+## Review Process
 
-### 1. Vector Database Support
-- Add support for other vector databases
-- Improve pgvector performance
-- Add more embedding models
+### What We Look For
 
-### 2. Monitoring Enhancements
-- Custom Datadog dashboards
-- Additional metrics collection
-- Performance alerting rules
+1. **Does it work?** - Most important
+2. **Does it break anything?** - Run tests
+3. **Is it documented?** - At least basics
+4. **Is the code reasonable?** - Doesn't have to be perfect
 
-### 3. Demo Improvements
-- Better TUI interface
-- More realistic data
-- Cross-platform compatibility
+### What We Don't Require
 
-### 4. Documentation
-- Troubleshooting guides
-- Performance tuning tips
-- Integration examples
+- Perfect test coverage
+- Extensive documentation (basics are fine)
+- Adherence to every style guide rule
+- Immediate responses to review comments
 
-## 🏆 Recognition
+### Review Timeline
+
+We'll try to review within a week, but no promises. Life happens.
+
+## Getting Help
+
+### If You're Stuck
+
+- Check docs/guides/ for technical docs
+- Look at existing code for examples
+- Open an issue to ask questions
+- No question is too basic
+
+### If You're Not Sure
+
+That's fine. Open a draft PR and ask for feedback.
+
+## Recognition
 
 Contributors will be:
-- **Listed in README** acknowledgments
-- **Tagged in release notes**
-- **Invited to maintainer discussions** (for significant contributions)
+- Listed in release notes (if they want)
+- Credited in README (if they want)
+- Appreciated genuinely
 
-## 📞 Getting Help
+No fake "rockstar contributor" badges or corporate thank-yous. Just real appreciation for real help.
 
-- **GitHub Issues**: For bugs and feature requests
-- **GitHub Discussions**: For questions and ideas
-- **Demo Issues**: Run `./DEMO.sh` and choose "Help & Troubleshooting"
-- **Troubleshooting Guide**: [docs/TROUBLESHOOTING.md](docs/TROUBLESHOOTING.md) for common issues and solutions
+## Non-Goals
 
-## 📄 License
+We're NOT trying to:
+- Build the perfect VM manager
+- Compete with commercial products
+- Win awards or get press
+- Grow a huge community
 
-By contributing, you agree that your contributions will be licensed under the same license as the project (MIT License).
+We ARE trying to:
+- Make a useful tool
+- Learn about macOS virtualization
+- Help developers who need local VMs
+- Share knowledge
+
+## License
+
+MIT License - Use it however you want. We just ask that you share improvements back if they might help others.
+
+## Questions?
+
+Open an issue. We'll do our best to help, but we're not running a support desk. Community help is appreciated.
 
 ---
 
-**Ready to contribute? Start with `./DEMO.sh` to understand what we're building!** 🚀
+**Thanks for reading this far.** If you contribute anything, even a small fix or documentation improvement, we appreciate it. And if you just use the tool or learn from the code, that's valuable too.
+
+No pressure. Just build cool stuff.
+
