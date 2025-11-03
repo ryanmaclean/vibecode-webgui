@@ -40,6 +40,13 @@ echo "==============================="
 echo "Testing: VM launch + service availability"
 echo ""
 
+# Ensure the release binary is built and signed with entitlements
+cd "$PROJECT_ROOT/VibeCodeSwift"
+echo "Preparing signed release binary..."
+swift build -c release > /dev/null 2>&1
+codesign --force --sign - --entitlements "$PROJECT_ROOT/VibeCodeSwift/VibeCode.entitlements" .build/release/VibeCode > /dev/null 2>&1
+cd "$PROJECT_ROOT"
+
 # Test 1: Launch VibeCode app
 log_test "1/7" "VibeCode app launch"
 "$PROJECT_ROOT/VibeCodeSwift/.build/release/VibeCode" > /tmp/vibecode-test.log 2>&1 &
@@ -119,11 +126,12 @@ fi
 # Check for errors
 echo ""
 echo "Error Check:"
-ERROR_COUNT=$(grep -c "ERROR\|FAIL\|crash" /tmp/vibecode-test.log 2>/dev/null || echo "0")
+# Use wc -l to ensure a single numeric value even when there are no matches
+ERROR_COUNT=$(grep -E "ERROR|FAIL|crash" /tmp/vibecode-test.log 2>/dev/null | wc -l | tr -d ' ')
 if [ "$ERROR_COUNT" -gt 0 ]; then
     echo "  WARNING: Found $ERROR_COUNT errors in logs"
     echo "  Last 10 error lines:"
-    grep "ERROR\|FAIL" /tmp/vibecode-test.log | tail -10 || true
+    grep -E "ERROR|FAIL|crash" /tmp/vibecode-test.log | tail -10 || true
 fi
 
 echo ""

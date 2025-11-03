@@ -84,6 +84,10 @@ MERGE_FILES=(
   "${CONFIG_DIR}/minivim-${ARCH_TARGET}.config"
 )
 ./scripts/kconfig/merge_config.sh -m .config "${MERGE_FILES[@]}"
+INITRAMFS_SRC="${REPO_ROOT}/bench-images/apple-vf/rootfs"
+if [[ -d "${INITRAMFS_SRC}" ]]; then
+  ./scripts/config --set-str INITRAMFS_SOURCE "${INITRAMFS_SRC}"
+fi
 "${MAKE_BIN}" ARCH="${ARCH_TARGET}" olddefconfig
 
 # Drop objtool / ORC requirements for lightweight build.
@@ -93,10 +97,17 @@ if [[ "${ARCH_TARGET}" == "x86_64" ]]; then
 fi
 
 # Build the kernel image.
-MAKEFLAGS=(ARCH="${ARCH_TARGET}" -j"${JOBS}" bzImage)
-if [[ "${ARCH_TARGET}" == "armv7" ]]; then
-  MAKEFLAGS=(ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j"${JOBS}" zImage)
-fi
+case "${ARCH_TARGET}" in
+  x86_64)
+    MAKEFLAGS=(ARCH=x86_64 -j"${JOBS}" bzImage)
+    ;;
+  arm64)
+    MAKEFLAGS=(ARCH=arm64 -j"${JOBS}" Image)
+    ;;
+  armv7)
+    MAKEFLAGS=(ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- -j"${JOBS}" zImage)
+    ;;
+esac
 
 "${MAKE_BIN}" "${MAKEFLAGS[@]}"
 

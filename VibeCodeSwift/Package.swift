@@ -9,18 +9,37 @@ let package = Package(
         .macOS(.v13)
     ],
     products: [
+        .library(name: "VibeCodeCore", targets: ["VibeCodeCore"]),
         .executable(
             name: "VibeCode",
             targets: ["VibeCode"]
         )
     ],
     targets: [
+        .target(
+            name: "VibeCodeCore",
+            path: "Sources/Core"
+        ),
         .executableTarget(
             name: "VibeCode",
-            dependencies: [],
+            dependencies: ["VibeCodeCore"],
             path: "Sources",
+            exclude: [
+                "Core",
+                "Utilities/IDEProcessManager.swift",
+                "Utilities/IDEPreferences.swift"
+            ],
             resources: [
                 .copy("Resources")
+            ]
+        ),
+        .testTarget(
+            name: "VibeCodeTests",
+            dependencies: ["VibeCodeCore"],
+            path: "Tests",
+            sources: [
+                "IDEProcessManagerTests.swift",
+                "IDEPreferencesTests.swift"
             ]
         )
     ]

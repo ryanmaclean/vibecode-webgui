@@ -60,6 +60,8 @@ PID_FILE="$VM_DIR/.microvm.pid"
 SERIAL_LOG="$VM_DIR/qemu-console.log"
 COMMON_OPTS=("-kernel" "$KERNEL" "-initrd" "$INITRD" "-append" "$APPEND" "-display" "none")
 LAST_READY_MS=0
+READY_TIMEOUT=${MICROVM_READY_TIMEOUT:-60}
+READY_POLL_INTERVAL=${MICROVM_READY_POLL_SEC:-0.1}
 
 ms_now() {
   python3 -c 'import time; print(int(time.time() * 1000))'
@@ -162,7 +164,7 @@ start_vm() {
       ;;
   esac
   local elapsed
-  elapsed=$(wait_for_ready 20) || {
+  elapsed=$(wait_for_ready "$READY_TIMEOUT") || {
     echo "error: microVM failed readiness check" >&2
     stop_vm
     exit 1
@@ -186,7 +188,7 @@ stop_vm() {
 }
 
 wait_for_ready() {
-  local timeout=${1:-15}
+  local timeout=${1:-$READY_TIMEOUT}
   local start
   start=$(ms_now)
   local deadline=$((start + timeout * 1000))
@@ -200,7 +202,7 @@ wait_for_ready() {
     if [[ $(ms_now) -ge $deadline ]]; then
       break
     fi
-    sleep 0.01
+    sleep "$READY_POLL_INTERVAL"
   done
   return 1
 }
