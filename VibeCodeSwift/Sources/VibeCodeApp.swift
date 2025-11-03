@@ -1,9 +1,12 @@
 // MIT License - VibeCode Main Application
 import SwiftUI
+import VibeCodeCore
 
 @main
 struct VibeCodeApp: App {
     @StateObject private var vmManager = VMManager()
+    @StateObject private var ideManager = IDEProcessManager()
+    @StateObject private var idePreferences = IDEPreferences()
     
     init() {
         DatadogLogger.shared.info("VibeCode application starting", [
@@ -17,11 +20,14 @@ struct VibeCodeApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(vmManager)
+                .environmentObject(ideManager)
                 .frame(minWidth: 800, minHeight: 600)
                 .onAppear {
                     NSLog("🟢 VIBECODE: ContentView.onAppear called!")
                     print("🟢 ContentView.onAppear called!")
                     vmManager.loadAvailableVMs()
+                    // inject shared preferences into manager
+                    ideManager.preferences = idePreferences
                 }
         }
         .commands {
@@ -33,6 +39,44 @@ struct VibeCodeApp: App {
         }
         .windowStyle(.hiddenTitleBar)
         .windowToolbarStyle(.unified)
+
+        MenuBarExtra("VibeCode", systemImage: "hammer") {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    Circle()
+                        .fill(ideManager.isRunning ? Color.green : Color.gray)
+                        .frame(width: 8, height: 8)
+                    Text(ideManager.status)
+                        .font(.caption)
+                }
+                Divider()
+                if ideManager.isRunning {
+                    Button("Stop IDE") {
+                        ideManager.stop()
+                    }
+                    Button("Open IDE") {
+                        ideManager.openInBrowser()
+                    }
+                    Button("Open Logs") {
+                        ideManager.openLogs()
+                    }
+                } else {
+                    Button("Start IDE") {
+                        ideManager.start()
+                    }
+                }
+                Divider()
+                Button("Preferences…") {
+                    NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+                }
+            }
+            .padding(8)
+        }
+
+        Settings {
+            PreferencesView(preferences: idePreferences, ideManager: ideManager)
+                .frame(width: 520, height: 360)
+        }
     }
 }
 

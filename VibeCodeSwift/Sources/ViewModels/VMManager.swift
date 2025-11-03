@@ -59,7 +59,7 @@ class VMManager: ObservableObject {
         
         // 2. Try development location (for testing)
         if vmPath == nil {
-            let devPath = URL(fileURLWithPath: "/Users/ryan.maclean/vibecode-webgui/dist/vm-images")
+            let devPath = URL(fileURLWithPath: "/Users/studio/Documents/vibecode-webgui/dist/vm-images")
             print("📂 Checking dev location: \(devPath.path)")
             DatadogLogger.shared.debug("Checking dev location", ["path": devPath.path])
             if FileManager.default.fileExists(atPath: devPath.path) {
@@ -204,6 +204,31 @@ class VMManager: ObservableObject {
     func startVM(_ vmInfo: VMInfo) async throws {
         print("🚀 Starting VM: \(vmInfo.name)")
         NSLog("🚀 VIBECODE: Starting VM: %@", vmInfo.name)
+        
+        // Safe mode: avoid booting tiny stub images that will crash VZ
+        do {
+            let attrs = try FileManager.default.attributesOfItem(atPath: vmInfo.diskPath.path)
+            if let size = attrs[.size] as? NSNumber {
+                let bytes = size.int64Value
+                // 1 GB threshold; allow known dev VMs (codeserver/ide)
+                let isTiny = bytes < (1_000_000_000)
+                let lower = vmInfo.name.lowercased()
+                let isAllowed = lower.contains("codeserver") || lower.contains("ide")
+                if isTiny && !isAllowed {
+                    DatadogLogger.shared.warning("Skipping VM start due to tiny disk (safe mode)", [
+                        "vm_name": vmInfo.name,
+                        "disk_bytes": bytes
+                    ])
+                    DogStatsDClient.shared.increment("vibecode.vm.start.skipped", tags: [
+                        "vm_name:\(vmInfo.name)",
+                        "reason:tiny_disk"
+                    ])
+                    throw VMError.failedToLoadDisk
+                }
+            }
+        } catch {
+            // If we cannot read attributes, proceed; VZ will validate later
+        }
         
         // Send Datadog metrics
         let startTime = Date()
