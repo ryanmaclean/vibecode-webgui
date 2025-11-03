@@ -105,17 +105,32 @@ Unified Launcher (launcher.js)
 
 ## Next Steps for Next Agent
 
+### 🔍 START HERE: Read Implementation Walkthrough
+**CRITICAL**: Before making any changes, read the complete walkthrough:
+- **`docs/IMPLEMENTATION_WALKTHROUGH.md`** - Complete step-by-step guide
+  - File-by-file breakdown
+  - Step-by-step recreation instructions
+  - Troubleshooting guide
+  - Architecture diagrams
+  - Verification checklist
+
+### Quick Start:
 1. **Review PR**: https://github.com/ryanmaclean/vibecode-webgui/pull/723
-2. **Test VM option**: Build VM artifacts if needed
+2. **Read walkthrough**: `docs/IMPLEMENTATION_WALKTHROUGH.md`
+3. **Verify setup**:
+   ```bash
+   bash scripts/test-launcher.sh
+   ```
+4. **Test VM option**: Build VM artifacts if needed
    ```bash
    # Build VM artifacts
    scripts/benchmarks/vscode_microvm.sh start
    ```
-3. **Build backend** (optional):
+5. **Build backend** (optional):
    ```bash
    cd src-tauri && cargo build --release
    ```
-4. **Test full integration**:
+6. **Test full integration**:
    ```bash
    npm start -- --vm  # Test lightweight VM
    npm start          # Test standard launch
