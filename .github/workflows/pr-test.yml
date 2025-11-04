@@ -1,0 +1,133 @@
+name: PR Testing
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+jobs:
+  test-pr:
+    name: Test PR Changes
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write
+      contents: read
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+        continue-on-error: false
+
+      - name: Run TypeScript type check
+        id: typecheck
+        run: |
+          echo "## TypeScript Type Check" >> $GITHUB_STEP_SUMMARY
+          npm run type-check 2>&1 | tee typecheck.log || true
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Type check passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Type check failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 typecheck.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Run ESLint
+        id: lint
+        run: |
+          echo "## ESLint" >> $GITHUB_STEP_SUMMARY
+          npm run lint 2>&1 | tee lint.log || true
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Lint passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Lint failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 lint.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Run Next.js build
+        id: build
+        run: |
+          echo "## Next.js Build" >> $GITHUB_STEP_SUMMARY
+          npm run build 2>&1 | tee build.log || true
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Build passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Build failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -100 build.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Run tests
+        id: test
+        run: |
+          echo "## Test Suite" >> $GITHUB_STEP_SUMMARY
+          npm test 2>&1 | tee test.log || true
+          if [ ${PIPESTATUS[0]} -eq 0 ]; then
+            echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Tests failed" >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            tail -50 test.log >> $GITHUB_STEP_SUMMARY
+            echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Check for launcher test script
+        id: launcher-test
+        run: |
+          echo "## Launcher Tests" >> $GITHUB_STEP_SUMMARY
+          if [ -f "scripts/test-launcher.sh" ]; then
+            echo "Found test-launcher.sh, running..." >> $GITHUB_STEP_SUMMARY
+            bash scripts/test-launcher.sh 2>&1 | tee launcher-test.log || true
+            if [ ${PIPESTATUS[0]} -eq 0 ]; then
+              echo "✅ Launcher tests passed" >> $GITHUB_STEP_SUMMARY
+            else
+              echo "❌ Launcher tests failed" >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+              cat launcher-test.log >> $GITHUB_STEP_SUMMARY
+              echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+            fi
+          else
+            echo "ℹ️ No launcher test script found" >> $GITHUB_STEP_SUMMARY
+          fi
+        continue-on-error: true
+
+      - name: Generate test summary
+        if: always()
+        run: |
+          echo "# PR Test Results Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "PR: #${{ github.event.pull_request.number }}" >> $GITHUB_STEP_SUMMARY
+          echo "Branch: ${{ github.event.pull_request.head.ref }}" >> $GITHUB_STEP_SUMMARY
+          echo "Commit: ${{ github.event.pull_request.head.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Run completed at $(date)" >> $GITHUB_STEP_SUMMARY
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: pr-test-logs
+          path: |
+            *.log
+          retention-days: 7
