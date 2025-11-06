@@ -13,6 +13,10 @@ let package = Package(
         .executable(
             name: "VibeCode",
             targets: ["VibeCode"]
+        ),
+        .executable(
+            name: "docker-alpine-vm",
+            targets: ["DockerAlpineVM"]
         )
     ],
     targets: [
@@ -25,8 +29,13 @@ let package = Package(
             dependencies: ["VibeCodeCore"],
             path: "Sources",
             exclude: [
-                "Core"
+                "Core",
+                "DockerVM"
             ]
+        ),
+        .executableTarget(
+            name: "DockerAlpineVM",
+            path: "Sources/DockerVM"
         ),
         .testTarget(
             name: "VibeCodeTests",
