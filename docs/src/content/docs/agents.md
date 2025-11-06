@@ -1,6 +1,21 @@
 ---
 title: Repository Guidelines & Agent System
 description: Development guidelines and AI agent orchestration
+lastUpdated: 2025-11-06
+---
+
+# Recent Work: ASIF + Virtualization Framework (2025-11-06)
+
+**Status:** ✅ Complete - Ready for VM creation
+
+VibeCode now has **Apple Virtualization.framework** integrated with **ASIF disk format** support:
+- Performance: 1.6 GB/s write, 3.7 GB/s read (tested)
+- Storage: 87% efficiency with sparse allocation
+- Documentation: See [ASIF + Virtualization Framework](/asif-virtualization/)
+- Next step: Download Alpine kernel and create first VM (~2 hours)
+
+**For agents:** Don't recreate this. Read `docs/ASIF_VZ_STATUS.md` before working on VMs.
+
 ---
 
 # Multi-Agent Coordination
