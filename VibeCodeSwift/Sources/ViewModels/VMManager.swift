@@ -210,8 +210,8 @@ class VMManager: ObservableObject {
             let attrs = try FileManager.default.attributesOfItem(atPath: vmInfo.diskPath.path)
             if let size = attrs[.size] as? NSNumber {
                 let bytes = size.int64Value
-                // 1 GB threshold; allow known dev VMs (codeserver/ide)
-                let isTiny = bytes < (1_000_000_000)
+                // 50 MB threshold; allow known dev VMs (codeserver/ide)
+                let isTiny = bytes < (50 * 1_024 * 1_024)
                 let lower = vmInfo.name.lowercased()
                 let isAllowed = lower.contains("codeserver") || lower.contains("ide")
                 if isTiny && !isAllowed {

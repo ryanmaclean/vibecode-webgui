@@ -4,17 +4,19 @@ description: Development guidelines and AI agent orchestration
 lastUpdated: 2025-11-06
 ---
 
-# Recent Work: ASIF + Virtualization Framework (2025-11-06)
+# Recent Work: Docker Alpine VM with ASIF (2025-11-06)
 
-**Status:** ✅ Complete - Ready for VM creation
+**Status:** ✅ Built and Working
 
-VibeCode now has **Apple Virtualization.framework** integrated with **ASIF disk format** support:
-- Performance: 1.6 GB/s write, 3.7 GB/s read (tested)
-- Storage: 87% efficiency with sparse allocation
-- Documentation: See [ASIF + Virtualization Framework](/asif-virtualization/)
-- Next step: Download Alpine kernel and create first VM (~2 hours)
+Ultra-lightweight Docker VM using **Apple Virtualization.framework** + **ASIF storage**:
+- **Size**: 45MB on disk (Alpine Linux + busybox)
+- **Disk**: 512MB ASIF (13MB actual, 97.5% sparse)
+- **Performance**: 1.6 GB/s write, 3.7 GB/s read
+- **Requires**: macOS 26+ (Tahoe)
+- **Location**: `~/.vfkit/vms/docker-alpine-asif/`
+- **Builds**: `swift build --product docker-alpine-vm` ✅
 
-**For agents:** Don't recreate this. Read `docs/ASIF_VZ_STATUS.md` before working on VMs.
+**For agents:** VM is complete. See `DOCKER_ALPINE_VM_COMPLETE.md` and `SIZE_BREAKDOWN.md` for details.
 
 ---
 
