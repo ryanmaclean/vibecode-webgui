@@ -1,0 +1,21 @@
+{
+  "vms": [
+    {"name": "vibecode-postgresql.img", "url": "TBD_URL/vibecode-postgresql.img", "sha256": "3b6a07d0d404fab4e23b6d34bc6696a6a312dd92821332385e5af7c01c421351"},
+    {"name": "vibecode-postgresql-efi.nvram", "url": "TBD_URL/vibecode-postgresql-efi.nvram", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+
+    {"name": "vibecode-valkey.img", "url": "TBD_URL/vibecode-valkey.img", "sha256": "3b6a07d0d404fab4e23b6d34bc6696a6a312dd92821332385e5af7c01c421351"},
+    {"name": "vibecode-valkey-efi.nvram", "url": "TBD_URL/vibecode-valkey-efi.nvram", "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"},
+
+    {"name": "vibecode-pgvector.img", "url": "TBD_URL/vibecode-pgvector.img", "sha256": "3b6a07d0d404fab4e23b6d34bc6696a6a312dd92821332385e5af7c01c421351"},
+    {"name": "vibecode-pgvector-efi.nvram", "url": "TBD_URL/vibecode-pgvector-efi.nvram", "sha256": "fa43239bcee7b97ca62f007cc68487560a39e19f74f3dde7486db3f98df8e471"},
+
+    {"name": "vibecode-nodejs.img", "url": "TBD_URL/vibecode-nodejs.img", "sha256": "aee320fce7e14edf2b50c0d2aef934e2c5b67c43d30bc2659feb711ec22cea56"},
+    {"name": "vibecode-nodejs-efi.nvram", "url": "TBD_URL/vibecode-nodejs-efi.nvram", "sha256": "fa43239bcee7b97ca62f007cc68487560a39e19f74f3dde7486db3f98df8e471"},
+
+    {"name": "vibecode-nodejs-codeserver.img", "url": "TBD_URL/vibecode-nodejs-codeserver.img", "sha256": "aee320fce7e14edf2b50c0d2aef934e2c5b67c43d30bc2659feb711ec22cea56"},
+    {"name": "vibecode-nodejs-codeserver-efi.nvram", "url": "TBD_URL/vibecode-nodejs-codeserver-efi.nvram", "sha256": "663fb1e36672e516bb172ffeab2c453e1f19ee92feca3c96e20e56e3d7975c15"},
+
+    {"name": "vibecode-ide.img", "url": "TBD_URL/vibecode-ide.img", "sha256": "aee320fce7e14edf2b50c0d2aef934e2c5b67c43d30bc2659feb711ec22cea56"},
+    {"name": "vibecode-ide-efi.nvram", "url": "TBD_URL/vibecode-ide-efi.nvram", "sha256": "fa43239bcee7b97ca62f007cc68487560a39e19f74f3dde7486db3f98df8e471"}
+  ]
+}

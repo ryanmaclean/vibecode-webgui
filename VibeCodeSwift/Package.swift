@@ -25,12 +25,7 @@ let package = Package(
             dependencies: ["VibeCodeCore"],
             path: "Sources",
             exclude: [
-                "Core",
-                "Utilities/IDEProcessManager.swift",
-                "Utilities/IDEPreferences.swift"
-            ],
-            resources: [
-                .copy("Resources")
+                "Core"
             ]
         ),
         .testTarget(
