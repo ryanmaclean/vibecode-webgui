@@ -1,0 +1,17 @@
+{
+  "name": "vibecode-mcp-extension",
+  "displayName": "VibeCode MCP Extension",
+  "description": "Minimal MCP client extension that logs activation and basic task lifecycle events.",
+  "version": "0.0.1",
+  "publisher": "vibecode",
+  "license": "MIT",
+  "engines": {
+    "vscode": "^1.70.0"
+  },
+  "categories": ["Other"],
+  "main": "extension.js",
+  "activationEvents": [
+    "*"
+  ],
+  "contributes": {}
+}

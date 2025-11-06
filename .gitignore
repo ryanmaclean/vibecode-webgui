@@ -45,6 +45,12 @@ coverage/
 .test-results/
 *.lcov
 
+# Build artifacts
+.eslintcache
+circular-deps.txt
+.cleanupignore
+scripts/vm-manifest.local.json
+
 # Session worklogs and agent reports
 *_REPORT.md
 *_STATUS.md
