@@ -1,0 +1,240 @@
+{
+  "name": "workspace-rag",
+  "displayName": "Workspace RAG with MLX",
+  "description": "Workspace-aware RAG extension using local pgvector and MLX for embeddings",
+  "version": "1.0.0",
+  "publisher": "vibecode",
+  "engines": {
+    "vscode": "^1.85.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Other"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "workspace-rag.indexWorkspace",
+        "title": "Index Workspace for RAG",
+        "category": "RAG"
+      },
+      {
+        "command": "workspace-rag.openRagChat",
+        "title": "Open RAG Chat",
+        "category": "RAG"
+      },
+      {
+        "command": "workspace-rag.setApiKey",
+        "title": "Set OpenAI API Key (Optional Fallback)",
+        "category": "RAG"
+      },
+      {
+        "command": "workspace-rag.showDashboard",
+        "title": "Show Performance Dashboard",
+        "category": "RAG"
+      }
+    ],
+    "views": {
+      "explorer": [
+        {
+          "type": "webview",
+          "id": "workspace-rag.chatView",
+          "name": "RAG Chat",
+          "when": "workspaceFolderCount > 0"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Workspace RAG",
+      "properties": {
+        "workspaceRag.pgHost": {
+          "type": "string",
+          "default": "localhost",
+          "description": "Hostname for PostgreSQL server"
+        },
+        "workspaceRag.pgPort": {
+          "type": "number",
+          "default": 5432,
+          "description": "Port for PostgreSQL server"
+        },
+        "workspaceRag.pgUser": {
+          "type": "string",
+          "default": "postgres",
+          "description": "Username for PostgreSQL"
+        },
+        "workspaceRag.pgPassword": {
+          "type": "string",
+          "default": "",
+          "description": "Password for PostgreSQL"
+        },
+        "workspaceRag.pgDatabase": {
+          "type": "string",
+          "default": "rag_db",
+          "description": "Database name for storing vectors"
+        },
+        "workspaceRag.includeGlob": {
+          "type": "string",
+          "default": "**/*.{js,ts,jsx,tsx,py,md,txt,json,go,java,c,cpp,h,cs,rb,php,rs}",
+          "description": "Glob pattern for files to include in indexing"
+        },
+        "workspaceRag.excludeGlob": {
+          "type": "string",
+          "default": "**/node_modules/**,**/dist/**,**/.git/**,**/venv/**,**/.vscode/**,**/build/**,**/target/**",
+          "description": "Glob pattern for files to exclude from indexing"
+        },
+        "workspaceRag.chunkSize": {
+          "type": "number",
+          "default": 1000,
+          "description": "Maximum size (in characters) for text chunks",
+          "minimum": 100,
+          "maximum": 5000
+        },
+        "workspaceRag.chunkOverlap": {
+          "type": "number",
+          "default": 100,
+          "description": "Overlap size between chunks"
+        },
+        "workspaceRag.embeddingModel": {
+          "type": "string",
+          "default": "text-embedding-3-small",
+          "description": "OpenAI embedding model to use (fallback)",
+          "enum": ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"]
+        },
+        "workspaceRag.retrievalLimit": {
+          "type": "number",
+          "default": 5,
+          "description": "Number of top results to retrieve",
+          "minimum": 1,
+          "maximum": 20
+        },
+        "workspaceRag.useLocalMLX": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use local MLX models when available (Apple Silicon only)"
+        },
+        "workspaceRag.debugMode": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug logging"
+        },
+        "workspaceRag.llmProvider": {
+          "type": "string",
+          "default": "openai",
+          "description": "LLM provider for answer generation",
+          "enum": ["openai", "anthropic", "google", "openrouter"]
+        },
+        "workspaceRag.openaiModel": {
+          "type": "string",
+          "default": "gpt-4-turbo-preview",
+          "description": "OpenAI model to use"
+        },
+        "workspaceRag.openaiBaseURL": {
+          "type": "string",
+          "description": "Custom OpenAI API base URL (optional)"
+        },
+        "workspaceRag.anthropicModel": {
+          "type": "string",
+          "default": "claude-3-5-sonnet-20241022",
+          "description": "Anthropic model to use"
+        },
+        "workspaceRag.anthropicBaseURL": {
+          "type": "string",
+          "description": "Custom Anthropic API base URL (optional)"
+        },
+        "workspaceRag.googleModel": {
+          "type": "string",
+          "default": "gemini-1.5-pro-latest",
+          "description": "Google Gemini model to use"
+        },
+        "workspaceRag.googleBaseURL": {
+          "type": "string",
+          "description": "Custom Google API base URL (optional)"
+        },
+        "workspaceRag.openrouterModel": {
+          "type": "string",
+          "default": "anthropic/claude-3.5-sonnet",
+          "description": "OpenRouter model to use"
+        },
+        "workspaceRag.openrouterBaseURL": {
+          "type": "string",
+          "description": "Custom OpenRouter API base URL (optional)"
+        },
+        "workspaceRag.llmTimeout": {
+          "type": "number",
+          "default": 30000,
+          "description": "LLM request timeout in milliseconds"
+        },
+        "workspaceRag.llmMaxRetries": {
+          "type": "number",
+          "default": 3,
+          "description": "Maximum number of retries for failed LLM requests"
+        },
+        "workspaceRag.tracing.enabled": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable distributed tracing with ddtrace"
+        },
+        "workspaceRag.tracing.sampleRate": {
+          "type": "number",
+          "default": 0.1,
+          "description": "Sampling rate for traces (0.1 = 10%)",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "workspaceRag.tracing.debug": {
+          "type": "boolean",
+          "default": false,
+          "description": "Enable debug mode for tracing"
+        },
+        "workspaceRag.tracing.exporters": {
+          "type": "array",
+          "default": ["console"],
+          "description": "Trace exporters",
+          "items": {
+            "type": "string",
+            "enum": ["console", "datadog", "jaeger"]
+          }
+        },
+        "workspaceRag.tracing.datadogApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "DataDog API key for trace export"
+        },
+        "workspaceRag.tracing.datadogSite": {
+          "type": "string",
+          "default": "datadoghq.com",
+          "description": "DataDog site URL"
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run package",
+    "compile": "webpack",
+    "watch": "webpack --watch",
+    "package": "webpack --mode production --devtool hidden-source-map",
+    "test": "node ./out/test/runTest.js",
+    "lint": "eslint src --ext ts"
+  },
+  "dependencies": {
+    "dd-trace": "^5.0.0",
+    "openai": "^4.20.1",
+    "pg": "^8.11.3"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.0",
+    "@types/pg": "^8.10.0",
+    "@types/vscode": "^1.85.0",
+    "@typescript-eslint/eslint-plugin": "^6.15.0",
+    "@typescript-eslint/parser": "^6.15.0",
+    "eslint": "^8.56.0",
+    "ts-loader": "^9.5.1",
+    "typescript": "^5.3.3",
+    "webpack": "^5.89.0",
+    "webpack-cli": "^5.1.4"
+  }
+}

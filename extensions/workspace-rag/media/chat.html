@@ -1,0 +1,541 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RAG Chat</title>
+    <style>
+        /* Tahoe-inspired design with VS Code theming */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--vscode-editor-background);
+            color: var(--vscode-editor-foreground);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            padding: 16px;
+            overflow: hidden;
+        }
+
+        .header {
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--vscode-widget-border);
+        }
+
+        .header h1 {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--vscode-foreground);
+        }
+
+        .status-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 12px;
+            border-radius: 12px;
+            font-size: 12px;
+            font-weight: 500;
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+        }
+
+        .status-badge.connected {
+            background: rgba(46, 160, 67, 0.2);
+            color: #2ea043;
+        }
+
+        .status-badge.indexing {
+            background: rgba(226, 153, 9, 0.2);
+            color: #e29909;
+        }
+
+        .status-badge.local {
+            background: rgba(31, 111, 235, 0.2);
+            color: #1f6feb;
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        #chat-container {
+            flex: 1;
+            overflow-y: auto;
+            padding: 12px;
+            margin-bottom: 16px;
+            border: 1px solid var(--vscode-widget-border);
+            border-radius: 8px;
+            background: var(--vscode-editor-background);
+        }
+
+        #chat-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        #chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb {
+            background: var(--vscode-scrollbarSlider-background);
+            border-radius: 4px;
+        }
+
+        #chat-container::-webkit-scrollbar-thumb:hover {
+            background: var(--vscode-scrollbarSlider-hoverBackground);
+        }
+
+        .message {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 20px;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .message-avatar {
+            width: 32px;
+            height: 32px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .message.user .message-avatar {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+        }
+
+        .message.assistant .message-avatar {
+            background: var(--vscode-badge-background);
+            color: var(--vscode-badge-foreground);
+        }
+
+        .message-content {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+        }
+
+        .message.user .message-content {
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            border: 1px solid transparent;
+        }
+
+        .message.assistant .message-content {
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            border: 1px solid var(--vscode-widget-border);
+        }
+
+        .sources {
+            margin-top: 12px;
+            padding-top: 8px;
+            border-top: 1px solid var(--vscode-widget-border);
+        }
+
+        .source-label {
+            font-size: 11px;
+            text-transform: uppercase;
+            font-weight: 600;
+            color: var(--vscode-descriptionForeground);
+            margin-bottom: 6px;
+        }
+
+        .source-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 4px 8px;
+            margin: 2px 0;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+            color: var(--vscode-textLink-foreground);
+            transition: background 0.2s;
+        }
+
+        .source-item:hover {
+            background: var(--vscode-list-hoverBackground);
+            text-decoration: underline;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .empty-state-icon {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+
+        .empty-state p {
+            font-size: 13px;
+            line-height: 1.5;
+        }
+
+        .quick-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .quick-action-btn {
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            border: 1px solid var(--vscode-widget-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .quick-action-btn:hover {
+            background: var(--vscode-list-hoverBackground);
+            border-color: var(--vscode-focusBorder);
+        }
+
+        #input-form {
+            display: flex;
+            gap: 8px;
+        }
+
+        #question-input {
+            flex: 1;
+            padding: 12px 16px;
+            border-radius: 24px;
+            border: 1px solid var(--vscode-input-border);
+            background: var(--vscode-input-background);
+            color: var(--vscode-input-foreground);
+            font-family: inherit;
+            font-size: 14px;
+            resize: none;
+            outline: none;
+        }
+
+        #question-input:focus {
+            border-color: var(--vscode-focusBorder);
+        }
+
+        #send-button {
+            padding: 0 24px;
+            border-radius: 24px;
+            border: none;
+            background: var(--vscode-button-background);
+            color: var(--vscode-button-foreground);
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        #send-button:hover:not(:disabled) {
+            background: var(--vscode-button-hoverBackground);
+        }
+
+        #send-button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--vscode-widget-border);
+            border-top-color: var(--vscode-button-background);
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>RAG Assistant</h1>
+        <div id="status-container">
+            <span class="status-badge" id="status-badge">
+                <span class="status-indicator"></span>
+                <span id="status-text">Initializing...</span>
+            </span>
+        </div>
+    </div>
+
+    <div id="chat-container">
+        <div class="empty-state">
+            <div class="empty-state-icon">▪</div>
+            <h3>Ask me about your codebase</h3>
+            <p>I can help you understand and navigate your workspace using RAG</p>
+        </div>
+    </div>
+
+    <div class="quick-actions" id="quick-actions">
+        <button class="quick-action-btn" data-query="Explain the main architecture">
+            Explain Architecture
+        </button>
+        <button class="quick-action-btn" data-query="Where is the configuration?">
+            Find Config
+        </button>
+        <button class="quick-action-btn" data-query="Show me API examples">
+            API Examples
+        </button>
+    </div>
+
+    <form id="input-form">
+        <textarea 
+            id="question-input" 
+            placeholder="Ask a question about your workspace..." 
+            rows="1"
+            autocomplete="off"
+        ></textarea>
+        <button type="submit" id="send-button">Send</button>
+    </form>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+        const chatContainer = document.getElementById('chat-container');
+        const inputForm = document.getElementById('input-form');
+        const questionInput = document.getElementById('question-input');
+        const sendButton = document.getElementById('send-button');
+        const statusBadge = document.getElementById('status-badge');
+        const statusText = document.getElementById('status-text');
+        const quickActions = document.getElementById('quick-actions');
+
+        let isProcessing = false;
+
+        // Auto-resize textarea
+        questionInput.addEventListener('input', () => {
+            questionInput.style.height = 'auto';
+            questionInput.style.height = Math.min(questionInput.scrollHeight, 120) + 'px';
+        });
+
+        // Handle form submission
+        inputForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            sendMessage();
+        });
+
+        // Handle Enter key (without Shift)
+        questionInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Handle quick action buttons
+        quickActions.addEventListener('click', (e) => {
+            const btn = e.target.closest('.quick-action-btn');
+            if (btn) {
+                questionInput.value = btn.dataset.query;
+                questionInput.focus();
+            }
+        });
+
+        function sendMessage() {
+            const question = questionInput.value.trim();
+            if (!question || isProcessing) return;
+
+            isProcessing = true;
+            sendButton.disabled = true;
+            questionInput.disabled = true;
+
+            // Remove empty state if present
+            const emptyState = chatContainer.querySelector('.empty-state');
+            if (emptyState) {
+                emptyState.remove();
+            }
+
+            // Display user message
+            addMessage('user', question);
+            questionInput.value = '';
+            questionInput.style.height = 'auto';
+
+            // Send to extension
+            vscode.postMessage({
+                command: 'askQuestion',
+                text: question,
+                timestamp: Date.now()
+            });
+
+            // Show loading
+            showLoading();
+        }
+
+        function addMessage(role, content, sources) {
+            const messageDiv = document.createElement('div');
+            messageDiv.classList.add('message', role);
+
+            const avatar = document.createElement('div');
+            avatar.classList.add('message-avatar');
+            avatar.textContent = role === 'user' ? 'You' : 'AI';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.classList.add('message-content');
+            contentDiv.textContent = content;
+
+            messageDiv.appendChild(avatar);
+            messageDiv.appendChild(contentDiv);
+
+            // Add sources if provided
+            if (sources && sources.length > 0) {
+                const sourcesDiv = document.createElement('div');
+                sourcesDiv.classList.add('sources');
+                
+                const label = document.createElement('div');
+                label.classList.add('source-label');
+                label.textContent = 'Sources';
+                sourcesDiv.appendChild(label);
+
+                sources.forEach(source => {
+                    const sourceItem = document.createElement('div');
+                    sourceItem.classList.add('source-item');
+                    const fileName = source.filepath.split('/').pop() || source.filepath;
+                    const similarity = (source.similarity * 100).toFixed(1);
+                    sourceItem.textContent = `${fileName} (${similarity}% match)`;
+                    sourceItem.onclick = () => {
+                        vscode.postMessage({
+                            command: 'openFile',
+                            path: source.filepath
+                        });
+                    };
+                    sourcesDiv.appendChild(sourceItem);
+                });
+
+                contentDiv.appendChild(sourcesDiv);
+            }
+
+            chatContainer.appendChild(messageDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function showLoading() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.classList.add('message', 'assistant');
+            loadingDiv.id = 'loading-message';
+
+            const avatar = document.createElement('div');
+            avatar.classList.add('message-avatar');
+            avatar.textContent = 'AI';
+
+            const contentDiv = document.createElement('div');
+            contentDiv.classList.add('message-content');
+            contentDiv.innerHTML = '<div class="loading"><div class="spinner"></div><span>Thinking...</span></div>';
+
+            loadingDiv.appendChild(avatar);
+            loadingDiv.appendChild(contentDiv);
+            chatContainer.appendChild(loadingDiv);
+            chatContainer.scrollTop = chatContainer.scrollHeight;
+        }
+
+        function removeLoading() {
+            const loading = document.getElementById('loading-message');
+            if (loading) {
+                loading.remove();
+            }
+        }
+
+        function updateStatus(status, isLocal) {
+            if (status === 'connected') {
+                statusBadge.className = 'status-badge connected';
+                statusText.textContent = isLocal ? 'Local MLX' : 'Cloud API';
+            } else if (status === 'indexing') {
+                statusBadge.className = 'status-badge indexing';
+                statusText.textContent = 'Indexing...';
+            } else {
+                statusBadge.className = 'status-badge';
+                statusText.textContent = status;
+            }
+        }
+
+        // Handle messages from extension
+        window.addEventListener('message', event => {
+            const message = event.data;
+            
+            switch (message.command) {
+                case 'answer':
+                    removeLoading();
+                    addMessage('assistant', message.text, message.sources);
+                    isProcessing = false;
+                    sendButton.disabled = false;
+                    questionInput.disabled = false;
+                    questionInput.focus();
+                    break;
+
+                case 'error':
+                    removeLoading();
+                    addMessage('assistant', `Error: ${message.text}`);
+                    isProcessing = false;
+                    sendButton.disabled = false;
+                    questionInput.disabled = false;
+                    questionInput.focus();
+                    break;
+
+                case 'status':
+                    updateStatus(message.status, message.isLocal);
+                    break;
+
+                case 'progress':
+                    const loading = document.querySelector('#loading-message .loading span');
+                    if (loading) {
+                        loading.textContent = message.text;
+                    }
+                    break;
+            }
+        });
+
+        // Initialize
+        vscode.postMessage({ command: 'ready' });
+    </script>
+</body>
+</html>
+
