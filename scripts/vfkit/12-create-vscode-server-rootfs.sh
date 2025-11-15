@@ -245,7 +245,7 @@ echo ""
 # Start OpenVSCode Server
 /opt/openvscode-server/bin/openvscode-server \
   --host 0.0.0.0 \
-  --port 3000 \
+  --port 8080 \
   --without-connection-token \
   --accept-server-license-terms \
   "$@"
@@ -263,7 +263,7 @@ Node.js 24.10.0 + OpenVSCode Server v1.105.1
 Basic Commands:
   verify-nodejs    - Verify Node.js installation
   verify-vscode    - Verify OpenVSCode Server installation
-  start-vscode     - Start OpenVSCode Server on port 3000
+  start-vscode     - Start OpenVSCode Server on port 8080
 
 Package Management:
   apk add <pkg>    - Install Alpine packages
@@ -314,7 +314,7 @@ name="openvscode-server"
 description="Gitpod OpenVSCode Server"
 
 command="/opt/openvscode-server/bin/openvscode-server"
-command_args="--host 0.0.0.0 --port 3000 --without-connection-token --accept-server-license-terms"
+command_args="--host 0.0.0.0 --port 8080 --without-connection-token --accept-server-license-terms"
 command_background=true
 pidfile="/var/run/${RC_SVCNAME}.pid"
 command_user="node:node"
@@ -326,6 +326,9 @@ depend() {
 EOF
 chmod +x etc/init.d/vscode-server
 
+# Enable on boot
+echo "rc-update add vscode-server default" >> etc/init.d/rc.local || true
+
 echo "✅ Init scripts created"
 echo ""
 
@@ -334,6 +337,29 @@ echo "🔒 Setting permissions..."
 chown -R 1000:1000 home/node 2>/dev/null || true
 echo "✅ Permissions set"
 echo ""
+
+
+# Enable SSH for port forwarding
+echo "📡 Setting up SSH..."
+mkdir -p etc/ssh
+cat > etc/ssh/sshd_config << 'SSH_EOF'
+Port 22
+PermitRootLogin yes
+PasswordAuthentication yes
+PubkeyAuthentication yes
+SSH_EOF
+
+# Create root password (for SSH access)
+echo "root:vibecode" | chpasswd 2>/dev/null || echo "root:vibecode" > etc/shadow
+
+# Enable SSH and OpenVSCode Server on boot
+cat > etc/init.d/rc.local << 'RC_EOF'
+#!/bin/sh
+# Auto-start OpenVSCode Server and SSH
+/usr/sbin/sshd &
+/opt/openvscode-server/bin/openvscode-server --host 0.0.0.0 --port 8080 --without-connection-token --accept-server-license-terms &
+RC_EOF
+chmod +x etc/init.d/rc.local
 
 # Create the cpio.gz archive
 echo "📦 Creating cpio.gz rootfs archive..."

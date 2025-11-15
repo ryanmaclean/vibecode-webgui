@@ -75,6 +75,7 @@ fn main() {
             ai::agent_cancel_task,
             // VM commands
             vm::vm_list,
+            vm::vm_start_openvscode,
             vm::vm_start,
             vm::vm_stop,
             vm::vm_status,
@@ -90,7 +91,7 @@ fn main() {
             let _app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 // Start code-server first for fast local UX
-                match commands::start_code_server(_app_handle.clone()).await {
+                match vm::vm_start_openvscode(_app_handle.clone()).await {
                     Ok(msg) => {
                         println!("✅ {}", msg);
                         // Optionally try vfkit VM in the background (non-blocking)
