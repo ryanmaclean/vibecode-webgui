@@ -102,7 +102,11 @@
           "type": "string",
           "default": "text-embedding-3-small",
           "description": "OpenAI embedding model to use (fallback)",
-          "enum": ["text-embedding-3-small", "text-embedding-3-large", "text-embedding-ada-002"]
+          "enum": [
+            "text-embedding-3-small",
+            "text-embedding-3-large",
+            "text-embedding-ada-002"
+          ]
         },
         "workspaceRag.retrievalLimit": {
           "type": "number",
@@ -125,7 +129,12 @@
           "type": "string",
           "default": "openai",
           "description": "LLM provider for answer generation",
-          "enum": ["openai", "anthropic", "google", "openrouter"]
+          "enum": [
+            "openai",
+            "anthropic",
+            "google",
+            "openrouter"
+          ]
         },
         "workspaceRag.openaiModel": {
           "type": "string",
@@ -192,11 +201,17 @@
         },
         "workspaceRag.tracing.exporters": {
           "type": "array",
-          "default": ["console"],
+          "default": [
+            "console"
+          ],
           "description": "Trace exporters",
           "items": {
             "type": "string",
-            "enum": ["console", "datadog", "jaeger"]
+            "enum": [
+              "console",
+              "datadog",
+              "jaeger"
+            ]
           }
         },
         "workspaceRag.tracing.datadogApiKey": {
@@ -246,5 +261,14 @@
     "typescript": "^5.3.3",
     "webpack": "^5.89.0",
     "webpack-cli": "^5.1.4"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanmaclean/vibecode-webgui.git",
+    "directory": "extensions/workspace-rag"
+  },
+  "homepage": "https://github.com/ryanmaclean/vibecode-webgui/tree/main/extensions/workspace-rag",
+  "bugs": {
+    "url": "https://github.com/ryanmaclean/vibecode-webgui/issues"
   }
 }
