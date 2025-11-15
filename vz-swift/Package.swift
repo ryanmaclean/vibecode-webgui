@@ -1,28 +1,24 @@
-// swift-tools-version: 5.9
-// Direct Apple Virtualization.framework integration for VibeCode
+// swift-tools-version:5.9
+// Standalone OpenVSCode VM - Virtualization.framework only
+// Requires: macOS 26.0+ (Tahoe)
 
 import PackageDescription
 
 let package = Package(
     name: "VibeCodeVM",
     platforms: [
-        .macOS(.v13) // Ventura+, full VZ support
+        .macOS(.v13) // Tahoe only
     ],
     products: [
         .executable(
-            name: "vibecode-vm",
-            targets: ["VibeCodeVM"]
+            name: "vibecode-vm-standalone",
+            targets: ["StandaloneVM"]
         )
     ],
     targets: [
         .executableTarget(
-            name: "VibeCodeVM",
-            dependencies: [],
-            path: "Sources/VibeCodeVM",
-            swiftSettings: [
-                .unsafeFlags(["-parse-as-library"])
-            ]
+            name: "StandaloneVM",
+            path: "Sources/StandaloneVM"
         )
     ]
 )
-
