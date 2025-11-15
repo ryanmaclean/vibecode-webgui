@@ -1,11 +1,11 @@
 {
   "version": "1.0.0",
-  "installed_at": "2025-11-15T01:47:34.008648Z",
+  "installed_at": "2025-11-15T01:52:43.483688Z",
   "extensions": [
     {
       "filename": "workspace-rag-1.0.0.vsix",
       "size": 247412,
-      "sha256": "fa8ce0b9ef8741e32800db3ba7790f08e0d02ee91794e562f9536a0c6ac930ab"
+      "sha256": "3339f10769b4e276171ee0296ee27698aed751aece1cd77481212b28af0798ba"
     }
   ]
 }
