@@ -188,6 +188,7 @@ export function activate(context: vscode.ExtensionContext) {
                     });
                 }
             });
+            }, 'RAG Query', { showError: false, rethrow: true });
         }
 
         private openFile(filePath: string) {

@@ -42,7 +42,7 @@ export class TracingManager {
         try {
             // Dynamically import dd-trace to avoid errors if not installed
             const ddtrace = await import('dd-trace');
-            this.tracer = ddtrace.default;
+            this.tracer = ddtrace.default as any;
 
             const sampleRate = config.get<number>('sampleRate', 0.1);
             const debugMode = config.get<boolean>('debug', false);
@@ -71,6 +71,8 @@ export class TracingManager {
                 tracerConfig.site = datadogSite;
                 process.env.DD_API_KEY = datadogApiKey;
             }
+
+            if (!this.tracer) return;
 
             this.tracer.init(tracerConfig);
 

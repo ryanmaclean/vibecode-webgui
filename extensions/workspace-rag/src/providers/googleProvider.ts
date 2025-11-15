@@ -51,11 +51,11 @@ export class GoogleProvider extends LLMProvider {
                 );
 
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json() as any;
                     throw new Error(`Google API error: ${error.error?.message || response.statusText}`);
                 }
 
-                const data = await response.json();
+                const data = await response.json() as any;
 
                 return {
                     content: data.candidates[0].content.parts[0].text,
