@@ -218,7 +218,7 @@ export class RagService {
                 this.logger.error(`${provider.providerName} API call failed`, error);
                 throw error;
             }
-        }, {}, span);
+        });
     }
 
     private generateSimpleAnswer(

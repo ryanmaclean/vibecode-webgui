@@ -43,11 +43,11 @@ export class OpenRouterProvider extends LLMProvider {
                 });
 
                 if (!response.ok) {
-                    const error = await response.json();
+                    const error = await response.json() as any;
                     throw new Error(`OpenRouter API error: ${error.error?.message || response.statusText}`);
                 }
 
-                const data = await response.json();
+                const data = await response.json() as any;
 
                 return {
                     content: data.choices[0].message.content,
