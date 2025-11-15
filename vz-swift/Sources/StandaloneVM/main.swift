@@ -64,7 +64,7 @@ class StandaloneOpenVSCodeVM: NSObject, VZVirtualMachineDelegate {
         config.bootLoader = bootLoader
         
         // Storage - Use regular disk image
-        let diskPath = "\(vmDir)/disk/root.img"
+        let diskPath = "\(vmDir)/disk/root.img.sparseimage"
         if !FileManager.default.fileExists(atPath: diskPath) {
             print("📦 Creating disk image (20GB)...")
             try createDiskImage(at: diskPath, sizeGB: 20)
