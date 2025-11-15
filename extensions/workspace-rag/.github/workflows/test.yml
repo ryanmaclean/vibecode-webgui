@@ -1,0 +1,133 @@
+name: Test Workspace RAG Extension
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'extensions/workspace-rag/**'
+  pull_request:
+    branches: [ main, develop ]
+    paths:
+      - 'extensions/workspace-rag/**'
+
+jobs:
+  test:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        node-version: [18.x, 20.x]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
+        cache-dependency-path: extensions/workspace-rag/package-lock.json
+
+    - name: Install dependencies
+      working-directory: extensions/workspace-rag
+      run: npm ci
+
+    - name: Run linter
+      working-directory: extensions/workspace-rag
+      run: npm run lint
+
+    - name: Compile TypeScript
+      working-directory: extensions/workspace-rag
+      run: npm run compile
+
+    - name: Run unit tests
+      working-directory: extensions/workspace-rag
+      run: npm run test:unit
+
+    - name: Package extension
+      working-directory: extensions/workspace-rag
+      run: npm run package
+
+    - name: Upload VSIX artifact
+      if: matrix.os == 'ubuntu-latest' && matrix.node-version == '20.x'
+      uses: actions/upload-artifact@v4
+      with:
+        name: workspace-rag-vsix
+        path: extensions/workspace-rag/*.vsix
+
+  integration:
+    runs-on: ubuntu-latest
+    needs: test
+
+    services:
+      postgres:
+        image: pgvector/pgvector:pg15
+        env:
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: rag_db_test
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+        ports:
+          - 5432:5432
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+        cache: 'npm'
+        cache-dependency-path: extensions/workspace-rag/package-lock.json
+
+    - name: Install dependencies
+      working-directory: extensions/workspace-rag
+      run: npm ci
+
+    - name: Setup test database
+      working-directory: extensions/workspace-rag
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: rag_db_test
+      run: |
+        PGPASSWORD=postgres psql -h localhost -U postgres -d rag_db_test -c "CREATE EXTENSION IF NOT EXISTS vector;"
+
+    - name: Run integration tests
+      working-directory: extensions/workspace-rag
+      env:
+        POSTGRES_HOST: localhost
+        POSTGRES_PORT: 5432
+        POSTGRES_USER: postgres
+        POSTGRES_PASSWORD: postgres
+        POSTGRES_DB: rag_db_test
+      run: npm run test
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup Node.js
+      uses: actions/setup-node@v4
+      with:
+        node-version: '20.x'
+
+    - name: Install dependencies
+      working-directory: extensions/workspace-rag
+      run: npm ci
+
+    - name: Run security audit
+      working-directory: extensions/workspace-rag
+      run: npm audit --audit-level=moderate
+
+    - name: Check for vulnerabilities
+      working-directory: extensions/workspace-rag
+      run: npm audit --production
+

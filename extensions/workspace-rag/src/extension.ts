@@ -5,6 +5,7 @@ import { getTracingManager, TracingManager } from './tracing';
 import { WorkspaceIndexer } from './workspaceIndexer';
 import { MLXEmbeddingService } from './mlxEmbeddingService';
 import { RagService } from './ragService';
+import { ErrorHandler } from './errorHandler';
 import { getWorkspaceId, getWorkspaceName } from './utils';
 import * as path from 'path';
 import * as fs from 'fs';
@@ -12,6 +13,7 @@ import * as fs from 'fs';
 export function activate(context: vscode.ExtensionContext) {
     const logger = new Logger(context);
     const tracing = getTracingManager(logger);
+    const errorHandler = new ErrorHandler(logger);
 
     // Initialize tracing (non-blocking)
     tracing.initialize().catch(error => {
@@ -27,16 +29,17 @@ export function activate(context: vscode.ExtensionContext) {
 
     // Command: Index Workspace
     const indexCommand = vscode.commands.registerCommand('workspace-rag.indexWorkspace', async () => {
-        return tracing.trace('command.indexWorkspace', async (span) => {
-            span.setTag('command', 'indexWorkspace');
-            
-            if (!getWorkspaceId()) {
-                vscode.window.showErrorMessage('No workspace found. Please open a workspace first.');
-                return;
-            }
+        return errorHandler.wrapAsync(async () => {
+            return tracing.trace('command.indexWorkspace', async (span) => {
+                span.setTag('command', 'indexWorkspace');
+                
+                if (!getWorkspaceId()) {
+                    throw new Error('No workspace found. Please open a workspace first.');
+                }
 
-            await workspaceIndexer.indexWorkspace(context);
-        });
+                await workspaceIndexer.indexWorkspace(context);
+            });
+        }, 'Index Workspace', { showError: true });
     });
 
     // Command: Set API Key (with provider selection)
@@ -135,19 +138,16 @@ export function activate(context: vscode.ExtensionContext) {
         private async handleQuestion(question: string, timestamp: number) {
             if (!this._view) return;
 
-            return tracing.trace('webview.handleQuestion', async (span) => {
-                span.setTag('question', question.substring(0, 100));
+            return errorHandler.wrapAsync(async () => {
+                return tracing.trace('webview.handleQuestion', async (span) => {
+                    span.setTag('question', question.substring(0, 100));
 
-                const workspaceId = getWorkspaceId();
-                if (!workspaceId) {
-                    this._view!.webview.postMessage({
-                        command: 'error',
-                        text: 'No workspace found. Please open a workspace first.'
-                    });
-                    return;
-                }
+                    const workspaceId = getWorkspaceId();
+                    if (!workspaceId) {
+                        throw new Error('No workspace found. Please open a workspace first.');
+                    }
 
-                try {
+                    try {
                     // Update progress
                     this._view!.webview.postMessage({
                         command: 'progress',

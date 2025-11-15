@@ -1,0 +1,10 @@
+{
+  "require": ["ts-node/register"],
+  "extensions": ["ts"],
+  "spec": ["src/test/**/*.test.ts"],
+  "watch-files": ["src/**/*.ts"],
+  "timeout": 10000,
+  "color": true,
+  "reporter": "spec"
+}
+
