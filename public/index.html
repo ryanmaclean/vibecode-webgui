@@ -3,28 +3,40 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:* ws://localhost:*; frame-src http://localhost:*; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';">
     <title>VibeCode - OpenVSCode Server</title>
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+        html, body {
+            width: 100%;
+            height: 100%;
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #1e1e1e;
             color: #cccccc;
         }
         #loading {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            text-align: center;
-            color: #cccccc;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            background: #1e1e1e;
+            z-index: 1000;
         }
         #status {
             margin-top: 20px;
             font-size: 14px;
             color: #888;
+            text-align: center;
         }
         #vscode-frame {
             width: 100%;
@@ -39,67 +51,90 @@
             width: 40px;
             height: 40px;
             animation: spin 1s linear infinite;
-            margin: 0 auto 20px;
         }
         @keyframes spin {
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
+        }
+        .error {
+            color: #f48771;
+            margin-top: 10px;
         }
     </style>
 </head>
 <body>
     <div id="loading">
         <div class="spinner"></div>
-        <div>Starting OpenVSCode Server...</div>
+        <div style="margin-top: 20px;">Starting OpenVSCode Server...</div>
         <div id="status">Initializing VM and services</div>
+        <div id="error" class="error" style="display: none;"></div>
     </div>
-    <iframe id="vscode-frame" src="http://localhost:8080"></iframe>
+    <iframe id="vscode-frame" src="http://localhost:8080" allow="fullscreen"></iframe>
     <script>
+        console.log('VibeCode index.html loaded');
+        
         const frame = document.getElementById('vscode-frame');
         const loading = document.getElementById('loading');
         const status = document.getElementById('status');
+        const error = document.getElementById('error');
         
         let retryCount = 0;
         const maxRetries = 60; // 2 minutes total (60 * 2 seconds)
         
         function updateStatus(message) {
+            console.log('Status:', message);
             status.textContent = message;
         }
         
+        function showError(message) {
+            error.textContent = message;
+            error.style.display = 'block';
+            console.error('Error:', message);
+        }
+        
         function checkOpenVSCode() {
-            fetch('http://localhost:8080', { method: 'HEAD', mode: 'no-cors' })
+            console.log(`Checking OpenVSCode Server (attempt ${retryCount + 1}/${maxRetries})...`);
+            
+            // Try to fetch the server
+            fetch('http://localhost:8080', { 
+                method: 'HEAD', 
+                mode: 'no-cors',
+                cache: 'no-cache'
+            })
                 .then(() => {
-                    // Server is up
+                    console.log('OpenVSCode Server detected!');
                     loading.style.display = 'none';
                     frame.style.display = 'block';
                     updateStatus('Connected!');
                 })
-                .catch(() => {
+                .catch((err) => {
                     retryCount++;
                     if (retryCount < maxRetries) {
                         const secondsRemaining = (maxRetries - retryCount) * 2;
                         updateStatus(`Waiting for OpenVSCode Server... (${secondsRemaining}s remaining)`);
                         setTimeout(checkOpenVSCode, 2000);
                     } else {
-                        updateStatus('OpenVSCode Server did not start. Please check VM status and ensure port forwarding is configured.');
+                        updateStatus('OpenVSCode Server did not start.');
+                        showError('Please check VM status and ensure port forwarding is configured. The VM may need to be started manually.');
                     }
                 });
         }
         
-        // Start checking after 5 seconds (give VM time to start)
-        setTimeout(() => {
-            updateStatus('Checking for OpenVSCode Server...');
-            checkOpenVSCode();
-        }, 5000);
-        
         frame.onload = function() {
+            console.log('Iframe loaded successfully');
             loading.style.display = 'none';
             frame.style.display = 'block';
         };
         
-        frame.onerror = function() {
-            updateStatus('Failed to load OpenVSCode Server. Ensure VM is running and port 8080 is forwarded.');
+        frame.onerror = function(e) {
+            console.error('Iframe error:', e);
+            showError('Failed to load OpenVSCode Server. Ensure VM is running and port 8080 is forwarded.');
         };
+        
+        // Start checking immediately
+        console.log('Starting OpenVSCode Server check...');
+        updateStatus('Checking for OpenVSCode Server...');
+        setTimeout(checkOpenVSCode, 2000);
     </script>
 </body>
 </html>
