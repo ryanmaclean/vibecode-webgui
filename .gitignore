@@ -88,3 +88,4 @@ DerivedData/
 # Rust
 Cargo.lock
 bench-images/
+vz-swift/.build/
