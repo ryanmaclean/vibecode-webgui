@@ -307,10 +307,11 @@ def main():
     
     # Initialize Datadog tracing
     if TRACING_ENABLED:
-        tracer.configure(
-            hostname=os.getenv("DD_AGENT_HOST", "localhost"),
-            port=int(os.getenv("DD_TRACE_AGENT_PORT", "8126"))
-        )
+        # Datadog uses environment variables for configuration
+        if not os.getenv("DD_AGENT_HOST"):
+            os.environ["DD_AGENT_HOST"] = "localhost"
+        if not os.getenv("DD_TRACE_AGENT_PORT"):
+            os.environ["DD_TRACE_AGENT_PORT"] = "8126"
         log_info("Datadog tracing enabled")
     
     # If no action specified, show menu
