@@ -101,6 +101,12 @@ class StandaloneOpenVSCodeVM: NSObject, VZVirtualMachineDelegate {
     }
     
     func createDiskImage(at path: String, sizeGB: Int) throws {
+        // Check if disk already exists
+        if FileManager.default.fileExists(atPath: path) {
+            print("   Using existing disk image")
+            return
+        }
+        
         let sizeMB = sizeGB * 1024
         let process = Process()
         process.executableURL = URL(fileURLWithPath: "/usr/bin/hdiutil")
