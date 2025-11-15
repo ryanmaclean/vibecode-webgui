@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VibeCode - OpenVSCode Server</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+        #loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            color: #666;
+        }
+        #vscode-frame {
+            width: 100%;
+            height: 100vh;
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div id="loading">Loading OpenVSCode Server...</div>
+    <iframe id="vscode-frame" src="http://localhost:8080" style="display: none;"></iframe>
+    <script>
+        const frame = document.getElementById('vscode-frame');
+        const loading = document.getElementById('loading');
+        
+        frame.onload = function() {
+            loading.style.display = 'none';
+            frame.style.display = 'block';
+        };
+        
+        frame.onerror = function() {
+            loading.innerHTML = 'OpenVSCode Server not running. Please start the VM manager.';
+        };
+        
+        // Check if OpenVSCode Server is available
+        fetch('http://localhost:8080')
+            .then(() => {
+                frame.style.display = 'block';
+                loading.style.display = 'none';
+            })
+            .catch(() => {
+                loading.innerHTML = 'Waiting for OpenVSCode Server to start...<br><small>This may take a few moments</small>';
+                // Retry every 2 seconds
+                const retry = setInterval(() => {
+                    fetch('http://localhost:8080')
+                        .then(() => {
+                            clearInterval(retry);
+                            frame.style.display = 'block';
+                            loading.style.display = 'none';
+                        })
+                        .catch(() => {});
+                }, 2000);
+            });
+    </script>
+</body>
+</html>
