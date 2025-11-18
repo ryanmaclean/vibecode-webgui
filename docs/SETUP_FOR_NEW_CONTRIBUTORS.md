@@ -49,22 +49,68 @@ cd ..
 
 **Why**: Fresh Alpine images don't have bootloaders configured. The working VMs (ide, pgvector) do, but they're not in git.
 
+**✅ UPDATE**: The EFI bootloader issue has been fixed! See below.
+
 **Solutions**:
 
-### Option 1: Get from Someone (Fastest)
+### Option 1: Build VMs with Proper EFI (Recommended)
+```bash
+./scripts/rebuild-all-vms-with-services.sh
+```
+This now creates VMs with properly initialized EFI NVRAM using Apple's Virtualization.framework API.
+
+**What it does**:
+- Downloads Alpine cloud images
+- Converts to RAW format
+- Creates proper EFI NVRAM with VZEFIVariableStore
+- Generates cloud-init ISOs for first boot
+
+**Note**: The Alpine cloud images still need GRUB installed in the EFI partition. This is being addressed. For now, VMs will have valid NVRAM but may need additional setup for the bootloader itself.
+
+### Option 2: Fix Existing VMs
+If you have VMs with invalid EFI NVRAM (from old dd/cp methods):
+```bash
+./scripts/fix-vm-efi.sh
+```
+This recreates EFI NVRAM files properly.
+
+### Option 3: Validate VM Configuration
+Check if your VMs are properly configured:
+```bash
+./scripts/validate-vm-config.sh
+```
+Shows status of disk images, EFI NVRAM, and suggests fixes.
+
+### Option 4: Get from Someone (Fastest for Testing)
 If someone has working VMs, they can share `vibecode-ide.img` and `vibecode-ide-efi.nvram` files. Put them in `dist/vm-images/` and run:
 ```bash
 ./scripts/setup-vms-for-new-clone.sh
 ```
 
-### Option 2: Build from Cloud Images (Complex)
-```bash
-./scripts/rebuild-all-vms-with-services.sh
-```
-This might work but has known issues. See `.github/ISSUE_TEMPLATE/01-bootloader-fix.md`
+## EFI Bootloader Fix
 
-### Option 3: Wait for Pre-Built Images
-We may provide downloadable VM images in a future release. Not available for v0.9-beta.
+The bootloader issue (`.github/ISSUE_TEMPLATE/01-bootloader-fix.md`) has been addressed:
+
+✅ **Created**:
+- `tools/efi-init/` - Swift tool for proper EFI NVRAM creation
+- `scripts/init-efi-nvram.sh` - Easy-to-use wrapper
+- `scripts/fix-vm-efi.sh` - Fix existing VMs
+- `scripts/validate-vm-config.sh` - Validation tool
+- `docs/guides/EFI_BOOT_CONFIGURATION.md` - Complete guide
+
+**What was wrong**:
+```bash
+# ❌ OLD METHOD - Creates invalid NVRAM
+dd if=/dev/zero of=vm-efi.nvram bs=1m count=64
+```
+
+**What's correct now**:
+```swift
+// ✅ NEW METHOD - Uses Apple's API
+try VZEFIVariableStore(creatingVariableStoreAt: url)
+```
+
+See `docs/guides/EFI_BOOT_CONFIGURATION.md` for complete details.
 
 ## Running Tests Without VMs
 

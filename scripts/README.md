@@ -1,12 +1,43 @@
-# 🚀 VibeCode KIND Scripts
+# 🚀 VibeCode Scripts
 
-**Automated Kubernetes setup for local development**
+**Automated setup and management scripts**
 
 ## 📖 Overview
 
-This directory contains scripts to set up and manage a local Kubernetes development environment using KIND (Kubernetes in Docker) for VibeCode development.
+This directory contains scripts for:
+- Kubernetes/KIND setup for local development
+- VM management and EFI boot configuration (macOS)
+- Testing and validation
 
-## 📁 Scripts
+## 📁 VM Management Scripts (macOS)
+
+| Script | Purpose | Usage |
+|--------|---------|--------|
+| `rebuild-all-vms-with-services.sh` | 🔨 **Build VMs** - Create all 6 VMs with proper EFI | `./scripts/rebuild-all-vms-with-services.sh` |
+| `init-efi-nvram.sh` | ⚙️ **EFI Init** - Create valid EFI NVRAM for a VM | `./scripts/init-efi-nvram.sh vm-efi.nvram` |
+| `fix-vm-efi.sh` | 🔧 **Fix EFI** - Recreate invalid EFI NVRAM files | `./scripts/fix-vm-efi.sh` |
+| `validate-vm-config.sh` | ✅ **Validate** - Check VM configuration | `./scripts/validate-vm-config.sh` |
+| `staff-level-test-suite.sh` | 🧪 **Test Suite** - Comprehensive validation | `./scripts/staff-level-test-suite.sh` |
+
+### VM Quick Start (macOS)
+
+```bash
+# Build all VMs with proper EFI
+./scripts/rebuild-all-vms-with-services.sh
+
+# Validate VM configuration
+./scripts/validate-vm-config.sh
+
+# If validation fails, fix EFI
+./scripts/fix-vm-efi.sh
+
+# Run full test suite
+./scripts/staff-level-test-suite.sh
+```
+
+See [EFI Boot Configuration Guide](../docs/guides/EFI_BOOT_CONFIGURATION.md) for details.
+
+## 📁 Kubernetes/KIND Scripts
 
 | Script | Purpose | Usage |
 |--------|---------|--------|
