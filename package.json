@@ -163,7 +163,7 @@
     "@opentelemetry/exporter-otlp-http": "0.26.0",
     "@opentelemetry/exporter-prometheus": "0.207.0",
     "@opentelemetry/instrumentation": "0.206.0",
-    "@opentelemetry/instrumentation-express": "0.52.0",
+    "@opentelemetry/instrumentation-express": "0.57.0",
     "@opentelemetry/instrumentation-fs": "0.27.0",
     "@opentelemetry/instrumentation-http": "0.203.0",
     "@opentelemetry/sdk-node": "0.203.0",
