@@ -80,17 +80,14 @@ META
         -volid cidata -joliet -rock \
         "$PROJECT_ROOT/tmp/cloud-init/${VM_NAME}-seed"
     
-    # Create EFI NVRAM
+    # Create EFI NVRAM using Apple's Virtualization.framework API
+    # This creates a properly initialized EFI variable store that VZ can boot from
     echo "Creating EFI variable store..."
-    if [ -f "/System/Library/Frameworks/Virtualization.framework/Resources/UEFI/OVMF_VARS.fd" ]; then
-        cp "/System/Library/Frameworks/Virtualization.framework/Resources/UEFI/OVMF_VARS.fd" \
-           "$PROJECT_ROOT/dist/vm-images/$VM_NAME-efi.nvram"
-    elif [ -f "/usr/share/qemu/edk2-aarch64-vars.fd" ]; then
-        cp "/usr/share/qemu/edk2-aarch64-vars.fd" \
-           "$PROJECT_ROOT/dist/vm-images/$VM_NAME-efi.nvram"
-    else
-        # Create empty NVRAM
-        dd if=/dev/zero of="$PROJECT_ROOT/dist/vm-images/$VM_NAME-efi.nvram" bs=1m count=64
+    "$SCRIPT_DIR/init-efi-nvram.sh" "$PROJECT_ROOT/dist/vm-images/$VM_NAME-efi.nvram"
+    
+    if [ $? -ne 0 ]; then
+        echo "❌ Failed to create EFI NVRAM for $VM_NAME"
+        return 1
     fi
     
     echo "✅ $VM_NAME built successfully"
