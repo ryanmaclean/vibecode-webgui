@@ -78,7 +78,7 @@ write_files:
       #!/bin/sh
       # Only start code-server if it's installed
       if command -v code-server >/dev/null 2>&1; then
-        su - vibecode -c "code-server --config /home/vibecode/.config/code-server/config.yaml > /var/log/code-server.log 2>&1 &"
+        su -s /bin/sh vibecode -c "code-server --config /home/vibecode/.config/code-server/config.yaml > /var/log/code-server.log 2>&1 &"
       else
         echo "code-server not found, skipping start" >> /var/log/code-server.log
       fi
