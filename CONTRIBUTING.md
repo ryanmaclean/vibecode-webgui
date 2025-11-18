@@ -102,6 +102,13 @@ Don't stress about perfection - working code is better than perfect code.
 - Plain language (avoid jargon when possible)
 - Be honest about limitations
 
+### Security
+
+- Never commit secrets or credentials
+- Follow our [Security Policy](SECURITY.md)
+- Use the [Credential Rotation Guide](docs/security/credential-rotation.md) when handling secrets
+- Report security issues to security@vibecode.dev (not public issues)
+
 ## Testing
 
 ### Run the test suite

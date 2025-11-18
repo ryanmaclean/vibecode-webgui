@@ -36,7 +36,7 @@ If you discover a security vulnerability in VibeCode WebGUI, please report it re
    - Use `crypto.randomBytes()` for security-critical random values
    - Never use `Math.random()` for passwords, tokens, or session IDs
    - Use bcrypt/argon2 for password hashing (cost factor >= 12)
-   - Implement proper key rotation policies
+   - Implement proper key rotation policies (see [Credential Rotation Guide](./security/credential-rotation.md))
 
 3. **Input Validation**
    - Validate and sanitize all user inputs
@@ -249,3 +249,15 @@ kubens --help > artifacts/supply-chain/kubens-${KUBENS_VERSION}-postinstall.txt
 ---
 
 **Action:** Owners must backfill the “Last verification date” column after each successful run and ping Maya in `#security-supply-chain` once the deadlines above are met.
+
+
+---
+
+## Additional Security Documentation
+
+For comprehensive security procedures and guidelines:
+
+- **[Credential Rotation Guide](./security/credential-rotation.md)** - Complete procedures for rotating all credentials including OpenAI, Datadog, PostgreSQL, CSRF, NextAuth, and JWT secrets
+- **[Security Documentation Index](./security/README.md)** - Full catalog of security documentation
+- **[GitHub Actions Security Checklist](./security/GITHUB_ACTIONS_SECURITY_CHECKLIST.md)** - CI/CD security and token rotation procedures
+- **[Root Security Policy](../SECURITY.md)** - Vulnerability reporting and responsible disclosure

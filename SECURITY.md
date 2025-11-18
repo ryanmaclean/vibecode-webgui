@@ -88,6 +88,7 @@ When contributing to VibeCode:
 4. **Follow OWASP guidelines**: Reference OWASP Top 10 and ASVS
 5. **Write security tests**: Include security test cases for new features
 6. **Review dependencies**: Check for known vulnerabilities before adding dependencies
+7. **Rotate credentials regularly**: Follow our [Credential Rotation Guide](docs/security/credential-rotation.md)
 
 ### Supported Versions
 
@@ -109,6 +110,7 @@ When contributing to VibeCode:
 - Full API validation coverage with Zod
 - Console.log to Winston logger migration
 - Security header enforcement in middleware
+- Regular credential rotation (see [Credential Rotation Guide](docs/security/credential-rotation.md))
 
 ### Security Contacts
 
@@ -121,6 +123,18 @@ When contributing to VibeCode:
 We recognize security researchers who help improve VibeCode's security:
 
 - *Coming soon - be the first contributor!*
+
+---
+
+## Additional Documentation
+
+For more detailed security documentation, see:
+
+- **[Credential Rotation Guide](docs/security/credential-rotation.md)** - Procedures for rotating all credentials (OpenAI, Datadog, PostgreSQL, CSRF, NextAuth, JWT)
+- **[Security Documentation Index](docs/security/README.md)** - Complete catalog of security documentation
+- **[GitHub Actions Security](docs/security/GITHUB_ACTIONS_SECURITY_CHECKLIST.md)** - CI/CD security checklist and token rotation
+- **[API Security](docs/security/api-security.md)** - API authentication and authorization
+- **[CSRF Protection](docs/security/csrf-protection.md)** - Cross-site request forgery protection
 
 ---
 
