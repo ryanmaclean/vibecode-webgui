@@ -30,6 +30,10 @@ runcmd:
   - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
   - rc-service sshd start
   
+  # Enable local service for auto-start scripts
+  - rc-update add local default
+  - rc-service local start
+  
   # Log completion
   - echo "Node.js VM setup complete" > /var/log/vibecode-setup.log
   - node --version >> /var/log/vibecode-setup.log
@@ -62,6 +66,6 @@ write_files:
   - path: /etc/local.d/start-node-server.start
     content: |
       #!/bin/sh
-      su - vibecode -c "node /opt/vibecode/server.js > /var/log/node-server.log 2>&1 &"
+      su -s /bin/sh vibecode -c "node /opt/vibecode/server.js > /var/log/node-server.log 2>&1 &"
     permissions: '0755'
 

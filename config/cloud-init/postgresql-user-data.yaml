@@ -26,7 +26,7 @@ runcmd:
   - rc-update add postgresql default
   - mkdir -p /run/postgresql
   - chown postgres:postgres /run/postgresql
-  - su - postgres -c "initdb -D /var/lib/postgresql/data"
+  - su -s /bin/sh postgres -c "initdb -D /var/lib/postgresql/data"
   
   # Configure PostgreSQL to listen on all interfaces
   - echo "listen_addresses = '*'" >> /var/lib/postgresql/data/postgresql.conf
@@ -36,10 +36,10 @@ runcmd:
   # Set postgres password
   - rc-service postgresql start
   - sleep 5
-  - su - postgres -c "psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
+  - su -s /bin/sh postgres -c "psql -c \"ALTER USER postgres PASSWORD 'postgres';\""
   
   # Create test database
-  - su - postgres -c "psql -c \"CREATE DATABASE vibecode;\""
+  - su -s /bin/sh postgres -c "psql -c \"CREATE DATABASE vibecode;\""
   
   # Configure SSH
   - rc-update add sshd default
