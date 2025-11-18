@@ -12,9 +12,7 @@
       ],
       "type": "local",
       "enabled": "true"
-    }
-  },
-  "mcp": {
+    },
     "my-local-mcp-server": {
       "type": "local",
       "command": ["bun", "x", "my-mcp-command"],
@@ -22,7 +20,8 @@
       "environment": {
         "MY_ENV_VAR": "my_env_var_value"
       }
-    },
+    }
+  },
   "shell": {}
 }
 
