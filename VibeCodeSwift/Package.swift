@@ -10,6 +10,7 @@ let package = Package(
     ],
     products: [
         .library(name: "VibeCodeCore", targets: ["VibeCodeCore"]),
+        .library(name: "EFIBootManager", targets: ["EFIBootManager"]),
         .executable(
             name: "VibeCode",
             targets: ["VibeCode"]
@@ -24,13 +25,18 @@ let package = Package(
             name: "VibeCodeCore",
             path: "Sources/Core"
         ),
+        .target(
+            name: "EFIBootManager",
+            path: "Sources/EFIBootManager"
+        ),
         .executableTarget(
             name: "VibeCode",
             dependencies: ["VibeCodeCore"],
             path: "Sources",
             exclude: [
                 "Core",
-                "DockerVM"
+                "DockerVM",
+                "EFIBootManager"
             ]
         ),
         .executableTarget(
