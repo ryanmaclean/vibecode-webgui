@@ -13,7 +13,7 @@ VERIFIED_BY=Agent Cascade
 # - Demo and tests working
 
 # DO NOT downgrade to 0.45.0 or 0.52.x
-# DO NOT install @codeium/react-code-editor (incompatible)
+# DO NOT install @codeium/react-code-editor (incompatible: Monaco 0.53.0 API mismatch, see https://github.com/codeium/react-code-editor/issues/42)
 
 # To verify: node scripts/verify-monacopilot.js
 # Expected: All 9 checks pass
