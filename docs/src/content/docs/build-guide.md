@@ -1,3 +1,8 @@
+---
+title: Build Guide
+description: Complete guide for building the VibeCode application
+---
+
 # VibeCode Build Guide
 
 Complete guide for building the VibeCode application.
