@@ -1,0 +1,24 @@
+[console_scripts]
+_dd_crashtracker_receiver = ddtrace.commands._dd_crashtracker_receiver:main
+ddtrace-run = ddtrace.commands.ddtrace_run:main
+
+[ddtrace.products]
+apm-tracing-rc = ddtrace.internal.remoteconfig.products.apm_tracing
+appsec = ddtrace.internal.appsec.product
+code-origin-for-spans = ddtrace.debugging._products.code_origin.span
+dynamic-instrumentation = ddtrace.debugging._products.dynamic_instrumentation
+error-tracking = ddtrace.errortracking.product
+exception-replay = ddtrace.debugging._products.exception_replay
+iast = ddtrace.internal.iast.product
+live-debugger = ddtrace.debugging._products.live_debugger
+remote-configuration = ddtrace.internal.remoteconfig.products.client
+symbol-database = ddtrace.internal.symbol_db.product
+tracer = ddtrace._trace.product
+
+[opentelemetry_context]
+ddcontextvars_context = ddtrace.internal.opentelemetry.context:DDRuntimeContext
+
+[pytest11]
+ddtrace = ddtrace.contrib.internal.pytest.plugin
+ddtrace.pytest_bdd = ddtrace.contrib.internal.pytest_bdd.plugin
+ddtrace.pytest_benchmark = ddtrace.contrib.internal.pytest_benchmark.plugin

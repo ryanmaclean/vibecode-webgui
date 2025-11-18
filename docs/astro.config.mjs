@@ -27,6 +27,7 @@ export default defineConfig({
           items: [
             { label: 'New Features Overview', link: '/new-features/', badge: 'New' },
             { label: 'ASIF + Virtualization Framework', link: '/asif-virtualization/', badge: 'New' },
+            { label: 'Build Guide', link: '/build-guide/', badge: 'New' },
           ]
         },
         {
