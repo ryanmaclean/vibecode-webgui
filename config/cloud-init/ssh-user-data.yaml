@@ -1,6 +1,8 @@
 #cloud-config
 
 # SSH Configuration for VibeCode VMs
+hostname: vibecode-ssh
+
 users:
   - name: vibecode
     groups: wheel
