@@ -37,10 +37,23 @@ if not os.getenv('OPENAI_API_KEY'):
 try:
     from crewai import Agent, Task, Crew, Process
     from langchain_openai import ChatOpenAI
+    from ddtrace import patch_all
+    from ddtrace.llmobs import LLMObs
 except ImportError as e:
     print(f"Missing dependency: {e}")
-    print("Install: pip install crewai langchain-openai")
+    print("Install: pip install crewai langchain-openai ddtrace")
     sys.exit(1)
+
+# Patch LangChain to ensure OpenAI calls are traced
+patch_all()
+
+# Enable LLMObs explicitly
+LLMObs.enable(
+    ml_app=os.getenv('DD_LLMOBS_ML_APP', 'vibecode-crewai-working'),
+    agentless_enabled=True,
+    api_key=os.getenv('DD_API_KEY'),
+    site=os.getenv('DD_SITE', 'datadoghq.com')
+)
 
 # Different OpenAI models for different agents
 gpt4 = ChatOpenAI(model="gpt-4-turbo-preview", temperature=0.7)
@@ -233,7 +246,63 @@ if __name__ == '__main__':
     print()
     
     try:
-        result = crew.kickoff()
+        # Wrap execution in LLMObs workflow to ensure content is captured
+        with LLMObs.workflow(name="vibecode_vm_management_workflow"):
+            # Collect all task descriptions as input
+            workflow_input = {
+                "tasks": [
+                    {
+                        "name": research_task.description[:100] + "...",
+                        "agent": research_agent.role,
+                        "full_description": research_task.description
+                    },
+                    {
+                        "name": bootloader_task.description[:100] + "...",
+                        "agent": bootloader_agent.role,
+                        "full_description": bootloader_task.description
+                    },
+                    {
+                        "name": service_task.description[:100] + "...",
+                        "agent": service_agent.role,
+                        "full_description": service_task.description
+                    },
+                    {
+                        "name": qa_task.description[:100] + "...",
+                        "agent": qa_agent.role,
+                        "full_description": qa_task.description
+                    }
+                ]
+            }
+            
+            # Annotate workflow with input
+            LLMObs.annotate(
+                input_data=workflow_input,
+                metadata={
+                    "agent_count": 4,
+                    "models": ["gpt-4-turbo-preview", "gpt-3.5-turbo", "gpt-4o-mini"],
+                    "process": "sequential"
+                }
+            )
+            
+            # Execute crew
+            result = crew.kickoff()
+            
+            # Capture the actual result output
+            result_str = str(result)
+            if hasattr(result, 'raw'):
+                result_str = str(result.raw)
+            
+            # Annotate workflow with output
+            LLMObs.annotate(
+                output_data=result_str,
+                metadata={
+                    "completed": True,
+                    "result_length": len(result_str)
+                }
+            )
+        
+        # Flush to ensure all spans are sent
+        LLMObs.flush()
         
         print()
         print("=" * 80)
@@ -247,9 +316,13 @@ if __name__ == '__main__':
         print("https://app.datadoghq.com/llm/traces")
         print()
         print("Search: ml_app:vibecode-crewai-working")
+        print()
+        print("✓ Input/Output content explicitly captured in LLMObs workflow")
         
     except Exception as e:
         print(f"Error: {e}")
+        import traceback
+        traceback.print_exc()
         print()
         print("Check that OPENAI_API_KEY is set")
         sys.exit(1)
