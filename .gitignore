@@ -49,6 +49,7 @@ coverage/
 .eslintcache
 circular-deps.txt
 .cleanupignore
+.pre-commit-cache/
 
 # VM manifest files (user-specific)
 scripts/vm-manifest.json
