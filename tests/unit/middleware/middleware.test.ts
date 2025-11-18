@@ -1,11 +1,6 @@
 import { NextRequest } from 'next/server';
 import { middleware } from '@/middleware';
-
-function buildRequest(path: string, headers: Record<string, string> = {}) {
-  return new NextRequest(`https://example.com${path}`, {
-    headers: new Headers(headers),
-  });
-}
+import { MockUtils } from '../../utils/mock-templates';
 
 function setNodeEnv(value: string | undefined) {
   (process.env as Record<string, string | undefined>).NODE_ENV = value;
@@ -25,7 +20,7 @@ describe('middleware', () => {
   });
 
   it('allows requests through unchanged in test environment', async () => {
-    const request = buildRequest('/dashboard');
+    const request = MockUtils.buildRequest('/dashboard') as unknown as NextRequest;
     const response = await middleware(request);
 
     expect(response.status).toBe(200);
@@ -34,7 +29,7 @@ describe('middleware', () => {
 
   it('redirects unauthenticated non-public pages to signin', async () => {
     setNodeEnv('production');
-    const request = buildRequest('/dashboard');
+    const request = MockUtils.buildRequest('/dashboard') as unknown as NextRequest;
     const response = await middleware(request);
 
     expect(response.status).toBe(307);
@@ -43,9 +38,9 @@ describe('middleware', () => {
 
   it('passes through when authentication cookie is present', async () => {
     setNodeEnv('production');
-    const request = buildRequest('/dashboard', {
-      cookie: 'next-auth.session-token=abc123',
-    });
+    const request = MockUtils.buildRequest('/dashboard', {
+      headers: { cookie: 'next-auth.session-token=abc123' },
+    }) as unknown as NextRequest;
 
     const response = await middleware(request);
     expect(response.status).toBe(200);

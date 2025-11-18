@@ -4,16 +4,18 @@
  */
 
 import { jest } from '@jest/globals'
+import { 
+  MockHeaders, 
+  MockNextRequest, 
+  MockNextResponse, 
+  MockUtils,
+  type HeaderMock,
+  type BasicRequest
+} from '../../utils/mock-templates'
 
 type SecurityMiddlewareModule = typeof import('@/middleware/security-middleware')
 type MockedNextServerModule = jest.Mocked<typeof import('next/server')>
 
-type HeaderMock = jest.Mock<string | null, [string]>
-interface MockHeaders {
-  get: HeaderMock
-}
-
-type BasicRequest = { headers: MockHeaders }
 type ValidationResult = { valid: boolean; reason?: string }
 type CorsValidationResult = { valid: boolean; headers?: Record<string, string> }
 type IpValidationResult = { allowed: boolean; reason?: string }
@@ -37,23 +39,6 @@ jest.mock('next/server', () => ({
   NextRequest: jest.fn(),
   NextResponse: jest.fn()
 }))
-
-// Interface for mocked NextRequest
-interface MockNextRequest {
-  nextUrl: { pathname: string }
-  method: string
-  headers: MockHeaders
-  body?: unknown
-  text?: () => Promise<string>
-}
-
-// Interface for mocked NextResponse
-interface MockNextResponse {
-  status?: number
-  headers: {
-    set: jest.Mock<void, [string, string]>
-  }
-}
 
 // Mock next-auth/jwt
 const mockGetToken = jest.fn()
@@ -108,14 +93,12 @@ describe('Security Middleware Module', () => {
 
     await initializeSecurityModules(true)
 
-    // Mock NextRequest
-    mockRequest = {
-      nextUrl: { pathname: '/api/test' },
+    // Mock NextRequest using shared helper
+    mockRequest = MockUtils.createSecurityMockRequest({
+      pathname: '/api/test',
       method: 'GET',
-      headers: {
-        get: jest.fn<string | null, [string]>()
-      }
-    }
+      headers: {}
+    }) as MockNextRequest
 
     // Mock NextResponse
     // Make tests recognize localhost origins by setting development mode

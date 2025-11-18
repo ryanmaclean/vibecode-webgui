@@ -1,11 +1,9 @@
 // Jest setup file
 import '@testing-library/jest-dom';
 
-// Mock global objects
-global.fetch = jest.fn();
-global.Headers = jest.fn();
-global.Request = jest.fn();
-global.Response = jest.fn();
+// Note: Browser API polyfills (fetch, Headers, Request, Response, TextEncoder, etc.) 
+// are provided by tests/jest.polyfills.js which is loaded first via setupFiles.
+// Individual tests can mock global.fetch as needed using jest.fn().
 
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({

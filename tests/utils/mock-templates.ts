@@ -6,6 +6,33 @@
  */
 
 // ================================
+// TYPE DEFINITIONS FOR MOCKS
+// ================================
+
+export type HeaderMock = jest.Mock<string | null, [string]>;
+
+export interface MockHeaders {
+  get: HeaderMock;
+}
+
+export type BasicRequest = { headers: MockHeaders };
+
+export interface MockNextRequest {
+  nextUrl: { pathname: string };
+  method: string;
+  headers: MockHeaders;
+  body?: unknown;
+  text?: () => Promise<string>;
+}
+
+export interface MockNextResponse {
+  status?: number;
+  headers: {
+    set: jest.Mock<void, [string, string]>;
+  };
+}
+
+// ================================
 // NEXT-AUTH MOCKING PATTERNS
 // ================================
 
@@ -166,7 +193,7 @@ export const MockUtils = {
     Object.assign(process.env, ENV_MOCK.test());
   },
   
-  // Create mock NextRequest
+  // Create mock NextRequest (for API route testing)
   createMockRequest: (options: {
     url?: string;
     method?: string;
@@ -187,6 +214,54 @@ export const MockUtils = {
       text: jest.fn().mockResolvedValue(JSON.stringify(body)),
       headers: new Map(Object.entries(headers)),
     } as any;
+  },
+
+  // Build a real NextRequest instance (for middleware testing)
+  buildRequest: (path: string, options: {
+    method?: string;
+    headers?: Record<string, string>;
+    body?: any;
+  } = {}) => {
+    // This function requires NextRequest to be available (from next/server)
+    // It creates a real NextRequest instance for middleware tests
+    if (typeof global.Request === 'undefined') {
+      throw new Error('Request is not defined. Ensure jest.polyfills.js is loaded.');
+    }
+    
+    const { method = 'GET', headers = {}, body } = options;
+    const url = `https://example.com${path}`;
+    
+    // Use the global Request constructor from polyfills
+    return new Request(url, {
+      method,
+      headers: new Headers(headers),
+      body: body ? JSON.stringify(body) : undefined,
+    });
+  },
+
+  // Create a mock request for security middleware tests
+  createSecurityMockRequest: (options: {
+    pathname?: string;
+    method?: string;
+    headers?: Record<string, string | null>;
+  } = {}) => {
+    const {
+      pathname = '/api/test',
+      method = 'GET',
+      headers = {},
+    } = options;
+
+    const mockHeadersGet = jest.fn((name: string) => {
+      return headers[name] ?? null;
+    });
+
+    return {
+      nextUrl: { pathname },
+      method,
+      headers: {
+        get: mockHeadersGet,
+      },
+    };
   },
 };
 
