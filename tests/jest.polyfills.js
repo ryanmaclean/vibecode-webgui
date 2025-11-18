@@ -1,5 +1,16 @@
 // Jest Polyfills for Browser APIs
 // ==============================
+// SINGLE SOURCE OF TRUTH for browser API polyfills in Jest tests.
+// This file is loaded via setupFiles in jest.config.mjs before any tests run.
+//
+// NOTE: Do not mock these globals in other setup files or tests unless you need
+// to override specific behavior for a test. The implementations here are designed
+// to work consistently across all tests.
+//
+// Related files:
+// - tests/jest.setup.js: Configures Jest environment after polyfills are loaded
+// - tests/setup.js: Legacy setup file for configs not using jest.polyfills.js
+// ==============================
 
 // Add setImmediate polyfill for Winston and other Node.js modules
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));

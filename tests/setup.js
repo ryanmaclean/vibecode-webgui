@@ -78,6 +78,9 @@ global.matchMedia = jest.fn((query) => ({
 }))
 
 // Mock crypto for Node.js environment
+// NOTE: TextEncoder/TextDecoder are also provided by tests/jest.polyfills.js
+// This file (setup.js) uses Node's util module implementation while jest.polyfills.js 
+// provides custom implementations. Configs using jest.polyfills.js should not also use this file.
 const { TextEncoder, TextDecoder } = require('util')
 global.TextEncoder = TextEncoder
 global.TextDecoder = TextDecoder
