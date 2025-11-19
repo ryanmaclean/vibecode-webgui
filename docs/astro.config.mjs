@@ -61,6 +61,17 @@ export default defineConfig({
           ]
         },
         {
+          label: 'Docker & OpenVSCode Setup',
+          badge: 'New',
+          items: [
+            { label: 'Complete Setup Guide', link: '/docker-database/openvscode-postgres-setup/' },
+            { label: 'Docker Compose Setup', link: '/docker-database/docker-compose-setup/' },
+            { label: 'Auto-Generated Passwords', link: '/docker-database/auto-password-setup/', badge: 'Recommended' },
+            { label: 'Password Setup Complete', link: '/docker-database/random-password-complete/' },
+            { label: 'Database Connection Fix', link: '/docker-database/db-connection-fixed/' },
+          ]
+        },
+        {
           label: 'API Reference',
           link: '/api-reference/',
           badge: 'Enhanced'
