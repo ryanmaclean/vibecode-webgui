@@ -1,106 +1,123 @@
 # Quick Start Guide
 
-Get up and running with Workspace RAG in 5 minutes.
+## Prerequisites Check
 
-## Step 1: Install PostgreSQL with pgvector
+1. **PostgreSQL with pgvector**:
+   ```bash
+   # Check if PostgreSQL is running
+   brew services list | grep postgresql
+   
+   # If not installed:
+   brew install postgresql@15 pgvector
+   brew services start postgresql@15
+   
+   # Create database
+   createdb workspace_rag
+   psql workspace_rag -c "CREATE EXTENSION vector;"
+   ```
 
-### macOS
-```bash
-brew install postgresql@15 pgvector
-brew services start postgresql@15
-```
+2. **Node.js** (should be installed):
+   ```bash
+   node --version  # Should be >= 18
+   npm --version
+   ```
 
-### Linux
-```bash
-sudo apt install postgresql postgresql-contrib postgresql-15-pgvector
-sudo systemctl start postgresql
-```
+## Installation Steps
 
-## Step 2: Create Database
+1. **Install dependencies**:
+   ```bash
+   cd extensions/workspace-rag
+   npm install
+   ```
 
-```bash
-# Connect to PostgreSQL
-psql postgres
+2. **Build the extension**:
+   ```bash
+   npm run build
+   ```
 
-# In psql, run:
-CREATE DATABASE rag_db;
-\c rag_db
-CREATE EXTENSION vector;
-\q
-```
+3. **Verify build**:
+   ```bash
+   ls -la dist/extension.js  # Should exist
+   ```
 
-## Step 3: Install Extension
+## VS Code Setup
 
-```bash
-cd extensions/workspace-rag
-npm install
-npm run compile
-```
+1. **Open Extension Development Host**:
+   - Press `F5` in VS Code
+   - This opens a new "Extension Development Host" window
 
-Then press `F5` in VS Code to launch.
+2. **Configure Settings** (in the new window):
+   - Press `Cmd+,` (or `Ctrl+,`) to open Settings
+   - Search for "Workspace RAG"
+   - Configure database settings:
+     - Host: `localhost`
+     - Port: `5432`
+     - User: `postgres` (or your user)
+     - Password: Your PostgreSQL password
+     - Database: `workspace_rag`
 
-## Step 4: Configure
+3. **Set OpenAI API Key**:
+   - Press `Cmd+Shift+P` (or `Ctrl+Shift+P`)
+   - Run: `Workspace RAG: Set OpenAI API Key`
+   - Enter your OpenAI API key
 
-In VS Code settings (`Ctrl+,`), search for "Workspace RAG" and set:
+## First Run
 
-```json
-{
-  "workspaceRag.pgPassword": "your_postgres_password"
-}
-```
+1. **Open a workspace** in the Extension Development Host window
+   - File > Open Folder
+   - Select any code project
 
-Other settings use sensible defaults.
+2. **Index the workspace**:
+   - Press `Cmd+Shift+P`
+   - Run: `Workspace RAG: Index Workspace`
+   - Wait for indexing to complete (progress notification)
 
-## Step 5: Index Your Workspace
+3. **Open the chat**:
+   - Look for "Workspace RAG Chat" in the Explorer sidebar
+   - Click to open
 
-1. Open Command Palette (`Ctrl+Shift+P`)
-2. Run: `RAG: Index Workspace for RAG`
-3. Wait for completion (~1-10 minutes depending on project size)
+4. **Ask a question**:
+   - Try: "What is the main entry point of this project?"
+   - Or: "How does authentication work?"
+   - Or: "Show me the database configuration"
 
-## Step 6: Ask Questions
+## Troubleshooting
 
-1. Open the "RAG Chat" panel in the Explorer sidebar
-2. Type: "What is this project about?"
-3. Get instant answers with source references
+### Build Errors
+- Run `npm install` again
+- Check Node.js version: `node --version`
+- Clear and rebuild: `rm -rf node_modules dist && npm install && npm run build`
 
-## Optional: Set OpenAI API Key
+### Database Connection Issues
+- Verify PostgreSQL is running: `brew services list`
+- Test connection: `psql -h localhost -U postgres -d workspace_rag`
+- Check settings match your PostgreSQL configuration
 
-For better LLM-powered answers:
+### MLX Not Working
+- Verify Apple Silicon: `uname -m` (should show `arm64`)
+- Extension will automatically fallback to OpenAI API
+- Check `workspaceRag.useMLX` setting
 
-1. Command Palette → `RAG: Set OpenAI API Key`
-2. Enter your key from https://platform.openai.com/api-keys
+### No Chat Panel
+- Ensure a workspace folder is open
+- Check Output panel for errors: View > Output > "Workspace RAG"
+- Reload window: `Cmd+R` or `Ctrl+R`
 
-Without an API key, you'll still get relevant code snippets.
+## Next Steps After Setup
 
-## Pro Tips
+1. **Enable Tracing** (optional):
+   - Settings > Workspace RAG > Tracing > Enable
+   - Configure exporters (console/datadog/jaeger)
 
-### Best Questions to Ask
-- "How does authentication work?"
-- "Where is the database configured?"
-- "What APIs are exposed?"
-- "Show me examples of X"
+2. **Customize File Patterns**:
+   - Adjust `includeGlob` and `excludeGlob` in settings
+   - Default includes: `**/*.{js,ts,jsx,tsx,py,md,txt,json,go,java,rb,rs}`
 
-### Performance
-- **Apple Silicon**: Embeddings run locally via MLX (fast & private)
-- **Other platforms**: Falls back to OpenAI API automatically
+3. **Tune Chunking**:
+   - Adjust `chunkSize` (default: 1000 characters)
+   - Smaller = more granular, larger = more context
 
-### Incremental Indexing
-- Only modified files are re-indexed
-- Run index command anytime to update
-
-### Troubleshooting
-- Can't connect? Check PostgreSQL is running: `brew services list`
-- Slow indexing? Exclude more directories in settings
-- No results? Verify files match your include glob pattern
-
-## What's Next?
-
-- Try the quick action buttons in the chat
-- Adjust chunk size for better results
-- Enable tracing to monitor performance
-- Share feedback and star the repo!
-
----
-
-**Need help?** Check the full [README.md](./README.md) or open an issue.
-
+4. **Test Different Queries**:
+   - Architecture questions
+   - Code explanation requests
+   - Finding specific functionality
