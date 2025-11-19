@@ -2,7 +2,7 @@
 import * as assert from 'assert';
 import { Logger } from '../logger';
 import { SafeguardManager } from '../safeguards';
-import { TextSplitter } from '../workspaceIndexer';
+import { TextSplitter } from '../textSplitter';
 
 suite('Integration Test Suite', () => {
     let logger: Logger;
@@ -70,12 +70,12 @@ function validateHash(user, hash) {
 
             const splitter = new TextSplitter(200, 20);
             const chunks = splitter.splitText(code);
-            
+
             assert.ok(chunks.length > 0);
-            assert.ok(chunks.every(chunk => chunk.length <= 220)); // Allow some overflow
-            
+            assert.ok(chunks.every((chunk: string) => chunk.length <= 220)); // Allow some overflow
+
             // Verify content is preserved
-            const combinedLength = chunks.reduce((sum, chunk) => sum + chunk.length, 0);
+            const combinedLength = chunks.reduce((sum: number, chunk: string) => sum + chunk.length, 0);
             assert.ok(combinedLength >= code.length * 0.9); // At least 90% preserved
         });
 

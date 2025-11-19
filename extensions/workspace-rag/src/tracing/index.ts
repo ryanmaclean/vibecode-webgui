@@ -161,7 +161,7 @@ export class TracingManager {
         if (!this.isInitialized) return;
         
         return new Promise((resolve) => {
-            tracer.flush(() => {
+            (tracer as any).flush(() => {
                 this.logger.debug('Tracing buffer flushed');
                 resolve();
             });

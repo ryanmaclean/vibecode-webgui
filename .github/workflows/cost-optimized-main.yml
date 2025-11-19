@@ -1,0 +1,178 @@
+# Cost-Optimized CI/CD Workflow
+# 
+# This workflow implements the release branch strategy to reduce GitHub Actions costs
+# from $100/month to ~$20-30/month (70-80% reduction).
+#
+# Strategy:
+# - Main branch: Fast, lightweight checks only
+# - Release branches: Full test suite and deployment
+#
+# Created: November 18, 2025
+
+name: Cost-Optimized CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    branches:
+      - main
+
+# Cancel in-progress runs for the same workflow
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  NODE_VERSION: '22'
+
+jobs:
+  # Fast checks for main branch (< 5 minutes)
+  quick-validation:
+    name: Quick Validation
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1  # Shallow clone for speed
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies (production only)
+        run: npm ci --production --prefer-offline
+        timeout-minutes: 3
+
+      - name: Lint check
+        run: npm run lint
+        timeout-minutes: 2
+
+      - name: Type check
+        run: npm run type-check
+        timeout-minutes: 3
+
+      - name: Build check
+        run: npm run build
+        timeout-minutes: 5
+
+  # Basic unit tests only (no integration/e2e)
+  unit-tests:
+    name: Unit Tests Only
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: quick-validation
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --prefer-offline
+        timeout-minutes: 3
+
+      - name: Run unit tests only
+        run: npm run test:unit
+        timeout-minutes: 5
+        env:
+          # Skip expensive tests
+          SKIP_INTEGRATION_TESTS: true
+          SKIP_E2E_TESTS: true
+
+  # Security scanning (fast, important)
+  security-scan:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          scan-type: 'fs'
+          scan-ref: '.'
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+          severity: 'CRITICAL,HIGH'
+          timeout: '5m'
+
+      - name: Upload Trivy results
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
+
+  # Cost monitoring
+  cost-report:
+    name: Cost Monitoring
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    
+    steps:
+      - name: Report workflow cost
+        run: |
+          echo "## 💰 CI/CD Cost Report" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Workflow:** ${{ github.workflow }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Strategy:** Cost-Optimized (Main Branch)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Jobs Run:" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Quick Validation (~5 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Unit Tests (~5 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ✅ Security Scan (~3 min)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Jobs Skipped (Run on Release Branches):" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ Integration Tests (~15 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ E2E Tests (~30 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ Performance Tests (~20 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ Docker Build (~10 min)" >> $GITHUB_STEP_SUMMARY
+          echo "- ⏭️ Deployment (~5 min)" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Estimated Time Saved:** ~75 minutes per push" >> $GITHUB_STEP_SUMMARY
+          echo "**Estimated Cost Saved:** ~70-80% reduction" >> $GITHUB_STEP_SUMMARY
+
+  # Notification for release branch requirement
+  release-branch-reminder:
+    name: Release Branch Reminder
+    runs-on: ubuntu-latest
+    timeout-minutes: 1
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: [quick-validation, unit-tests, security-scan]
+    
+    steps:
+      - name: Post reminder
+        run: |
+          echo "## 🚀 Ready for Release?" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This push to main has passed quick validation." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "To run full test suite and deploy:" >> $GITHUB_STEP_SUMMARY
+          echo "1. Create a release branch: \`git checkout -b release/v1.x.x\`" >> $GITHUB_STEP_SUMMARY
+          echo "2. Push the branch: \`git push origin release/v1.x.x\`" >> $GITHUB_STEP_SUMMARY
+          echo "3. Full CI/CD will run automatically" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "Or use the helper script:" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`bash" >> $GITHUB_STEP_SUMMARY
+          echo "./scripts/create-release-branch.sh v1.x.x" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' http://127.0.0.1:*">
+  <title>VibeCode - Electron Prototype</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <div class="header-content">
+        <h1>VibeCode</h1>
+        <p class="subtitle">Electron + OpenVSCode Server Prototype</p>
+      </div>
+      <div class="status-indicator">
+        <span class="status-dot" id="statusDot"></span>
+        <span id="statusText">Initializing...</span>
+      </div>
+    </header>
+
+    <main class="main-content">
+      <div id="welcomeScreen" class="welcome-screen">
+        <div class="welcome-card">
+          <div class="icon-container">
+            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/>
+            </svg>
+          </div>
+
+          <h2>Welcome to VibeCode Electron POC</h2>
+          <p class="description">
+            This prototype demonstrates embedding OpenVSCode Server in an Electron application
+            for maximum rendering consistency.
+          </p>
+
+          <div class="info-grid">
+            <div class="info-item">
+              <span class="info-label">Platform:</span>
+              <span class="info-value" id="platform">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Architecture:</span>
+              <span class="info-value" id="arch">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Electron:</span>
+              <span class="info-value" id="electronVersion">-</span>
+            </div>
+            <div class="info-item">
+              <span class="info-label">Server Status:</span>
+              <span class="info-value" id="serverStatus">Checking...</span>
+            </div>
+          </div>
+
+          <div class="action-buttons">
+            <button id="launchBtn" class="btn btn-primary" disabled>
+              <span class="btn-text">Launch VS Code</span>
+            </button>
+            <button id="refreshBtn" class="btn btn-secondary">
+              <span class="btn-text">Refresh Status</span>
+            </button>
+          </div>
+
+          <div id="errorMessage" class="error-message" style="display: none;">
+            <strong>Note:</strong> VS Code Server is not running.
+            <br>
+            <small>
+              To use a real VS Code Server, install code-server or place OpenVSCode Server
+              in the <code>vscode-server/bin/</code> directory.
+            </small>
+          </div>
+
+          <details class="setup-instructions">
+            <summary>Quick Setup Instructions</summary>
+            <div class="instructions-content">
+              <h3>Option 1: Install code-server (Recommended)</h3>
+              <pre><code>brew install code-server
+# or
+npm install -g code-server</code></pre>
+
+              <h3>Option 2: Manual OpenVSCode Server</h3>
+              <pre><code># Download OpenVSCode Server
+curl -L https://github.com/gitpod-io/openvscode-server/releases/latest/download/openvscode-server-linux-x64.tar.gz | tar xz
+
+# Move to electron-prototype directory
+mv openvscode-server-* ./vscode-server
+
+# Run Electron app
+npm start</code></pre>
+            </div>
+          </details>
+        </div>
+      </div>
+
+      <div id="loadingScreen" class="loading-screen" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading VS Code Server...</p>
+      </div>
+    </main>
+
+    <footer class="footer">
+      <span>VibeCode Electron POC</span>
+      <span class="separator">•</span>
+      <span id="loadTime">-</span>
+    </footer>
+  </div>
+
+  <script src="renderer.js"></script>
+</body>
+</html>

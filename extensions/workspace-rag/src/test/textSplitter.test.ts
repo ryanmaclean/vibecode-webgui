@@ -1,6 +1,6 @@
 // src/test/textSplitter.test.ts
 import * as assert from 'assert';
-import { TextSplitter } from '../workspaceIndexer';
+import { TextSplitter } from '../textSplitter';
 
 suite('TextSplitter Test Suite', () => {
     let splitter: TextSplitter;

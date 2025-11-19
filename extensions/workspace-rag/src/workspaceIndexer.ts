@@ -132,14 +132,13 @@ export class WorkspaceIndexer {
 
                         const batch = filesToProcess.slice(i, i + batchSize);
                         await this.processFileBatch(
-                            batch, 
-                            workspaceId, 
-                            pgClient, 
+                            batch,
+                            workspaceId,
+                            pgClient,
                             splitter,
-                            progress, 
-                            i, 
-                            filesToProcess.length,
-                            span
+                            progress,
+                            i,
+                            filesToProcess.length
                         );
                     }
 
@@ -170,8 +169,7 @@ export class WorkspaceIndexer {
         splitter: TextSplitter,
         progress: vscode.Progress<{ message?: string; increment?: number }>,
         processed: number,
-        total: number,
-        parentSpan: any
+        total: number
     ): Promise<void> {
         const tracing = getTracingManager(this.logger);
 
@@ -205,7 +203,7 @@ export class WorkspaceIndexer {
                     span.setTag('error.msg', (error as Error).message);
                     this.logger.error(`Error processing file ${file.fsPath}`, error);
                 }
-            }, {}, parentSpan);
+            });
         });
 
         await Promise.all(promises);

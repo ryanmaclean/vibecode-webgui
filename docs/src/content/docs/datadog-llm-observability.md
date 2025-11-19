@@ -158,6 +158,33 @@ No extra code is needed to capture input/output payload metadata, latency, or to
 
 ---
 
+## 💻 VS Code Workspace RAG Extension
+
+The `workspace-rag` VS Code extension can also emit Datadog traces for RAG operations (indexing, embeddings, and LLM calls):
+
+1. **Install & enable the extension**
+   - Open this repo in VS Code.
+   - Install/compile the `extensions/workspace-rag` extension as usual.
+
+2. **Configure tracing in VS Code settings**
+   - Search for **Workspace RAG** settings.
+   - Enable: `workspaceRag.tracing.enabled`.
+   - Choose exporters with `workspaceRag.tracing.exporters` (e.g. `datadog`, `jaeger`).
+   - Optionally set `workspaceRag.tracing.datadogApiKey` and `workspaceRag.tracing.datadogSite`, or rely on `DD_API_KEY` / `DD_SITE` from the environment.
+
+3. **Control embedding backend**
+   - By default, embeddings use OpenAI (requires an API key stored in VS Code secrets).
+   - To enable experimental local MLX embeddings on Apple Silicon, set `workspaceRag.useLocalMLX = true`.
+
+4. **Verify Datadog LLM observability locally**
+   - At the repo root, run:
+     - `npm run test:llmobs:datadog`
+   - This executes `scripts/test-llm-observability-final.js`, which loads `.env` / `.env.local` with `dotenv`, sends workflow + task spans, and prints a summary when data is flushed to Datadog.
+
+Once enabled, interactions with the Workspace RAG chat view will generate spans tagged with `span.type=ai`, provider/model information, and token usage, complementing the main web app’s LLM observability.
+
+---
+
 ## ✅ Validation Checklist
 
 - Watch application debug output for payloads labeled `openai.request`.

@@ -1,0 +1,318 @@
+{
+    "title": "VibeCode - AI Cost & Token Usage",
+    "description": "Monitor AI token usage, costs, and budget tracking across all providers",
+    "widgets": [
+        {
+            "id": 1,
+            "definition": {
+                "title": "Total AI Cost (Last 24h)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.cost.total_usd{*}",
+                        "aggregator": "sum"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 2,
+                "custom_unit": "$"
+            },
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 2,
+            "definition": {
+                "title": "Total Tokens (Last 24h)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.tokens.total{*}",
+                        "aggregator": "sum"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0
+            },
+            "layout": {
+                "x": 3,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 3,
+            "definition": {
+                "title": "AI Requests (Last 24h)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.requests{*}.as_count()",
+                        "aggregator": "sum"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0
+            },
+            "layout": {
+                "x": 6,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 4,
+            "definition": {
+                "title": "Average Cost per Request",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.cost.total_usd{*}/sum:vibecode.ai.requests{*}.as_count()",
+                        "aggregator": "avg"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 4,
+                "custom_unit": "$"
+            },
+            "layout": {
+                "x": 9,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 5,
+            "definition": {
+                "title": "Cost Over Time by Provider",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.cost.total_usd{*} by {provider}",
+                        "display_type": "area",
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "",
+                    "scale": "linear",
+                    "min": "auto",
+                    "max": "auto",
+                    "include_zero": true
+                },
+                "markers": []
+            },
+            "layout": {
+                "x": 0,
+                "y": 2,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 6,
+            "definition": {
+                "title": "Token Usage by Provider",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.tokens.total{*} by {provider}",
+                        "display_type": "bars",
+                        "style": {
+                            "palette": "dog_classic"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "",
+                    "scale": "linear",
+                    "min": "auto",
+                    "max": "auto",
+                    "include_zero": true
+                }
+            },
+            "layout": {
+                "x": 6,
+                "y": 2,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 7,
+            "definition": {
+                "title": "Cost by Model",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "toplist",
+                "requests": [
+                    {
+                        "q": "top(sum:vibecode.ai.cost.total_usd{*} by {model}, 10, 'sum', 'desc')"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 5,
+                "width": 4,
+                "height": 3
+            }
+        },
+        {
+            "id": 8,
+            "definition": {
+                "title": "Requests by Operation Type",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "sunburst",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.requests{*} by {operation,provider}.as_count()"
+                    }
+                ],
+                "legend": {
+                    "type": "automatic"
+                }
+            },
+            "layout": {
+                "x": 4,
+                "y": 5,
+                "width": 4,
+                "height": 3
+            }
+        },
+        {
+            "id": 9,
+            "definition": {
+                "title": "Cost Distribution by Provider",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "distribution",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.cost.total_usd{*} by {provider}"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 8,
+                "y": 5,
+                "width": 4,
+                "height": 3
+            }
+        },
+        {
+            "id": 10,
+            "definition": {
+                "title": "Prompt vs Completion Tokens",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.tokens.prompt{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "warm",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        }
+                    },
+                    {
+                        "q": "sum:vibecode.ai.tokens.completion{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "cool",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Tokens",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 0,
+                "y": 8,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 11,
+            "definition": {
+                "title": "Cost Efficiency (Tokens per Dollar)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.ai.tokens.total{*}/sum:vibecode.ai.cost.total_usd{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "green",
+                            "line_type": "solid",
+                            "line_width": "thick"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Tokens/$",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 6,
+                "y": 8,
+                "width": 6,
+                "height": 3
+            }
+        }
+    ],
+    "template_variables": [
+        {
+            "name": "provider",
+            "default": "*",
+            "prefix": "provider"
+        },
+        {
+            "name": "model",
+            "default": "*",
+            "prefix": "model"
+        },
+        {
+            "name": "workspace",
+            "default": "*",
+            "prefix": "workspace"
+        }
+    ],
+    "layout_type": "ordered",
+    "is_read_only": false,
+    "notify_list": [],
+    "reflow_type": "fixed"
+}

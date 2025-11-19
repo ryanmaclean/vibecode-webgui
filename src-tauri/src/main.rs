@@ -8,6 +8,7 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
+mod openvscode;
 mod vm;
 
 // use tauri::Manager; // Removed unused import
@@ -35,6 +36,7 @@ fn main() {
 
     tauri::Builder::default()
         .plugin(tauri_plugin_shell::init())
+        .manage(std::sync::Mutex::new(openvscode::OpenVSCodeManager::new()))
         .invoke_handler(tauri::generate_handler![
             browser::open_browser_window,
             browser::navigate_to,
@@ -80,6 +82,12 @@ fn main() {
             vm::vm_stop,
             vm::vm_status,
             vm::vm_setup_first_run,
+            // OpenVSCode commands
+            openvscode::openvscode_start,
+            openvscode::openvscode_stop,
+            openvscode::openvscode_restart,
+            openvscode::openvscode_status,
+            openvscode::openvscode_install_extensions,
         ])
         .setup(|app| {
             // Initialize system tray

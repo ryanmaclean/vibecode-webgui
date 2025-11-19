@@ -30,6 +30,21 @@
         "command": "workspace-rag.setApiKey",
         "title": "Workspace RAG: Set OpenAI API Key",
         "category": "Workspace RAG"
+      },
+      {
+        "command": "workspace-rag.explainCode",
+        "title": "Workspace RAG: Explain Selected Code",
+        "category": "Workspace RAG"
+      },
+      {
+        "command": "workspace-rag.showDashboard",
+        "title": "Workspace RAG: Show Cost Dashboard",
+        "category": "Workspace RAG"
+      },
+      {
+        "command": "workspace-rag.setBudget",
+        "title": "Workspace RAG: Set Token Budget",
+        "category": "Workspace RAG"
       }
     ],
     "views": {

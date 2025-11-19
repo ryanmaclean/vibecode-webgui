@@ -1,0 +1,337 @@
+{
+    "title": "VibeCode - Code Quality & Complexity",
+    "description": "Monitor code complexity metrics, pattern detection, and code quality trends",
+    "widgets": [
+        {
+            "id": 1,
+            "definition": {
+                "title": "Average Complexity Score",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.complexity.score{*}",
+                        "aggregator": "avg"
+                    }
+                ],
+                "autoscale": false,
+                "precision": 1,
+                "custom_unit": "/100"
+            },
+            "layout": {
+                "x": 0,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 2,
+            "definition": {
+                "title": "Code Analyses (Last 24h)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.code.analysis.count{*}.as_count()",
+                        "aggregator": "sum"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0
+            },
+            "layout": {
+                "x": 3,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 3,
+            "definition": {
+                "title": "Average Analysis Duration",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.analysis.duration_ms{*}",
+                        "aggregator": "avg"
+                    }
+                ],
+                "autoscale": true,
+                "precision": 0,
+                "custom_unit": "ms"
+            },
+            "layout": {
+                "x": 6,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 4,
+            "definition": {
+                "title": "Code with Warnings",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "query_value",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.code.analysis.count{has_warnings:true}.as_count()/sum:vibecode.code.analysis.count{*}.as_count()*100",
+                        "aggregator": "avg"
+                    }
+                ],
+                "autoscale": false,
+                "precision": 1,
+                "custom_unit": "%"
+            },
+            "layout": {
+                "x": 9,
+                "y": 0,
+                "width": 3,
+                "height": 2
+            }
+        },
+        {
+            "id": 5,
+            "definition": {
+                "title": "Complexity Score Over Time",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.complexity.score{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Score (0-100)",
+                    "scale": "linear",
+                    "min": "0",
+                    "max": "100",
+                    "include_zero": true
+                },
+                "markers": [
+                    {
+                        "value": "y = 40",
+                        "display_type": "warning dashed",
+                        "label": "Moderate Threshold"
+                    },
+                    {
+                        "value": "y = 70",
+                        "display_type": "error dashed",
+                        "label": "Complex Threshold"
+                    }
+                ]
+            },
+            "layout": {
+                "x": 0,
+                "y": 2,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 6,
+            "definition": {
+                "title": "Complexity Distribution",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "distribution",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.complexity.score{*}"
+                    }
+                ],
+                "legend_size": "0"
+            },
+            "layout": {
+                "x": 6,
+                "y": 2,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 7,
+            "definition": {
+                "title": "Complexity Breakdown",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.complexity.cyclomatic{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "warm",
+                            "line_type": "solid"
+                        }
+                    },
+                    {
+                        "q": "avg:vibecode.code.complexity.cognitive{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "cool",
+                            "line_type": "solid"
+                        }
+                    },
+                    {
+                        "q": "avg:vibecode.code.complexity.nesting{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "purple",
+                            "line_type": "solid"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Metric Value",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 0,
+                "y": 5,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 8,
+            "definition": {
+                "title": "Code by Complexity Level",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "sunburst",
+                "requests": [
+                    {
+                        "q": "sum:vibecode.code.analysis.count{*} by {complexity}.as_count()"
+                    }
+                ],
+                "legend": {
+                    "type": "automatic"
+                }
+            },
+            "layout": {
+                "x": 6,
+                "y": 5,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 9,
+            "definition": {
+                "title": "Pattern Detection Over Time",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.patterns.total{*}",
+                        "display_type": "bars",
+                        "style": {
+                            "palette": "green"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Patterns Detected",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 0,
+                "y": 8,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 10,
+            "definition": {
+                "title": "Warnings Over Time",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "avg:vibecode.code.warnings.total{*}",
+                        "display_type": "area",
+                        "style": {
+                            "palette": "warm"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Warnings",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 6,
+                "y": 8,
+                "width": 6,
+                "height": 3
+            }
+        },
+        {
+            "id": 11,
+            "definition": {
+                "title": "Analysis Performance (p95)",
+                "title_size": "16",
+                "title_align": "left",
+                "type": "timeseries",
+                "requests": [
+                    {
+                        "q": "p95:vibecode.code.analysis.duration_ms{*}",
+                        "display_type": "line",
+                        "style": {
+                            "palette": "dog_classic",
+                            "line_type": "solid",
+                            "line_width": "normal"
+                        }
+                    }
+                ],
+                "yaxis": {
+                    "label": "Duration (ms)",
+                    "scale": "linear"
+                }
+            },
+            "layout": {
+                "x": 0,
+                "y": 11,
+                "width": 12,
+                "height": 3
+            }
+        }
+    ],
+    "template_variables": [
+        {
+            "name": "complexity",
+            "default": "*",
+            "prefix": "complexity"
+        },
+        {
+            "name": "has_warnings",
+            "default": "*",
+            "prefix": "has_warnings"
+        }
+    ],
+    "layout_type": "ordered",
+    "is_read_only": false,
+    "notify_list": [],
+    "reflow_type": "fixed"
+}

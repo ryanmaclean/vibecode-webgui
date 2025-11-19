@@ -48,13 +48,13 @@ export class RagService {
                     await this.initialize(context);
                 }
 
-                const queryEmbedding = await this.generateQueryEmbedding(query, span);
+                const queryEmbedding = await this.generateQueryEmbedding(query);
                 
                 // Step 2: Retrieve relevant documents
-                const documents = await this.retrieveDocuments(workspaceId, queryEmbedding, dbConfig, span);
+                const documents = await this.retrieveDocuments(workspaceId, queryEmbedding, dbConfig);
                 
                 // Step 3: Generate response
-                const response = await this.generateResponse(query, documents, span);
+                const response = await this.generateResponse(query, documents);
                 
                 // Step 4: Log metrics
                 this.logMetrics(query, documents, response, span);
@@ -71,23 +71,22 @@ export class RagService {
         });
     }
 
-    private async generateQueryEmbedding(query: string, parentSpan: any): Promise<number[]> {
+    private async generateQueryEmbedding(query: string): Promise<number[]> {
         const tracing = getTracingManager(this.logger);
         return tracing.trace('rag.generate_query_embedding', async (span) => {
             span.setTag('step', 'embedding_generation');
             
             const embedding = await this.embeddingService.generateEmbedding(query);
             span.setTag('embedding.dimension', embedding.length);
-            
+
             return embedding;
-        }, {}, parentSpan);
+        });
     }
 
     private async retrieveDocuments(
-        workspaceId: string, 
-        queryEmbedding: number[], 
-        dbConfig: any,
-        parentSpan: any
+        workspaceId: string,
+        queryEmbedding: number[],
+        dbConfig: any
     ): Promise<any[]> {
         const tracing = getTracingManager(this.logger);
         return tracing.trace('rag.retrieve_documents', async (span) => {
@@ -120,13 +119,12 @@ export class RagService {
             } finally {
                 await dbClient.close();
             }
-        }, {}, parentSpan);
+        });
     }
 
     private async generateResponse(
-        query: string, 
-        documents: any[], 
-        parentSpan: any
+        query: string,
+        documents: any[]
     ): Promise<{ answer: string; sources: string[]; metadata: any }> {
         const tracing = getTracingManager(this.logger);
         return tracing.trace('rag.generate_response', async (span) => {
@@ -148,7 +146,7 @@ export class RagService {
             const start = Date.now();
             
             // Generate answer using LLM
-            const answer = await this.callLanguageModel(query, context, span);
+            const answer = await this.callLanguageModel(query, context);
             
             span.setTag('generation.duration_ms', Date.now() - start);
             span.setTag('answer.length', answer.length);
@@ -161,10 +159,10 @@ export class RagService {
             };
 
             return { answer, sources, metadata };
-        }, {}, parentSpan);
+        });
     }
 
-    private async callLanguageModel(query: string, context: string, span: any): Promise<string> {
+    private async callLanguageModel(query: string, context: string): Promise<string> {
         const tracing = getTracingManager(this.logger);
         return tracing.trace('rag.llm_inference', async (llmSpan) => {
             llmSpan.setTag('llm.operation', 'completion');
@@ -211,7 +209,7 @@ Question: ${query}`;
                 llmSpan.setTag('error.msg', error.message);
                 throw error;
             }
-        }, {}, span);
+        });
     }
 
     private buildContext(documents: any[]): string {
