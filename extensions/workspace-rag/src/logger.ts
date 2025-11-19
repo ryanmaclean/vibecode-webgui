@@ -1,65 +1,53 @@
 // src/logger.ts
 import * as vscode from 'vscode';
-
-export type LogLevel = 'DEBUG' | 'INFO' | 'WARN' | 'ERROR';
+import { ExtensionContext } from 'vscode';
 
 export class Logger {
+    private context: ExtensionContext | undefined;
     private outputChannel: vscode.OutputChannel;
-    private debugMode: boolean;
 
-    constructor(context?: vscode.ExtensionContext) {
+    constructor(context?: ExtensionContext) {
+        this.context = context;
         this.outputChannel = vscode.window.createOutputChannel('Workspace RAG');
-        this.debugMode = vscode.workspace.getConfiguration('workspaceRag').get('debugMode', false);
-        
-        if (context) {
-            context.subscriptions.push(this.outputChannel);
-        }
     }
 
-    private log(level: LogLevel, message: string, data?: any) {
-        const timestamp = new Date().toISOString();
-        let logMessage = `[${timestamp}] [${level}] ${message}`;
-        
-        if (data) {
-            if (typeof data === 'object') {
-                logMessage += '\n' + JSON.stringify(data, null, 2);
-            } else {
-                logMessage += ` ${data}`;
+    public info(message: string, metadata?: any) {
+        this.log('INFO', message, metadata);
+    }
+
+    public warn(message: string, metadata?: any) {
+        this.log('WARN', message, metadata);
+    }
+
+    public error(message: string, error?: any, metadata?: any) {
+        this.log('ERROR', message, metadata);
+        if (error) {
+            this.outputChannel.appendLine(`Error details: ${JSON.stringify(error, null, 2)}`);
+            if (error.stack) {
+                this.outputChannel.appendLine(`Stack trace: ${error.stack}`);
             }
         }
-        
-        this.outputChannel.appendLine(logMessage);
     }
 
-    public debug(message: string, data?: any) {
-        if (this.debugMode) {
-            this.log('DEBUG', message, data);
+    public debug(message: string, metadata?: any) {
+        const config = vscode.workspace.getConfiguration('workspaceRag');
+        if (config.get('tracing.debug', false)) {
+            this.log('DEBUG', message, metadata);
         }
     }
 
-    public info(message: string, data?: any) {
-        this.log('INFO', message, data);
-    }
-
-    public warn(message: string, data?: any) {
-        this.log('WARN', message, data);
-        vscode.window.showWarningMessage(message);
-    }
-
-    public error(message: string, error?: any) {
-        this.log('ERROR', message, error);
+    private log(level: string, message: string, metadata?: any) {
+        const timestamp = new Date().toISOString();
+        const logMessage = `[${timestamp}] [${level}] ${message}`;
+        this.outputChannel.appendLine(logMessage);
         
-        // Show error message to user
-        const errorMsg = error?.message || message;
-        vscode.window.showErrorMessage(`RAG Extension: ${errorMsg}`);
+        if (metadata) {
+            this.outputChannel.appendLine(`  Metadata: ${JSON.stringify(metadata, null, 2)}`);
+        }
     }
 
     public showOutput() {
         this.outputChannel.show();
-    }
-
-    public clear() {
-        this.outputChannel.clear();
     }
 }
 
