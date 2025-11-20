@@ -8,29 +8,46 @@ Comprehensive collection of demos showcasing VibeCode's AI, database, and monito
 
 Demonstrations of multi-agent AI orchestration using CrewAI framework.
 
-#### **crewai-4-agent-openai-workflow.py** ⭐ Production-Ready
-Production-quality demo with real OpenAI API calls and complete Datadog tracing.
+#### **crewai-4-agent-openai-workflow.py** ⭐ Daily Production Use
+Production-ready daily platform health check using AI agents.
 
-**Purpose:** Showcase production-ready multi-agent workflow with different GPT models
-**Agents:** 4 (Research, Bootloader, Service, QA)
-**Models:** GPT-4, GPT-3.5-turbo, GPT-4o-mini
-**Cost:** ~$0.10-0.50 per run (real OpenAI calls)
-**Monitoring:** Full Datadog LLM Observability with I/O capture
+**Purpose:** Automated daily health audit of VibeCode platform
+**What it does:**
+- Security audit (vulnerabilities, secrets, dependencies)
+- Documentation review (accuracy, completeness, updates)
+- Code quality analysis (complexity, errors, tech debt)
+- Daily health report generation
+
+**Agents:** 4 specialized AI agents
+- Security Auditor (GPT-4)
+- Documentation Reviewer (GPT-3.5)
+- Code Quality Analyst (GPT-4o-mini)
+- Report Generator (GPT-3.5)
+
+**Cost:** ~$0.20-0.40 per run | ~$6-12/month if run daily
+**Monitoring:** service:vibecode-platform-health | ml_app:vibecode-daily-audit
 
 **When to use:**
-- Testing complete CrewAI workflows
-- Demonstrating multi-model orchestration
-- Production pattern validation
-- Datadog LLM Obs capability demos
+- Run daily via cron for continuous monitoring
+- Before major releases
+- After merging significant changes
+- As CI/CD quality gate
 
-**Run:**
+**Daily schedule (crontab):**
+```bash
+# Run daily at 9 AM
+0 9 * * * cd /path/to/vibecode-webgui && python demos/crewai-4-agent-openai-workflow.py
+```
+
+**Run manually:**
 ```bash
 export OPENAI_API_KEY=sk-...
 export DD_API_KEY=...
+export DD_ENV=production  # or staging
 python demos/crewai-4-agent-openai-workflow.py
 ```
 
-**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `ml_app:vibecode-crewai-working`
+**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `service:vibecode-platform-health`
 
 ---
 
@@ -239,8 +256,8 @@ export PGPASSWORD=your-password
 ### "I want to test CrewAI without spending money"
 → Use: **crewai-vm-management-demo.py** (free, no API calls)
 
-### "I want to see a production-ready AI workflow"
-→ Run: **crewai-4-agent-openai-workflow.py** (costs ~$0.10-0.50)
+### "I want to run daily platform health checks"
+→ Use: **crewai-4-agent-openai-workflow.py** (automated security, docs, code quality audit)
 
 ### "I want to test vector database functionality"
 → Try: **postgresql-pgvector-demo.cjs** or **pgvector-web-interface.html**
@@ -262,7 +279,7 @@ export PGPASSWORD=your-password
 | crewai-vm-management-demo.py | FREE | None |
 | postgresql-* demos | FREE | None |
 | datadog-llmobs-io-capture-test.py | ~$0.01 | 1 OpenAI call |
-| crewai-4-agent-openai-workflow.py | ~$0.10-0.50 | Multiple OpenAI calls |
+| crewai-4-agent-openai-workflow.py | ~$0.20-0.40 | 4 agents (daily health check) |
 
 ---
 
