@@ -1,6 +1,24 @@
 import os
 import torch
 from dotenv import load_dotenv
+
+# Setup Datadog LLM Observability for Hugging Face
+try:
+    from ddtrace import patch_all
+    from ddtrace.llmobs import LLMObs
+    
+    if os.getenv('DD_LLMOBS_ENABLED', '0') == '1':
+        patch_all()  # Patches Hugging Face transformers
+        LLMObs.enable(
+            ml_app=os.getenv('DD_LLMOBS_ML_APP', 'vibecode-ai'),
+            agentless_enabled=os.getenv('DD_LLMOBS_AGENTLESS_ENABLED', '0') == '1',
+            api_key=os.getenv('DD_API_KEY'),
+            site=os.getenv('DD_SITE', 'datadoghq.com')
+        )
+        print('✅ Datadog LLM Observability enabled for Hugging Face')
+except ImportError:
+    pass  # ddtrace not installed, continue without instrumentation
+
 from transformers import pipeline
 from huggingface_hub import login, HfApi
 
