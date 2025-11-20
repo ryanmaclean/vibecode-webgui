@@ -50,7 +50,7 @@ The same approach will work with CrewAI:
 - agent.execute_task() will be traced
 - All captured in Datadog LLM Observability
 
-Ready to run: `python demos/crewai-vm-agents.py`
+Ready to run: `python demos/crewai-vm-management-demo.py`
 
 ## Verified
 

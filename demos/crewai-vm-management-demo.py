@@ -1,25 +1,48 @@
 #!/usr/bin/env python3
 """
-CrewAI Demo: Multi-Agent VM Management with Datadog Monitoring
+CrewAI VM Management Demo with Datadog Monitoring
 
-Run with: ddtrace-run python demos/crewai-vm-agents.py
+PURPOSE:
+    Educational demo showing CrewAI agent orchestration patterns without
+    making real LLM API calls. Uses CrewAI's built-in agent logic to
+    demonstrate workflow patterns while being traced by Datadog.
 
-Demonstrates:
-- CrewAI multi-agent orchestration
-- Datadog LLM Observability integration (automatic)
-- VM research and implementation agents
-- Real-time monitoring of agent workflows
+WHAT IT DEMONSTRATES:
+    - CrewAI multi-agent orchestration framework
+    - Agent role and task definition patterns
+    - Sequential workflow process (Research → Implementation → QA)
+    - Automatic Datadog LLM Observability integration
+    - Real-time monitoring of agent workflows
+    - No-cost testing of agent patterns
 
-Based on: https://docs.datadoghq.com/integrations/crewai/
+AGENTS:
+    1. VZ Research Engineer - Studies bootloader patterns
+    2. Bootloader Engineer - Creates EFI configuration
+    3. Service Installation Engineer - Configures cloud-init
+    4. QA Validation Engineer - Tests and validates
 
-Prerequisites:
-    pip install -r demos/requirements.txt
-    export DD_API_KEY=your-key  # Or have Agent running
-    
-Environment Variables:
-    DD_LLMOBS_ENABLED=1 (auto-set below)
-    DD_LLMOBS_ML_APP=vibecode-crewai-demo (auto-set below)
-    DD_SITE=datadoghq.com (optional)
+WHEN TO USE:
+    - Learning CrewAI agent patterns without API costs
+    - Testing Datadog integration setup
+    - Prototyping multi-agent workflows
+    - Demonstrating agent orchestration concepts
+
+COST:
+    FREE - No LLM API calls, uses CrewAI's built-in logic only
+
+REQUIREMENTS:
+    pip install crewai ddtrace
+    export DD_API_KEY=... (or have Datadog Agent running)
+
+USAGE:
+    ddtrace-run python demos/crewai-vm-management-demo.py
+
+VIEW RESULTS:
+    https://app.datadoghq.com/llm/traces
+    Search: ml_app:vibecode-crewai-demo
+
+BASED ON:
+    https://docs.datadoghq.com/integrations/crewai/
 """
 
 import os

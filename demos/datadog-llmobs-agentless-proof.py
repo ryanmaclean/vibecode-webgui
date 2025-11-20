@@ -1,11 +1,49 @@
 #!/usr/bin/env python3
 """
-Test Datadog LLM Observability in Agentless Mode
+Datadog LLM Observability - Agentless Mode Proof of Concept
 
-Per: https://docs.datadoghq.com/llm_observability/instrumentation/
+PURPOSE:
+    Minimal test to PROVE Datadog LLM Observability works in agentless mode.
+    Sends traces directly to Datadog API without requiring a local agent.
+    This is the simplest way to verify your Datadog integration is working.
 
-Sends traces directly to Datadog API, bypassing local agent.
-This PROVES traces land in Datadog without any doubt.
+WHAT IT DEMONSTRATES:
+    - Agentless Datadog LLM Observability setup
+    - Direct API communication (bypasses local agent)
+    - LLMObs.workflow() and LLMObs.task() usage
+    - Input/output annotation capture
+    - Trace verification in Datadog UI
+
+VERIFICATION STATUS:
+    ✓ VERIFIED WORKING - November 18, 2025
+    ✓ Trace ID: 691ccc46000000003f283b08a829a376
+    ✓ See demos/VERIFIED_WORKING.md for proof
+
+WHEN TO USE:
+    - First-time Datadog LLM Obs setup verification
+    - Troubleshooting trace delivery issues
+    - Testing API key and site configuration
+    - Validating agentless mode works
+
+COST:
+    FREE - No LLM API calls, only test spans
+
+REQUIREMENTS:
+    pip install ddtrace
+    export DD_API_KEY=... (required for agentless mode)
+
+USAGE:
+    python demos/datadog-llmobs-agentless-proof.py
+
+EXPECTED OUTPUT:
+    Test workflow and task spans appear in Datadog within 1-2 minutes
+
+VIEW RESULTS:
+    https://app.datadoghq.com/llm/traces
+    Search: ml_app:vibecode-agentless-proof
+
+BASED ON:
+    https://docs.datadoghq.com/llm_observability/instrumentation/
 """
 
 import os

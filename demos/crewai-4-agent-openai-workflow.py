@@ -1,9 +1,47 @@
 #!/usr/bin/env python3
 """
-Working CrewAI Demo with Real OpenAI Calls and Datadog Monitoring
+CrewAI 4-Agent Workflow with OpenAI Models and Datadog LLM Observability
 
-Demonstrates actual AI agents solving VM management tasks with different models.
-All traced in Datadog LLM Observability.
+PURPOSE:
+    Production-ready demo of multi-agent AI workflow with real OpenAI API calls.
+    Shows how to orchestrate 4 specialized agents using different GPT models,
+    with complete Datadog LLM Observability tracing including input/output capture.
+
+WHAT IT DEMONSTRATES:
+    - CrewAI multi-agent orchestration (4 agents, sequential process)
+    - Using different OpenAI models per agent (GPT-4, GPT-3.5, GPT-4o-mini)
+    - Real AI execution solving complex VM management tasks
+    - Datadog LLM Observability in agentless mode
+    - Input/output content capture using LLMObs.workflow()
+    - Complete workflow tracing with metadata
+
+AGENTS:
+    1. Research Agent (GPT-4) - Analyzes bootloader problems
+    2. Bootloader Agent (GPT-3.5) - Creates implementation
+    3. Service Agent (GPT-4o-mini) - Configures cloud-init
+    4. QA Agent (GPT-3.5) - Validates results
+
+WHEN TO USE:
+    - Testing full CrewAI workflow with real AI agents
+    - Demonstrating Datadog LLM Observability capabilities
+    - Validating multi-model agent orchestration
+    - Production-ready pattern for AI workflows
+
+COST WARNING:
+    This demo makes REAL OpenAI API calls and will incur costs.
+    Approximately $0.10-0.50 per run depending on response lengths.
+
+REQUIREMENTS:
+    pip install crewai langchain-openai ddtrace
+    export OPENAI_API_KEY=sk-...
+    export DD_API_KEY=... (or have Datadog Agent running)
+
+USAGE:
+    python demos/crewai-4-agent-openai-workflow.py
+
+VIEW RESULTS:
+    https://app.datadoghq.com/llm/traces
+    Search: ml_app:vibecode-crewai-working
 """
 
 import os

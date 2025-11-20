@@ -1,6 +1,44 @@
 #!/usr/bin/env python3
 """
-Test that prompts and responses are captured in Datadog
+Datadog LLM Observability - Input/Output Capture Test
+
+PURPOSE:
+    Verifies that LLM prompts and responses are captured in Datadog traces.
+    Tests explicit input/output annotation using LLMObs.annotate().
+    Ensures content visibility in Datadog LLM Observability UI.
+
+WHAT IT DEMONSTRATES:
+    - Capturing LLM prompts as input_data
+    - Capturing LLM responses as output_data
+    - Using LLMObs.workflow() wrapper for content capture
+    - Metadata annotation for additional context
+    - CrewAI integration with content capture
+
+WHEN TO USE:
+    - Verifying prompt/response visibility in Datadog
+    - Testing content capture configuration
+    - Validating LLMObs.annotate() usage
+    - Debugging missing content in traces
+
+COST WARNING:
+    Makes REAL OpenAI API calls (minimal: one simple math question)
+    Cost: ~$0.01 per run
+
+REQUIREMENTS:
+    pip install crewai langchain-openai ddtrace
+    export OPENAI_API_KEY=sk-...
+    export DD_API_KEY=...
+
+USAGE:
+    python demos/datadog-llmobs-io-capture-test.py
+
+EXPECTED OUTPUT:
+    Trace with visible prompt ("What is 2+2?") and response in Datadog UI
+
+VIEW RESULTS:
+    https://app.datadoghq.com/llm/traces
+    Search: ml_app:vibecode-input-output-test
+    Check trace details for input_data and output_data fields
 """
 
 import os

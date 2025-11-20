@@ -103,7 +103,7 @@ After running your workflow:
 
 ## Example
 
-See `demos/working-crewai-demo.py` for a complete example with:
+See `demos/crewai-4-agent-openai-workflow.py` for a complete example with:
 - 4 agents using different OpenAI models
 - Explicit input/output capture
 - Full workflow tracing

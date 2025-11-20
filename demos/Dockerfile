@@ -7,11 +7,11 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir ddtrace crewai langchain-openai
 
 # Copy demo files
-COPY working-crewai-demo.py .
-COPY simple-datadog-test.py .
-COPY test-llm-obs-agentless.py .
+COPY crewai-4-agent-openai-workflow.py .
+COPY datadog-ddtrace-basic-test.py .
+COPY datadog-llmobs-agentless-proof.py .
 
 # Run with ddtrace
 ENTRYPOINT ["python"]
-CMD ["working-crewai-demo.py"]
+CMD ["crewai-4-agent-openai-workflow.py"]
 

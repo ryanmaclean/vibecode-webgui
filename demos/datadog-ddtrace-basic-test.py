@@ -1,11 +1,40 @@
 #!/usr/bin/env python3
 """
-Simple Datadog Integration Test
+Datadog dd-trace Basic Integration Test
 
-Run with: ddtrace-run python demos/simple-datadog-test.py
+PURPOSE:
+    Minimal test to verify dd-trace instrumentation is working correctly.
+    Tests basic APM tracing without LLM Observability features.
+    Good first step before testing more complex integrations.
 
-Tests that ddtrace is working and sending data to Datadog.
-Much simpler than full CrewAI demo - good for verification.
+WHAT IT DEMONSTRATES:
+    - Basic dd-trace auto-instrumentation
+    - Trace generation for Python functions
+    - APM trace delivery to Datadog
+    - Service and environment tagging
+
+WHEN TO USE:
+    - Verifying dd-trace installation
+    - Testing basic APM connectivity
+    - Troubleshooting tracer issues
+    - Before setting up LLM Observability
+
+COST:
+    FREE - No LLM or external API calls
+
+REQUIREMENTS:
+    pip install ddtrace
+    Have Datadog Agent running OR use agentless mode with DD_API_KEY
+
+USAGE:
+    ddtrace-run python demos/datadog-ddtrace-basic-test.py
+
+EXPECTED OUTPUT:
+    Basic function traces appear in Datadog APM
+
+VIEW RESULTS:
+    https://app.datadoghq.com/apm/traces
+    Service: vibecode-demo
 """
 
 import os

@@ -7,10 +7,10 @@
 python3 -m pip install --user ddtrace crewai
 
 # Run the test
-python3 -m ddtrace.commands.ddtrace_run demos/simple-datadog-test.py
+python3 -m ddtrace.commands.ddtrace_run demos/datadog-ddtrace-basic-test.py
 
 # Or if ddtrace-run is in PATH:
-ddtrace-run demos/simple-datadog-test.py
+ddtrace-run demos/datadog-ddtrace-basic-test.py
 ```
 
 ## Verify Installation
@@ -36,7 +36,7 @@ export DD_LLMOBS_ENABLED=1
 export DD_SERVICE="vibecode-test"
 export DD_ENV="development"
 
-ddtrace-run python demos/simple-datadog-test.py
+ddtrace-run python demos/datadog-ddtrace-basic-test.py
 ```
 
 Traces go to: `localhost:8126` (Datadog Agent)
@@ -50,7 +50,7 @@ export DD_LLMOBS_ENABLED=1
 export DD_LLMOBS_AGENTLESS_ENABLED=1
 export DD_SERVICE="vibecode-test"
 
-ddtrace-run python demos/simple-datadog-test.py
+ddtrace-run python demos/datadog-ddtrace-basic-test.py
 ```
 
 Traces go directly to Datadog API.
@@ -99,7 +99,7 @@ source venv/bin/activate
 pip install -r demos/requirements.txt
 
 # Then run
-ddtrace-run python demos/simple-datadog-test.py
+ddtrace-run python demos/datadog-ddtrace-basic-test.py
 ```
 
 ## What Gets Tracked
@@ -120,12 +120,12 @@ According to [Datadog's CrewAI docs](https://docs.datadoghq.com/integrations/cre
 
 ## Demo Comparison
 
-### simple-datadog-test.py
+### datadog-ddtrace-basic-test.py
 - Basic ddtrace verification
 - No CrewAI dependencies
 - Quick validation
 
-### crewai-vm-agents.py
+### crewai-vm-management-demo.py
 - Full multi-agent workflow
 - Mimics real VM management
 - Shows agent coordination

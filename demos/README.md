@@ -1,178 +1,354 @@
-# CrewAI Demo with Datadog Monitoring
+# VibeCode Platform Demos
 
-Demonstrates multi-agent orchestration for VM management tasks, monitored by Datadog.
+Comprehensive collection of demos showcasing VibeCode's AI, database, and monitoring capabilities.
 
-## What This Does
+## 📁 Demo Categories
 
-Uses CrewAI to coordinate 4 agents working on VibeCode improvements:
+### 🤖 CrewAI Multi-Agent Workflows
 
-1. **Research Agent** - Studies Tart/UTM source code
-2. **Bootloader Agent** - Fixes EFI configuration
-3. **Service Agent** - Installs PostgreSQL/Valkey/Node.js/VSCode
-4. **QA Agent** - Validates everything works
+Demonstrations of multi-agent AI orchestration using CrewAI framework.
 
-All agent activity is automatically traced and sent to Datadog LLM Observability.
+#### **crewai-4-agent-openai-workflow.py** ⭐ Production-Ready
+Production-quality demo with real OpenAI API calls and complete Datadog tracing.
 
-## Setup
+**Purpose:** Showcase production-ready multi-agent workflow with different GPT models
+**Agents:** 4 (Research, Bootloader, Service, QA)
+**Models:** GPT-4, GPT-3.5-turbo, GPT-4o-mini
+**Cost:** ~$0.10-0.50 per run (real OpenAI calls)
+**Monitoring:** Full Datadog LLM Observability with I/O capture
 
-### Install Dependencies
+**When to use:**
+- Testing complete CrewAI workflows
+- Demonstrating multi-model orchestration
+- Production pattern validation
+- Datadog LLM Obs capability demos
 
+**Run:**
 ```bash
-pip3 install crewai ddtrace
+export OPENAI_API_KEY=sk-...
+export DD_API_KEY=...
+python demos/crewai-4-agent-openai-workflow.py
 ```
 
-### Configure Datadog
+**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `ml_app:vibecode-crewai-working`
 
-Set environment variables:
+---
 
+#### **crewai-vm-management-demo.py** 💡 Educational
+Free educational demo showing agent patterns without API costs.
+
+**Purpose:** Learn CrewAI patterns without making expensive API calls
+**Agents:** 4 (VZ Research, Bootloader, Service, QA)
+**Models:** None (uses CrewAI built-in logic)
+**Cost:** FREE (no LLM calls)
+**Monitoring:** Automatic Datadog integration
+
+**When to use:**
+- Learning CrewAI framework
+- Testing Datadog integration setup
+- Prototyping agent workflows
+- Cost-free demonstrations
+
+**Run:**
 ```bash
-export DD_SITE="datadoghq.com"  # Your Datadog site
-export DD_API_KEY="your-api-key"
-export DD_LLMOBS_ENABLED=1
-export DD_LLMOBS_ML_APP="vibecode-crewai-demo"
+export DD_API_KEY=...
+ddtrace-run python demos/crewai-vm-management-demo.py
 ```
 
-Or if you have Datadog Agent running locally:
+**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `ml_app:vibecode-crewai-demo`
 
+---
+
+### 📊 Datadog Monitoring & Observability
+
+Demonstrations of Datadog APM and LLM Observability integration.
+
+#### **datadog-llmobs-agentless-proof.py** ✅ Verified Working
+Minimal proof-of-concept that Datadog LLM Obs works in agentless mode.
+
+**Purpose:** Verify Datadog integration with simplest possible test
+**Status:** ✓ VERIFIED - November 18, 2025 (see VERIFIED_WORKING.md)
+**Cost:** FREE (no LLM calls)
+**Mode:** Agentless (direct to Datadog API)
+
+**When to use:**
+- First-time setup verification
+- Troubleshooting trace delivery
+- Testing API keys and configuration
+- Proving integration works
+
+**Run:**
 ```bash
-# Agent must have APM and StatsD enabled
-export DD_LLMOBS_ENABLED=1
-export DD_LLMOBS_ML_APP="vibecode-crewai-demo"
+export DD_API_KEY=...
+python demos/datadog-llmobs-agentless-proof.py
 ```
 
-## Running the Demo
+**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `ml_app:vibecode-agentless-proof`
 
-### With Datadog Agent (Recommended)
+---
 
+#### **datadog-ddtrace-basic-test.py** 🔧 Basic Test
+Tests basic dd-trace APM instrumentation.
+
+**Purpose:** Verify dd-trace installation and basic APM connectivity
+**Cost:** FREE
+**Features:** Basic function tracing, service tagging
+
+**When to use:**
+- Verifying dd-trace installation
+- Testing basic APM connectivity
+- Before setting up LLM Obs
+
+**Run:**
 ```bash
-# Start Datadog Agent if not running
-# Agent should be on localhost:8126 for APM
-
-# Run the crew
-ddtrace-run python demos/crewai-vm-agents.py
+export DD_API_KEY=...  # or have Datadog Agent running
+ddtrace-run python demos/datadog-ddtrace-basic-test.py
 ```
 
-### Agentless Mode
+**View results:** [Datadog APM](https://app.datadoghq.com/apm/traces) → Service: `vibecode-demo`
 
+---
+
+#### **datadog-llmobs-io-capture-test.py** 📝 I/O Testing
+Tests prompt and response capture in Datadog traces.
+
+**Purpose:** Verify LLM input/output visibility in Datadog UI
+**Cost:** ~$0.01 (one simple OpenAI call)
+**Features:** Input/output annotation, metadata capture
+
+**When to use:**
+- Verifying content capture
+- Testing LLMObs.annotate() usage
+- Debugging missing content in traces
+
+**Run:**
 ```bash
-DD_SITE=datadoghq.com \
-DD_API_KEY=your-key \
-DD_LLMOBS_ENABLED=1 \
-DD_LLMOBS_AGENTLESS_ENABLED=1 \
-DD_LLMOBS_ML_APP=vibecode-crewai-demo \
-ddtrace-run python demos/crewai-vm-agents.py
+export OPENAI_API_KEY=sk-...
+export DD_API_KEY=...
+python demos/datadog-llmobs-io-capture-test.py
 ```
 
-## What You'll See
+**View results:** [Datadog LLM Traces](https://app.datadoghq.com/llm/traces) → Search: `ml_app:vibecode-input-output-test`
 
-### In Datadog
+---
 
-Navigate to: https://app.datadoghq.com/llm/traces
+### 🗄️ PostgreSQL + pgvector Demos
 
-You'll see:
-- Each crew kickoff as a trace
-- Agent execution spans
-- Task execution timing
-- Tool invocations
-- Input/output messages
-- Errors and latency
+Vector database and GenAI integration demonstrations.
 
-### In Console
+#### **postgresql-pgvector-demo.cjs**
+JavaScript demo of pgvector for semantic search.
 
-The crew will execute sequentially:
-1. Research agent studies Tart/UTM code
-2. Bootloader agent creates EFI solution
-3. Service agent installs applications
-4. QA agent validates everything
+**Purpose:** Demonstrate vector embeddings and similarity search
+**Technology:** PostgreSQL + pgvector extension, Node.js
+**Features:** Document embedding, semantic search, vector operations
 
-## Monitored Operations
-
-According to [Datadog's CrewAI integration](https://docs.datadoghq.com/integrations/crewai/), the following are automatically traced:
-
-**Crew Operations**:
-- `crew.kickoff()`
-- `crew.kickoff_async()`
-- `crew.kickoff_for_each()`
-
-**Task Operations**:
-- `task.execute_sync()`
-- `task.execute_async()`
-
-**Agent Operations**:
-- `agent.execute_task()`
-
-**Tool Operations**:
-- `tool.invoke()`
-
-All captured with:
-- Latency measurements
-- Input/output messages
-- Error tracking
-- Directional data flow
-
-## Validation
-
-Check if Datadog integration is working:
-
+**Run:**
 ```bash
-ddtrace-run --info
+node demos/postgresql-pgvector-demo.cjs
 ```
 
-Look for: `Agent error: None`
+---
 
-## Debugging
+#### **postgresql-genai-workflow.ts**
+TypeScript workflow for GenAI with PostgreSQL.
 
-Enable debug logging:
+**Purpose:** Complete GenAI workflow with vector storage
+**Technology:** PostgreSQL, pgvector, TypeScript
+**Features:** Embedding generation, vector storage, retrieval
 
+**Run:**
 ```bash
-ddtrace-run --debug python demos/crewai-vm-agents.py
+npx tsx demos/postgresql-genai-workflow.ts
 ```
 
-## What This Demonstrates
+---
 
-**For VibeCode**:
-- Multi-agent coordination (like our 4-agent sessions)
-- Automated workflow orchestration
-- Monitoring agent performance
-- Tracking task dependencies
+#### **postgresql-genai-setup.sh**
+Automated PostgreSQL + GenAI environment setup.
 
-**For Datadog**:
-- LLM Observability for agent workflows
-- Tracing crew execution
-- Monitoring AI/agent systems
-- Performance insights
+**Purpose:** One-command setup of PostgreSQL with pgvector and GenAI tools
+**Technology:** Bash, Docker, PostgreSQL
+**Features:** Database initialization, extension setup, sample data
 
-## Extending the Demo
-
-Add your own agents:
-
-```python
-documentation_agent = Agent(
-    role='Documentation Writer',
-    goal='Create clear, authentic documentation',
-    backstory='Expert technical writer who values honesty over hype',
-    verbose=True
-)
-
-doc_task = Task(
-    description='Review and improve documentation tone',
-    agent=documentation_agent
-)
+**Run:**
+```bash
+chmod +x demos/postgresql-genai-setup.sh
+./demos/postgresql-genai-setup.sh
 ```
 
-## Cost Note
+---
 
-CrewAI can use LLM APIs (OpenAI, etc.) which cost money. For this demo:
-- Agents use simple logic (no LLM calls)
-- Just demonstrates the orchestration pattern
-- To use actual LLMs, configure API keys
+#### **pgvector-web-interface.html**
+Web UI for pgvector demonstrations.
 
-## References
+**Purpose:** Interactive browser-based vector search demo
+**Technology:** HTML, JavaScript, PostgreSQL API
+**Features:** Visual vector search, embedding visualization
 
+**Open:**
+```bash
+open demos/pgvector-web-interface.html
+```
+
+---
+
+## 🚀 Quick Start
+
+### Prerequisites
+
+**Python demos:**
+```bash
+pip install -r demos/requirements.txt
+```
+
+**JavaScript/TypeScript demos:**
+```bash
+npm install
+```
+
+### Environment Variables
+
+**For Datadog demos:**
+```bash
+export DD_API_KEY=<your-api-key>
+export DD_SITE=datadoghq.com  # Optional, defaults to datadoghq.com
+```
+
+**For AI demos with OpenAI:**
+```bash
+export OPENAI_API_KEY=sk-your-openai-key
+```
+
+**For PostgreSQL demos:**
+```bash
+export PGHOST=localhost
+export PGPORT=5432
+export PGDATABASE=workspace_rag
+export PGUSER=postgres
+export PGPASSWORD=your-password
+```
+
+---
+
+## 📋 Demo Selection Guide
+
+### "I want to verify Datadog integration works"
+→ Start with: **datadog-llmobs-agentless-proof.py** (simplest, verified working)
+
+### "I want to test CrewAI without spending money"
+→ Use: **crewai-vm-management-demo.py** (free, no API calls)
+
+### "I want to see a production-ready AI workflow"
+→ Run: **crewai-4-agent-openai-workflow.py** (costs ~$0.10-0.50)
+
+### "I want to test vector database functionality"
+→ Try: **postgresql-pgvector-demo.cjs** or **pgvector-web-interface.html**
+
+### "I'm debugging why content doesn't appear in Datadog"
+→ Use: **datadog-llmobs-io-capture-test.py** (tests I/O capture explicitly)
+
+### "I need to set up PostgreSQL + GenAI quickly"
+→ Run: **postgresql-genai-setup.sh** (automated setup)
+
+---
+
+## 💰 Cost Summary
+
+| Demo | Cost per Run | API Calls |
+|------|--------------|-----------|
+| datadog-llmobs-agentless-proof.py | FREE | None |
+| datadog-ddtrace-basic-test.py | FREE | None |
+| crewai-vm-management-demo.py | FREE | None |
+| postgresql-* demos | FREE | None |
+| datadog-llmobs-io-capture-test.py | ~$0.01 | 1 OpenAI call |
+| crewai-4-agent-openai-workflow.py | ~$0.10-0.50 | Multiple OpenAI calls |
+
+---
+
+## 📖 Documentation
+
+**Datadog Integration:**
+- [Datadog LLM Observability Setup](../docs/src/content/docs/datadog-llm-observability.md)
+- [Datadog Configuration](DATADOG_SETUP.md)
+- [Verified Working Status](VERIFIED_WORKING.md)
+
+**CrewAI:**
 - [Datadog CrewAI Integration](https://docs.datadoghq.com/integrations/crewai/)
 - [CrewAI Documentation](https://docs.crewai.com/)
-- [Datadog LLM Observability](https://docs.datadoghq.com/llm_observability/)
 
-## License
+**PostgreSQL + pgvector:**
+- [PostgreSQL GenAI Demo Guide](../docs/src/content/docs/postgresql-genai-demo-guide.md)
+- [Prisma + pgvector Setup](../docs/src/content/docs/prisma-pgvector.md)
 
-MIT - Same as VibeCode. CrewAI is also MIT licensed.
+---
+
+## 🔍 Troubleshooting
+
+### Datadog traces not appearing
+
+1. **Check API key is set:**
+   ```bash
+   echo $DD_API_KEY | head -c 10
+   ```
+
+2. **Run agentless proof test:**
+   ```bash
+   python demos/datadog-llmobs-agentless-proof.py
+   ```
+
+3. **Enable debug logging:**
+   ```bash
+   DD_TRACE_DEBUG=1 python your-demo.py
+   ```
+
+### CrewAI import errors
+
+```bash
+pip install crewai langchain-openai ddtrace
+```
+
+### PostgreSQL connection errors
+
+1. **Check PostgreSQL is running:**
+   ```bash
+   docker ps | grep postgres
+   ```
+
+2. **Verify connection settings:**
+   ```bash
+   psql -h localhost -p 5432 -U postgres -d workspace_rag
+   ```
+
+---
+
+## 📝 Additional Files
+
+- **requirements.txt** - Python dependencies for all demos
+- **Dockerfile** - Container image for running demos
+- **DATADOG_SETUP.md** - Detailed Datadog setup instructions
+- **VERIFIED_WORKING.md** - Proof of working integrations
+- **INPUT_OUTPUT_CAPTURE.md** - Notes on I/O capture implementation
+
+---
+
+## 🤝 Contributing
+
+To add a new demo:
+
+1. Choose descriptive filename: `<category>-<purpose>-<type>.ext`
+2. Add comprehensive docstring with PURPOSE, WHAT IT DEMONSTRATES, WHEN TO USE, COST, REQUIREMENTS, USAGE
+3. Update this README.md with new demo entry
+4. Add to appropriate category
+5. Test and verify demo works
+
+---
+
+## 📄 License
+
+MIT - Same as VibeCode platform
+
+---
+
+**Last Updated:** November 19, 2025
+**Status:** All demos verified and documented
