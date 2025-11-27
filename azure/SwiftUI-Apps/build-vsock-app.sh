@@ -169,6 +169,21 @@ cp "$PROJECT_DIR/Info.plist" "$APP_DIR/Contents/"
 # Make executable
 chmod +x "$APP_DIR/Contents/MacOS/$PROJECT_NAME"
 
+# Code sign the bundle
+echo ""
+echo "Step 6: Code signing application..."
+if [ -f "$SCRIPT_DIR/entitlements.plist" ]; then
+    codesign --force --deep --sign - --entitlements "$SCRIPT_DIR/entitlements.plist" "$APP_DIR"
+    echo "Application signed with entitlements"
+else
+    echo "WARNING: entitlements.plist not found, signing without entitlements"
+    codesign --force --deep --sign - "$APP_DIR"
+fi
+
+# Verify signature
+echo "Verifying signature..."
+codesign --verify --deep --strict --verbose=2 "$APP_DIR"
+
 echo ""
 echo "=== Build Complete ==="
 echo ""

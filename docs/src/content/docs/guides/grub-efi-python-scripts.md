@@ -232,3 +232,4 @@ Python scripts provide:
 - [EFI Bootloader Setup Guide](./efi-bootloader-setup.md) - Complete setup guide
 - [README-PYTHON-SCRIPTS.md](../../../scripts/vfkit/README-PYTHON-SCRIPTS.md) - Detailed script documentation
 
+

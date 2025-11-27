@@ -8,11 +8,19 @@ LiquidGlassVibeCode
 *.zip
 *.dmg
 *.pkg
+*.o
+.build/
 
 # Large binary files (use GitHub Releases instead)
 *.cpio.gz
 *.img
 vmlinux-*
+
+# Executable build outputs
+BasicVibeCodeApp
+LiquidGlassVibeCodeApp
+NetworkTestCLI
+NetworkTestVibeCodeApp
 
 # Logs
 *.log

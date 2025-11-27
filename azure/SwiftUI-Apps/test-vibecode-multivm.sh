@@ -414,13 +414,13 @@ test_code_signature() {
 test_entitlements() {
     print_test 21 "Required entitlements"
 
-    # Check for virtualization entitlements
+    # Check for virtualization entitlements (correct keys are com.apple.security.hypervisor or com.apple.security.virtualization)
     if [ -d "${APP_PATH}" ]; then
-        if codesign -d --entitlements - "${APP_PATH}" 2>/dev/null | grep -q "com.apple.vm.hypervisor"; then
+        if codesign -d --entitlements - "${APP_PATH}" 2>/dev/null | grep -q "com.apple.security.hypervisor\|com.apple.security.virtualization"; then
             test_result 0 "Required entitlements"
             return 0
         else
-            log_warn "Hypervisor entitlements not found"
+            log_warn "Virtualization entitlements not found"
             test_result 0 "Required entitlements"
             return 0
         fi
@@ -441,18 +441,20 @@ test_app_launch() {
         local exec_path="${APP_PATH}/Contents/MacOS/${APP_NAME}"
 
         if [ -x "${exec_path}" ]; then
-            # Try to launch app with timeout
-            if timeout ${TIMEOUT_APP_LAUNCH} "${exec_path}" > /dev/null 2>&1 &
-            then
-                local pid=$!
-                sleep 2
+            # Launch app in background
+            "${exec_path}" > /dev/null 2>&1 &
+            local pid=$!
 
-                if kill -0 ${pid} 2>/dev/null; then
-                    kill ${pid} 2>/dev/null || true
-                    wait ${pid} 2>/dev/null || true
-                    test_result 0 "Application launch"
-                    return 0
-                fi
+            # Wait for app to initialize
+            sleep 3
+
+            # Check if process is still running
+            if kill -0 ${pid} 2>/dev/null; then
+                # App is running - success
+                kill ${pid} 2>/dev/null || true
+                wait ${pid} 2>/dev/null || true
+                test_result 0 "Application launch"
+                return 0
             fi
         fi
     fi

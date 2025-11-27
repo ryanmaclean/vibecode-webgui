@@ -115,7 +115,7 @@ test_app_exists() {
 test_app_executable() {
     print_test 2 "App executable is valid"
 
-    local exec_path="${APP_PATH}/Contents/MacOS/BasicVibeCodeApp"
+    local exec_path="${APP_PATH}/Contents/MacOS/BasicVibeCode"
 
     if [ -x "${exec_path}" ]; then
         test_result 0 "App executable is valid"
@@ -130,29 +130,28 @@ test_app_executable() {
 test_app_launch_no_crash() {
     print_test 3 "App launches without crash"
 
-    local exec_path="${APP_PATH}/Contents/MacOS/BasicVibeCodeApp"
+    local exec_path="${APP_PATH}/Contents/MacOS/BasicVibeCode"
     local output_file="${LOG_DIR}/app_launch_output.log"
 
-    # Launch app in background with timeout
-    if timeout ${TIMEOUT_APP_LAUNCH} "${exec_path}" > "${output_file}" 2>&1 &
-    then
-        local pid=$!
-        sleep 3
+    # Launch app in background
+    "${exec_path}" > "${output_file}" 2>&1 &
+    local pid=$!
 
-        # Check if process is still running
-        if kill -0 ${pid} 2>/dev/null; then
-            kill ${pid} 2>/dev/null || true
-            wait ${pid} 2>/dev/null || true
-            test_result 0 "App launches without crash"
-            return 0
-        else
-            test_result 1 "App launches without crash"
-            log_error "App crashed during launch"
-            return 1
-        fi
+    # Wait a few seconds for app to initialize
+    sleep 3
+
+    # Check if process is still running
+    if kill -0 ${pid} 2>/dev/null; then
+        # App is running - success
+        kill ${pid} 2>/dev/null || true
+        wait ${pid} 2>/dev/null || true
+        test_result 0 "App launches without crash"
+        return 0
     else
+        # App crashed or exited
         test_result 1 "App launches without crash"
-        log_error "Failed to launch app"
+        log_error "App crashed during launch"
+        log_error "Output: $(cat ${output_file} 2>/dev/null | head -10)"
         return 1
     fi
 }
@@ -162,12 +161,12 @@ test_app_entitlements() {
 
     local entitlements_file="${APP_PATH}/Contents/entitlements.plist"
 
-    # Check for virtualization entitlements
-    if codesign -d --entitlements - "${APP_PATH}" 2>/dev/null | grep -q "com.apple.vm.hypervisor"; then
+    # Check for virtualization entitlements (correct key is com.apple.security.hypervisor or com.apple.security.virtualization)
+    if codesign -d --entitlements - "${APP_PATH}" 2>/dev/null | grep -q "com.apple.security.hypervisor\|com.apple.security.virtualization"; then
         test_result 0 "App has virtualization entitlements"
         return 0
     else
-        log_warn "Could not verify hypervisor entitlements, checking alternative methods"
+        log_warn "Could not verify virtualization entitlements, checking alternative methods"
         # Alternative check: just verify the app is code-signed
         if codesign -v "${APP_PATH}" 2>/dev/null; then
             test_result 0 "App has required entitlements"

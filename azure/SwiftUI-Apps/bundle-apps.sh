@@ -7,9 +7,9 @@ SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 cd "$SCRIPT_DIR"
 
 # Paths to resources
-# Using Ubuntu kernel with full virtio-net support for networking
-KERNEL="$HOME/.vfkit/vms/vibecode-alpine/kernel/vmlinux-ubuntu-uncompressed"
-INITRD="$HOME/vibecode-webgui/azure/bun-openvscode.cpio.gz"
+# Using Ubuntu 5.15.0-161-generic kernel with virtio module support
+KERNEL="$HOME/Downloads/vmlinuz-5.15.0-161-generic"
+INITRD="$HOME/vibecode-webgui/azure/bun-openvscode-ssh.cpio.gz"
 
 # Function to create app bundle
 create_bundle() {
@@ -29,11 +29,13 @@ create_bundle() {
     chmod +x "$APP_NAME.app/Contents/MacOS/$APP_NAME"
 
     # Copy VM resources
-    echo "  Copying Ubuntu kernel with virtio-net support (45MB)..."
+    echo "  Copying Ubuntu 5.15.0-160-generic kernel (45MB)..."
     cp "$KERNEL" "$APP_NAME.app/Contents/Resources/vmlinux-raw"
+    chmod 644 "$APP_NAME.app/Contents/Resources/vmlinux-raw"
 
-    echo "  Copying initramfs (108MB)..."
+    echo "  Copying initramfs with network modules (108MB)..."
     cp "$INITRD" "$APP_NAME.app/Contents/Resources/bun-openvscode.cpio.gz"
+    chmod 644 "$APP_NAME.app/Contents/Resources/bun-openvscode.cpio.gz"
 
     # Create Info.plist
     cat > "$APP_NAME.app/Contents/Info.plist" <<EOF
@@ -82,6 +84,21 @@ echo "=== Bundle Summary ==="
 ls -lh *.app/Contents/MacOS/* 2>/dev/null | awk '{print $9, $5}'
 echo ""
 du -sh BasicVibeCode.app LiquidGlassVibeCode.app
+
+echo ""
+echo "=== Verifying Code Signatures ==="
+echo ""
+echo "BasicVibeCode.app signature:"
+codesign --verify --deep --strict --verbose=2 BasicVibeCode.app && echo "  ✓ Valid signature"
+echo ""
+echo "BasicVibeCode.app entitlements:"
+codesign -dv --entitlements - BasicVibeCode.app 2>&1 | grep -A 10 "\[Dict\]" | head -11
+echo ""
+echo "LiquidGlassVibeCode.app signature:"
+codesign --verify --deep --strict --verbose=2 LiquidGlassVibeCode.app && echo "  ✓ Valid signature"
+echo ""
+echo "LiquidGlassVibeCode.app entitlements:"
+codesign -dv --entitlements - LiquidGlassVibeCode.app 2>&1 | grep -A 10 "\[Dict\]" | head -11
 
 echo ""
 echo "=== Bundles ready for distribution ==="
