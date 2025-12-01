@@ -120,12 +120,12 @@ final class ValkeyVMManager: BaseVMManager {
 // MARK: - NAT Network Strategy Extension for Valkey
 
 extension NATNetworkStrategy {
-    /// NAT networking strategy for Valkey VM with fixed MAC address.
+    /// NAT networking strategy for Valkey VM.
     ///
-    /// MAC: 52:54:00:12:34:92 (ensures stable DHCP lease)
+    /// Uses auto-generated MAC address (like working Ubuntu Desktop 26 VM)
     /// VSOCK disabled since Valkey uses regular TCP
     static let valkey = NATNetworkStrategy(
-        macAddress: "52:54:00:12:34:92",
+        macAddress: nil,  // Let Apple Virtualization auto-generate MAC
         enableVsock: false
     )
 }
