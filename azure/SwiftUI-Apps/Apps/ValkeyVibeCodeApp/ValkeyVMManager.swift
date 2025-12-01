@@ -8,6 +8,7 @@
 
 import Foundation
 import Virtualization
+import Network
 
 /// VM manager for ValkeyVibeCodeApp.
 ///
@@ -25,6 +26,11 @@ import Virtualization
 /// - IPv6 disabled for better DHCP reliability
 ///
 final class ValkeyVMManager: BaseVMManager {
+
+    // MARK: - Port Forwarding
+
+    /// Port forwarder for accessing Valkey on localhost
+    private var portForwarder: VMPortForwarder?
 
     // MARK: - Template Method Overrides
 
@@ -76,6 +82,38 @@ final class ValkeyVMManager: BaseVMManager {
             return "Starting..."
         }
         return nil
+    }
+
+    // MARK: - Lifecycle Hooks for Port Forwarding
+
+    /// Called when VM IP is detected via DHCP - start port forwarding to localhost.
+    ///
+    /// This enables accessing Valkey on localhost:6379 instead of VM_IP:6379,
+    /// providing a consistent development experience similar to Docker/Podman.
+    override func onIPAddressDetected(ip: String) {
+        super.onIPAddressDetected(ip: ip)
+
+        // Start port forwarding for Valkey service
+        print("[ValkeyVM] Starting port forwarding for \(ip):6379 → localhost:6379")
+        portForwarder = VMPortForwarder.forwardService(vmIP: ip, serviceName: "Valkey")
+
+        if portForwarder != nil {
+            print("[ValkeyVM] Port forwarding enabled - access Valkey via: redis-cli -h localhost -p 6379")
+        } else {
+            print("[ValkeyVM] Warning: Port forwarding failed to start")
+        }
+    }
+
+    /// Called when VM stops - clean up port forwarding.
+    override func onVMStopped() {
+        super.onVMStopped()
+
+        // Stop port forwarding
+        if portForwarder != nil {
+            print("[ValkeyVM] Stopping port forwarding")
+            portForwarder?.stopAll()
+            portForwarder = nil
+        }
     }
 }
 

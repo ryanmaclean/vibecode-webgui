@@ -40,3 +40,28 @@ releases/
 tmp/
 temp/
 *.tmp
+demos/venv311/
+__pycache__/
+*.pyc
+.next/
+vz-swift/.build/
+VibeCodeSwift/.build/
+
+# Kernel build artifacts
+azure/*.cpio.gz
+azure/ValkeyVibeCodeBinary
+azure/PostgreSQLVibeCodeBinary
+azure/SwiftUI-Apps/ValkeyVibeCodeBinary
+azure/SwiftUI-Apps/PostgreSQLVibeCodeBinary
+
+# Logs
+logs/
+*.log
+
+# Temp and caches
+tmp/
+.next/
+.git/
+git-*.tar.gz
+git-*/
+

@@ -56,6 +56,7 @@ compile_app() {
     SWIFT_FILES+="Shared/Networking/VsockProxyServer.swift "
     SWIFT_FILES+="Shared/Networking/ProxyConnection.swift "
     SWIFT_FILES+="Shared/Networking/DHCPLeaseMonitor.swift "
+    SWIFT_FILES+="Shared/Networking/VMPortForwarder.swift "
     SWIFT_FILES+="Shared/Observability/ObservabilityProvider.swift "
 
     echo "Compiling with files:"

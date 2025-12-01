@@ -65,5 +65,9 @@ struct ContentView: View {
         }
         .frame(width: 800, height: 600)
         .padding()
+        .onAppear {
+            // Autostart VM when app launches
+            vmManager.startVM()
+        }
     }
 }
