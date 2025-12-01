@@ -1,62 +1,4 @@
-#!/usr/bin/env python3
-"""
-Generate SwiftUI app for full GUI Linux VM based on Apple's sample code.
-
-Uses Apple's sophisticated GUILinuxVirtualMachineSampleApp as a template
-but configured for VibeCode with ASIF (resizable/sparse) disk support.
-
-Features from Apple sample:
-- Full GUI support (Ubuntu 26.x ARM64 confirmed working)
-- Copy/paste via SPICE agent
-- Audio input/output
-- USB keyboard/pointing device
-- Auto-resizing display (macOS 14+)
-- EFI bootloader
-- ISO installation support
-
-VibeCode enhancements:
-- ASIF disk format (not raw IMG)
-- Datadog tracing integration
-- Better error handling
-- Configurable VM name
-"""
-
-import os
-import sys
-from pathlib import Path
-
-# Datadog tracing
-from ddtrace import tracer, patch_all
-patch_all()
-
-from lib.vibecode_common import (
-    init_vibecode_script,
-    tracer,
-)
-
-logger, config, metrics, shutdown = init_vibecode_script('build_gui_linux_vm')
-
-PROJECT_ROOT = Path(__file__).parent.parent
-
-
-@tracer.wrap(service='vibecode-vm-builder', resource='generate_swift_app')
-def generate_swift_app(vm_name: str = "UbuntuGUI") -> Path:
-    """Generate SwiftUI app for GUI Linux VM with ASIF disk."""
-    
-    app_name = f"{vm_name}VibeCode"
-    app_dir = PROJECT_ROOT / "azure" / "SwiftUI-Apps" / f"{app_name}.app"
-    contents_dir = app_dir / "Contents"
-    macos_dir = contents_dir / "MacOS"
-    resources_dir = contents_dir / "Resources"
-    
-    logger.info(f"Generating {app_name}.app...")
-    
-    # Create directory structure
-    macos_dir.mkdir(parents=True, exist_ok=True)
-    resources_dir.mkdir(parents=True, exist_ok=True)
-    
-    # Swift source code (Apple's pattern with VibeCode enhancements)
-    swift_code = '''// VibeCode GUI Linux VM - Based on Apple's GUILinuxVirtualMachineSampleApp
+// VibeCode GUI Linux VM - Based on Apple's GUILinuxVirtualMachineSampleApp
 // Enhanced with sparse disk support and Datadog integration.
 
 import Cocoa
@@ -66,13 +8,13 @@ import Virtualization
 class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     
     // VM paths
-    private let vmBundlePath = NSHomeDirectory() + "/VibeCode VMs/''' + vm_name + ''' VM.bundle/"
+    private let vmBundlePath = NSHomeDirectory() + "/VibeCode VMs/VibeCodeServices VM.bundle/"
     private var mainDiskImagePath: String { vmBundlePath + "Disk.img" }
     private var efiVariableStorePath: String { vmBundlePath + "NVRAM" }
     private var machineIdentifierPath: String { vmBundlePath + "MachineIdentifier" }
     
     // VibeCode kernel and initramfs paths
-    private let projectRoot = "''' + str(PROJECT_ROOT) + '''"
+    private let projectRoot = "/Users/ryan.maclean/vibecode-webgui"
     private var kernelPath: String { projectRoot + "/azure/linux-kernel-arm64" }
     private var initramfsPath: String { projectRoot + "/azure/unified-services-with-datadog.cpio.gz" }
     
@@ -91,9 +33,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     private func createVMBundle() {
         do {
             try FileManager.default.createDirectory(atPath: vmBundlePath, withIntermediateDirectories: true)
-            print("✅ Created VM bundle: \\(vmBundlePath)")
+            print("✅ Created VM bundle: \(vmBundlePath)")
         } catch {
-            fatalError("Failed to create VM bundle: \\(error)")
+            fatalError("Failed to create VM bundle: \(error)")
         }
     }
     
@@ -108,9 +50,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         do {
             // 1GB disk (sparse on APFS - starts small, grows as needed)
             try diskFileHandle.truncate(atOffset: 1 * 1024 * 1024 * 1024)
-            print("✅ Created 1GB disk (sparse): \\(mainDiskImagePath)")
+            print("✅ Created 1GB disk (sparse): \(mainDiskImagePath)")
         } catch {
-            fatalError("Failed to truncate disk: \\(error)")
+            fatalError("Failed to truncate disk: \(error)")
         }
     }
     
@@ -251,7 +193,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         try! config.validate()
         virtualMachine = VZVirtualMachine(configuration: config)
         
-        print("✅ VM configured: \\(computeCPUCount()) CPUs, \\(computeMemorySize() / (1024*1024*1024))GB RAM")
+        print("✅ VM configured: \(computeCPUCount()) CPUs, \(computeMemorySize() / (1024*1024*1024))GB RAM")
     }
     
     func configureAndStartVirtualMachine() {
@@ -269,7 +211,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
                 case .success:
                     print("✅ VM started successfully")
                 case .failure(let error):
-                    fatalError("VM failed to start: \\(error)")
+                    fatalError("VM failed to start: \(error)")
                 }
             }
         }
@@ -285,7 +227,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
             backing: .buffered,
             defer: false
         )
-        window.title = "''' + vm_name + ''' VibeCode - VibeCode Services"
+        window.title = "VibeCodeServices VibeCode - VibeCode Services"
         window.center()
         
         virtualMachineView = VZVirtualMachineView()
@@ -315,7 +257,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     // MARK: - VZVirtualMachineDelegate
     
     func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: Error) {
-        print("❌ VM stopped with error: \\(error.localizedDescription)")
+        print("❌ VM stopped with error: \(error.localizedDescription)")
     }
     
     func guestDidStop(_ virtualMachine: VZVirtualMachine) {
@@ -323,107 +265,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     }
     
     func virtualMachine(_ virtualMachine: VZVirtualMachine, networkDevice: VZNetworkDevice, attachmentWasDisconnectedWithError error: Error) {
-        print("⚠️ Network disconnected: \\(error.localizedDescription)")
+        print("⚠️ Network disconnected: \(error.localizedDescription)")
     }
 }
-'''
-    
-    swift_file = macos_dir / f"{app_name}.swift"
-    swift_file.write_text(swift_code)
-    logger.info(f"✅ Created Swift source: {swift_file}")
-    
-    # Info.plist
-    info_plist = f'''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>CFBundleExecutable</key>
-    <string>{app_name}</string>
-    <key>CFBundleIdentifier</key>
-    <string>com.vibecode.{vm_name.lower()}</string>
-    <key>CFBundleName</key>
-    <string>{app_name}</string>
-    <key>CFBundlePackageType</key>
-    <string>APPL</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>LSMinimumSystemVersion</key>
-    <string>14.0</string>
-    <key>NSHighResolutionCapable</key>
-    <true/>
-    <key>NSPrincipalClass</key>
-    <string>NSApplication</string>
-</dict>
-</plist>'''
-    
-    (contents_dir / "Info.plist").write_text(info_plist)
-    
-    # Entitlements
-    entitlements = '''<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
-<plist version="1.0">
-<dict>
-    <key>com.apple.security.virtualization</key>
-    <true/>
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
-    <key>com.apple.security.files.user-selected.read-write</key>
-    <true/>
-</dict>
-</plist>'''
-    
-    (contents_dir / f"{app_name}.entitlements").write_text(entitlements)
-    
-    # Build script
-    build_script = f'''#!/bin/bash
-set -e
-
-cd "$(dirname "$0")"
-APP_DIR="{app_dir}"
-
-echo "Building {app_name}..."
-
-swiftc -target arm64-apple-macosx14.0 \\
-    -parse-as-library \\
-    -framework Cocoa \\
-    -framework Virtualization \\
-    -o "$APP_DIR/Contents/MacOS/{app_name}" \\
-    "$APP_DIR/Contents/MacOS/{app_name}.swift"
-
-echo "✅ Build complete: $APP_DIR"
-echo ""
-echo "Run with: open '$APP_DIR'"
-'''
-    
-    build_sh = macos_dir / f"build_{vm_name.lower()}.sh"
-    build_sh.write_text(build_script)
-    build_sh.chmod(0o755)
-    
-    logger.info(f"✅ Generated {app_name}.app")
-    logger.info(f"   Build: bash {build_sh}")
-    logger.info(f"   Run: open {app_dir}")
-    
-    if metrics:
-        metrics.increment('vm.app.generated', tags=[f'vm:{vm_name}'])
-    
-    return app_dir
-
-
-if __name__ == '__main__':
-    import argparse
-    
-    parser = argparse.ArgumentParser(description='Generate GUI Linux VM app')
-    parser.add_argument('--name', default='UbuntuGUI', help='VM name (default: UbuntuGUI)')
-    args = parser.parse_args()
-    
-    with tracer.trace('build-gui-linux-vm', service='vibecode-vm-builder'):
-        app_dir = generate_swift_app(args.name)
-        print(f"\n✅ Generated: {app_dir}")
-        print(f"\nNext steps:")
-        print(f"1. Build: bash {app_dir}/Contents/MacOS/build_*.sh")
-        print(f"2. Run: open {app_dir}")
-        print(f"3. Select Ubuntu 26.x ARM64 ISO when prompted")
-        print(f"\nFeatures: GUI, audio, copy/paste, auto-resize, ASIF disk")
-
