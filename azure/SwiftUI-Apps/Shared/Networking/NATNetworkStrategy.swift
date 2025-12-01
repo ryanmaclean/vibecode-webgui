@@ -88,14 +88,11 @@ public class NATNetworkStrategy: NetworkingStrategy {
     /// Enable vsock for direct host-guest communication
     private let enableVsock: Bool
 
-    /// Guest port for vsock connections (default: 3000)
-    private let vsockGuestPort: UInt32
+    /// Port forwards for vsock connections (guest port -> host port)
+    private let portForwards: [(guestPort: UInt32, hostPort: UInt16)]
 
-    /// Host port for vsock proxy (default: 3000)
-    private let vsockHostPort: UInt16
-
-    /// Vsock proxy server (started after VM boots)
-    private var proxyServer: VsockProxyServer?
+    /// Vsock proxy servers (one per port forward)
+    private var proxyServers: [VsockProxyServer] = []
 
     /// Queue for vsock operations
     private let vsockQueue = DispatchQueue(label: "com.vibecode.vsock", qos: .userInitiated)
@@ -109,21 +106,24 @@ public class NATNetworkStrategy: NetworkingStrategy {
     ///     If nil, generates a random MAC address.
     ///     Use a stable MAC address for consistent DHCP leases.
     ///   - enableVsock: Enable vsock for direct host-guest communication (default: true)
-    ///   - vsockGuestPort: Guest port for vsock connections (default: 3000)
-    ///   - vsockHostPort: Host port for vsock proxy (default: 3000)
+    ///   - portForwards: Array of (guestPort, hostPort) tuples for vsock forwarding.
+    ///     Default: [(3000, 3000)] - forwards guest port 3000 to host port 3000
     ///
     /// Example:
     /// ```swift
-    /// // Random MAC with vsock (recommended for localhost access)
+    /// // Random MAC with default port forwarding (3000 -> 3000)
     /// let strategy1 = NATNetworkStrategy()
     ///
-    /// // Fixed MAC with vsock
-    /// let strategy2 = NATNetworkStrategy(macAddress: "52:54:00:12:34:90")
+    /// // Fixed MAC with multiple port forwards
+    /// let strategy2 = NATNetworkStrategy(
+    ///     macAddress: "52:54:00:12:34:90",
+    ///     portForwards: [(3000, 3000), (8080, 8080)]
+    /// )
     ///
     /// // NAT only (no vsock)
     /// let strategy3 = NATNetworkStrategy(enableVsock: false)
     /// ```
-    public init(macAddress: String? = nil, enableVsock: Bool = true, vsockGuestPort: UInt32 = 3000, vsockHostPort: UInt16 = 3000) {
+    public init(macAddress: String? = nil, enableVsock: Bool = true, portForwards: [(guestPort: UInt32, hostPort: UInt16)] = [(3000, 3000)]) {
         if let mac = macAddress {
             self.macAddress = mac
         } else {
@@ -132,10 +132,9 @@ public class NATNetworkStrategy: NetworkingStrategy {
         }
 
         self.enableVsock = enableVsock
-        self.vsockGuestPort = vsockGuestPort
-        self.vsockHostPort = vsockHostPort
+        self.portForwards = portForwards
 
-        NSLog("[NATNetworkStrategy] Initialized with MAC: \(self.macAddress), vsock: \(enableVsock)")
+        NSLog("[NATNetworkStrategy] Initialized with MAC: \(self.macAddress), vsock: \(enableVsock), forwards: \(portForwards)")
     }
 
     /// Create a NAT networking strategy with stable MAC based on seed.
@@ -183,7 +182,7 @@ public class NATNetworkStrategy: NetworkingStrategy {
         if enableVsock {
             let socketDevice = VZVirtioSocketDeviceConfiguration()
             config.socketDevices = [socketDevice]
-            NSLog("[NATNetworkStrategy] Vsock device configured (guest:\(vsockGuestPort), host:\(vsockHostPort))")
+            NSLog("[NATNetworkStrategy] Vsock device configured for \(portForwards.count) port forwards")
         }
 
         NSLog("[NATNetworkStrategy] NAT networking configured successfully")
@@ -202,11 +201,13 @@ public class NATNetworkStrategy: NetworkingStrategy {
     }
 
     public func teardown() {
-        // Stop vsock proxy server
+        // Stop all vsock proxy servers
         if enableVsock {
-            proxyServer?.stop()
-            proxyServer = nil
-            NSLog("[NATNetworkStrategy] Vsock proxy stopped")
+            for proxy in proxyServers {
+                proxy.stop()
+            }
+            proxyServers.removeAll()
+            NSLog("[NATNetworkStrategy] All vsock proxies stopped")
         }
 
         NSLog("[NATNetworkStrategy] NAT networking teardown complete")
@@ -218,10 +219,11 @@ public class NATNetworkStrategy: NetworkingStrategy {
 
     // MARK: - Private Helpers
 
-    /// Start the vsock proxy server.
+    /// Start the vsock proxy servers.
     ///
-    /// This creates and starts a VsockProxyServer that forwards TCP connections
-    /// from localhost:vsockHostPort to the guest VM on vsockGuestPort via vsock.
+    /// This creates and starts multiple VsockProxyServer instances, one for each
+    /// port forward configuration. Each forwards TCP connections from
+    /// localhost:hostPort to the guest VM on guestPort via vsock.
     ///
     /// - Parameter manager: The VM manager instance (to access the VM and socket device)
     private func startProxyServer(manager: BaseVMManager) {
@@ -252,25 +254,31 @@ public class NATNetworkStrategy: NetworkingStrategy {
                 return
             }
 
-            NSLog("[NATNetworkStrategy] Socket device found, creating proxy server...")
+            NSLog("[NATNetworkStrategy] Socket device found, creating \(self.portForwards.count) proxy servers...")
 
-            // Create and start proxy server
-            self.proxyServer = VsockProxyServer(
-                device: device,
-                guestPort: self.vsockGuestPort,
-                hostPort: self.vsockHostPort,
-                queue: self.vsockQueue
-            )
+            // Create and start a proxy server for each port forward
+            for (guestPort, hostPort) in self.portForwards {
+                let proxy = VsockProxyServer(
+                    device: device,
+                    guestPort: guestPort,
+                    hostPort: hostPort,
+                    queue: self.vsockQueue
+                )
 
-            NSLog("[NATNetworkStrategy] Starting proxy server (guest:\(self.vsockGuestPort), host:\(self.vsockHostPort))...")
+                NSLog("[NATNetworkStrategy] Starting proxy server (guest:\(guestPort), host:\(hostPort))...")
 
-            self.proxyServer?.start { [weak self] success in
-                if success {
-                    NSLog("[NATNetworkStrategy] ✓ Vsock proxy started successfully on localhost:\(self?.vsockHostPort ?? 0)")
-                } else {
-                    NSLog("[NATNetworkStrategy] ERROR: Failed to start vsock proxy")
+                proxy.start { success in
+                    if success {
+                        NSLog("[NATNetworkStrategy] ✓ Vsock proxy started successfully on localhost:\(hostPort)")
+                    } else {
+                        NSLog("[NATNetworkStrategy] ERROR: Failed to start vsock proxy on port \(hostPort)")
+                    }
                 }
+
+                self.proxyServers.append(proxy)
             }
+
+            NSLog("[NATNetworkStrategy] All \(self.proxyServers.count) proxy servers started")
         }
     }
 

@@ -167,12 +167,11 @@ public class EFIBootManager {
                     // Wait a bit for EFI to discover boot entries
                     DispatchQueue.global().asyncAfter(deadline: .now() + timeout) {
                         // Stop the VM
-                        vm.stop { stopResult in
-                            switch stopResult {
-                            case .success:
+                        vm.stop { stopError in
+                            if let stopError = stopError {
+                                continuation.resume(throwing: stopError)
+                            } else {
                                 continuation.resume()
-                            case .failure(let error):
-                                continuation.resume(throwing: error)
                             }
                         }
                     }

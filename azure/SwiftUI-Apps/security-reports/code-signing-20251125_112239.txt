@@ -1,0 +1,255 @@
+Code Signing Verification Report
+Generated: Tue Nov 25 11:22:39 PST 2025
+Project: SwiftUI-Apps
+
+========================================
+CODE SIGNING AND INTEGRITY VERIFICATION
+========================================
+
+
+--- Executable Signature Verification ---
+Checking: LiquidGlassVibeCode
+  [OK] Valid signature
+Identifier=LiquidGlassVibeCode
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: LiquidGlassVibeCode
+  [OK] Valid signature
+Identifier=com.vibecode.liquidglass
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+  [INFO] Entitlements present
+[Dict]
+	[Key] com.apple.security.hypervisor
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.network.client
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.network.server
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.virtualization
+	[Value]
+		[Bool] true
+
+Checking: BasicVibeCodeApp
+  [OK] Valid signature
+Identifier=BasicVibeCodeApp
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: TestVM.swift
+  [INFO] Not a Mach-O executable (script)
+
+Checking: NetworkTestVibeCodeApp
+  [OK] Valid signature
+Identifier=NetworkTestVibeCodeApp
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: NetworkTestCLI
+  [OK] Valid signature
+Identifier=NetworkTestCLI
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: LiquidGlassVibeCodeApp
+  [OK] Valid signature
+Identifier=LiquidGlassVibeCodeApp
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: BasicVibeCode
+  [OK] Valid signature
+Identifier=com.vibecode.basic
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+  [INFO] Entitlements present
+[Dict]
+	[Key] com.apple.security.hypervisor
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.network.client
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.network.server
+	[Value]
+		[Bool] true
+	[Key] com.apple.security.virtualization
+	[Value]
+		[Bool] true
+
+Checking: VsockVibeCodeAppBinary
+  [OK] Valid signature
+Identifier=VsockVibeCodeAppBinary
+TeamIdentifier=not set
+  [WARNING] Hardened Runtime not enabled
+
+Checking: ObservabilityE2ETest.swift
+  [INFO] Not a Mach-O executable (script)
+
+Summary: 0 signed, 0 unsigned
+
+
+--- Application Bundle Verification ---
+Verifying: LiquidGlassVibeCode.app
+  [OK] Valid bundle signature
+  [OK] Deep verification passed
+Executable=/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/LiquidGlassVibeCode.app/Contents/MacOS/LiquidGlassVibeCode
+Identifier=com.vibecode.liquidglass
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20400 size=5489 flags=0x2(adhoc) hashes=161+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=4b27d42d4956ccdebb4f1ed11528cbf0ad624442
+CandidateCDHashFull sha256=4b27d42d4956ccdebb4f1ed11528cbf0ad62444233c9bce06944a1073591bd32
+Hash choices=sha256
+CMSDigest=4b27d42d4956ccdebb4f1ed11528cbf0ad62444233c9bce06944a1073591bd32
+CMSDigestType=2
+CDHash=4b27d42d4956ccdebb4f1ed11528cbf0ad624442
+Signature=adhoc
+Info.plist entries=8
+TeamIdentifier=not set
+Sealed Resources version=2 rules=13 files=2
+  [INFO] Info.plist present
+    [OK] CFBundleIdentifier present
+    [OK] CFBundleVersion present
+    [OK] CFBundleExecutable present
+
+Verifying: BasicVibeCode.app
+  [OK] Valid bundle signature
+  [OK] Deep verification passed
+Executable=/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/BasicVibeCode.app/Contents/MacOS/BasicVibeCode
+Identifier=com.vibecode.basic
+Format=app bundle with Mach-O thin (arm64)
+CodeDirectory v=20400 size=3051 flags=0x2(adhoc) hashes=85+7 location=embedded
+Hash type=sha256 size=32
+CandidateCDHash sha256=90bace30edd58d979a6e35e577579b198939dad9
+CandidateCDHashFull sha256=90bace30edd58d979a6e35e577579b198939dad9f9533fa92ea699ffe5ec779d
+Hash choices=sha256
+CMSDigest=90bace30edd58d979a6e35e577579b198939dad9f9533fa92ea699ffe5ec779d
+CMSDigestType=2
+CDHash=90bace30edd58d979a6e35e577579b198939dad9
+Signature=adhoc
+Info.plist entries=8
+TeamIdentifier=not set
+Sealed Resources version=2 rules=13 files=2
+  [INFO] Info.plist present
+    [OK] CFBundleIdentifier present
+    [OK] CFBundleVersion present
+    [OK] CFBundleExecutable present
+
+
+
+--- Framework Signature Verification ---
+[INFO] No frameworks found
+
+--- Tampering Detection ---
+  [OK] LiquidGlassVibeCode: No tampering detected
+  [OK] LiquidGlassVibeCode: No tampering detected
+  [OK] BasicVibeCodeApp: No tampering detected
+  [OK] NetworkTestVibeCodeApp: No tampering detected
+  [OK] NetworkTestCLI: No tampering detected
+  [OK] LiquidGlassVibeCodeApp: No tampering detected
+  [OK] BasicVibeCode: No tampering detected
+  [OK] VsockVibeCodeAppBinary: No tampering detected
+
+
+--- Entitlements Consistency Check ---
+Entitlements files found:
+  entitlements.plist
+    [OK] Valid plist format
+    [OK] Virtualization entitlement present
+
+
+--- Developer Certificate Check ---
+Available signing identities:
+     0 valid identities found
+
+Certificate expiration check:
+notBefore=Feb  7 21:48:47 2013 GMT
+notAfter=Feb  7 21:48:47 2023 GMT
+
+
+--- Installer Package Verification ---
+DMG files found:
+  BasicVibeCode.dmg
+Checksumming Protective Master Boot Record (MBR : 0)…
+Protective Master Boot Record (MBR :: verified   CRC32 $5970CB8F
+Checksumming GPT Header (Primary GPT Header : 1)…
+ GPT Header (Primary GPT Header : 1): verified   CRC32 $38226470
+Checksumming GPT Partition Data (Primary GPT Table : 2)…
+GPT Partition Data (Primary GPT Tabl: verified   CRC32 $12431467
+Checksumming  (Apple_Free : 3)…
+                    (Apple_Free : 3): verified   CRC32 $00000000
+Checksumming disk image (Apple_APFS : 4)…
+         disk image (Apple_APFS : 4): verified   CRC32 $658389C7
+Checksumming  (Apple_Free : 5)…
+                    (Apple_Free : 5): verified   CRC32 $00000000
+Checksumming GPT Partition Data (Backup GPT Table : 6)…
+GPT Partition Data (Backup GPT Table: verified   CRC32 $12431467
+Checksumming GPT Header (Backup GPT Header : 7)…
+  GPT Header (Backup GPT Header : 7): verified   CRC32 $1291AE23
+verified   CRC32 $05D012D7
+hdiutil: verify: checksum of "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/BasicVibeCode.dmg" is VALID
+    [OK] DMG verified
+  VibeCode.dmg
+Checksumming Protective Master Boot Record (MBR : 0)…
+Protective Master Boot Record (MBR :: verified   CRC32 $EE13DAE9
+Checksumming GPT Header (Primary GPT Header : 1)…
+ GPT Header (Primary GPT Header : 1): verified   CRC32 $D4E2318E
+Checksumming GPT Partition Data (Primary GPT Table : 2)…
+GPT Partition Data (Primary GPT Tabl: verified   CRC32 $B83F4A50
+Checksumming  (Apple_Free : 3)…
+                    (Apple_Free : 3): verified   CRC32 $00000000
+Checksumming disk image (Apple_APFS : 4)…
+         disk image (Apple_APFS : 4): verified   CRC32 $3D1C139F
+Checksumming  (Apple_Free : 5)…
+                    (Apple_Free : 5): verified   CRC32 $00000000
+Checksumming GPT Partition Data (Backup GPT Table : 6)…
+GPT Partition Data (Backup GPT Table: verified   CRC32 $B83F4A50
+Checksumming GPT Header (Backup GPT Header : 7)…
+  GPT Header (Backup GPT Header : 7): verified   CRC32 $BFB48C10
+verified   CRC32 $34055FA9
+hdiutil: verify: checksum of "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/VibeCode.dmg" is VALID
+    [OK] DMG verified
+  LiquidGlassVibeCode.dmg
+Checksumming Protective Master Boot Record (MBR : 0)…
+Protective Master Boot Record (MBR :: verified   CRC32 $95287303
+Checksumming GPT Header (Primary GPT Header : 1)…
+ GPT Header (Primary GPT Header : 1): verified   CRC32 $FAA11168
+Checksumming GPT Partition Data (Primary GPT Table : 2)…
+GPT Partition Data (Primary GPT Tabl: verified   CRC32 $7FE71C23
+Checksumming  (Apple_Free : 3)…
+                    (Apple_Free : 3): verified   CRC32 $00000000
+Checksumming disk image (Apple_APFS : 4)…
+         disk image (Apple_APFS : 4): verified   CRC32 $F08D8AEF
+Checksumming  (Apple_Free : 5)…
+                    (Apple_Free : 5): verified   CRC32 $00000000
+Checksumming GPT Partition Data (Backup GPT Table : 6)…
+GPT Partition Data (Backup GPT Table: verified   CRC32 $7FE71C23
+Checksumming GPT Header (Backup GPT Header : 7)…
+  GPT Header (Backup GPT Header : 7): verified   CRC32 $A8A6A6A3
+verified   CRC32 $1036DB2D
+hdiutil: verify: checksum of "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/LiquidGlassVibeCode.dmg" is VALID
+    [OK] DMG verified
+
+
+========================================
+SCAN SUMMARY
+========================================
+Critical Issues: 0
+0
+Warnings: 8
+Passed Checks: 31
+
+Code Signing Best Practices:
+1. Sign all executables and frameworks
+2. Enable Hardened Runtime for distribution
+3. Use notarization for macOS apps
+4. Regularly verify code signatures
+5. Use minimal required entitlements
+6. Keep certificates up to date
+
+Overall Status: ⚠ PASS WITH WARNINGS

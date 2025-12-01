@@ -1,0 +1,200 @@
+# AI Assistant Rules for VibeCode SwiftUI Apps
+# Machine-readable rules for Claude Code, Gemini CLI, OpenAI Codex, Cursor, etc.
+#
+# Format: RULE_TYPE: pattern -> action
+# Priority: MUST > SHOULD > MAY
+
+## CRITICAL: Refactoring in Progress
+MUST: READ REFACTORING-IN-PROGRESS.md BEFORE ANY CODE CHANGES
+MUST: CHECK MIGRATION-STATUS.md BEFORE MODIFYING FILES
+
+## Code Duplication Prevention
+MUST_NOT: Create new VMManager classes without extending BaseVMManager
+MUST_NOT: Duplicate VM configuration code (use VMConfigurationBuilder)
+MUST_NOT: Copy console monitoring patterns (use ConsoleMonitoring/)
+MUST_NOT: Duplicate DHCP parsing (use DHCPLeaseMonitor)
+MUST_NOT: Add observability without ObservabilityProvider protocol
+
+## File Location Enforcement
+PATTERN: "class.*VMManager.*ObservableObject"
+  IF: NOT extends BaseVMManager
+  THEN: ERROR "Use BaseVMManager from Shared/Core/"
+
+PATTERN: "VZVirtualMachineConfiguration"
+  IF: NOT in Shared/Core/VMConfiguration/
+  THEN: WARN "Consider using VMConfigurationBuilder"
+
+PATTERN: "DatadogLogger|DogStatsDClient|OpenTelemetryIntegration"
+  IF: NOT using ObservabilityProvider protocol
+  THEN: ERROR "Use ObservabilityProvider from Shared/Observability/"
+
+PATTERN: "Timer.*scheduledTimer.*console"
+  IF: NOT in Shared/ConsoleMonitoring/
+  THEN: WARN "Use FileHandleConsoleMonitor from Shared/"
+
+## Legacy Code Marking
+PATTERN: File in ["BasicVibeCodeApp.swift", "LiquidGlassVibeCodeApp.swift", "VsockVibeCodeApp.swift"]
+  IF: Contains "class VMManager" OR "class VsockVMManager"
+  THEN: MUST ADD HEADER:
+    """
+    // @deprecated: Legacy VMManager implementation
+    // @migrate-to: Shared/Core/BaseVMManager.swift
+    // @tracking: See MIGRATION-STATUS.md
+    """
+
+## New File Guidelines
+CREATE: "*/VMManager.swift"
+  LOCATION: "Apps/{AppName}/" ONLY
+  MUST: Extend BaseVMManager
+  MUST: Import "../Shared/Core/BaseVMManager"
+  TEMPLATE:
+    """
+    import Foundation
+    import Virtualization
+
+    final class {AppName}VMManager: BaseVMManager {
+        override func createNetworkingStrategy() -> NetworkingStrategy {
+            // App-specific networking
+        }
+    }
+    """
+
+CREATE: "*Strategy.swift"
+  LOCATION: "Shared/Networking/" OR "Shared/VMConfiguration/"
+  MUST: Conform to protocol (NetworkingStrategy, VMConfigurationStrategy, etc.)
+
+CREATE: "*Provider.swift"
+  LOCATION: "Shared/Observability/"
+  MUST: Conform to ObservabilityProvider protocol
+
+## Testing Requirements
+PATTERN: "Shared/.*\.swift"
+  MUST: Have corresponding test in "Tests/SharedTests/"
+
+PATTERN: "class BaseVMManager"
+  MUST: Have unit tests with MockVM
+
+## Documentation Requirements
+MODIFY: "Shared/.*\.swift"
+  MUST: Update Shared/README.md if adding new public interface
+  SHOULD: Add inline documentation for protocols
+
+MODIFY: "*VMManager.swift" AND extends BaseVMManager
+  MUST: Document which hooks are overridden and why
+
+## Pre-Commit Checks
+CHECK: No direct references to "Virtualization" in app files
+  ALLOWED: Only in Shared/ or Apps/*/VMManager.swift
+
+CHECK: All new .swift files have file header
+  REQUIRED_FORMAT:
+    """
+    //
+    // {FileName}.swift
+    // VibeCode
+    //
+    // Created: {Date}
+    // Migration Status: [NEW|LEGACY|MIGRATED]
+    //
+    """
+
+CHECK: Migration markers are resolved before merge
+  BLOCK_MERGE_IF: Contains "// TODO(refactor):"
+  EXCEPT: In files marked "LEGACY" in MIGRATION-STATUS.md
+
+## Import Guidelines
+PATTERN: "import DatadogLogger"
+  REPLACE: "import Shared.Observability"
+
+PATTERN: "import DHCPLeaseParser"
+  REPLACE: "import Shared.Networking.DHCPLeaseMonitor"
+
+## Error Messages for AI Assistants
+ERROR_CODE_DUPLICATION:
+  "Detected VM configuration duplication. This violates refactoring rules.
+   Use: Shared/Core/VMConfigurationBuilder.swift
+   See: REFACTORING-IN-PROGRESS.md#do-not-add-new-duplicate-code"
+
+ERROR_NO_BASE_CLASS:
+  "New VMManager must extend BaseVMManager.
+   Example: Apps/BasicVibeCodeApp/BasicVMManager.swift
+   See: Shared/README.md#creating-a-new-vm-app"
+
+ERROR_WRONG_LOCATION:
+  "File in wrong location for architecture.
+   Check: REFACTORING-IN-PROGRESS.md#new-code-location-rules"
+
+WARN_LEGACY_CODE:
+  "Modifying legacy code. Consider refactoring to Shared/ instead.
+   Status: MIGRATION-STATUS.md"
+
+## Python Script Requirements
+CREATE: "*.py"
+  MUST: Use Python 3
+  MUST: Include ddtrace integration with graceful fallback
+  MUST: Follow Colors class pattern for output
+  TEMPLATE:
+    """
+    #!/usr/bin/env python3
+    \"\"\"
+    Script description
+    \"\"\"
+
+    # Try to import ddtrace for observability
+    try:
+        import ddtrace
+        from ddtrace import tracer
+        DDTRACE_AVAILABLE = True
+    except ImportError:
+        DDTRACE_AVAILABLE = False
+        print("⚠️  ddtrace not available, running without tracing", file=sys.stderr)
+
+    class Colors:
+        RED = '\\033[0;31m'
+        GREEN = '\\033[0;32m'
+        YELLOW = '\\033[1;33m'
+        BLUE = '\\033[0;34m'
+        NC = '\\033[0m'
+
+    def main():
+        if DDTRACE_AVAILABLE:
+            with tracer.trace("operation_name", service="vibecode-service") as span:
+                span.set_tag("key", "value")
+                # do work
+        else:
+            # do work without tracing
+    """
+
+PATTERN: "def.*main|class.*:"
+  IF: File is "*.py" AND NOT contains "ddtrace"
+  THEN: WARN "Python scripts should include ddtrace integration"
+
+## AI Collaboration Protocol
+ON_UNCERTAINTY:
+  1. Check MIGRATION-STATUS.md
+  2. Check REFACTORING-BLOCKERS.md
+  3. Add question to REFACTORING-QUESTIONS.md
+  4. Wait for human clarification
+
+ON_CONFLICT:
+  1. Document in REFACTORING-CONFLICTS.md
+  2. Do NOT merge conflicting patterns
+  3. Request human decision
+
+ON_COMPLETION:
+  1. Update MIGRATION-STATUS.md
+  2. Mark files as MIGRATED
+  3. Remove @deprecated markers
+  4. Update documentation
+
+## Technology Stack Requirements
+MUST: Use ONLY Apple Virtualization.framework for VM management
+MUST_NOT: Use vfkit, QEMU, VMware, VirtualBox, or any external VM tools
+MUST_NOT: Execute VM commands via shell/Process
+MUST: Use native VZ classes: VZVirtualMachine, VZLinuxBootLoader, VZVirtioConsoleDeviceSerialPortConfiguration
+
+PATTERN: "import.*vfkit|Process.*vfkit|shell.*vm"
+  THEN: ERROR "Must use Apple Virtualization.framework only, not external VM tools"
+
+PATTERN: "Process\(\).*vm|shell.*qemu|spawn.*kvm"
+  THEN: ERROR "No external VM process execution allowed. Use VZVirtualMachine."

@@ -1,0 +1,321 @@
+================================================================================
+                VSOCK PROXY FIX - VISUAL DIAGRAM
+================================================================================
+
+
+BEFORE (BROKEN)
+===============
+
+Configuration Phase:
+--------------------
+
+  startVM()
+    |
+    +--> createVMConfiguration()
+           |
+           +--> createBootloader()
+           |      [OK] Sets up kernel, initramfs, cmdline
+           |
+           +--> networkingStrategy.configure()
+           |      |
+           |      +--> config.socketDevices = [Device A]  ← Sets socket device
+           |      +--> config.networkDevices = [Net A]    ← Sets network device
+           |
+           +--> configureSerialConsole()
+           |      [OK] Sets up console output
+           |
+           +--> configureStandardDevices()
+                  |
+                  +--> config.socketDevices = [Device B]  ← OVERWRITES Device A!
+                  +--> config.networkDevices = [Net B]    ← OVERWRITES Net A!
+
+  Result: Config has Device B (not Device A)
+
+
+Runtime Phase:
+--------------
+
+  VZVirtualMachine.start() succeeds
+    |
+    +--> onVMStarted()
+           |
+           +--> networkingStrategy.setupConnectivity()
+                  |
+                  +--> startProxyServer()
+                         |
+                         +--> Access vm.socketDevices
+                         |      |
+                         |      +--> Array is EMPTY or wrong device!
+                         |
+                         +--> ❌ FAILS: Cannot start proxy
+
+
+  Console Output:
+    [NATNetworkStrategy] ERROR: Cannot start proxy - socketDevices array is empty
+
+  Result:
+    ❌ No proxy server
+    ❌ Port 3000 not listening
+    ❌ Cannot access VM services via localhost
+
+
+
+AFTER (FIXED)
+=============
+
+Configuration Phase:
+--------------------
+
+  startVM()
+    |
+    +--> createVMConfiguration()
+           |
+           +--> createBootloader()
+           |      [OK] Sets up kernel, initramfs, cmdline
+           |
+           +--> networkingStrategy.configure()
+           |      |
+           |      +--> config.socketDevices = [Device A]  ← AUTHORITATIVE
+           |      +--> config.networkDevices = [Net A]    ← AUTHORITATIVE
+           |
+           +--> configureSerialConsole()
+           |      [OK] Sets up console output
+           |
+           +--> configureStandardDevices()
+                  |
+                  +--> config.entropyDevices = [...]     ← Generic devices only
+                  +--> config.platform = ...             ← Generic devices only
+                  |
+                  +--> (No longer touches socket/network devices)
+
+  Result: Config has Device A (correct!)
+
+
+Runtime Phase:
+--------------
+
+  VZVirtualMachine.start() succeeds
+    |
+    +--> onVMStarted()
+           |
+           +--> networkingStrategy.setupConnectivity()
+                  |
+                  +--> startProxyServer()
+                         |
+                         +--> Check vm exists ✓
+                         |
+                         +--> Wait 500ms (device initialization)
+                         |
+                         +--> Access vm.socketDevices
+                         |      |
+                         |      +--> Array has Device A ✓
+                         |
+                         +--> Create VsockProxyServer ✓
+                         |
+                         +--> Start proxy server ✓
+
+
+  Console Output:
+    [NATNetworkStrategy] VM available, adding delay for device initialization...
+    [NATNetworkStrategy] Checking socket devices after delay...
+    [NATNetworkStrategy] VM socketDevices property: 1 devices
+    [NATNetworkStrategy] Socket device found, creating proxy server...
+    [VsockProxyServer] Listener ready on localhost:3000
+    [NATNetworkStrategy] ✓ Vsock proxy started successfully on localhost:3000
+
+  Result:
+    ✅ Proxy server running
+    ✅ Port 3000 listening
+    ✅ Can access VM services via localhost:3000
+
+
+
+CALL STACK COMPARISON
+======================
+
+BEFORE (Broken):
+----------------
+startVM()
+  → createVMConfiguration()
+      → networkingStrategy.configure()        [Sets Device A]
+      → configureStandardDevices()           [OVERWRITES with Device B]
+  → VZVirtualMachine.start()
+  → onVMStarted()
+      → networkingStrategy.setupConnectivity()
+          → startProxyServer()
+              → vm.socketDevices              [Empty or wrong device]
+              → ❌ FAILS
+
+
+AFTER (Fixed):
+--------------
+startVM()
+  → createVMConfiguration()
+      → networkingStrategy.configure()        [Sets Device A - AUTHORITATIVE]
+      → configureStandardDevices()           [Only sets generic devices]
+  → VZVirtualMachine.start()
+  → onVMStarted()
+      → networkingStrategy.setupConnectivity()
+          → startProxyServer()
+              → Wait 500ms                    [Device initialization]
+              → vm.socketDevices              [Device A present!]
+              → Create proxy                  [Success]
+              → Start proxy                   [Success]
+              → ✅ WORKS
+
+
+
+KEY INSIGHTS
+============
+
+1. ORDER MATTERS
+   When multiple pieces of code set config.socketDevices, the LAST one wins
+   Since BaseVMManager ran after NATNetworkStrategy, it was overwriting the
+   socket device configuration.
+
+2. TIMING MATTERS
+   Even with correct device, vm.socketDevices may be empty immediately after
+   VM.start() completes. Need delay for internal initialization.
+
+3. SINGLE RESPONSIBILITY
+   Socket/network devices should ONLY be configured by NetworkingStrategy
+   BaseVMManager should ONLY configure generic devices (entropy, platform)
+
+4. WEAK REFERENCES
+   The delay closure captures weak references to prevent retain cycles
+
+
+
+TESTING FLOW
+============
+
+Test Script Execution:
+----------------------
+
+  ./test-vsock-proxy.sh
+    |
+    +--> [1] Kill existing processes
+    |
+    +--> [2] Launch BasicVibeCode.app
+    |
+    +--> [3] Wait 10 seconds
+    |         (VM boots, proxy starts)
+    |
+    +--> [4] Check port 3000
+    |         |
+    |         +--> lsof -i :3000
+    |         |      |
+    |         |      +--> ✅ LISTEN found → Success!
+    |         |      +--> ❌ No LISTEN    → Failed
+    |
+    +--> [5] Test connection
+              |
+              +--> nc localhost 3000
+                     |
+                     +--> ✅ Connected   → Success!
+                     +--> ❌ Refused     → Failed
+
+
+Expected Success Output:
+------------------------
+
+  ================================================
+  Vsock Proxy Server Test
+  ================================================
+
+  [1] Cleaning up existing processes...
+  [2] Starting BasicVibeCode app...
+      App launched (PID: 12345)
+
+  [3] Waiting for VM to start (10 seconds)...
+  ..........
+
+  [4] Checking if port 3000 is listening...
+  BasicVibeCode 12345 user TCP *:3000 (LISTEN)
+      ✓ Port 3000 is LISTENING!
+
+  [5] Testing connection to localhost:3000...
+      ✓ Connection successful!
+
+  ================================================
+  TEST PASSED: Vsock proxy is working!
+  ================================================
+
+
+
+VERIFICATION CHECKLIST
+======================
+
+Before Running Test:
+  ☐ Changes applied to BaseVMManager.swift
+  ☐ Changes applied to NATNetworkStrategy.swift
+  ☐ Test script is executable (chmod +x)
+
+During Test:
+  ☐ App launches without errors
+  ☐ VM starts (see status changes in UI)
+  ☐ Wait for proxy initialization (10 seconds)
+
+After Test:
+  ☐ Port 3000 shows LISTEN state
+  ☐ Connection succeeds
+  ☐ Console logs show success messages
+  ☐ No error messages in logs
+
+Success Criteria:
+  ✅ All checks pass
+  ✅ Proxy accessible on localhost:3000
+  ✅ No errors in console
+  ✅ Architecture follows best practices
+
+
+
+DEBUGGING TIPS
+==============
+
+If Test Still Fails:
+--------------------
+
+1. Check Console.app:
+   $ open /Applications/Utilities/Console.app
+   Filter: "NATNetworkStrategy" or "VsockProxyServer"
+   Look for error messages
+
+2. Check if VM is running:
+   $ ps aux | grep BasicVibeCode
+
+3. Check port binding:
+   $ lsof -i :3000 -P -n
+
+4. Check for port conflicts:
+   $ lsof -i :3000 -P -n | grep -v BasicVibeCode
+
+5. Verify socket device in config:
+   Add NSLog in configure():
+   NSLog("Socket devices configured: \(config.socketDevices.count)")
+
+6. Verify socket device at runtime:
+   Add NSLog in startProxyServer():
+   NSLog("Runtime socket devices: \(vm.socketDevices.count)")
+
+7. Increase delay if needed:
+   Change: .now() + 0.5
+   To:     .now() + 1.0
+
+
+Common Issues:
+--------------
+
+Issue: Port already in use
+Fix:   $ lsof -i :3000 -P -n | awk 'NR>1 {print $2}' | xargs kill -9
+
+Issue: VM not starting
+Fix:   Check Console.app for kernel/initramfs errors
+
+Issue: Delay too short
+Fix:   Increase delay from 0.5 to 1.0 seconds
+
+Issue: Wrong device type
+Fix:   Verify cast to VZVirtioSocketDevice succeeds
+
+================================================================================

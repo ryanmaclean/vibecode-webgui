@@ -1,0 +1,133 @@
+VM/Container Security Configuration Scan Report
+Generated: Tue Nov 25 11:22:37 PST 2025
+Project: SwiftUI-Apps
+
+========================================
+VM SECURITY CONFIGURATION ANALYSIS
+========================================
+
+
+--- VM Configuration Security Scan ---
+VM Configuration files found:
+  Analyzing: AuthorizationTests.swift
+    [INFO] File sharing configured
+  Analyzing: BaseVMManagerTests.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+    [INFO] CPU configuration found
+  Analyzing: NetworkingStrategyTests.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+    [INFO] Memory configuration found
+    [INFO] CPU configuration found
+    [INFO] Boot loader configuration found
+  Analyzing: NetworkTestCLIManager.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+    [INFO] Serial console configured
+    [INFO] Memory configuration found
+    [INFO] CPU configuration found
+    [INFO] Boot loader configuration found
+  Analyzing: BaseVMManager.swift
+    [INFO] Serial console configured
+    [INFO] Memory configuration found
+    [INFO] CPU configuration found
+    [INFO] Boot loader configuration found
+  Analyzing: NATNetworkStrategy.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+  Analyzing: VsockNetworkStrategy.swift
+  Analyzing: NetworkingStrategy.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+  Analyzing: TestVM.swift
+    [INFO] Network device configuration found
+    [WARNING] Consider enabling network isolation
+    [INFO] Serial console configured
+    [INFO] Memory configuration found
+    [INFO] CPU configuration found
+    [INFO] Boot loader configuration found
+
+
+--- Kernel Command Line Security ---
+Kernel command line references found:
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/NetworkTestCLIManager.swift:174:        bootloader.commandLine = config.commandLine
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/NetworkTestCLIManager.swift:255:        print("Command line: \(config.commandLine)")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/NetworkTestCLIManager.swift:278:    var commandLine: String {
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Core/BaseVMManager.swift:512:        bootloader.commandLine = getKernelCommandLine()
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/TestVM.swift:46:bootloader.commandLine = "console=hvc0"
+
+
+--- Network Security Configuration ---
+[INFO] NAT network configuration found (more isolated)
+[WARNING] Bridge network - VM has direct network access
+  Recommendation: Use NAT for better isolation unless bridge is required
+
+
+--- File Sharing Security ---
+File sharing configurations found:
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SecurityTests/AuthorizationTests.swift:143:        // In real implementation, would verify VZSharedDirectory config
+
+
+--- Application Entitlements Security ---
+Analyzing: entitlements.plist
+  [INFO] Network client access enabled
+  [OK] Virtualization entitlement present (required)
+
+
+--- Exposed Services Check ---
+[INFO] Socket/network service references found:
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/VsockVibeCodeApp.swift:33:            Text("OpenVSCode Server via VirtIO Socket")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SecurityTests/InputValidationTests.swift:107:                          "Invalid memory size accepted: \(size)")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SecurityTests/InputValidationTests.swift:136:                          "Insecure URL accepted: \(urlString)")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SecurityTests/InputValidationTests.swift:153:                      "Oversized string accepted")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/DHCPLeaseMonitorTests.swift:76:        // Note: This test would need DHCPLeaseMonitor to accept custom lease file path
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/VsockProxyServer.swift:18:/// VsockProxyServer creates a TCP listener on localhost and forwards connections
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/VsockProxyServer.swift:55:/// 2. Call start() to begin listening
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/VsockProxyServer.swift:56:/// 3. Server accepts connections and creates ProxyConnection for each
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/VsockProxyServer.swift:69:    /// Port on host to listen on
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/VsockProxyServer.swift:75:    /// TCP listener
+  Review these for unintended exposure
+
+
+--- Resource Limits Check ---
+Memory configurations found:
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/NetworkingStrategyTests.swift:281:        config.memorySize = 512 * 1024 * 1024
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/NetworkTestCLIManager.swift:156:        vmConfig.memorySize = 1024 * 1024 * 1024
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Core/BaseVMManager.swift:477:        config.memorySize = getMemorySize()
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/TestVM.swift:22:config.memorySize = 1024 * 1024 * 1024
+CPU configurations found:
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:27:        var customCPUCount: Int?
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:34:        override func getCPUCount() -> Int {
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:35:            return customCPUCount ?? super.getCPUCount()
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:142:        XCTAssertEqual(manager.getCPUCount(), 2, "Default CPU count should be 2")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:151:        manager.customCPUCount = 4
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:157:        XCTAssertEqual(manager.getCPUCount(), 4, "Custom CPU count should be 4")
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/BaseVMManagerTests.swift:432:                _ = manager.getCPUCount()
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Tests/SharedTests/NetworkingStrategyTests.swift:280:        config.cpuCount = 1
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/NetworkTestCLIManager.swift:155:        vmConfig.cpuCount = 2
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Core/BaseVMManager.swift:246:    /// override func getCPUCount() -> Int {
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Core/BaseVMManager.swift:250:    open func getCPUCount() -> Int {
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Core/BaseVMManager.swift:476:        config.cpuCount = getCPUCount()
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/TestVM.swift:21:config.cpuCount = 2
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Apps/BasicVibeCodeApp/BasicVMManager.swift:84:    // - getCPUCount() -> 2
+/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Apps/NetworkTestVibeCodeApp/NetworkTestVMManager.swift:148:    // - getCPUCount() -> 2
+
+
+========================================
+SCAN SUMMARY
+========================================
+Critical Issues: 0
+0
+Warnings: 7
+Passed Checks: 1
+
+Security Recommendations:
+1. Use NAT networking for better VM isolation
+2. Configure read-only file sharing when possible
+3. Enable minimal required entitlements only
+4. Set appropriate resource limits to prevent DoS
+5. Use secure kernel command line parameters
+6. Regularly audit VM configurations
+
+Overall Status: ⚠ PASS WITH WARNINGS

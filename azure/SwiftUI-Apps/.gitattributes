@@ -1,0 +1,40 @@
+# Git Attributes for VibeCode SwiftUI Apps
+# Helps AI assistants understand file types and handling
+
+# Documentation files
+*.md linguist-documentation
+REFACTORING-*.md linguist-important
+MIGRATION-*.md linguist-important
+ADR-*.md linguist-documentation
+
+# Swift files
+*.swift linguist-language=Swift
+*VMManager.swift linguist-important merge=ours
+
+# AI configuration files
+.ai-rules linguist-important
+.cursorrules linguist-important
+
+# Prevent certain files from showing in diffs (noise reduction)
+*.xcodeproj/* linguist-generated
+*.app/* linguist-generated
+.build/* linguist-generated
+
+# Enforce LF line endings for consistency across AI assistants
+*.swift text eol=lf
+*.md text eol=lf
+.ai-rules text eol=lf
+.cursorrules text eol=lf
+
+# Mark migration tracking files as critical
+REFACTORING-IN-PROGRESS.md merge=union
+MIGRATION-STATUS.md merge=union
+
+# Binary files
+*.app/** binary
+*.cpio.gz binary
+*.png binary
+*.jpg binary
+
+# Custom diff for Swift files during migration
+*.swift diff=swift

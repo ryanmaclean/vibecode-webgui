@@ -1,0 +1,118 @@
+UNIFIED SERVICES VM - INITRAMFS CONTENTS
+=========================================
+
+File: ~/vibecode-webgui/azure/unified-services-complete.cpio.gz
+Size: 134 MB compressed (370 MB extracted)
+
+DIRECTORY STRUCTURE:
+/tmp/unified-vm-initramfs/
+├── bin/                      # Core utilities
+│   ├── busybox              # BusyBox utilities
+│   ├── socat                # VSOCK/TCP relay
+│   ├── valkey-server        # Valkey database server (19 MB)
+│   └── valkey-cli           # Valkey client (7.6 MB)
+├── dev/                     # Device nodes
+├── etc/
+│   ├── hosts                # Network configuration
+│   ├── hostname             # VM hostname
+│   ├── valkey.conf          # Valkey configuration
+│   └── dropbear/            # SSH server keys
+├── init                     # Modified init script (enhanced)
+├── lib/                     # Core libraries (116 files)
+│   ├── ld-linux-aarch64.so.1
+│   ├── libc.so.6
+│   └── [various .so files]
+├── lib64/                   # 64-bit library links
+├── opt/
+│   ├── bun-linux-aarch64/   # Bun runtime
+│   │   └── bun              # Bun executable (93 MB)
+│   └── openvscode/          # OpenVSCode Server
+│       ├── bun-server.js    # Server entry point
+│       ├── out/             # Compiled server code
+│       ├── extensions/      # VS Code extensions
+│       └── product.json     # Product configuration
+├── proc/                    # Process filesystem mount point
+├── root/                    # Root user home
+├── sys/                     # System filesystem mount point
+├── tmp/                     # Temporary files
+├── usr/
+│   ├── bin/
+│   │   ├── postgres         # PostgreSQL server (8.7 MB)
+│   │   ├── initdb           # PostgreSQL initializer (195 KB)
+│   │   ├── psql             # PostgreSQL client (707 KB)
+│   │   ├── pg_ctl           # PostgreSQL controller (66 KB)
+│   │   └── dropbearkey      # SSH key generator
+│   ├── lib/                 # PostgreSQL libraries
+│   │   ├── libpq.so.5       # PostgreSQL client lib
+│   │   ├── libssl.so.3      # OpenSSL (Alpine)
+│   │   ├── libcrypto.so.3   # Crypto library
+│   │   ├── libicu*.so.*     # ICU libraries
+│   │   ├── libreadline.so.8 # Readline library
+│   │   └── postgresql16/    # PostgreSQL extensions
+│   └── sbin/
+│       └── dropbear         # SSH server
+└── var/
+    ├── lib/postgresql/      # PostgreSQL data directory
+    │   └── data/            # Database files (created on first run)
+    └── run/postgresql/      # PostgreSQL runtime files
+
+INIT SCRIPT ENHANCEMENTS:
+=========================
+Lines 250-269: Valkey startup logic
+  - Check for binary existence
+  - Set LD_LIBRARY_PATH
+  - Start server in background
+  - Validate with ps check
+
+Lines 271-297: PostgreSQL startup logic
+  - Initialize database if needed (initdb)
+  - Set library paths for Alpine musl
+  - Start postgres daemon
+  - Validate with ps check
+
+Lines 353-379: Enhanced status display
+  - Show all running services
+  - Display connection URLs with VM IP
+  - Provide usage instructions
+
+KEY LIBRARIES:
+==============
+Base VM (Ubuntu glibc):
+  - libc.so.6 (glibc 2.35)
+  - libssl.so.3 (OpenSSL 3.0 Ubuntu build)
+  - ld-linux-aarch64.so.1 (dynamic linker)
+
+PostgreSQL (Alpine musl) - INCOMPATIBLE:
+  - libssl.so.3 (OpenSSL 3.x Alpine build) ❌
+  - libicuuc.so.74 (ICU libraries)
+  - libpq.so.5 (PostgreSQL client)
+
+Missing Libraries:
+  - libsystemd.so.0 (needed by Valkey) ❌
+  - libncursesw.so.6 (needed by readline) ❌
+
+NETWORK CONFIGURATION:
+======================
+Expected Services:
+  - OpenVSCode: 0.0.0.0:8080 (TCP relay) -> 127.0.0.1:3000
+  - Valkey: 0.0.0.0:6379
+  - PostgreSQL: 0.0.0.0:5432
+  - SSH: 0.0.0.0:22
+
+Actual Working Services:
+  - OpenVSCode: 127.0.0.1:3000 (internal only) ✅
+  - SSH: 0.0.0.0:22 ✅
+  - Valkey: Failed to start ❌
+  - PostgreSQL: Failed to start ❌
+
+CONSOLE OUTPUT ANALYSIS:
+========================
+Boot sequence visible and working:
+  ✅ Kernel initialization
+  ✅ Network setup (DHCP)
+  ✅ SSH server startup
+  ✅ Service startup attempts logged
+  ✅ Bun/OpenVSCode startup
+  ❌ Valkey fails with library error
+  ❌ PostgreSQL fails with symbol errors
+

@@ -9,7 +9,7 @@ cd "$SCRIPT_DIR"
 # Paths to resources
 # Using Ubuntu 5.15.0-161-generic kernel with virtio module support
 KERNEL="$HOME/Downloads/vmlinuz-5.15.0-161-generic"
-INITRD="$HOME/vibecode-webgui/azure/bun-openvscode-ssh.cpio.gz"
+INITRD="$HOME/vibecode-webgui/azure/bun-openvscode-complete.cpio.gz"
 
 # Function to create app bundle
 create_bundle() {

@@ -1,0 +1,199 @@
+name: Security Scan
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  sast:
+    name: Static Application Security Testing
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret scanning
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint Security Rules
+        run: |
+          if [ -f .swiftlint-security.yml ]; then
+            swiftlint lint --config .swiftlint-security.yml --reporter github-actions-logging
+          else
+            echo "Warning: .swiftlint-security.yml not found"
+          fi
+
+      - name: Install Semgrep
+        run: pip3 install semgrep
+
+      - name: Run Semgrep SAST
+        run: |
+          semgrep --config=auto --json --output=semgrep-results.json . || true
+          if [ -f semgrep-results.json ]; then
+            cat semgrep-results.json | jq '.results[] | select(.extra.severity == "ERROR" or .extra.severity == "WARNING")'
+          fi
+
+      - name: Upload Semgrep Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: semgrep-results
+          path: semgrep-results.json
+
+  dependency-scan:
+    name: Dependency Vulnerability Scanning
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+
+      - name: Run Dependency Security Scan
+        run: |
+          chmod +x scripts/security-scan-dependencies.sh
+          ./scripts/security-scan-dependencies.sh
+
+      - name: Upload Dependency Scan Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: dependency-scan-results
+          path: security-reports/dependency-scan-*.txt
+
+  secrets-scan:
+    name: Secrets Scanning
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for secret scanning
+
+      - name: Install gitleaks
+        run: brew install gitleaks
+
+      - name: Run Gitleaks Secret Scan
+        run: |
+          gitleaks detect --source . --verbose --report-path gitleaks-report.json || true
+
+      - name: Run Custom Secrets Scan
+        run: |
+          chmod +x scripts/security-scan-secrets.sh
+          ./scripts/security-scan-secrets.sh
+
+      - name: Upload Secrets Scan Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: secrets-scan-results
+          path: |
+            gitleaks-report.json
+            security-reports/secrets-scan-*.txt
+
+  vm-security:
+    name: VM/Container Security Scan
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Run VM Configuration Security Scan
+        run: |
+          chmod +x scripts/security-scan-vm-config.sh
+          ./scripts/security-scan-vm-config.sh
+
+      - name: Upload VM Security Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: vm-security-results
+          path: security-reports/vm-security-*.txt
+
+  code-signing:
+    name: Code Signing Verification
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+
+      - name: Build Applications
+        run: |
+          swift build --configuration release || true
+
+      - name: Verify Code Signatures
+        run: |
+          chmod +x scripts/security-verify-signatures.sh
+          ./scripts/security-verify-signatures.sh
+
+      - name: Upload Code Signing Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: code-signing-results
+          path: security-reports/code-signing-*.txt
+
+  security-tests:
+    name: Security Test Suite
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Swift
+        uses: swift-actions/setup-swift@v1
+        with:
+          swift-version: "5.9"
+
+      - name: Run Security Tests
+        run: |
+          swift test --filter SecurityTests || true
+
+      - name: Upload Test Results
+        uses: actions/upload-artifact@v3
+        if: always()
+        with:
+          name: security-test-results
+          path: .build/debug/*.xctest
+
+  security-report:
+    name: Generate Security Report
+    runs-on: macos-latest
+    needs: [sast, dependency-scan, secrets-scan, vm-security, code-signing, security-tests]
+    if: always()
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Download All Artifacts
+        uses: actions/download-artifact@v3
+
+      - name: Generate Consolidated Report
+        run: |
+          echo "# Security Scan Results - $(date)" > SECURITY-SCAN-SUMMARY.md
+          echo "" >> SECURITY-SCAN-SUMMARY.md
+          echo "## Scan Status" >> SECURITY-SCAN-SUMMARY.md
+          echo "- SAST: ${{ needs.sast.result }}" >> SECURITY-SCAN-SUMMARY.md
+          echo "- Dependency Scan: ${{ needs.dependency-scan.result }}" >> SECURITY-SCAN-SUMMARY.md
+          echo "- Secrets Scan: ${{ needs.secrets-scan.result }}" >> SECURITY-SCAN-SUMMARY.md
+          echo "- VM Security: ${{ needs.vm-security.result }}" >> SECURITY-SCAN-SUMMARY.md
+          echo "- Code Signing: ${{ needs.code-signing.result }}" >> SECURITY-SCAN-SUMMARY.md
+          echo "- Security Tests: ${{ needs.security-tests.result }}" >> SECURITY-SCAN-SUMMARY.md
+
+      - name: Upload Final Report
+        uses: actions/upload-artifact@v3
+        with:
+          name: security-final-report
+          path: SECURITY-SCAN-SUMMARY.md

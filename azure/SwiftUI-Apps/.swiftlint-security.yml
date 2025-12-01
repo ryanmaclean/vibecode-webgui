@@ -1,0 +1,167 @@
+# SwiftLint Security-Focused Configuration
+# Detects security vulnerabilities and unsafe coding patterns
+
+disabled_rules: []
+
+opt_in_rules:
+  - force_unwrapping
+  - force_cast
+  - force_try
+  - implicitly_unwrapped_optional
+  - weak_delegate
+  - unsafe_pointer_operations
+  - unneeded_synthesized_initializer
+
+# Force unwrapping is a security risk
+force_unwrapping:
+  severity: error
+
+# Force casting can cause crashes
+force_cast:
+  severity: error
+
+# Force try hides error handling
+force_try:
+  severity: error
+
+# Implicitly unwrapped optionals are dangerous
+implicitly_unwrapped_optional:
+  severity: warning
+  mode: all_except_iboutlets
+
+# Custom security rules
+custom_rules:
+  hardcoded_api_key:
+    name: "Hardcoded API Key"
+    regex: '(api[_-]?key|apikey)\s*=\s*["\'][a-zA-Z0-9]{20,}["\']'
+    match_kinds:
+      - string
+    message: "Hardcoded API key detected. Use environment variables or secure storage."
+    severity: error
+
+  hardcoded_password:
+    name: "Hardcoded Password"
+    regex: '(password|passwd|pwd)\s*=\s*["\'][^"\']{4,}["\']'
+    match_kinds:
+      - string
+    message: "Hardcoded password detected. Use Keychain or secure storage."
+    severity: error
+
+  hardcoded_token:
+    name: "Hardcoded Token"
+    regex: '(token|bearer|auth)\s*=\s*["\'][a-zA-Z0-9_\-\.]{20,}["\']'
+    match_kinds:
+      - string
+    message: "Hardcoded authentication token detected."
+    severity: error
+
+  insecure_random:
+    name: "Insecure Random Number"
+    regex: 'arc4random\(\)|random\(\)|srand\('
+    message: "Using insecure random number generator. Use SecRandomCopyBytes instead."
+    severity: warning
+
+  unsafe_pointer_usage:
+    name: "Unsafe Pointer Operations"
+    regex: 'UnsafePointer|UnsafeMutablePointer|UnsafeRawPointer'
+    message: "Unsafe pointer usage detected. Review for buffer overflows and memory safety."
+    severity: warning
+
+  sql_injection_risk:
+    name: "SQL Injection Risk"
+    regex: 'executeQuery.*\+|executeUpdate.*\+'
+    message: "Potential SQL injection. Use parameterized queries."
+    severity: error
+
+  weak_crypto:
+    name: "Weak Cryptography"
+    regex: 'kCCAlgorithmDES|MD5|SHA1|kCCAlgorithmRC4'
+    message: "Weak cryptographic algorithm detected. Use AES-256 and SHA-256 or better."
+    severity: error
+
+  insecure_url:
+    name: "Insecure HTTP URL"
+    regex: '(http://(?!localhost|127\.0\.0\.1))'
+    match_kinds:
+      - string
+    message: "Insecure HTTP URL detected. Use HTTPS."
+    severity: warning
+
+  shell_injection_risk:
+    name: "Shell Injection Risk"
+    regex: 'system\(|popen\(|exec\('
+    message: "Shell command execution detected. Validate inputs to prevent injection."
+    severity: error
+
+  file_path_traversal:
+    name: "Path Traversal Risk"
+    regex: '\.\./'
+    match_kinds:
+      - string
+    message: "Path traversal pattern detected. Validate and sanitize file paths."
+    severity: warning
+
+  debug_logging_sensitive:
+    name: "Debug Logging Sensitive Data"
+    regex: 'print.*password|NSLog.*password|print.*token|NSLog.*token'
+    message: "Logging sensitive data detected. Remove or mask sensitive information."
+    severity: error
+
+  world_readable_permissions:
+    name: "World Readable File Permissions"
+    regex: '0o777|0o666'
+    message: "Insecure file permissions detected. Use restrictive permissions."
+    severity: error
+
+  deprecated_security_function:
+    name: "Deprecated Security Function"
+    regex: 'CC_MD5|CC_SHA1'
+    message: "Deprecated cryptographic function. Use CryptoKit."
+    severity: warning
+
+  unvalidated_redirect:
+    name: "Unvalidated Redirect"
+    regex: 'URL\(string:\s*.*\).*open\('
+    message: "Potential unvalidated redirect. Validate URLs before opening."
+    severity: warning
+
+# File exclusions
+excluded:
+  - Pods
+  - .build
+  - Tests
+  - docs
+  - scripts
+
+# Include all Swift files
+included:
+  - Apps
+  - Shared
+  - "*.swift"
+
+# Stricter line length for security-critical code
+line_length:
+  warning: 120
+  error: 150
+
+# Function complexity can hide vulnerabilities
+cyclomatic_complexity:
+  warning: 10
+  error: 15
+
+# Large files are harder to audit
+file_length:
+  warning: 400
+  error: 500
+
+# Long functions are harder to audit
+function_body_length:
+  warning: 50
+  error: 75
+
+# Too many parameters increases attack surface
+function_parameter_count:
+  warning: 5
+  error: 8
+
+reporter: "github-actions-logging"
