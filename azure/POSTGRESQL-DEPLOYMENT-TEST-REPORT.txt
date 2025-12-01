@@ -1,0 +1,332 @@
+================================================================================
+PostgreSQL VM Deployment Test Report
+================================================================================
+Date: 2025-12-01
+Test Duration: ~6 minutes
+VM Process ID: 58960
+Status: FAILED
+
+================================================================================
+DEPLOYMENT SUMMARY
+================================================================================
+
+✓ Step 1: Killed existing VMs - SUCCESS
+✓ Step 2: Deployed new initramfs (postgresql-complete.cpio.gz → postgresql-standalone.cpio.gz) - SUCCESS
+✗ Step 3: Initial launch failed - MISSING ENTITLEMENTS
+✓ Step 4: Rebuilt app with entitlements - SUCCESS
+✗ Step 5: VM boot incomplete - NETWORK FAILURE
+✗ Step 6: PostgreSQL startup - FAILED (missing dependencies)
+
+================================================================================
+CRITICAL ISSUES IDENTIFIED
+================================================================================
+
+1. NETWORK FAILURE - VIRTIO_NET DRIVER MISSING
+   - Symptom: "Warning: eth0 not found"
+   - Root Cause: Kernel has no virtio_net support (neither built-in nor module)
+   - Impact: VM cannot get DHCP lease, no network connectivity
+   - Evidence: No virtio messages in kernel boot log
+   
+2. MISSING SYSTEM UTILITIES
+   - su command: Not found (line 138, 164 in /init)
+     * Required for: Running PostgreSQL as postgres user
+     * Impact: Cannot start PostgreSQL server
+   
+   - cut command: Not found (line 69, 76, 85 in /init)
+     * Required for: Parsing DD_API_KEY
+     * Impact: Datadog integration cannot be configured
+   
+   - grep -P: Not supported by BusyBox
+     * BusyBox grep doesn't support Perl regex (-P flag)
+     * Impact: Init script parsing failures
+
+3. POSTGRESQL STARTUP FAILURE
+   - Database initialization reported success but misleading
+   - PostgreSQL server failed to start
+   - Error: "su: not found" when trying to run as postgres user
+   - Log location: /tmp/postgresql.log (in VM, not accessible from host)
+
+================================================================================
+SUCCESSFUL COMPONENTS
+================================================================================
+
+✓ App Bundle Creation
+  - Binary: 440KB (PostgreSQLVibeCodeBinary)
+  - Kernel: 45MB (linux-kernel-arm64, 5.15.0-161-generic)
+  - Initramfs: 30MB (postgresql-complete.cpio.gz)
+  - Bundle size: 75MB total
+
+✓ Code Signing with Entitlements
+  - com.apple.security.virtualization: true
+  - com.apple.security.hypervisor: true
+  - com.apple.security.network.client: true
+  - com.apple.security.network.server: true
+
+✓ VM Manager Configuration
+  - MAC Address: 52:54:00:12:34:93 (stable, fixed)
+  - CPU: 2 cores
+  - RAM: 1GB
+  - Networking: NAT strategy configured
+  - Console: Serial console on hvc0 with file logging
+
+✓ Kernel Boot
+  - Kernel loaded successfully
+  - Initramfs unpacked (30668K)
+  - Init process started
+  - Filesystems mounted
+
+✓ SSH Server
+  - Host keys generated successfully
+  - SSH daemon started on port 22
+  - Credentials: root/root
+  - Note: Inaccessible due to network failure
+
+================================================================================
+TEST RESULTS
+================================================================================
+
+❌ VM boots: PARTIAL (kernel boots, userspace fails)
+❌ Gets DHCP IP: FAILED (no network interface)
+❌ PostgreSQL responds on port 5432: FAILED (service didn't start)
+❌ Can query PostgreSQL version: FAILED (cannot connect)
+❌ Can create database: FAILED (cannot connect)
+✓ MAC address auto-generated: SUCCESS (52:54:00:12:34:93)
+✓ No errors in app logs: SUCCESS (clean startup)
+❌ Console shows errors: FAILED (multiple init script errors)
+
+Boot Performance:
+- Kernel boot time: ~0.3 seconds (very fast)
+- Init script execution: ~5 seconds to SSH ready
+- Total time to failure: ~5 seconds
+
+================================================================================
+ROOT CAUSE ANALYSIS
+================================================================================
+
+The postgresql-complete.cpio.gz initramfs has THREE fundamental problems:
+
+1. WRONG KERNEL OR MISSING MODULES
+   The linux-kernel-arm64 (5.15.0-161-generic) either:
+   a) Doesn't have virtio_net built-in, OR
+   b) Requires virtio_net.ko module that isn't in initramfs
+   
+   Solution: Use a kernel with built-in virtio_net OR include virtio modules
+
+2. INCOMPLETE ALPINE LINUX USERSPACE
+   The initramfs is missing critical Alpine Linux packages:
+   - shadow package (provides su command)
+   - coreutils package (provides cut command)
+   - Or use BusyBox equivalents properly configured
+   
+   Solution: Rebuild initramfs with complete Alpine base system
+
+3. BUSYBOX COMPATIBILITY
+   Init scripts use GNU grep features (-P for Perl regex)
+   BusyBox grep doesn't support these features
+   
+   Solution: Rewrite init scripts to use POSIX-compatible regex
+
+================================================================================
+FILES AND LOCATIONS
+================================================================================
+
+App Bundle:
+  /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/PostgreSQLVibeCode.app
+  
+Initramfs Source:
+  /Users/ryan.maclean/vibecode-webgui/azure/postgresql-complete.cpio.gz (30MB)
+  
+Deployed Initramfs:
+  /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/PostgreSQLVibeCode.app/Contents/Resources/postgresql-standalone.cpio.gz
+  
+Kernel:
+  /Users/ryan.maclean/vibecode-webgui/azure/linux-kernel-arm64 (45MB)
+  
+Console Log:
+  /tmp/vibecode-console-C93E7D2D-3276-40C2-BD00-CBF4453AEF46.log (6.4KB)
+  
+Test Log:
+  /tmp/postgresql-deploy-test.log (4.5KB)
+  
+VM UUID:
+  C93E7D2D-3276-40C2-BD00-CBF4453AEF46
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+IMMEDIATE ACTIONS REQUIRED:
+
+1. REBUILD INITRAMFS WITH NETWORK SUPPORT
+   Priority: CRITICAL
+   Options:
+   a) Include virtio_net.ko, virtio_pci.ko modules in initramfs
+   b) Use different kernel with built-in virtio support
+   c) Use vmlinux-cloud kernel (currently 0 bytes, needs rebuild)
+
+2. ADD MISSING SYSTEM UTILITIES
+   Priority: CRITICAL
+   Required packages in Alpine:
+   - apk add shadow (for su command)
+   - apk add coreutils (for cut command)
+   Or fix BusyBox configuration to include these applets
+
+3. FIX INIT SCRIPT COMPATIBILITY
+   Priority: HIGH
+   - Replace grep -P with grep -E or sed
+   - Test all scripts with BusyBox utilities
+   - Add explicit checks for required commands
+
+4. VALIDATE INITRAMFS CONTENTS
+   Priority: HIGH
+   Before deploying:
+   - Extract initramfs and verify all required binaries exist
+   - Check kernel module directory for virtio_net.ko
+   - Test init script independently
+   - Validate Alpine package installation
+
+5. IMPROVE BOOT DIAGNOSTICS
+   Priority: MEDIUM
+   - Add network interface detection logging
+   - Show available network devices at boot
+   - List loaded kernel modules
+   - Display lsmod output in console
+
+================================================================================
+NEXT STEPS
+================================================================================
+
+1. Investigate why postgresql-complete.cpio.gz is missing virtio_net
+   - Review the build script: build-postgresql-with-datadog.sh
+   - Check if network modules were extracted from kernel
+   - Verify Alpine package installation completed
+
+2. Either fix postgresql-complete.cpio.gz OR rebuild from scratch
+   - Ensure virtio modules are included
+   - Ensure shadow and coreutils packages are installed
+   - Test init script compatibility with BusyBox
+
+3. Re-test deployment with fixed initramfs
+   - Follow same deployment procedure
+   - Monitor for network interface creation
+   - Verify PostgreSQL startup with su command available
+
+4. If fixing is complex, consider using working Valkey VM as template
+   - Valkey VM was built successfully (192MB bundle)
+   - Extract working components from valkey-standalone-complete.cpio.gz
+   - Adapt for PostgreSQL instead of Valkey
+
+================================================================================
+PRODUCTION READINESS
+================================================================================
+
+Status: NOT READY FOR PRODUCTION
+
+Blockers:
+- [ ] Network connectivity (virtio_net driver)
+- [ ] PostgreSQL service startup (su command)
+- [ ] Datadog integration (cut command)
+- [ ] Init script compatibility (BusyBox)
+
+Estimated Time to Production:
+- If fixing initramfs: 2-3 hours
+- If rebuilding from scratch: 4-6 hours
+
+Recommendation: DO NOT DEPLOY until all critical issues are resolved.
+
+================================================================================
+
+================================================================================
+BUILD SCRIPT ANALYSIS
+================================================================================
+
+Script Reviewed: /Users/ryan.maclean/vibecode-webgui/azure/build-postgresql-with-datadog.sh
+Lines: 1003
+Last Modified: 2025-12-01 12:22
+
+CRITICAL FINDING:
+
+The build script creates an Alpine Linux-based initramfs but does NOT:
+- Extract kernel modules from the Ubuntu kernel
+- Include virtio_net.ko or virtio_pci.ko modules
+- Configure modprobe or module loading in init script
+
+The script assumes virtio drivers are built-in to the kernel, but:
+- Ubuntu kernels typically have virtio as modules (virtio_net.ko)
+- Alpine-based initramfs needs these modules explicitly included
+- Without modules, eth0 interface never appears
+
+COMPARISON WITH SUCCESSFUL VMs:
+
+The Valkey build script has the same issue but somehow worked. This suggests:
+1. Different kernel was used (with built-in virtio), OR
+2. Valkey VM actually has the same network problem (untested), OR  
+3. Previous manual intervention fixed the Valkey initramfs
+
+REQUIRED FIX:
+
+The build script needs a new section after Alpine package extraction:
+
+```bash
+# Extract kernel modules
+section "Extracting Kernel Modules"
+log "Extracting virtio network drivers from kernel..."
+
+KERNEL_VERSION="5.15.0-161-generic"  # Match linux-kernel-arm64
+MODULES_DIR="$WORK_DIR/rootfs/lib/modules/$KERNEL_VERSION/kernel/drivers"
+
+mkdir -p "$MODULES_DIR/net/virtio"
+mkdir -p "$MODULES_DIR/virtio"
+
+# Extract from Ubuntu kernel package or pre-built modules archive
+# Copy virtio_net.ko, virtio_pci.ko, virtio_ring.ko, etc.
+# Run depmod to generate modules.dep
+
+log "Configuring module auto-loading..."
+cat >> "$WORK_DIR/rootfs/init" << 'SCRIPT'
+# Load virtio modules before network configuration
+modprobe virtio_pci
+modprobe virtio_net
+SCRIPT
+```
+
+ALTERNATIVE SOLUTIONS:
+
+1. Use a custom-built kernel with built-in virtio drivers
+2. Use Alpine's own kernel package (which has built-in virtio)
+3. Switch to a different base OS (Debian netboot has virtio built-in)
+
+================================================================================
+
+
+================================================================================
+ALTERNATIVE INITRAMFS FILES AVAILABLE
+================================================================================
+
+The following larger initramfs files exist and may have working PostgreSQL:
+
+1. unified-services-postgres-fixed.cpio.gz (121MB)
+   - 4x larger than postgresql-complete.cpio.gz
+   - Likely includes more complete system with modules
+   - May include PostgreSQL in multi-service setup
+   
+2. unified-services-glibc-fixed.cpio.gz (147MB)
+   - 5x larger than postgresql-complete.cpio.gz
+   - Uses glibc instead of musl
+   - Probably has full kernel module support
+   
+3. valkey-standalone-complete.cpio.gz (147MB)
+   - Successfully built (no errors reported)
+   - Could be used as reference for working network setup
+   - Should be tested to verify networking works
+
+RECOMMENDATION:
+Before spending time rebuilding postgresql-complete.cpio.gz, test if any
+of these existing initramfs files have working network and PostgreSQL.
+
+Test command:
+  1. Copy alternate initramfs to app bundle
+  2. Launch and check for eth0 interface
+  3. If network works, adapt for PostgreSQL-only use
+
+================================================================================

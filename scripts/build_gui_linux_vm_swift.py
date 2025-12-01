@@ -239,14 +239,18 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         
         config.networkDevices = [createNetworkDeviceConfiguration()]
         config.graphicsDevices = [createGraphicsDeviceConfiguration()]
-        config.audioDevices = [
-            createInputAudioDeviceConfiguration(),
-            createOutputAudioDeviceConfiguration()
-        ]
+        
+        // Serial console for boot output
+        let serialConfig = VZVirtioConsoleDeviceSerialPortConfiguration()
+        let serialPort = VZFileHandleSerialPortAttachment(
+            fileHandleForReading: FileHandle.standardInput,
+            fileHandleForWriting: FileHandle.standardOutput
+        )
+        serialConfig.attachment = serialPort
+        config.serialPorts = [serialConfig]
         
         config.keyboards = [VZUSBKeyboardConfiguration()]
         config.pointingDevices = [VZUSBScreenCoordinatePointingDeviceConfiguration()]
-        config.consoleDevices = [createSpiceAgentConsoleDeviceConfiguration()]
         
         try! config.validate()
         virtualMachine = VZVirtualMachine(configuration: config)
