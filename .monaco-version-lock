@@ -1,0 +1,26 @@
+# Monaco Editor Version Lock
+# DO NOT MODIFY THIS FILE WITHOUT REVIEWING THE INTEGRATION
+
+MONACO_VERSION=0.53.0
+MONACOPILOT_VERSION=1.2.7
+INTEGRATION_DATE=2025-09-29
+VERIFIED_BY=Agent Cascade
+
+# Why this version?
+# - Monaco 0.53.0 is the latest stable release
+# - Monacopilot 1.2.7 is fully compatible (requires >=0.41.0)
+# - All 9 verification checks pass
+# - Demo and tests working
+
+# DO NOT downgrade to 0.45.0 or 0.52.x
+# DO NOT install @codeium/react-code-editor (incompatible: Monaco 0.53.0 API mismatch, see https://github.com/codeium/react-code-editor/issues/42)
+
+# To verify: node scripts/verify-monacopilot.js
+# Expected: All 9 checks pass
+
+# If you need to change Monaco version:
+# 1. Update this file
+# 2. Run verification script
+# 3. Update all tests
+# 4. Test demo page
+# 5. Document in TODO.md

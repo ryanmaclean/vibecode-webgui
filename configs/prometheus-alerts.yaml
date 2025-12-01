@@ -1,0 +1,277 @@
+# Prometheus AlertManager Configuration for AgentAPI
+# Alert rules for comprehensive monitoring
+
+groups:
+  - name: agentapi_alerts
+    interval: 30s
+    rules:
+      # High Error Rate Alert
+      - alert: AgentAPIHighErrorRate
+        expr: |
+          (
+            sum(rate(agent_failure_total[5m]))
+            /
+            (sum(rate(agent_success_total[5m])) + sum(rate(agent_failure_total[5m])))
+          ) * 100 > 5
+        for: 5m
+        labels:
+          severity: critical
+          service: agentapi
+          team: ai-platform
+          alert: error_rate
+        annotations:
+          summary: "AgentAPI High Error Rate"
+          description: "Agent failure rate exceeds 5% over the last 5 minutes (current: {{ $value | humanizePercentage }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-high-error-rate"
+
+      # Slow Response Time Alert
+      - alert: AgentAPISlowResponseTime
+        expr: |
+          histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{service="agentapi"}[5m])) by (le)) > 1.0
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: latency
+        annotations:
+          summary: "AgentAPI Slow Response Time"
+          description: "P95 HTTP response time exceeds 1 second (current: {{ $value | humanizeDuration }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-slow-response"
+
+      # Agent Downtime Alert
+      - alert: AgentAPIServiceDowntime
+        expr: |
+          sum(rate(http_requests_total{service="agentapi"}[5m])) == 0
+        for: 2m
+        labels:
+          severity: critical
+          service: agentapi
+          team: ai-platform
+          alert: downtime
+        annotations:
+          summary: "AgentAPI Service Downtime"
+          description: "AgentAPI service is offline for more than 2 minutes"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-downtime"
+
+      # Long Task Duration Alert
+      - alert: AgentAPILongTaskDuration
+        expr: |
+          histogram_quantile(0.95, sum(rate(agent_task_duration_seconds_bucket[10m])) by (le)) > 600
+        for: 10m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: performance
+        annotations:
+          summary: "AgentAPI Long Task Duration"
+          description: "P95 agent task duration exceeds 10 minutes (current: {{ $value | humanizeDuration }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-long-tasks"
+
+      # High Memory Usage Alert
+      - alert: AgentAPIHighMemoryUsage
+        expr: |
+          (process_resident_memory_bytes{service="agentapi"} / (1024 * 1024 * 1024)) > 2
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: resources
+        annotations:
+          summary: "AgentAPI High Memory Usage"
+          description: "Memory usage exceeds 2GB (current: {{ $value | humanize }}GB)"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-high-memory"
+
+      # High CPU Usage Alert
+      - alert: AgentAPIHighCPUUsage
+        expr: |
+          rate(process_cpu_seconds_total{service="agentapi"}[5m]) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: resources
+        annotations:
+          summary: "AgentAPI High CPU Usage"
+          description: "CPU usage exceeds 85% for sustained period (current: {{ $value | humanizePercentage }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-high-cpu"
+
+      # Too Many Concurrent Agents Alert
+      - alert: AgentAPITooManyConcurrentAgents
+        expr: |
+          sum(agent_active_count) > 4
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: capacity
+        annotations:
+          summary: "AgentAPI Too Many Concurrent Agents"
+          description: "Number of concurrent agents exceeds configured limit (current: {{ $value }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-capacity"
+
+      # Agent Stuck Alert
+      - alert: AgentAPIAgentStuck
+        expr: |
+          rate(agent_output_lines_total[5m]) == 0 and sum(agent_active_count{state="running"}) > 0
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: health
+        annotations:
+          summary: "AgentAPI Agent Stuck"
+          description: "Agent has not produced output for more than 5 minutes while running"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-agent-stuck"
+
+      # Agent Errors Alert
+      - alert: AgentAPIHighAgentErrors
+        expr: |
+          sum(rate(agent_errors_total[5m])) > 1
+        for: 5m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: errors
+        annotations:
+          summary: "AgentAPI High Agent Errors"
+          description: "Agent error rate exceeds 1 per second (current: {{ $value | humanize }}/sec)"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-agent-errors"
+
+      # HTTP 5xx Errors Alert
+      - alert: AgentAPIHTTP5xxErrors
+        expr: |
+          sum(rate(http_requests_total{service="agentapi",status_code=~"5.."}[5m])) / sum(rate(http_requests_total{service="agentapi"}[5m])) * 100 > 1
+        for: 5m
+        labels:
+          severity: critical
+          service: agentapi
+          team: ai-platform
+          alert: http_errors
+        annotations:
+          summary: "AgentAPI HTTP 5xx Errors"
+          description: "HTTP 5xx error rate exceeds 1% (current: {{ $value | humanizePercentage }})"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-http-errors"
+
+      # No Active Agents (Potential Issue)
+      - alert: AgentAPINoActiveAgents
+        expr: |
+          sum(agent_active_count) == 0 and sum(rate(http_requests_total{service="agentapi",route=~"/v1/agents/start"}[10m])) > 0
+        for: 10m
+        labels:
+          severity: warning
+          service: agentapi
+          team: ai-platform
+          alert: health
+        annotations:
+          summary: "AgentAPI No Active Agents"
+          description: "No active agents despite recent start requests"
+          dashboard: "https://app.datadoghq.com/dashboard/agentapi"
+          runbook: "https://docs.vibecode.com/runbooks/agentapi-no-active-agents"
+
+  - name: agentapi_capacity_planning
+    interval: 5m
+    rules:
+      # Task Duration Trend
+      - record: agentapi:task_duration:p95_1h
+        expr: |
+          histogram_quantile(0.95, sum(rate(agent_task_duration_seconds_bucket[1h])) by (le, agent_type))
+
+      # Success Rate Trend
+      - record: agentapi:success_rate:1h
+        expr: |
+          (
+            sum(rate(agent_success_total[1h])) by (agent_type)
+            /
+            (sum(rate(agent_success_total[1h])) by (agent_type) + sum(rate(agent_failure_total[1h])) by (agent_type))
+          ) * 100
+
+      # Request Rate Trend
+      - record: agentapi:request_rate:1h
+        expr: |
+          sum(rate(http_requests_total{service="agentapi"}[1h])) by (route)
+
+      # Active Agents Trend
+      - record: agentapi:active_agents:avg_1h
+        expr: |
+          avg_over_time(agent_active_count[1h])
+
+# AlertManager Configuration
+alertmanagers:
+  - static_configs:
+      - targets:
+          - localhost:9093
+
+# Global Configuration
+global:
+  resolve_timeout: 5m
+  slack_api_url: ${SLACK_WEBHOOK_URL}
+  pagerduty_url: https://events.pagerduty.com/v2/enqueue
+
+# Route Configuration
+route:
+  receiver: default
+  group_by: [alertname, service, severity]
+  group_wait: 30s
+  group_interval: 5m
+  repeat_interval: 4h
+
+  routes:
+    - match:
+        severity: critical
+      receiver: pagerduty
+      continue: true
+
+    - match:
+        severity: warning
+      receiver: slack
+      continue: false
+
+# Receivers
+receivers:
+  - name: default
+    webhook_configs:
+      - url: http://localhost:5001/webhook
+
+  - name: slack
+    slack_configs:
+      - channel: '#agentapi-alerts'
+        title: '{{ .GroupLabels.alertname }}'
+        text: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+        send_resolved: true
+
+  - name: pagerduty
+    pagerduty_configs:
+      - routing_key: ${PAGERDUTY_INTEGRATION_KEY}
+        description: '{{ .GroupLabels.alertname }}'
+        severity: '{{ .GroupLabels.severity }}'
+        details:
+          summary: '{{ range .Alerts }}{{ .Annotations.summary }}{{ end }}'
+          description: '{{ range .Alerts }}{{ .Annotations.description }}{{ end }}'
+          dashboard: '{{ range .Alerts }}{{ .Annotations.dashboard }}{{ end }}'
+
+  - name: email
+    email_configs:
+      - to: 'devops@vibecode.com,ai-team@vibecode.com'
+        from: 'alerts@vibecode.com'
+        smarthost: 'smtp.gmail.com:587'
+        auth_username: ${SMTP_USERNAME}
+        auth_password: ${SMTP_PASSWORD}
+        headers:
+          Subject: '[{{ .GroupLabels.severity | toUpper }}] {{ .GroupLabels.alertname }}'

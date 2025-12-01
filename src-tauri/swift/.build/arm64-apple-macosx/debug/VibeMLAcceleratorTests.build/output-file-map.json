@@ -1,0 +1,12 @@
+{
+  "": {
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/master.swiftdeps"
+  },
+  "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/Tests/VibeMLAcceleratorTests/MetalAcceleratorTests.swift": {
+    "dependencies": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/MetalAcceleratorTests.d",
+    "object": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/MetalAcceleratorTests.swift.o",
+    "swiftmodule": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/MetalAcceleratorTests~partial.swiftmodule",
+    "swift-dependencies": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/MetalAcceleratorTests.swiftdeps",
+    "diagnostics": "/Users/ryan.maclean/vibecode-webgui/src-tauri/swift/.build/arm64-apple-macosx/debug/VibeMLAcceleratorTests.build/MetalAcceleratorTests.dia"
+  }
+}

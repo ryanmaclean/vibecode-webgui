@@ -1,0 +1,17 @@
+{
+  "name": "vibecode-chromium-kiosk",
+  "version": "0.1.0",
+  "description": "VibeCode Chromium Kiosk Launcher - Faster than Electron",
+  "main": "launcher.js",
+  "scripts": {
+    "start": "node launcher.js",
+    "build": "echo 'No build needed - uses system Chromium'"
+  },
+  "dependencies": {
+    "node-fetch": "^3.3.2"
+  },
+  "bin": {
+    "vibecode": "./launcher.js"
+  }
+}
+

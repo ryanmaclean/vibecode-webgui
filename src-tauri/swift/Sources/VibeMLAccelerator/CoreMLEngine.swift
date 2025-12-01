@@ -41,7 +41,7 @@ public actor CoreMLInferenceEngine {
                     let tokens = tokenizer.encode(prompt)
                     logger.debug("Tokenized \(tokens.count) tokens")
 
-                    var generatedTokens: [Int] = []
+                    var generatedTokens: [Int32] = []
                     var firstTokenTime: TimeInterval?
 
                     // Generate tokens
@@ -50,7 +50,7 @@ public actor CoreMLInferenceEngine {
                         try Task.checkCancellation()
 
                         // Prepare input
-                        let inputTokens: [Int] = tokens + generatedTokens
+                        let inputTokens: [Int32] = tokens + generatedTokens.map { Int32($0) }
                         let input = try createMLInput(tokens: inputTokens)
 
                         // Run inference
@@ -81,7 +81,7 @@ public actor CoreMLInferenceEngine {
                         // Stream token
                         continuation.yield(tokenText)
 
-                        generatedTokens.append(Int(nextToken))
+                        generatedTokens.append(nextToken)
 
                         // Check for EOS
                         if nextToken == tokenizer.eosTokenId {

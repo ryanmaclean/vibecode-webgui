@@ -1,0 +1,235 @@
+{
+  "synthetics": [
+    {
+      "name": "VibeCode WebGUI - Health Check",
+      "type": "api",
+      "subtype": "http",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/api/health",
+        "timeout": 10000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "responseTime",
+          "operator": "lessThan",
+          "target": 5000
+        },
+        {
+          "type": "body",
+          "operator": "contains",
+          "target": "healthy"
+        }
+      ],
+      "locations": ["aws:us-east-1", "aws:us-west-2", "aws:eu-west-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:health"],
+      "message": "VibeCode WebGUI health check failed. Check the application status.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - Database Health",
+      "type": "api",
+      "subtype": "http",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/api/health/database",
+        "timeout": 10000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "responseTime",
+          "operator": "lessThan",
+          "target": 3000
+        },
+        {
+          "type": "body",
+          "operator": "contains",
+          "target": "healthy"
+        }
+      ],
+      "locations": ["aws:us-east-1", "aws:us-west-2"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:database"],
+      "message": "VibeCode WebGUI database connection failed. Check PostgreSQL status.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - Main Page Load",
+      "type": "browser",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/",
+        "timeout": 30000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "responseTime",
+          "operator": "lessThan",
+          "target": 10000
+        }
+      ],
+      "locations": ["aws:us-east-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:frontend"],
+      "message": "VibeCode WebGUI main page failed to load. Check frontend application.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - Valkey Connection",
+      "type": "api",
+      "subtype": "http",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/api/health",
+        "timeout": 10000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "body",
+          "operator": "contains",
+          "target": "valkey"
+        }
+      ],
+      "locations": ["aws:us-east-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:cache"],
+      "message": "VibeCode WebGUI Valkey cache check failed. Check Redis/Valkey status.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - API Error Handling",
+      "type": "api",
+      "subtype": "http",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/api/non-existent",
+        "timeout": 10000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 404
+        }
+      ],
+      "locations": ["aws:us-east-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:error-handling"],
+      "message": "VibeCode WebGUI error handling test failed. Check API error responses.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - MCP Integration",
+      "type": "api",
+      "subtype": "http",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/api/mcp/status",
+        "timeout": 15000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "responseTime",
+          "operator": "lessThan",
+          "target": 10000
+        }
+      ],
+      "locations": ["aws:us-east-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:mcp"],
+      "message": "VibeCode WebGUI MCP integration failed. Check MCP server status.",
+      "status": "live"
+    },
+    {
+      "name": "VibeCode WebGUI - Performance Test",
+      "type": "browser",
+      "request": {
+        "method": "GET",
+        "url": "{{$env.BASE_URL}}/",
+        "timeout": 30000
+      },
+      "assertions": [
+        {
+          "type": "statusCode",
+          "operator": "is",
+          "target": 200
+        },
+        {
+          "type": "responseTime",
+          "operator": "lessThan",
+          "target": 5000
+        }
+      ],
+      "locations": ["aws:us-east-1"],
+      "tags": ["env:production", "service:vibecode-webgui", "type:performance"],
+      "message": "VibeCode WebGUI performance test failed. Check application performance.",
+      "status": "live"
+    }
+  ],
+  "monitors": [
+    {
+      "name": "VibeCode WebGUI - Health Status",
+      "type": "query alert",
+      "query": "avg(last_5m):avg:datadog.synthetics.http.response_time{service:vibecode-webgui} > 5000",
+      "message": "VibeCode WebGUI response time is high. Check application performance.",
+      "tags": ["env:production", "service:vibecode-webgui"],
+      "options": {
+        "thresholds": {
+          "critical": 5000,
+          "warning": 3000
+        },
+        "notify_audit": false,
+        "locked": false,
+        "timeout_h": 0,
+        "new_host_delay": 300,
+        "require_full_window": false,
+        "notify_no_data": false,
+        "renotify_interval": 0,
+        "evaluation_delay": 60,
+        "include_tags": true
+      }
+    },
+    {
+      "name": "VibeCode WebGUI - Error Rate",
+      "type": "query alert",
+      "query": "sum(last_5m):sum:datadog.synthetics.http.response_code{service:vibecode-webgui,response_code:5xx} / sum:datadog.synthetics.http.response_code{service:vibecode-webgui} > 0.05",
+      "message": "VibeCode WebGUI error rate is high. Check application logs.",
+      "tags": ["env:production", "service:vibecode-webgui"],
+      "options": {
+        "thresholds": {
+          "critical": 0.05,
+          "warning": 0.02
+        },
+        "notify_audit": false,
+        "locked": false,
+        "timeout_h": 0,
+        "new_host_delay": 300,
+        "require_full_window": false,
+        "notify_no_data": false,
+        "renotify_interval": 0,
+        "evaluation_delay": 60,
+        "include_tags": true
+      }
+    }
+  ]
+}

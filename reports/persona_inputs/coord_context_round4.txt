@@ -1,0 +1,5 @@
+- Release drift unresolved (#410/#418); workflow reruns failed 2025-10-01 19:34 UTC.
+- QA gaps (telemetry, sanitisation, PATH-missing, Ready exhaustion) block CI gating (#417).
+- Security tasks due 10-05/10-08/10-10; Dockerfile downloads still unchecked (#416).
+- Docs deliverables due 10-02 18:00 and 10-06 (#411).
+- Cross-team checkpoint scheduled 2025-10-02 12:00; need aligned plan and reporting.

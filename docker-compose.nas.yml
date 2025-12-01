@@ -1,0 +1,40 @@
+services:
+  code-server:
+    image: vibecode/code-server:monaco053
+    container_name: vibecode-code-server
+    env_file:
+      - nas.env
+    environment:
+      PASSWORD: "${CODE_SERVER_PASSWORD:-change-me}"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_API_KEY: "${DD_API_KEY:-}"
+      DD_SITE: "${DD_SITE:-datadoghq.com}"
+    ports:
+      - "8443:8765"
+    volumes:
+      - cs-workspace:/home/coder/workspace
+      - cs-settings:/home/coder/.local/share/code-server/User
+    restart: unless-stopped
+
+  vibecode-app:
+    image: vibecode/webgui:latest
+    container_name: vibecode-webgui
+    env_file:
+      - nas.env
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: "postgres://user:pass@postgres:5432/vibecode"
+      OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
+      ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
+      OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_API_KEY: "${DD_API_KEY:-}"
+      DD_SITE: "${DD_SITE:-datadoghq.com}"
+    ports:
+      - "3000:3000"
+    restart: unless-stopped
+
+volumes:
+  cs-workspace:
+  cs-settings:

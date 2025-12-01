@@ -1,0 +1,370 @@
+---
+title: Deployment
+description: Auto-generated placeholder. Update as needed.
+---
+
+# VibeCode Deployment Guide
+
+This guide covers all deployment options for the VibeCode platform, from one-click cloud deployments to self-hosted Kubernetes clusters.
+
+## 🚀 Automated CI/CD Deployment (Recommended)
+
+> **The primary and recommended deployment method for VibeCode.**
+
+The VibeCode platform is configured with a robust CI/CD pipeline using GitHub Actions. This pipeline automatically builds, tests, and deploys the application to your production Kubernetes cluster on every push to the `main` branch.
+
+### How It Works
+
+1.  **Push to `main`**: Any code merged into the `main` branch triggers the deployment workflow.
+2.  **Build & Test**: The workflow builds the Docker image, runs all tests (unit, integration, and security scans), and ensures the application is stable.
+3.  **Deploy to Kubernetes**: Upon a successful build, the workflow automatically deploys the new version to your Kubernetes cluster using Helm.
+
+### Prerequisites
+
+To use the automated deployment, you must have the following secrets configured in your GitHub repository's settings:
+
+- `DD_API_KEY`: Your Datadog API key for monitoring and security scans.
+- `DD_APP_KEY`: Your Datadog application key.
+- `KUBE_CONFIG_DATA`: Your Kubernetes configuration file, base64 encoded.
+
+### Manual Trigger
+
+You can also manually trigger the deployment workflow from the "Actions" tab in your GitHub repository.
+
+## 📋 Environment Variables
+
+## 📋 Environment Variables
+
+### Required Environment Variables
+
+Setting up the correct environment variables is crucial for the platform to function correctly. The following variables are required for a full deployment.
+
+```bash
+# ---------------------------------
+# --- Authentication (REQUIRED) ---
+# ---------------------------------
+NEXTAUTH_URL=https://your-domain.com          # The public URL of your deployment.
+NEXTAUTH_SECRET=your-32-char-secret           # A 32-character secret for session encryption.
+
+# ---------------------------
+# --- Database (REQUIRED) ---
+# ---------------------------
+DATABASE_URL=postgresql://user:pass@host:port/db  # Connection string for your PostgreSQL database.
+REDIS_URL=redis://host:port                       # Connection string for your Redis instance.
+
+# --------------------------------------
+# --- AI Integration (REQUIRED)      ---
+# --------------------------------------
+OPENROUTER_API_KEY=sk-or-v1-your-key          # Your API key from OpenRouter.
+ANTHROPIC_API_KEY=sk-ant-your-anthropic-api-key # Your API key from Anthropic for Claude models.
+AI_PROJECT_GENERATION_ENABLED=true            # Must be true to enable AI features.
+AI_MAX_TOKENS=4000                            # Max tokens for AI responses.
+AI_TEMPERATURE=0.7                            # Creativity of the AI model.
+CLAUDE_MODEL=claude-3-5-sonnet-20241022      # The specific Claude model to use.
+
+# -----------------------------------------
+# --- Code-Server Integration (REQUIRED) --
+# -----------------------------------------
+CODE_SERVER_BASE_URL=http://localhost:8080    # URL for the code-server instance.
+CODE_SERVER_PASSWORD=your-code-server-password  # Password to access code-server.
+WORKSPACE_BASE_PATH=/workspaces               # Path where user workspaces are stored.
+
+# -------------------------------------------
+# --- Datadog Monitoring (RECOMMENDED)    ---
+# -------------------------------------------
+DD_API_KEY=your-datadog-api-key             # Your Datadog API key.
+DD_LLMOBS_ENABLED=1                         # Enables LLM Observability.
+DD_DATABASE_MONITORING_ENABLED=true         # Enables Database Monitoring.
+```
+
+### Getting API Keys
+
+#### OpenRouter API Key
+
+1. Visit [OpenRouter](https://openrouter.ai/keys)
+2. Sign up for an account
+3. Create a new API key
+4. Copy the key (starts with `sk-or-`)
+
+#### Anthropic API Key (For Claude AI)
+
+1. Visit [Anthropic Console](https://console.anthropic.com/keys)
+2. Sign up for an account
+3. Create a new API key
+4. Copy the key (starts with `sk-ant-`)
+
+#### NextAuth Secret
+
+Generate a secure random string:
+
+```bash
+# Option 1: Use OpenSSL
+openssl rand -base64 32
+
+# Option 2: Use Node.js
+node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+
+# Option 3: Online generator
+# Visit: https://generate-secret.vercel.app/32
+```
+
+### Platform-Specific Setup
+
+#### Vercel
+
+1. Add environment variables in the Vercel dashboard
+2. Redeploy if variables were added after initial deployment
+
+#### Netlify
+
+1. Go to Site Settings > Environment Variables
+2. Add each variable individually
+3. Redeploy the site
+
+#### Railway
+
+1. Variables are set during initial deployment
+2. Update in Project Settings > Variables if needed
+
+## 🐳 Docker Deployment
+
+### Single Container (Simple)
+
+```bash
+# Build and run
+docker build -f Dockerfile.production -t vibecode .
+docker run -p 3000:3000 \
+  -e OPENROUTER_API_KEY=your-key \
+  -e NEXTAUTH_SECRET=your-secret \
+  -e NEXTAUTH_URL=http://localhost:3000 \
+  vibecode
+```
+
+### Full Stack with Docker Compose (Production)
+
+```bash
+# Create environment file
+cp .env.example .env
+
+# Edit .env with your values
+
+# Start all services
+docker-compose -f docker-compose.production.yml up -d
+
+# With monitoring (optional)
+docker-compose -f docker-compose.production.yml --profile monitoring up -d
+```
+
+Services included:
+
+- VibeCode App (port 3000)
+- PostgreSQL Database (port 5432)
+- Redis Cache (port 6379)
+- NGINX Reverse Proxy (ports 80/443)
+- Code Server for VS Code (port 8080)
+- AI Gateway Service (port 3001)
+- Prometheus + Grafana (ports 9090/3001) - optional
+
+## ☸️ Kubernetes Deployment
+
+### Using Helm (Recommended)
+
+```bash
+# Add the repository
+helm repo add vibecode ./helm
+
+# Install with custom values
+helm install vibecode vibecode/vibecode-platform \
+  --set app.openrouter.apiKey=your-key \
+  --set app.nextauth.secret=your-secret \
+  --set app.nextauth.url=https://vibecode.example.com
+
+# Or use a values file
+helm install vibecode vibecode/vibecode-platform -f values.yaml
+```
+
+### KIND (Local Development)
+
+```bash
+# Set up KIND cluster
+npm run kind:setup  # wraps ./scripts/kind-setup.sh
+
+# Deploy to KIND
+kubectl apply -k k8s/
+```
+
+## 🔧 Self-Hosted Server
+
+### Prerequisites
+
+- Ubuntu 20.04+ or similar Linux distribution
+- Node.js 18+
+- PostgreSQL 13+ (optional)
+- Redis 6+ (optional)
+- NGINX (for reverse proxy)
+
+### Installation
+
+```bash
+# 1. Clone and build
+git clone https://github.com/your-repo/vibecode-webgui.git
+cd vibecode-webgui
+npm install
+npm run build
+
+# 2. Set up environment
+cp .env.example .env
+# Edit .env with your configuration
+
+# 3. Install PM2 for process management
+npm install -g pm2
+
+# 4. Start the application
+pm2 start npm --name "vibecode" -- start
+pm2 save
+pm2 startup
+
+# 5. Set up NGINX reverse proxy
+sudo cp docker/nginx/nginx.conf /etc/nginx/sites-available/vibecode
+sudo ln -s /etc/nginx/sites-available/vibecode /etc/nginx/sites-enabled/
+sudo nginx -t
+sudo systemctl reload nginx
+```
+
+## 🔍 Health Monitoring
+
+All deployments include health check endpoints:
+
+- **Health Check:** `GET /api/health`
+- **AI Project Generation:** `POST /api/ai/generate-project`
+- **Code-Server Sessions:** `POST /api/code-server/session`
+- **File Sync:** `POST /api/files/sync`
+- **Metrics:** Available in Docker/K8s deployments
+
+Example health check response:
+
+```json
+{
+  "status": "healthy",
+  "timestamp": "2024-01-15T10:30:00Z",
+  "uptime": 3600,
+  "version": "1.0.0",
+  "checks": {
+    "memory": { "status": "healthy" },
+    "database": { "status": "healthy" },
+    "ai": { "status": "healthy" },
+    "codeServer": { "status": "healthy" },
+    "openrouter": { "status": "healthy" },
+    "anthropic": { "status": "healthy" }
+  }
+}
+```
+
+## 🛠️ Troubleshooting
+
+### Common Issues
+
+#### "OpenRouter API key not configured"
+
+- Ensure `OPENROUTER_API_KEY` is set correctly
+- Check the key format (should start with `sk-or-`)
+- Verify the key is active on OpenRouter dashboard
+
+#### "Anthropic API key not configured"
+
+- Ensure `ANTHROPIC_API_KEY` is set correctly
+- Check the key format (should start with `sk-ant-`)
+- Verify the key is active on Anthropic Console
+- Ensure you have sufficient Claude API credits
+
+#### "NextAuth configuration error"
+
+- Set `NEXTAUTH_SECRET` to a secure random string
+- Update `NEXTAUTH_URL` to match your deployment URL
+- For HTTPS deployments, ensure the URL uses `https://`
+
+#### "Build failed" during deployment
+
+- Check Node.js version (requires 18+)
+- Ensure all dependencies are properly installed
+- Review build logs for specific error messages
+
+#### Database connection issues
+
+- Verify `DATABASE_URL` format: `postgresql://user:pass@host:port/db`
+- Ensure database server is accessible
+- Check firewall rules and security groups
+
+#### AI project generation not working
+
+- Verify both `OPENROUTER_API_KEY` and `ANTHROPIC_API_KEY` are set
+- Check `AI_PROJECT_GENERATION_ENABLED=true` is set
+- Ensure `CODE_SERVER_BASE_URL` points to running code-server instance
+- Verify workspace directory permissions for `WORKSPACE_BASE_PATH`
+
+### Performance Optimization
+
+#### For High Traffic
+
+- Use PostgreSQL instead of file storage
+- Enable Redis for caching
+- Set up CDN for static assets
+- Configure horizontal scaling (K8s/Railway)
+
+#### For Large Files
+
+- Configure file upload limits
+- Use cloud storage (S3, etc.) for file uploads
+- Enable compression in NGINX
+
+## 📊 Monitoring and Analytics
+
+### Built-in Monitoring
+
+- Health check endpoint (`/api/health`)
+- Performance metrics in production
+- Error tracking and logging
+
+### External Monitoring
+
+- Datadog integration (configured)
+- Prometheus metrics (Docker/K8s)
+- Custom monitoring via webhooks
+
+## 🔒 Security Considerations
+
+### Production Checklist
+
+- [ ] Use strong `NEXTAUTH_SECRET`
+- [ ] Enable HTTPS/TLS
+- [ ] Configure CORS properly
+- [ ] Set up rate limiting
+- [ ] Use environment variables for secrets
+- [ ] Enable security headers
+- [ ] Regular security updates
+- [ ] Database connection encryption
+- [ ] API key rotation schedule
+
+### Firewall Rules
+
+```bash
+# Essential ports
+80/tcp    # HTTP
+443/tcp   # HTTPS
+22/tcp    # SSH (limit to specific IPs)
+
+# Optional (if exposing directly)
+3000/tcp  # VibeCode app
+5432/tcp  # PostgreSQL (limit to app servers)
+6379/tcp  # Redis (limit to app servers)
+```
+
+## 📞 Support
+
+- **Documentation:** [GitHub Wiki](https://github.com/your-repo/vibecode-webgui/wiki)
+- **Issues:** [GitHub Issues](https://github.com/your-repo/vibecode-webgui/issues)
+- **Discussions:** [GitHub Discussions](https://github.com/your-repo/vibecode-webgui/discussions)
+
+---
+
+**Need help?** Open an issue on GitHub or check our troubleshooting guide.

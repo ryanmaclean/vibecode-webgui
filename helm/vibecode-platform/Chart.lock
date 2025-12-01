@@ -1,0 +1,9 @@
+dependencies:
+- name: datadog
+  repository: https://helm.datadoghq.com
+  version: 3.60.0
+- name: mongodb
+  repository: https://charts.bitnami.com/bitnami
+  version: 14.0.0
+digest: sha256:5f9d64d98a245f92bc4af0d4fa13927259fa033b5bd617817600c3e61d27aee8
+generated: "2025-08-27T10:33:13.893589-07:00"

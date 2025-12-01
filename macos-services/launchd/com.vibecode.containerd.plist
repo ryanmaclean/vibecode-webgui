@@ -1,0 +1,232 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <!-- ===================================================================
+         VibeCode Container Daemon - LaunchDaemon Configuration
+         Location: /Library/LaunchDaemons/com.vibecode.containerd.plist
+         Purpose: System-level container runtime management
+         =================================================================== -->
+
+    <!-- Service Identity -->
+    <key>Label</key>
+    <string>com.vibecode.containerd</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/usr/local/bin/vibecode-containerd</string>
+        <string>--socket</string>
+        <string>/var/run/vibecode-containerd.sock</string>
+        <string>--config</string>
+        <string>/etc/vibecode/containerd.conf</string>
+    </array>
+
+    <!-- Launch Behavior -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Keep Alive Policies (Google-scale reliability) -->
+    <key>KeepAlive</key>
+    <dict>
+        <!-- Restart on crash or unexpected exit -->
+        <key>SuccessfulExit</key>
+        <false/>
+
+        <!-- Restart if network state changes (for mDNS) -->
+        <key>NetworkState</key>
+        <true/>
+
+        <!-- Don't restart if we manually stopped it -->
+        <key>Crashed</key>
+        <true/>
+
+        <!-- Restart if socket is removed -->
+        <key>PathState</key>
+        <dict>
+            <key>/var/run</key>
+            <true/>
+        </dict>
+    </dict>
+
+    <!-- Resource Limits (optimized for container runtime) -->
+    <key>SoftResourceLimits</key>
+    <dict>
+        <!-- File descriptors: 4096 open files (containers + logs) -->
+        <key>NumberOfFiles</key>
+        <integer>4096</integer>
+
+        <!-- Process limit: 512 child processes -->
+        <key>NumberOfProcesses</key>
+        <integer>512</integer>
+
+        <!-- Memory: No soft limit (adaptive allocation) -->
+    </dict>
+
+    <key>HardResourceLimits</key>
+    <dict>
+        <!-- Maximum file descriptors -->
+        <key>NumberOfFiles</key>
+        <integer>8192</integer>
+
+        <!-- Maximum processes -->
+        <key>NumberOfProcesses</key>
+        <integer>1024</integer>
+
+        <!-- Core dumps enabled for debugging -->
+        <key>Core</key>
+        <integer>0</integer> <!-- Unlimited core dumps -->
+    </dict>
+
+    <!-- Security Context -->
+    <key>UserName</key>
+    <string>root</string>
+
+    <key>GroupName</key>
+    <string>wheel</string>
+
+    <!-- Run in separate session (not attached to terminal) -->
+    <key>SessionCreate</key>
+    <true/>
+
+    <!-- Socket Activation (launch-on-demand) -->
+    <key>Sockets</key>
+    <dict>
+        <key>Listener</key>
+        <dict>
+            <key>SockPathName</key>
+            <string>/var/run/vibecode-containerd.sock</string>
+
+            <key>SockPathMode</key>
+            <integer>384</integer> <!-- 0600: Owner read/write only -->
+
+            <key>SockType</key>
+            <string>stream</string>
+
+            <key>SockFamily</key>
+            <string>Unix</string>
+
+            <key>SockPathOwner</key>
+            <integer>0</integer> <!-- root -->
+
+            <key>SockPathGroup</key>
+            <integer>0</integer> <!-- wheel -->
+        </dict>
+    </dict>
+
+    <!-- Logging Configuration -->
+    <key>StandardOutPath</key>
+    <string>/var/log/vibecode/containerd.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/vibecode/containerd.error.log</string>
+
+    <!-- Environment Variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <!-- Runtime Environment -->
+        <key>VIBECODE_ENV</key>
+        <string>production</string>
+
+        <key>VIBECODE_LOG_LEVEL</key>
+        <string>info</string>
+
+        <key>VIBECODE_DATA_DIR</key>
+        <string>/var/lib/vibecode</string>
+
+        <!-- Datadog APM Integration -->
+        <key>DD_SERVICE</key>
+        <string>vibecode-containerd</string>
+
+        <key>DD_ENV</key>
+        <string>production</string>
+
+        <key>DD_VERSION</key>
+        <string>1.0.0</string>
+
+        <key>DD_TRACE_ENABLED</key>
+        <string>true</string>
+
+        <key>DD_LOGS_INJECTION</key>
+        <string>true</string>
+
+        <!-- Container Runtime Settings -->
+        <key>CONTAINER_RUNTIME</key>
+        <string>apple-virtualization</string>
+
+        <key>CONTAINER_MAX_INSTANCES</key>
+        <string>10</string>
+
+        <key>CONTAINER_DEFAULT_CPU</key>
+        <string>2</string>
+
+        <key>CONTAINER_DEFAULT_MEMORY</key>
+        <string>4096</string>
+
+        <!-- Path -->
+        <key>PATH</key>
+        <string>/usr/local/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Process Management -->
+    <key>ProcessType</key>
+    <string>Adaptive</string> <!-- Can change priority based on load -->
+
+    <key>Nice</key>
+    <integer>-5</integer> <!-- Higher priority than normal processes -->
+
+    <!-- Throttling (prevent restart loops) -->
+    <key>ThrottleInterval</key>
+    <integer>10</integer> <!-- Don't restart more than once per 10 seconds -->
+
+    <key>ExitTimeOut</key>
+    <integer>30</integer> <!-- Grace period for shutdown (stop containers) -->
+
+    <!-- Working Directory -->
+    <key>WorkingDirectory</key>
+    <string>/var/lib/vibecode</string>
+
+    <!-- inetd compatibility (not used, but documented) -->
+    <key>inetdCompatibility</key>
+    <dict>
+        <key>Wait</key>
+        <false/>
+    </dict>
+
+    <!-- Umask for file creation -->
+    <key>Umask</key>
+    <integer>18</integer> <!-- 0022: rw-r--r-- for created files -->
+
+    <!-- Launch only on these conditions -->
+    <key>LaunchOnlyOnce</key>
+    <false/> <!-- Can be launched multiple times if needed -->
+
+    <!-- Abandon process group on exit -->
+    <key>AbandonProcessGroup</key>
+    <false/> <!-- Kill child processes when daemon exits -->
+
+    <!-- Enable Transactions (smooth shutdown) -->
+    <key>EnableTransactions</key>
+    <true/>
+
+    <!-- Mach Services (for IPC) -->
+    <key>MachServices</key>
+    <dict>
+        <key>com.vibecode.containerd</key>
+        <true/>
+    </dict>
+
+    <!-- Watch Paths (restart if these change) -->
+    <key>WatchPaths</key>
+    <array>
+        <string>/etc/vibecode/containerd.conf</string>
+    </array>
+
+    <!-- Queue Directories (not used) -->
+    <!-- <key>QueueDirectories</key> -->
+
+    <!-- Disabled (can be enabled via launchctl) -->
+    <key>Disabled</key>
+    <false/>
+
+</dict>
+</plist>
