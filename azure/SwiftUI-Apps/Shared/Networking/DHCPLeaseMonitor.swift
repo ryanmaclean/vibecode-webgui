@@ -255,6 +255,7 @@ class DHCPLeaseMonitor {
     /// Get all active DHCP leases.
     ///
     /// Returns a dictionary mapping MAC addresses to their assigned IP addresses.
+    /// All MAC addresses are normalized to standard format with leading zeros.
     ///
     /// - Returns: Dictionary of [MAC: IP] pairs
     ///
@@ -278,7 +279,9 @@ class DHCPLeaseMonitor {
             if let hwAddress = extractValue(from: block, key: "hw_address"),
                let ipAddress = extractValue(from: block, key: "ip_address") {
                 let mac = extractMACFromHwAddress(hwAddress)
-                result[mac] = ipAddress
+                // Normalize MAC address to standard format with leading zeros
+                let normalizedMAC = normalizeMACAddress(mac)
+                result[normalizedMAC] = ipAddress
             }
         }
 
@@ -298,14 +301,21 @@ class DHCPLeaseMonitor {
 
         let leaseBlocks = parseLeaseBlocks(content)
 
+        // Normalize the search MAC address to ensure leading zeros
+        // (e.g., "52:54:0:e0:17:c3" -> "52:54:00:e0:17:c3")
+        let normalizedSearchMAC = normalizeMACAddress(macAddress)
+
         for block in leaseBlocks {
             if let hwAddress = extractValue(from: block, key: "hw_address"),
                let ipAddress = extractValue(from: block, key: "ip_address") {
 
                 let leaseMAC = extractMACFromHwAddress(hwAddress)
+                // Normalize the lease MAC address from DHCP file
+                // (Apple's DHCP writes without leading zeros: "52:54:0:XX:XX:XX")
+                let normalizedLeaseMAC = normalizeMACAddress(leaseMAC)
 
-                if leaseMAC.uppercased() == macAddress.uppercased() {
-                    NSLog("[DHCPLeaseMonitor] Found IP \(ipAddress) for MAC \(macAddress)")
+                if normalizedLeaseMAC.uppercased() == normalizedSearchMAC.uppercased() {
+                    NSLog("[DHCPLeaseMonitor] Found IP \(ipAddress) for MAC \(macAddress) (normalized: \(normalizedSearchMAC))")
                     return ipAddress
                 }
             }
@@ -391,6 +401,28 @@ class DHCPLeaseMonitor {
         let macParts = hwAddress.split(separator: ",")
         let mac = macParts.count > 1 ? String(macParts[1]) : hwAddress
         return mac.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+
+    /// Normalize MAC address format by padding octets with leading zeros.
+    ///
+    /// Apple's DHCP server writes MAC addresses without leading zeros (52:54:0:e0:17:c3),
+    /// but network code typically uses standard format with leading zeros (52:54:00:e0:17:c3).
+    /// This function normalizes both formats to ensure reliable comparison.
+    ///
+    /// - Parameter mac: MAC address in any format (with or without leading zeros)
+    /// - Returns: Normalized MAC address with leading zeros (e.g., "52:54:00:e0:17:c3")
+    ///
+    /// Examples:
+    /// - "52:54:0:e0:17:c3" -> "52:54:00:e0:17:c3"
+    /// - "52:54:00:e0:17:c3" -> "52:54:00:e0:17:c3" (unchanged)
+    /// - "a:b:c:d:e:f" -> "0a:0b:0c:0d:0e:0f"
+    private static func normalizeMACAddress(_ mac: String) -> String {
+        let octets = mac.split(separator: ":")
+        let normalized = octets.map { octet in
+            // Pad single-digit octets with leading zero
+            return octet.count == 1 ? "0\(octet)" : String(octet)
+        }
+        return normalized.joined(separator: ":")
     }
 }
 

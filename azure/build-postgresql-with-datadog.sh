@@ -187,6 +187,65 @@ create_initramfs_structure() {
 }
 
 # ============================================================================
+# Extract and Install Kernel Modules
+# ============================================================================
+
+install_kernel_modules() {
+    section "Installing Kernel Modules"
+
+    cd "$WORK_DIR/initramfs"
+
+    # Check for kernel modules tarball
+    local MODULE_TARBALL="/tmp/vibecode-kernel-modules.tar.gz"
+    local MODULE_DIR="/tmp/vibecode-kernel-modules"
+
+    if [ ! -f "$MODULE_TARBALL" ] && [ ! -d "$MODULE_DIR" ]; then
+        warn "Kernel modules not found at $MODULE_TARBALL"
+        warn "VM will require kernel with built-in virtio_net support"
+        mkdir -p lib/modules
+        return 0
+    fi
+
+    log "Extracting kernel modules..."
+
+    # Create modules directory
+    mkdir -p lib/modules
+
+    # Extract from tarball if it exists
+    if [ -f "$MODULE_TARBALL" ]; then
+        log "  Extracting from tarball: $MODULE_TARBALL"
+        tar -xzf "$MODULE_TARBALL" -C lib/modules/ 2>/dev/null || {
+            warn "Failed to extract kernel modules from tarball"
+            return 0
+        }
+    elif [ -d "$MODULE_DIR" ]; then
+        log "  Copying from directory: $MODULE_DIR"
+        cp -r "$MODULE_DIR"/* lib/modules/ 2>/dev/null || {
+            warn "Failed to copy kernel modules from directory"
+            return 0
+        }
+    fi
+
+    # Verify modules were installed
+    local module_count=$(find lib/modules -name "*.ko" 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$module_count" -gt 0 ]; then
+        log "✓ Installed $module_count kernel module(s)"
+
+        # List the installed modules
+        find lib/modules -name "*.ko" | while read module; do
+            local module_name=$(basename "$module")
+            local module_size=$(du -h "$module" | cut -f1)
+            log "    - $module_name ($module_size)"
+        done
+    else
+        warn "No kernel modules found after extraction"
+        warn "VM will require kernel with built-in virtio_net support"
+    fi
+
+    log "✓ Kernel module installation complete"
+}
+
+# ============================================================================
 # Extract and Install Packages
 # ============================================================================
 
@@ -625,6 +684,36 @@ mount -t tmpfs run /run
 
 echo "✓ Filesystems mounted"
 
+# Load kernel modules for networking
+echo ""
+echo "Loading kernel modules..."
+
+# Check if modules are available
+if [ -d /lib/modules ]; then
+    MODULE_COUNT=$(find /lib/modules -name "*.ko" 2>/dev/null | wc -l)
+    if [ "$MODULE_COUNT" -gt 0 ]; then
+        echo "Found $MODULE_COUNT kernel module(s)"
+
+        # Load virtio and network modules in correct order
+        for module in failover net_failover virtio_net; do
+            MODULE_PATH=$(find /lib/modules -name "${module}.ko" 2>/dev/null | head -1)
+            if [ -n "$MODULE_PATH" ]; then
+                echo "  Loading $module..."
+                insmod "$MODULE_PATH" 2>/dev/null && echo "    ✓ $module loaded" || echo "    ⚠ $module load failed"
+            fi
+        done
+
+        # Wait for modules to initialize
+        echo "Waiting for network hardware to initialize..."
+        sleep 2
+        echo "✓ Kernel modules loaded"
+    else
+        echo "⚠ No kernel modules found (using built-in drivers)"
+    fi
+else
+    echo "⚠ No /lib/modules directory (using built-in drivers)"
+fi
+
 # Configure network
 echo ""
 echo "Configuring network..."
@@ -869,7 +958,7 @@ add_kernel_module_awareness() {
         if [ -f "$kernel_path" ]; then
             log "Found kernel at: $kernel_path"
             # Try to extract version from kernel file
-            KERNEL_VERSION=$(file "$kernel_path" 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1)
+            KERNEL_VERSION=$(file "$kernel_path" 2>/dev/null | grep -o '[0-9]\+\.[0-9]\+\.[0-9]\+' | head -1 || true)
             if [ -n "$KERNEL_VERSION" ]; then
                 log "  Detected kernel version: $KERNEL_VERSION"
                 break
@@ -1184,6 +1273,7 @@ main() {
     check_dependencies
     download_alpine_packages
     create_initramfs_structure
+    install_kernel_modules
     install_packages
     configure_libraries
     configure_busybox

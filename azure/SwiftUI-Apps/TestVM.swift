@@ -58,7 +58,8 @@ print("Network: MAC=\(macAddress.string)")
 // Serial console
 let consoleLogPath = URL(fileURLWithPath: "/tmp/test-vm-console.log")
 FileManager.default.createFile(atPath: consoleLogPath.path, contents: nil)
-let consoleFileHandle = try! FileHandle(forWritingTo: consoleLogPath)
+// Use forUpdating instead of forWritingTo to allow the VM framework to write properly
+let consoleFileHandle = try! FileHandle(forUpdating: consoleLogPath)
 
 let serial = VZVirtioConsoleDeviceSerialPortConfiguration()
 serial.attachment = VZFileHandleSerialPortAttachment(

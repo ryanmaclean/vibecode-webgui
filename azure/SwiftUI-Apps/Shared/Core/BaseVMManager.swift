@@ -710,7 +710,8 @@ open class BaseVMManager: NSObject, ObservableObject {
             VMLogger.debug("Configuring serial console with file logging", metadata: ["vm_id": vmID])
 
             FileManager.default.createFile(atPath: consoleLogPath.path, contents: nil)
-            consoleFileHandle = try FileHandle(forWritingTo: consoleLogPath)
+            // Use forUpdating instead of forWritingTo to allow the VM framework to write properly
+            consoleFileHandle = try FileHandle(forUpdating: consoleLogPath)
 
             serial.attachment = VZFileHandleSerialPortAttachment(
                 fileHandleForReading: nil,

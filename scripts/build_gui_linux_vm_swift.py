@@ -65,6 +65,13 @@ import Virtualization
 @main
 class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     
+    static func main() {
+        let app = NSApplication.shared
+        let delegate = AppDelegate()
+        app.delegate = delegate
+        app.run()
+    }
+    
     // VM paths
     private let vmBundlePath = NSHomeDirectory() + "/VibeCode VMs/''' + vm_name + ''' VM.bundle/"
     private var mainDiskImagePath: String { vmBundlePath + "Disk.img" }
@@ -97,17 +104,23 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         }
     }
     
-    // Create ASIF (sparse/resizable) disk image instead of raw IMG
+    // Create sparse disk image (APFS automatically makes it sparse)
     private func createMainDiskImage() {
-        let diskURL = URL(fileURLWithPath: mainDiskImagePath)
+        // First create the empty file
+        let created = FileManager.default.createFile(atPath: mainDiskImagePath, contents: nil, attributes: nil)
+        guard created else {
+            fatalError("Failed to create disk file at: \\(mainDiskImagePath)")
+        }
         
-        guard let diskFileHandle = try? FileHandle(forWritingTo: diskURL) else {
+        // Now open it for writing and truncate to size
+        guard let diskFileHandle = try? FileHandle(forWritingTo: URL(fileURLWithPath: mainDiskImagePath)) else {
             fatalError("Failed to get file handle for disk")
         }
         
         do {
             // 1GB disk (sparse on APFS - starts small, grows as needed)
             try diskFileHandle.truncate(atOffset: 1 * 1024 * 1024 * 1024)
+            try diskFileHandle.close()
             print("✅ Created 1GB disk (sparse): \\(mainDiskImagePath)")
         } catch {
             fatalError("Failed to truncate disk: \\(error)")
@@ -282,6 +295,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     // MARK: - Application Lifecycle
     
     func applicationDidFinishLaunching(_ notification: Notification) {
+        NSLog("🚀 VibeCodeServices starting...")
+        
         // Create window
         window = NSWindow(
             contentRect: NSRect(x: 0, y: 0, width: 1280, height: 720),
@@ -297,14 +312,36 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         window.makeKeyAndOrderFront(nil)
         
         NSApp.activate(ignoringOtherApps: true)
+        NSLog("Window created")
+        
+        // Check kernel and initramfs exist
+        if !FileManager.default.fileExists(atPath: kernelPath) {
+            NSLog("❌ ERROR: Kernel not found at: \\(kernelPath)")
+            let alert = NSAlert()
+            alert.messageText = "Kernel Not Found"
+            alert.informativeText = "Kernel not found at: \\(kernelPath)"
+            alert.runModal()
+            return
+        }
+        NSLog("✅ Kernel found: \\(kernelPath)")
+        
+        if !FileManager.default.fileExists(atPath: initramfsPath) {
+            NSLog("❌ ERROR: Initramfs not found at: \\(initramfsPath)")
+            let alert = NSAlert()
+            alert.messageText = "Initramfs Not Found"
+            alert.informativeText = "Initramfs not found at: \\(initramfsPath)"
+            alert.runModal()
+            return
+        }
+        NSLog("✅ Initramfs found: \\(initramfsPath)")
         
         // Check if disk exists
         if !FileManager.default.fileExists(atPath: vmBundlePath) {
-            print("📦 Creating new VM with VibeCode services...")
+            NSLog("📦 Creating new VM with VibeCode services...")
             createVMBundle()
             createMainDiskImage()
         } else {
-            print("🚀 Booting existing VM")
+            NSLog("🚀 Booting existing VM")
         }
         
         // Always boot with our kernel + initramfs
@@ -332,7 +369,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
 }
 '''
     
-    swift_file = macos_dir / f"{app_name}.swift"
+    # Put Swift source OUTSIDE the app bundle (will be compiled into binary)
+    swift_file = app_dir.parent / f"{app_name}.swift"
     swift_file.write_text(swift_code)
     logger.info(f"✅ Created Swift source: {swift_file}")
     
@@ -371,14 +409,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
 <dict>
     <key>com.apple.security.virtualization</key>
     <true/>
-    <key>com.apple.security.app-sandbox</key>
-    <true/>
-    <key>com.apple.security.files.user-selected.read-write</key>
-    <true/>
 </dict>
 </plist>'''
     
-    (contents_dir / f"{app_name}.entitlements").write_text(entitlements)
+    # Put entitlements outside app bundle for signing
+    (app_dir.parent / f"{app_name}.entitlements").write_text(entitlements)
     
     # Build script
     build_script = f'''#!/bin/bash
@@ -386,6 +421,9 @@ set -e
 
 cd "$(dirname "$0")"
 APP_DIR="{app_dir}"
+ENTITLEMENTS="$(dirname "$APP_DIR")/{app_name}.entitlements"
+BINARY="$APP_DIR/Contents/MacOS/{app_name}"
+SOURCE="$(dirname "$APP_DIR")/{app_name}.swift"
 
 echo "Building {app_name}..."
 
@@ -393,15 +431,21 @@ swiftc -target arm64-apple-macosx14.0 \\
     -parse-as-library \\
     -framework Cocoa \\
     -framework Virtualization \\
-    -o "$APP_DIR/Contents/MacOS/{app_name}" \\
-    "$APP_DIR/Contents/MacOS/{app_name}.swift"
+    -o "$BINARY" \\
+    "$SOURCE"
+
+# Source stays outside bundle, no need to remove
+
+echo "Signing binary with entitlements..."
+codesign --force --sign - --entitlements "$ENTITLEMENTS" "$BINARY"
 
 echo "✅ Build complete: $APP_DIR"
 echo ""
 echo "Run with: open '$APP_DIR'"
 '''
     
-    build_sh = macos_dir / f"build_{vm_name.lower()}.sh"
+    # Put build script OUTSIDE the app bundle
+    build_sh = app_dir.parent / f"build_{vm_name.lower()}.sh"
     build_sh.write_text(build_script)
     build_sh.chmod(0o755)
     

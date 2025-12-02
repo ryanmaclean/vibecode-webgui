@@ -44,13 +44,18 @@ final class ValkeyVMManager: BaseVMManager {
 
     /// Get kernel command line parameters.
     ///
-    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1"
+    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1 DD_API_KEY=... DD_SITE=..."
     ///
     /// - console=hvc0: Enable serial console output
     /// - debug loglevel=8: Verbose kernel logging for debugging
     /// - ipv6.disable=1: Force IPv4-only for better DHCP reliability
+    /// - DD_API_KEY: Datadog API key (if configured)
+    /// - DD_SITE: Datadog site region (if configured)
+    ///
+    /// Inherits Datadog integration from BaseVMManager.
     override func getKernelCommandLine() -> String {
-        return "console=hvc0 debug loglevel=8 ipv6.disable=1"
+        // Call super to get Datadog-enhanced kernel command line
+        return super.getKernelCommandLine()
     }
 
     /// Get initramfs resource name (without .cpio.gz extension).

@@ -502,6 +502,61 @@ create_initramfs_structure() {
     log "✓ Directory structure created"
 }
 
+copy_kernel_modules() {
+    log "=== Copying Kernel Modules ==="
+
+    local initramfs="$WORK_DIR/initramfs"
+    local modules_tarball="/tmp/vibecode-kernel-modules.tar.gz"
+
+    if [ ! -f "$modules_tarball" ]; then
+        warn "Kernel modules tarball not found at $modules_tarball"
+        warn "Skipping kernel module installation"
+        return 0
+    fi
+
+    info "Extracting kernel modules from tarball..."
+    local temp_extract="/tmp/modules-extract-$$"
+    mkdir -p "$temp_extract"
+    cd "$temp_extract"
+
+    # Extract the tarball
+    tar xzf "$modules_tarball" || error "Failed to extract kernel modules"
+
+    # Find the kernel version directory
+    local kernel_version=$(ls lib/modules/ | head -1)
+    info "Found kernel version: $kernel_version"
+
+    # Copy the entire modules directory to initramfs
+    mkdir -p "$initramfs/lib/modules"
+    cp -r lib/modules/* "$initramfs/lib/modules/"
+
+    # Decompress the specific modules we need for faster loading
+    info "Decompressing critical network modules..."
+    cd "$initramfs/lib/modules/$kernel_version"
+
+    # Find and decompress virtio network modules
+    local modules_to_decompress=(
+        "kernel/net/core/failover.ko.gz"
+        "kernel/drivers/net/net_failover.ko.gz"
+        "kernel/drivers/net/virtio_net.ko.gz"
+    )
+
+    for module in "${modules_to_decompress[@]}"; do
+        if [ -f "$module" ]; then
+            info "Decompressing $module"
+            gunzip "$module" || warn "Failed to decompress $module"
+        fi
+    done
+
+    # Cleanup temp directory
+    cd /
+    rm -rf "$temp_extract"
+
+    local modules_count=$(find "$initramfs/lib/modules" -name "*.ko" -o -name "*.ko.gz" | wc -l)
+    log "✓ Copied $modules_count kernel modules"
+    log ""
+}
+
 copy_binaries() {
     log "=== Copying Binaries ==="
 
@@ -726,6 +781,38 @@ echo "unified-vm" > /etc/hostname 2>/dev/null || true
 mknod -m 666 /dev/null c 1 3 2>/dev/null || true
 mknod -m 666 /dev/zero c 1 5 2>/dev/null || true
 mknod -m 666 /dev/random c 1 8 2>/dev/null || true
+
+# Load kernel modules for network
+echo ""
+echo "=== Loading Kernel Modules ==="
+if [ -d /lib/modules ]; then
+    KERNEL_VERSION=$(ls /lib/modules/ | head -1)
+    MODULE_PATH="/lib/modules/$KERNEL_VERSION/kernel"
+
+    # Load network failover modules first
+    if [ -f "$MODULE_PATH/net/core/failover.ko" ]; then
+        echo "Loading failover.ko..."
+        insmod "$MODULE_PATH/net/core/failover.ko" 2>/dev/null || echo "  (already loaded or built-in)"
+    fi
+
+    if [ -f "$MODULE_PATH/drivers/net/net_failover.ko" ]; then
+        echo "Loading net_failover.ko..."
+        insmod "$MODULE_PATH/drivers/net/net_failover.ko" 2>/dev/null || echo "  (already loaded or built-in)"
+    fi
+
+    # Load virtio network driver
+    if [ -f "$MODULE_PATH/drivers/net/virtio_net.ko" ]; then
+        echo "Loading virtio_net.ko..."
+        insmod "$MODULE_PATH/drivers/net/virtio_net.ko" 2>/dev/null || echo "  (already loaded or built-in)"
+    fi
+
+    echo "✓ Kernel modules loaded"
+
+    # Give modules time to initialize
+    sleep 2
+else
+    echo "⚠ No kernel modules directory found"
+fi
 
 # Network setup
 echo ""
@@ -1020,6 +1107,32 @@ verify_initramfs() {
             "usr/local/bin/statsd-bridge.py"
         )
 
+        # Check for kernel modules directory
+        if [ -d "lib/modules" ]; then
+            local module_count=$(find lib/modules -name "*.ko" -o -name "*.ko.gz" | wc -l)
+            log "✓ Kernel modules directory present ($module_count modules)"
+
+            # Verify critical network modules
+            local kernel_version=$(ls lib/modules/ | head -1)
+            if [ -n "$kernel_version" ]; then
+                local net_modules=(
+                    "lib/modules/$kernel_version/kernel/net/core/failover.ko"
+                    "lib/modules/$kernel_version/kernel/drivers/net/net_failover.ko"
+                    "lib/modules/$kernel_version/kernel/drivers/net/virtio_net.ko"
+                )
+
+                for module in "${net_modules[@]}"; do
+                    if [ -f "$module" ]; then
+                        log "  ✓ $(basename $module)"
+                    else
+                        warn "  ✗ $(basename $module) not found (may be compressed)"
+                    fi
+                done
+            fi
+        else
+            warn "Kernel modules directory not found - network may not function properly"
+        fi
+
         local missing=()
         for file in "${critical_files[@]}"; do
             if [ ! -f "$file" ]; then
@@ -1142,6 +1255,7 @@ main() {
 
     # Build initramfs
     create_initramfs_structure
+    copy_kernel_modules
     copy_binaries
     copy_libraries
     create_configuration_files

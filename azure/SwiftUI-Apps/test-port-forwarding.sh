@@ -1,44 +1,92 @@
 #!/bin/bash
-# Test port forwarding in ValkeyVibeCode.app
 
-cd ~/vibecode-webgui/azure/SwiftUI-Apps
+echo "=== VMPortForwarder Test Script ==="
+echo ""
 
-# Kill any existing VM
+# Kill existing instances
+echo "1. Stopping any existing ValkeyVibeCode instances..."
 killall ValkeyVibeCode 2>/dev/null
-rm -f /tmp/vibecode-console-*.log
+sleep 2
 
-echo "Launching ValkeyVibeCode.app with port forwarding..."
-./ValkeyVibeCode.app/Contents/MacOS/ValkeyVibeCode > /tmp/valkey-test-portforward.log 2>&1 &
-VM_PID=$!
-echo "VM PID: $VM_PID"
-echo ""
-echo "Waiting 45 seconds for VM to boot and port forwarding to start..."
-sleep 45
+# Start the app
+echo "2. Starting ValkeyVibeCode app..."
+open /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/ValkeyVibeCode.app
+sleep 3
 
-echo ""
-echo "=== Checking VM Access ==="
-VM_IP=$(tail -50 /tmp/vibecode-console-*.log 2>/dev/null | grep -oE "192\.168\.64\.[0-9]+" | head -1 || echo "")
-if [ -n "$VM_IP" ]; then
-    echo "VM IP: $VM_IP"
-    echo ""
-    echo "1. Testing VM direct access ($VM_IP:6379):"
-    redis-cli -h "$VM_IP" -p 6379 PING 2>&1 || echo "Failed"
-else
-    echo "Could not detect VM IP from console logs"
+# Monitor for VM startup and IP detection
+echo "3. Monitoring VM startup (waiting 30 seconds)..."
+for i in {1..30}; do
+    # Check if VM has an IP
+    IP=$(for ip in 192.168.64.{2..15}; do nc -z -w 1 $ip 6379 2>/dev/null && echo $ip && break; done)
+
+    if [ -n "$IP" ]; then
+        echo "   ✓ Valkey VM detected at $IP:6379 (after ${i}s)"
+        VALKEY_IP=$IP
+        break
+    fi
+
+    if [ $((i % 5)) -eq 0 ]; then
+        echo "   ... still waiting (${i}s)"
+    fi
+    sleep 1
+done
+
+if [ -z "$VALKEY_IP" ]; then
+    echo "   ✗ ERROR: Valkey VM did not start within 30 seconds"
+    exit 1
 fi
 
 echo ""
-echo "2. Testing localhost port forwarding (localhost:6379):"
-redis-cli -h localhost -p 6379 PING 2>&1 || echo "Failed"
+echo "4. Testing direct VM connection..."
+if redis-cli -h $VALKEY_IP -p 6379 PING 2>&1 | grep -q PONG; then
+    echo "   ✓ Direct connection to VM works: redis-cli -h $VALKEY_IP -p 6379"
+else
+    echo "   ✗ Direct connection to VM failed"
+fi
 
 echo ""
-echo "3. Checking what's listening on localhost:6379:"
-lsof -i :6379 -P -n | grep LISTEN || echo "Nothing listening on 6379"
+echo "5. Testing port forwarding on localhost:6379..."
+sleep 2  # Give port forwarder time to start
+
+# Check if port 6379 is listening on localhost
+if lsof -i :6379 -n -P | grep -q LISTEN; then
+    echo "   ✓ Port 6379 is listening on localhost"
+
+    # Try to connect
+    if redis-cli -h localhost -p 6379 PING 2>&1 | grep -q PONG; then
+        echo "   ✓ Port forwarding WORKS! localhost:6379 → $VALKEY_IP:6379"
+        echo ""
+        echo "SUCCESS: VMPortForwarder is working correctly"
+        exit 0
+    else
+        echo "   ✗ Port 6379 is listening but connection failed"
+        echo "   (Port forwarder might be starting up...)"
+    fi
+else
+    echo "   ✗ Port 6379 is NOT listening on localhost"
+    echo "   This means VMPortForwarder.forwardService() was not called"
+    echo "   or failed to start the listener"
+fi
 
 echo ""
-echo "4. Console log excerpts:"
-tail -30 /tmp/vibecode-console-*.log 2>/dev/null | grep -E "(Valkey|SUCCESS|IP address|port)" || echo "(no Valkey messages)"
+echo "6. Checking for VMPortForwarder in running processes..."
+if lsof -c ValkeyVibeCode -i :6379 2>&1 | grep -q LISTEN; then
+    echo "   ✓ ValkeyVibeCode is listening on port 6379"
+else
+    echo "   ✗ ValkeyVibeCode is NOT listening on port 6379"
+fi
 
 echo ""
-echo "5. Application stdout/stderr:"
-tail -20 /tmp/valkey-test-portforward.log
+echo "7. Diagnosis:"
+echo "   - VM IP: $VALKEY_IP"
+echo "   - VM Valkey: Accessible at $VALKEY_IP:6379"
+echo "   - Port Forward: NOT WORKING (localhost:6379)"
+echo ""
+echo "   Possible causes:"
+echo "   a) onIPAddressDetected() callback not being fired"
+echo "   b) VMPortForwarder.forwardService() failing silently"
+echo "   c) Network framework listener not starting"
+echo "   d) DHCP lease monitor not detecting IP"
+echo ""
+echo "FAILURE: VMPortForwarder is not forwarding ports"
+exit 1

@@ -189,7 +189,8 @@ class NetworkTestCLIManager {
         // Serial console
         _ = try? FileManager.default.removeItem(atPath: consoleLogPath)
         FileManager.default.createFile(atPath: consoleLogPath, contents: nil)
-        consoleFileHandle = try FileHandle(forWritingTo: URL(fileURLWithPath: consoleLogPath))
+        // Use forUpdating instead of forWritingTo to allow the VM framework to write properly
+        consoleFileHandle = try FileHandle(forUpdating: URL(fileURLWithPath: consoleLogPath))
 
         let serial = VZVirtioConsoleDeviceSerialPortConfiguration()
         serial.attachment = VZFileHandleSerialPortAttachment(
