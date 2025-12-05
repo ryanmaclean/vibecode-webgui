@@ -165,12 +165,20 @@ function getTracer() {
           service: `${service}-openai`,
           mlApp,
         });
-        console.log('✅ Datadog LLM Observability enabled for OpenAI spans', {
+        
+        // Configure LangChain plugin for LLM Observability
+        // This instruments @langchain/openai, @langchain/core, and other LangChain modules
+        tracer.use('langchain', {
+          service: `${service}-langchain`,
+          mlApp,
+        });
+        
+        console.log('✅ Datadog LLM Observability enabled for OpenAI and LangChain', {
           mlApp,
           agentless: llmObservabilityAgentless,
         });
       } catch (pluginError) {
-        console.warn('⚠️ Failed to configure Datadog OpenAI plugin', pluginError);
+        console.warn('⚠️ Failed to configure Datadog LLM plugins', pluginError);
       }
     }
 
