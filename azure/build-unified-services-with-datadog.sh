@@ -309,13 +309,13 @@ download_musl_libc() {
     mkdir -p "$lib_dir"
     cd "$lib_dir"
 
-    # Essential libraries from Alpine
+    # Essential libraries from Alpine (using current edge versions)
     local packages=(
         "musl-1.2.5-r8.apk"
         "zlib-1.3.1-r2.apk"
         "openssl-3.4.0-r0.apk"
-        "libgcc-15.0.0_git20241124-r0.apk"
-        "libstdc++-15.0.0_git20241124-r0.apk"
+        "libgcc-15.2.0-r2.apk"
+        "libstdc++-15.2.0-r2.apk"
         "ncurses-libs-6.5_p20241115-r1.apk"
         "readline-8.2.13-r0.apk"
     )
@@ -323,8 +323,43 @@ download_musl_libc() {
     for pkg in "${packages[@]}"; do
         local url="${ALPINE_MIRROR}/main/aarch64/${pkg}"
         info "Downloading: $pkg"
-        wget -q "$url" -O "$pkg" || warn "Failed to download $pkg (may not be critical)"
-        tar xzf "$pkg" 2>/dev/null || true
+
+        # Try download with fallback to older versions
+        if ! wget -q "$url" -O "$pkg" 2>/dev/null; then
+            warn "Failed to download $pkg from primary URL"
+
+            # Try alternate package name patterns for libgcc/libstdc++
+            if [[ "$pkg" == libgcc-* ]]; then
+                info "Trying alternate libgcc versions..."
+                for alt_version in "15.0.0_git20241124-r0" "14.2.0-r4" "13.2.1_git20231014-r0"; do
+                    local alt_pkg="libgcc-${alt_version}.apk"
+                    info "  Trying: $alt_pkg"
+                    if wget -q "${ALPINE_MIRROR}/main/aarch64/${alt_pkg}" -O "$pkg" 2>/dev/null; then
+                        log "  ✓ Downloaded alternate version: $alt_pkg"
+                        break
+                    fi
+                done
+            elif [[ "$pkg" == libstdc++-* ]]; then
+                info "Trying alternate libstdc++ versions..."
+                for alt_version in "15.0.0_git20241124-r0" "14.2.0-r4" "13.2.1_git20231014-r0"; do
+                    local alt_pkg="libstdc++-${alt_version}.apk"
+                    info "  Trying: $alt_pkg"
+                    if wget -q "${ALPINE_MIRROR}/main/aarch64/${alt_pkg}" -O "$pkg" 2>/dev/null; then
+                        log "  ✓ Downloaded alternate version: $alt_pkg"
+                        break
+                    fi
+                done
+            else
+                warn "  No alternate versions available"
+            fi
+        fi
+
+        # Extract the package if downloaded
+        if [ -f "$pkg" ]; then
+            tar xzf "$pkg" 2>/dev/null || true
+        else
+            warn "  Package $pkg could not be downloaded - continuing anyway"
+        fi
     done
 
     log "✓ Libraries downloaded"
@@ -646,6 +681,8 @@ copy_libraries() {
         "libz.so.1"
         "libssl.so.3"
         "libcrypto.so.3"
+        "libgcc_s.so.1"
+        "libstdc++.so.6"
     )
 
     for lib in "${critical_libs[@]}"; do

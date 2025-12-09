@@ -145,12 +145,33 @@ download_alpine_packages() {
     # COMPATIBILITY FIX: Add missing system utilities
     log "Downloading compatibility packages..."
 
+    # Required libraries for coreutils
+    log "  - acl (provides libacl.so.1)"
+    wget -q "${ALPINE_MIRROR}/acl-"*.apk 2>/dev/null || \
+    wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'acl-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
+    warn "Could not download acl package"
+
+    log "  - attr (provides libattr.so.1)"
+    wget -q "${ALPINE_MIRROR}/attr-"*.apk 2>/dev/null || \
+    wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'attr-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
+    warn "Could not download attr package"
+
+    log "  - skalibs (provides libutmps.so for su)"
+    wget -q "${ALPINE_MIRROR}/skalibs-"*.apk 2>/dev/null || \
+    wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'skalibs-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
+    warn "Could not download skalibs package"
+
+    log "  - utmps (provides libutmps.so.0.1)"
+    wget -q "${ALPINE_MIRROR}/utmps-"*.apk 2>/dev/null || \
+    wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'utmps-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
+    warn "Could not download utmps package"
+
     log "  - shadow (provides su command)"
     wget -q "${ALPINE_MIRROR}/shadow-"*.apk 2>/dev/null || \
     wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'shadow-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
     warn "Could not download shadow package"
 
-    log "  - coreutils (provides cut command)"
+    log "  - coreutils (provides cut, wc commands)"
     wget -q "${ALPINE_MIRROR}/coreutils-"*.apk 2>/dev/null || \
     wget -q "${ALPINE_MIRROR}/$(wget -q -O- ${ALPINE_MIRROR}/ | grep -o 'coreutils-[0-9][^"]*\.apk' | head -1)" 2>/dev/null || \
     warn "Could not download coreutils package"

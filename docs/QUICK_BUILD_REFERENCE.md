@@ -128,3 +128,4 @@ ping 192.168.64.X
 | Memory | 8GB |
 | CPUs | Half of host |
 
+
