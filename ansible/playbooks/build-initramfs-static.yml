@@ -340,6 +340,69 @@
       ignore_errors: true
 
     # ========================================
+    # NODE.JS - From Alpine (musl-compatible)
+    # ========================================
+    - name: Download Node.js from Alpine
+      get_url:
+        url: "{{ alpine_mirror }}/{{ alpine_version }}/main/{{ alpine_arch }}/nodejs-20.15.1-r0.apk"
+        dest: "{{ downloads_dir }}/nodejs.apk"
+        mode: '0644'
+      ignore_errors: true
+
+    - name: Extract Node.js APK and replace glibc node
+      shell: |
+        cd {{ downloads_dir }}
+        mkdir -p nodejs
+        cd nodejs
+        tar -xzf ../nodejs.apk 2>/dev/null || true
+        # Replace the glibc node with musl node
+        if [ -f usr/bin/node ]; then
+          cp usr/bin/node {{ rootfs_dir }}/opt/openvscode/node 2>/dev/null || true
+          chmod +x {{ rootfs_dir }}/opt/openvscode/node 2>/dev/null || true
+          echo "Replaced node with Alpine musl version"
+        fi
+      ignore_errors: true
+
+    - name: Download Node.js dependencies from Alpine
+      get_url:
+        url: "{{ alpine_mirror }}/{{ alpine_version }}/main/{{ alpine_arch }}/{{ item }}"
+        dest: "{{ downloads_dir }}/{{ item }}"
+        mode: '0644'
+      loop:
+        - "c-ares-1.33.1-r0.apk"
+        - "libgcc-13.2.1_git20240309-r1.apk"
+        - "libstdc++-13.2.1_git20240309-r1.apk"
+        - "libuv-1.48.0-r0.apk"
+        - "brotli-libs-1.1.0-r2.apk"
+        - "nghttp2-libs-1.62.1-r0.apk"
+        - "ada-libs-2.7.8-r0.apk"
+        - "libbase64-0.5.2-r0.apk"
+        - "llhttp-libs-9.2.1-r0.apk"
+      ignore_errors: true
+
+    - name: Extract Node.js dependencies
+      shell: |
+        cd {{ downloads_dir }}
+        mkdir -p nodejs-deps
+        for apk in c-ares*.apk libuv*.apk brotli-libs*.apk nghttp2-libs*.apk ada-libs*.apk libbase64*.apk llhttp-libs*.apk; do
+          if [ -f "$apk" ]; then
+            cd nodejs-deps
+            tar -xzf ../$apk 2>/dev/null || true
+            cd ..
+          fi
+        done
+        # Copy libraries
+        find nodejs-deps -name "*.so*" -type f -exec cp {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        find nodejs-deps -name "*.so*" -type l -exec cp -P {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        # Create symlinks for expected names
+        cd {{ rootfs_dir }}/lib
+        ln -sf libcares.so.2.* libcares.so.2 2>/dev/null || true
+        ln -sf libada.so.2.* libada.so.2 2>/dev/null || true
+        ln -sf libbase64.so.0.* libbase64.so.0 2>/dev/null || true
+        ls -la libcares* libada* libbase64* 2>/dev/null || true
+      ignore_errors: true
+
+    # ========================================
     # CONFIGURATION FILES
     # ========================================
     - name: Create /etc/passwd
@@ -546,14 +609,44 @@
           {% if services.openvscode.enabled %}
           echo ""
           echo "=== OpenVSCode ==="
-          if [ -d /opt/openvscode ]; then
-              mkdir -p /tmp/vscode-data
+          if [ -d /opt/openvscode ] && [ -x /opt/openvscode/node ]; then
+              mkdir -p /tmp/vscode-data /tmp/vscode-extensions
               cd /opt/openvscode
-              ./bin/openvscode-server --host 0.0.0.0 --port {{ services.openvscode.port }} --without-connection-token --accept-server-license-terms --user-data-dir /tmp/vscode-data > /tmp/openvscode.log 2>&1 &
+              
+              # Create settings for dark mode and disable welcome
+              mkdir -p /tmp/vscode-data/User
+              cat > /tmp/vscode-data/User/settings.json << 'SETTINGS'
+          {
+            "workbench.colorTheme": "Default Dark Modern",
+            "workbench.startupEditor": "none",
+            "workbench.tips.enabled": false,
+            "workbench.welcomePage.walkthroughs.openOnInstall": false,
+            "update.mode": "none",
+            "telemetry.telemetryLevel": "off"
+          }
+          SETTINGS
+              
+              # Start OpenVSCode Server
+              ./node out/server-main.js \
+                --host 0.0.0.0 \
+                --port {{ services.openvscode.port }} \
+                --without-connection-token \
+                --accept-server-license-terms \
+                --user-data-dir /tmp/vscode-data \
+                --extensions-dir /tmp/vscode-extensions \
+                > /tmp/openvscode.log 2>&1 &
+              
               sleep 3
-              ps | grep -v grep | grep -q "node" && echo "OpenVSCode OK at http://$VM_IP:{{ services.openvscode.port }}" || echo "OpenVSCode FAIL"
+              if ps | grep -v grep | grep -q "node"; then
+                  echo "OpenVSCode OK at http://$VM_IP:{{ services.openvscode.port }}"
+                  echo "  Theme: Dark Modern"
+                  echo "  Welcome: Disabled"
+              else
+                  echo "OpenVSCode FAIL"
+                  cat /tmp/openvscode.log 2>/dev/null | head -5
+              fi
           else
-              echo "OpenVSCode not found"
+              echo "OpenVSCode not found or node missing"
           fi
           {% endif %}
           
