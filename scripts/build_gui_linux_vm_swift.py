@@ -58,6 +58,7 @@ def generate_swift_app(vm_name: str = "UbuntuGUI") -> Path:
     # Swift source code (Apple's pattern with VibeCode enhancements)
     swift_code = '''// VibeCode GUI Linux VM - Based on Apple's GUILinuxVirtualMachineSampleApp
 // Enhanced with sparse disk support and Datadog integration.
+// Supports multiple instances via unique VM bundle paths.
 
 import Cocoa
 import Virtualization
@@ -72,8 +73,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         app.run()
     }
     
-    // VM paths
-    private let vmBundlePath = NSHomeDirectory() + "/VibeCode VMs/''' + vm_name + ''' VM.bundle/"
+    // VM paths - unique per instance using UUID
+    // Each app instance gets its own VM bundle to allow multiple VMs
+    private lazy var instanceId: String = {
+        // Try to get a stable ID from the app bundle, or generate a new UUID
+        if let bundlePath = Bundle.main.bundlePath as NSString? {
+            // Use hash of bundle path for apps in different locations
+            let hash = abs(bundlePath.hash)
+            return String(format: "%08X", hash)
+        }
+        return UUID().uuidString.prefix(8).lowercased()
+    }()
+    
+    private lazy var vmBundlePath: String = {
+        let basePath = NSHomeDirectory() + "/VibeCode VMs/''' + vm_name + '''-\\(instanceId).bundle/"
+        print("VM Bundle: \\(basePath)")
+        return basePath
+    }()
+    
     private var mainDiskImagePath: String { vmBundlePath + "Disk.img" }
     private var efiVariableStorePath: String { vmBundlePath + "NVRAM" }
     private var machineIdentifierPath: String { vmBundlePath + "MachineIdentifier" }
@@ -81,7 +98,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     // VibeCode kernel and initramfs paths
     private let projectRoot = "''' + str(PROJECT_ROOT) + '''"
     private var kernelPath: String { projectRoot + "/azure/linux-kernel-arm64" }
-    private var initramfsPath: String { projectRoot + "/azure/unified-services-with-datadog.cpio.gz" }
+    private var initramfsPath: String { projectRoot + "/azure/unified-services-static.cpio.gz" }
     
     private var window: NSWindow!
     private var virtualMachineView: VZVirtualMachineView!

@@ -512,44 +512,66 @@
               ip link set $FOUND_IFACE up
               sleep 1
               
-              # Simple DHCP script
+              # DHCP script that logs what it receives
               cat > /tmp/udhcpc.script << 'DHCPEOF'
           #!/bin/sh
+          # Log DHCP events
+          echo "DHCP event: $1" >> /tmp/dhcp.log
+          echo "  interface=$interface ip=$ip mask=$mask router=$router dns=$dns" >> /tmp/dhcp.log
+          
           case "$1" in
               deconfig)
-                  ip addr flush dev $interface
+                  ip addr flush dev $interface 2>/dev/null
                   ;;
               bound|renew)
-                  ip addr add $ip/$mask dev $interface
-                  [ -n "$router" ] && ip route add default via $router dev $interface
-                  [ -n "$dns" ] && echo "nameserver $dns" > /etc/resolv.conf
+                  # Apply IP address
+                  ip addr add $ip/$mask dev $interface 2>/dev/null
+                  # Add default route
+                  if [ -n "$router" ]; then
+                      ip route del default 2>/dev/null
+                      ip route add default via $router dev $interface
+                  fi
+                  # Set DNS
+                  if [ -n "$dns" ]; then
+                      echo "nameserver $dns" > /etc/resolv.conf
+                  fi
+                  echo "DHCP configured: $ip" >> /tmp/dhcp.log
                   ;;
           esac
           DHCPEOF
               chmod +x /tmp/udhcpc.script
               
-              # Try DHCP first with verbose output
+              # Run DHCP - use -f to stay in foreground, -q to quit after obtaining lease
+              # -t 5 = 5 retries, -T 3 = 3 second timeout between retries
               echo "Requesting DHCP..."
-              udhcpc -i $FOUND_IFACE -s /tmp/udhcpc.script -t 5 -T 3 -n 2>&1 | head -3
+              udhcpc -i $FOUND_IFACE -s /tmp/udhcpc.script -t 5 -T 3 -q 2>&1
+              
+              # Wait a moment for the script to apply settings
+              sleep 2
+              
+              # Get the assigned IP
               VM_IP=$(ip addr show $FOUND_IFACE | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)
               
-              # If DHCP failed, use static IP (Apple VZ NAT typically uses 192.168.64.x)
-              if [ -z "$VM_IP" ]; then
-                  echo "DHCP failed, using static IP"
-                  ip addr add 192.168.64.10/24 dev $FOUND_IFACE
-                  ip route add default via 192.168.64.1 dev $FOUND_IFACE
-                  VM_IP="192.168.64.10"
+              if [ -n "$VM_IP" ]; then
+                  echo "DHCP success: $VM_IP"
+              else
+                  echo "DHCP failed - no IP assigned"
+                  echo "DHCP log:"
+                  cat /tmp/dhcp.log 2>/dev/null || echo "  (no log)"
+                  VM_IP="NO_IP"
               fi
               
               echo "IP: $VM_IP"
               echo "Gateway: $(ip route | grep default | awk '{print $3}')"
               
               # Test DNS
-              echo "Testing DNS..."
-              nslookup google.com 8.8.8.8 2>&1 | head -3 || echo "DNS test failed (expected in minimal env)"
+              if [ "$VM_IP" != "NO_IP" ]; then
+                  echo "Testing DNS..."
+                  nslookup google.com 8.8.8.8 2>&1 | head -3 || echo "DNS test skipped"
+              fi
           else
               echo "No network interface found"
-              VM_IP="unknown"
+              VM_IP="NO_IP"
           fi
           
           # Environment
