@@ -65,3 +65,10 @@ tmp/
 git-*.tar.gz
 git-*/
 
+
+# Build artifacts - do not commit
+artifacts/
+*.o
+*.a
+*.so
+
