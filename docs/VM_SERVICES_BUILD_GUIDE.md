@@ -170,3 +170,41 @@ gh release upload v0.1.0-vm-services azure/unified-services-glibc-fixed.cpio.gz 
   - Valkey: BSD-3-Clause
   - OpenVSCode: MIT
 
+
+## Accessing the VM
+
+### Via Hostname (Avahi/mDNS)
+
+Once the VM boots, it advertises itself via Avahi/Bonjour as `vibecode-vm.local`:
+
+```bash
+# SSH into the VM
+ssh root@vibecode-vm.local
+
+# Access services
+curl http://vibecode-vm.local:8080  # OpenVSCode
+redis-cli -h vibecode-vm.local       # Valkey
+psql -h vibecode-vm.local -U postgres # PostgreSQL
+```
+
+### Via IP Address
+
+The VM also displays its IP address in the console. Use that if mDNS isn't working:
+
+```bash
+ssh root@<IP_ADDRESS>
+```
+
+## Services Advertised
+
+The VM advertises these services via Avahi:
+- `_ssh._tcp` on port 22
+- `_redis._tcp` on port 6379
+- `_postgresql._tcp` on port 5432
+- `_http._tcp` on port 3000 (OpenVSCode)
+
+You can discover them with:
+```bash
+dns-sd -B _ssh._tcp local.
+dns-sd -B _redis._tcp local.
+```
