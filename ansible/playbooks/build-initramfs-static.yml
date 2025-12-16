@@ -277,24 +277,52 @@
         - "libcrypto3-3.3.5-r0.apk"
         - "zlib-1.3.1-r1.apk"
         - "lz4-libs-1.9.4-r5.apk"
-        - "zstd-1.5.6-r0.apk"
+        - "zstd-libs-1.5.6-r0.apk"
         - "icu-libs-74.2-r1.apk"
+        - "xz-libs-5.6.2-r1.apk"
+        - "libldap-2.6.8-r0.apk"
+        - "libstdc++-13.2.1_git20240309-r1.apk"
+        - "libgcc-13.2.1_git20240309-r1.apk"
+        - "libsasl-2.1.28-r6.apk"
+        - "icu-data-full-74.2-r1.apk"
       ignore_errors: true
 
     - name: Extract Alpine dependencies
       shell: |
         cd {{ downloads_dir }}
-        for apk in libpq*.apk libxml2*.apk libssl*.apk libcrypto*.apk zlib*.apk liblz4*.apk libzstd*.apk icu-libs*.apk; do
+        mkdir -p deps
+        for apk in libpq*.apk libxml2*.apk libssl*.apk libcrypto*.apk zlib*.apk lz4-libs*.apk zstd-libs*.apk icu-libs*.apk icu-data*.apk xz-libs*.apk libldap*.apk libstdc++*.apk libgcc*.apk libsasl*.apk; do
           if [ -f "$apk" ]; then
-            mkdir -p deps
             cd deps
             tar -xzf ../$apk 2>/dev/null || true
             cd ..
           fi
         done
-        # Copy all .so files
-        find deps -name "*.so*" -exec cp {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
-        find deps -name "*.so*" -exec cp {} {{ rootfs_dir }}/usr/lib/ \; 2>/dev/null || true
+        # Copy all .so files to /lib (dereferencing symlinks to get actual files)
+        find deps -name "*.so*" -type f -exec cp {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        # Also copy symlinks
+        find deps -name "*.so*" -type l -exec cp -P {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        # Fix broken symlinks by copying actual files
+        cd {{ rootfs_dir }}/lib
+        # Remove broken symlinks and create correct ones
+        rm -f libcrypto.so.3 libssl.so.3 2>/dev/null || true
+        # Find and copy the actual libcrypto and libssl
+        find {{ downloads_dir }}/deps -name "libcrypto.so.3" -type f -exec cp {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        find {{ downloads_dir }}/deps -name "libssl.so.3" -type f -exec cp {} {{ rootfs_dir }}/lib/ \; 2>/dev/null || true
+        # Create symlinks for expected library names
+        ln -sf libzstd.so.1.5.6 libzstd.so.1 2>/dev/null || true
+        ln -sf liblz4.so.1.9.4 liblz4.so.1 2>/dev/null || true
+        ln -sf liblzma.so.5.6.2 liblzma.so.5 2>/dev/null || true
+        ln -sf libldap.so.2.0.200 libldap.so.2 2>/dev/null || true
+        # Copy ICU data files
+        if [ -d {{ downloads_dir }}/deps/usr/share/icu ]; then
+          mkdir -p {{ rootfs_dir }}/usr/share
+          cp -r {{ downloads_dir }}/deps/usr/share/icu {{ rootfs_dir }}/usr/share/
+          echo "ICU data copied"
+        fi
+        # List what we have
+        echo "Libraries in /lib:"
+        ls -la *.so* 2>/dev/null | head -30
       ignore_errors: true
 
     # ========================================
@@ -456,21 +484,33 @@
           echo ""
           echo "=== PostgreSQL ==="
           if [ -x /usr/bin/postgres ]; then
+              # Create directories with proper permissions
+              mkdir -p /var/lib/postgresql/data
               mkdir -p /run/postgresql
-              chown postgres:postgres /var/lib/postgresql /run/postgresql 2>/dev/null || true
+              
+              # Set ownership (use numeric IDs in case names aren't resolved yet)
+              chown -R 999:999 /var/lib/postgresql
+              chown -R 999:999 /run/postgresql
               chmod 700 /var/lib/postgresql/data
               chmod 755 /run/postgresql
               
               if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
                   echo "Initializing database..."
-                  su postgres -c "/usr/bin/initdb -D /var/lib/postgresql/data" 2>&1 | tail -3
-                  echo "host all all 0.0.0.0/0 trust" >> /var/lib/postgresql/data/pg_hba.conf
-                  echo "listen_addresses = '*'" >> /var/lib/postgresql/data/postgresql.conf
+                  # Run initdb as postgres user
+                  su -s /bin/sh postgres -c "/usr/bin/initdb -D /var/lib/postgresql/data --no-locale --encoding=UTF8" 2>&1 | tail -5
+                  if [ -f /var/lib/postgresql/data/pg_hba.conf ]; then
+                      echo "host all all 0.0.0.0/0 trust" >> /var/lib/postgresql/data/pg_hba.conf
+                      echo "listen_addresses = '*'" >> /var/lib/postgresql/data/postgresql.conf
+                  fi
               fi
               
-              su postgres -c "/usr/bin/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
-              sleep 3
-              ps | grep -v grep | grep -q "postgres" && echo "PostgreSQL OK on port {{ services.postgresql.port }}" || { echo "PostgreSQL FAIL"; cat /tmp/postgresql.log | head -5; }
+              if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+                  su -s /bin/sh postgres -c "/usr/bin/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
+                  sleep 3
+                  ps | grep -v grep | grep -q "postgres" && echo "PostgreSQL OK on port {{ services.postgresql.port }}" || { echo "PostgreSQL FAIL"; cat /tmp/postgresql.log | head -5; }
+              else
+                  echo "PostgreSQL FAIL - initdb failed"
+              fi
           else
               echo "PostgreSQL binary not found"
           fi
