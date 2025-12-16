@@ -23,7 +23,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
     // VibeCode kernel and initramfs paths
     private let projectRoot = "/Users/ryan.maclean/vibecode-webgui"
     private var kernelPath: String { projectRoot + "/azure/linux-kernel-arm64" }
-    private var initramfsPath: String { projectRoot + "/azure/unified-services-glibc-fixed.cpio.gz" }
+    private var initramfsPath: String { projectRoot + "/azure/unified-services-static.cpio.gz" }
     
     private var window: NSWindow!
     private var virtualMachine: VZVirtualMachine!
