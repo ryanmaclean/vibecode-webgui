@@ -129,3 +129,6 @@ ping 192.168.64.X
 | CPUs | Half of host |
 
 
+
+
+
