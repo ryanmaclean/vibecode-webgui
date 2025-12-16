@@ -278,9 +278,9 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
     // MARK: - NSTextViewDelegate - Capture keyboard input
     
     func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
-        // Send typed characters to VM serial input
-        if let text = replacementString, let data = text.data(using: .utf8) {
-            inputPipe.fileHandleForWriting.write(data)
+        // Send typed characters to VM serial input (only if pipe is initialized)
+        if let pipe = inputPipe, let text = replacementString, let data = text.data(using: .utf8) {
+            pipe.fileHandleForWriting.write(data)
         }
         return false  // Don't insert into text view - VM will echo back
     }
