@@ -67,7 +67,7 @@
       - name: libsasl2
         url: "{{ ubuntu_mirror }}/pool/main/c/cyrus-sasl2/libsasl2-2_2.1.27+dfsg2-3ubuntu1.2_{{ ubuntu_arch }}.deb"
       - name: libsystemd
-        url: "{{ ubuntu_mirror }}/pool/main/s/systemd/libsystemd0_249.11-0ubuntu3.12_{{ ubuntu_arch }}.deb"
+        url: "{{ ubuntu_mirror }}/pool/main/s/systemd/libsystemd0_249.11-0ubuntu3.17_{{ ubuntu_arch }}.deb"
     
     # VM hostname
     vm_hostname: "vibecode-vm"
