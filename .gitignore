@@ -72,3 +72,68 @@ artifacts/
 *.a
 *.so
 
+# Swift build artifacts
+**/.build/
+**/ModuleCache/
+*.swiftmodule
+*.pcm
+
+# Backup files
+*.backup
+*.backup-*
+*.conflict-backup-*
+
+# Large binary files that should be in releases
+azure/linux-kernel-arm64*
+azure/vmlinux*
+azure/nodejs-complete*
+src-tauri/resources/vfkit*
+release-artifacts/
+pkg-build/
+
+# OpenVSCode server (large)
+openvscode-server/
+
+# More large files
+dist-pkg/
+bench-images/
+tmp-codeium-example/
+.serena/
+patches/*.patch
+bin/apple-container-runtime
+scripts/vibecode-demo
+src-tauri/resources/codeserver/
+azure/SwiftUI-Apps/*Binary
+azure/SwiftUI-Apps/LiquidGlassVibeCodeApp
+
+# Astro cache
+docs/.astro/
+
+# Playwright reports
+playwright-report/
+tests/playwright-reports/
+.playwright-mcp/
+
+# Tauri binaries
+src-tauri/binaries/
+src-tauri/release-artifacts/
+
+# Datadog logs
+datadog/*.txt
+ops/monitoring/datadog/*.txt
+
+# Swift app binaries (compiled)
+azure/SwiftUI-Apps/*App
+azure/SwiftUI-Apps/*AppBinary
+!azure/SwiftUI-Apps/*.app/
+
+# Performance test results
+tests/performance/
+performance-results/
+
+# Migration reports
+migration-report.txt
+
+# Conflict backups
+*.conflict-backup-*
+
