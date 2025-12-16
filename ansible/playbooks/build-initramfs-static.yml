@@ -138,14 +138,39 @@
       when: base_initramfs.stat.exists
 
     # ========================================
-    # VALKEY - Copy from base initramfs
+    # VALKEY - From Alpine (Linux ELF binary)
     # ========================================
-    - name: Copy Valkey from base initramfs
+    - name: Download Valkey from Alpine
+      get_url:
+        url: "{{ alpine_mirror }}/{{ alpine_version }}/main/{{ alpine_arch }}/valkey-7.2.11-r0.apk"
+        dest: "{{ downloads_dir }}/valkey.apk"
+        mode: '0644'
+
+    - name: Extract Valkey APK
       shell: |
-        cp {{ downloads_dir }}/base/bin/valkey-server {{ rootfs_dir }}/bin/ 2>/dev/null || true
-        cp {{ downloads_dir }}/base/bin/valkey-cli {{ rootfs_dir }}/bin/ 2>/dev/null || true
-        chmod +x {{ rootfs_dir }}/bin/valkey-* 2>/dev/null || true
-      when: base_initramfs.stat.exists
+        cd {{ downloads_dir }}
+        mkdir -p valkey
+        cd valkey
+        tar -xzf ../valkey.apk 2>/dev/null || true
+        cp usr/bin/valkey-server {{ rootfs_dir }}/bin/ 2>/dev/null || true
+        chmod +x {{ rootfs_dir }}/bin/valkey-server 2>/dev/null || true
+
+    - name: Download Valkey CLI from Alpine
+      get_url:
+        url: "{{ alpine_mirror }}/{{ alpine_version }}/main/{{ alpine_arch }}/valkey-cli-7.2.11-r0.apk"
+        dest: "{{ downloads_dir }}/valkey-cli.apk"
+        mode: '0644'
+      ignore_errors: true
+
+    - name: Extract Valkey CLI APK
+      shell: |
+        cd {{ downloads_dir }}
+        mkdir -p valkey-cli
+        cd valkey-cli
+        tar -xzf ../valkey-cli.apk 2>/dev/null || true
+        cp usr/bin/valkey-cli {{ rootfs_dir }}/bin/ 2>/dev/null || true
+        chmod +x {{ rootfs_dir }}/bin/valkey-cli 2>/dev/null || true
+      ignore_errors: true
 
     # ========================================
     # KERNEL MODULES - Copy from base initramfs
@@ -174,9 +199,9 @@
         mkdir -p dropbear
         cd dropbear
         tar -xzf ../dropbear.apk 2>/dev/null || true
-        cp usr/bin/dropbear {{ rootfs_dir }}/usr/sbin/ 2>/dev/null || true
+        # Dropbear binary is in usr/sbin/dropbear
+        cp usr/sbin/dropbear {{ rootfs_dir }}/usr/sbin/ 2>/dev/null || true
         cp usr/bin/dropbearkey {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
-        cp usr/bin/dbclient {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
         chmod +x {{ rootfs_dir }}/usr/sbin/dropbear {{ rootfs_dir }}/usr/bin/dropbearkey 2>/dev/null || true
       when: dropbear_download is succeeded
       ignore_errors: true
@@ -224,12 +249,16 @@
         cd postgresql
         tar -xzf ../postgresql.apk 2>/dev/null || true
         tar -xzf ../postgresql-client.apk 2>/dev/null || true
-        cp usr/bin/postgres {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
-        cp usr/bin/initdb {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
-        cp usr/bin/psql {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
-        cp usr/bin/pg_ctl {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
-        mkdir -p {{ rootfs_dir }}/usr/share/postgresql
-        cp -r usr/share/postgresql/* {{ rootfs_dir }}/usr/share/postgresql/ 2>/dev/null || true
+        # PostgreSQL binaries are in usr/libexec/postgresql16/
+        cp usr/libexec/postgresql16/postgres {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        cp usr/libexec/postgresql16/initdb {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        cp usr/libexec/postgresql16/pg_ctl {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        # Client tools from client package
+        cp usr/libexec/postgresql16/psql {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        # Shared files
+        mkdir -p {{ rootfs_dir }}/usr/share/postgresql16
+        cp -r usr/share/postgresql16/* {{ rootfs_dir }}/usr/share/postgresql16/ 2>/dev/null || true
+        # Libraries
         mkdir -p {{ rootfs_dir }}/usr/lib/postgresql16
         cp -r usr/lib/postgresql16/* {{ rootfs_dir }}/usr/lib/postgresql16/ 2>/dev/null || true
         chmod +x {{ rootfs_dir }}/usr/bin/postgres {{ rootfs_dir }}/usr/bin/initdb 2>/dev/null || true
