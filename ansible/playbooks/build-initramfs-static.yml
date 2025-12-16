@@ -64,6 +64,9 @@
     alpine_version: "v3.20"
     alpine_arch: "aarch64"
 
+    # Root password hash for 'vibecode' (openssl passwd -6 -salt vibecode vibecode)
+    shadow_password: "$6$vibecode$vQV9vbWp4TC3qmWb/NZzb.VCtcJRd8c.1N0o6S4q1D50tuRDDfbhtkfIqN6cuyenVRkOm8xiH8i7gH6D/ZM.K0"
+
     # Services configuration
     services:
       valkey:
@@ -348,6 +351,13 @@
           nobody:x:65534:65534:nobody:/:/bin/false
         mode: '0644'
 
+    - name: Create /etc/shadow (password is vibecode)
+      copy:
+        dest: "{{ rootfs_dir }}/etc/shadow"
+        # Password hash for 'vibecode' generated with openssl passwd -6 -salt vibecode vibecode
+        content: "root:{{ shadow_password }}:19000:0:99999:7:::\npostgres:*:19000:0:99999:7:::\nnobody:*:19000:0:99999:7:::\n"
+        mode: '0640'
+
     - name: Create /etc/group
       copy:
         dest: "{{ rootfs_dir }}/etc/group"
@@ -437,6 +447,7 @@
           if [ -n "$FOUND_IFACE" ]; then
               echo "Found interface: $FOUND_IFACE"
               ip link set $FOUND_IFACE up
+              sleep 1
               
               # Simple DHCP script
               cat > /tmp/udhcpc.script << 'DHCPEOF'
@@ -454,9 +465,25 @@
           DHCPEOF
               chmod +x /tmp/udhcpc.script
               
-              udhcpc -i $FOUND_IFACE -s /tmp/udhcpc.script -q -n 2>/dev/null
+              # Try DHCP first with verbose output
+              echo "Requesting DHCP..."
+              udhcpc -i $FOUND_IFACE -s /tmp/udhcpc.script -t 5 -T 3 -n 2>&1 | head -3
               VM_IP=$(ip addr show $FOUND_IFACE | grep 'inet ' | awk '{print $2}' | cut -d/ -f1)
+              
+              # If DHCP failed, use static IP (Apple VZ NAT typically uses 192.168.64.x)
+              if [ -z "$VM_IP" ]; then
+                  echo "DHCP failed, using static IP"
+                  ip addr add 192.168.64.10/24 dev $FOUND_IFACE
+                  ip route add default via 192.168.64.1 dev $FOUND_IFACE
+                  VM_IP="192.168.64.10"
+              fi
+              
               echo "IP: $VM_IP"
+              echo "Gateway: $(ip route | grep default | awk '{print $3}')"
+              
+              # Test DNS
+              echo "Testing DNS..."
+              nslookup google.com 8.8.8.8 2>&1 | head -3 || echo "DNS test failed (expected in minimal env)"
           else
               echo "No network interface found"
               VM_IP="unknown"
@@ -472,7 +499,7 @@
           echo ""
           echo "=== Valkey ==="
           if [ -x /bin/valkey-server ]; then
-              /bin/valkey-server --bind 0.0.0.0 --port {{ services.valkey.port }} --daemonize yes --dir /tmp
+              /bin/valkey-server --bind 0.0.0.0 --port {{ services.valkey.port }} --protected-mode no --daemonize yes --dir /tmp
               sleep 1
               ps | grep -v grep | grep -q valkey && echo "Valkey OK on port {{ services.valkey.port }}" || echo "Valkey FAIL"
           else
@@ -534,16 +561,22 @@
           echo ""
           echo "=== Dropbear SSH ==="
           if [ -x /usr/sbin/dropbear ]; then
-              mkdir -p /etc/dropbear
+              mkdir -p /etc/dropbear /root/.ssh
+              chmod 700 /root/.ssh
+              
+              # Generate host keys
               if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
                   /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key 2>/dev/null
               fi
               if [ ! -f /etc/dropbear/dropbear_ecdsa_host_key ]; then
                   /usr/bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key 2>/dev/null
               fi
-              /usr/sbin/dropbear -R -B
+              
+              # Start dropbear (-R regenerate keys if needed, -E log to stderr, -F foreground but we use &)
+              # -s disables password login for root, so we omit it to allow password auth
+              /usr/sbin/dropbear -R -E 2>&1 &
               sleep 1
-              ps | grep -v grep | grep -q dropbear && echo "SSH OK on port {{ services.ssh.port }}" || echo "SSH FAIL"
+              ps | grep -v grep | grep -q dropbear && echo "SSH OK on port {{ services.ssh.port }} (password: vibecode)" || echo "SSH FAIL"
           else
               echo "Dropbear binary not found"
           fi
