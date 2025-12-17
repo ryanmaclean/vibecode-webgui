@@ -1,12 +1,12 @@
 // VibeCode GUI Linux VM - Based on Apple's GUILinuxVirtualMachineSampleApp
-// Enhanced with sparse disk support and Datadog integration.
+// Enhanced with sparse disk support and interactive serial console.
 // Supports multiple instances via unique VM bundle paths.
 
 import Cocoa
 import Virtualization
 
 @main
-class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NSTextViewDelegate {
     
     static func main() {
         let app = NSApplication.shared
@@ -16,11 +16,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     }
     
     // VM paths - unique per instance using UUID
-    // Each app instance gets its own VM bundle to allow multiple VMs
     private lazy var instanceId: String = {
-        // Try to get a stable ID from the app bundle, or generate a new UUID
         if let bundlePath = Bundle.main.bundlePath as NSString? {
-            // Use hash of bundle path for apps in different locations
             let hash = abs(bundlePath.hash)
             return String(format: "%08X", hash)
         }
@@ -29,7 +26,6 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     
     private lazy var vmBundlePath: String = {
         let basePath = NSHomeDirectory() + "/VibeCode VMs/VibeCodeServices-\(instanceId).bundle/"
-        print("VM Bundle: \(basePath)")
         return basePath
     }()
     
@@ -43,10 +39,14 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     private var initramfsPath: String { projectRoot + "/azure/unified-services-static.cpio.gz" }
     
     private var window: NSWindow!
-    private var virtualMachineView: VZVirtualMachineView!
+    private var consoleTextView: NSTextView!
+    private var scrollView: NSScrollView!
     private var virtualMachine: VZVirtualMachine!
-    private var installerISOPath: URL?
-    private var needsInstall = true
+    
+    // Serial console pipes
+    private var inputPipe: Pipe!
+    private var outputPipe: Pipe!
+    private var logFileHandle: FileHandle?
     
     override init() {
         super.init()
@@ -57,30 +57,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     private func createVMBundle() {
         do {
             try FileManager.default.createDirectory(atPath: vmBundlePath, withIntermediateDirectories: true)
-            print("✅ Created VM bundle: \(vmBundlePath)")
+            appendToConsole("✅ Created VM bundle: \(vmBundlePath)\n")
         } catch {
             fatalError("Failed to create VM bundle: \(error)")
         }
     }
     
-    // Create sparse disk image (APFS automatically makes it sparse)
     private func createMainDiskImage() {
-        // First create the empty file
         let created = FileManager.default.createFile(atPath: mainDiskImagePath, contents: nil, attributes: nil)
         guard created else {
             fatalError("Failed to create disk file at: \(mainDiskImagePath)")
         }
         
-        // Now open it for writing and truncate to size
         guard let diskFileHandle = try? FileHandle(forWritingTo: URL(fileURLWithPath: mainDiskImagePath)) else {
             fatalError("Failed to get file handle for disk")
         }
         
         do {
-            // 1GB disk (sparse on APFS - starts small, grows as needed)
             try diskFileHandle.truncate(atOffset: 1 * 1024 * 1024 * 1024)
             try diskFileHandle.close()
-            print("✅ Created 1GB disk (sparse): \(mainDiskImagePath)")
+            appendToConsole("✅ Created 1GB sparse disk\n")
         } catch {
             fatalError("Failed to truncate disk: \(error)")
         }
@@ -95,60 +91,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         ) else {
             fatalError("Failed to create disk attachment")
         }
-        
         return VZVirtioBlockDeviceConfiguration(attachment: mainDiskAttachment)
     }
     
     private func computeCPUCount() -> Int {
         let totalCPUs = ProcessInfo.processInfo.processorCount
-        var cpuCount = totalCPUs <= 1 ? 1 : totalCPUs / 2  // Use half for guest
+        var cpuCount = totalCPUs <= 1 ? 1 : totalCPUs / 2
         cpuCount = max(cpuCount, VZVirtualMachineConfiguration.minimumAllowedCPUCount)
         cpuCount = min(cpuCount, VZVirtualMachineConfiguration.maximumAllowedCPUCount)
         return cpuCount
     }
     
     private func computeMemorySize() -> UInt64 {
-        var memorySize = (8 * 1024 * 1024 * 1024) as UInt64  // 8GB
+        var memorySize = (4 * 1024 * 1024 * 1024) as UInt64  // 4GB
         memorySize = max(memorySize, VZVirtualMachineConfiguration.minimumAllowedMemorySize)
         memorySize = min(memorySize, VZVirtualMachineConfiguration.maximumAllowedMemorySize)
         return memorySize
-    }
-    
-    private func createAndSaveMachineIdentifier() -> VZGenericMachineIdentifier {
-        let machineIdentifier = VZGenericMachineIdentifier()
-        try! machineIdentifier.dataRepresentation.write(to: URL(fileURLWithPath: machineIdentifierPath))
-        return machineIdentifier
-    }
-    
-    private func retrieveMachineIdentifier() -> VZGenericMachineIdentifier {
-        guard let data = try? Data(contentsOf: URL(fileURLWithPath: machineIdentifierPath)),
-              let identifier = VZGenericMachineIdentifier(dataRepresentation: data) else {
-            fatalError("Failed to retrieve machine identifier")
-        }
-        return identifier
-    }
-    
-    private func createEFIVariableStore() -> VZEFIVariableStore {
-        guard let store = try? VZEFIVariableStore(
-            creatingVariableStoreAt: URL(fileURLWithPath: efiVariableStorePath)
-        ) else {
-            fatalError("Failed to create EFI variable store")
-        }
-        return store
-    }
-    
-    private func retrieveEFIVariableStore() -> VZEFIVariableStore {
-        return VZEFIVariableStore(url: URL(fileURLWithPath: efiVariableStorePath))
-    }
-    
-    private func createUSBMassStorageDeviceConfiguration() -> VZUSBMassStorageDeviceConfiguration {
-        guard let attachment = try? VZDiskImageStorageDeviceAttachment(
-            url: installerISOPath!,
-            readOnly: true
-        ) else {
-            fatalError("Failed to create installer attachment")
-        }
-        return VZUSBMassStorageDeviceConfiguration(attachment: attachment)
     }
     
     private func createNetworkDeviceConfiguration() -> VZVirtioNetworkDeviceConfiguration {
@@ -157,37 +115,35 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         return networkDevice
     }
     
-    private func createGraphicsDeviceConfiguration() -> VZVirtioGraphicsDeviceConfiguration {
-        let graphicsDevice = VZVirtioGraphicsDeviceConfiguration()
-        graphicsDevice.scanouts = [
-            VZVirtioGraphicsScanoutConfiguration(widthInPixels: 1920, heightInPixels: 1080)
-        ]
-        return graphicsDevice
+    // MARK: - Console Output
+    
+    private func appendToConsole(_ text: String) {
+        DispatchQueue.main.async {
+            guard self.consoleTextView != nil else { return }
+            
+            // Filter ANSI escape sequences
+            let filtered = self.filterAnsiEscapes(text)
+            
+            let attrs: [NSAttributedString.Key: Any] = [
+                .font: NSFont.monospacedSystemFont(ofSize: 13, weight: .regular),
+                .foregroundColor: NSColor.green
+            ]
+            let attrStr = NSAttributedString(string: filtered, attributes: attrs)
+            self.consoleTextView.textStorage?.append(attrStr)
+            
+            // Auto-scroll to bottom
+            self.consoleTextView.scrollToEndOfDocument(nil)
+        }
     }
     
-    private func createInputAudioDeviceConfiguration() -> VZVirtioSoundDeviceConfiguration {
-        let audioDevice = VZVirtioSoundDeviceConfiguration()
-        let inputStream = VZVirtioSoundDeviceInputStreamConfiguration()
-        inputStream.source = VZHostAudioInputStreamSource()
-        audioDevice.streams = [inputStream]
-        return audioDevice
-    }
-    
-    private func createOutputAudioDeviceConfiguration() -> VZVirtioSoundDeviceConfiguration {
-        let audioDevice = VZVirtioSoundDeviceConfiguration()
-        let outputStream = VZVirtioSoundDeviceOutputStreamConfiguration()
-        outputStream.sink = VZHostAudioOutputStreamSink()
-        audioDevice.streams = [outputStream]
-        return audioDevice
-    }
-    
-    private func createSpiceAgentConsoleDeviceConfiguration() -> VZVirtioConsoleDeviceConfiguration {
-        let consoleDevice = VZVirtioConsoleDeviceConfiguration()
-        let spiceAgentPort = VZVirtioConsolePortConfiguration()
-        spiceAgentPort.name = VZSpiceAgentPortAttachment.spiceAgentPortName
-        spiceAgentPort.attachment = VZSpiceAgentPortAttachment()
-        consoleDevice.ports[0] = spiceAgentPort
-        return consoleDevice
+    private func filterAnsiEscapes(_ text: String) -> String {
+        // Remove ANSI escape sequences
+        let pattern = "\\x1b\\[[0-9;]*[a-zA-Z]|\\x1b\\][^\\x07]*\\x07|\\x1b[\\(\\)][AB012]"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return text
+        }
+        let range = NSRange(text.startIndex..., in: text)
+        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
     }
     
     // MARK: - VM Creation
@@ -198,57 +154,93 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
         config.cpuCount = computeCPUCount()
         config.memorySize = computeMemorySize()
         
-        // Use Linux bootloader with our kernel and initramfs
+        // Linux bootloader with kernel and initramfs
         let bootloader = VZLinuxBootLoader(kernelURL: URL(fileURLWithPath: kernelPath))
         bootloader.initialRamdiskURL = URL(fileURLWithPath: initramfsPath)
-        bootloader.commandLine = "console=hvc0"
+        bootloader.commandLine = "console=hvc0 TERM=dumb"
         
         config.bootLoader = bootloader
         config.platform = VZGenericPlatformConfiguration()
         
-        // Storage: just our main disk
         config.storageDevices = [createBlockDeviceConfiguration()]
-        
         config.networkDevices = [createNetworkDeviceConfiguration()]
-        config.graphicsDevices = [createGraphicsDeviceConfiguration()]
         
-        // Serial console for boot output
+        // Serial console using pipes for bidirectional I/O
+        inputPipe = Pipe()
+        outputPipe = Pipe()
+        
         let serialConfig = VZVirtioConsoleDeviceSerialPortConfiguration()
-        let serialPort = VZFileHandleSerialPortAttachment(
-            fileHandleForReading: FileHandle.standardInput,
-            fileHandleForWriting: FileHandle.standardOutput
+        serialConfig.attachment = VZFileHandleSerialPortAttachment(
+            fileHandleForReading: inputPipe.fileHandleForReading,
+            fileHandleForWriting: outputPipe.fileHandleForWriting
         )
-        serialConfig.attachment = serialPort
         config.serialPorts = [serialConfig]
         
-        config.keyboards = [VZUSBKeyboardConfiguration()]
-        config.pointingDevices = [VZUSBScreenCoordinatePointingDeviceConfiguration()]
+        // Create log file
+        let logPath = vmBundlePath + "console.log"
+        FileManager.default.createFile(atPath: logPath, contents: nil, attributes: nil)
+        logFileHandle = FileHandle(forWritingAtPath: logPath)
+        
+        // Read output from VM and display in console + write to log
+        outputPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
+            let data = handle.availableData
+            if !data.isEmpty, let text = String(data: data, encoding: .utf8) {
+                self?.appendToConsole(text)
+                // Also write to log file
+                self?.logFileHandle?.write(data)
+            }
+        }
         
         try! config.validate()
         virtualMachine = VZVirtualMachine(configuration: config)
         
-        print("✅ VM configured: \(computeCPUCount()) CPUs, \(computeMemorySize() / (1024*1024*1024))GB RAM")
+        appendToConsole("✅ VM configured: \(computeCPUCount()) CPUs, \(computeMemorySize() / (1024*1024*1024))GB RAM\n")
     }
     
-    func configureAndStartVirtualMachine() {
-        DispatchQueue.main.async {
-            self.createVirtualMachine()
-            self.virtualMachineView.virtualMachine = self.virtualMachine
-            
-            if #available(macOS 14.0, *) {
-                self.virtualMachineView.automaticallyReconfiguresDisplay = true
-            }
-            
-            self.virtualMachine.delegate = self
-            self.virtualMachine.start { result in
-                switch result {
-                case .success:
-                    print("✅ VM started successfully")
-                case .failure(let error):
-                    fatalError("VM failed to start: \(error)")
-                }
+    func startVirtualMachine() {
+        virtualMachine.delegate = self
+        virtualMachine.start { [weak self] result in
+            switch result {
+            case .success:
+                self?.appendToConsole("✅ VM started successfully\n\n")
+            case .failure(let error):
+                self?.appendToConsole("❌ VM failed to start: \(error.localizedDescription)\n")
             }
         }
+    }
+    
+    // MARK: - NSTextViewDelegate - Handle keyboard input
+    
+    func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
+        // Send typed characters to VM serial input
+        if let text = replacementString, let data = text.data(using: .utf8) {
+            if let pipe = inputPipe {
+                pipe.fileHandleForWriting.write(data)
+            }
+        }
+        return false  // Don't insert into text view - VM will echo back
+    }
+    
+    // Handle special keys
+    func textView(_ textView: NSTextView, doCommandBy commandSelector: Selector) -> Bool {
+        if commandSelector == #selector(NSResponder.insertNewline(_:)) {
+            // Enter key
+            if let data = "\n".data(using: .utf8) {
+                inputPipe?.fileHandleForWriting.write(data)
+            }
+            return true
+        } else if commandSelector == #selector(NSResponder.deleteBackward(_:)) {
+            // Backspace
+            let data = Data([0x7f])  // DEL character
+            inputPipe?.fileHandleForWriting.write(data)
+            return true
+        } else if commandSelector == #selector(NSResponder.cancelOperation(_:)) {
+            // Escape / Ctrl+C
+            let data = Data([0x03])  // ETX (Ctrl+C)
+            inputPipe?.fileHandleForWriting.write(data)
+            return true
+        }
+        return false
     }
     
     // MARK: - Application Lifecycle
@@ -256,73 +248,98 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("🚀 VibeCodeServices starting...")
         
-        // Create window
+        // Create window with dark background
         window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 1280, height: 720),
+            contentRect: NSRect(x: 0, y: 0, width: 900, height: 600),
             styleMask: [.titled, .closable, .miniaturizable, .resizable],
             backing: .buffered,
             defer: false
         )
-        window.title = "VibeCodeServices VibeCode - VibeCode Services"
+        window.title = "VibeCode Services VM [\(instanceId)]"
         window.center()
+        window.backgroundColor = NSColor.black
         
-        virtualMachineView = VZVirtualMachineView()
-        window.contentView = virtualMachineView
+        // Create scroll view with text view for console
+        scrollView = NSScrollView(frame: window.contentView!.bounds)
+        scrollView.autoresizingMask = [.width, .height]
+        scrollView.hasVerticalScroller = true
+        scrollView.hasHorizontalScroller = false
+        scrollView.borderType = .noBorder
+        
+        consoleTextView = NSTextView(frame: scrollView.bounds)
+        consoleTextView.autoresizingMask = [.width, .height]
+        consoleTextView.backgroundColor = NSColor.black
+        consoleTextView.textColor = NSColor.green
+        consoleTextView.font = NSFont.monospacedSystemFont(ofSize: 13, weight: .regular)
+        consoleTextView.isEditable = true
+        consoleTextView.isSelectable = true
+        consoleTextView.delegate = self
+        consoleTextView.insertionPointColor = NSColor.green
+        
+        // Allow text view to be first responder for keyboard input
+        consoleTextView.isFieldEditor = false
+        
+        scrollView.documentView = consoleTextView
+        window.contentView = scrollView
         window.makeKeyAndOrderFront(nil)
+        window.makeFirstResponder(consoleTextView)
         
         NSApp.activate(ignoringOtherApps: true)
-        NSLog("Window created")
         
-        // Check kernel and initramfs exist
+        // Welcome message
+        appendToConsole("╔══════════════════════════════════════════════════════════╗\n")
+        appendToConsole("║  VibeCode Services VM - Interactive Console              ║\n")
+        appendToConsole("║  Instance: \(instanceId)                                      ║\n")
+        appendToConsole("╚══════════════════════════════════════════════════════════╝\n\n")
+        
+        // Check kernel and initramfs
         if !FileManager.default.fileExists(atPath: kernelPath) {
-            NSLog("❌ ERROR: Kernel not found at: \(kernelPath)")
-            let alert = NSAlert()
-            alert.messageText = "Kernel Not Found"
-            alert.informativeText = "Kernel not found at: \(kernelPath)"
-            alert.runModal()
+            appendToConsole("❌ ERROR: Kernel not found at: \(kernelPath)\n")
             return
         }
-        NSLog("✅ Kernel found: \(kernelPath)")
+        appendToConsole("✅ Kernel: \(kernelPath)\n")
         
         if !FileManager.default.fileExists(atPath: initramfsPath) {
-            NSLog("❌ ERROR: Initramfs not found at: \(initramfsPath)")
-            let alert = NSAlert()
-            alert.messageText = "Initramfs Not Found"
-            alert.informativeText = "Initramfs not found at: \(initramfsPath)"
-            alert.runModal()
+            appendToConsole("❌ ERROR: Initramfs not found at: \(initramfsPath)\n")
             return
         }
-        NSLog("✅ Initramfs found: \(initramfsPath)")
+        appendToConsole("✅ Initramfs: \(initramfsPath)\n")
         
-        // Check if disk exists
+        // Create or use existing VM bundle
         if !FileManager.default.fileExists(atPath: vmBundlePath) {
-            NSLog("📦 Creating new VM with VibeCode services...")
+            appendToConsole("\n📦 Creating new VM...\n")
             createVMBundle()
             createMainDiskImage()
         } else {
-            NSLog("🚀 Booting existing VM")
+            appendToConsole("\n🚀 Using existing VM bundle\n")
         }
         
-        // Always boot with our kernel + initramfs
-        needsInstall = false
-        configureAndStartVirtualMachine()
+        appendToConsole("\n--- Booting Linux ---\n\n")
+        
+        createVirtualMachine()
+        startVirtualMachine()
     }
     
     func applicationShouldTerminateAfterLastWindowClosed(_ sender: NSApplication) -> Bool {
         return true
     }
     
+    func applicationWillTerminate(_ notification: Notification) {
+        // Clean up
+        outputPipe?.fileHandleForReading.readabilityHandler = nil
+    }
+    
     // MARK: - VZVirtualMachineDelegate
     
     func virtualMachine(_ virtualMachine: VZVirtualMachine, didStopWithError error: Error) {
-        print("❌ VM stopped with error: \(error.localizedDescription)")
+        appendToConsole("\n❌ VM stopped with error: \(error.localizedDescription)\n")
     }
     
     func guestDidStop(_ virtualMachine: VZVirtualMachine) {
-        print("🛑 Guest OS shut down")
+        appendToConsole("\n🛑 Guest OS shut down\n")
     }
     
     func virtualMachine(_ virtualMachine: VZVirtualMachine, networkDevice: VZNetworkDevice, attachmentWasDisconnectedWithError error: Error) {
-        print("⚠️ Network disconnected: \(error.localizedDescription)")
+        appendToConsole("\n⚠️ Network disconnected: \(error.localizedDescription)\n")
     }
 }
