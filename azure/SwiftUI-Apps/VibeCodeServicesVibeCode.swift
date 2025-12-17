@@ -1,11 +1,12 @@
 // VibeCode GUI Linux VM - Based on Apple's GUILinuxVirtualMachineSampleApp
 // Enhanced with sparse disk support and Datadog integration.
+// Supports multiple instances via unique VM bundle paths.
 
 import Cocoa
 import Virtualization
 
 @main
-class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NSTextViewDelegate {
+class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate {
     
     static func main() {
         let app = NSApplication.shared
@@ -14,8 +15,24 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
         app.run()
     }
     
-    // VM paths
-    private let vmBundlePath = NSHomeDirectory() + "/VibeCode VMs/VibeCodeServices VM.bundle/"
+    // VM paths - unique per instance using UUID
+    // Each app instance gets its own VM bundle to allow multiple VMs
+    private lazy var instanceId: String = {
+        // Try to get a stable ID from the app bundle, or generate a new UUID
+        if let bundlePath = Bundle.main.bundlePath as NSString? {
+            // Use hash of bundle path for apps in different locations
+            let hash = abs(bundlePath.hash)
+            return String(format: "%08X", hash)
+        }
+        return UUID().uuidString.prefix(8).lowercased()
+    }()
+    
+    private lazy var vmBundlePath: String = {
+        let basePath = NSHomeDirectory() + "/VibeCode VMs/VibeCodeServices-\(instanceId).bundle/"
+        print("VM Bundle: \(basePath)")
+        return basePath
+    }()
+    
     private var mainDiskImagePath: String { vmBundlePath + "Disk.img" }
     private var efiVariableStorePath: String { vmBundlePath + "NVRAM" }
     private var machineIdentifierPath: String { vmBundlePath + "MachineIdentifier" }
@@ -26,12 +43,8 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
     private var initramfsPath: String { projectRoot + "/azure/unified-services-static.cpio.gz" }
     
     private var window: NSWindow!
+    private var virtualMachineView: VZVirtualMachineView!
     private var virtualMachine: VZVirtualMachine!
-    private var textView: NSTextView!
-    private var outputPipe: Pipe!
-    private var inputPipe: Pipe!
-    private var logFileHandle: FileHandle?
-    private let logPath = "/tmp/vibecode-vm-serial.log"
     private var installerISOPath: URL?
     private var needsInstall = true
     
@@ -188,8 +201,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
         // Use Linux bootloader with our kernel and initramfs
         let bootloader = VZLinuxBootLoader(kernelURL: URL(fileURLWithPath: kernelPath))
         bootloader.initialRamdiskURL = URL(fileURLWithPath: initramfsPath)
-        // Console to hvc0 (serial) - set TERM=dumb to avoid escape sequences
-        bootloader.commandLine = "console=hvc0 TERM=dumb"
+        bootloader.commandLine = "console=hvc0"
         
         config.bootLoader = bootloader
         config.platform = VZGenericPlatformConfiguration()
@@ -198,38 +210,19 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
         config.storageDevices = [createBlockDeviceConfiguration()]
         
         config.networkDevices = [createNetworkDeviceConfiguration()]
+        config.graphicsDevices = [createGraphicsDeviceConfiguration()]
         
-        // Serial console - bidirectional pipes for input/output
-        outputPipe = Pipe()
-        inputPipe = Pipe()
+        // Serial console for boot output
         let serialConfig = VZVirtioConsoleDeviceSerialPortConfiguration()
         let serialPort = VZFileHandleSerialPortAttachment(
-            fileHandleForReading: inputPipe.fileHandleForReading,
-            fileHandleForWriting: outputPipe.fileHandleForWriting
+            fileHandleForReading: FileHandle.standardInput,
+            fileHandleForWriting: FileHandle.standardOutput
         )
         serialConfig.attachment = serialPort
         config.serialPorts = [serialConfig]
         
-        // Create log file
-        FileManager.default.createFile(atPath: logPath, contents: nil, attributes: nil)
-        logFileHandle = FileHandle(forWritingAtPath: logPath)
-        
-        // Read pipe output and display in text view + log to file
-        outputPipe.fileHandleForReading.readabilityHandler = { [weak self] handle in
-            let data = handle.availableData
-            if !data.isEmpty {
-                // Write raw to log file
-                self?.logFileHandle?.write(data)
-                
-                if let text = String(data: data, encoding: .utf8), !text.isEmpty {
-                    // Strip ANSI escape sequences that we can't render
-                    let cleaned = self?.stripAnsiEscapes(text) ?? text
-                    DispatchQueue.main.async {
-                        self?.appendToConsole(cleaned)
-                    }
-                }
-            }
-        }
+        config.keyboards = [VZUSBKeyboardConfiguration()]
+        config.pointingDevices = [VZUSBScreenCoordinatePointingDeviceConfiguration()]
         
         try! config.validate()
         virtualMachine = VZVirtualMachine(configuration: config)
@@ -240,49 +233,22 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
     func configureAndStartVirtualMachine() {
         DispatchQueue.main.async {
             self.createVirtualMachine()
+            self.virtualMachineView.virtualMachine = self.virtualMachine
+            
+            if #available(macOS 14.0, *) {
+                self.virtualMachineView.automaticallyReconfiguresDisplay = true
+            }
+            
             self.virtualMachine.delegate = self
             self.virtualMachine.start { result in
                 switch result {
                 case .success:
-                    self.appendToConsole("✅ VM started successfully\n")
+                    print("✅ VM started successfully")
                 case .failure(let error):
-                    self.appendToConsole("❌ VM failed to start: \(error)\n")
+                    fatalError("VM failed to start: \(error)")
                 }
             }
         }
-    }
-    
-    private func appendToConsole(_ text: String) {
-        textView.textStorage?.append(NSAttributedString(
-            string: text,
-            attributes: [
-                .foregroundColor: NSColor.green,
-                .font: NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-            ]
-        ))
-        textView.scrollToEndOfDocument(nil)
-    }
-    
-    // Strip ANSI escape sequences that NSTextView can't render
-    private func stripAnsiEscapes(_ text: String) -> String {
-        // Match ESC [ ... (any params) ending with a letter
-        // This covers: cursor position, colors, clear screen, etc.
-        let pattern = "\\x1b\\[[0-9;?]*[A-Za-z]|\\x1b\\][^\\x07]*\\x07|\\x1b[()][AB012]"
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
-            return text
-        }
-        let range = NSRange(text.startIndex..., in: text)
-        return regex.stringByReplacingMatches(in: text, options: [], range: range, withTemplate: "")
-    }
-    
-    // MARK: - NSTextViewDelegate - Capture keyboard input
-    
-    func textView(_ textView: NSTextView, shouldChangeTextIn affectedCharRange: NSRange, replacementString: String?) -> Bool {
-        // Send typed characters to VM serial input (only if pipe is initialized)
-        if let pipe = inputPipe, let text = replacementString, let data = text.data(using: .utf8) {
-            pipe.fileHandleForWriting.write(data)
-        }
-        return false  // Don't insert into text view - VM will echo back
     }
     
     // MARK: - Application Lifecycle
@@ -297,27 +263,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, VZVirtualMachineDelegate, NS
             backing: .buffered,
             defer: false
         )
-        window.title = "VibeCodeServices - Console"
+        window.title = "VibeCodeServices VibeCode - VibeCode Services"
         window.center()
-        window.backgroundColor = .black
         
-        // Create scrollable text view for console output
-        let scrollView = NSScrollView(frame: window.contentView!.bounds)
-        scrollView.autoresizingMask = [.width, .height]
-        scrollView.hasVerticalScroller = true
-        scrollView.hasHorizontalScroller = false
-        
-        textView = NSTextView(frame: scrollView.bounds)
-        textView.autoresizingMask = [.width, .height]
-        textView.isEditable = true  // Allow typing
-        textView.backgroundColor = .black
-        textView.font = NSFont.monospacedSystemFont(ofSize: 12, weight: .regular)
-        textView.textColor = .green
-        textView.insertionPointColor = .green
-        textView.delegate = self
-        
-        scrollView.documentView = textView
-        window.contentView = scrollView
+        virtualMachineView = VZVirtualMachineView()
+        window.contentView = virtualMachineView
         window.makeKeyAndOrderFront(nil)
         
         NSApp.activate(ignoringOtherApps: true)
