@@ -1,0 +1,19 @@
+# BusyBox License
+
+BusyBox is licensed under the GNU General Public License version 2 (GPL-2.0).
+
+## Source Code Availability
+
+In compliance with the GPL v2, the complete source code for BusyBox
+used in this application is available at:
+
+- Official BusyBox source: https://busybox.net/downloads/
+- Alpine Linux packages: https://pkgs.alpinelinux.org/packages?name=busybox
+
+## License
+
+BusyBox is copyrighted by many authors between 1998-2015.
+Licensed under GPLv2. See the GPL-2.0 license text in LINUX-KERNEL.txt.
+
+For the complete license, see: https://busybox.net/license.html
+

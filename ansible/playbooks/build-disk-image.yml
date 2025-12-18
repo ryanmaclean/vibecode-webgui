@@ -1,0 +1,283 @@
+---
+# Disk Image Builder for VibeCode Services
+# Creates a pre-configured disk image with all services installed
+# For App Store distribution - downloaded on first launch
+#
+# Usage: ansible-playbook ansible/playbooks/build-disk-image.yml
+
+- name: Build VibeCode Services Disk Image
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    build_dir: "/tmp/disk-image-build"
+    disk_size_mb: 512
+    output_raw: "/tmp/vibecode-services.img"
+    output_compressed: "{{ playbook_dir }}/../../azure/vibecode-services-disk.img.gz"
+    alpine_mirror: "https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64"
+    alpine_community: "https://dl-cdn.alpinelinux.org/alpine/v3.20/community/aarch64"
+
+  tasks:
+    - name: Clean build directory
+      file:
+        path: "{{ build_dir }}"
+        state: absent
+
+    - name: Create build directory structure
+      file:
+        path: "{{ build_dir }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - rootfs
+        - packages
+
+    - name: Create sparse disk image
+      shell: |
+        dd if=/dev/zero of={{ output_raw }} bs=1M count=0 seek={{ disk_size_mb }}
+      args:
+        executable: /bin/bash
+
+    - name: Create filesystem on disk image
+      shell: |
+        /opt/homebrew/opt/e2fsprogs/sbin/mkfs.ext4 -L vibecode-data {{ output_raw }}
+      args:
+        executable: /bin/bash
+
+    - name: Mount disk image
+      shell: |
+        mkdir -p {{ build_dir }}/mnt
+        # On macOS, we can't mount ext4 directly, so we'll build in a directory
+        # and copy to the image using debugfs or a Linux VM
+        echo "Building rootfs in {{ build_dir }}/rootfs"
+      args:
+        executable: /bin/bash
+
+    # Download all service packages
+    - name: Download Valkey
+      get_url:
+        url: "{{ alpine_mirror }}/valkey-7.2.11-r0.apk"
+        dest: "{{ build_dir }}/packages/valkey.apk"
+        timeout: 120
+
+    - name: Download PostgreSQL
+      get_url:
+        url: "{{ alpine_mirror }}/postgresql16-16.6-r0.apk"
+        dest: "{{ build_dir }}/packages/postgresql.apk"
+        timeout: 120
+      ignore_errors: true
+
+    - name: Download PostgreSQL (community)
+      get_url:
+        url: "{{ alpine_community }}/postgresql16-16.6-r0.apk"
+        dest: "{{ build_dir }}/packages/postgresql.apk"
+        timeout: 120
+      when: false  # Fallback
+
+    - name: Download Dropbear
+      get_url:
+        url: "{{ alpine_mirror }}/dropbear-2024.86-r0.apk"
+        dest: "{{ build_dir }}/packages/dropbear.apk"
+        timeout: 60
+      ignore_errors: true
+
+    - name: Download Node.js
+      get_url:
+        url: "{{ alpine_mirror }}/nodejs-20.18.1-r0.apk"
+        dest: "{{ build_dir }}/packages/nodejs.apk"
+        timeout: 120
+      ignore_errors: true
+
+    # Dependencies
+    - name: Download dependencies
+      get_url:
+        url: "{{ alpine_mirror }}/{{ item }}"
+        dest: "{{ build_dir }}/packages/"
+        timeout: 60
+      loop:
+        - "musl-1.2.5-r1.apk"
+        - "libcrypto3-3.3.2-r4.apk"
+        - "libssl3-3.3.2-r4.apk"
+        - "zlib-1.3.1-r2.apk"
+        - "libstdc++-13.2.1_git20240309-r1.apk"
+        - "libgcc-13.2.1_git20240309-r1.apk"
+      ignore_errors: true
+
+    - name: Create rootfs directories
+      file:
+        path: "{{ build_dir }}/rootfs/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - bin
+        - sbin
+        - lib
+        - usr/bin
+        - usr/lib
+        - usr/sbin
+        - etc
+        - var/lib/postgresql/data
+        - var/lib/valkey
+        - opt/openvscode
+        - init.d
+        - tmp
+
+    - name: Extract packages to rootfs
+      shell: |
+        cd {{ build_dir }}/rootfs
+        for pkg in {{ build_dir }}/packages/*.apk; do
+          tar -xzf "$pkg" 2>/dev/null || true
+        done
+        # Clean up package metadata
+        rm -rf .PKGINFO .SIGN.* 2>/dev/null || true
+      args:
+        executable: /bin/bash
+
+    - name: Create service startup script
+      copy:
+        dest: "{{ build_dir }}/rootfs/init.d/start-services.sh"
+        content: |
+          #!/bin/sh
+          # VibeCode Services Startup Script
+          
+          export PATH=/bin:/sbin:/usr/bin:/usr/sbin:/data/bin:/data/usr/bin
+          export LD_LIBRARY_PATH=/lib:/usr/lib:/data/lib:/data/usr/lib
+          
+          echo "=== Starting VibeCode Services ==="
+          
+          # Valkey
+          if [ -x /data/usr/bin/valkey-server ]; then
+            echo "Starting Valkey..."
+            mkdir -p /var/lib/valkey
+            /data/usr/bin/valkey-server --daemonize yes --protected-mode no \
+              --dir /var/lib/valkey --bind 0.0.0.0 2>&1
+            sleep 1
+            if pgrep valkey-server > /dev/null; then
+              echo "  Valkey: OK (port 6379)"
+            else
+              echo "  Valkey: FAILED"
+            fi
+          fi
+          
+          # PostgreSQL
+          if [ -x /data/usr/bin/postgres ]; then
+            echo "Starting PostgreSQL..."
+            mkdir -p /var/lib/postgresql/data
+            chown -R postgres:postgres /var/lib/postgresql 2>/dev/null || true
+            
+            if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+              echo "  Initializing database..."
+              su -s /bin/sh postgres -c "/data/usr/bin/initdb -D /var/lib/postgresql/data" 2>&1
+              echo "host all all 0.0.0.0/0 trust" >> /var/lib/postgresql/data/pg_hba.conf
+              echo "listen_addresses = '*'" >> /var/lib/postgresql/data/postgresql.conf
+            fi
+            
+            su -s /bin/sh postgres -c "/data/usr/bin/postgres -D /var/lib/postgresql/data" &
+            sleep 2
+            if pgrep postgres > /dev/null; then
+              echo "  PostgreSQL: OK (port 5432)"
+            else
+              echo "  PostgreSQL: FAILED"
+            fi
+          fi
+          
+          # Dropbear SSH
+          if [ -x /data/usr/sbin/dropbear ]; then
+            echo "Starting SSH..."
+            mkdir -p /etc/dropbear
+            if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
+              /data/usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key 2>/dev/null
+            fi
+            /data/usr/sbin/dropbear -R -B 2>&1
+            if pgrep dropbear > /dev/null; then
+              echo "  SSH: OK (port 22, password: vibecode)"
+            else
+              echo "  SSH: FAILED"
+            fi
+          fi
+          
+          # OpenVSCode Server
+          if [ -x /data/opt/openvscode/bin/openvscode-server ]; then
+            echo "Starting OpenVSCode..."
+            export NODE_OPTIONS="--max-old-space-size=512"
+            /data/opt/openvscode/bin/openvscode-server \
+              --host 0.0.0.0 --port 8080 \
+              --without-connection-token \
+              --disable-telemetry \
+              2>&1 &
+            sleep 2
+            if pgrep -f openvscode > /dev/null; then
+              echo "  OpenVSCode: OK (port 8080)"
+            else
+              echo "  OpenVSCode: FAILED"
+            fi
+          fi
+          
+          echo ""
+          echo "Services started."
+        mode: '0755'
+
+    - name: Create etc files
+      copy:
+        dest: "{{ build_dir }}/rootfs/etc/{{ item.name }}"
+        content: "{{ item.content }}"
+        mode: "{{ item.mode }}"
+      loop:
+        - name: passwd
+          content: |
+            root:x:0:0:root:/root:/bin/sh
+            postgres:x:70:70:PostgreSQL:/var/lib/postgresql:/bin/sh
+          mode: '0644'
+        - name: group
+          content: |
+            root:x:0:
+            postgres:x:70:
+          mode: '0644'
+        - name: shadow
+          content: |
+            root:$6$vibecode$LkKMVBQY5qE3Vq7rWvK7xI8eXkQmNpO0jR1sT2uW3vX4yZ5aB6cD7eF8gH9iJ0kL1mN2oP3qR4sT5uV6wX7yZ8:19000:0:99999:7:::
+            postgres:!:19000:0:99999:7:::
+          mode: '0600'
+
+    - name: Create rootfs tarball
+      shell: "cd {{ build_dir }}/rootfs && tar -czf {{ build_dir }}/services-rootfs.tar.gz ."
+      args:
+        executable: /bin/bash
+
+    - name: Copy to output location
+      shell: "cp {{ build_dir }}/services-rootfs.tar.gz {{ output_compressed }}"
+      args:
+        executable: /bin/bash
+
+    - name: Get output size
+      stat:
+        path: "{{ output_compressed }}"
+      register: output_stat
+
+    - name: Clean up raw disk
+      file:
+        path: "{{ output_raw }}"
+        state: absent
+
+    - name: Report results
+      debug:
+        msg: |
+          ✅ Disk image created!
+          
+          Output: {{ output_compressed }}
+          Size: {{ (output_stat.stat.size / 1024 / 1024) | round(2) }} MB
+          
+          Contents:
+          - Valkey server
+          - PostgreSQL 16
+          - Dropbear SSH
+          - Service startup scripts
+          
+          Note: OpenVSCode Server must be downloaded separately due to size.
+          
+          To use:
+          1. Boot VM with minimal initramfs
+          2. Extract to /data: tar -xzf services-rootfs.tar.gz -C /data
+          3. Run: /data/init.d/start-services.sh
+

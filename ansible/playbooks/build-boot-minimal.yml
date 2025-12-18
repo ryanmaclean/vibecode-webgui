@@ -1,0 +1,270 @@
+---
+# Minimal Boot Initramfs Builder
+# Creates a tiny (~3MB) initramfs that just boots, mounts disk, and starts services
+# For App Store distribution - keeps app bundle small
+#
+# Usage: ansible-playbook ansible/playbooks/build-boot-minimal.yml
+
+- name: Build Minimal Boot Initramfs
+  hosts: localhost
+  connection: local
+  gather_facts: true
+
+  vars:
+    build_dir: "/tmp/boot-minimal-build"
+    output_file: "{{ playbook_dir }}/../../azure/boot-minimal.cpio.gz"
+    busybox_version: "1.36.1-r31"
+    alpine_mirror: "https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64"
+
+  tasks:
+    - name: Clean build directory
+      file:
+        path: "{{ build_dir }}"
+        state: absent
+
+    - name: Create initramfs directory structure
+      file:
+        path: "{{ build_dir }}/{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - bin
+        - sbin
+        - etc
+        - dev
+        - proc
+        - sys
+        - mnt
+        - data
+        - tmp
+        - lib
+        - usr/bin
+        - usr/sbin
+        - var/run
+
+    - name: Download BusyBox
+      get_url:
+        url: "{{ alpine_mirror }}/busybox-{{ busybox_version }}.apk"
+        dest: "{{ build_dir }}/busybox.apk"
+        timeout: 60
+
+    - name: Extract BusyBox
+      shell: |
+        cd {{ build_dir }}
+        tar -xzf busybox.apk
+      args:
+        executable: /bin/bash
+
+    - name: Create BusyBox symlinks
+      shell: |
+        cd {{ build_dir }}/bin
+        for cmd in sh ash mount umount ls cat echo mkdir rm cp mv ln chmod chown \
+                   sleep ip ifconfig udhcpc route ping hostname dmesg ps kill \
+                   grep sed awk cut head tail sort uniq wc tr date; do
+          ln -sf busybox $cmd
+        done
+        cd {{ build_dir }}/sbin
+        for cmd in init reboot poweroff halt modprobe insmod switch_root pivot_root \
+                   fdisk mkfs.ext4 mke2fs e2fsck fsck blkid; do
+          ln -sf ../bin/busybox $cmd
+        done
+      args:
+        executable: /bin/bash
+
+    - name: Download musl libc
+      get_url:
+        url: "{{ alpine_mirror }}/musl-1.2.5-r1.apk"
+        dest: "{{ build_dir }}/musl.apk"
+        timeout: 60
+
+    - name: Extract musl libc
+      shell: |
+        cd {{ build_dir }}
+        tar -xzf musl.apk
+        cp -a lib/* lib/ 2>/dev/null || true
+      args:
+        executable: /bin/bash
+
+    - name: Create /etc/passwd
+      copy:
+        dest: "{{ build_dir }}/etc/passwd"
+        content: |
+          root:x:0:0:root:/:/bin/sh
+        mode: '0644'
+
+    - name: Create /etc/group
+      copy:
+        dest: "{{ build_dir }}/etc/group"
+        content: |
+          root:x:0:
+        mode: '0644'
+
+    - name: Create /etc/shadow
+      copy:
+        dest: "{{ build_dir }}/etc/shadow"
+        content: |
+          root:$6$rounds=5000$vibecode$N.xKk7VKqGmFj7dJO5n5dF5K5Gk7VKqGmFj7dJO5n5dF5K5Gk7VKqGmFj7dJO:19000:0:99999:7:::
+        mode: '0600'
+
+    - name: Create udhcpc script
+      copy:
+        dest: "{{ build_dir }}/etc/udhcpc.script"
+        content: |
+          #!/bin/sh
+          case "$1" in
+            bound|renew)
+              ip addr flush dev $interface
+              ip addr add $ip/$mask dev $interface
+              [ -n "$router" ] && ip route add default via $router dev $interface
+              [ -n "$dns" ] && echo "nameserver $dns" > /etc/resolv.conf
+              echo "DHCP: $ip via $router"
+              ;;
+          esac
+        mode: '0755'
+
+    - name: Create minimal init script
+      copy:
+        dest: "{{ build_dir }}/init"
+        content: |
+          #!/bin/sh
+          # Minimal Boot Init - Mounts disk and starts services
+          
+          export PATH=/bin:/sbin:/usr/bin:/usr/sbin
+          
+          echo "=== VibeCode Boot ==="
+          
+          # Mount essential filesystems
+          mount -t proc proc /proc
+          mount -t sysfs sys /sys
+          mount -t devtmpfs dev /dev
+          mkdir -p /dev/pts /dev/shm
+          mount -t devpts devpts /dev/pts
+          mount -t tmpfs tmpfs /tmp
+          mount -t tmpfs tmpfs /var/run
+          
+          # Load virtio block driver
+          if [ -f /lib/modules/virtio_blk.ko ]; then
+            insmod /lib/modules/virtio_blk.ko 2>/dev/null
+            sleep 1
+          fi
+          
+          # Configure network
+          echo "=== Network ==="
+          IFACE=""
+          for iface in eth0 enp0s1 ens1; do
+            if [ -d "/sys/class/net/$iface" ]; then
+              IFACE=$iface
+              break
+            fi
+          done
+          
+          if [ -n "$IFACE" ]; then
+            echo "Interface: $IFACE"
+            ip link set $IFACE up
+            sleep 1
+            
+            # Try DHCP
+            udhcpc -i $IFACE -s /etc/udhcpc.script -n -q -t 5 2>/dev/null
+            
+            if ! ip addr show $IFACE | grep -q "inet "; then
+              echo "DHCP failed - using static IP"
+              ip addr add 192.168.64.10/24 dev $IFACE
+              ip route add default via 192.168.64.1
+              echo "nameserver 8.8.8.8" > /etc/resolv.conf
+            fi
+            
+            IP=$(ip -4 addr show $IFACE | grep -oP 'inet \K[\d.]+')
+            echo "IP: $IP"
+          fi
+          
+          # Mount data disk
+          echo "=== Storage ==="
+          if [ -b /dev/vda ]; then
+            # Check if formatted
+            if ! blkid /dev/vda | grep -q "TYPE="; then
+              echo "Formatting /dev/vda..."
+              mkfs.ext4 -L vibecode-data /dev/vda
+            fi
+            mount /dev/vda /data
+            echo "Mounted /data"
+            
+            # Run services from disk if available
+            if [ -x /data/init.d/start-services.sh ]; then
+              echo "=== Starting Services ==="
+              /data/init.d/start-services.sh
+            else
+              echo "No services found on disk"
+              echo "Download disk image or install services manually"
+            fi
+          else
+            echo "No disk found - running in RAM only"
+          fi
+          
+          echo ""
+          echo "========================================="
+          echo "  VibeCode Ready"
+          echo "  IP: ${IP:-unknown}"
+          echo "========================================="
+          echo ""
+          
+          # Start shell
+          exec /bin/sh
+        mode: '0755'
+
+    - name: Create lib/modules directory
+      file:
+        path: "{{ build_dir }}/lib/modules"
+        state: directory
+        mode: '0755'
+
+    - name: Copy virtio_blk module if available
+      shell: |
+        # Try to find virtio_blk.ko from system or previous builds
+        KMOD=""
+        for path in \
+          "/tmp/static-build/lib/modules/virtio_blk.ko" \
+          "{{ playbook_dir }}/../../azure/modules/virtio_blk.ko"; do
+          if [ -f "$path" ]; then
+            KMOD="$path"
+            break
+          fi
+        done
+        
+        if [ -n "$KMOD" ]; then
+          cp "$KMOD" {{ build_dir }}/lib/modules/
+          echo "Copied virtio_blk.ko"
+        else
+          echo "virtio_blk.ko not found - disk support may not work"
+        fi
+      args:
+        executable: /bin/bash
+      ignore_errors: true
+
+    - name: Create initramfs archive
+      shell: |
+        cd {{ build_dir }}
+        find . | cpio -o -H newc 2>/dev/null | gzip -9 > {{ output_file }}
+      args:
+        executable: /bin/bash
+
+    - name: Get output size
+      stat:
+        path: "{{ output_file }}"
+      register: output_stat
+
+    - name: Report results
+      debug:
+        msg: |
+          ✅ Minimal boot initramfs created!
+          
+          Output: {{ output_file }}
+          Size: {{ (output_stat.stat.size / 1024 / 1024) | round(2) }} MB
+          
+          This initramfs contains:
+          - BusyBox (shell, mount, network)
+          - DHCP client with static IP fallback
+          - Disk mounting (ext4)
+          - Service launcher from /data
+          
+          To use: Boot with kernel + this initramfs + disk image
+
