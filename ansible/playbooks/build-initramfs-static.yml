@@ -563,10 +563,13 @@
               if [ -n "$VM_IP" ]; then
                   echo "DHCP success: $VM_IP"
               else
-                  echo "DHCP failed - no IP assigned"
-                  echo "DHCP log:"
-                  cat /tmp/dhcp.log 2>/dev/null || echo "  (no log)"
-                  VM_IP="NO_IP"
+                  echo "DHCP failed - using static IP fallback"
+                  # Use static IP as fallback (192.168.64.10)
+                  ip addr add 192.168.64.10/24 dev $FOUND_IFACE
+                  ip route add default via 192.168.64.1 dev $FOUND_IFACE
+                  echo "nameserver 8.8.8.8" > /etc/resolv.conf
+                  VM_IP="192.168.64.10"
+                  echo "Static IP configured: $VM_IP"
               fi
               
               echo "IP: $VM_IP"
