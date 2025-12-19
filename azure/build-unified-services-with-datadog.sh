@@ -177,7 +177,11 @@ download_valkey() {
 
         if [ $valkey_found -eq 0 ]; then
             rm -rf "$temp_extract"
-            error "Valkey binary not found in pre-built image"
+            warn "Valkey binary not found or not ARM64 ELF - skipping Valkey (OpenVSCode will still work)"
+            mkdir -p "$valkey_dir/bin"
+            touch "$valkey_dir/bin/.valkey-skipped"
+            log ""
+            return 0
         fi
 
         # Copy any required libraries
