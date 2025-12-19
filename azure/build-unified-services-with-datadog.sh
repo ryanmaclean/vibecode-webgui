@@ -938,23 +938,48 @@ if [ -n "$FOUND_IFACE" ]; then
     ip link set "$FOUND_IFACE" up
     sleep 0.5
 
-    # DHCP configuration (fast: 2 tries, 1 second timeout each = max 3s)
+    # DHCP configuration with retries (3 attempts with exponential backoff)
     echo "Requesting DHCP address..."
-    udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q -t 2 -T 1 2>&1 || true
-    sleep 0.5
+    DHCP_SUCCESS=0
+    for attempt in 1 2 3; do
+        echo "  Attempt $attempt/3..."
+        if udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q -t 1 -T 1 2>&1; then
+            DHCP_SUCCESS=1
+            break
+        fi
+        [ $attempt -lt 3 ] && sleep $((attempt * 1))  # 1s, 2s delays
+    done
 
     # Get IP address
     VM_IP=$(ip addr show "$FOUND_IFACE" | grep "inet " | awk '{print $2}' | cut -d/ -f1)
 
-    # If DHCP failed, use static IP fallback
+    # Aggressive fallback to static IP if DHCP failed
     if [ -z "$VM_IP" ]; then
-        echo "DHCP failed, using static IP fallback..."
+        echo "DHCP failed after 3 attempts, using static IP fallback..."
+        # Remove any partial DHCP config
+        ip addr flush dev "$FOUND_IFACE" 2>/dev/null || true
+        ip route flush dev "$FOUND_IFACE" 2>/dev/null || true
+        # Set static IP
         ip addr add 192.168.64.10/24 dev "$FOUND_IFACE" 2>/dev/null || true
         ip route add default via 192.168.64.1 2>/dev/null || true
         VM_IP="192.168.64.10"
         echo "✓ Static IP: $VM_IP"
+
+        # Verify network is reachable
+        if ping -c 1 -W 2 192.168.64.1 >/dev/null 2>&1; then
+            echo "  ✓ Gateway reachable"
+        else
+            echo "  ⚠ Gateway not reachable (continuing anyway)"
+        fi
     else
         echo "✓ DHCP IP: $VM_IP"
+
+        # Verify DHCP configuration
+        if ping -c 1 -W 2 192.168.64.1 >/dev/null 2>&1; then
+            echo "  ✓ Gateway reachable"
+        else
+            echo "  ⚠ Gateway not reachable via DHCP"
+        fi
     fi
 else
     echo "⚠ No network interface found"
