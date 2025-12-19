@@ -342,7 +342,11 @@ set -e
 # Initialize database if needed
 if [ ! -s "$PGDATA/PG_VERSION" ]; then
     echo "Initializing PostgreSQL database..."
-    initdb --username="$POSTGRES_USER" --pwfile=<(echo "$POSTGRES_PASSWORD")
+    # Create temporary password file (POSIX sh compatible)
+    PWFILE=$(mktemp)
+    echo "$POSTGRES_PASSWORD" > "$PWFILE"
+    initdb --username="$POSTGRES_USER" --pwfile="$PWFILE"
+    rm -f "$PWFILE"
     
     # Configure PostgreSQL
     cat >> "$PGDATA/postgresql.conf" <<-CONFIG

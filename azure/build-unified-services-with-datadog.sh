@@ -653,10 +653,12 @@ copy_binaries() {
     done
     cd "$WORK_DIR"
 
-    # Valkey (skip in fast build)
+    # Valkey (skip in fast build or if not available)
     if [ "$FAST_BUILD" = false ]; then
-        info "Copying Valkey..."
-        if [ -f "$downloads/valkey/bin/valkey-server" ]; then
+        if [ -f "$downloads/valkey/bin/.valkey-skipped" ]; then
+            warn "Valkey was skipped during download - continuing without it"
+        elif [ -f "$downloads/valkey/bin/valkey-server" ]; then
+            info "Copying Valkey..."
             cp "$downloads/valkey/bin/valkey-server" "$initramfs/bin/"
             chmod +x "$initramfs/bin/valkey-server"
             # Copy Valkey libraries if present
@@ -667,7 +669,7 @@ copy_binaries() {
                 cp -r "$downloads/valkey/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
             fi
         else
-            error "Valkey binary not found"
+            warn "Valkey binary not found - continuing without it (OpenVSCode will still work)"
         fi
     fi
 
