@@ -27,7 +27,7 @@ info() { echo -e "${BLUE}[INFO]${NC} $1"; }
 # Configuration
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 WORK_DIR="/tmp/unified-services-dd-$$"
-OUTPUT_NAME="unified-services-with-datadog.cpio.gz"
+OUTPUT_NAME="unified-services-static.cpio.gz"
 OUTPUT_PATH="${SCRIPT_DIR}/${OUTPUT_NAME}"
 
 # Version configuration
@@ -39,9 +39,32 @@ VALKEY_VERSION="8.0.1"
 # Alpine Linux packages (ARM64)
 ALPINE_MIRROR="https://dl-cdn.alpinelinux.org/alpine/edge"
 
+# Parse command line arguments
+FAST_BUILD=false
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --fast)
+            FAST_BUILD=true
+            OUTPUT_NAME="unified-services-fast.cpio.gz"
+            shift
+            ;;
+        *)
+            error "Unknown option: $1. Usage: $0 [--fast]"
+            ;;
+    esac
+done
+
+# Update output path after parsing args
+OUTPUT_PATH="${SCRIPT_DIR}/${OUTPUT_NAME}"
+
 log "========================================="
 log "  Unified Services VM Builder"
 log "  with Datadog Integration"
+if [ "$FAST_BUILD" = true ]; then
+    log "  MODE: FAST (OpenVSCode + DHCP only)"
+else
+    log "  MODE: FULL (All services)"
+fi
 log "========================================="
 log ""
 info "Build ID: $$"
@@ -88,23 +111,30 @@ download_busybox() {
     log "=== Downloading BusyBox ==="
 
     local busybox_dir="$WORK_DIR/downloads/busybox"
-    mkdir -p "$busybox_dir"
+    mkdir -p "$busybox_dir/bin"
     cd "$busybox_dir"
 
-    local apk_url="${ALPINE_MIRROR}/main/aarch64/busybox-${BUSYBOX_VERSION}-r29.apk"
-    info "Downloading: $apk_url"
-
-    wget -q --show-progress "$apk_url" -O busybox.apk || error "Failed to download BusyBox"
-
-    # Extract APK (APK files are tar.gz archives)
-    tar xzf busybox.apk 2>/dev/null || true
-
-    if [ ! -f bin/busybox ]; then
-        error "BusyBox binary not found in APK"
+    # Use saved working r29 binary if available, otherwise download r30
+    if [ -f "/tmp/busybox-r29/busybox" ]; then
+        info "Using saved working BusyBox r29..."
+        cp /tmp/busybox-r29/busybox bin/busybox
+        chmod +x bin/busybox
+    else
+        local apk_url="${ALPINE_MIRROR}/main/aarch64/busybox-${BUSYBOX_VERSION}-r30.apk"
+        info "Downloading: $apk_url"
+        
+        wget -q --show-progress "$apk_url" -O busybox.apk || error "Failed to download BusyBox"
+        
+        # Extract APK (APK files are tar.gz archives)
+        tar xzf busybox.apk 2>/dev/null || true
+        
+        if [ ! -f bin/busybox ]; then
+            error "BusyBox binary not found in APK"
+        fi
     fi
 
     local size=$(du -h bin/busybox | cut -f1)
-    log "✓ BusyBox downloaded: $size"
+    log "✓ BusyBox ready: $size"
     log ""
 }
 
@@ -112,7 +142,7 @@ download_valkey() {
     log "=== Downloading Valkey ==="
 
     local valkey_dir="$WORK_DIR/downloads/valkey"
-    mkdir -p "$valkey_dir/usr/bin"
+    mkdir -p "$valkey_dir/bin"
     cd "$valkey_dir"
 
     # Valkey is not available in Alpine repos, extract from pre-built image
@@ -125,16 +155,23 @@ download_valkey() {
 
         (cd "$temp_extract" && gunzip -c "$valkey_image" | cpio -idm 2>/dev/null)
 
-        # Copy Valkey binaries (check multiple possible locations)
+        # Copy Valkey binaries (check multiple possible locations, prioritize usr/local/bin)
         local valkey_found=0
-        for valkey_path in "$temp_extract/bin/valkey-server" "$temp_extract/usr/local/bin/valkey-server" "$temp_extract/usr/bin/valkey-server"; do
+        for valkey_path in "$temp_extract/usr/local/bin/valkey-server" "$temp_extract/bin/valkey-server" "$temp_extract/usr/bin/valkey-server"; do
             if [ -f "$valkey_path" ]; then
-                cp "$valkey_path" "$valkey_dir/usr/bin/"
-                # Try to find valkey-cli
-                local valkey_dir_path=$(dirname "$valkey_path")
-                [ -f "$valkey_dir_path/valkey-cli" ] && cp "$valkey_dir_path/valkey-cli" "$valkey_dir/usr/bin/" 2>/dev/null || true
-                valkey_found=1
-                break
+                # Verify it's an ARM64 ELF binary
+                if file "$valkey_path" | grep -q "ELF.*aarch64"; then
+                    cp "$valkey_path" "$valkey_dir/bin/valkey-server"
+                    chmod +x "$valkey_dir/bin/valkey-server"
+                    # Try to find valkey-cli
+                    local valkey_dir_path=$(dirname "$valkey_path")
+                    [ -f "$valkey_dir_path/valkey-cli" ] && cp "$valkey_dir_path/valkey-cli" "$valkey_dir/bin/" 2>/dev/null || true
+                    valkey_found=1
+                    info "Found Valkey ARM64 binary at: $valkey_path"
+                    break
+                else
+                    warn "File at $valkey_path is not an ARM64 ELF binary, skipping..."
+                fi
             fi
         done
 
@@ -155,7 +192,7 @@ download_valkey() {
 
         rm -rf "$temp_extract"
 
-        local size=$(du -h "$valkey_dir/usr/bin/valkey-server" | cut -f1)
+        local size=$(du -h "$valkey_dir/bin/valkey-server" | cut -f1)
         log "✓ Valkey extracted: $size"
     else
         # Fall back to building from source if Docker is available
@@ -318,6 +355,8 @@ download_musl_libc() {
         "libstdc++-15.2.0-r2.apk"
         "ncurses-libs-6.5_p20241115-r1.apk"
         "readline-8.2.13-r0.apk"
+        "libldap-2.6.9-r0.apk"
+        "lz4-libs-1.10.0-r0.apk"
     )
 
     for pkg in "${packages[@]}"; do
@@ -610,49 +649,64 @@ copy_binaries() {
     done
     cd "$WORK_DIR"
 
-    # Valkey
-    info "Copying Valkey..."
-    if [ -f "$downloads/valkey/usr/bin/valkey-server" ]; then
-        cp "$downloads/valkey/usr/bin/valkey-server" "$initramfs/bin/"
-        chmod +x "$initramfs/bin/valkey-server"
-        # Copy Valkey libraries if present
-        if [ -d "$downloads/valkey/lib" ]; then
-            cp -r "$downloads/valkey/lib/"* "$initramfs/lib/" 2>/dev/null || true
+    # Valkey (skip in fast build)
+    if [ "$FAST_BUILD" = false ]; then
+        info "Copying Valkey..."
+        if [ -f "$downloads/valkey/bin/valkey-server" ]; then
+            cp "$downloads/valkey/bin/valkey-server" "$initramfs/bin/"
+            chmod +x "$initramfs/bin/valkey-server"
+            # Copy Valkey libraries if present
+            if [ -d "$downloads/valkey/lib" ]; then
+                cp -r "$downloads/valkey/lib/"* "$initramfs/lib/" 2>/dev/null || true
+            fi
+            if [ -d "$downloads/valkey/usr/lib" ]; then
+                cp -r "$downloads/valkey/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
+            fi
+        else
+            error "Valkey binary not found"
         fi
-        if [ -d "$downloads/valkey/usr/lib" ]; then
-            cp -r "$downloads/valkey/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
-        fi
-    else
-        error "Valkey binary not found"
     fi
 
-    # PostgreSQL
-    info "Copying PostgreSQL..."
-    cp "$downloads/postgresql/usr/bin/postgres" "$initramfs/usr/bin/"
-    cp "$downloads/postgresql/usr/bin/initdb" "$initramfs/usr/bin/" 2>/dev/null || true
-    cp "$downloads/postgresql/usr/bin/psql" "$initramfs/usr/bin/" 2>/dev/null || true
-    chmod +x "$initramfs/usr/bin/postgres" "$initramfs/usr/bin/initdb" 2>/dev/null || true
+    # PostgreSQL (skip in fast build)
+    if [ "$FAST_BUILD" = false ]; then
+        info "Copying PostgreSQL..."
+        cp "$downloads/postgresql/usr/bin/postgres" "$initramfs/usr/bin/"
+        cp "$downloads/postgresql/usr/bin/initdb" "$initramfs/usr/bin/" 2>/dev/null || true
+        cp "$downloads/postgresql/usr/bin/psql" "$initramfs/usr/bin/" 2>/dev/null || true
+        chmod +x "$initramfs/usr/bin/postgres" "$initramfs/usr/bin/initdb" 2>/dev/null || true
 
-    # Copy PostgreSQL libraries
-    if [ -d "$downloads/postgresql/usr/lib" ]; then
-        info "Copying PostgreSQL libraries..."
-        cp -r "$downloads/postgresql/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
+        # Copy PostgreSQL libraries
+        if [ -d "$downloads/postgresql/usr/lib" ]; then
+            info "Copying PostgreSQL libraries..."
+            cp -r "$downloads/postgresql/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
+        fi
     fi
 
     # OpenVSCode
     info "Copying OpenVSCode..."
     cp -r "$downloads/openvscode/openvscode/"* "$initramfs/opt/openvscode/"
+    # Ensure binary has execute permissions
+    if [ -f "$initramfs/opt/openvscode/bin/openvscode-server" ]; then
+        chmod +x "$initramfs/opt/openvscode/bin/openvscode-server"
+        info "✓ OpenVSCode binary permissions set"
+    else
+        warn "OpenVSCode binary not found at expected location"
+    fi
 
-    # Dropbear SSH
-    info "Copying Dropbear SSH..."
-    cp "$downloads/dropbear/usr/sbin/dropbear" "$initramfs/usr/sbin/"
-    cp "$downloads/dropbear/usr/bin/dropbearkey" "$initramfs/usr/bin/" 2>/dev/null || true
-    chmod +x "$initramfs/usr/sbin/dropbear" "$initramfs/usr/bin/dropbearkey"
+    # Dropbear SSH (skip in fast build)
+    if [ "$FAST_BUILD" = false ]; then
+        info "Copying Dropbear SSH..."
+        cp "$downloads/dropbear/usr/sbin/dropbear" "$initramfs/usr/sbin/"
+        cp "$downloads/dropbear/usr/bin/dropbearkey" "$initramfs/usr/bin/" 2>/dev/null || true
+        chmod +x "$initramfs/usr/sbin/dropbear" "$initramfs/usr/bin/dropbearkey"
+    fi
 
-    # Datadog bridge
-    info "Copying Datadog StatsD bridge..."
-    cp "$WORK_DIR/datadog/statsd-bridge.py" "$initramfs/usr/local/bin/"
-    chmod +x "$initramfs/usr/local/bin/statsd-bridge.py"
+    # Datadog bridge (skip in fast build)
+    if [ "$FAST_BUILD" = false ]; then
+        info "Copying Datadog StatsD bridge..."
+        cp "$WORK_DIR/datadog/statsd-bridge.py" "$initramfs/usr/local/bin/"
+        chmod +x "$initramfs/usr/local/bin/statsd-bridge.py"
+    fi
 
     log "✓ Binaries copied"
     log ""
@@ -812,6 +866,14 @@ mount -t tmpfs tmp /tmp 2>/dev/null || true
 
 # Set hostname
 hostname unified-vm 2>/dev/null || true
+
+# Check if this is a fast build (OpenVSCode + DHCP only)
+FAST_BUILD=false
+if [ -f /.fast_build ]; then
+    FAST_BUILD=true
+    echo "FAST BUILD MODE: OpenVSCode + DHCP only"
+    echo ""
+fi
 echo "unified-vm" > /etc/hostname 2>/dev/null || true
 
 # Create essential device nodes
@@ -868,16 +930,26 @@ done
 if [ -n "$FOUND_IFACE" ]; then
     echo "Network interface: $FOUND_IFACE"
     ip link set "$FOUND_IFACE" up
-    sleep 1
+    sleep 0.5
 
-    # DHCP configuration
+    # DHCP configuration (fast: 2 tries, 1 second timeout each = max 3s)
     echo "Requesting DHCP address..."
-    udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q 2>&1 || true
-    sleep 2
+    udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q -t 2 -T 1 2>&1 || true
+    sleep 0.5
 
     # Get IP address
     VM_IP=$(ip addr show "$FOUND_IFACE" | grep "inet " | awk '{print $2}' | cut -d/ -f1)
-    echo "✓ IP Address: $VM_IP"
+
+    # If DHCP failed, use static IP fallback
+    if [ -z "$VM_IP" ]; then
+        echo "DHCP failed, using static IP fallback..."
+        ip addr add 192.168.64.10/24 dev "$FOUND_IFACE" 2>/dev/null || true
+        ip route add default via 192.168.64.1 2>/dev/null || true
+        VM_IP="192.168.64.10"
+        echo "✓ Static IP: $VM_IP"
+    else
+        echo "✓ DHCP IP: $VM_IP"
+    fi
 else
     echo "⚠ No network interface found"
     VM_IP="localhost"
@@ -951,7 +1023,8 @@ echo ""
 # Library path for services
 export LD_LIBRARY_PATH=/lib:/usr/lib
 
-# Start Valkey
+# Start Valkey (skip in fast build)
+if [ "$FAST_BUILD" = false ]; then
 echo "=== Starting Valkey Server ==="
 if [ -f /bin/valkey-server ] && [ -f /etc/valkey.conf ]; then
     /bin/valkey-server /etc/valkey.conf > /tmp/valkey.log 2>&1 &
@@ -971,8 +1044,10 @@ else
     echo "⚠ Valkey binary or config not found"
 fi
 echo ""
+fi
 
-# Start PostgreSQL
+# Start PostgreSQL (skip in fast build)
+if [ "$FAST_BUILD" = false ]; then
 echo "=== Starting PostgreSQL Server ==="
 if [ -f /usr/bin/postgres ]; then
     # Create postgres user directories
@@ -1003,6 +1078,58 @@ if [ -f /usr/bin/postgres ]; then
         echo "  Port: 5432"
         echo "  Data dir: /var/lib/postgresql/data"
         echo "  Logs: /tmp/postgresql.log"
+
+        # Install PostgreSQL extensions (permissive licenses only)
+        echo "  Installing PostgreSQL extensions..."
+        sleep 2  # Give PostgreSQL time to fully start
+        
+        # Create SQL script for extensions (all MIT/BSD/PostgreSQL licensed)
+        cat > /tmp/install-extensions.sql << 'EXTEOF'
+-- Vector similarity search for RAG/embeddings (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS vector;
+
+-- Trigram text search (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+
+-- Query performance monitoring (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+
+-- Key-value storage in rows (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS hstore;
+
+-- Case-insensitive text (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS citext;
+
+-- UUID generation (BSD license)
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Better indexing (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
+-- Remove accents from text (PostgreSQL license)
+CREATE EXTENSION IF NOT EXISTS unaccent;
+EXTEOF
+
+        # Run extension installation
+        if [ -f /usr/bin/psql ]; then
+            su - postgres -c "psql -U postgres -d postgres -f /tmp/install-extensions.sql" > /tmp/extensions.log 2>&1 || true
+            
+            # Check which extensions were installed
+            INSTALLED=$(su - postgres -c "psql -U postgres -d postgres -t -c \"SELECT COUNT(*) FROM pg_extension WHERE extname NOT IN ('plpgsql');\"" 2>/dev/null | tr -d ' ')
+            
+            if [ -n "$INSTALLED" ] && [ "$INSTALLED" -gt 0 ]; then
+                echo "  ✓ Installed $INSTALLED PostgreSQL extensions"
+                echo "    - vector (pgvector for RAG)"
+                echo "    - pg_trgm (fuzzy text search)"
+                echo "    - pg_stat_statements (query stats)"
+                echo "    - hstore, citext, uuid-ossp"
+                echo "    - btree_gin, btree_gist, unaccent"
+            else
+                echo "  ⚠ Some extensions may not be available"
+                echo "    Check: cat /tmp/extensions.log"
+            fi
+        fi
     else
         echo "⚠ PostgreSQL failed to start"
         echo "  Check logs: cat /tmp/postgresql.log"
@@ -1011,6 +1138,7 @@ else
     echo "⚠ PostgreSQL binary not found"
 fi
 echo ""
+fi
 
 # Start OpenVSCode
 echo "=== Starting OpenVSCode Server ==="
@@ -1070,6 +1198,12 @@ exec /bin/sh
 INITEOF
 
     chmod +x "$initramfs/init"
+    
+    # Create fast build marker if needed
+    if [ "$FAST_BUILD" = true ]; then
+        touch "$initramfs/.fast_build"
+        info "FAST BUILD marker created"
+    fi
 
     log "✓ Init script created"
     log ""
@@ -1281,14 +1415,24 @@ main() {
 
     # Download phase
     download_busybox
-    download_valkey
-    download_postgresql
+    
+    if [ "$FAST_BUILD" = false ]; then
+        download_valkey
+        download_postgresql
+        download_dropbear_ssh
+    else
+        info "FAST BUILD: Skipping Valkey, PostgreSQL, and Dropbear SSH"
+    fi
+    
     download_openvscode
-    download_dropbear_ssh
     download_musl_libc
 
-    # Create Datadog integration
-    create_datadog_bridge
+    # Create Datadog integration (only in full build)
+    if [ "$FAST_BUILD" = false ]; then
+        create_datadog_bridge
+    else
+        info "FAST BUILD: Skipping Datadog integration"
+    fi
 
     # Build initramfs
     create_initramfs_structure
