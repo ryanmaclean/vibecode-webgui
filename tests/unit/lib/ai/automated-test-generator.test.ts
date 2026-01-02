@@ -45,8 +45,7 @@ type AutomatedTestGeneratorPrivate = {
   llm: unknown;
 };
 
-describe.skip('AutomatedTestGenerator', () => {
-  // Skipping LangChain-dependent tests until proper mocking is implemented
+describe('AutomatedTestGenerator', () => {
   let generator: AutomatedTestGenerator
   const mockApiKey = 'test-api-key'
 
