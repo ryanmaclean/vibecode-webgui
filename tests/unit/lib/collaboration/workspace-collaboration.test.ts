@@ -27,8 +27,7 @@ jest.mock('ws', () => {
 
 import { WorkspaceCollaboration } from '@/lib/workspace-collaboration';
 
-describe.skip('WorkspaceCollaboration', () => {
-  // Skipping Redis-dependent tests until proper mocking is implemented
+describe('WorkspaceCollaboration', () => {
   let collaboration: WorkspaceCollaboration;
 
   beforeEach(() => {
