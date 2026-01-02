@@ -23,6 +23,9 @@ describe('ProjectGenerator', () => {
     // Reset all mocks before each test
     jest.clearAllMocks();
 
+    // Mock generateProject to return a resolved promise
+    mockGenerateProject.mockResolvedValue(undefined);
+
     // Default mock implementation
     mockUseProjectGenerator.mockReturnValue({
       isGenerating: false,
