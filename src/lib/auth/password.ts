@@ -319,3 +319,38 @@ export function generateSecurePassword(length: number = 16): string {
     .sort(() => Math.random() - 0.5)
     .join('');
 }
+
+/**
+ * Validates if a string is a valid bcrypt hash format
+ *
+ * Bcrypt hashes follow the format: $2[a|b|y]$[rounds]$[salt+hash]
+ * - Variant: 2a, 2b, or 2y
+ * - Rounds: 04-31 (typically 10-12)
+ * - Salt+hash: 53 characters (22 char salt + 31 char hash)
+ *
+ * @param hash - The string to validate
+ * @returns True if the string is a valid bcrypt hash format
+ *
+ * @example
+ * ```typescript
+ * isValidBcryptHash('$2a$12$R9h/cIPz0gi.URNNX3kh2OPST9/PgBkqquzi.Ss7KIUgO2t0jWMUW'); // true
+ * isValidBcryptHash('invalid-hash'); // false
+ * ```
+ */
+export function isValidBcryptHash(hash: any): boolean {
+  // Check if input is a string
+  if (typeof hash !== 'string') {
+    return false;
+  }
+
+  // Bcrypt hash format: $2[a|b|y]$[rounds]$[salt+hash]
+  // Total length is 60 characters
+  // - $2a$ or $2b$ or $2y$ (4 chars)
+  // - rounds (2 digits: 04-31)
+  // - $ (1 char)
+  // - salt+hash (53 chars using base64-like encoding)
+  const bcryptRegex = /^\$2[aby]\$(0[4-9]|[12][0-9]|3[01])\$[./A-Za-z0-9]{53}$/;
+
+  // Also check total length is 60
+  return hash.length === 60 && bcryptRegex.test(hash);
+}
