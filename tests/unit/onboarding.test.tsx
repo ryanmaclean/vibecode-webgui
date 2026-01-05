@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, renderWithProviders } from '../test-utils'
 import { useRouter } from 'next/navigation'
 
 // Mock Next.js router
@@ -25,13 +25,13 @@ describe('Onboarding Flow', () => {
   })
 
   it('renders welcome screen initially', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     expect(screen.getByText(/Welcome to VibeCode/i)).toBeInTheDocument()
     expect(screen.getByText(/Get Started/i)).toBeInTheDocument()
   })
 
   it('shows progress bar', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     expect(screen.getByText('Welcome')).toBeInTheDocument()
     expect(screen.getByText('Theme')).toBeInTheDocument()
     expect(screen.getByText('Editor')).toBeInTheDocument()
@@ -40,14 +40,14 @@ describe('Onboarding Flow', () => {
   })
 
   it('navigates to theme selection on get started', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     const getStartedButton = screen.getByText(/Get Started/i)
     fireEvent.click(getStartedButton)
     expect(screen.getByText(/Choose Your Theme/i)).toBeInTheDocument()
   })
 
   it('allows theme selection', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to theme step
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -62,7 +62,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('allows CLI editor selection', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to editor step
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -75,7 +75,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('shows extension recommendations', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to extensions step
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -88,7 +88,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('shows integration options', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to integrations step
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -103,7 +103,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('allows navigation back', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate forward
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -120,7 +120,7 @@ describe('Onboarding Flow', () => {
       json: async () => ({ success: true }),
     })
 
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate through all steps
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -146,7 +146,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('allows extension selection', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to extensions
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -163,7 +163,7 @@ describe('Onboarding Flow', () => {
   })
 
   it('allows integration selection', () => {
-    render(<OnboardingPage />)
+    renderWithProviders(<OnboardingPage />)
     
     // Navigate to integrations
     fireEvent.click(screen.getByText(/Get Started/i))

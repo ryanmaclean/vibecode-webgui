@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../../../tests/test-utils';
 import { ProjectGenerator } from '../ProjectGenerator';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 

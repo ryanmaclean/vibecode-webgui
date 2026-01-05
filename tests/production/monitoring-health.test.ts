@@ -5,8 +5,10 @@
 
 import { describe, test, expect } from '@jest/globals'
 
-describe.skip('Monitoring Health Endpoints', () => {
-  // Skipping production health endpoint tests - requires proper API mocking
+const HAS_MONITORING = process.env.DD_API_KEY !== undefined;
+
+(HAS_MONITORING ? describe : describe.skip)('Monitoring Health Endpoints', () => {
+  // Only run with real monitoring configuration
   test('should provide detailed health status', async () => {
     const response = await fetch('/api/monitoring/health');
     expect(response.status).toBe(200);
@@ -55,8 +57,8 @@ describe.skip('Monitoring Health Endpoints', () => {
   });
 });
 
-describe.skip('Component Health Validation', () => {
-  // Skipping component health validation tests - requires proper service mocking
+(HAS_MONITORING ? describe : describe.skip)('Component Health Validation', () => {
+  // Only run with real monitoring configuration
   test('should validate Datadog connectivity', async () => {
     const response = await fetch('/api/monitoring/health/datadog');
     expect(response.status).toBe(200);
@@ -95,8 +97,8 @@ describe.skip('Component Health Validation', () => {
   });
 });
 
-describe.skip('Health Check Security', () => {
-  // Skipping security tests - requires proper authentication mocking
+(HAS_MONITORING ? describe : describe.skip)('Health Check Security', () => {
+  // Only run with real monitoring configuration
   test('should require authentication for detailed health info', async () => {
     const response = await fetch('/api/monitoring/health/detailed');
     expect(response.status).toBe(401);
@@ -115,8 +117,8 @@ describe.skip('Health Check Security', () => {
   });
 });
 
-describe.skip('Health Check Performance', () => {
-  // Skipping performance tests - requires proper API mocking
+(HAS_MONITORING ? describe : describe.skip)('Health Check Performance', () => {
+  // Only run with real monitoring configuration
   test('should handle multiple concurrent health checks', async () => {
     const promises = Array.from({ length: 50 }, () =>
       fetch('/api/monitoring/health')

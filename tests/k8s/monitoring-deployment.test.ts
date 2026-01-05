@@ -7,9 +7,13 @@ import { exec } from 'child_process'
 import { promisify } from 'util'
 import { jest } from '@jest/globals'
 
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
 const execAsync = promisify(exec);
 
-describe('Monitoring Infrastructure Deployment', () => {
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('Monitoring Infrastructure Deployment', () => {
   const clusterName = 'vibecode-test';
   const timeout = 300000 // 5 minutes for cluster operations;
   let clusterAvailable = false;
@@ -26,12 +30,27 @@ describe('Monitoring Infrastructure Deployment', () => {
   };
 
   beforeAll(async () => {
-    // Check if Docker is available
-    try {
-      await execAsync('docker ps');
-    } catch (error) {
-      console.log('Docker not available, skipping KIND cluster tests');
-      return;
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        await execAsync('kubectl version --client');
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        await execAsync('kind version');
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+
+      // Check if Docker is available
+      try {
+        await execAsync('docker ps');
+      } catch (error) {
+        throw new Error('Docker is not available. Install Docker or set SKIP_K8S_TESTS=1');
+      }
     }
 
     // Create KIND cluster for testing

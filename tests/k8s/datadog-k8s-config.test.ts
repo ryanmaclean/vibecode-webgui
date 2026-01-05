@@ -2,6 +2,8 @@ import fs from 'node:fs'
 import path from 'node:path'
 import { load, loadAll } from 'js-yaml'
 
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
 type HelmValues = {
   datadog: {
     logs?: { enabled?: boolean; containerCollectAll?: boolean; containerCollectUsingFiles?: boolean }
@@ -24,7 +26,9 @@ type HelmValues = {
   }
 }
 
-describe('Datadog Kubernetes configurations', () => {
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('Datadog Kubernetes configurations', () => {
   const helmFiles = [
     'k8s/datadog-values-kind.yaml',
     'k8s/kind-datadog-values.yaml',

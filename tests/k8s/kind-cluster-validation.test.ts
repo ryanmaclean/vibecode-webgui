@@ -6,11 +6,31 @@
 import { describe, test, beforeAll, afterAll, expect } from '@jest/globals';
 import { execSync } from 'child_process';
 
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
 const CLUSTER_NAME = 'vibecode-cluster';
 const TIMEOUT = 300000; // 5 minutes;
 
-describe('KIND Cluster Validation', () => {
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('KIND Cluster Validation', () => {
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     console.log('Setting up KIND cluster for validation testing...');
 
     // Check if cluster already exists and is ready

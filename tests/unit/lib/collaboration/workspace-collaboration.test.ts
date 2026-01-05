@@ -21,11 +21,21 @@ jest.mock('ws', () => {
     close: jest.fn(),
     on: jest.fn(),
     off: jest.fn(),
-    readyState: 1
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    onopen: null,
+    onmessage: null,
+    onerror: null,
+    onclose: null,
+    readyState: 1,
+    CONNECTING: 0,
+    OPEN: 1,
+    CLOSING: 2,
+    CLOSED: 3
   }));
 });
 
-import { WorkspaceCollaboration } from '@/lib/workspace-collaboration';
+import { WorkspaceCollaboration } from '@/lib/collaboration/workspace-collaboration';
 
 describe('WorkspaceCollaboration', () => {
   let collaboration: WorkspaceCollaboration;

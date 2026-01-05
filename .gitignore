@@ -88,3 +88,9 @@ DerivedData/
 # Rust
 Cargo.lock
 bench-images/
+test-output*.txt
+test-results.txt
+test_failure_analysis.json
+error-analysis-report.json
+analyze-errors.js
+analyze_test_failures.py

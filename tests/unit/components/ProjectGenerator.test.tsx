@@ -3,6 +3,25 @@ import { render, screen, fireEvent, waitFor } from '../../test-utils';
 import { ProjectGenerator } from '@/components/ProjectGenerator';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 
+// Mock UI components
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, ...props }: any) => (
+    <button onClick={onClick} {...props}>{children}</button>
+  )
+}));
+
+jest.mock('@/components/ui/progress', () => ({
+  Progress: ({ value, ...props }: any) => (
+    <div data-testid="progress" data-value={value} {...props} />
+  )
+}));
+
+jest.mock('@/components/ui/alert', () => ({
+  Alert: ({ children, ...props }: any) => <div data-testid="alert" {...props}>{children}</div>,
+  AlertDescription: ({ children, ...props }: any) => <div {...props}>{children}</div>,
+  AlertTitle: ({ children, ...props }: any) => <div {...props}>{children}</div>
+}));
+
 // Mock the useProjectGenerator hook
 jest.mock('@/hooks/useProjectGenerator');
 
@@ -104,8 +123,9 @@ describe('ProjectGenerator', () => {
 
     render(<ProjectGenerator {...defaultProps} />);
 
-    // Check that error is displayed
-    expect(screen.getByText('Error')).toBeInTheDocument();
+    // Check that error is displayed - use getAllByText and verify one exists
+    const errorTexts = screen.getAllByText('Error');
+    expect(errorTexts.length).toBeGreaterThan(0);
     expect(screen.getByText(/failed to generate project/i)).toBeInTheDocument();
   });
 

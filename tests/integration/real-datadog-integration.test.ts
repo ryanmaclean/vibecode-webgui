@@ -9,12 +9,14 @@
 
 const { describe, test, expect, beforeAll } = require('@jest/globals');
 
-// Skip these tests if not in CI/staging environment
-const shouldRunRealTests = process.env.ENABLE_REAL_DATADOG_TESTS === 'true' && process.env.DD_API_KEY;
+// Check if Redis is available (set by jest.globalSetup.js)
+const SKIP_REDIS = process.env.SKIP_REDIS_TESTS === '1';
 
-const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
+// Skip these tests if DD_API_KEY not set or Redis unavailable
+const HAS_DD_KEY = process.env.DD_API_KEY !== undefined;
+const SKIP_TESTS = SKIP_REDIS || !HAS_DD_KEY;
 
-conditionalDescribe('Real Datadog Integration Tests (NO MOCKING)', () => {
+(SKIP_TESTS ? describe.skip : describe)('Real Datadog Integration Tests (NO MOCKING)', () => {
   const apiKey = process.env.DD_API_KEY;
   const datadogSite = process.env.DD_SITE || 'datadoghq.com';
   const baseUrl = `https://api.${datadogSite}`;
@@ -101,13 +103,13 @@ describe('Test Quality Validation', () => {
     // 3. Proper skipping when environment is not configured
 
     // Check that conditional execution is set up
-    expect(typeof shouldRunRealTests).toBe('boolean');
+    expect(typeof HAS_DD_KEY).toBe('boolean');
 
     // Should skip when environment variables are not set (which is expected in most test environments)
-    if (!process.env.ENABLE_REAL_DATADOG_TESTS || !process.env.DD_API_KEY) {
-      expect(shouldRunRealTests).toBe(false);
+    if (!process.env.DD_API_KEY) {
+      expect(HAS_DD_KEY).toBe(false);
     } else {
-      expect(shouldRunRealTests).toBe(true);
+      expect(HAS_DD_KEY).toBe(true);
     }
   });
 

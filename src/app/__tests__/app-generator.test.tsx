@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../../../tests/test-utils';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ProjectGenerator } from '@/components/ProjectGenerator';
@@ -21,6 +21,7 @@ jest.mock('@/lib/analytics', () => ({
 
 // Mock the ProjectGenerator component to test the integration
 jest.mock('@/components/ProjectGenerator', () => {
+  const mockReact = require('react');
   const MockProjectGenerator = ({
     initialPrompt = '',
     onComplete,
@@ -30,7 +31,7 @@ jest.mock('@/components/ProjectGenerator', () => {
     onComplete?: (data: { workspaceId: string; projectName: string }) => void;
     autoStart?: boolean;
   }) => {
-    React.useEffect(() => {
+    mockReact.useEffect(() => {
       if (autoStart && initialPrompt) {
         // Simulate completion after a short delay
         const timer = setTimeout(() => {
@@ -44,28 +45,24 @@ jest.mock('@/components/ProjectGenerator', () => {
       return () => {}; // No-op cleanup function
     }, [autoStart, initialPrompt, onComplete]);
 
-    return (
-      <div data-testid="mock-project-generator">
-        <input 
-          data-testid="prompt-input" 
-          defaultValue={initialPrompt} 
-          onChange={() => {}} 
-        />
-        <button 
-          data-testid="generate-button"
-          onClick={() => {
-            onComplete?.({
-              workspaceId: 'test-workspace-123',
-              projectName: 'Test Project',
-            });
-          }}
-        >
-          Generate Project
-        </button>
-      </div>
+    return mockReact.createElement('div', { 'data-testid': 'mock-project-generator' },
+      mockReact.createElement('input', {
+        'data-testid': 'prompt-input',
+        defaultValue: initialPrompt,
+        onChange: () => {},
+      }),
+      mockReact.createElement('button', {
+        'data-testid': 'generate-button',
+        onClick: () => {
+          onComplete?.({
+            workspaceId: 'test-workspace-123',
+            projectName: 'Test Project',
+          });
+        },
+      }, 'Generate Project')
     );
   };
-  return MockProjectGenerator;
+  return { ProjectGenerator: MockProjectGenerator };
 });
 
 describe('App Generator Integration', () => {

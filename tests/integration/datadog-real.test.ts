@@ -1,23 +1,15 @@
 /**
  * Real Datadog Integration Tests
  * Tests actual connectivity to Datadog APIs using provided API key
- * Only runs when ENABLE_DATADOG_INTEGRATION_TESTS=true
+ * Only runs when DD_API_KEY is set
  */
-
-
-jest.unmock('node-fetch');
-// @ts-ignore
-global.fetch = require('node-fetch');
-
-import fetch from 'node-fetch';
-global.fetch = fetch as any;
 
 import { describe, test, expect, beforeAll } from '@jest/globals'
 
-// Only run these tests when explicitly enabled with real API key
-const shouldRunTests = process.env.ENABLE_DATADOG_INTEGRATION_TESTS === 'true' && !!process.env.DD_API_KEY;
+// Only run these tests when real API key is available
+const HAS_DD_KEY = process.env.DD_API_KEY !== undefined;
 
-const conditionalDescribe = shouldRunTests ? describe : describe.skip
+const conditionalDescribe = HAS_DD_KEY ? describe : describe.skip
 
 conditionalDescribe('Real Datadog Integration Tests', () => {
   const apiKey = process.env.DD_API_KEY as string

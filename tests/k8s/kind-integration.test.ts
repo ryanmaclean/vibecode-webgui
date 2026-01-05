@@ -10,10 +10,30 @@
 const { describe, test, expect, beforeAll } = require('@jest/globals');
 const { execSync } = require('child_process');
 
-describe('KIND Integration Tests', () => {
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('KIND Integration Tests', () => {
   const NAMESPACE = 'vibecode-platform';
 
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     // Wait for databases to be fully ready before testing
     console.log('Waiting for database pods to be ready...');
     await waitForPodsReady(['postgres', 'redis'], NAMESPACE, 60000);

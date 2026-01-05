@@ -6,14 +6,34 @@
 import { execSync, spawn } from 'child_process';
 import { promisify } from 'util';
 
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
 const exec = promisify(execSync);
 
-describe('KinD Cloud Deployment Smoke Tests', () => {
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('KinD Cloud Deployment Smoke Tests', () => {
   const CLUSTER_NAME = 'vibecode-cloud-test';
   const NAMESPACE = 'vibecode-cloud';
   const CODESERVER_NAMESPACE = 'codeserver';
-  
+
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     // Ensure KinD cluster exists
     try {
       await exec(`kind get clusters | grep -q "${CLUSTER_NAME}"`);
@@ -21,10 +41,10 @@ describe('KinD Cloud Deployment Smoke Tests', () => {
       console.log(`Creating KinD cluster: ${CLUSTER_NAME}`);
       await exec(`kind create cluster --name ${CLUSTER_NAME} --config k8s/kind-cloud-config.yaml`);
     }
-    
+
     // Set kubectl context
     await exec(`kubectl config use-context kind-${CLUSTER_NAME}`);
-    
+
     // Create namespaces
     await exec(`kubectl create namespace ${NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`);
     await exec(`kubectl create namespace ${CODESERVER_NAMESPACE} --dry-run=client -o yaml | kubectl apply -f -`);

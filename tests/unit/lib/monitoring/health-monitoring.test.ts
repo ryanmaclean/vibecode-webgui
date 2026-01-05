@@ -9,7 +9,7 @@ import path from 'path'
 // Define SpyInstance type directly since it's not properly exported
 type SpyInstance = jest.SpiedFunction<any>
 
-// Mock winston logger
+// Mock only essential logger methods to reduce test complexity
 const mockLogger = {
   info: jest.fn(),
   warn: jest.fn(),
@@ -20,13 +20,13 @@ const mockLogger = {
 jest.mock('winston', () => ({
   createLogger: jest.fn(() => mockLogger),
   format: {
-    combine: jest.fn(),
-    timestamp: jest.fn(),
-    errors: jest.fn(),
-    json: jest.fn(),
-    printf: jest.fn(),
-    colorize: jest.fn(),
-    simple: jest.fn()
+    combine: jest.fn(() => ({})),
+    timestamp: jest.fn(() => ({})),
+    errors: jest.fn(() => ({})),
+    json: jest.fn(() => ({})),
+    printf: jest.fn(() => ({})),
+    colorize: jest.fn(() => ({})),
+    simple: jest.fn(() => ({}))
   },
   transports: {
     Console: jest.fn()

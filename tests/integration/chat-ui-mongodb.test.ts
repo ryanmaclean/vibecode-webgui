@@ -5,6 +5,9 @@ import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach } from
 import { MongoClient, Db, Collection } from 'mongodb'
 import { v4 as uuidv4 } from 'uuid'
 
+// Check if MongoDB is available (set by jest.globalSetup.js)
+const SKIP_MONGO = process.env.SKIP_MONGO_TESTS === '1';
+
 // Mock environment for testing
 const MONGO_URL = process.env.MONGODB_TEST_URL || 'mongodb://localhost:27017/chatui_test'
 const TEST_DB_NAME = 'chatui_test'
@@ -40,11 +43,7 @@ interface TestSession {
   expiresAt: Date
 }
 
-// Only run this suite when explicitly enabled (CI or local env provides MongoDB)
-const RUN_MONGO_TESTS = process.env.RUN_MONGO_TESTS === 'true'
-const describeIf = RUN_MONGO_TESTS ? describe : describe.skip
-
-describeIf('Chat-UI MongoDB Integration', () => {
+(SKIP_MONGO ? describe.skip : describe)('Chat-UI MongoDB Integration', () => {
   let mongoClient: MongoClient
   let db: Db
   let conversationsCollection: Collection<TestConversation>

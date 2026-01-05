@@ -1,6 +1,6 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
-import ConnectionPoolAlerts from '@/components/ConnectionPoolAlerts'
+import { render, screen, fireEvent, waitFor } from '../../../test-utils'
+import ConnectionPoolAlerts from '@/components/monitoring/ConnectionPoolAlerts'
 import ConnectionPoolAlertService, { AlertSeverity, AlertType } from '@/lib/db/connection-pool-alerts'
 
 describe('ConnectionPoolAlerts component (integration)', () => {

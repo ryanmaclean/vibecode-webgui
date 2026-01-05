@@ -26,14 +26,8 @@ jest.mock('@/lib/vector-store', () => ({
   }
 }))
 
-// Mock prisma
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    user: {
-      findUnique: jest.fn(() => Promise.resolve(null))
-    }
-  }
-}))
+// Mock prisma - use the comprehensive mock
+jest.mock('@/lib/prisma')
 
 // Mock next-auth
 jest.mock('next-auth', () => ({
@@ -60,8 +54,8 @@ afterAll(() => {
   process.env = originalEnv
 })
 
-describe.skip('/api/ai/chat/stream', () => {
-  // Skipping API chat stream tests until proper endpoint mocking is implemented
+describe('/api/ai/chat/stream', () => {
+  // Tests use comprehensive mocks for OpenAI, vector store, Prisma, and authentication
   beforeEach(() => {
     jest.clearAllMocks()
     

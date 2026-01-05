@@ -7,14 +7,17 @@
  * Staff Engineer Implementation - Replacing over-mocked monitoring tests
  */
 
+// Check if databases are available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
+const SKIP_REDIS = process.env.SKIP_REDIS_TESTS === '1';
+
 const { getDatadogApiKey, getDatadogSite } = require('../../src/lib/monitoring/datadog-env');
 
-// Skip these tests if not in environment with real monitoring setup
-const shouldRunRealTests = process.env.ENABLE_REAL_MONITORING_TESTS === 'true'
+// Skip these tests if DD_API_KEY not set or databases unavailable
+const HAS_DD_KEY = process.env.DD_API_KEY !== undefined;
+const SKIP_TESTS = SKIP_POSTGRES || SKIP_REDIS || !HAS_DD_KEY;
 
-const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
-
-conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
+(SKIP_TESTS ? describe.skip : describe)('Real Monitoring Integration Tests (NO MOCKING)', () => {
   beforeAll(() => {
     const apiKey = getDatadogApiKey()
     if (!apiKey) {
@@ -286,6 +289,12 @@ conditionalDescribe('Real Monitoring Integration Tests (NO MOCKING)', () => {
   }, 15000);
 
   test('should validate Vector logging pipeline is operational', async () => {
+    // Skip if kubectl not available
+    if (process.env.SKIP_K8S_TESTS === '1') {
+      console.log('Skipping Vector K8s check - kubectl not available');
+      return;
+    }
+
     // Check if Vector is running in Kubernetes
     const { execSync } = require('child_process')
 

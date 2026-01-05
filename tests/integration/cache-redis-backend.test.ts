@@ -5,6 +5,9 @@
 
 import { ProductionVectorCacheInvalidator } from '../../src/lib/cache/production-vector-cache-invalidator';
 
+// Check if Redis is available (set by jest.globalSetup.js)
+const SKIP_REDIS = process.env.SKIP_REDIS_TESTS === '1';
+
 // Mock the metrics module
 jest.mock('../../src/lib/server-monitoring', () => ({
   metrics: {
@@ -243,7 +246,7 @@ class RedisIntegratedCacheInvalidator {
   }
 }
 
-describe('Cache Invalidation with Redis/Valkey Backend', () => {
+(SKIP_REDIS ? describe.skip : describe)('Cache Invalidation with Redis/Valkey Backend', () => {
   let invalidator: RedisIntegratedCacheInvalidator;
   let redisClient: MockRedisClient | any;
 

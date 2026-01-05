@@ -10,11 +10,31 @@
 const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals');
 const { execSync } = require('child_process');
 
-describe('KIND Deployment Tests', () => {
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('KIND Deployment Tests', () => {
   const NAMESPACE = 'vibecode-platform';
   const TIMEOUT = 30000;
 
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     // Ensure we're using the correct kubectl context
     try {
       execSync('kubectl config use-context kind-vibecode-test-validation', { stdio: 'pipe' });

@@ -6,6 +6,11 @@
 import { Pool } from 'pg';
 import { performance } from 'perf_hooks';
 
+// Check if PostgreSQL is available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
+
+// Only load classes when PostgreSQL is available
+
 interface TestResult {
   test_name: string;
   passed: boolean;

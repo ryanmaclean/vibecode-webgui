@@ -5,6 +5,9 @@
  * - Verifies the route returns results or a well-formed empty response
  */
 
+// Check if PostgreSQL is available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
+
 // Mock NextAuth session to bypass auth in tests (must be hoisted before route import)
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn().mockResolvedValue({ user: { id: '1' } }),
@@ -67,13 +70,10 @@ jest.mock('@/lib/vector-store', () => {
 import { POST as vectorSearchPost } from '@/app/api/ai/search/route'
 
 const hasDb = !!process.env.DATABASE_URL
+const skipTests = SKIP_POSTGRES || !hasDb;
 
-describe('POST /api/ai/search (real DB)', () => {
-  const testOrSkip = hasDb ? it : it.skip
-
-  testOrSkip(
-    'returns vector search results or an empty set without throwing',
-    async () => {
+(skipTests ? describe.skip : describe)('POST /api/ai/search (real DB)', () => {
+  it('returns vector search results or an empty set without throwing', async () => {
       const payload = {
         query: 'Datadog DBM vector ingestion verification',
         limit: 5,
@@ -108,7 +108,5 @@ describe('POST /api/ai/search (real DB)', () => {
           }
         }
       }
-    },
-    60_000
-  )
-})
+  }, 60_000);
+});

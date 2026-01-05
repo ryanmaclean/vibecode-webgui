@@ -15,6 +15,12 @@ global.WebSocket = jest.fn().mockImplementation(() => ({
   removeEventListener: jest.fn(),
   send: jest.fn(),
   close: jest.fn(),
+  on: jest.fn(),
+  off: jest.fn(),
+  onopen: null,
+  onmessage: null,
+  onerror: null,
+  onclose: null,
   readyState: 1, // OPEN
   CONNECTING: 0,
   OPEN: 1,

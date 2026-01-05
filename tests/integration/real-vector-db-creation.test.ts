@@ -1,6 +1,6 @@
 /**
  * REAL Vector Database Creation Integration Test
- * 
+ *
  * Tests actual factory creation logic without mocking the core adapter creation process.
  * Validates real configuration handling, adapter selection, and error handling.
  */
@@ -8,7 +8,12 @@
 import { VectorDatabaseFactory } from '../../src/lib/vector-db/vector-database-factory';
 import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';
 
-describe('Real Vector Database Creation Integration', () => {
+// Check if databases are available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
+const SKIP_REDIS = process.env.SKIP_REDIS_TESTS === '1';
+const conditionalDescribe = (SKIP_POSTGRES && SKIP_REDIS) ? describe.skip : describe;
+
+conditionalDescribe('Real Vector Database Creation Integration', () => {
   describe('Factory method availability', () => {
     it('should expose the create method', () => {
       expect(typeof VectorDatabaseFactory.create).toBe('function');

@@ -9,10 +9,12 @@
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 
-const shouldRunRealTests = process.env.DATABASE_URL && process.env.ENABLE_REAL_DATABASE_TESTS === 'true';
-const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
+// Check if PostgreSQL is available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
 
-describe.skip('Feature Flag Persistence (Real Database) - Temporarily Disabled', () => {
+const conditionalDescribe = SKIP_POSTGRES ? describe.skip : describe;
+
+conditionalDescribe('Feature Flag Persistence (Real Database)', () => {
   let client: any
 
   beforeAll(async () => {

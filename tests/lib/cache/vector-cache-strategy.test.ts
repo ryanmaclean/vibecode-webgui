@@ -37,20 +37,8 @@ jest.mock('../../../src/lib/cache/redis-client', () => ({
   }
 }));
 
-// Mock Prisma
-jest.mock('@prisma/client', () => {
-  const mockPrismaClient = {
-    $queryRawUnsafe: jest.fn(),
-    $executeRaw: jest.fn(),
-    rAGChunk: {
-      update: jest.fn()
-    }
-  };
-  
-  return {
-    PrismaClient: jest.fn(() => mockPrismaClient)
-  };
-});
+// Mock Prisma - use the comprehensive mock
+jest.mock('@prisma/client');
 
 describe('ValKey Vector Cache Strategy', () => {
   // Sample test data

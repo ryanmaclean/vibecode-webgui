@@ -1,11 +1,43 @@
 // Jest Polyfills for Browser APIs
 // ==============================
 
+// Mock openai package BEFORE any modules load to prevent OOM
+jest.mock('openai', () => {
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{
+              message: { content: 'mock response' },
+              finish_reason: 'stop'
+            }],
+            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+          })
+        }
+      },
+      models: {
+        list: jest.fn().mockResolvedValue({ data: [] })
+      }
+    }))
+  };
+});
+
 // Add setImmediate polyfill for Winston and other Node.js modules
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
 global.clearImmediate = global.clearImmediate || clearTimeout;
 
-// Do not define a default fetch here; jest.setup.js provides a default mock and restores it per-test.
+// Define a default jest mock for fetch (can be customized in individual tests)
+if (!global.fetch || typeof global.fetch !== 'function') {
+  const { jest } = require('@jest/globals');
+  global.fetch = jest.fn(() =>
+    Promise.resolve(new Response(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    }))
+  );
+}
 
 // Minimal TextEncoder/TextDecoder implementations (non-mocked)
 global.TextEncoder = class TextEncoder {
@@ -220,6 +252,18 @@ global.Request = class Request {
     this.integrity = init.integrity || '';
     this.keepalive = init.keepalive || false;
     this.signal = init.signal;
+    // Next.js specific properties
+    this.nextUrl = this._url;
+    this.cookies = {
+      get: jest.fn(() => null),
+      getAll: jest.fn(() => []),
+      has: jest.fn(() => false),
+      set: jest.fn(),
+      delete: jest.fn(),
+      clear: jest.fn(),
+    };
+    this.geo = {};
+    this.ip = '';
   }
   
   get url() {
@@ -267,3 +311,7 @@ if (!Response.json) {
     });
   };
 }
+
+// Add NextRequest and NextResponse for Next.js compatibility
+global.NextRequest = global.Request;
+global.NextResponse = global.Response;

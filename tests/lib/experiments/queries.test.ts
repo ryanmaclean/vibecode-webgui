@@ -7,18 +7,8 @@
 import { ExperimentQueries } from '@/lib/experiments/queries'
 import { PrismaClient } from '@prisma/client'
 
-// Mock Prisma
-jest.mock('@prisma/client', () => {
-  const mockPrisma = {
-    experiment: {
-      findUnique: jest.fn()
-    }
-  }
-
-  return {
-    PrismaClient: jest.fn(() => mockPrisma)
-  }
-})
+// Mock Prisma - use the comprehensive mock
+jest.mock('@prisma/client')
 
 // Mock monitoring
 jest.mock('@/lib/server-monitoring', () => ({
@@ -29,14 +19,18 @@ jest.mock('@/lib/server-monitoring', () => ({
   }
 }))
 
+// Import the global mock instance
+import { prismaMock } from '../../__mocks__/@prisma/client'
+
 describe('ExperimentQueries', () => {
   let queries: ExperimentQueries
-  let mockPrisma: any
+  let mockPrisma: typeof prismaMock
 
   beforeEach(() => {
     jest.clearAllMocks()
     queries = new ExperimentQueries()
-    mockPrisma = new PrismaClient()
+    // Use the global mock instance that PrismaClient returns
+    mockPrisma = prismaMock
   })
 
   describe('getVariantDistribution', () => {

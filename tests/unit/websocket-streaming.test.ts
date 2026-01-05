@@ -3,8 +3,6 @@
  * Coverage target: 80%+
  */
 
-import { WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client';
-
 class MockWebSocket {
   static CONNECTING = 0;
   static OPEN = 1;
@@ -38,9 +36,22 @@ class MockWebSocket {
 global.WebSocket = MockWebSocket as any;
 
 jest.mock('@/lib/websocket-connection-pooling', () => ({
-  getPooledWebSocket: jest.fn(),
+  getPooledWebSocket: jest.fn().mockResolvedValue({
+    readyState: 1,
+    send: jest.fn(),
+    close: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    onopen: null,
+    onmessage: null,
+    onerror: null,
+    onclose: null
+  }),
   releasePooledWebSocket: jest.fn(),
 }));
+
+// Import after mocks are set up
+import { WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client';
 
 describe('WebSocketStreamingClient', () => {
   let mockWs: MockWebSocket;

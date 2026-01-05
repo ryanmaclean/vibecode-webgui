@@ -565,3 +565,11 @@ export const COLLECTION_SCHEMAS = {
     metric: 'cosine' as const
   }
 };
+
+/**
+ * Factory function to create a new PGVectorClient instance
+ * Exported for testing and convenience
+ */
+export function createPGVectorClient(config: PGVectorConfig): PGVectorClient {
+  return new PGVectorClient(config);
+}

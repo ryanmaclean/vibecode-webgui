@@ -93,7 +93,7 @@ describe('SSE Client Performance Tests', () => {
       expect(results.throughputMsgPerSec).toBeGreaterThan(1000)
     })
 
-    it.skip('should support 10,000+ concurrent connections', async () => {
+    it('should support 10,000+ concurrent connections', async () => {
       // This test requires significant resources and special infrastructure
       // Run manually with: RUN_LOAD_TESTS=true LARGE_SCALE_TEST=true npm test
 
@@ -146,7 +146,7 @@ describe('SSE Client Performance Tests', () => {
         latencyP99: results.p99Latency,
         throughput: results.throughputMsgPerSec
       })
-    })
+    }, 60000) // 60 second timeout for large scale test
   })
 
   describe('Latency Performance', () => {
@@ -462,7 +462,7 @@ describe('WebSocket Client Performance Tests', () => {
       expect(results.p95RTT).toBeLessThan(200) // Round-trip time < 200ms
     })
 
-    it.skip('should support 10,000+ concurrent WebSocket connections', async () => {
+    it('should support 10,000+ concurrent WebSocket connections', async () => {
       if (!process.env.LARGE_SCALE_TEST) {
         return
       }
@@ -495,7 +495,7 @@ describe('WebSocket Client Performance Tests', () => {
       expect(results.throughputMsgPerSec).toBeGreaterThan(10000)
 
       console.log('10K WebSocket Test Results:', results)
-    })
+    }, 60000) // 60 second timeout for large scale test
   })
 
   describe('Binary Protocol Performance', () => {

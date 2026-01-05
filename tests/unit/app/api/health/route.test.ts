@@ -3,7 +3,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { GET } from '@/app/route';
+import { GET } from '@/app/api/health/route';
 
 // Mock the monitoring module
 jest.mock('@/lib/monitoring', () => ({

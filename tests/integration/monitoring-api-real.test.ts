@@ -13,11 +13,9 @@
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 
-const shouldRunRealTests =
-  process.env.ENABLE_REAL_INTEGRATION_TESTS === 'true' &&
-  process.env.DATABASE_URL
+const HAS_DATABASE = process.env.DATABASE_URL !== undefined;
 
-const conditionalDescribe = shouldRunRealTests ? describe : describe.skip
+const conditionalDescribe = HAS_DATABASE ? describe : describe.skip
 
 conditionalDescribe('Real Monitoring API Integration (NO MOCKING)', () => {
   const baseUrl = process.env.TEST_BASE_URL || 'http://localhost:3000'

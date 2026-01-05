@@ -5,19 +5,17 @@
 import { PostgresVectorDatabaseAdapter } from '../../src/lib/vector-db/postgres-vector-database-adapter';
 import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';
 
+// Check if PostgreSQL is available (set by jest.globalSetup.js)
+const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
+
 // Only run these tests if we have a test database configured
 const testConfig = process.env.TEST_POSTGRES_CONNECTION_STRING;
-const skipTests = !testConfig;
+const skipTests = SKIP_POSTGRES || !testConfig;
 
-describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
+(skipTests ? describe.skip : describe)('PostgresVectorDatabaseAdapter Integration Tests', () => {
   let adapter: PostgresVectorDatabaseAdapter;
 
   beforeAll(async () => {
-    if (skipTests) {
-      console.warn('Skipping Postgres vector DB tests - no test database configured');
-      return;
-    }
-
     const config = {
       provider: VectorDatabaseProvider.POSTGRES,
       connectionString: testConfig,
@@ -33,13 +31,13 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   afterAll(async () => {
-    if (!skipTests) {
+    if (adapter) {
       await adapter.close();
     }
   });
 
   describe('Basic Operations', () => {
-    (skipTests ? it.skip : it)('should store and retrieve vectors', async () => {
+    it('should store and retrieve vectors', async () => {
       const fileId = Math.floor(Math.random() * 1000000);
       const chunks = [
         {
@@ -72,7 +70,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
       await adapter.deleteFileChunks(fileId);
     });
 
-    (skipTests ? it.skip : it)('should handle concurrent operations', async () => {
+    it('should handle concurrent operations', async () => {
       const fileIds = Array(5).fill(0).map((_, i) => 1000000 + i);
       const chunks = fileIds.map(id => ({
         content: `Test content for file ${id}`,
@@ -99,7 +97,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Caching', () => {
-    (skipTests ? it.skip : it)('should cache search results', async () => {
+    it('should cache search results', async () => {
       const fileId = Math.floor(Math.random() * 1000000);
       const chunks = [{
         content: 'Cached content test',
@@ -132,7 +130,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Connection Pool', () => {
-    (skipTests ? it.skip : it)('should handle many concurrent connections', async () => {
+    it('should handle many concurrent connections', async () => {
       const fileId = Math.floor(Math.random() * 1000000);
       const chunks = [{
         content: 'Connection pool test',
@@ -160,7 +158,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Error Handling', () => {
-    (skipTests ? it.skip : it)('should handle invalid queries gracefully', async () => {
+    it('should handle invalid queries gracefully', async () => {
       const invalidFileId = -1;
       const embedding = await adapter.generateEmbedding('Invalid query');
 
@@ -169,7 +167,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
       })).resolves.toEqual([]);
     });
 
-    (skipTests ? it.skip : it)('should handle connection interruptions', async () => {
+    it('should handle connection interruptions', async () => {
       // Force a connection error
       const oldConnection = (adapter as any).pool;
       (adapter as any).pool = null;
@@ -185,7 +183,7 @@ describe('PostgresVectorDatabaseAdapter Integration Tests', () => {
   });
 
   describe('Performance', () => {
-    (skipTests ? it.skip : it)('should perform well under load', async () => {
+    it('should perform well under load', async () => {
       const startTime = Date.now();
       const embedding = await adapter.generateEmbedding('Performance test');
 

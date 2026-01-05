@@ -1,6 +1,9 @@
 // Import the jest-dom library for DOM testing
 import '@testing-library/jest-dom';
 
+// Mock UnifiedAIClient EARLY to prevent OOM during module loading
+jest.mock('@/lib/unified-ai-client');
+
 // Mock the global ResizeObserver which is used by CodeMirror
 class ResizeObserver {
   constructor(callback: any) {

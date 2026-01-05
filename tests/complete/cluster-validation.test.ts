@@ -7,10 +7,30 @@
 
 const { execSync } = require('child_process');
 
-describe('KIND Cluster Validation (Complete)', () => {
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('KIND Cluster Validation (Complete)', () => {
   let clusterExists = false;
 
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     try {
       execSync('kind get clusters | grep vibecode-test', { stdio: 'pipe' });
       clusterExists = true;
@@ -88,10 +108,26 @@ describe('KIND Cluster Validation (Complete)', () => {
   });
 });
 
-describe('Application Health Validation (Complete)', () => {
+describeFn('Application Health Validation (Complete)', () => {
   let clusterExists = false;
 
   beforeAll(async () => {
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        execSync('kubectl version --client', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        execSync('kind version', { stdio: 'pipe' });
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+    }
+
     try {
       execSync('kind get clusters | grep vibecode-test', { stdio: 'pipe' });
       clusterExists = true;
@@ -143,7 +179,7 @@ describe('Application Health Validation (Complete)', () => {
   });
 });
 
-describe('Integration Test Quality (Complete)', () => {
+describeFn('Integration Test Quality (Complete)', () => {
   test('should have comprehensive test coverage', async () => {
     const fs = require('fs');
     const path = require('path');

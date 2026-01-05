@@ -12,14 +12,17 @@ jest.mock('next-auth', () => ({
   }),
 }));
 
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    workspace: {
-      findFirst: jest.fn().mockResolvedValue({ id: 1, workspace_id: 'test-workspace' }),
-    },
-  },
-  logAIRequest: jest.fn().mockResolvedValue(undefined),
-}));
+// Mock prisma - use the comprehensive mock
+jest.mock('@/lib/prisma');
+
+// Import after mocking to get the mock instance
+import { prisma, logAIRequest } from '@/lib/prisma';
+
+// Configure specific mocks
+beforeAll(() => {
+  (prisma.workspace.findFirst as jest.Mock).mockResolvedValue({ id: 1, workspace_id: 'test-workspace' });
+  (logAIRequest as jest.Mock).mockResolvedValue(undefined);
+});
 
 jest.mock('@/lib/vector-store', () => ({
   vectorStore: {

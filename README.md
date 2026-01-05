@@ -1,4 +1,6 @@
-# VibeCode - DEMO GITHUB WORKFLOW REPOSITORY - APP BUILDS AS SAMPLES FOR TRACING
+# VibeCode - Sample Repository
+
+**This is a sample/demo VibeCode repository for testing GitHub workflows and tracing.**
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![CI](https://github.com/ryanmaclean/vibecode-webgui/workflows/CI/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml)
@@ -6,16 +8,22 @@
 [![Release](https://img.shields.io/github/v/release/ryanmaclean/vibecode-webgui)](https://github.com/ryanmaclean/vibecode-webgui/releases/latest)
 [![Platform](https://img.shields.io/badge/platform-macOS-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases/latest)
 [![codecov](https://codecov.io/gh/ryanmaclean/vibecode-webgui/branch/main/graph/badge.svg)](https://codecov.io/gh/ryanmaclean/vibecode-webgui)
+[![Tests](https://img.shields.io/badge/tests-2796%20total-blue)](./TESTING.md)
+[![Coverage](https://img.shields.io/badge/coverage-60%25+-brightgreen)](https://codecov.io/gh/ryanmaclean/vibecode-webgui)
+[![Node](https://img.shields.io/badge/node-18%20%7C%2020%20%7C%2022-brightgreen)](https://nodejs.org)
 
-Native desktop app built on OpenVSCode Server with AI assistance and macOS native integration.
+Experimental desktop code editor with code-server running in Tauri + AI integrations.
 
 ## What It Is
 
-OpenVSCode Server with native macOS integration via Swift 5 + Rust FFI + Virtualization Framework SDK.
+A sample project demonstrating code-server integration with native macOS features:
 
-```
-OpenVSCode Server (Rust CLI + Node) → Swift 5 Wrapper → VibeCode Desktop + AI Assistant
-```
+- **Code-server in Tauri** - Running but using webkit (has GUI bugs)
+- **Alpine VM with ASIF** - Docker VM (45MB) with native Apple Virtualization.framework
+- **Swift + Rust** - Native macOS integration experiments
+- **AI Integrations** - OpenRouter, OpenAI, Claude API examples
+
+**Note:** This is an experimental/sample repository. Code-server GUI has known issues due to webkit limitations.
 
 ## Features
 
@@ -79,6 +87,7 @@ Extension auto-installs when OpenVSCode Server starts.
 - [Quick Start Guide](./QUICKSTART.md) - Get started in 5 minutes
 - [Installation Guide](./INSTALL.md) - Complete installation instructions
 - [User Guide](./USER_GUIDE.md) - Full user documentation
+- [Testing Guide](./TESTING.md) - Comprehensive testing documentation
 - [Release Notes](./RELEASE_NOTES.md) - What's new in v1.5.0
 - [Architecture Diagram](./docs/ARCHITECTURE_DIAGRAM.md) - System overview
 - [Documentation Index](./docs/README.md) - Complete doc catalog
@@ -89,7 +98,9 @@ Extension auto-installs when OpenVSCode Server starts.
 
 ### Core
 - [Desktop Build](./docs/DESKTOP_BUILD_GUIDE.md) - Build from source
-- [Testing](./docs/DESKTOP_BUILD_TESTING.md) - QA procedures
+- [Testing Guide](./TESTING.md) - Comprehensive testing documentation
+- [Test Guidelines](./TEST_GUIDELINES.md) - Writing tests for contributors
+- [Test Summary](./TEST_SUMMARY.md) - Test infrastructure overview
 - [CLI Tools](./scripts/VIBECODE_CLI.md) - Development toolkit
 
 ### Advanced
@@ -114,6 +125,10 @@ Extension auto-installs when OpenVSCode Server starts.
 # Install dependencies
 npm install --legacy-peer-deps
 
+# Run tests
+npm test                  # All tests
+npm run test:coverage     # With coverage report
+
 # Build desktop app
 npm run tauri:build
 
@@ -122,6 +137,44 @@ npm run tauri:build
 ./scripts/desktop/build-linux.sh      # Linux
 .\scripts\desktop\build-windows.ps1   # Windows
 ```
+
+## Testing
+
+We maintain a comprehensive test suite with 2,796+ tests covering unit, integration, and end-to-end scenarios.
+
+### Quick Start
+
+```bash
+# Run all tests
+npm test
+
+# Run specific test types
+npm run test:unit           # Unit tests only
+npm run test:integration    # Integration tests
+npm run test:e2e           # End-to-end tests
+
+# Development workflow
+npm run test:watch         # Watch mode
+npm run test:coverage      # With coverage report
+```
+
+### Test Infrastructure
+
+- **2,796 total tests** across the project
+- **60%+ code coverage** (targeting 70%+)
+- **Multi-version CI/CD** - Node.js 18, 20, 22
+- **Automatic infrastructure detection** - Skips Docker/K8s when unavailable
+- **Comprehensive documentation** - See [TESTING.md](./TESTING.md)
+
+### For Contributors
+
+Before submitting a PR:
+1. Write tests for new features
+2. Ensure existing tests pass: `npm test`
+3. Check coverage: `npm run test:coverage`
+4. Follow the [Test Guidelines](./TEST_GUIDELINES.md)
+
+See [TESTING.md](./TESTING.md) for detailed testing documentation.
 
 ## License
 

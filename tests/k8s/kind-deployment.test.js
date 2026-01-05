@@ -6,45 +6,37 @@ const { promisify } = require('util')
 
 const execAsync = promisify(exec)
 
-// Check if required tools are available
-async function checkKindAvailable() {
-  try {
-    await execAsync('kind version')
-    await execAsync('kubectl version --client')
-    await execAsync('docker version')
-    return true
-  } catch (error) {
-    return false
-  }
-}
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
 
-// Helper function to skip tests when KIND is not available
-function skipIfKindUnavailable(testName, testFn) {
-  return async function(...args) {
-    if (this.parent?.skipTests) {
-      console.log(`Skipping "${testName}" - KIND environment not available`)
-      return
-    }
-    return await testFn.apply(this, args)
-  }
-}
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
 
-// Check if KIND environment should be tested (opt-in only to avoid heavy local runs)
-const shouldTestKind = process.env.TEST_KIND === 'true'
-
-const describeKind = shouldTestKind ? describe : describe.skip
-
-describeKind('KIND Deployment Tests', () => {
+describeFn('KIND Deployment Tests', () => {
   const CLUSTER_NAME = 'vibecode-test'
   const NAMESPACE = 'vibecode-webgui'
   const timeout = 120000 // 2 minutes
 
   beforeAll(async () => {
-    // Check if required tools are available
-    const kindAvailable = await checkKindAvailable()
-    
-    if (!kindAvailable) {
-      throw new Error('KIND deployment tests require Docker, kubectl, and kind to be installed and available')
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        await execAsync('kubectl version --client');
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify kind is available
+      try {
+        await execAsync('kind version');
+      } catch (error) {
+        throw new Error('kind is not available. Install kind or set SKIP_K8S_TESTS=1');
+      }
+
+      // Verify Docker is available
+      try {
+        await execAsync('docker version');
+      } catch (error) {
+        throw new Error('Docker is not available. Install Docker or set SKIP_K8S_TESTS=1');
+      }
     }
 
     console.log('Setting up KIND cluster for testing...')

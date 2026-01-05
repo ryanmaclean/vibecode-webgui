@@ -4,30 +4,33 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
-import { describeWithInfrastructure } from '../utils/infrastructure-detection.js';
 
 const execAsync = promisify(exec);
 
-describeWithInfrastructure('Chaos Controller Deployment Tests', 
-  { 
-    kubernetes: true, 
-    kind: true, 
-    helm: true,
-    helmDependenciesChartPath: './helm/vibecode-platform',
-    chaosCRD: true
-  }, () => {
+const SKIP_K8S_TESTS = process.env.SKIP_K8S_TESTS === '1';
+
+const describeFn = SKIP_K8S_TESTS ? describe.skip : describe;
+
+describeFn('Chaos Controller Deployment Tests', () => {
   const namespace = 'chaos-engineering';
   const timeout = 300000; // 5 minutes
 
   beforeAll(async () => {
-    // Check if test cluster is available, skip if not
-    try {
-      const { stdout } = await execAsync('kubectl cluster-info --request-timeout=5s');
-      console.log('Cluster info:', stdout);
-    } catch (error) {
-      console.warn('Kubernetes cluster not available, skipping chaos tests');
-      // Skip all tests in this suite
-      return;
+    if (!SKIP_K8S_TESTS) {
+      // Verify kubectl is available
+      try {
+        await execAsync('kubectl version --client');
+      } catch (error) {
+        throw new Error('kubectl is not available. Install kubectl or set SKIP_K8S_TESTS=1');
+      }
+
+      // Check if test cluster is available
+      try {
+        const { stdout } = await execAsync('kubectl cluster-info --request-timeout=5s');
+        console.log('Cluster info:', stdout);
+      } catch (error) {
+        throw new Error('Kubernetes cluster not available. Ensure cluster is running or set SKIP_K8S_TESTS=1');
+      }
     }
   }, timeout);
 

@@ -7,6 +7,7 @@ import { createLogger, format, transports } from 'winston';
 import tracer from '@/instrument';
 // import { logger } from '@/lib/logger';
 // Initialize Datadog tracer (should be done before importing other modules)
+// Note: Console logging removed from module level to avoid Jest isolateModules issues
 if (process.env.DD_API_KEY) {
   tracer.init({
     service: 'vibecode-webgui',
@@ -17,9 +18,6 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  console.info('🔍 Datadog APM tracer initialized')
-} else {
-  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -66,7 +64,7 @@ const logger = createLogger({
   ]
 })
 
-console.info('Winston logger initialized')
+// Console logging removed from module level to avoid Jest isolateModules issues
 
 /**
  * Custom metrics collector (compatible with Datadog)
