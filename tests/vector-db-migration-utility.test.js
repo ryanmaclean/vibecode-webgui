@@ -42,10 +42,7 @@ const migrateVectorIndex = require('../scripts/vector-db-migrations/migrate-vect
 // Mock for process.env
 const originalEnv = process.env;
 
-const runVectorMigrationTests = process.env.TEST_VECTOR_MIGRATIONS === 'true';
-const describeVM = runVectorMigrationTests ? describe : describe.skip;
-
-describeVM('Vector DB Migration Utility', () => {
+describe('Vector DB Migration Utility', () => {
   let mockClient;
   
   beforeEach(() => {
@@ -325,7 +322,7 @@ describeVM('Vector DB Migration Utility', () => {
 /**
  * Test suite for vector index migration
  */
-describeVM('Vector Index Migration', () => {
+describe('Vector Index Migration', () => {
   let mockClient;
   
   beforeEach(() => {

@@ -3,12 +3,23 @@
  * Validates health endpoints and monitoring system status
  */
 
-import { describe, test, expect } from '@jest/globals'
+import { describe, test, expect, beforeEach, afterEach } from '@jest/globals'
+import { setupDatadogMocks } from '../__mocks__/datadog-mock'
 
-const HAS_MONITORING = process.env.DD_API_KEY !== undefined;
+describe('Monitoring Health Endpoints', () => {
+  let restoreMocks: () => void;
 
-(HAS_MONITORING ? describe : describe.skip)('Monitoring Health Endpoints', () => {
-  // Only run with real monitoring configuration
+  beforeEach(() => {
+    const mocks = setupDatadogMocks();
+    restoreMocks = mocks.restore;
+  })
+
+  afterEach(() => {
+    if (restoreMocks) {
+      restoreMocks();
+    }
+  })
+
   test('should provide detailed health status', async () => {
     const response = await fetch('/api/monitoring/health');
     expect(response.status).toBe(200);
@@ -57,8 +68,20 @@ const HAS_MONITORING = process.env.DD_API_KEY !== undefined;
   });
 });
 
-(HAS_MONITORING ? describe : describe.skip)('Component Health Validation', () => {
-  // Only run with real monitoring configuration
+describe('Component Health Validation', () => {
+  let restoreMocks: () => void;
+
+  beforeEach(() => {
+    const mocks = setupDatadogMocks();
+    restoreMocks = mocks.restore;
+  })
+
+  afterEach(() => {
+    if (restoreMocks) {
+      restoreMocks();
+    }
+  })
+
   test('should validate Datadog connectivity', async () => {
     const response = await fetch('/api/monitoring/health/datadog');
     expect(response.status).toBe(200);
@@ -97,8 +120,20 @@ const HAS_MONITORING = process.env.DD_API_KEY !== undefined;
   });
 });
 
-(HAS_MONITORING ? describe : describe.skip)('Health Check Security', () => {
-  // Only run with real monitoring configuration
+describe('Health Check Security', () => {
+  let restoreMocks: () => void;
+
+  beforeEach(() => {
+    const mocks = setupDatadogMocks();
+    restoreMocks = mocks.restore;
+  })
+
+  afterEach(() => {
+    if (restoreMocks) {
+      restoreMocks();
+    }
+  })
+
   test('should require authentication for detailed health info', async () => {
     const response = await fetch('/api/monitoring/health/detailed');
     expect(response.status).toBe(401);
@@ -117,8 +152,20 @@ const HAS_MONITORING = process.env.DD_API_KEY !== undefined;
   });
 });
 
-(HAS_MONITORING ? describe : describe.skip)('Health Check Performance', () => {
-  // Only run with real monitoring configuration
+describe('Health Check Performance', () => {
+  let restoreMocks: () => void;
+
+  beforeEach(() => {
+    const mocks = setupDatadogMocks();
+    restoreMocks = mocks.restore;
+  })
+
+  afterEach(() => {
+    if (restoreMocks) {
+      restoreMocks();
+    }
+  })
+
   test('should handle multiple concurrent health checks', async () => {
     const promises = Array.from({ length: 50 }, () =>
       fetch('/api/monitoring/health')

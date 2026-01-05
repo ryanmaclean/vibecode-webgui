@@ -8,12 +8,24 @@ import WebSocket from 'ws'
 import { spawn } from 'child_process'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 
-// Only run these tests if AI integration is enabled
-const shouldRunAITests = process.env.ENABLE_AI_INTEGRATION_TESTS === 'true'
+// Mock AI integration by default
+jest.mock('@/lib/claude-cli-integration', () => ({
+  ClaudeCliIntegration: jest.fn().mockImplementation((config) => ({
+    config,
+    executeCommand: jest.fn().mockResolvedValue({
+      type: 'ai-response',
+      response: 'Mocked AI response about ls command',
+      metadata: { model: 'claude-3', tokens: 100 }
+    }),
+    provideSuggestion: jest.fn().mockResolvedValue({
+      type: 'ai-suggestion',
+      suggestion: 'Did you mean: ls?',
+      trigger: 'error'
+    })
+  }))
+}))
 
-const conditionalDescribe = shouldRunAITests ? describe : describe.skip
-
-conditionalDescribe('Enhanced Terminal Integration Tests', () => {
+describe('Enhanced Terminal Integration Tests', () => {
   let wsServer: any
   let ws: WebSocket
   let testWorkspaceId: string
@@ -113,11 +125,7 @@ conditionalDescribe('Enhanced Terminal Integration Tests', () => {
   })
 
   test('should handle AI command processing', async () => {
-    // Skip if no Claude API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.log('Skipping AI test - no ANTHROPIC_API_KEY')
-      return
-    }
+    // Uses mocked AI integration
 
     // Create terminal session
     ws.send(JSON.stringify({
@@ -163,11 +171,7 @@ conditionalDescribe('Enhanced Terminal Integration Tests', () => {
   }, 30000) // 30 second timeout for AI calls
 
   test('should provide AI suggestions on command errors', async () => {
-    // Skip if no Claude API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.log('Skipping AI suggestion test - no ANTHROPIC_API_KEY')
-      return
-    }
+    // Uses mocked AI integration
 
     // Create terminal session
     ws.send(JSON.stringify({
@@ -307,11 +311,7 @@ conditionalDescribe('Enhanced Terminal Integration Tests', () => {
   })
 
   test('should maintain AI context across commands', async () => {
-    // Skip if no Claude API key
-    if (!process.env.ANTHROPIC_API_KEY) {
-      console.log('Skipping AI context test - no ANTHROPIC_API_KEY')
-      return
-    }
+    // Uses mocked AI integration
 
     // Create terminal session
     ws.send(JSON.stringify({

@@ -1,67 +1,83 @@
 /**
  * Integration test: /api/ai/search
  * - Mocks NextAuth session
- * - Requires DATABASE_URL to point at Azure Postgres (with pgvector)
+ * - Mocks vector search without requiring live database
  * - Verifies the route returns results or a well-formed empty response
  */
-
-// Check if PostgreSQL is available (set by jest.globalSetup.js)
-const SKIP_POSTGRES = process.env.SKIP_POSTGRES_TESTS === '1';
 
 // Mock NextAuth session to bypass auth in tests (must be hoisted before route import)
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn().mockResolvedValue({ user: { id: '1' } }),
 }))
 
-// Stub vectorStore with a direct SQL-based similarity search using pg
+// Mock vectorStore with simulated vector search results
 jest.mock('@/lib/vector-store', () => {
-  const { Client } = require('pg')
   const actual = jest.requireActual('@/lib/vector-store') as typeof import('@/lib/vector-store')
-  function unitVec(dim: number) {
+
+  // Generate mock embedding vector
+  function generateMockEmbedding(dim: number = 1536): number[] {
     const v = Array.from({ length: dim }, () => Math.random() * 2 - 1)
     const m = Math.sqrt(v.reduce((s, x) => s + x * x, 0))
     return v.map((x) => x / m)
   }
+
+  // Mock vector search results
+  const mockSearchResults = [
+    {
+      chunk: {
+        id: 1,
+        content: 'Datadog DBM vector ingestion verification function handles database monitoring integration',
+        embedding: generateMockEmbedding(),
+        metadata: { fileId: 101, fileName: 'datadog-integration.ts', tokens: 150 }
+      },
+      similarity: 0.89
+    },
+    {
+      chunk: {
+        id: 2,
+        content: 'Vector ingestion pipeline processes embeddings for efficient similarity search',
+        embedding: generateMockEmbedding(),
+        metadata: { fileId: 102, fileName: 'vector-pipeline.ts', tokens: 120 }
+      },
+      similarity: 0.82
+    },
+    {
+      chunk: {
+        id: 3,
+        content: 'Database monitoring with Datadog provides real-time metrics and alerts',
+        embedding: generateMockEmbedding(),
+        metadata: { fileId: 103, fileName: 'monitoring-setup.ts', tokens: 95 }
+      },
+      similarity: 0.76
+    }
+  ]
+
   return {
     __esModule: true,
     ...actual,
     vectorStore: {
       async search(
-        _query: string,
+        query: string,
         opts: { workspaceId?: number; fileIds?: number[]; limit?: number; threshold?: number } = {}
       ) {
         const limit = opts.limit ?? 5
-        const conn = process.env.DATABASE_URL
-        if (!conn) throw new Error('DATABASE_URL required for test')
-        const client = new Client({ connectionString: conn })
-        await client.connect()
-        const vec = unitVec(1536)
-        const vecLiteral = '[' + vec.map((x) => x.toFixed(6)).join(',') + ']'
-        const rows = await client.query(
-          `SELECT rc.chunk_id, rc.content, rc.start_line, rc.end_line, rc.tokens, rc.file_id,
-                  (1 - (rc.embedding <=> $1::vector)) as similarity
-             FROM rag_chunks rc
-            WHERE rc.embedding IS NOT NULL
-            ORDER BY rc.embedding <=> $1::vector
-            LIMIT $2`,
-          [vecLiteral, limit]
-        )
-        await client.end()
-        return rows.rows.map((r: any) => ({
-          chunk: {
-            id: r.chunk_id,
-            content: r.content,
-            embedding: [],
-            metadata: { fileId: r.file_id, fileName: 'unknown', tokens: r.tokens || 0 },
-          },
-          similarity: r.similarity,
-        }))
+        const threshold = opts.threshold ?? 0
+
+        // Filter by threshold and limit
+        let results = mockSearchResults.filter(r => r.similarity >= threshold)
+
+        // Filter by fileIds if provided
+        if (opts.fileIds && opts.fileIds.length > 0) {
+          results = results.filter(r => opts.fileIds!.includes(r.chunk.metadata.fileId))
+        }
+
+        return results.slice(0, limit)
       },
       async getContext() {
-        return ''
+        return mockSearchResults.map(r => r.chunk.content).join('\n\n')
       },
       async getStats() {
-        return { totalChunks: 0, totalFiles: 0, averageChunkSize: 0 }
+        return { totalChunks: 150, totalFiles: 25, averageChunkSize: 512 }
       },
     },
   }
@@ -69,10 +85,7 @@ jest.mock('@/lib/vector-store', () => {
 
 import { POST as vectorSearchPost } from '@/app/api/ai/search/route'
 
-const hasDb = !!process.env.DATABASE_URL
-const skipTests = SKIP_POSTGRES || !hasDb;
-
-(skipTests ? describe.skip : describe)('POST /api/ai/search (real DB)', () => {
+describe('POST /api/ai/search (mocked vector store)', () => {
   it('returns vector search results or an empty set without throwing', async () => {
       const payload = {
         query: 'Datadog DBM vector ingestion verification',

@@ -192,6 +192,16 @@ const createPrismaClientMock = () => ({
       ? query.filter(s => s && s.trim()).join(' ')
       : String(query);
 
+    // Mock pgvector extension check
+    if (queryStr.toLowerCase().includes('pg_extension') && queryStr.toLowerCase().includes('vector')) {
+      return Promise.resolve([{ extname: 'vector' }]);
+    }
+
+    // Mock pgvector type check
+    if (queryStr.toLowerCase().includes('pg_type') && queryStr.toLowerCase().includes('vector')) {
+      return Promise.resolve([{ typname: 'vector' }]);
+    }
+
     // Mock SELECT FROM workspace_members JOIN users (list members) - check this FIRST
     if (queryStr.includes('wm.user_id') && queryStr.includes('JOIN users')) {
       const workspaceId = params[0]

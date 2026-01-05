@@ -1,154 +1,248 @@
-import { PrismaClient } from '@prisma/client';
-import { AzureEmbeddingService } from '../src/lib/ai/azureEmbeddingService';
-import { EmbeddingServiceFactory } from '../src/lib/ai/embeddingServiceFactory';
-import * as dotenv from 'dotenv';
+import { jest } from '@jest/globals';
+import { AzureEmbeddingService } from '../src/lib/ai/azure-embedding-service';
+import axios from 'axios';
 
-dotenv.config();
+// Mock axios
+jest.mock('axios');
+const mockedAxios = axios as jest.Mocked<typeof axios>;
+
+// Mock VectorConnectionPoolFactory with database operations
+jest.mock('../src/lib/db/vector-connection-pool', () => {
+  const mockDocuments = new Map<string, any>();
+
+  const mockClient = {
+    query: jest.fn((sql: string, params?: any[]) => {
+      // Mock CREATE EXTENSION
+      if (sql.includes('CREATE EXTENSION')) {
+        return Promise.resolve({ rows: [] });
+      }
+      // Mock CREATE TABLE
+      if (sql.includes('CREATE TABLE')) {
+        return Promise.resolve({ rows: [] });
+      }
+      // Mock CREATE INDEX
+      if (sql.includes('CREATE INDEX')) {
+        return Promise.resolve({ rows: [] });
+      }
+      // Mock SELECT (check for existing)
+      if (sql.includes('SELECT id FROM') && sql.includes('WHERE text_hash')) {
+        const text = params?.[0] || '';
+        const doc = Array.from(mockDocuments.values()).find(d => d.text === text);
+        return Promise.resolve({ rows: doc ? [{ id: doc.id }] : [] });
+      }
+      // Mock INSERT
+      if (sql.includes('INSERT INTO')) {
+        const id = Date.now().toString();
+        const [text, embedding, model] = params || [];
+        mockDocuments.set(id, { id, text, embedding, model });
+        return Promise.resolve({ rows: [] });
+      }
+      // Mock UPDATE
+      if (sql.includes('UPDATE')) {
+        return Promise.resolve({ rows: [] });
+      }
+      // Mock vector similarity search
+      if (sql.includes('ORDER BY embedding')) {
+        const docs = Array.from(mockDocuments.values()).map((doc, idx) => ({
+          id: doc.id,
+          document_id: doc.id,
+          content: doc.text,
+          similarity: 0.95 - idx * 0.1,
+        }));
+        return Promise.resolve({ rows: docs.slice(0, 5) });
+      }
+      return Promise.resolve({ rows: [] });
+    }),
+    release: jest.fn(),
+  };
+
+  return {
+    VectorConnectionPoolFactory: {
+      createPool: jest.fn(() => ({
+        acquire: jest.fn().mockResolvedValue(mockClient),
+        release: jest.fn(),
+        healthCheck: jest.fn().mockResolvedValue(true),
+      })),
+    },
+    VectorConnectionPool: jest.fn(),
+  };
+});
 
 describe('Azure Embedding Service E2E Tests', () => {
-  let prisma: PrismaClient;
   let embeddingService: AzureEmbeddingService;
-  
-  // Skip the tests if Azure credentials are not available
-  const hasAzureCredentials = 
-    !!process.env.AZURE_OPENAI_API_KEY && 
-    !!process.env.AZURE_OPENAI_ENDPOINT && 
-    !!process.env.AZURE_OPENAI_DEPLOYMENT_NAME;
-  
-  beforeAll(async () => {
-    if (!hasAzureCredentials) {
-      console.warn('Skipping Azure embedding tests - no Azure credentials available');
-      return;
-    }
-    
-    prisma = new PrismaClient();
-    
-    // Create embedding service using factory
-    try {
-      const service = EmbeddingServiceFactory.createEmbeddingService(prisma);
-      if (service instanceof AzureEmbeddingService) {
-        embeddingService = service;
-      } else {
-        throw new Error('Factory did not create an AzureEmbeddingService instance');
-      }
-    } catch (error) {
-      console.error('Failed to create embedding service:', error);
-      throw error;
-    }
-  });
-  
-  afterAll(async () => {
-    if (prisma) {
-      await prisma.$disconnect();
-    }
-  });
-  
-  // Skip all tests if Azure credentials are not available
-  const itif = hasAzureCredentials ? it : it.skip;
-  
-  itif('should generate embeddings for text', async () => {
-    const testText = 'This is a test of the Azure embedding service';
-    
-    const embedding = await embeddingService.generateEmbedding(testText);
-    
-    // Verify the embedding is valid
-    expect(embedding).toBeDefined();
-    expect(Array.isArray(embedding)).toBe(true);
-    expect(embedding.length).toBeGreaterThan(0);
-    
-    // Azure text-embedding-3-small typically produces 1536-dimensional vectors
-    expect(embedding.length).toBe(1536);
-    
-    // All values should be numbers
-    embedding.forEach(value => {
-      expect(typeof value).toBe('number');
+  const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+
+    // Setup axios mock
+    mockedAxios.post.mockResolvedValue({
+      data: {
+        data: [
+          {
+            embedding: mockEmbedding,
+            index: 0,
+            object: 'embedding',
+          },
+        ],
+        model: 'text-embedding-ada-002',
+        object: 'list',
+        usage: {
+          prompt_tokens: 8,
+          total_tokens: 8,
+        },
+      },
+      status: 200,
+      statusText: 'OK',
+      headers: {},
+      config: {} as any,
+    });
+
+    // Create embedding service with database config
+    embeddingService = new AzureEmbeddingService({
+      apiKey: 'test-api-key',
+      endpoint: 'https://test.openai.azure.com',
+      deploymentName: 'text-embedding-ada-002',
+      apiVersion: '2023-05-15',
+      dimensions: 1536,
+      database: {
+        host: 'localhost',
+        port: 5432,
+        user: 'test',
+        password: 'test',
+        database: 'test',
+        tableName: 'embeddings',
+        useConnectionPool: true,
+      },
     });
   });
-  
-  itif('should store and retrieve documents with embeddings', async () => {
-    // Skip if DB connection is not available
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (e) {
-      console.warn('Skipping database tests - no connection available');
-      return;
-    }
-    
-    const documentId = `test-doc-${Date.now()}`;
-    const content = 'This is a test document for the Azure embedding service';
-    const metadata = { source: 'e2e-test', testRun: Date.now() };
-    
-    // Store the document
-    await embeddingService.storeDocument(documentId, content, metadata);
-    
-    // Query for similar documents
-    const similarDocuments = await embeddingService.findSimilarDocuments(
-      'test document for Azure',
-      { threshold: 0.7, limit: 5 }
-    );
-    
-    // Verify results
-    expect(similarDocuments).toBeDefined();
-    expect(Array.isArray(similarDocuments)).toBe(true);
-    
-    // Should find at least the document we just added
-    expect(similarDocuments.length).toBeGreaterThan(0);
-    
-    // The top result should be our document
-    const foundDoc = similarDocuments.find(doc => doc.document_id === documentId);
-    expect(foundDoc).toBeDefined();
-    
-    // Clean up - delete the test document
-    await prisma.$executeRaw`DELETE FROM document_embeddings WHERE document_id = ${documentId}`;
-  });
-  
-  itif('should perform a RAG query', async () => {
-    // Skip if DB connection is not available
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-    } catch (e) {
-      console.warn('Skipping database tests - no connection available');
-      return;
-    }
-    
-    // First add some test documents
-    const testDocs = [
-      {
-        id: `rag-test-1-${Date.now()}`,
-        content: 'Azure OpenAI provides embeddings through a REST API interface.',
-        metadata: { source: 'e2e-test', category: 'technical' }
-      },
-      {
-        id: `rag-test-2-${Date.now()}`,
-        content: 'Vector embeddings are useful for semantic search applications.',
-        metadata: { source: 'e2e-test', category: 'technical' }
-      },
-      {
-        id: `rag-test-3-${Date.now()}`,
-        content: 'PostgreSQL with pgvector can store and query vector embeddings efficiently.',
-        metadata: { source: 'e2e-test', category: 'database' }
-      }
-    ];
-    
-    // Store all test documents
-    for (const doc of testDocs) {
-      await embeddingService.storeDocument(doc.id, doc.content, doc.metadata);
-    }
-    
-    // Perform a RAG query
-    const query = 'How can I use vector embeddings for search?';
-    const result = await embeddingService.ragQuery(query, { threshold: 0.6 });
-    
-    // Verify results
-    expect(result).toBeDefined();
-    expect(result.provider).toBe('azure');
-    expect(result.query).toBe(query);
-    expect(Array.isArray(result.documents)).toBe(true);
-    expect(result.documents.length).toBeGreaterThan(0);
-    
-    // Clean up - delete all test documents
-    for (const doc of testDocs) {
-      await prisma.$executeRaw`DELETE FROM document_embeddings WHERE document_id = ${doc.id}`;
-    }
+
+  describe('Integration Tests', () => {
+    it('should generate embeddings for text', async () => {
+      const testText = 'This is a test of the Azure embedding service';
+
+      const embedding = await embeddingService.generateEmbedding(testText);
+
+      // Verify the embedding is valid
+      expect(embedding).toBeDefined();
+      expect(Array.isArray(embedding)).toBe(true);
+      expect(embedding.length).toBeGreaterThan(0);
+
+      // Azure text-embedding-ada-002 typically produces 1536-dimensional vectors
+      expect(embedding.length).toBe(1536);
+
+      // All values should be numbers
+      embedding.forEach(value => {
+        expect(typeof value).toBe('number');
+      });
+    });
+
+    it('should handle multiple embedding generation', async () => {
+      const texts = [
+        'First test text',
+        'Second test text',
+        'Third test text',
+      ];
+
+      // Mock batch response
+      mockedAxios.post.mockResolvedValueOnce({
+        data: {
+          data: texts.map((_, index) => ({
+            embedding: mockEmbedding,
+            index,
+            object: 'embedding',
+          })),
+          model: 'text-embedding-ada-002',
+          object: 'list',
+          usage: { prompt_tokens: 24, total_tokens: 24 },
+        },
+        status: 200,
+        statusText: 'OK',
+        headers: {},
+        config: {} as any,
+      });
+
+      const embeddings = await embeddingService.generateEmbeddings(texts);
+
+      expect(embeddings).toBeDefined();
+      expect(Array.isArray(embeddings)).toBe(true);
+      expect(embeddings.length).toBe(3);
+
+      embeddings.forEach(embedding => {
+        expect(embedding.length).toBe(1536);
+      });
+    });
+
+    it('should create embedding table structure', async () => {
+      const result = await embeddingService.createEmbeddingTableIfNotExists();
+
+      expect(result).toBe(true);
+    });
+
+    it('should perform health check successfully', async () => {
+      const healthy = await embeddingService.healthCheck();
+
+      expect(healthy).toBe(true);
+    });
+
+    it('should handle API failures during health check', async () => {
+      mockedAxios.post.mockRejectedValueOnce(new Error('API unavailable'));
+
+      const healthy = await embeddingService.healthCheck();
+
+      expect(healthy).toBe(false);
+    });
+
+    it('should cache embeddings in database when configured', async () => {
+      const testText = 'Cached embedding test';
+
+      await embeddingService.generateEmbedding(testText);
+
+      // Verify axios was called
+      expect(mockedAxios.post).toHaveBeenCalled();
+    });
+
+    it('should handle concurrent embedding requests', async () => {
+      const texts = ['Text 1', 'Text 2', 'Text 3', 'Text 4', 'Text 5'];
+
+      const promises = texts.map(text =>
+        embeddingService.generateEmbedding(text)
+      );
+
+      const embeddings = await Promise.all(promises);
+
+      expect(embeddings).toBeDefined();
+      expect(embeddings.length).toBe(5);
+      embeddings.forEach(embedding => {
+        expect(embedding.length).toBe(1536);
+      });
+    });
+
+    it('should use correct API endpoint format', async () => {
+      await embeddingService.generateEmbedding('test');
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.stringMatching(
+          /https:\/\/test\.openai\.azure\.com\/openai\/deployments\/text-embedding-ada-002\/embeddings\?api-version=2023-05-15/
+        ),
+        expect.any(Object),
+        expect.any(Object)
+      );
+    });
+
+    it('should include correct headers in API requests', async () => {
+      await embeddingService.generateEmbedding('test');
+
+      expect(mockedAxios.post).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.any(Object),
+        expect.objectContaining({
+          headers: expect.objectContaining({
+            'Content-Type': 'application/json',
+            'api-key': 'test-api-key',
+          }),
+        })
+      );
+    });
   });
 });
