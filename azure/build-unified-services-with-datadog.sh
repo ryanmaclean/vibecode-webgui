@@ -814,6 +814,31 @@ copy_libraries() {
         ln -sf ld-musl-aarch64.so.1 "$initramfs/lib/libc.so" 2>/dev/null || true
     fi
 
+    # Create GNU libc compatibility symlinks for Node.js and other glibc-compiled binaries
+    info "Creating GNU libc compatibility symlinks..."
+
+    # Dynamic linker symlink (for binaries compiled with glibc)
+    if [ -f "$initramfs/lib/ld-musl-aarch64.so.1" ]; then
+        ln -sf ld-musl-aarch64.so.1 "$initramfs/lib/ld-linux-aarch64.so.1" 2>/dev/null || true
+        info "✓ GNU dynamic linker symlink: /lib/ld-linux-aarch64.so.1"
+    fi
+
+    # In musl, libm, libpthread, libdl, librt are all part of libc
+    # Create symlinks for glibc-style library names
+    if [ -f "$initramfs/lib/libc.so" ]; then
+        ln -sf libc.so "$initramfs/lib/libm.so.6" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/libpthread.so.0" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/libdl.so.2" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/librt.so.1" 2>/dev/null || true
+        info "✓ GNU library symlinks: libm, libpthread, libdl, librt"
+    fi
+
+    # Create versioned libc symlink (some binaries expect libc.so.6)
+    if [ -f "$initramfs/lib/libc.so" ]; then
+        ln -sf libc.so "$initramfs/lib/libc.so.6" 2>/dev/null || true
+        info "✓ Versioned libc symlink: /lib/libc.so.6"
+    fi
+
     log "✓ Libraries copied"
     log ""
 }
