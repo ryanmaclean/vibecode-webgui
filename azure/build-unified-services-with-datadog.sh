@@ -41,6 +41,7 @@ ALPINE_MIRROR="https://dl-cdn.alpinelinux.org/alpine/edge"
 
 # Parse command line arguments
 FAST_BUILD=false
+WITH_EXTENSIONS=false
 while [[ $# -gt 0 ]]; do
     case $1 in
         --fast)
@@ -48,8 +49,12 @@ while [[ $# -gt 0 ]]; do
             OUTPUT_NAME="unified-services-fast.cpio.gz"
             shift
             ;;
+        --with-extensions)
+            WITH_EXTENSIONS=true
+            shift
+            ;;
         *)
-            error "Unknown option: $1. Usage: $0 [--fast]"
+            error "Unknown option: $1. Usage: $0 [--fast] [--with-extensions]"
             ;;
     esac
 done
@@ -182,6 +187,7 @@ download_valkey() {
     log ""
 }
 
+
 build_valkey_from_source() {
     log "Building Valkey from source using Alpine Docker container..."
 
@@ -293,6 +299,74 @@ download_openvscode() {
     log ""
 }
 
+download_vscode_extensions() {
+    log "=== Downloading VS Code Extensions ==="
+    
+    local ext_dir="$WORK_DIR/downloads/openvscode/openvscode/extensions"
+    mkdir -p "$ext_dir"
+    cd "$ext_dir"
+    
+    # Helper function to download and extract a single extension
+    download_extension() {
+        local publisher="$1"
+        local extension="$2"
+        local version="$3"
+        local name="${publisher}.${extension}"
+        
+        info "Downloading ${name}..."
+        
+        local url="https://${publisher}.gallery.vsassets.io/_apis/public/gallery/publisher/${publisher}/extension/${extension}/${version}/assetbyname/Microsoft.VisualStudio.Services.VSIXPackage"
+        
+        # Try primary URL
+        if ! wget -q --show-progress "$url" -O "${name}.vsix" 2>/dev/null; then
+            # Fallback to marketplace API
+            local alt_url="https://marketplace.visualstudio.com/_apis/public/gallery/publishers/${publisher}/vsextensions/${extension}/${version}/vspackage"
+            wget -q --show-progress "$alt_url" -O "${name}.vsix" || {
+                warn "Failed to download ${name}, skipping"
+                return 1
+            }
+        fi
+        
+        # Extract .vsix (it's just a ZIP file)
+        info "Extracting ${name}..."
+        unzip -q "${name}.vsix" -d "${name}-temp" || {
+            warn "Failed to extract ${name}, skipping"
+            rm -rf "${name}.vsix" "${name}-temp"
+            return 1
+        }
+        
+        # Move extension content to proper location
+        if [ -d "${name}-temp/extension" ]; then
+            mv "${name}-temp/extension" "${name}"
+            rm -rf "${name}-temp" "${name}.vsix"
+            info "✓ Installed ${name}"
+            return 0
+        else
+            warn "Extension ${name} has unexpected structure, skipping"
+            rm -rf "${name}-temp" "${name}.vsix"
+            return 1
+        fi
+    }
+    
+    # Essential Extensions (Tier 1: ~25MB total)
+    log "Installing essential extensions..."
+    download_extension "Continue" "continue" "0.9.237" || true
+    download_extension "cweijan" "vscode-redis-client" "4.7.0" || true
+    download_extension "mtxr" "sqltools" "0.28.3" || true
+    download_extension "mtxr" "sqltools-driver-pg" "0.5.4" || true
+    download_extension "esbenp" "prettier-vscode" "11.0.0" || true
+    download_extension "dbaeumer" "vscode-eslint" "3.0.13" || true
+    download_extension "humao" "rest-client" "0.25.1" || true
+    
+    # Count successful installs
+    local count=$(find . -maxdepth 1 -type d ! -name "." | wc -l)
+    local size=$(du -sh . | cut -f1 2>/dev/null || echo "unknown")
+    
+    cd "$WORK_DIR/downloads"
+    log "✓ Installed ${count} extensions (${size})"
+    log ""
+}
+
 download_dropbear_ssh() {
     log "=== Downloading Dropbear SSH Server ==="
 
@@ -300,7 +374,7 @@ download_dropbear_ssh() {
     mkdir -p "$ssh_dir"
     cd "$ssh_dir"
 
-    local apk_url="${ALPINE_MIRROR}/main/aarch64/dropbear-2025.88-r1.apk"
+    local apk_url="${ALPINE_MIRROR}/main/aarch64/dropbear-2025.89-r1.apk"
     info "Downloading: $apk_url"
 
     wget -q "$apk_url" -O dropbear.apk || error "Failed to download Dropbear"
@@ -323,15 +397,19 @@ download_musl_libc() {
 
     # Essential libraries from Alpine (using current edge versions)
     local packages=(
-        "musl-1.2.5-r8.apk"
+        "musl-1.2.5-r21.apk"
         "zlib-1.3.1-r2.apk"
-        "openssl-3.4.0-r0.apk"
+        "openssl-3.5.4-r0.apk"
         "libgcc-15.2.0-r2.apk"
         "libstdc++-15.2.0-r2.apk"
-        "ncurses-libs-6.5_p20241115-r1.apk"
-        "readline-8.2.13-r0.apk"
-        "libldap-2.6.9-r0.apk"
+        "ncurses-libs-6.5_p20251123-r0.apk"
+        "readline-8.3.3-r0.apk"
+        "libldap-2.6.10-r0.apk"
         "lz4-libs-1.10.0-r0.apk"
+        # AGENT 2 FIX: Missing PostgreSQL 16 dependencies
+        "zstd-libs-1.5.7-r2.apk"
+        "xz-libs-5.8.1-r0.apk"
+        "libsasl-2.1.28-r9.apk"
     )
 
     for pkg in "${packages[@]}"; do
@@ -669,6 +747,12 @@ copy_binaries() {
     else
         warn "OpenVSCode binary not found at expected location"
     fi
+    
+    # Check if extensions were included
+    if [ "$WITH_EXTENSIONS" = true ] && [ -d "$initramfs/opt/openvscode/extensions" ]; then
+        local ext_count=$(find "$initramfs/opt/openvscode/extensions" -maxdepth 1 -type d ! -name "extensions" | wc -l)
+        info "✓ Included ${ext_count} VS Code extensions"
+    fi
 
     # Dropbear SSH (skip in fast build)
     if [ "$FAST_BUILD" = false ]; then
@@ -714,6 +798,9 @@ copy_libraries() {
         "libcrypto.so.3"
         "libgcc_s.so.1"
         "libstdc++.so.6"
+        "libldap.so.2"
+        "liblber.so.2"
+        "libsasl2.so.3"
     )
 
     for lib in "${critical_libs[@]}"; do
@@ -725,6 +812,31 @@ copy_libraries() {
     # Create libc symlink
     if [ -f "$initramfs/lib/ld-musl-aarch64.so.1" ]; then
         ln -sf ld-musl-aarch64.so.1 "$initramfs/lib/libc.so" 2>/dev/null || true
+    fi
+
+    # Create GNU libc compatibility symlinks for Node.js and other glibc-compiled binaries
+    info "Creating GNU libc compatibility symlinks..."
+
+    # Dynamic linker symlink (for binaries compiled with glibc)
+    if [ -f "$initramfs/lib/ld-musl-aarch64.so.1" ]; then
+        ln -sf ld-musl-aarch64.so.1 "$initramfs/lib/ld-linux-aarch64.so.1" 2>/dev/null || true
+        info "✓ GNU dynamic linker symlink: /lib/ld-linux-aarch64.so.1"
+    fi
+
+    # In musl, libm, libpthread, libdl, librt are all part of libc
+    # Create symlinks for glibc-style library names
+    if [ -f "$initramfs/lib/libc.so" ]; then
+        ln -sf libc.so "$initramfs/lib/libm.so.6" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/libpthread.so.0" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/libdl.so.2" 2>/dev/null || true
+        ln -sf libc.so "$initramfs/lib/librt.so.1" 2>/dev/null || true
+        info "✓ GNU library symlinks: libm, libpthread, libdl, librt"
+    fi
+
+    # Create versioned libc symlink (some binaries expect libc.so.6)
+    if [ -f "$initramfs/lib/libc.so" ]; then
+        ln -sf libc.so "$initramfs/lib/libc.so.6" 2>/dev/null || true
+        info "✓ Versioned libc symlink: /lib/libc.so.6"
     fi
 
     log "✓ Libraries copied"
@@ -814,18 +926,20 @@ EOF
 }
 
 create_init_script() {
-    log "=== Creating Init Script ==="
+    log "=== Creating Init Script (PARALLEL STARTUP - Firecracker-style) ==="
 
     local initramfs="$WORK_DIR/initramfs"
 
     cat > "$initramfs/init" << 'INITEOF'
 #!/bin/busybox sh
-# Unified Services VM Init Script
+# Unified Services VM Init Script - PARALLEL STARTUP (Firecracker-style)
 # Services: Valkey + PostgreSQL + OpenVSCode
 # Monitoring: Datadog StatsD bridge
+# Performance: All services start simultaneously after network ready
 
 echo "========================================="
 echo "  Unified Services VM"
+echo "  PARALLEL STARTUP (Firecracker-style)"
 echo "  Valkey + PostgreSQL + OpenVSCode"
 echo "========================================="
 echo ""
@@ -884,40 +998,80 @@ if [ -d /lib/modules ]; then
 
     echo "✓ Kernel modules loaded"
 
-    # Give modules time to initialize
-    sleep 2
+    # Give modules time to initialize (increased from 2s to 5s per Agent 5 recommendation)
+    echo "  Waiting 5 seconds for module initialization..."
+    sleep 5
 else
     echo "⚠ No kernel modules directory found"
 fi
 
+# Network Debug Section (Agent 17 enhancement)
+echo ""
+echo "=== Network Debug Info ===" | tee -a /tmp/network.log
+echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Network debug started" >> /tmp/network.log
+
+# Show loaded network modules
+echo "Loaded network modules:" | tee -a /tmp/network.log
+lsmod 2>/dev/null | grep -E "virtio|failover" | tee -a /tmp/network.log || echo "  (no modules or lsmod unavailable)" | tee -a /tmp/network.log
+
+# Show all network devices
+echo "All network devices:" | tee -a /tmp/network.log
+ip link show 2>&1 | tee -a /tmp/network.log || echo "  (ip command failed)" | tee -a /tmp/network.log
+
 # Network setup
 echo ""
 echo "=== Network Setup ==="
+echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Network setup started" >> /tmp/network.log
 ip link set lo up
 
-# Find and configure network interface
+# Active network interface detection loop (Agent 5 & Agent 15 optimization)
+# Wait up to 10 seconds for network interface to appear
 FOUND_IFACE=""
-for iface in eth0 eth1 enp0s1 ens3; do
-    if ip link show "$iface" >/dev/null 2>&1; then
-        FOUND_IFACE="$iface"
-        break
-    fi
+NETWORK_MODE="localhost"
+echo "Waiting for network interface to appear (max 10 seconds)..."
+for i in $(seq 1 20); do
+    for iface in eth0 eth1 enp0s1 ens3; do
+        if ip link show "$iface" >/dev/null 2>&1; then
+            ELAPSED=$(awk "BEGIN {printf \"%.1f\", $i * 0.5}")
+            echo "  ✓ Found interface: $iface after ${ELAPSED} seconds"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Found interface: $iface after ${ELAPSED}s" >> /tmp/network.log
+            FOUND_IFACE="$iface"
+            NETWORK_MODE="network"
+            break 2  # Break both loops
+        fi
+    done
+    sleep 0.5
 done
+
+if [ -z "$FOUND_IFACE" ]; then
+    echo "  ⚠ Network interface not found after 10 seconds"
+    echo "  Will start services in localhost-only mode"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] No network interface found - localhost mode" >> /tmp/network.log
+    VM_IP="127.0.0.1"
+    BIND_HOST="127.0.0.1"
+else
+    BIND_HOST="0.0.0.0"
+fi
 
 if [ -n "$FOUND_IFACE" ]; then
     echo "Network interface: $FOUND_IFACE"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Found interface: $FOUND_IFACE" >> /tmp/network.log
     ip link set "$FOUND_IFACE" up
     sleep 0.5
 
     # DHCP configuration with retries (3 attempts with exponential backoff)
     echo "Requesting DHCP address..."
+    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Starting DHCP attempts..." >> /tmp/network.log
     DHCP_SUCCESS=0
     for attempt in 1 2 3; do
         echo "  Attempt $attempt/3..."
-        if udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q -t 1 -T 1 2>&1; then
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] DHCP attempt $attempt/3 started" >> /tmp/network.log
+        if udhcpc -i "$FOUND_IFACE" -s /bin/true -n -q -t 1 -T 1 2>&1 | tee -a /tmp/network.log; then
             DHCP_SUCCESS=1
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] DHCP attempt $attempt succeeded" >> /tmp/network.log
             break
         fi
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] DHCP attempt $attempt failed" >> /tmp/network.log
         [ $attempt -lt 3 ] && sleep $((attempt * 1))  # 1s, 2s delays
     done
 
@@ -927,6 +1081,7 @@ if [ -n "$FOUND_IFACE" ]; then
     # Aggressive fallback to static IP if DHCP failed
     if [ -z "$VM_IP" ]; then
         echo "DHCP failed after 3 attempts, using static IP fallback..."
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] DHCP failed, using static IP fallback" >> /tmp/network.log
         # Remove any partial DHCP config
         ip addr flush dev "$FOUND_IFACE" 2>/dev/null || true
         ip route flush dev "$FOUND_IFACE" 2>/dev/null || true
@@ -935,242 +1090,276 @@ if [ -n "$FOUND_IFACE" ]; then
         ip route add default via 192.168.64.1 2>/dev/null || true
         VM_IP="192.168.64.10"
         echo "✓ Static IP: $VM_IP"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Static IP configured: $VM_IP" >> /tmp/network.log
 
         # Verify network is reachable
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Testing gateway reachability..." >> /tmp/network.log
         if ping -c 1 -W 2 192.168.64.1 >/dev/null 2>&1; then
             echo "  ✓ Gateway reachable"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Gateway 192.168.64.1 is reachable" >> /tmp/network.log
         else
             echo "  ⚠ Gateway not reachable (continuing anyway)"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Gateway 192.168.64.1 NOT reachable" >> /tmp/network.log
         fi
     else
         echo "✓ DHCP IP: $VM_IP"
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] DHCP IP configured: $VM_IP" >> /tmp/network.log
 
         # Verify DHCP configuration
+        echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Testing gateway reachability..." >> /tmp/network.log
         if ping -c 1 -W 2 192.168.64.1 >/dev/null 2>&1; then
             echo "  ✓ Gateway reachable"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Gateway 192.168.64.1 is reachable" >> /tmp/network.log
         else
             echo "  ⚠ Gateway not reachable via DHCP"
+            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Gateway 192.168.64.1 NOT reachable via DHCP" >> /tmp/network.log
         fi
     fi
 else
     echo "⚠ No network interface found"
+    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] ERROR: No network interface found" >> /tmp/network.log
     VM_IP="localhost"
 fi
+echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Network setup completed. Final IP: $VM_IP" >> /tmp/network.log
 echo ""
 
-# Setup SSH server
-echo "=== SSH Server Setup ==="
-mkdir -p /etc/dropbear /run
-
-if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
-    echo "Generating SSH host keys..."
-    /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key -s 2048 2>&1 | grep -E "Generating|fingerprint" || true
-    /usr/bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key 2>&1 | grep -E "Generating|fingerprint" || true
-    echo "✓ SSH keys generated"
-fi
-
-# Start Dropbear SSH server
-/usr/sbin/dropbear -R -E -p 22 -B 2>/dev/null &
-DROPBEAR_PID=$!
-sleep 1
-
-if ps | grep -v grep | grep -q dropbear; then
-    echo "✓ SSH server started (PID: $DROPBEAR_PID)"
-    echo "  Connect: ssh root@$VM_IP (password: vibecode)"
-else
-    echo "⚠ SSH server failed to start"
-fi
-echo ""
-
-# Datadog Integration
-echo "=== Datadog Integration ==="
-
-# Parse Datadog config from kernel command line
-if [ -f /proc/cmdline ]; then
-    DD_API_KEY=$(grep -oP 'DD_API_KEY=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "")
-    DD_SITE=$(grep -oP 'DD_SITE=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "datadoghq.com")
-    DD_HOSTNAME=$(grep -oP 'DD_HOSTNAME=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "unified-services-vm")
-
-    export DD_API_KEY
-    export DD_SITE
-    export DD_HOSTNAME
-fi
-
-if [ -n "$DD_API_KEY" ]; then
-    echo "✓ Datadog API key configured (${#DD_API_KEY} chars)"
-    echo "  Site: $DD_SITE"
-    echo "  Hostname: $DD_HOSTNAME"
-
-    # Start StatsD bridge
-    if [ -f /usr/local/bin/statsd-bridge.py ]; then
-        echo "  Starting StatsD bridge..."
-        /usr/local/bin/statsd-bridge.py > /tmp/datadog-bridge.log 2>&1 &
-        DATADOG_PID=$!
-        sleep 1
-
-        if ps | grep -q "$DATADOG_PID"; then
-            echo "  ✓ StatsD bridge running (PID: $DATADOG_PID)"
-            echo "  Metrics port: 8125 (UDP)"
-            echo "  Flush interval: 30 seconds"
-        else
-            echo "  ⚠ StatsD bridge failed to start"
-        fi
-    fi
-else
-    echo "⚠ DD_API_KEY not configured - Datadog disabled"
-    echo "  To enable: Add DD_API_KEY=<key> to kernel cmdline"
-fi
-echo ""
+# ==============================================================================
+# PHASE 2: PARALLEL SERVICE STARTUP (Firecracker-style)
+# ==============================================================================
 
 # Library path for services
 export LD_LIBRARY_PATH=/lib:/usr/lib
 
-# Start Valkey (skip in fast build)
-if [ "$FAST_BUILD" = false ]; then
-echo "=== Starting Valkey Server ==="
-if [ -f /bin/valkey-server ] && [ -f /etc/valkey.conf ]; then
-    /bin/valkey-server /etc/valkey.conf > /tmp/valkey.log 2>&1 &
-    VALKEY_PID=$!
-    sleep 2
-
-    if ps | grep -v grep | grep -q valkey-server; then
-        echo "✓ Valkey started (PID: $VALKEY_PID)"
-        echo "  Port: 6379"
-        echo "  Config: /etc/valkey.conf"
-        echo "  Logs: /tmp/valkey.log"
-    else
-        echo "⚠ Valkey failed to start"
-        echo "  Check logs: cat /tmp/valkey.log"
-    fi
-else
-    echo "⚠ Valkey binary or config not found"
-fi
-echo ""
+# Parse Datadog config from kernel command line (do this early)
+if [ -f /proc/cmdline ]; then
+    DD_API_KEY=$(grep -oP 'DD_API_KEY=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "")
+    DD_SITE=$(grep -oP 'DD_SITE=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "datadoghq.com")
+    DD_HOSTNAME=$(grep -oP 'DD_HOSTNAME=\K[^ ]+' /proc/cmdline 2>/dev/null || echo "unified-services-vm")
+    export DD_API_KEY DD_SITE DD_HOSTNAME
 fi
 
-# Start PostgreSQL (skip in fast build)
-if [ "$FAST_BUILD" = false ]; then
-echo "=== Starting PostgreSQL Server ==="
-if [ -f /usr/bin/postgres ]; then
-    # Create postgres user directories
+# Setup directories and SSH keys (must be done before parallel launch)
+echo "=== Preparing Service Directories ==="
+mkdir -p /etc/dropbear /run /tmp/vscode-data
+
+# Generate SSH host keys if needed
+if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
+    echo "Generating SSH host keys..."
+    /usr/bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key -s 2048 2>&1 | grep -E "Generating|fingerprint" || true
+    /usr/bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key 2>&1 | grep -E "Generating|fingerprint" || true
+fi
+
+# Setup PostgreSQL directories and initialization (must complete before parallel start)
+if [ "$FAST_BUILD" = false ] && [ -f /usr/bin/postgres ]; then
     mkdir -p /var/lib/postgresql/data /run/postgresql /tmp/postgresql
     chmod 700 /var/lib/postgresql/data
     chmod 775 /run/postgresql
     chown -R postgres:postgres /var/lib/postgresql /run/postgresql /tmp/postgresql 2>/dev/null || true
 
-    # Initialize database if needed
+    # Initialize database if needed (blocking, but only on first boot)
     if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
         echo "Initializing PostgreSQL database..."
-        su - postgres -c "/usr/bin/initdb -D /var/lib/postgresql/data" 2>&1 | head -5
-
-        # Copy configs
-        cp /etc/postgresql.conf /var/lib/postgresql/data/ 2>/dev/null || true
-        cp /etc/pg_hba.conf /var/lib/postgresql/data/ 2>/dev/null || true
-        echo "✓ Database initialized"
+        if su - postgres -c "/usr/bin/initdb -D /var/lib/postgresql/data" > /tmp/postgresql-init.log 2>&1; then
+            if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+                echo "✓ Database initialized"
+                cp /etc/postgresql.conf /var/lib/postgresql/data/ 2>/dev/null || true
+                cp /etc/pg_hba.conf /var/lib/postgresql/data/ 2>/dev/null || true
+            fi
+        else
+            echo "⚠ Database initialization failed (will skip PostgreSQL)"
+        fi
     fi
+fi
 
-    # Start PostgreSQL
-    echo "Starting PostgreSQL server..."
+echo "✓ Preparation complete"
+echo ""
+
+# ==============================================================================
+# PARALLEL SERVICE LAUNCHES - Firecracker Pattern
+# ==============================================================================
+
+echo "========================================="
+echo "  PARALLEL SERVICE STARTUP"
+echo "  All services launching simultaneously"
+echo "========================================="
+echo ""
+
+# Initialize PID variables
+SSH_PID=""
+DATADOG_PID=""
+VALKEY_PID=""
+POSTGRES_PID=""
+VSCODE_PID=""
+
+# Determine network binding mode
+if [ "$NETWORK_MODE" = "localhost" ]; then
+    VSCODE_HOST="127.0.0.1"
+    BIND_HOST="127.0.0.1"
+else
+    VSCODE_HOST="0.0.0.0"
+    BIND_HOST="0.0.0.0"
+fi
+
+# LAUNCH ALL SERVICES IN BACKGROUND
+echo "Launching services in parallel..."
+
+# 1. SSH Server
+if [ -n "$VM_IP" ] || ip link show lo 2>/dev/null | grep -q "state UP"; then
+    /usr/sbin/dropbear -R -B -E -p 22 > /tmp/dropbear.log 2>&1 &
+    SSH_PID=$!
+    echo "  - SSH server launched (PID: $SSH_PID)"
+fi
+
+# 2. Datadog StatsD Bridge (skip in fast build)
+if [ "$FAST_BUILD" = false ] && [ -n "$DD_API_KEY" ] && [ -f /usr/local/bin/statsd-bridge.py ]; then
+    /usr/local/bin/statsd-bridge.py > /tmp/datadog-bridge.log 2>&1 &
+    DATADOG_PID=$!
+    echo "  - Datadog bridge launched (PID: $DATADOG_PID)"
+fi
+
+# 3. Valkey Server (skip in fast build)
+if [ "$FAST_BUILD" = false ] && [ -f /bin/valkey-server ] && [ -f /etc/valkey.conf ]; then
+    /bin/valkey-server /etc/valkey.conf > /tmp/valkey.log 2>&1 &
+    VALKEY_PID=$!
+    echo "  - Valkey server launched (PID: $VALKEY_PID)"
+fi
+
+# 4. PostgreSQL Server (skip in fast build)
+if [ "$FAST_BUILD" = false ] && [ -f /usr/bin/postgres ] && [ -f /var/lib/postgresql/data/PG_VERSION ]; then
     su - postgres -c "/usr/bin/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
     POSTGRES_PID=$!
-    sleep 3
-
-    if ps | grep -v grep | grep -q "postgres -D"; then
-        echo "✓ PostgreSQL started (PID: $POSTGRES_PID)"
-        echo "  Port: 5432"
-        echo "  Data dir: /var/lib/postgresql/data"
-        echo "  Logs: /tmp/postgresql.log"
-
-        # Install PostgreSQL extensions (permissive licenses only)
-        echo "  Installing PostgreSQL extensions..."
-        sleep 2  # Give PostgreSQL time to fully start
-        
-        # Create SQL script for extensions (all MIT/BSD/PostgreSQL licensed)
-        cat > /tmp/install-extensions.sql << 'EXTEOF'
--- Vector similarity search for RAG/embeddings (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS vector;
-
--- Trigram text search (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS pg_trgm;
-
--- Query performance monitoring (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
-
--- Key-value storage in rows (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS hstore;
-
--- Case-insensitive text (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS citext;
-
--- UUID generation (BSD license)
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
--- Better indexing (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS btree_gin;
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-
--- Remove accents from text (PostgreSQL license)
-CREATE EXTENSION IF NOT EXISTS unaccent;
-EXTEOF
-
-        # Run extension installation
-        if [ -f /usr/bin/psql ]; then
-            su - postgres -c "psql -U postgres -d postgres -f /tmp/install-extensions.sql" > /tmp/extensions.log 2>&1 || true
-            
-            # Check which extensions were installed
-            INSTALLED=$(su - postgres -c "psql -U postgres -d postgres -t -c \"SELECT COUNT(*) FROM pg_extension WHERE extname NOT IN ('plpgsql');\"" 2>/dev/null | tr -d ' ')
-            
-            if [ -n "$INSTALLED" ] && [ "$INSTALLED" -gt 0 ]; then
-                echo "  ✓ Installed $INSTALLED PostgreSQL extensions"
-                echo "    - vector (pgvector for RAG)"
-                echo "    - pg_trgm (fuzzy text search)"
-                echo "    - pg_stat_statements (query stats)"
-                echo "    - hstore, citext, uuid-ossp"
-                echo "    - btree_gin, btree_gist, unaccent"
-            else
-                echo "  ⚠ Some extensions may not be available"
-                echo "    Check: cat /tmp/extensions.log"
-            fi
-        fi
-    else
-        echo "⚠ PostgreSQL failed to start"
-        echo "  Check logs: cat /tmp/postgresql.log"
-    fi
-else
-    echo "⚠ PostgreSQL binary not found"
-fi
-echo ""
+    echo "  - PostgreSQL server launched (PID: $POSTGRES_PID)"
 fi
 
-# Start OpenVSCode
-echo "=== Starting OpenVSCode Server ==="
+# 5. OpenVSCode Server
 if [ -f /opt/openvscode/bin/openvscode-server ]; then
-    mkdir -p /tmp/vscode-data
-    cd /opt/openvscode
-
-    ./bin/openvscode-server \
-        --host 0.0.0.0 \
+    (cd /opt/openvscode && ./bin/openvscode-server \
+        --host $VSCODE_HOST \
         --port 8080 \
         --without-connection-token \
         --accept-server-license-terms \
         --user-data-dir /tmp/vscode-data \
-        > /tmp/openvscode.log 2>&1 &
-
+        --log trace \
+        > /tmp/openvscode.log 2>&1) &
     VSCODE_PID=$!
-    sleep 3
+    echo "  - OpenVSCode server launched (PID: $VSCODE_PID)"
+fi
 
+echo ""
+echo "All services launched in background!"
+echo "Waiting 3 seconds for services to initialize..."
+sleep 3  # Single wait for all services
+
+# ==============================================================================
+# SERVICE VERIFICATION - Check each service independently
+# ==============================================================================
+
+echo ""
+echo "========================================="
+echo "  SERVICE VERIFICATION"
+echo "========================================="
+echo ""
+
+# Verify SSH
+if [ -n "$SSH_PID" ]; then
+    echo "=== SSH Server ==="
+    if ps | grep -v grep | grep -q dropbear; then
+        echo "✓ SSH server running (PID: $SSH_PID)"
+        if [ -n "$VM_IP" ] && [ "$VM_IP" != "localhost" ]; then
+            echo "  Connect: ssh root@$VM_IP (password: vibecode)"
+        else
+            echo "  Connect: ssh root@localhost"
+        fi
+    else
+        echo "⚠ SSH server failed to start"
+        [ -f /tmp/dropbear.log ] && head -5 /tmp/dropbear.log
+    fi
+    echo ""
+fi
+
+# Verify Datadog
+if [ -n "$DATADOG_PID" ]; then
+    echo "=== Datadog StatsD Bridge ==="
+    if ps | grep -q "$DATADOG_PID"; then
+        echo "✓ Datadog bridge running (PID: $DATADOG_PID)"
+        echo "  Metrics: UDP port 8125"
+        echo "  Site: $DD_SITE"
+    else
+        echo "⚠ Datadog bridge failed to start"
+    fi
+    echo ""
+fi
+
+# Verify Valkey
+if [ -n "$VALKEY_PID" ]; then
+    echo "=== Valkey Server ==="
+    if ps | grep -v grep | grep -q valkey-server; then
+        echo "✓ Valkey running (PID: $VALKEY_PID)"
+        echo "  Port: 6379"
+        echo "  Logs: /tmp/valkey.log"
+    else
+        echo "⚠ Valkey failed to start"
+        [ -f /tmp/valkey.log ] && head -5 /tmp/valkey.log
+    fi
+    echo ""
+fi
+
+# Verify PostgreSQL
+if [ -n "$POSTGRES_PID" ]; then
+    echo "=== PostgreSQL Server ==="
+    if ps | grep -v grep | grep -q "postgres -D"; then
+        echo "✓ PostgreSQL running (PID: $POSTGRES_PID)"
+        echo "  Port: 5432"
+        echo "  Logs: /tmp/postgresql.log"
+
+        # Quick connection test (non-blocking)
+        if su - postgres -c "psql -U postgres -d postgres -c 'SELECT 1;'" > /dev/null 2>&1; then
+            echo "  ✓ Accepting connections"
+
+            # Install extensions in background (don't block boot)
+            (
+                sleep 2
+                cat > /tmp/install-extensions.sql << 'EXTEOF'
+CREATE EXTENSION IF NOT EXISTS vector;
+CREATE EXTENSION IF NOT EXISTS pg_trgm;
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+CREATE EXTENSION IF NOT EXISTS hstore;
+CREATE EXTENSION IF NOT EXISTS citext;
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+CREATE EXTENSION IF NOT EXISTS btree_gin;
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+CREATE EXTENSION IF NOT EXISTS unaccent;
+EXTEOF
+                su - postgres -c "psql -U postgres -d postgres -f /tmp/install-extensions.sql" > /tmp/extensions.log 2>&1 || true
+            ) &
+            echo "  Extensions installing in background..."
+        else
+            echo "  ⚠ Not accepting connections yet (may need a moment)"
+        fi
+    else
+        echo "⚠ PostgreSQL failed to start"
+        [ -f /tmp/postgresql.log ] && head -10 /tmp/postgresql.log
+    fi
+    echo ""
+fi
+
+# Verify OpenVSCode
+if [ -n "$VSCODE_PID" ]; then
+    echo "=== OpenVSCode Server ==="
     if ps | grep -v grep | grep -q openvscode-server; then
-        echo "✓ OpenVSCode started (PID: $VSCODE_PID)"
-        echo "  URL: http://$VM_IP:8080"
+        echo "✓ OpenVSCode running (PID: $VSCODE_PID)"
+        if [ "$NETWORK_MODE" = "localhost" ]; then
+            echo "  URL: http://127.0.0.1:8080 (localhost only)"
+        else
+            echo "  URL: http://$VM_IP:8080"
+        fi
         echo "  Logs: /tmp/openvscode.log"
     else
         echo "⚠ OpenVSCode failed to start"
-        echo "  Check logs: cat /tmp/openvscode.log"
+        [ -f /tmp/openvscode.log ] && head -10 /tmp/openvscode.log
     fi
-else
-    echo "⚠ OpenVSCode binary not found"
+    echo ""
 fi
-echo ""
 
 # Summary
 echo "========================================="
@@ -1352,11 +1541,26 @@ show_usage_instructions() {
     echo "Size: $size"
     echo ""
     echo "Services included:"
-    echo "  - Valkey ${VALKEY_VERSION} (Redis-compatible)"
-    echo "  - PostgreSQL ${POSTGRESQL_VERSION}"
-    echo "  - OpenVSCode Server ${OPENVSCODE_VERSION}"
-    echo "  - Dropbear SSH"
-    echo "  - Datadog StatsD bridge"
+    if [ "$FAST_BUILD" = true ]; then
+        echo "  - OpenVSCode Server ${OPENVSCODE_VERSION} (FAST BUILD)"
+    else
+        echo "  - Valkey ${VALKEY_VERSION} (Redis-compatible)"
+        echo "  - PostgreSQL ${POSTGRESQL_VERSION}"
+        echo "  - OpenVSCode Server ${OPENVSCODE_VERSION}"
+        echo "  - Dropbear SSH"
+        echo "  - Datadog StatsD bridge"
+    fi
+    
+    if [ "$WITH_EXTENSIONS" = true ]; then
+        echo ""
+        echo "VS Code Extensions:"
+        echo "  - Continue (AI with Claude/GPT)"
+        echo "  - Redis Client (Valkey/Redis GUI)"
+        echo "  - SQLTools + PostgreSQL driver"
+        echo "  - Prettier (code formatter)"
+        echo "  - ESLint (linter)"
+        echo "  - REST Client (API testing)"
+    fi
     echo ""
     echo "Quick Start:"
     echo ""
@@ -1427,6 +1631,14 @@ main() {
     fi
     
     download_openvscode
+    
+    # Download VS Code extensions if requested
+    if [ "$WITH_EXTENSIONS" = true ]; then
+        download_vscode_extensions
+    else
+        info "Skipping VS Code extensions (use --with-extensions to include)"
+    fi
+    
     download_musl_libc
 
     # Create Datadog integration (only in full build)
