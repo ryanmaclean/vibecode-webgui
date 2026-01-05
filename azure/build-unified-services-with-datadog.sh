@@ -241,13 +241,13 @@ download_postgresql() {
             info "Checking: $pg_path"
             if [ -f "$pg_path" ]; then
                 local pg_bin_dir=$(dirname "$pg_path")
-                mkdir -p "$pg_dir/usr/bin"
+                mkdir -p "$pg_dir/usr/libexec/postgresql16"
 
-                # Copy main binaries
-                cp "$pg_path" "$pg_dir/usr/bin/"
-                [ -f "$pg_bin_dir/initdb" ] && cp "$pg_bin_dir/initdb" "$pg_dir/usr/bin/" || true
-                [ -f "$pg_bin_dir/psql" ] && cp "$pg_bin_dir/psql" "$pg_dir/usr/bin/" || true
-                [ -f "$pg_bin_dir/pg_ctl" ] && cp "$pg_bin_dir/pg_ctl" "$pg_dir/usr/bin/" || true
+                # Copy main binaries - preserve libexec structure for initdb
+                cp "$pg_path" "$pg_dir/usr/libexec/postgresql16/"
+                [ -f "$pg_bin_dir/initdb" ] && cp "$pg_bin_dir/initdb" "$pg_dir/usr/libexec/postgresql16/" || true
+                [ -f "$pg_bin_dir/psql" ] && cp "$pg_bin_dir/psql" "$pg_dir/usr/libexec/postgresql16/" || true
+                [ -f "$pg_bin_dir/pg_ctl" ] && cp "$pg_bin_dir/pg_ctl" "$pg_dir/usr/libexec/postgresql16/" || true
 
                 pg_found=1
                 break
@@ -266,6 +266,13 @@ download_postgresql() {
                 cp -r "$lib_path/"* "$pg_dir/usr/lib/" 2>/dev/null || true
             fi
         done
+
+        # Copy PostgreSQL shared data (CRITICAL for initdb)
+        if [ -d "$temp_extract/usr/share/postgresql16" ]; then
+            info "Copying PostgreSQL shared data (required for initdb)..."
+            mkdir -p "$pg_dir/usr/share"
+            cp -r "$temp_extract/usr/share/postgresql16" "$pg_dir/usr/share/" 2>/dev/null || true
+        fi
 
         rm -rf "$temp_extract"
 
@@ -293,6 +300,60 @@ download_openvscode() {
     log "Extracting OpenVSCode..."
     tar xzf openvscode.tar.gz
     mv "openvscode-server-v${OPENVSCODE_VERSION}-linux-arm64" openvscode
+
+    # Patch the openvscode-server wrapper script for busybox compatibility
+    # Issue: The wrapper uses #!/usr/bin/env sh and readlink -f, which aren't available in minimal busybox
+    # Fix: Replace with direct /bin/sh and busybox-compatible path resolution
+    info "Patching OpenVSCode wrapper script for busybox compatibility..."
+    local wrapper="openvscode/bin/openvscode-server"
+    if [ -f "$wrapper" ]; then
+        # Create a patched version
+        cat > "${wrapper}.new" << 'EOF'
+#!/bin/sh
+#
+# Copyright (c) Microsoft Corporation. All rights reserved.
+#
+
+case "$1" in
+	--inspect*) INSPECT="$1"; shift;;
+esac
+
+# Busybox-compatible path resolution (no readlink -f needed)
+# Get the directory containing this script
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+"$ROOT/node" ${INSPECT:-} "$ROOT/out/server-main.js" "$@"
+EOF
+        mv "${wrapper}.new" "$wrapper"
+        chmod +x "$wrapper"
+        info "✓ OpenVSCode wrapper patched for busybox"
+    else
+        warn "OpenVSCode wrapper not found, skipping patch"
+    fi
+
+    # Replace the GNU libc Node.js binary with a musl-compatible one from Alpine
+    # Issue: The bundled Node.js binary is built for GNU libc and won't work with musl
+    # Fix: Download and use Alpine's musl-compatible Node.js binary
+    info "Replacing GNU libc Node.js with musl-compatible version..."
+    local node_apk="nodejs-current-24.9.0-r1.apk"
+    local node_url="https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/${node_apk}"
+
+    if wget -q --show-progress "$node_url" -O node.apk 2>/dev/null; then
+        # Extract the Node.js binary from the APK
+        tar xzf node.apk 2>/dev/null || true
+        if [ -f "usr/bin/node" ]; then
+            # Replace the GNU libc node binary with musl node
+            cp "usr/bin/node" "openvscode/node"
+            chmod +x "openvscode/node"
+            info "✓ Replaced with Alpine Node.js (musl-compatible)"
+            rm -rf node.apk usr/ 2>/dev/null || true
+        else
+            warn "Failed to extract Node.js from Alpine package, using original"
+            rm -rf node.apk usr/ 2>/dev/null || true
+        fi
+    else
+        warn "Failed to download Alpine Node.js, using original (may not work)"
+    fi
 
     local size=$(du -sh openvscode | cut -f1)
     log "✓ OpenVSCode downloaded: $size"
@@ -410,6 +471,20 @@ download_musl_libc() {
         "zstd-libs-1.5.7-r2.apk"
         "xz-libs-5.8.1-r0.apk"
         "libsasl-2.1.28-r9.apk"
+        # AGENT K FIX: Add utmps library for SSH (Dropbear) - provides libutmps.so.0.1
+        "utmps-libs-0.1.3.2-r0.apk"
+        # AGENT K FIX: Add skalibs library (dependency of utmps) - provides libskarnet.so.2.14
+        "skalibs-libs-2.14.5.0-r0.apk"
+        # AGENT I FIX: Add Node.js dependencies for musl-compatible Node.js
+        # AGENT L FIX: Updated to current Alpine Edge versions (2026-01-05)
+        "libuv-1.51.0-r0.apk"           # provides libuv.so.1
+        "brotli-libs-1.2.0-r0.apk"      # provides libbrotlidec.so.1 and libbrotlienc.so.1
+        "c-ares-1.34.6-r0.apk"          # provides libcares.so.2
+        "nghttp2-libs-1.68.0-r0.apk"    # provides libnghttp2.so.14
+        # AGENT M FIX: Add ICU libraries for PostgreSQL Unicode collation
+        # AGENT N FIX: Updated to current Alpine Edge version (2026-01-05)
+        "icu-libs-76.1-r2.apk"          # provides ICU Unicode libraries
+        "icu-data-full-76.1-r2.apk"     # provides full Unicode collation data
     )
 
     for pkg in "${packages[@]}"; do
@@ -697,7 +772,7 @@ copy_binaries() {
 
     # Create busybox symlinks
     cd "$initramfs/bin"
-    for applet in sh ash mount umount ip udhcpc ps kill mkdir cat grep awk sed sleep echo chmod chown ls ln cp mv rm wget nc true false; do
+    for applet in sh ash mount umount ip udhcpc ps kill mkdir cat grep awk sed sleep echo chmod chown ls ln cp mv rm wget nc true false readlink realpath su; do
         ln -sf busybox "$applet" 2>/dev/null || true
     done
     cd "$WORK_DIR"
@@ -725,15 +800,28 @@ copy_binaries() {
     # PostgreSQL (skip in fast build)
     if [ "$FAST_BUILD" = false ]; then
         info "Copying PostgreSQL..."
-        cp "$downloads/postgresql/usr/bin/postgres" "$initramfs/usr/bin/"
-        cp "$downloads/postgresql/usr/bin/initdb" "$initramfs/usr/bin/" 2>/dev/null || true
-        cp "$downloads/postgresql/usr/bin/psql" "$initramfs/usr/bin/" 2>/dev/null || true
-        chmod +x "$initramfs/usr/bin/postgres" "$initramfs/usr/bin/initdb" 2>/dev/null || true
+        mkdir -p "$initramfs/usr/libexec/postgresql16"
+        cp "$downloads/postgresql/usr/libexec/postgresql16/postgres" "$initramfs/usr/libexec/postgresql16/"
+        cp "$downloads/postgresql/usr/libexec/postgresql16/initdb" "$initramfs/usr/libexec/postgresql16/" 2>/dev/null || true
+        cp "$downloads/postgresql/usr/libexec/postgresql16/psql" "$initramfs/usr/libexec/postgresql16/" 2>/dev/null || true
+        chmod +x "$initramfs/usr/libexec/postgresql16/postgres" "$initramfs/usr/libexec/postgresql16/initdb" 2>/dev/null || true
+
+        # AGENT M: Create symlinks in /usr/bin for easier access
+        ln -sf /usr/libexec/postgresql16/postgres "$initramfs/usr/bin/postgres" 2>/dev/null || true
+        ln -sf /usr/libexec/postgresql16/initdb "$initramfs/usr/bin/initdb" 2>/dev/null || true
+        ln -sf /usr/libexec/postgresql16/psql "$initramfs/usr/bin/psql" 2>/dev/null || true
 
         # Copy PostgreSQL libraries
         if [ -d "$downloads/postgresql/usr/lib" ]; then
             info "Copying PostgreSQL libraries..."
             cp -r "$downloads/postgresql/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
+        fi
+
+        # Copy PostgreSQL shared data (CRITICAL for initdb)
+        if [ -d "$downloads/postgresql/usr/share/postgresql16" ]; then
+            info "Copying PostgreSQL shared data (required for initdb)..."
+            mkdir -p "$initramfs/usr/share"
+            cp -r "$downloads/postgresql/usr/share/postgresql16" "$initramfs/usr/share/" 2>/dev/null || true
         fi
     fi
 
@@ -788,6 +876,16 @@ copy_libraries() {
         cp -r "$downloads/libs/usr/lib/"* "$initramfs/usr/lib/" 2>/dev/null || true
     fi
 
+    # AGENT N FIX: Copy ICU data files (required for PostgreSQL Unicode collation)
+    if [ -d "$downloads/libs/usr/share/icu" ]; then
+        info "Copying ICU data files for PostgreSQL Unicode support..."
+        mkdir -p "$initramfs/usr/share"
+        cp -r "$downloads/libs/usr/share/icu" "$initramfs/usr/share/" 2>/dev/null || true
+        info "✓ ICU data files copied to /usr/share/icu"
+    else
+        warn "ICU data directory not found - PostgreSQL Unicode collation may fail"
+    fi
+
     # Ensure critical libraries are present
     info "Verifying critical libraries..."
     local critical_libs=(
@@ -801,6 +899,14 @@ copy_libraries() {
         "libldap.so.2"
         "liblber.so.2"
         "libsasl2.so.3"
+        "libutmps.so.0.1"
+        "libskarnet.so.2.14"
+        # AGENT L: Node.js dependencies
+        "libuv.so.1"
+        "libbrotlidec.so.1"
+        "libbrotlienc.so.1"
+        "libcares.so.2"
+        "libnghttp2.so.14"
     )
 
     for lib in "${critical_libs[@]}"; do
@@ -971,6 +1077,21 @@ echo "unified-vm" > /etc/hostname 2>/dev/null || true
 mknod -m 666 /dev/null c 1 3 2>/dev/null || true
 mknod -m 666 /dev/zero c 1 5 2>/dev/null || true
 mknod -m 666 /dev/random c 1 8 2>/dev/null || true
+
+# Mount tmpfs for shared memory (required for PostgreSQL) - MOVED EARLY
+# Must be done before any service initialization
+echo ""
+echo "=== Setting up shared memory ==="
+if ! grep -q "tmpfs /dev/shm" /proc/mounts; then
+    mkdir -p /dev/shm
+    if mount -t tmpfs -o size=256M tmpfs /dev/shm; then
+        echo "✓ /dev/shm mounted (256M)"
+    else
+        echo "⚠ Failed to mount /dev/shm, PostgreSQL may fail"
+    fi
+else
+    echo "✓ /dev/shm already mounted"
+fi
 
 # Load kernel modules for network
 echo ""
@@ -1150,25 +1271,43 @@ if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
 fi
 
 # Setup PostgreSQL directories and initialization (must complete before parallel start)
-if [ "$FAST_BUILD" = false ] && [ -f /usr/bin/postgres ]; then
-    mkdir -p /var/lib/postgresql/data /run/postgresql /tmp/postgresql
-    chmod 700 /var/lib/postgresql/data
-    chmod 775 /run/postgresql
-    chown -R postgres:postgres /var/lib/postgresql /run/postgresql /tmp/postgresql 2>/dev/null || true
+echo "Checking PostgreSQL setup conditions: FAST_BUILD=$FAST_BUILD"
+if [ "$FAST_BUILD" = false ]; then
+    echo "  FAST_BUILD is false, checking for postgres binary..."
+    if [ -f /usr/bin/postgres ]; then
+        echo "  ✓ Found /usr/bin/postgres"
+        mkdir -p /var/lib/postgresql/data /run/postgresql /tmp/postgresql
+        chmod 700 /var/lib/postgresql/data
+        chmod 775 /run/postgresql
+        chown -R postgres:postgres /var/lib/postgresql /run/postgresql /tmp/postgresql 2>/dev/null || true
 
-    # Initialize database if needed (blocking, but only on first boot)
-    if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
-        echo "Initializing PostgreSQL database..."
-        if su - postgres -c "/usr/bin/initdb -D /var/lib/postgresql/data" > /tmp/postgresql-init.log 2>&1; then
-            if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
-                echo "✓ Database initialized"
-                cp /etc/postgresql.conf /var/lib/postgresql/data/ 2>/dev/null || true
-                cp /etc/pg_hba.conf /var/lib/postgresql/data/ 2>/dev/null || true
+        # Initialize database if needed (blocking, but only on first boot)
+        if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
+            echo "Initializing PostgreSQL database..."
+            # AGENT M FIX: Use 'su postgres' to actually switch user (not just env vars)
+            # initdb checks the real UID and refuses to run as root for security
+            # AGENT T FIX: Set ICU_DATA environment variable to help ICU libraries find data files
+            if su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/initdb -U postgres -D /var/lib/postgresql/data --auth=trust --locale=C --encoding=SQL_ASCII --no-locale --locale-provider=libc" > /tmp/postgresql-init.log 2>&1; then
+                if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+                    echo "✓ Database initialized"
+                    chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null || true
+                    cp /etc/postgresql.conf /var/lib/postgresql/data/ 2>/dev/null || true
+                    cp /etc/pg_hba.conf /var/lib/postgresql/data/ 2>/dev/null || true
+                fi
+            else
+                echo "⚠ Database initialization failed (will skip PostgreSQL)"
+                echo "  Error log: /tmp/postgresql-init.log"
+                if [ -f /tmp/postgresql-init.log ]; then
+                    echo "  Last 20 lines of output:"
+                    tail -20 /tmp/postgresql-init.log | sed 's/^/    /'
+                fi
             fi
-        else
-            echo "⚠ Database initialization failed (will skip PostgreSQL)"
         fi
+    else
+        echo "  ✗ PostgreSQL binary not found at /usr/bin/postgres"
     fi
+else
+    echo "  Skipping PostgreSQL (FAST_BUILD mode)"
 fi
 
 echo "✓ Preparation complete"
@@ -1225,8 +1364,9 @@ if [ "$FAST_BUILD" = false ] && [ -f /bin/valkey-server ] && [ -f /etc/valkey.co
 fi
 
 # 4. PostgreSQL Server (skip in fast build)
-if [ "$FAST_BUILD" = false ] && [ -f /usr/bin/postgres ] && [ -f /var/lib/postgresql/data/PG_VERSION ]; then
-    su - postgres -c "/usr/bin/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
+if [ "$FAST_BUILD" = false ] && [ -f /usr/libexec/postgresql16/postgres ] && [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+    # AGENT T FIX: Set ICU_DATA environment variable for runtime ICU support
+    su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
     POSTGRES_PID=$!
     echo "  - PostgreSQL server launched (PID: $POSTGRES_PID)"
 fi
@@ -1313,7 +1453,7 @@ if [ -n "$POSTGRES_PID" ]; then
         echo "  Logs: /tmp/postgresql.log"
 
         # Quick connection test (non-blocking)
-        if su - postgres -c "psql -U postgres -d postgres -c 'SELECT 1;'" > /dev/null 2>&1; then
+        if su postgres -c "psql -U postgres -d postgres -c 'SELECT 1;'" > /dev/null 2>&1; then
             echo "  ✓ Accepting connections"
 
             # Install extensions in background (don't block boot)
@@ -1330,7 +1470,7 @@ CREATE EXTENSION IF NOT EXISTS btree_gin;
 CREATE EXTENSION IF NOT EXISTS btree_gist;
 CREATE EXTENSION IF NOT EXISTS unaccent;
 EXTEOF
-                su - postgres -c "psql -U postgres -d postgres -f /tmp/install-extensions.sql" > /tmp/extensions.log 2>&1 || true
+                su postgres -c "psql -U postgres -d postgres -f /tmp/install-extensions.sql" > /tmp/extensions.log 2>&1 || true
             ) &
             echo "  Extensions installing in background..."
         else
