@@ -3,14 +3,36 @@
  * Validates Docker configuration and container orchestration
  */
 
-const { exec } = require('child_process')
+const { exec, execSync } = require('child_process')
 const { promisify } = require('util')
 const execAsync = promisify(exec)
 
-describe('Docker Setup Tests', () => {
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
+
+// Helper to check if docker-compose is available
+function isDockerComposeAvailable() {
+  try {
+    execSync('docker-compose --version', { stdio: 'pipe' });
+    return true;
+  } catch {
+    try {
+      execSync('docker compose version', { stdio: 'pipe' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+(HAS_DOCKER ? describe : describe.skip)('Docker Setup Tests', () => {
   const TIMEOUT = 60000 // 60 seconds for Docker operations
 
   beforeAll(async () => {
+    // Verify docker-compose is available
+    if (HAS_DOCKER && !isDockerComposeAvailable()) {
+      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
+    }
+
     // Ensure Docker is running
     try {
       await execAsync('docker --version')
@@ -171,7 +193,14 @@ describe('Docker Setup Tests', () => {
   })
 })
 
-describe('Container Integration Tests', () => {
+(HAS_DOCKER ? describe : describe.skip)('Container Integration Tests', () => {
+  beforeAll(() => {
+    // Verify docker-compose is available
+    if (HAS_DOCKER && !isDockerComposeAvailable()) {
+      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
+    }
+  });
+
   describe('Database Schema Validation', () => {
     test('should have all required tables initialized', async () => {
       try {
@@ -234,7 +263,7 @@ describe('Container Integration Tests', () => {
   })
 })
 
-describe('Production Readiness Tests', () => {
+(HAS_DOCKER ? describe : describe.skip)('Production Readiness Tests', () => {
   test('should have Dockerfile optimized for production', async () => {
     const { stdout } = await execAsync('cat Dockerfile')
 

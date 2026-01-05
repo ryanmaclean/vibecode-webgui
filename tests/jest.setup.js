@@ -2,6 +2,24 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 
+// Setup default fetch mock before each test
+beforeEach(() => {
+  // Mock fetch to return 401 for UserPreferencesProvider (uses default preferences)
+  if (!global.fetch || !global.fetch.mockImplementation) {
+    global.fetch = jest.fn();
+  }
+  global.fetch.mockImplementation((url) => {
+    // Default mock - return 401 to trigger default preferences
+    return Promise.resolve({
+      ok: false,
+      status: 401,
+      json: () => Promise.resolve({}),
+      text: () => Promise.resolve(''),
+      blob: () => Promise.resolve(new Blob()),
+    });
+  });
+});
+
 // Automatically cleanup after each test
 afterEach(() => {
   cleanup();
@@ -53,13 +71,17 @@ const originalError = console.error;
 const originalWarn = console.warn;
 
 beforeAll(() => {
+  // Mock global fetch for UserPreferencesProvider
+  global.fetch = global.fetch || jest.fn();
+
   console.error = (...args) => {
     // Filter out known React warnings in test environment
     if (
       typeof args[0] === 'string' &&
       (args[0].includes('Warning: ReactDOM.render') ||
        args[0].includes('Warning: useLayoutEffect') ||
-       args[0].includes('Not implemented: HTMLFormElement.prototype.submit'))
+       args[0].includes('Not implemented: HTMLFormElement.prototype.submit') ||
+       args[0].includes('not wrapped in act'))
     ) {
       return;
     }

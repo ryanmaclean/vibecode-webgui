@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react';
-import { render, RenderOptions, RenderResult } from '@testing-library/react';
+import { render, RenderOptions, RenderResult, act, waitFor } from '@testing-library/react';
 import { useRouter, usePathname, useSearchParams } from 'next/navigation';
 import { UserPreferencesProvider } from '@/providers/UserPreferencesProvider';
 
@@ -118,10 +118,15 @@ export const renderWithProviders = (
     </AllProviders>
   );
 
-  const renderResult = render(ui, { wrapper: Wrapper, ...renderOptions });
+  let renderResult: RenderResult;
+
+  // Wrap render in act() to properly handle async state updates from providers
+  act(() => {
+    renderResult = render(ui, { wrapper: Wrapper, ...renderOptions });
+  });
 
   return {
-    ...renderResult,
+    ...renderResult!,
     mockRouter: router ? createMockRouter(router) : undefined,
   };
 };

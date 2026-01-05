@@ -253,17 +253,35 @@ global.Request = class Request {
     this.keepalive = init.keepalive || false;
     this.signal = init.signal;
     // Next.js specific properties
-    this.nextUrl = this._url;
-    this.cookies = {
-      get: jest.fn(() => null),
-      getAll: jest.fn(() => []),
-      has: jest.fn(() => false),
-      set: jest.fn(),
-      delete: jest.fn(),
-      clear: jest.fn(),
-    };
-    this.geo = {};
-    this.ip = '';
+    // Use Object.defineProperty for readonly properties in real NextRequest
+    // nextUrl should be a URL object, not a string
+    Object.defineProperty(this, 'nextUrl', {
+      value: new URL(this._url),
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'cookies', {
+      value: {
+        get: jest.fn(() => null),
+        getAll: jest.fn(() => []),
+        has: jest.fn(() => false),
+        set: jest.fn(),
+        delete: jest.fn(),
+        clear: jest.fn(),
+      },
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'geo', {
+      value: {},
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'ip', {
+      value: '',
+      writable: false,
+      enumerable: true
+    });
   }
   
   get url() {
@@ -314,4 +332,38 @@ if (!Response.json) {
 
 // Add NextRequest and NextResponse for Next.js compatibility
 global.NextRequest = global.Request;
-global.NextResponse = global.Response;
+
+// NextResponse extends Response with additional static methods
+class NextResponse extends Response {
+  static next(init) {
+    return new NextResponse(null, {
+      status: 200,
+      ...init,
+    });
+  }
+
+  static redirect(url, init) {
+    const urlObj = typeof url === 'string' ? new URL(url) : url;
+    return new NextResponse(null, {
+      status: 307,
+      ...init,
+      headers: {
+        Location: urlObj.toString(),
+        ...init?.headers,
+      },
+    });
+  }
+
+  static json(data, init) {
+    return new NextResponse(JSON.stringify(data), {
+      status: 200,
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        ...init?.headers,
+      },
+    });
+  }
+}
+
+global.NextResponse = NextResponse;

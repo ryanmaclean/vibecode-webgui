@@ -5,11 +5,28 @@
 
 const { execSync } = require('child_process');
 
-describe('Code-Server Extensions', () => {
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
+
+// Helper to check if docker is available
+function isDockerAvailable() {
+  try {
+    execSync('docker --version', { stdio: 'pipe' });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+(HAS_DOCKER ? describe : describe.skip)('Code-Server Extensions', () => {
   const IMAGE_NAME = 'vibecode/code-server:latest';
   let containerName;
 
   beforeAll(() => {
+    // Verify Docker is available
+    if (HAS_DOCKER && !isDockerAvailable()) {
+      throw new Error('Docker is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
+    }
+
     // Start a test container
     containerName = `code-server-test-${Date.now()}`;
     try {

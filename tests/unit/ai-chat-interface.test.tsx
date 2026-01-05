@@ -52,7 +52,7 @@ describe('AIChatInterface', () => {
     })
 
     it('applies custom className', async () => {
-      const { container } = render(<AIChatInterface {...defaultProps} />)
+      const { container } = renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       expect(container.firstChild).toHaveClass('test-class')
     })
@@ -258,7 +258,7 @@ describe('AIChatInterface', () => {
     it('shows "more" indicator when there are many context files', async () => {
       const manyFiles = ['file1.js', 'file2.js', 'file3.js', 'file4.js', 'file5.js']
 
-      render(<AIChatInterface {...defaultProps} initialContext={manyFiles} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} initialContext={manyFiles} />)
 
       expect(screen.getByText('+2 more')).toBeInTheDocument()
     })
@@ -330,7 +330,7 @@ describe('AIChatInterface', () => {
 
   describe('Responsive Design', () => {
     it('adapts to different screen sizes', async () => {
-      const { container } = render(<AIChatInterface {...defaultProps} />)
+      const { container } = renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Test that component has responsive classes
       expect(container.firstChild).toHaveClass('test-class')

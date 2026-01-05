@@ -3,12 +3,36 @@
  * Tests container health, resource usage, and performance metrics
  */
 
-const { exec } = require('child_process')
+const { exec, execSync } = require('child_process')
 const { promisify } = require('util')
 const execAsync = promisify(exec)
 
-describe('Container Health Tests', () => {
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
+
+// Helper to check if docker-compose is available
+function isDockerComposeAvailable() {
+  try {
+    execSync('docker-compose --version', { stdio: 'pipe' });
+    return true;
+  } catch {
+    try {
+      execSync('docker compose version', { stdio: 'pipe' });
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}
+
+(HAS_DOCKER ? describe : describe.skip)('Container Health Tests', () => {
   const HEALTH_CHECK_TIMEOUT = 30000
+
+  beforeAll(() => {
+    // Verify docker-compose is available
+    if (HAS_DOCKER && !isDockerComposeAvailable()) {
+      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
+    }
+  });
 
   describe('Container Health Status', () => {
     test('should report container health status', async () => {
@@ -199,7 +223,14 @@ describe('Container Health Tests', () => {
   })
 })
 
-describe('Performance and Load Tests', () => {
+(HAS_DOCKER ? describe : describe.skip)('Performance and Load Tests', () => {
+  beforeAll(() => {
+    // Verify docker-compose is available
+    if (HAS_DOCKER && !isDockerComposeAvailable()) {
+      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
+    }
+  });
+
   describe('Database Performance', () => {
     test('should handle basic database operations efficiently', async () => {
       try {

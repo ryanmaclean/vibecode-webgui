@@ -349,10 +349,12 @@ export class MonacoAgentAPI {
       imports.push(match[1])
     }
 
-    // Python imports
-    const pyImportRegex = /(?:from\s+([\w.]+)\s+)?import\s+([\w,\s*]+)/g
+    // Python imports - match both "import X" and "from X import Y" patterns
+    const pyImportRegex = /(?:^|\n)\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/gm
     while ((match = pyImportRegex.exec(content)) !== null) {
-      if (match[1]) imports.push(match[1])
+      // match[1] is for "from X import", match[2] is for "import X"
+      const moduleName = match[1] || match[2]
+      if (moduleName) imports.push(moduleName)
     }
 
     return imports

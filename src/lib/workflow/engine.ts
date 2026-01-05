@@ -27,6 +27,7 @@ import {
   AgentTaskConfig,
   ConditionConfig,
   ParallelConfig,
+  MergeConfig,
   LoopConfig,
   TransformConfig,
   DelayConfig,
@@ -343,7 +344,7 @@ export class WorkflowEngine extends EventEmitter {
         runningNodes.add(nodeId);
 
         try {
-          await this.executeNode(node, execution);
+          await this.executeNode(node, execution, definition.edges);
         } finally {
           runningNodes.delete(nodeId);
         }
@@ -364,7 +365,8 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeNode(
     node: WorkflowNode,
-    execution: WorkflowExecution
+    execution: WorkflowExecution,
+    edges?: WorkflowEdge[]
   ): Promise<void> {
     const nodeExec = execution.nodes.get(node.id)!;
     nodeExec.status = 'running';
@@ -390,6 +392,10 @@ export class WorkflowEngine extends EventEmitter {
 
         case 'parallel':
           output = await this.executeParallel(node.config as ParallelConfig, execution);
+          break;
+
+        case 'merge':
+          output = await this.executeMerge(node, execution, edges || []);
           break;
 
         case 'loop':
@@ -487,6 +493,46 @@ export class WorkflowEngine extends EventEmitter {
   ): Promise<unknown> {
     // Parallel execution handled by executeNodes
     return { parallel: true };
+  }
+
+  /**
+   * Execute merge node
+   */
+  private async executeMerge(
+    node: WorkflowNode,
+    execution: WorkflowExecution,
+    edges: WorkflowEdge[]
+  ): Promise<unknown> {
+    const config = node.config as MergeConfig;
+
+    // Get outputs from all incoming nodes
+    const dependencies = getNodeDependencies(node.id, edges);
+    const inputs: unknown[] = dependencies.map(depId => execution.context.nodes[depId]);
+
+    switch (config.strategy) {
+      case 'all':
+        // Return all inputs as an array
+        return { inputs, merged: true };
+
+      case 'any':
+        // Return first available input
+        return { input: inputs[0], merged: true };
+
+      case 'first':
+        // Return first input
+        return { input: inputs[0], merged: true };
+
+      case 'custom':
+        // Execute custom merge function
+        if (config.mergeFunction) {
+          const mergeFunc = new Function('inputs', `return ${config.mergeFunction}`);
+          return mergeFunc(inputs);
+        }
+        return { inputs, merged: true };
+
+      default:
+        return { inputs, merged: true };
+    }
   }
 
   /**
