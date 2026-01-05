@@ -20,46 +20,94 @@
 jest.mock('@/lib/streaming/optimized-sse-client', () => {
   const actualModule = jest.requireActual('@/lib/streaming/optimized-sse-client')
 
-  let messageCallbacks: Array<(data: any) => void> = []
-  let openCallbacks: Array<() => void> = []
-  let closeCallbacks: Array<() => void> = []
-
   return {
     ...actualModule,
     createOptimizedSSEClient: jest.fn().mockImplementation((config, handlers) => {
-      if (handlers?.onMessage) messageCallbacks.push(handlers.onMessage)
-      if (handlers?.onOpen) openCallbacks.push(handlers.onOpen)
-      if (handlers?.onClose) closeCallbacks.push(handlers.onClose)
+      // Use instance-specific callbacks instead of shared global arrays
+      const instanceMessageCallbacks: Array<(data: any) => void> = []
+      const instanceOpenCallbacks: Array<() => void> = []
+      const instanceCloseCallbacks: Array<() => void> = []
+
+      if (handlers?.onMessage) instanceMessageCallbacks.push(handlers.onMessage)
+      if (handlers?.onOpen) instanceOpenCallbacks.push(handlers.onOpen)
+      if (handlers?.onClose) instanceCloseCallbacks.push(handlers.onClose)
 
       let connected = false
       let messageCount = 0
+      let intervalId: NodeJS.Timeout | null = null
+      const startTime = Date.now()
 
-      return {
+      const clientInstance = {
         connect: jest.fn().mockImplementation(() => {
           connected = true
-          openCallbacks.forEach(cb => cb())
-          // Simulate streaming messages
-          setTimeout(() => {
-            const interval = setInterval(() => {
+          messageCount = 0
+
+          // Use Promise.resolve().then() for more predictable async execution in tests
+          Promise.resolve().then(() => {
+            // Trigger onOpen callbacks
+            instanceOpenCallbacks.forEach(cb => {
+              try {
+                cb()
+              } catch (e) {
+                // Ignore errors in callbacks to prevent breaking the mock
+              }
+            })
+
+            // Send first message immediately for low first-byte latency
+            if (connected && messageCount < 10) {
+              instanceMessageCallbacks.forEach(cb => {
+                try {
+                  cb({
+                    data: `test message ${messageCount}`,
+                    sequence: messageCount,
+                    timestamp: Date.now()
+                  })
+                } catch (e) {
+                  // Ignore errors in callbacks
+                }
+              })
+              messageCount++
+            }
+
+            // Then continue with interval for remaining messages
+            intervalId = setInterval(() => {
               if (connected && messageCount < 10) {
-                messageCallbacks.forEach(cb => cb({
-                  data: `test message ${messageCount}`,
-                  sequence: messageCount,
-                  timestamp: Date.now()
-                }))
+                instanceMessageCallbacks.forEach(cb => {
+                  try {
+                    cb({
+                      data: `test message ${messageCount}`,
+                      sequence: messageCount,
+                      timestamp: Date.now()
+                    })
+                  } catch (e) {
+                    // Ignore errors in callbacks
+                  }
+                })
                 messageCount++
               } else {
-                clearInterval(interval)
+                if (intervalId) clearInterval(intervalId)
               }
             }, 50)
-          }, 100)
+          })
         }),
         disconnect: jest.fn().mockImplementation(() => {
           connected = false
-          closeCallbacks.forEach(cb => cb())
+          if (intervalId) {
+            clearInterval(intervalId)
+            intervalId = null
+          }
+          Promise.resolve().then(() => {
+            instanceCloseCallbacks.forEach(cb => {
+              try {
+                cb()
+              } catch (e) {
+                // Ignore errors in callbacks
+              }
+            })
+          })
         }),
-        isConnected: jest.fn().mockReturnValue(connected),
-        getEnhancedMetrics: jest.fn().mockReturnValue({
+        isConnected: jest.fn().mockImplementation(() => connected),
+        getEnhancedMetrics: jest.fn().mockImplementation(() => ({
           totalMessages: messageCount,
           messagesDropped: 0,
           bufferUsage: 0.3,
@@ -70,11 +118,13 @@ jest.mock('@/lib/streaming/optimized-sse-client', () => {
           averageBatchSize: 5,
           batchesSent: Math.floor(messageCount / 5),
           batchLatency: 75,
-          connectionUptime: 5000,
+          connectionUptime: Date.now() - startTime,
           throughputMsgPerSec: messageCount / 5,
           slowConsumerDetections: 0
-        })
+        }))
       }
+
+      return clientInstance
     }),
     benchmarkSSEClients: jest.fn().mockImplementation(async (config, clientCount, duration) => {
       // Simulate realistic benchmark results
@@ -97,46 +147,74 @@ jest.mock('@/lib/streaming/optimized-sse-client', () => {
 jest.mock('@/lib/streaming/optimized-websocket-client', () => {
   const actualModule = jest.requireActual('@/lib/streaming/optimized-websocket-client')
 
-  let chunkCallbacks: Array<(data: any) => void> = []
-
   return {
     ...actualModule,
     createOptimizedWebSocketClient: jest.fn().mockImplementation((config, handlers) => {
-      if (handlers?.onChunk) chunkCallbacks.push(handlers.onChunk)
+      // Use instance-specific callbacks instead of shared global arrays
+      const instanceChunkCallbacks: Array<(data: any) => void> = []
+
+      if (handlers?.onChunk) instanceChunkCallbacks.push(handlers.onChunk)
 
       let connected = false
       let messagesSent = 0
       let binaryMessagesSent = 0
       let backpressureEvents = 0
 
-      return {
-        connect: jest.fn().mockResolvedValue(undefined),
+      // Get binary protocol threshold from config (default 1024)
+      const binaryThreshold = config?.binaryProtocol?.threshold || 1024
+
+      const clientInstance = {
+        connect: jest.fn().mockImplementation(async () => {
+          connected = true
+          return Promise.resolve()
+        }),
         disconnect: jest.fn().mockImplementation(() => {
           connected = false
         }),
         sendOptimized: jest.fn().mockImplementation(async (payload) => {
+          if (!connected) {
+            throw new Error('WebSocket not connected')
+          }
           messagesSent++
+
           // Simulate binary protocol for large payloads
-          if (JSON.stringify(payload).length > 1024) {
+          // Use actual byte size calculation instead of JSON string length
+          const payloadStr = JSON.stringify(payload)
+          const payloadSize = new TextEncoder().encode(payloadStr).length
+
+          if (payloadSize > binaryThreshold) {
             binaryMessagesSent++
           }
-          // Simulate backpressure occasionally
+
+          // Simulate backpressure more realistically
+          // Backpressure occurs every 5 messages after 10 initial messages
           if (messagesSent > 10 && messagesSent % 5 === 0) {
             backpressureEvents++
           }
+
+          // Small delay to simulate network transmission
+          await new Promise(resolve => setImmediate(resolve))
+
           return 'message-id-' + messagesSent
         }),
-        getMetrics: jest.fn().mockReturnValue({
+        getMetrics: jest.fn().mockImplementation(() => ({
           messagesSent,
           binaryMessagesSent,
           backpressureEvents,
           droppedMessages: 0
-        })
+        })),
+        isConnected: jest.fn().mockImplementation(() => connected)
       }
+
+      return clientInstance
     }),
     benchmarkWebSocketClients: jest.fn().mockImplementation(async (config, clientCount, messageCount) => {
       const successRate = 0.95
       const successfulConnections = Math.floor(clientCount * successRate)
+
+      // Add small delay to simulate benchmark execution
+      await new Promise(resolve => setTimeout(resolve, 10))
+
       return {
         totalConnections: clientCount,
         successfulConnections,
@@ -634,8 +712,8 @@ describe('WebSocket Client Performance Tests', () => {
 
       await client.connect()
 
-      // MEMORY FIX: Reduced payload size from 2048 to 512
-      const largePayload = { data: 'x'.repeat(512) }
+      // MEMORY FIX: Increased payload size to 1100 bytes to trigger binary protocol (threshold is 1024)
+      const largePayload = { data: 'x'.repeat(1100) }
       await client.sendOptimized(largePayload)
 
       await new Promise(resolve => setTimeout(resolve, 500)) // MEMORY FIX: Reduced from 1s

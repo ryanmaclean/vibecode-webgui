@@ -62,7 +62,7 @@ describe('Datadog Kubernetes configurations', () => {
       }
 
       expect(values.datadog?.confd).toBeDefined()
-      expect(values.datadog?.confd).toHaveProperty('redisdb.yaml')
+      expect(values.datadog?.confd?.['redisdb.yaml']).toBeDefined()
 
       expect(values.securityAgent?.runtime?.enabled).toBe(true)
       expect(values.securityAgent?.compliance?.enabled).toBe(true)

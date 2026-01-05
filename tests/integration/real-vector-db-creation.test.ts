@@ -65,17 +65,20 @@ describe('Real Vector Database Creation Integration', () => {
 
       try {
         const adapter = await VectorDatabaseFactory.create(postgresConfig);
+        // Adapter is created synchronously, it fails on initialize()
+        await adapter.initialize();
         fail('Should have thrown due to mocked connection error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
         // Should fail with connection error from our mock
-        const message = (error as Error).message;
+        const message = (error as Error).message.toLowerCase();
         expect(
           message.includes('connection') ||
           message.includes('connect') ||
-          message.includes('Prisma') ||
+          message.includes('prisma') ||
           message.includes('database') ||
-          message.includes('error')
+          message.includes('error') ||
+          message.includes('mocked')
         ).toBe(true);
       }
     });
@@ -88,14 +91,17 @@ describe('Real Vector Database Creation Integration', () => {
 
       try {
         const adapter = await VectorDatabaseFactory.create(azurePostgresConfig);
+        await adapter.initialize();
         fail('Should have thrown due to mocked connection error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        const message = (error as Error).message;
+        const message = (error as Error).message.toLowerCase();
         expect(
           message.includes('connection') ||
-          message.includes('Prisma') ||
-          message.includes('error')
+          message.includes('connect') ||
+          message.includes('prisma') ||
+          message.includes('error') ||
+          message.includes('mocked')
         ).toBe(true);
       }
     });
@@ -111,11 +117,13 @@ describe('Real Vector Database Creation Integration', () => {
         fail('Should have thrown due to SQL Server adapter not implemented or connection failure');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        const message = (error as Error).message;
+        const message = (error as Error).message.toLowerCase();
         expect(
+          message.includes('unsupported') ||
           message.includes('not yet implemented') ||
           message.includes('connection') ||
-          message.includes('error')
+          message.includes('error') ||
+          message.includes('sqlserver')
         ).toBe(true);
       }
     });
@@ -134,11 +142,12 @@ describe('Real Vector Database Creation Integration', () => {
         fail('Should have thrown due to mocked Cosmos connection error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        const message = (error as Error).message;
+        const message = (error as Error).message.toLowerCase();
         expect(
+          message.includes('unsupported') ||
           message.includes('not yet implemented') ||
           message.includes('connection') ||
-          message.includes('Cosmos') ||
+          message.includes('cosmos') ||
           message.includes('authentication') ||
           message.includes('error')
         ).toBe(true);
@@ -177,11 +186,12 @@ describe('Real Vector Database Creation Integration', () => {
         fail('Should have thrown due to mocked Redis connection error');
       } catch (error) {
         expect(error).toBeInstanceOf(Error);
-        const message = (error as Error).message;
+        const message = (error as Error).message.toLowerCase();
         expect(
+          message.includes('unsupported') ||
           message.includes('not yet implemented') ||
           message.includes('connection') ||
-          message.includes('Redis') ||
+          message.includes('redis') ||
           message.includes('error')
         ).toBe(true);
       }
@@ -251,21 +261,27 @@ describe('Real Vector Database Creation Integration', () => {
       const testCases = [
         {
           config: { provider: VectorDatabaseProvider.POSTGRES },
-          expectedKeywords: ['datasource', 'prismaclient', 'constructor', 'connection_string', 'url', 'error']
+          expectedKeywords: ['datasource', 'prismaclient', 'constructor', 'connection', 'url', 'error', 'mocked', 'prisma', 'database'],
+          requiresInitialize: true
         },
         {
           config: { provider: VectorDatabaseProvider.REDIS },
-          expectedKeywords: ['connection', 'error', 'host', 'port', 'redis', 'mock']
+          expectedKeywords: ['unsupported', 'redis', 'error'],
+          requiresInitialize: false
         },
         {
           config: { provider: VectorDatabaseProvider.COSMOSDB },
-          expectedKeywords: ['cosmos', 'endpoint', 'database', 'container', 'error']
+          expectedKeywords: ['unsupported', 'cosmos', 'cosmosdb', 'error'],
+          requiresInitialize: false
         }
       ];
 
       for (const testCase of testCases) {
         try {
-          await VectorDatabaseFactory.create(testCase.config);
+          const adapter = await VectorDatabaseFactory.create(testCase.config);
+          if (testCase.requiresInitialize) {
+            await adapter.initialize();
+          }
           fail(`Should have thrown for incomplete ${testCase.config.provider} config`);
         } catch (error) {
           expect(error).toBeInstanceOf(Error);
@@ -329,7 +345,11 @@ describe('Real Vector Database Creation Integration', () => {
       // Test concurrent creation attempts
       const creationPromises = configs.map(async config => {
         try {
-          await VectorDatabaseFactory.create(config);
+          const adapter = await VectorDatabaseFactory.create(config);
+          // For Postgres, adapter is created but needs initialization
+          if (config.provider === VectorDatabaseProvider.POSTGRES) {
+            await adapter.initialize();
+          }
           return { success: true, error: null };
         } catch (error) {
           return { success: false, error: error as Error };

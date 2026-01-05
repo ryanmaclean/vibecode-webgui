@@ -7,7 +7,7 @@
  * Staff Engineer Implementation - Kubernetes deployment validation
  */
 
-const { describe, test, expect, beforeAll, afterAll, jest } = require('@jest/globals');
+const { describe, test, expect, beforeAll, afterAll } = require('@jest/globals');
 
 // Mock child_process to avoid actual kubectl/kind calls
 jest.mock('child_process');

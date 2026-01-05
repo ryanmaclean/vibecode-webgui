@@ -6,12 +6,15 @@
 // Import jest globals
 import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
-// Mock fetch for health check tests
-const healthCheckData = {
-  status: 'healthy',
-  timestamp: new Date().toISOString(),
-  checks: {
-    database: {
+// Mock next-auth before importing anything that uses it
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn()
+}));
+
+// Mock monitoring module
+jest.mock('@/lib/monitoring', () => ({
+  monitoring: {
+    checkDatabase: jest.fn().mockResolvedValue({
       status: 'healthy',
       responseTime: 5,
       details: {
@@ -19,81 +22,57 @@ const healthCheckData = {
         poolSize: 10,
         activeConnections: 2
       }
-    },
-    redis: {
+    }),
+    checkValkey: jest.fn().mockResolvedValue({
       status: 'healthy',
       responseTime: 3,
       details: {
         connected: true,
         memoryUsage: '1.2MB'
       }
-    },
-    ai: {
+    }),
+    checkAIService: jest.fn().mockResolvedValue({
       status: 'healthy',
       responseTime: 10,
       details: {
         provider: 'openrouter',
         available: true
       }
-    }
+    }),
+    trackMetrics: jest.fn().mockResolvedValue(undefined),
+    submitEvent: jest.fn().mockResolvedValue(undefined)
   }
-};
+}));
 
-const mockFetch = jest.fn((url) => {
-  if (url.toString().includes('/api/health')) {
-    // Create a response object that mimics the Response interface
-    const mockResponse = {
-      status: 200,
-      ok: true,
-      statusText: 'OK',
-      headers: new Headers({ 'content-type': 'application/json' }),
-      json: async () => healthCheckData,
-      text: async () => JSON.stringify(healthCheckData),
-      blob: async () => new Blob([JSON.stringify(healthCheckData)]),
-      arrayBuffer: async () => new ArrayBuffer(0),
-      formData: async () => new FormData(),
-      clone: function() { return this; },
-      body: null,
-      bodyUsed: false,
-      redirected: false,
-      type: 'basic' as ResponseType,
-      url: url.toString()
-    };
-    return Promise.resolve(mockResponse as Response);
-  }
-  return Promise.reject(new Error('Not found'));
-}) as any;
-
-global.fetch = mockFetch;
+// Import the route handler after mocks are set up
+import { GET } from '@/app/api/health/route';
+import { NextRequest } from 'next/server';
 
 describe('API Health Check', () => {
   // Set a longer timeout for these tests since they involve network requests
   jest.setTimeout(30000);
 
-  beforeEach(() => {
-    // Ensure mock is set before each test
-    (global as any).fetch = mockFetch;
-  });
-
   it('should return a healthy status for all critical services', async () => {
-    // Use the mock directly
-    const response = await mockFetch('http://localhost:3000/api/health');
+    // Create a mock request
+    const request = new NextRequest('http://localhost:3000/api/health');
 
-    // The mock should return a valid response
+    // Call the API route handler directly
+    const response = await GET(request);
+
+    // The handler should return a valid response
     expect(response.status).toBe(200);
-    expect(response.ok).toBe(true);
 
     const data = await response.json();
 
-    // Check the overall status from mock data
+    // Check the overall status
     expect(data.status).toBe('healthy');
 
-    // Verify each critical dependency from mock data
+    // Verify each critical dependency
     expect(data.checks).toBeDefined();
     expect(data.checks.database).toBeDefined();
     expect(data.checks.database.status).toBe('healthy');
-    expect(data.checks.redis).toBeDefined();
-    expect(data.checks.redis.status).toBe('healthy');
+    expect(data.checks.valkey).toBeDefined();
+    expect(data.checks.valkey.status).toBe('healthy');
     expect(data.checks.ai).toBeDefined();
     expect(data.checks.ai.status).toBe('healthy');
   });

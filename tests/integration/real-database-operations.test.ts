@@ -21,7 +21,9 @@ class MockPostgresClient {
     column: string;
     foreignTable: string;
     foreignColumn: string;
+    onDelete?: string;
   }> = [];
+  private uniqueConstraints: Map<string, Set<string>> = new Map();
   private connected: boolean = false;
 
   constructor(config?: any) {
@@ -39,11 +41,14 @@ class MockPostgresClient {
     this.indexes.add('idx_projects_owner');
     this.indexes.add('idx_files_project');
 
-    // Create foreign keys
+    // Create foreign keys with cascade rules
     this.foreignKeys.push(
-      { table: 'projects', column: 'owner_id', foreignTable: 'users', foreignColumn: 'id' },
-      { table: 'files', column: 'project_id', foreignTable: 'projects', foreignColumn: 'id' }
+      { table: 'projects', column: 'owner_id', foreignTable: 'users', foreignColumn: 'id', onDelete: 'CASCADE' },
+      { table: 'files', column: 'project_id', foreignTable: 'projects', foreignColumn: 'id', onDelete: 'CASCADE' }
     );
+
+    // Create unique constraints
+    this.uniqueConstraints.set('users', new Set(['email']));
   }
 
   async connect() {
@@ -56,6 +61,9 @@ class MockPostgresClient {
   }
 
   async query(sql: string, params?: any[]): Promise<any> {
+    // Normalize SQL - remove errant semicolons
+    sql = sql.replace(/^\s*;/, ''); // Remove leading semicolons
+    sql = sql.replace(/;\s*(VALUES|RETURNING|WHERE)/gi, ' $1'); // Remove semicolons before keywords
     const sqlLower = sql.toLowerCase().trim();
 
     // Handle information_schema queries
@@ -90,6 +98,68 @@ class MockPostgresClient {
         throw new Error(`Table ${tableName} does not exist`);
       }
 
+      const table = this.tables.get(tableName)!;
+      const hasReturning = sqlLower.includes('returning');
+
+      // Handle bulk insert with multiple VALUES - look for VALUES followed by multiple tuples
+      const valuesMatch = sql.match(/VALUES\s+(.*?)(?:\s+RETURNING|$)/is);
+      const valuesSection = valuesMatch ? valuesMatch[1].trim() : '';
+      const isBulkInsert = /\)\s*,\s*\(/.test(valuesSection);
+
+      if (sqlLower.includes('values') && isBulkInsert) {
+        // Extract individual value tuples for bulk insert
+        // Split by ),( to separate tuples, then clean up parentheses
+        let tuples = valuesSection.split(/\)\s*,\s*\(/);
+        tuples = tuples.map((tuple, idx) => {
+          // Add back parentheses that were removed by split
+          if (idx === 0) return tuple; // First tuple starts with (
+          if (idx === tuples.length - 1) return tuple; // Last tuple ends with )
+          return tuple;
+        });
+
+        const records: any[] = [];
+
+        // Bulk insert - extract values from SQL
+        for (let i = 0; i < tuples.length; i++) {
+          const id = `${Date.now()}-${i}-${Math.random()}`;
+          const record: any = { id };
+
+          // For bulk users insert, parse from the SQL VALUES clause
+          const valuesStr = tuples[i];
+          if (tableName === 'users') {
+            const match = valuesStr.match(/'([^']+)'/g);
+            if (match && match.length >= 4) {
+              record.email = match[0].replace(/'/g, '');
+              record.name = match[1].replace(/'/g, '');
+              record.provider = match[2].replace(/'/g, '');
+              record.provider_id = match[3].replace(/'/g, '');
+              record.created_at = new Date();
+              record.updated_at = new Date();
+            }
+          }
+
+          table.set(id, record);
+          records.push(record);
+        }
+
+        return {
+          rows: hasReturning ? records : [],
+          rowCount: records.length
+        };
+      }
+
+      // Check unique constraints
+      if (this.uniqueConstraints.has(tableName) && params) {
+        const constraints = this.uniqueConstraints.get(tableName)!;
+        if (constraints.has('email') && tableName === 'users') {
+          const email = params[0];
+          const existingUser = Array.from(table.values()).find((u: any) => u.email === email);
+          if (existingUser) {
+            throw new Error('duplicate key value violates unique constraint');
+          }
+        }
+      }
+
       // Check foreign key constraints
       if (tableName === 'projects' && params) {
         const ownerId = params[2]; // owner_id is the 3rd param
@@ -99,7 +169,6 @@ class MockPostgresClient {
         }
       }
 
-      const table = this.tables.get(tableName)!;
       const id = `${Date.now()}-${Math.random()}`;
       const record: any = { id };
 
@@ -123,7 +192,7 @@ class MockPostgresClient {
       table.set(id, record);
 
       return {
-        rows: [record],
+        rows: hasReturning ? [record] : [],
         rowCount: 1
       };
     }
@@ -137,12 +206,67 @@ class MockPostgresClient {
       }
 
       const table = this.tables.get(tableName)!;
-      const id = params?.[0];
-      if (table.has(id)) {
-        table.delete(id);
-        return { rows: [], rowCount: 1 };
+
+      // Handle DELETE with WHERE clause
+      if (sqlLower.includes('where')) {
+        if (sqlLower.includes('where id =')) {
+          const id = params?.[0];
+          if (table.has(id)) {
+            // Handle cascading deletes
+            if (tableName === 'users') {
+              // Delete associated projects
+              const projectsTable = this.tables.get('projects')!;
+              const projectsToDelete = Array.from(projectsTable.entries())
+                .filter(([, project]) => project.owner_id === id)
+                .map(([projectId]) => projectId);
+
+              projectsToDelete.forEach(projectId => projectsTable.delete(projectId));
+            }
+
+            table.delete(id);
+            return { rows: [], rowCount: 1 };
+          }
+        } else if (sqlLower.includes('where email =')) {
+          const email = params?.[0];
+          const entries = Array.from(table.entries());
+          const found = entries.find(([, record]) => record.email === email);
+          if (found) {
+            table.delete(found[0]);
+            return { rows: [], rowCount: 1 };
+          }
+        } else if (sqlLower.includes('any(')) {
+          // Handle DELETE WHERE id = ANY($1)
+          const ids = params?.[0] || [];
+          let deleted = 0;
+          ids.forEach((id: string) => {
+            if (table.has(id)) {
+              table.delete(id);
+              deleted++;
+            }
+          });
+          return { rows: [], rowCount: deleted };
+        }
       }
+
       return { rows: [], rowCount: 0 };
+    }
+
+    // Handle SELECT with WHERE
+    if (sqlLower.startsWith('select') && sqlLower.includes('where')) {
+      const match = sql.match(/from (\w+)/i);
+      const tableName = match?.[1];
+      if (tableName && this.tables.has(tableName)) {
+        const table = this.tables.get(tableName)!;
+        const id = params?.[0];
+
+        if (sqlLower.includes('where id =')) {
+          const record = table.get(id);
+          return {
+            rows: record ? [record] : [],
+            rowCount: record ? 1 : 0
+          };
+        }
+      }
     }
 
     // Handle SELECT with JOIN
@@ -183,10 +307,11 @@ class MockPostgresClient {
     // Handle EXPLAIN queries
     if (sqlLower.startsWith('explain')) {
       const emailIndexUsed = sql.includes('email');
+      const queryPlan = emailIndexUsed
+        ? 'Index Scan using idx_users_email on users'
+        : 'Seq Scan on users';
       return {
-        rows: emailIndexUsed
-          ? [{ 'QUERY PLAN': 'Index Scan using idx_users_email on users' }]
-          : [{ 'QUERY PLAN': 'Seq Scan on users' }]
+        rows: [{ 'QUERY PLAN': queryPlan }]
       };
     }
 
@@ -423,8 +548,7 @@ class MockPostgresClient {
       // Test multiple concurrent connections
       const connections = await Promise.all(
         Array.from({ length: 10 }, async () => {
-          const { Client } = require('pg');
-          const testClient = new Client({
+          const testClient = new MockPostgresClient({
             connectionString: process.env.DATABASE_URL,
             connectionTimeoutMillis: 5000,
           });
