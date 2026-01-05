@@ -41,7 +41,6 @@ const createModelMock = () => ({
         email: args.data.email,
         name: args.data.name || null
       });
-      console.log('[MOCK] User created:', created.id, args.data.email, 'Total users:', usersStore.length);
     }
 
     return Promise.resolve(created);
@@ -114,7 +113,6 @@ const createPrismaClientMock = () => ({
           revoked_at: null,
           updated_at: new Date()
         }
-        console.log('[MOCK] Updated workspace member:', userId, workspaceId, role);
       } else {
         // Insert new
         workspaceMembersStore.push({
@@ -129,13 +127,32 @@ const createPrismaClientMock = () => ({
           created_at: new Date(),
           updated_at: new Date()
         })
-        console.log('[MOCK] Added workspace member:', userId, workspaceId, role, 'Total members:', workspaceMembersStore.length);
       }
       return Promise.resolve(1)
     }
 
+    // Mock UPDATE workspace_members (role change) - check this FIRST before revoke
+    if (queryStr.includes('UPDATE workspace_members') && queryStr.includes('SET role')) {
+      // Query format: UPDATE workspace_members SET role = ${newRole}, updated_at = CURRENT_TIMESTAMP WHERE user_id = ${userId} AND workspace_id = ${workspaceId}
+      // So params are: [newRole, userId, workspaceId]
+      const newRole = params[0]
+      const userId = params[1]
+      const workspaceId = params[2]
+
+      const member = workspaceMembersStore.find(
+        m => m.user_id === userId && m.workspace_id === workspaceId && !m.revoked_at
+      )
+
+      if (member) {
+        member.role = newRole
+        member.updated_at = new Date()
+        return Promise.resolve(1)
+      }
+      return Promise.resolve(0)
+    }
+
     // Mock UPDATE workspace_members (revoke)
-    if (queryStr.includes('UPDATE workspace_members') && queryStr.includes('revoked_at')) {
+    if (queryStr.includes('UPDATE workspace_members') && queryStr.includes('SET revoked_at')) {
       const userId = params[0]
       const workspaceId = params[1]
 
@@ -147,28 +164,6 @@ const createPrismaClientMock = () => ({
         member.revoked_at = new Date()
         return Promise.resolve(1)
       }
-      return Promise.resolve(0)
-    }
-
-    // Mock UPDATE workspace_members (role change)
-    if (queryStr.includes('UPDATE workspace_members') && queryStr.includes('role')) {
-      const newRole = params[0]
-      const userId = params[1]
-      const workspaceId = params[2]
-
-      console.log('[MOCK] Updating role:', newRole, 'for user:', userId, 'in workspace:', workspaceId);
-
-      const member = workspaceMembersStore.find(
-        m => m.user_id === userId && m.workspace_id === workspaceId && !m.revoked_at
-      )
-
-      if (member) {
-        console.log('[MOCK] Found member, updating from', member.role, 'to', newRole);
-        member.role = newRole
-        member.updated_at = new Date()
-        return Promise.resolve(1)
-      }
-      console.log('[MOCK] Member not found for update');
       return Promise.resolve(0)
     }
 
@@ -192,31 +187,8 @@ const createPrismaClientMock = () => ({
       ? query.filter(s => s && s.trim()).join(' ')
       : String(query);
 
-    // Mock SELECT FROM workspace_members (single user access check)
-    if (queryStr.includes('FROM workspace_members') && queryStr.includes('user_id')) {
-      const userId = params[0]
-      const workspaceId = params[1]
-
-      console.log('[MOCK] Checking access for user:', userId, 'workspace:', workspaceId, 'Members in store:', workspaceMembersStore.length);
-
-      const member = workspaceMembersStore.find(
-        m => m.user_id === userId && m.workspace_id === workspaceId && !m.revoked_at
-      )
-
-      if (member) {
-        console.log('[MOCK] Found member with role:', member.role);
-        return Promise.resolve([{
-          role: member.role,
-          permissions: member.permissions,
-          revoked_at: member.revoked_at
-        }])
-      }
-      console.log('[MOCK] No member found');
-      return Promise.resolve([])
-    }
-
-    // Mock SELECT FROM workspace_members JOIN users (list members)
-    if (queryStr.includes('FROM workspace_members wm') && queryStr.includes('JOIN users')) {
+    // Mock SELECT FROM workspace_members JOIN users (list members) - check this FIRST
+    if (queryStr.includes('wm.user_id') && queryStr.includes('JOIN users')) {
       const workspaceId = params[0]
 
       const members = workspaceMembersStore
@@ -234,6 +206,25 @@ const createPrismaClientMock = () => ({
         })
 
       return Promise.resolve(members)
+    }
+
+    // Mock SELECT FROM workspace_members (single user access check)
+    if (queryStr.includes('FROM workspace_members') && queryStr.includes('WHERE user_id')) {
+      const userId = params[0]
+      const workspaceId = params[1]
+
+      const member = workspaceMembersStore.find(
+        m => m.user_id === userId && m.workspace_id === workspaceId && !m.revoked_at
+      )
+
+      if (member) {
+        return Promise.resolve([{
+          role: member.role,
+          permissions: member.permissions,
+          revoked_at: member.revoked_at
+        }])
+      }
+      return Promise.resolve([])
     }
 
     return Promise.resolve([])
@@ -281,7 +272,6 @@ const createPrismaClientMock = () => ({
           created_at: new Date(),
           updated_at: new Date()
         });
-        console.log('[MOCK] Workspace created:', created.id, 'Owner:', args.data.user_id, 'workspace_members:', workspaceMembersStore.length);
       }
 
       return Promise.resolve(created);

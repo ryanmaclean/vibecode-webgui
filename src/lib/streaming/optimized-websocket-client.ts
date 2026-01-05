@@ -300,6 +300,12 @@ export class OptimizedWebSocketClient {
    * Disconnect from server
    */
   disconnect(): void {
+    // MEMORY FIX: Clear performance monitoring interval
+    if (this.perfMonitoringInterval) {
+      clearInterval(this.perfMonitoringInterval)
+      this.perfMonitoringInterval = null
+    }
+
     this.baseClient.disconnect()
   }
 
@@ -565,8 +571,11 @@ export class OptimizedWebSocketClient {
     this.recordMetric('bytes_received', chunkSize)
   }
 
+  private perfMonitoringInterval: NodeJS.Timeout | null = null
+
   private startPerformanceMonitoring(): void {
-    setInterval(() => {
+    // MEMORY FIX: Store interval reference so it can be cleared
+    this.perfMonitoringInterval = setInterval(() => {
       const metrics = this.getMetrics()
 
       if (this.config.performanceMonitoring?.exportToPrometheus) {

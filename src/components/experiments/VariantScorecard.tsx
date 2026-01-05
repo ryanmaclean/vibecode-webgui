@@ -96,7 +96,7 @@ export function VariantScorecard({
             {metricName.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
           </CardTitle>
           {statistics.significant && (
-            <Badge variant="default" className="bg-green-600">
+            <Badge variant="default" className="bg-green-700">
               Significant
             </Badge>
           )}

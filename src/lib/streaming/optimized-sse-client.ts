@@ -352,6 +352,12 @@ export class OptimizedSSEClient {
       this.batchTimer = null
     }
 
+    // MEMORY FIX: Clear performance monitoring interval
+    if (this.perfMonitoringInterval) {
+      clearInterval(this.perfMonitoringInterval)
+      this.perfMonitoringInterval = null
+    }
+
     this.baseClient.disconnect()
   }
 
@@ -612,9 +618,12 @@ export class OptimizedSSEClient {
     this.recordMetric('message_size_bytes', messageSize)
   }
 
+  private perfMonitoringInterval: NodeJS.Timeout | null = null
+
   private startPerformanceMonitoring(): void {
+    // MEMORY FIX: Store interval reference so it can be cleared
     // Reset throughput window every second
-    setInterval(() => {
+    this.perfMonitoringInterval = setInterval(() => {
       const metrics = this.getEnhancedMetrics()
 
       // Export to Prometheus if enabled

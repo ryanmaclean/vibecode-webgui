@@ -20,8 +20,10 @@ const colors = {
   'white': '#ffffff',
   'blue-600': '#2563eb',
   'green-600': '#16a34a',
+  'green-700': '#15803d',
   'purple-600': '#9333ea',
   'orange-600': '#ea580c',
+  'orange-700': '#c2410c',
 }
 
 /**
@@ -107,8 +109,8 @@ describe('Color Contrast Accessibility Tests', () => {
       expect(meetsWCAGAA(ratio)).toBe(true)
     })
 
-    it('should have sufficient contrast for white text on green-600 background', () => {
-      const ratio = getContrastRatio(colors.white, colors['green-600'])
+    it('should have sufficient contrast for white text on green-700 background', () => {
+      const ratio = getContrastRatio(colors.white, colors['green-700'])
       expect(ratio).toBeGreaterThanOrEqual(4.5)
       expect(meetsWCAGAA(ratio)).toBe(true)
     })
@@ -119,8 +121,8 @@ describe('Color Contrast Accessibility Tests', () => {
       expect(meetsWCAGAA(ratio)).toBe(true)
     })
 
-    it('should have sufficient contrast for white text on orange-600 background', () => {
-      const ratio = getContrastRatio(colors.white, colors['orange-600'])
+    it('should have sufficient contrast for white text on orange-700 background', () => {
+      const ratio = getContrastRatio(colors.white, colors['orange-700'])
       expect(ratio).toBeGreaterThanOrEqual(4.5)
       expect(meetsWCAGAA(ratio)).toBe(true)
     })
@@ -148,6 +150,18 @@ describe('Color Contrast Accessibility Tests', () => {
 
     it('should fail WCAG AA for gray-300 text on white background', () => {
       const ratio = getContrastRatio(colors['gray-300'], colors.white)
+      expect(meetsWCAGAA(ratio)).toBe(false)
+    })
+
+    it('should fail WCAG AA for white text on green-600 background', () => {
+      const ratio = getContrastRatio(colors.white, colors['green-600'])
+      expect(ratio).toBeLessThan(4.5)
+      expect(meetsWCAGAA(ratio)).toBe(false)
+    })
+
+    it('should fail WCAG AA for white text on orange-600 background', () => {
+      const ratio = getContrastRatio(colors.white, colors['orange-600'])
+      expect(ratio).toBeLessThan(4.5)
       expect(meetsWCAGAA(ratio)).toBe(false)
     })
   })

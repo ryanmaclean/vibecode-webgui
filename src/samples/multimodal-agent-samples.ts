@@ -538,21 +538,21 @@ Expected AI Response:
       throw new Error(`Sample ${sampleId} not found`);
     }
 
-    // Debug log removed
-    // Debug log removed
-    // Debug log removed
+    console.log(`\n🚀 Running sample: ${sample.title}`);
+    console.log(`📋 Category: ${sample.category} | Complexity: ${sample.complexity}`);
+    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s\n`);
 
     const startTime = Date.now();
-    
+
     try {
       const result = await this.agent.processMultimodalInput(sample.inputs);
-      
+
       const duration = Date.now() - startTime;
-      
-      // Debug log removed
-      // Debug log removed
-      // Debug log removed}`);
-      
+
+      console.log(`\n✅ Sample completed in ${(duration / 1000).toFixed(2)}s`);
+      console.log(`📊 Confidence: ${result.metadata.confidence}`);
+      console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
+
       return {
         sample,
         result,

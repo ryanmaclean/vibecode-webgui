@@ -112,13 +112,22 @@ function getNodeDependencies(nodeId: string, edges: WorkflowEdge[]): string[] {
 function areDependenciesSatisfied(
   nodeId: string,
   edges: WorkflowEdge[],
-  nodeExecutions: Map<string, NodeExecution>
+  nodeExecutions: Map<string, NodeExecution>,
+  nodes: WorkflowNode[]
 ): boolean {
   const dependencies = getNodeDependencies(nodeId, edges);
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-    return depExec?.status === 'completed';
+    if (depExec?.status === 'completed') {
+      return true;
+    }
+    // Allow failed dependencies if they have continueOnError enabled
+    if (depExec?.status === 'failed') {
+      const node = nodes.find(n => n.id === depId);
+      return node?.continueOnError === true;
+    }
+    return false;
   });
 }
 
@@ -161,7 +170,7 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-    const contextVars = { ...context.input, ...context.globals, nodes: context.nodes };
+    const contextVars = { input: context.input, ...context.globals, nodes: context.nodes };
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -329,7 +338,7 @@ export class WorkflowEngine extends EventEmitter {
       // Find nodes ready to execute (dependencies satisfied, under concurrency limit)
       const readyNodes = Array.from(pendingNodes).filter(nodeId => {
         if (runningNodes.size >= maxConcurrency) return false;
-        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes);
+        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes, definition.nodes);
       });
 
       if (readyNodes.length === 0 && runningNodes.size === 0) {

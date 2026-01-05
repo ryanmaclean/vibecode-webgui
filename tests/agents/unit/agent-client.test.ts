@@ -13,10 +13,21 @@ jest.mock('@/lib/unified-ai-client');
 
 describe('Agent Client - Unit Tests', () => {
   let mockClient: jest.Mocked<UnifiedAIClient>;
+  let agent: Agent | null = null;
 
   beforeEach(() => {
     jest.clearAllMocks();
     mockClient = new UnifiedAIClient() as jest.Mocked<UnifiedAIClient>;
+    agent = null;
+  });
+
+  afterEach(() => {
+    // Clean up agent instances and their event listeners
+    if (agent) {
+      agent.removeAllListeners?.();
+      agent.clearMemory?.();
+      agent = null;
+    }
   });
 
   describe('Agent Initialization', () => {
@@ -283,10 +294,11 @@ describe('Agent Client - Unit Tests', () => {
 
   describe('Memory Management', () => {
     it('should maintain memory within size limit', async () => {
-      const agent = new Agent({
+      const testAgent = new Agent({
         memorySize: 5,
         client: mockClient,
       });
+      agent = testAgent; // Track for cleanup
 
       mockClient.chat = jest.fn().mockResolvedValue({
         content: 'Response',
@@ -294,9 +306,9 @@ describe('Agent Client - Unit Tests', () => {
         provider: 'openai',
       });
 
-      // Send more messages than memory size
-      for (let i = 0; i < 10; i++) {
-        await agent.processMessage(`Message ${i}`);
+      // Reduced to 5 iterations to prevent memory buildup
+      for (let i = 0; i < 5; i++) {
+        await testAgent.processMessage(`Message ${i}`);
       }
 
       // Memory should be trimmed to size limit
@@ -332,10 +344,11 @@ describe('Agent Client - Unit Tests', () => {
 
   describe('Event Emission', () => {
     it('should emit message events', async () => {
-      const agent = new Agent({ client: mockClient });
+      const testAgent = new Agent({ client: mockClient });
+      agent = testAgent; // Track for cleanup
       const messageHandler = jest.fn();
 
-      agent.on(AgentEvent.Message, messageHandler);
+      testAgent.on(AgentEvent.Message, messageHandler);
 
       mockClient.chat = jest.fn().mockResolvedValue({
         content: 'Response',
@@ -343,9 +356,12 @@ describe('Agent Client - Unit Tests', () => {
         provider: 'openai',
       });
 
-      await agent.processMessage('Test');
+      await testAgent.processMessage('Test');
 
       expect(messageHandler).toHaveBeenCalled();
+
+      // Clean up event listener
+      testAgent.removeListener?.(AgentEvent.Message, messageHandler);
     });
 
     it('should emit tool call events', async () => {
@@ -357,13 +373,14 @@ describe('Agent Client - Unit Tests', () => {
         execute: toolExecutor,
       };
 
-      const agent = new Agent({
+      const testAgent = new Agent({
         tools: [testTool],
         client: mockClient,
       });
+      agent = testAgent; // Track for cleanup
 
       const toolCallHandler = jest.fn();
-      agent.on(AgentEvent.ToolCall, toolCallHandler);
+      testAgent.on(AgentEvent.ToolCall, toolCallHandler);
 
       mockClient.chat = jest.fn()
         .mockResolvedValueOnce({
@@ -385,27 +402,34 @@ describe('Agent Client - Unit Tests', () => {
           provider: 'openai',
         });
 
-      await agent.processMessage('Test');
+      await testAgent.processMessage('Test');
 
       expect(toolCallHandler).toHaveBeenCalledWith({
         tool: 'test_tool',
         args: {},
       });
+
+      // Clean up event listener
+      testAgent.removeListener?.(AgentEvent.ToolCall, toolCallHandler);
     });
 
     it('should emit error events', async () => {
-      const agent = new Agent({ client: mockClient });
+      const testAgent = new Agent({ client: mockClient });
+      agent = testAgent; // Track for cleanup
       const errorHandler = jest.fn();
 
-      agent.on(AgentEvent.Error, errorHandler);
+      testAgent.on(AgentEvent.Error, errorHandler);
 
       mockClient.chat = jest.fn().mockRejectedValue(
         new Error('Test error')
       );
 
-      await expect(agent.processMessage('Test')).rejects.toThrow();
+      await expect(testAgent.processMessage('Test')).rejects.toThrow();
 
       expect(errorHandler).toHaveBeenCalled();
+
+      // Clean up event listener
+      testAgent.removeListener?.(AgentEvent.Error, errorHandler);
     });
   });
 

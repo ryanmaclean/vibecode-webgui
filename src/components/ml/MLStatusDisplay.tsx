@@ -42,7 +42,7 @@ export default function MLStatusDisplay() {
           <button
             onClick={handleInitialize}
             disabled={isInitLoading}
-            className="px-3 py-1 text-xs bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            className="px-3 py-1 text-xs bg-green-700 text-white rounded hover:bg-green-800 disabled:opacity-50"
           >
             {isInitLoading ? 'Initializing...' : 'Initialize'}
           </button>
