@@ -145,69 +145,40 @@ download_valkey() {
     mkdir -p "$valkey_dir/bin"
     cd "$valkey_dir"
 
-    # Valkey is not available in Alpine repos, extract from pre-built image
-    local valkey_image="${SCRIPT_DIR}/valkey-with-datadog.cpio.gz"
+    # Download from Alpine Linux edge repository (ARM64)
+    local valkey_version="9.0.0-r1"
+    local apk_url="https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/valkey-${valkey_version}.apk"
 
-    if [ -f "$valkey_image" ]; then
-        info "Extracting Valkey from pre-built image..."
-        local temp_extract="/tmp/valkey-extract-$$"
-        mkdir -p "$temp_extract"
+    info "Downloading Valkey from Alpine Linux..."
+    info "URL: $apk_url"
 
-        (cd "$temp_extract" && gunzip -c "$valkey_image" | cpio -idm 2>/dev/null)
+    wget -q --show-progress "$apk_url" -O valkey.apk || error "Failed to download Valkey"
 
-        # Copy Valkey binaries (check multiple possible locations, prioritize usr/local/bin)
-        local valkey_found=0
-        for valkey_path in "$temp_extract/usr/local/bin/valkey-server" "$temp_extract/bin/valkey-server" "$temp_extract/usr/bin/valkey-server"; do
-            if [ -f "$valkey_path" ]; then
-                # Verify it's an ARM64 ELF binary
-                if file "$valkey_path" | grep -q "ELF.*aarch64"; then
-                    cp "$valkey_path" "$valkey_dir/bin/valkey-server"
-                    chmod +x "$valkey_dir/bin/valkey-server"
-                    # Try to find valkey-cli
-                    local valkey_dir_path=$(dirname "$valkey_path")
-                    [ -f "$valkey_dir_path/valkey-cli" ] && cp "$valkey_dir_path/valkey-cli" "$valkey_dir/bin/" 2>/dev/null || true
-                    valkey_found=1
-                    info "Found Valkey ARM64 binary at: $valkey_path"
-                    break
-                else
-                    warn "File at $valkey_path is not an ARM64 ELF binary, skipping..."
-                fi
-            fi
-        done
+    # Extract APK (APK files are tar.gz archives)
+    tar xzf valkey.apk 2>/dev/null || true
 
-        if [ $valkey_found -eq 0 ]; then
-            rm -rf "$temp_extract"
-            warn "Valkey binary not found or not ARM64 ELF - skipping Valkey (OpenVSCode will still work)"
-            mkdir -p "$valkey_dir/bin"
-            touch "$valkey_dir/bin/.valkey-skipped"
-            log ""
-            return 0
-        fi
-
-        # Copy any required libraries
-        if [ -d "$temp_extract/lib" ]; then
-            mkdir -p "$valkey_dir/lib"
-            cp -r "$temp_extract/lib/"* "$valkey_dir/lib/" 2>/dev/null || true
-        fi
-        if [ -d "$temp_extract/usr/lib" ]; then
-            mkdir -p "$valkey_dir/usr/lib"
-            cp -r "$temp_extract/usr/lib/"* "$valkey_dir/usr/lib/" 2>/dev/null || true
-        fi
-
-        rm -rf "$temp_extract"
-
-        local size=$(du -h "$valkey_dir/bin/valkey-server" | cut -f1)
-        log "✓ Valkey extracted: $size"
-    else
-        # Fall back to building from source if Docker is available
-        if [ -z "$NO_DOCKER" ]; then
-            warn "Pre-built Valkey image not found, building from source..."
-            build_valkey_from_source
-        else
-            error "Valkey not available: no pre-built image and Docker not available"
-        fi
+    # Verify binary exists and is correct format
+    if [ ! -f usr/bin/valkey-server ]; then
+        error "Valkey binary not found in APK"
     fi
 
+    if ! file usr/bin/valkey-server | grep -q "ELF.*aarch64"; then
+        error "Downloaded Valkey binary is not ARM64 ELF format"
+    fi
+
+    # Copy to expected location
+    mkdir -p bin
+    cp usr/bin/valkey-server bin/
+    chmod +x bin/valkey-server
+
+    # Optional: Also get valkey-cli
+    if [ -f usr/bin/valkey-cli ]; then
+        cp usr/bin/valkey-cli bin/
+        chmod +x bin/valkey-cli
+    fi
+
+    local size=$(du -h bin/valkey-server | cut -f1)
+    log "✓ Valkey downloaded and verified: $size (version ${valkey_version})"
     log ""
 }
 
