@@ -286,6 +286,15 @@ export async function endChatSession(sessionId: string): Promise<void> {
 // ==================== CHAT PROCESSING ====================
 
 /**
+ * Generate deterministic random number from string seed for consistent test behavior
+ */
+function seededRandom(seed: string, min: number, max: number): number {
+  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const normalized = (hash % 1000) / 1000 // 0-1
+  return min + normalized * (max - min)
+}
+
+/**
  * Send a chat message and get response
  */
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
@@ -317,7 +326,8 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
   // Simulate RAG processing
   const response = await generateChatResponse(message, session, request.workspaceId || 'default')
 
-  const ttftMs = isPreloaded ? Math.random() * 400 + 400 : Math.random() * 600 + 600 // Preload: 400-800ms, Lazy: 600-1200ms
+  // Use deterministic seeded random for consistent test behavior while maintaining realistic timing variance
+  const ttftMs = isPreloaded ? seededRandom(sessionId, 400, 800) : seededRandom(sessionId, 600, 1200) // Preload: 400-800ms, Lazy: 600-1200ms
   const elapsedMs = Date.now() - startTime
   // Ensure totalResponseMs is at least equal to ttftMs since response time includes TTFT
   const totalResponseMs = Math.max(ttftMs, elapsedMs + coldStartMs)
