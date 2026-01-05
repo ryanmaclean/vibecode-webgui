@@ -47,8 +47,8 @@ jest.doMock('../consistent-hash-ring', () => ({
   }))
 }));
 
-import { VectorShardingManager } from '@/lib/sharding-manager';
-import { DatabasePoolFactory, DatabasePool, DatabasePoolClient } from '@/lib/connection-router';
+import { VectorShardingManager } from '@/lib/vector-db/sharding-manager';
+import { DatabasePoolFactory, DatabasePool, DatabasePoolClient } from '@/lib/vector-db/connection-router';
 import { 
   ShardInfo, 
   ShardStatus, 

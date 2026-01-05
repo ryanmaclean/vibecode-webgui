@@ -3,16 +3,16 @@ jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-uuid-123')
 }));
 
-import { MongoDBChatService } from '@/lib/chat-mongodb';
+import { MongoDBChatService } from '@/lib/services/chat-mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '@/lib/mongodb';
 
 // Mock external dependencies
-jest.mock('../../../lib/mongodb', () => ({
+jest.mock('@/lib/mongodb', () => ({
   getDatabase: jest.fn()
 }));
 
-jest.mock('../../../lib/monitoring', () => ({
+jest.mock('@/lib/monitoring', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn()

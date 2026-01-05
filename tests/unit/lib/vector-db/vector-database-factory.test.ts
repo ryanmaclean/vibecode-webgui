@@ -3,8 +3,8 @@
  * Tests the factory logic and documents real implementation issues
  */
 
-import { VectorDatabaseFactory } from '@/lib/vector-database-factory';
-import { VectorDatabaseProvider } from '@/lib/vector-types';
+import { VectorDatabaseFactory } from '@/lib/vector-db/vector-database-factory';
+import { VectorDatabaseProvider } from '@/lib/vector-db/sharding-types';
 
 describe('VectorDatabaseFactory', () => {
   beforeEach(() => {

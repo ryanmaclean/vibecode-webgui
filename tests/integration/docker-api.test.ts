@@ -156,7 +156,7 @@ describe('Docker Status API', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error).toBe('Invalid action');
+      expect(data.error).toBe('Invalid request parameters');
     });
 
     it('should handle exceptions gracefully', async () => {

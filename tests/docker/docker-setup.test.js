@@ -157,7 +157,8 @@ function isDockerComposeAvailable() {
 
       // Check for basic security configurations (labels, healthchecks, or networks)
       // For development environment, basic network isolation is sufficient
-      expect(stdout).toContain('networks:') || expect(stdout).toContain('healthcheck:') || expect(stdout).toContain('labels:')
+      const hasSecurityConfig = stdout.includes('networks:') || stdout.includes('healthcheck:') || stdout.includes('labels:')
+      expect(hasSecurityConfig).toBe(true)
     })
 
     test('should have resource limits', async () => {

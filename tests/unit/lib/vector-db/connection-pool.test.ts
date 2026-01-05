@@ -2,10 +2,10 @@
  * Unit tests for ConnectionPool
  */
 
-import { ConnectionPool, ConnectionPoolConfig } from '@/lib/connection-pool';
+import { ConnectionPool, ConnectionPoolConfig } from '@/lib/vector-db/connection-pool';
 
 // Mock the dependencies
-jest.mock('../../server-monitoring', () => ({
+jest.mock('@/lib/server-monitoring', () => ({
   metrics: {
     gauge: jest.fn(),
     increment: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('../../server-monitoring', () => ({
   }
 }));
 
-jest.mock('../../logger', () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),

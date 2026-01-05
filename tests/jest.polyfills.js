@@ -332,3 +332,98 @@ if (!Response.json) {
 
 // Note: NextRequest and NextResponse from next/server work fine in Node.js test environment
 // We don't need to mock them here - the real implementations work correctly
+
+// Add BroadcastChannel polyfill for MSW (required for chaos tests)
+if (!global.BroadcastChannel) {
+  global.BroadcastChannel = class BroadcastChannel {
+    constructor(name) {
+      this.name = name;
+      this._listeners = [];
+    }
+    postMessage(message) {
+      this._listeners.forEach(listener => {
+        listener({ data: message });
+      });
+    }
+    addEventListener(type, listener) {
+      if (type === 'message') {
+        this._listeners.push(listener);
+      }
+    }
+    removeEventListener(type, listener) {
+      if (type === 'message') {
+        this._listeners = this._listeners.filter(l => l !== listener);
+      }
+    }
+    close() {
+      this._listeners = [];
+    }
+  };
+}
+
+// Add TransformStream polyfill for Playwright tests
+if (!global.TransformStream) {
+  global.TransformStream = class TransformStream {
+    constructor(transformer = {}) {
+      this._transformer = transformer;
+      this._chunks = [];
+      this._closed = false;
+
+      this.readable = new ReadableStream({
+        start: (controller) => {
+          this._readableController = controller;
+        }
+      });
+
+      this.writable = new WritableStream({
+        write: async (chunk) => {
+          if (this._transformer.transform) {
+            await this._transformer.transform(chunk, this._readableController);
+          } else {
+            this._readableController?.enqueue(chunk);
+          }
+        },
+        close: () => {
+          if (this._transformer.flush) {
+            this._transformer.flush(this._readableController);
+          }
+          this._readableController?.close();
+        }
+      });
+    }
+  };
+}
+
+// Add WritableStream polyfill
+if (!global.WritableStream) {
+  global.WritableStream = class WritableStream {
+    constructor(underlyingSink = {}) {
+      this._underlyingSink = underlyingSink;
+      this._closed = false;
+    }
+
+    getWriter() {
+      return {
+        write: async (chunk) => {
+          if (this._underlyingSink.write) {
+            await this._underlyingSink.write(chunk);
+          }
+        },
+        close: async () => {
+          if (this._underlyingSink.close) {
+            await this._underlyingSink.close();
+          }
+          this._closed = true;
+        },
+        abort: async () => {
+          if (this._underlyingSink.abort) {
+            await this._underlyingSink.abort();
+          }
+        },
+        releaseLock: () => {},
+      };
+    }
+
+    get locked() { return false; }
+  };
+}

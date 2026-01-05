@@ -1,7 +1,6 @@
 import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { resourceManager } from '@/lib/resource-management'
-import { withQuotaCheck, createQuotaResponse } from '@/middleware/quota-middleware'
 
 type SessionLike = Awaited<ReturnType<typeof getServerSession>>
 
@@ -20,6 +19,11 @@ jest.mock('@/lib/resource-management', () => ({
     recordAPICall: jest.fn()
   }
 }))
+
+// Use the actual implementation instead of the mock
+jest.mock('@/middleware/quota-middleware', () => jest.requireActual('@/middleware/quota-middleware'))
+
+import { withQuotaCheck, createQuotaResponse } from '@/middleware/quota-middleware'
 
 describe('Quota Middleware', () => {
   const mockedGetServerSession = jest.mocked(getServerSession)

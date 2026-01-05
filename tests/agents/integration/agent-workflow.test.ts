@@ -1,7 +1,7 @@
 /**
  * Integration Tests for Agent Workflows
  *
- * Tests end-to-end agent workflows with real API interactions
+ * Tests end-to-end agent workflows with mocked API interactions
  */
 
 import { Agent, createAgent } from '@/lib/agent-framework';
@@ -9,16 +9,34 @@ import { CodeAgent, ResearchAgent } from '@/lib/agent-framework/agents';
 import type { ToolDefinition } from '@/lib/agent-framework';
 import { UnifiedAIClient } from '@/lib/unified-ai-client';
 
+// UnifiedAIClient is globally mocked by jest.setup.js
+jest.mock('@/lib/unified-ai-client');
+
 describe('Agent Workflow - Integration Tests', () => {
-  let client: UnifiedAIClient;
+  let client: jest.Mocked<UnifiedAIClient>;
 
-  beforeAll(() => {
-    // Use test API keys from environment
-    client = new UnifiedAIClient();
-  });
-
-  afterEach(() => {
+  beforeEach(() => {
+    // Reset and configure the mock client
     jest.clearAllMocks();
+    client = new UnifiedAIClient() as jest.Mocked<UnifiedAIClient>;
+
+    // Default mock response
+    client.chat = jest.fn().mockResolvedValue({
+      content: 'Mock response',
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      usage: {
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      },
+    });
+
+    client.chatStream = jest.fn().mockImplementation(async function* () {
+      yield { content: 'Mock ', model: 'gpt-4o-mini', provider: 'openai', done: false };
+      yield { content: 'stream', model: 'gpt-4o-mini', provider: 'openai', done: false };
+      yield { content: 'response', model: 'gpt-4o-mini', provider: 'openai', done: true };
+    });
   });
 
   describe('Multi-turn Conversations', () => {

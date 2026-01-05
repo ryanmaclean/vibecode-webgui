@@ -1,9 +1,25 @@
 /**
  * Core Web Vitals Performance Test Suite
  * Validates LCP, FID, CLS, INP metrics against targets
+ *
+ * NOTE: This is a Playwright E2E test - skip in Jest
  */
 
-import { test, expect } from '@playwright/test'
+// Skip this test file in Jest - it requires Playwright/browser environment
+if (typeof jest !== 'undefined') {
+  describe.skip('Core Web Vitals - Playwright E2E Tests', () => {
+    test('skipped in Jest environment - run with Playwright', () => {
+      expect(true).toBe(true)
+    })
+  })
+  // Exit early to avoid importing Playwright in Jest
+  // @ts-ignore
+  module.exports = {}
+} else {
+  // Only import Playwright when running with Playwright
+  const playwright = require('@playwright/test')
+  const test = playwright.test
+  const expect = playwright.expect
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000'
 
@@ -251,3 +267,4 @@ test.describe('Performance - Resource Loading', () => {
     })
   })
 })
+}

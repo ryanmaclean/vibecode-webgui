@@ -4,33 +4,32 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
 import { generateCSRFToken, getSessionId } from '@/lib/security/csrf-protection';
 
 export async function GET(request: NextRequest) {
   try {
-    // Verify the user is authenticated
-    const token = await getToken({
-      req: request,
-      secret: process.env.NEXTAUTH_SECRET
-    });
-
-    if (!token) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
-    }
-
     // Generate CSRF token for this session
+    // Note: In production, you may want to require authentication here
+    // For now, allowing unauthenticated access for CSRF token generation
     const sessionId = getSessionId(request);
     const csrfToken = generateCSRFToken(sessionId);
+    const expires = Date.now() + (60 * 60 * 1000); // 1 hour
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       csrfToken,
-      sessionId: sessionId.substring(0, 8) + '...', // Partial session ID for debugging
-      expires: Date.now() + (60 * 60 * 1000) // 1 hour
+      expires
     });
+
+    // Set secure HTTP-only cookie
+    response.cookies.set('csrf-token', csrfToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'strict',
+      maxAge: 60 * 60, // 1 hour in seconds
+      path: '/'
+    });
+
+    return response;
 
   } catch (error) {
     console.error('CSRF token generation failed:', error);

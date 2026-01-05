@@ -32,11 +32,43 @@ function setNodeEnv(value: string) {
   })
 }
 
-// Mock Next.js modules
-jest.mock('next/server', () => ({
-  NextRequest: jest.fn(),
-  NextResponse: jest.fn()
-}))
+// Mock Next.js modules BEFORE requiring actual middleware
+jest.mock('next/server', () => {
+  // Create a proper NextResponse mock that can be instantiated
+  class MockNextResponse {
+    status: number
+    headers: Map<string, string>
+    body: unknown
+
+    constructor(body?: unknown, init?: { status?: number; headers?: Record<string, string> }) {
+      this.body = body
+      this.status = init?.status ?? 200
+      this.headers = new Map()
+
+      if (init?.headers) {
+        Object.entries(init.headers).forEach(([key, value]) => {
+          this.headers.set(key, value)
+        })
+      }
+
+      // Add set method to headers
+      const headersSet = this.headers.set.bind(this.headers)
+      this.headers.set = jest.fn(headersSet)
+    }
+
+    static json(data: unknown, init?: { status?: number; headers?: Record<string, string> }): MockNextResponse {
+      return new MockNextResponse(JSON.stringify(data), init)
+    }
+  }
+
+  return {
+    NextRequest: jest.fn(),
+    NextResponse: MockNextResponse
+  }
+})
+
+// Use actual security middleware instead of mock
+jest.mock('@/middleware/security-middleware', () => jest.requireActual('@/middleware/security-middleware'))
 
 // Interface for mocked NextRequest
 interface MockNextRequest {
@@ -68,13 +100,23 @@ const mockAiRateLimiter = {
   getRemainingQueries: jest.fn()
 }
 const mockAISecurityLogger = {
-  logSuspiciousActivity: jest.fn()
+  logSuspiciousActivity: jest.fn(),
+  logValidationFailure: jest.fn()
 }
 
 jest.mock('@/lib/security/input-validator', () => ({
   validateAIQuery: mockValidateAIQuery,
   aiRateLimiter: mockAiRateLimiter,
   AISecurityLogger: mockAISecurityLogger
+}))
+
+// Mock CSRF protection
+jest.mock('@/lib/security/csrf-protection', () => ({
+  needsCSRFProtection: jest.fn(() => false),
+  validateCSRFToken: jest.fn(() => true),
+  extractCSRFToken: jest.fn(() => 'mock-token'),
+  getSessionId: jest.fn(() => 'mock-session-id'),
+  validateOrigin: jest.fn(() => true)
 }))
 
 const loadSecurityMiddleware = () => import('@/middleware/security-middleware')
@@ -86,12 +128,7 @@ async function initializeSecurityModules(bypass = true) {
     securityMiddlewareModule.__TEST__bypassSecurityChecks(bypass)
   }
   nextServerModule = (await import('next/server')) as MockedNextServerModule
-  nextServerModule.NextResponse.mockImplementation((_, init?: { status?: number }): MockNextResponse => ({
-    status: init?.status ?? 200,
-    headers: {
-      set: jest.fn<void, [string, string]>()
-    }
-  }))
+  // NextResponse is now a class, not a mock function, so we don't need mockImplementation
   apiSecurityMiddleware = securityMiddlewareModule.apiSecurityMiddleware
   addSecurityHeaders = securityMiddlewareModule.addSecurityHeaders
 }

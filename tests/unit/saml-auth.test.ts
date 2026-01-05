@@ -2,18 +2,19 @@
  * Unit tests for SAML authentication provider
  */
 
-import { SAMLProvider } from '@/lib/auth/saml-provider'
-
-// Mock crypto for SAML request generation
-const mockCrypto = {
+// Mock crypto BEFORE importing SAMLProvider
+jest.mock('crypto', () => ({
   randomBytes: jest.fn(() => Buffer.from('mockrandomdata', 'utf8')),
   createHash: jest.fn(() => ({
     update: jest.fn().mockReturnThis(),
     digest: jest.fn(() => 'mockedhash')
   }))
-}
+}))
 
-jest.mock('crypto', () => mockCrypto)
+import { SAMLProvider } from '@/lib/auth/saml-provider'
+import crypto from 'crypto'
+
+const mockCrypto = crypto as jest.Mocked<typeof crypto>
 
 describe('SAML Authentication Provider', () => {
   let samlProvider: SAMLProvider

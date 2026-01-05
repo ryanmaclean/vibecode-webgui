@@ -17,7 +17,7 @@ const mockFetch = jest.fn<typeof fetch>();
 global.fetch = mockFetch as unknown as typeof fetch;
 
 // Import the function after mocking
-import { fetchWithRetry } from '@/lib/fetch';
+import { fetchWithRetry } from '@/lib/utils/fetch';
 
 const createResponse = (status: number, body?: Record<string, unknown>) =>
   new Response(body ? JSON.stringify(body) : null, {

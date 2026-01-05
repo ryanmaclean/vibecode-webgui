@@ -1,4 +1,4 @@
-import ConnectionPoolAlertService, { AlertSeverity, AlertType, AlertConfig, ThresholdConfig } from '@/lib/connection-pool-alerts'
+import ConnectionPoolAlertService, { AlertSeverity, AlertType, AlertConfig, ThresholdConfig } from '@/lib/db/connection-pool-alerts'
 
 describe('ConnectionPoolAlertService', () => {
   let service: ConnectionPoolAlertService

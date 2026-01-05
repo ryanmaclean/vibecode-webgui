@@ -68,11 +68,17 @@ describe('Docker Detection Service', () => {
     });
 
     it('should detect Podman when running', async () => {
-      mockExistsSync.mockReturnValue(true);
+      mockExistsSync.mockImplementation((path: any) => {
+        // Only return true for Podman socket, not Docker/Colima sockets
+        return path.includes('podman');
+      });
 
       mockExec.mockImplementation((cmd, callback: any) => {
         if (cmd.includes('podman version')) {
           callback(null, { stdout: '4.9.0', stderr: '' });
+        } else if (cmd.includes('docker')) {
+          // Docker commands fail
+          callback(new Error('not found'), { stdout: '', stderr: 'not found' });
         }
         return {} as any;
       });

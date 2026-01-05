@@ -92,12 +92,15 @@ describe('Sequential Testing', () => {
     });
 
     test('should stop faster with larger effect size', () => {
-      const observations = Array(50).fill(0).map((_, i) => i < 30 ? 1 : 0);
+      // When true effect is small (55%), data matches h1=0.55
+      const smallEffectObs = Array(50).fill(0).map((_, i) => i < 28 ? 1 : 0); // ~56%
+      const smallEffect = sprt(smallEffectObs, 0.50, 0.55, 0.05, 0.20);
 
-      const smallEffect = sprt(observations, 0.50, 0.55, 0.05, 0.20);
-      const largeEffect = sprt(observations, 0.50, 0.70, 0.05, 0.20);
+      // When true effect is large (70%), data matches h1=0.70
+      const largeEffectObs = Array(50).fill(0).map((_, i) => i < 35 ? 1 : 0); // 70%
+      const largeEffect = sprt(largeEffectObs, 0.50, 0.70, 0.05, 0.20);
 
-      // Larger effect should accumulate evidence faster
+      // Larger effect should accumulate evidence faster (more distance from h0)
       expect(Math.abs(largeEffect.logLikelihoodRatio)).toBeGreaterThan(
         Math.abs(smallEffect.logLikelihoodRatio)
       );

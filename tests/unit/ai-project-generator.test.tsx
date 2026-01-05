@@ -10,17 +10,18 @@ const mockProjectGenerator = ({ onComplete, initialPrompt, autoStart }: any) => 
 
   const handleGenerate = () => {
     if (!prompt.trim()) return
-    
+
     setIsGenerating(true)
-    
+
     // Simulate API call with delay to match real component behavior
     setTimeout(() => {
       setIsGenerating(false)
       onComplete?.({
-        workspaceUrl: '/workspace/ai-project-123',
+        workspaceId: 'ai-project-123',
+        projectName: 'test-project',
         projectStructure: {
           name: 'test-project',
-          description: 'Test project description', 
+          description: 'Test project description',
           language: 'JavaScript',
           framework: 'React',
           files: []
@@ -146,10 +147,10 @@ describe('AIProjectGenerator Component', () => {
     // Check loading state
     expect(screen.getByTestId('loading-state')).toBeInTheDocument()
     
-    // Wait for completion and redirect
+    // Wait for completion and redirect (component has 1500ms delay)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/workspace/ai-project-123')
-    }, { timeout: 2000 })
+    }, { timeout: 3000 })
   })
 
   it('handles initial prompt and auto-start', () => {

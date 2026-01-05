@@ -14,7 +14,7 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 // Mock the robust-db-connection dependency
-jest.mock('../robust-db-connection', () => ({
+jest.mock('@/lib/db/robust-db-connection', () => ({
   getConnectionPoolStatus: jest.fn().mockReturnValue({
     pools: [],
   }),

@@ -5,7 +5,7 @@
  * SRM detection, and guardrail evaluation.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import {
   runSpeechToTextExperiment,
   getSpeechExperimentSummary,
@@ -18,9 +18,9 @@ import { experimentWarehouse } from '@/lib/experiments/warehouse';
 import { detectSampleRatioMismatch } from '@/lib/experiments/srm-detector';
 
 // Mock OpenRouter to avoid real API calls
-vi.mock('@/lib/openrouter-client', () => ({
-  OpenRouter: vi.fn().mockImplementation(() => ({
-    createChatCompletion: vi.fn().mockResolvedValue({
+jest.mock('@/lib/openrouter-client', () => ({
+  OpenRouter: jest.fn().mockImplementation(() => ({
+    createChatCompletion: jest.fn().mockResolvedValue({
       id: 'test-id',
       object: 'chat.completion',
       created: Date.now(),

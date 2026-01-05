@@ -52,9 +52,11 @@ describe('AIChatInterface', () => {
     })
 
     it('applies custom className', async () => {
-      const { container } = renderWithProviders(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
-      expect(container.firstChild).toHaveClass('test-class')
+      // The className is applied to the main container div with role="region"
+      const chatInterface = screen.getByRole('region', { name: /AI Chat Interface/i })
+      expect(chatInterface).toHaveClass('test-class')
     })
   })
 
@@ -189,10 +191,18 @@ describe('AIChatInterface', () => {
       renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const sendButton = screen.getByRole('button', { name: /send/i })
+
+      // Wait for initial load to complete
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith('/api/ai/conversations/test-workspace')
+      })
+
+      const callCountBeforeClick = (global.fetch as jest.Mock).mock.calls.length
+
       await user.click(sendButton)
 
-      // Should not make API call for empty message
-      expect(global.fetch).toHaveBeenCalledTimes(1) // Only the initial conversation load
+      // Should not make additional API call for empty message
+      expect(global.fetch).toHaveBeenCalledTimes(callCountBeforeClick)
     })
 
     it('disables send button while streaming', async () => {
@@ -330,10 +340,13 @@ describe('AIChatInterface', () => {
 
   describe('Responsive Design', () => {
     it('adapts to different screen sizes', async () => {
-      const { container } = renderWithProviders(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
-      // Test that component has responsive classes
-      expect(container.firstChild).toHaveClass('test-class')
+      // Test that component has responsive classes and custom className
+      const chatInterface = screen.getByRole('region', { name: /AI Chat Interface/i })
+      expect(chatInterface).toHaveClass('test-class')
+      // Check for responsive flex classes
+      expect(chatInterface).toHaveClass('flex', 'flex-col')
     })
   })
 })

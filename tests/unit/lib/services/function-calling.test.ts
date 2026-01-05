@@ -1,4 +1,4 @@
-import { FunctionCallingService, FunctionDefinition, FunctionCall, FunctionResult } from '@/lib/function-calling';
+import { FunctionCallingService, FunctionDefinition, FunctionCall, FunctionResult } from '@/lib/services/function-calling';
 
 // Mock external dependencies
 jest.mock('node-fetch', () => jest.fn());

@@ -9,7 +9,7 @@ import {
   EmbeddingServiceFactory,
   BaseEmbeddingService,
   MockEmbeddingService,
-} from '@/lib/embedding-service'
+} from '@/lib/ai/embedding-service'
 
 describe('EmbeddingService', () => {
   describe('MockEmbeddingService', () => {

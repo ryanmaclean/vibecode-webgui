@@ -1,6 +1,8 @@
 /**
  * Simple vector cache tests using plain JavaScript
  * Tests the core functionality without complex Jest configuration
+ *
+ * @jest-environment node
  */
 
 const { performance } = require('perf_hooks');
@@ -33,15 +35,15 @@ const mockRedisClient = {
 };
 
 const mockMetrics = {
-  increment: () => {},
-  histogram: () => {}
+  increment: jest.fn(),
+  histogram: jest.fn()
 };
 
 const mockLogger = {
-  debug: () => {},
-  info: () => {},
-  warn: () => {},
-  error: () => {}
+  debug: jest.fn(),
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn()
 };
 
 // Simple vector cache implementation for testing
@@ -168,28 +170,8 @@ class SimpleVectorCacheManager {
   }
 }
 
-// Test runner
-async function runTests() {
-  console.log('🧪 Running Vector Cache Tests...\n');
-  
-  let passed = 0;
-  let failed = 0;
-  
-  function assert(condition, message) {
-    if (condition) {
-      console.log(`✅ ${message}`);
-      passed++;
-    } else {
-      console.log(`❌ ${message}`);
-      failed++;
-    }
-  }
-  
-  function assertEqual(actual, expected, message) {
-    const condition = JSON.stringify(actual) === JSON.stringify(expected);
-    assert(condition, `${message} (expected: ${JSON.stringify(expected)}, got: ${JSON.stringify(actual)})`);
-  }
-
+// Jest test suite
+describe('Simple Vector Cache', () => {
   // Setup
   const sampleEmbedding = Array(1536).fill(0.1);
   const sampleResults = [
@@ -201,7 +183,7 @@ async function runTests() {
       contentType: 'code'
     }
   ];
-  
+
   const sampleQuery = {
     embedding: sampleEmbedding,
     table: 'embeddings',
@@ -211,137 +193,142 @@ async function runTests() {
     contentTypes: ['code']
   };
 
-  // Test 1: Cache Key Generation
-  console.log('📝 Testing Cache Key Generation...');
-  SimpleVectorCacheManager.resetStats();
-  mockRedisClient.clear();
-  
-  const key1 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
-  const key2 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
-  assert(key1 === key2, 'Should generate consistent cache keys');
-  
-  const differentQuery = { ...sampleQuery, limit: 20 };
-  const key3 = SimpleVectorCacheManager.calculateCacheKey(differentQuery);
-  assert(key1 !== key3, 'Should generate different keys for different queries');
-  
-  const key4 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery, 'workspace1');
-  assert(key1 !== key4, 'Should include workspace in key');
-
-  // Test 2: Cache Operations
-  console.log('\n💾 Testing Cache Operations...');
-  
-  // Cache miss
-  const cachedResults1 = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
-  assert(cachedResults1 === null, 'Should return null on cache miss');
-  
-  // Store in cache
-  const stored = await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
-  assert(stored === true, 'Should successfully store results');
-  
-  // Cache hit
-  const cachedResults2 = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
-  assertEqual(cachedResults2, sampleResults, 'Should return cached results on hit');
-
-  // Test 3: Workspace Isolation
-  console.log('\n🏢 Testing Workspace Isolation...');
-  
-  await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults, 'workspace1');
-  
-  const noWorkspaceResults = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
-  const workspaceResults = await SimpleVectorCacheManager.getCachedResults(sampleQuery, 'workspace1');
-  
-  assertEqual(workspaceResults, sampleResults, 'Should find results with correct workspace');
-
-  // Test 4: Cache Invalidation
-  console.log('\n🗑️  Testing Cache Invalidation...');
-  
-  await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
-  const beforeInvalidation = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
-  assert(beforeInvalidation !== null, 'Results should be in cache before invalidation');
-  
-  const invalidatedCount = await SimpleVectorCacheManager.invalidateForTable('embeddings');
-  assert(invalidatedCount > 0, 'Should invalidate at least one key');
-  
-  const afterInvalidation = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
-  assert(afterInvalidation === null, 'Results should be removed after invalidation');
-
-  // Test 5: Skip Cache Logic
-  console.log('\n⏭️  Testing Skip Cache Logic...');
-  
-  const complexQuery = {
-    ...sampleQuery,
-    filter: {
-      language: 'typescript',
-      framework: 'react',
-      complexity: 'high',
-      fileSize: 'large',
-      modified: 'recent',
-      author: 'someone'
-    }
-  };
-  
-  const skipped = await SimpleVectorCacheManager.cacheResults(complexQuery, sampleResults);
-  assert(skipped === false, 'Should skip caching for complex queries');
-  
-  const lowSimilarityQuery = { ...sampleQuery, minSimilarity: 0.05 };
-  const skipped2 = await SimpleVectorCacheManager.cacheResults(lowSimilarityQuery, sampleResults);
-  assert(skipped2 === false, 'Should skip caching for low similarity queries');
-
-  // Test 6: Cache Statistics
-  console.log('\n📊 Testing Cache Statistics...');
-  
-  SimpleVectorCacheManager.resetStats();
-  
-  // Generate some cache activity
-  await SimpleVectorCacheManager.getCachedResults(sampleQuery); // miss
-  await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
-  await SimpleVectorCacheManager.getCachedResults(sampleQuery); // hit
-  
-  const stats = SimpleVectorCacheManager.getCacheStats();
-  assert(stats.hitCount === 1, 'Should track cache hits');
-  assert(stats.missCount === 1, 'Should track cache misses');
-  assert(stats.hitRate === 0.5, 'Should calculate correct hit rate');
-
-  // Test 7: Vector Fingerprinting
-  console.log('\n🔍 Testing Vector Fingerprinting...');
-  
-  const vector1 = [0.1, 0.2, 0.3, 0.4, 0.5];
-  const vector2 = [0.1, 0.2, 0.3, 0.4, 0.5];
-  const vector3 = [0.2, 0.3, 0.4, 0.5, 0.6];
-  
-  const fp1 = SimpleVectorCacheManager.getVectorFingerprint(vector1);
-  const fp2 = SimpleVectorCacheManager.getVectorFingerprint(vector2);
-  const fp3 = SimpleVectorCacheManager.getVectorFingerprint(vector3);
-  
-  assert(fp1 === fp2, 'Should generate same fingerprint for identical vectors');
-  assert(fp1 !== fp3, 'Should generate different fingerprints for different vectors');
-  
-  const emptyFp = SimpleVectorCacheManager.getVectorFingerprint([]);
-  assert(emptyFp === 'empty', 'Should handle empty vectors');
-
-  // Results
-  console.log('\n📋 Test Results:');
-  console.log(`✅ Passed: ${passed}`);
-  console.log(`❌ Failed: ${failed}`);
-  console.log(`📊 Success Rate: ${((passed / (passed + failed)) * 100).toFixed(1)}%`);
-  
-  if (failed === 0) {
-    console.log('\n🎉 All tests passed! Vector cache is working correctly.');
-  } else {
-    console.log('\n⚠️  Some tests failed. Please review the implementation.');
-  }
-  
-  return failed === 0;
-}
-
-// Run tests if this file is executed directly
-if (require.main === module) {
-  runTests().then(success => {
-    process.exit(success ? 0 : 1);
-  }).catch(error => {
-    console.error('Test execution failed:', error);
-    process.exit(1);
+  beforeEach(() => {
+    SimpleVectorCacheManager.resetStats();
+    mockRedisClient.clear();
   });
-}
 
-module.exports = { runTests, SimpleVectorCacheManager };
+  describe('Cache Key Generation', () => {
+    test('should generate consistent cache keys', () => {
+      const key1 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
+      const key2 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
+      expect(key1).toBe(key2);
+    });
+
+    test('should generate different keys for different queries', () => {
+      const key1 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
+      const differentQuery = { ...sampleQuery, limit: 20 };
+      const key3 = SimpleVectorCacheManager.calculateCacheKey(differentQuery);
+      expect(key1).not.toBe(key3);
+    });
+
+    test('should include workspace in key', () => {
+      const key1 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery);
+      const key4 = SimpleVectorCacheManager.calculateCacheKey(sampleQuery, 'workspace1');
+      expect(key1).not.toBe(key4);
+    });
+  });
+
+  describe('Cache Operations', () => {
+    test('should return null on cache miss', async () => {
+      const cachedResults1 = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
+      expect(cachedResults1).toBeNull();
+    });
+
+    test('should successfully store results', async () => {
+      const stored = await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
+      expect(stored).toBe(true);
+    });
+
+    test('should return cached results on hit', async () => {
+      await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
+      const cachedResults2 = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
+      expect(cachedResults2).toEqual(sampleResults);
+    });
+  });
+
+  describe('Workspace Isolation', () => {
+    test('should find results with correct workspace', async () => {
+      await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults, 'workspace1');
+
+      const noWorkspaceResults = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
+      const workspaceResults = await SimpleVectorCacheManager.getCachedResults(sampleQuery, 'workspace1');
+
+      expect(workspaceResults).toEqual(sampleResults);
+      expect(noWorkspaceResults).toBeNull();
+    });
+  });
+
+  describe('Cache Invalidation', () => {
+    test('should invalidate cache entries', async () => {
+      await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
+      const beforeInvalidation = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
+      expect(beforeInvalidation).not.toBeNull();
+
+      const invalidatedCount = await SimpleVectorCacheManager.invalidateForTable('embeddings');
+      expect(invalidatedCount).toBeGreaterThan(0);
+
+      const afterInvalidation = await SimpleVectorCacheManager.getCachedResults(sampleQuery);
+      expect(afterInvalidation).toBeNull();
+    });
+  });
+
+  describe('Skip Cache Logic', () => {
+    test('should skip caching for complex queries', async () => {
+      const complexQuery = {
+        ...sampleQuery,
+        filter: {
+          language: 'typescript',
+          framework: 'react',
+          complexity: 'high',
+          fileSize: 'large',
+          modified: 'recent',
+          author: 'someone'
+        }
+      };
+
+      const skipped = await SimpleVectorCacheManager.cacheResults(complexQuery, sampleResults);
+      expect(skipped).toBe(false);
+    });
+
+    test('should skip caching for low similarity queries', async () => {
+      const lowSimilarityQuery = { ...sampleQuery, minSimilarity: 0.05 };
+      const skipped2 = await SimpleVectorCacheManager.cacheResults(lowSimilarityQuery, sampleResults);
+      expect(skipped2).toBe(false);
+    });
+  });
+
+  describe('Cache Statistics', () => {
+    test('should track cache hits and misses', async () => {
+      SimpleVectorCacheManager.resetStats();
+
+      await SimpleVectorCacheManager.getCachedResults(sampleQuery); // miss
+      await SimpleVectorCacheManager.cacheResults(sampleQuery, sampleResults);
+      await SimpleVectorCacheManager.getCachedResults(sampleQuery); // hit
+
+      const stats = SimpleVectorCacheManager.getCacheStats();
+      expect(stats.hitCount).toBe(1);
+      expect(stats.missCount).toBe(1);
+      expect(stats.hitRate).toBe(0.5);
+    });
+  });
+
+  describe('Vector Fingerprinting', () => {
+    test('should generate same fingerprint for identical vectors', () => {
+      const vector1 = [0.1, 0.2, 0.3, 0.4, 0.5];
+      const vector2 = [0.1, 0.2, 0.3, 0.4, 0.5];
+
+      const fp1 = SimpleVectorCacheManager.getVectorFingerprint(vector1);
+      const fp2 = SimpleVectorCacheManager.getVectorFingerprint(vector2);
+
+      expect(fp1).toBe(fp2);
+    });
+
+    test('should generate different fingerprints for different vectors', () => {
+      const vector1 = [0.1, 0.2, 0.3, 0.4, 0.5];
+      const vector3 = [0.2, 0.3, 0.4, 0.5, 0.6];
+
+      const fp1 = SimpleVectorCacheManager.getVectorFingerprint(vector1);
+      const fp3 = SimpleVectorCacheManager.getVectorFingerprint(vector3);
+
+      expect(fp1).not.toBe(fp3);
+    });
+
+    test('should handle empty vectors', () => {
+      const emptyFp = SimpleVectorCacheManager.getVectorFingerprint([]);
+      expect(emptyFp).toBe('empty');
+    });
+  });
+});
+
+module.exports = { SimpleVectorCacheManager };
