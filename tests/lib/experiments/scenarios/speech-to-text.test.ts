@@ -302,10 +302,8 @@ describe('Speech-to-Text Experiment', () => {
 
   describe('Sample Ratio Mismatch Detection', () => {
     it('should pass SRM check for balanced allocation', () => {
-      const assignments = [
-        ...Array(500).fill('gpt4'),
-        ...Array(500).fill('gpt41')
-      ];
+      // detectSampleRatioMismatch expects Record<string, number> not an array
+      const assignments = { gpt4: 500, gpt41: 500 };
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
@@ -314,10 +312,8 @@ describe('Speech-to-Text Experiment', () => {
     });
 
     it('should fail SRM check for imbalanced allocation', () => {
-      const assignments = [
-        ...Array(700).fill('gpt4'),
-        ...Array(300).fill('gpt41')
-      ];
+      // detectSampleRatioMismatch expects Record<string, number> not an array
+      const assignments = { gpt4: 700, gpt41: 300 };
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
