@@ -54,7 +54,7 @@ describe('auth.ts Configuration', () => {
     }
     
     // Clear the module cache to ensure fresh import
-    delete require.cache[require.resolve('../auth')]
+    delete require.cache[require.resolve('@/lib/auth')]
   })
 
   afterEach(() => {
