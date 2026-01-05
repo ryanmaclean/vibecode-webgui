@@ -11,8 +11,10 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
 
-// Skip tests if DATABASE_URL is not set
-const describeIf = process.env.DATABASE_URL ? describe : describe.skip
+// Skip tests if DATABASE_URL is not set OR if the server is not running
+// These are true E2E tests that require a running Next.js server
+const SKIP_E2E = !process.env.DATABASE_URL || !process.env.E2E_SERVER_RUNNING
+const describeIf = SKIP_E2E ? describe.skip : describe
 
 // Helper to make API requests
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
