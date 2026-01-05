@@ -39,10 +39,7 @@ describe('SAML Authentication Provider', () => {
 
   describe('SAML Request Generation', () => {
     it('should generate valid SAML auth request', () => {
-      const result = samlProvider.generateAuthRequest({
-        assertionConsumerServiceURL: 'https://app.com/saml/acs',
-        destination: 'https://idp.com/sso'
-      })
+      const result = samlProvider.generateAuthRequest()
 
       expect(result).toHaveProperty('url')
       expect(result).toHaveProperty('samlRequest')
@@ -51,13 +48,10 @@ describe('SAML Authentication Provider', () => {
     })
 
     it('should include correct destination in auth request', () => {
-      const destination = 'https://test-idp.com/sso'
-      const result = samlProvider.generateAuthRequest({
-        assertionConsumerServiceURL: 'https://app.com/saml/acs',
-        destination
-      })
+      const result = samlProvider.generateAuthRequest()
 
-      expect(result.url).toContain(encodeURIComponent(destination))
+      // The destination is configured in the provider config
+      expect(result.url).toContain('https://test-idp.com/sso')
     })
 
     it('should generate unique request IDs', () => {
@@ -65,28 +59,24 @@ describe('SAML Authentication Provider', () => {
         .mockReturnValueOnce(Buffer.from('random1', 'utf8'))
         .mockReturnValueOnce(Buffer.from('random2', 'utf8'))
 
-      const result1 = samlProvider.generateAuthRequest({
-        assertionConsumerServiceURL: 'https://app.com/saml/acs',
-        destination: 'https://idp.com/sso'
-      })
-
-      const result2 = samlProvider.generateAuthRequest({
-        assertionConsumerServiceURL: 'https://app.com/saml/acs', 
-        destination: 'https://idp.com/sso'
-      })
+      const result1 = samlProvider.generateAuthRequest()
+      const result2 = samlProvider.generateAuthRequest()
 
       expect(result1.samlRequest).not.toEqual(result2.samlRequest)
     })
   })
 
   describe('SAML Response Processing', () => {
-    const mockSamlResponse = `
-      <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
-        <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+    const mockSamlResponse = `<?xml version="1.0" encoding="UTF-8"?>
+      <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" ID="_response123" Version="2.0" IssueInstant="2026-01-05T12:00:00Z">
+        <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">https://test-idp.com</saml:Issuer>
+        <samlp:Status>
+          <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
+        </samlp:Status>
+        <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion" ID="_assertion123" Version="2.0" IssueInstant="2026-01-05T12:00:00Z">
+          <saml:Issuer>https://test-idp.com</saml:Issuer>
           <saml:Subject>
-            <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
-              test@example.com
-            </saml:NameID>
+            <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">test@example.com</saml:NameID>
           </saml:Subject>
           <saml:AttributeStatement>
             <saml:Attribute Name="firstName">
@@ -102,14 +92,20 @@ describe('SAML Authentication Provider', () => {
 
     it('should process valid SAML response', async () => {
       const encodedResponse = Buffer.from(mockSamlResponse).toString('base64')
-      
+
       const result = await samlProvider.processResponse(encodedResponse)
 
-      expect(result).toHaveProperty('nameId')
-      expect(result).toHaveProperty('attributes')
-      expect(result.nameId).toBe('test@example.com')
-      expect(result.attributes.firstName).toBe('John')
-      expect(result.attributes.lastName).toBe('Doe')
+      expect(result).toHaveProperty('id')
+      expect(result).toHaveProperty('email')
+      expect(result).toHaveProperty('name')
+      expect(result.id).toBe('test@example.com')
+      expect(result.email).toBe('test@example.com')
+      expect(result.firstName).toBe('John')
+      expect(result.lastName).toBe('Doe')
+      expect(result.name).toBe('John Doe')
+      expect(result.provider).toBe('saml')
+      expect(result.samlAttributes.firstName).toBe('John')
+      expect(result.samlAttributes.lastName).toBe('Doe')
     })
 
     it('should reject empty SAML response', async () => {

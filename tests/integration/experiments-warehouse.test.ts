@@ -23,7 +23,7 @@ describe('Experiment Warehouse Integration Tests', () => {
   let testExperimentKey: string;
 
   beforeAll(async () => {
-    await prisma.\$connect();
+    await prisma.$connect();
   });
 
   afterAll(async () => {
@@ -32,12 +32,12 @@ describe('Experiment Warehouse Integration Tests', () => {
       await prisma.experimentAssignment.deleteMany({ where: { experimentId: testExperimentId } });
       await prisma.experiment.delete({ where: { id: testExperimentId } });
     }
-    await prisma.\$disconnect();
+    await prisma.$disconnect();
   });
 
   describe('Assignment Logging with Upsert', () => {
     it('should handle upsert behavior correctly', async () => {
-      testExperimentKey = \`test-exp-\${Date.now()}\`;
+      testExperimentKey = `test-exp-${Date.now()}`;
       const experiment = await warehouse.createExperiment({
         key: testExperimentKey,
         name: 'Upsert Test',
@@ -68,7 +68,7 @@ describe('Experiment Warehouse Integration Tests', () => {
     it('should efficiently batch log assignments', async () => {
       const assignments = Array.from({ length: 100 }, (_, i) => ({
         experimentId: testExperimentId,
-        userId: \`batch_user_\${i}\`,
+        userId: `batch_user_${i}`,
         variantKey: i % 2 === 0 ? 'control' : 'treatment'
       }));
 

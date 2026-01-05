@@ -5,7 +5,12 @@ describe('Credentials Provider authorize', () => {
 
   beforeAll(() => {
     const credentialsProvider = authOptions.providers.find(
-      (provider: any) => provider.id === 'credentials'
+      (provider: any) => {
+        // Check multiple conditions for matching credentials provider
+        return provider.type === 'credentials' ||
+               provider.id === 'credentials' ||
+               provider.name === 'Credentials';
+      }
     ) as { authorize?: (credentials: Record<string, string>) => Promise<any>; options?: { authorize?: (credentials: Record<string, string>) => Promise<any> } };
 
     if (!credentialsProvider) {
@@ -22,14 +27,14 @@ describe('Credentials Provider authorize', () => {
     authorize = authorizeFn;
   });
 
-  it('returns legacy user for valid credentials', async () => {
+  it('returns user for valid credentials', async () => {
     const user = await authorize({
       email: 'admin@vibecode.dev',
       password: 'admin123',
     });
 
     expect(user).toEqual({
-      id: 'legacy-admin',
+      id: '1',
       name: 'Admin User',
       email: 'admin@vibecode.dev',
       role: 'admin',

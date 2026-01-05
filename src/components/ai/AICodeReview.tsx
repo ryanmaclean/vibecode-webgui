@@ -77,17 +77,54 @@ export default function AICodeReview({
       // }
 
       // Temporary mock response for testing
-      setResults([{
-        stepId: 'security',
-        agentRole: 'Security Analyst',
-        input: code,
-        output: 'Mock security review - LangChain temporarily disabled',
-        metadata: {
-          model: 'mock',
-          duration: 100,
-          timestamp: new Date().toISOString()
+      const mockResults: CodeReviewResult[] = [
+        {
+          stepId: 'security-review',
+          agentRole: 'code-reviewer',
+          input: code,
+          output: 'Mock security review - LangChain temporarily disabled',
+          metadata: {
+            model: 'mock',
+            duration: 100,
+            timestamp: new Date().toISOString()
+          }
+        },
+        {
+          stepId: 'performance-review',
+          agentRole: 'code-reviewer',
+          input: code,
+          output: 'Mock performance review - LangChain temporarily disabled',
+          metadata: {
+            model: 'mock',
+            duration: 100,
+            timestamp: new Date().toISOString()
+          }
+        },
+        {
+          stepId: 'quality-review',
+          agentRole: 'code-reviewer',
+          input: code,
+          output: 'Mock quality review - LangChain temporarily disabled',
+          metadata: {
+            model: 'mock',
+            duration: 100,
+            timestamp: new Date().toISOString()
+          }
+        },
+        {
+          stepId: 'comprehensive-review',
+          agentRole: 'code-reviewer',
+          input: code,
+          output: 'Mock comprehensive review - LangChain temporarily disabled',
+          metadata: {
+            model: 'mock',
+            duration: 100,
+            timestamp: new Date().toISOString()
+          }
         }
-      }]);
+      ];
+      setResults(mockResults);
+      onReviewComplete?.(mockResults);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred during code review');
       console.error('Code review error:', err);

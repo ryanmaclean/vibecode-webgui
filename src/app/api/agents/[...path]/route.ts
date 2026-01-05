@@ -175,9 +175,9 @@ async function handleRequest(
         return handleToolRoutes(request, method, userId, id)
 
       default:
-        // Agent CRUD operations
-        if (id) {
-          return handleAgentOperations(request, method, userId, resource, subResource)
+        // Agent CRUD operations - if resource looks like an agent ID
+        if (resource && !['create', 'list', 'threads', 'files', 'tools'].includes(resource)) {
+          return handleAgentOperations(request, method, userId, resource, id)
         }
     }
 

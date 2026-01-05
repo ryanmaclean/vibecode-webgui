@@ -2,7 +2,7 @@
 // Tests core functionality, state management, and user interactions
 
 import React from 'react'
-import { screen, fireEvent, waitFor, renderWithProviders } from '@/../../tests/test-utils'
+import { screen, fireEvent, waitFor, renderWithProviders } from '@/../tests/test-utils'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
 import AIChatInterface from '@/components/ai/AIChatInterface'

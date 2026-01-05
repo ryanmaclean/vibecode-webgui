@@ -182,16 +182,17 @@ export class VectorCacheManager {
    * Calculate appropriate TTL for a query
    */
   private static calculateTtl(query: VectorSimilarityQuery, results: VectorSimilarityResults): number {
-    // Default TTL
-    const defaultTtl = CacheTTL?.EMBEDDINGS || 2592000; // 30 days
+    // Get TTL values from cache config
+    const EMBEDDINGS_TTL = CacheTTL?.EMBEDDINGS || 2592000; // 30 days
+    const MEDIUM_TTL = CacheTTL?.MEDIUM || 300; // 5 minutes
 
     // Shorter TTL for small result sets (likely specific queries)
     if (results.length < 3) {
-      return Math.floor(defaultTtl / 2);
+      return Math.floor(MEDIUM_TTL / 2); // Half of MEDIUM TTL
     }
 
-    // Use default for most queries
-    return defaultTtl;
+    // Use EMBEDDINGS TTL for code embeddings
+    return EMBEDDINGS_TTL;
   }
 
   /**
@@ -226,19 +227,34 @@ export class VectorCacheManager {
         return 0;
       }
 
-      // Build pattern to match cache keys
-      let pattern: string;
-      if (contentType) {
-        pattern = `vector:search:*${table}*${contentType}*`;
-      } else {
-        pattern = `vector:search:*${table}*`;
-      }
+      // Get all vector search keys
+      const allKeys = await redis.keys('vector:search:*');
 
-      // Find and delete matching keys
-      const keys = await redis.keys(pattern);
-      if (keys && keys.length > 0) {
-        await redis.del(keys);
-        return keys.length;
+      // Filter keys by decoding and checking content
+      const matchingKeys = allKeys.filter((key: string) => {
+        try {
+          // Extract base64 part
+          const base64Part = key.replace('vector:search:', '');
+          const decoded = Buffer.from(base64Part, 'base64').toString('utf-8');
+
+          // Check if decoded string contains the table name
+          const hasTable = decoded.includes(table);
+
+          // If contentType is specified, also check for it
+          if (contentType) {
+            return hasTable && decoded.includes(contentType);
+          }
+
+          return hasTable;
+        } catch (err) {
+          return false;
+        }
+      });
+
+      // Delete matching keys
+      if (matchingKeys && matchingKeys.length > 0) {
+        await redis.del(matchingKeys);
+        return matchingKeys.length;
       }
 
       return 0;

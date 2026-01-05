@@ -434,14 +434,39 @@ class PgvectorCacheIntegrationTest {
   }
 }
 
+// Jest test wrapper
+describe('PGVector Cache End-to-End', () => {
+  // Skip if PostgreSQL not available
+  if (SKIP_POSTGRES) {
+    test.skip('PostgreSQL not available - skipping end-to-end tests', () => {});
+    return;
+  }
+
+  test('should run all integration tests', async () => {
+    const tester = new PgvectorCacheIntegrationTest();
+
+    try {
+      const results = await tester.runAllTests();
+      await tester.cleanup();
+
+      // Expect all tests to pass
+      expect(results.failed).toBe(0);
+      expect(results.success_rate).toBe(100);
+    } catch (error) {
+      await tester.cleanup();
+      throw error;
+    }
+  }, 60000); // 60 second timeout for integration tests
+});
+
 // Run tests if executed directly
 async function main() {
   const tester = new PgvectorCacheIntegrationTest();
-  
+
   try {
     const results = await tester.runAllTests();
     await tester.cleanup();
-    
+
     // Exit with appropriate code
     process.exit(results.failed === 0 ? 0 : 1);
   } catch (error) {

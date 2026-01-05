@@ -78,6 +78,8 @@ const config = {
     '/extensions/',
     '<rootDir>/packages/vibecode-cli/src/__tests__/',
     '/__mocks__/',
+    '<rootDir>/config/alternatives/',
+    '<rootDir>/examples/',
     ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
   

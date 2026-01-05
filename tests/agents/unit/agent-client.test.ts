@@ -295,7 +295,7 @@ describe('Agent Client - Unit Tests', () => {
   describe('Memory Management', () => {
     it('should maintain memory within size limit', async () => {
       const testAgent = new Agent({
-        memorySize: 5,
+        memorySize: 3,
         client: mockClient,
       });
       agent = testAgent; // Track for cleanup
@@ -306,10 +306,13 @@ describe('Agent Client - Unit Tests', () => {
         provider: 'openai',
       });
 
-      // Reduced to 5 iterations to prevent memory buildup
-      for (let i = 0; i < 5; i++) {
+      // Reduced to 3 iterations to prevent memory buildup
+      for (let i = 0; i < 3; i++) {
         await testAgent.processMessage(`Message ${i}`);
       }
+
+      // Clear memory after test
+      testAgent.clearMemory();
 
       // Memory should be trimmed to size limit
     });
@@ -360,8 +363,9 @@ describe('Agent Client - Unit Tests', () => {
 
       expect(messageHandler).toHaveBeenCalled();
 
-      // Clean up event listener
+      // Clean up event listener and memory
       testAgent.removeListener?.(AgentEvent.Message, messageHandler);
+      testAgent.clearMemory();
     });
 
     it('should emit tool call events', async () => {
@@ -409,8 +413,9 @@ describe('Agent Client - Unit Tests', () => {
         args: {},
       });
 
-      // Clean up event listener
+      // Clean up event listener and memory
       testAgent.removeListener?.(AgentEvent.ToolCall, toolCallHandler);
+      testAgent.clearMemory();
     });
 
     it('should emit error events', async () => {
@@ -428,8 +433,9 @@ describe('Agent Client - Unit Tests', () => {
 
       expect(errorHandler).toHaveBeenCalled();
 
-      // Clean up event listener
+      // Clean up event listener and memory
       testAgent.removeListener?.(AgentEvent.Error, errorHandler);
+      testAgent.clearMemory();
     });
   });
 

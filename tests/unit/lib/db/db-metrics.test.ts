@@ -23,7 +23,7 @@ jest.mock('@/lib/db/robust-db-connection', () => ({
 import {
   getDatabaseMetricsCollector,
   createQueryTrackingMiddleware,
-} from '@/lib/db-metrics'
+} from '@/lib/db/db-metrics'
 
 describe('Database Metrics', () => {
   let collector: ReturnType<typeof getDatabaseMetricsCollector>

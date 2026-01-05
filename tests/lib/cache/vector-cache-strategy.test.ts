@@ -250,13 +250,19 @@ describe('ValKey Vector Cache Strategy', () => {
         table: 'rag_chunks',
         contentTypes: ['code']
       };
-      
-      await VectorCacheManager.cacheResults(codeQuery, sampleResults);
-      
+
+      // Use more than 3 results to trigger EMBEDDINGS TTL
+      const largerResults = [
+        ...sampleResults,
+        { id: 3, similarity: 0.75, content: 'Sample 3', metadata: {}, contentType: 'code' }
+      ];
+
+      await VectorCacheManager.cacheResults(codeQuery, largerResults);
+
       // Check TTL value
       expect(mockRedisClient.set).toHaveBeenCalled();
       const setCall = mockRedisClient.set.mock.calls[0];
-      
+
       // Third argument should be TTL
       expect(setCall[2]).toBe(2592000); // EMBEDDINGS TTL
     });

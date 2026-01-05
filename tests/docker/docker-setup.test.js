@@ -24,7 +24,9 @@ function isDockerComposeAvailable() {
   }
 }
 
-(HAS_DOCKER ? describe : describe.skip)('Docker Setup Tests', () => {
+const conditionalDescribe = HAS_DOCKER ? describe : describe.skip;
+
+conditionalDescribe('Docker Setup Tests', () => {
   const TIMEOUT = 60000 // 60 seconds for Docker operations
 
   beforeAll(async () => {
@@ -194,7 +196,7 @@ function isDockerComposeAvailable() {
   })
 })
 
-(HAS_DOCKER ? describe : describe.skip)('Container Integration Tests', () => {
+conditionalDescribe('Container Integration Tests', () => {
   beforeAll(() => {
     // Verify docker-compose is available
     if (HAS_DOCKER && !isDockerComposeAvailable()) {
@@ -264,7 +266,7 @@ function isDockerComposeAvailable() {
   })
 })
 
-(HAS_DOCKER ? describe : describe.skip)('Production Readiness Tests', () => {
+conditionalDescribe('Production Readiness Tests', () => {
   test('should have Dockerfile optimized for production', async () => {
     const { stdout } = await execAsync('cat Dockerfile')
 

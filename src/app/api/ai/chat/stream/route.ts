@@ -130,6 +130,15 @@ export async function POST(req: AuthenticatedRequest) {
 
     const { message, model, context } = validation.data as z.infer<typeof streamingChatRequestSchema>
 
+    // Check for API key before initializing OpenRouter client
+    if (!process.env.OPENROUTER_API_KEY) {
+      logger.error('Streaming chat missing API key')
+      return NextResponse.json(
+        { error: 'OpenRouter API key not configured' },
+        { status: 500 }
+      )
+    }
+
     // Initialize OpenRouter client
     const openrouter = new OpenAI({
       baseURL: process.env.OPENROUTER_API_BASE,
@@ -149,7 +158,7 @@ export async function POST(req: AuthenticatedRequest) {
     const messages: ChatMessage[] = [
       {
         role: 'system',
-        content: `You are an expert AI pair programmer. Use the provided context to answer the user's question. Context: ${contextString}`
+        content: `You are an expert AI pair programmer. Use the provided context to answer the user's question. Context:${contextString ? '\n' + contextString : ''}`
       }
     ];
 

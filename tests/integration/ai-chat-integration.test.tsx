@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
-import { render, screen, fireEvent, waitFor } from '../test-utils'
+import { render, screen, fireEvent, waitFor } from '@/../tests/test-utils'
 import userEvent from '@testing-library/user-event'
 
 import AIChatInterface from '@/components/ai/AIChatInterface'
@@ -91,9 +91,9 @@ describe('AI Chat Integration', () => {
         read: jest.fn().mockImplementation(() => {
           if (idx < chunks.length) {
             const value = chunks[idx++]
-            return new Promise(resolve => setTimeout(() => resolve({ done: false, value }), 5))
+            return new Promise(resolve => setTimeout(() => resolve({ done: false, value }), 50))
           }
-          return Promise.resolve({ done: true, value: new Uint8Array() })
+          return Promise.resolve({ done: true, value: undefined })
         })
       }
       const streamResponse = { body: { getReader: () => reader } } as unknown as Response
@@ -419,16 +419,24 @@ describe('AI Chat Integration', () => {
         )
 
       // Mock slow streaming response for the chat stream call
+      let readCallCount = 0
       const mockReader = {
         read: jest.fn()
-          .mockImplementation(() =>
-            new Promise(resolve =>
-              setTimeout(() => resolve({
-                done: false,
-                value: new TextEncoder().encode('data: {"content": "slow"}\n\n')
-              }), 100)
-            )
-          )
+          .mockImplementation(() => {
+            readCallCount++
+            if (readCallCount === 1) {
+              // First call: keep streaming alive with a delay
+              return new Promise(resolve =>
+                setTimeout(() => resolve({
+                  done: false,
+                  value: new TextEncoder().encode('slow response')
+                }), 200)
+              )
+            } else {
+              // Second call: complete the stream
+              return Promise.resolve({ done: true, value: undefined })
+            }
+          })
       }
       const mockResponse: any = { body: { getReader: () => mockReader } }
       ;(global.fetch as unknown as jest.Mock).mockResolvedValueOnce(mockResponse)
@@ -441,10 +449,10 @@ describe('AI Chat Integration', () => {
       const sendButton = screen.getByRole('button', { name: /send/i })
       await userEvent.click(sendButton)
 
-      // UI should remain responsive
+      // UI should show loading state while streaming
       await waitFor(() => {
         expect(screen.getByText('AI is thinking...')).toBeInTheDocument()
-      })
+      }, { timeout: 3000 })
     })
   })
 

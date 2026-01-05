@@ -11,7 +11,7 @@
  */
 
 import { test, expect, Page, BrowserContext } from '@playwright/test';
-import { injectAxe, checkA11y } from 'axe-playwright';
+import { injectAxe, checkA11y } from '@axe-core/playwright';
 
 // Page Object Models
 class LoginPage {

@@ -21,13 +21,22 @@ export async function GET(request: NextRequest) {
     });
 
     // Set secure HTTP-only cookie
-    response.cookies.set('csrf-token', csrfToken, {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'strict',
-      maxAge: 60 * 60, // 1 hour in seconds
-      path: '/'
-    });
+    // NextResponse should have cookies available, but add defensive check
+    try {
+      response.cookies.set('csrf-token', csrfToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'strict',
+        maxAge: 60 * 60, // 1 hour in seconds
+        path: '/'
+      });
+    } catch (cookieError) {
+      // Fallback to Set-Cookie header for test environments
+      console.warn('Failed to set cookie via cookies API, using header fallback', cookieError);
+      response.headers.set('Set-Cookie',
+        `csrf-token=${csrfToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${60 * 60}`
+      );
+    }
 
     return response;
 

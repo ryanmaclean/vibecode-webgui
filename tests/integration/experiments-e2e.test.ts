@@ -68,7 +68,7 @@ describe('Experiments E2E Tests', () => {
       where: { experiment: { key: { startsWith: 'e2e_test_' } } }
     })
     await prisma.experiment.deleteMany({
-      where: { key: { startsWith: 'e2e_test_' } } }
+      where: { key: { startsWith: 'e2e_test_' } }
     })
     await prisma.$disconnect()
   })

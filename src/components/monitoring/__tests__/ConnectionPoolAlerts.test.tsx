@@ -1,5 +1,5 @@
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@/tests/test-utils'
+import { render, screen, fireEvent, waitFor } from '@/../tests/test-utils'
 import ConnectionPoolAlerts from '../ConnectionPoolAlerts'
 import ConnectionPoolAlertService, { AlertSeverity, AlertType } from '@/lib/db/connection-pool-alerts'
 

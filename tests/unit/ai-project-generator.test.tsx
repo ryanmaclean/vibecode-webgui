@@ -147,10 +147,10 @@ describe('AIProjectGenerator Component', () => {
     // Check loading state
     expect(screen.getByTestId('loading-state')).toBeInTheDocument()
     
-    // Wait for completion and redirect (component has 1500ms delay)
+    // Wait for completion and redirect (component has 1500ms delay + mock has 100ms delay)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/workspace/ai-project-123')
-    }, { timeout: 3000 })
+    }, { timeout: 5000 })
   })
 
   it('handles initial prompt and auto-start', () => {

@@ -24,7 +24,9 @@ function isDockerComposeAvailable() {
   }
 }
 
-(HAS_DOCKER ? describe : describe.skip)('Container Health Tests', () => {
+const conditionalDescribe = HAS_DOCKER ? describe : describe.skip;
+
+conditionalDescribe('Container Health Tests', () => {
   const HEALTH_CHECK_TIMEOUT = 30000
 
   beforeAll(() => {
@@ -223,7 +225,7 @@ function isDockerComposeAvailable() {
   })
 })
 
-(HAS_DOCKER ? describe : describe.skip)('Performance and Load Tests', () => {
+conditionalDescribe('Performance and Load Tests', () => {
   beforeAll(() => {
     // Verify docker-compose is available
     if (HAS_DOCKER && !isDockerComposeAvailable()) {

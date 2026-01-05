@@ -26,7 +26,10 @@ const mockRedisClient = {
     return 1;
   },
   async keys(pattern) {
-    const regex = new RegExp(pattern.replace(/\*/g, '.*'));
+    // Escape special regex characters except *
+    const escapedPattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    // Replace * with .*
+    const regex = new RegExp('^' + escapedPattern.replace(/\*/g, '.*') + '$');
     return Array.from(this.data.keys()).filter(key => regex.test(key));
   },
   clear() {
@@ -129,19 +132,35 @@ class SimpleVectorCacheManager {
   }
 
   static async invalidateForTable(table, contentType) {
-    let pattern;
-    if (contentType) {
-      pattern = `vector:search:*${table}*${contentType}*`;
-    } else {
-      pattern = `vector:search:*${table}*`;
+    // Get all vector search keys
+    const allKeys = await mockRedisClient.keys('vector:search:*');
+
+    // Filter keys by decoding and checking content
+    const matchingKeys = allKeys.filter(key => {
+      try {
+        // Extract base64 part
+        const base64Part = key.replace('vector:search:', '');
+        const decoded = Buffer.from(base64Part, 'base64').toString('utf-8');
+
+        // Check if decoded string contains the table name
+        const hasTable = decoded.includes(table);
+
+        // If contentType is specified, also check for it
+        if (contentType) {
+          return hasTable && decoded.includes(contentType);
+        }
+
+        return hasTable;
+      } catch (err) {
+        return false;
+      }
+    });
+
+    if (matchingKeys.length > 0) {
+      await mockRedisClient.del(matchingKeys);
     }
-    
-    const keys = await mockRedisClient.keys(pattern);
-    if (keys.length > 0) {
-      await mockRedisClient.del(keys);
-    }
-    
-    return keys.length;
+
+    return matchingKeys.length;
   }
 
   static shouldSkipCache(query) {

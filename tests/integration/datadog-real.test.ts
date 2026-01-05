@@ -36,7 +36,9 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
 
       const validation = await response.json()
       expect(validation).toHaveProperty('valid');
-      expect(validation.valid).toBe(true)}, 10000)})
+      expect(validation.valid).toBe(true)
+    }, 10000)
+  })
 
   describe('Metrics Submission', () => {
     test('should successfully submit custom metrics', async () => {
@@ -61,13 +63,15 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
           'DD-API-KEY': apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(testMetric)});
+        body: JSON.stringify(testMetric)
+      })
 
       expect(response.status).toBe(202) // Datadog returns 202 for accepted metrics
 
       const result = await response.json()
       expect(result).toHaveProperty('status')
-      expect(result.status).toBe('ok')}, 10000)
+      expect(result.status).toBe('ok')
+    }, 10000)
 
     test('should handle multiple metrics in single request', async () => {
       const timestamp = Math.floor(Date.now() / 1000)
@@ -99,9 +103,12 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
           'DD-API-KEY': apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(multipleMetrics)});
+        body: JSON.stringify(multipleMetrics)
+      })
 
-      expect(response.status).toBe(202)}, 10000)})
+      expect(response.status).toBe(202)
+    }, 10000)
+  })
 
   describe('Events Submission', () => {
     test('should submit application events', async () => {
@@ -123,13 +130,16 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
           'DD-API-KEY': apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(testEvent)});
+        body: JSON.stringify(testEvent)
+      })
 
       expect(response.status).toBe(202);
 
       const result = await response.json()
       expect(result).toHaveProperty('status')
-      expect(result.status).toBe('ok')}, 10000)})
+      expect(result.status).toBe('ok')
+    }, 10000)
+  })
 
   describe('Service Checks', () => {
     test('should submit service check status', async () => {
@@ -150,13 +160,16 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
           'DD-API-KEY': apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(serviceCheck)});
+        body: JSON.stringify(serviceCheck)
+      })
 
       expect(response.status).toBe(202);
 
       const result = await response.json()
       expect(result).toHaveProperty('status')
-      expect(result.status).toBe('ok')}, 10000)})
+      expect(result.status).toBe('ok')
+    }, 10000)
+  })
 
   describe('Error Handling', () => {
     test('should handle invalid metric data gracefully', async () => {
@@ -175,10 +188,12 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
           'DD-API-KEY': apiKey,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(invalidMetric)});
+        body: JSON.stringify(invalidMetric)
+      })
 
       // Should return error for invalid data
-      expect(response.status).toBeGreaterThanOrEqual(400)}, 10000)
+      expect(response.status).toBeGreaterThanOrEqual(400)
+    }, 10000)
 
     test('should handle rate limiting appropriately', async () => {
       // Submit many requests rapidly to test rate limiting behavior
@@ -196,7 +211,9 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
               points: [[timestamp, i]],
               type: 'count'
             }]
-          })})});
+          })
+        })
+      })
 
       const responses = await Promise.allSettled(requests);
 
@@ -206,7 +223,8 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
       ).length
 
       expect(successCount).toBeGreaterThan(50) // At least 50% should succeed
-    }, 30000)})
+    }, 30000)
+  })
 
   describe('Health Check Integration', () => {
     test('should validate health check endpoint with real Datadog API', async () => {
@@ -225,8 +243,10 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
         const datadogHealth = health.components.datadog
         expect(datadogHealth.status).toBe('healthy');
         expect(datadogHealth.details.integrationTested).toBe(true);
-        expect(datadogHealth.details.apiKeyValid).toBe(true)}
-    })})
+        expect(datadogHealth.details.apiKeyValid).toBe(true)
+      }
+    })
+  })
 
   describe('Performance Validation', () => {
     test('should maintain acceptable performance under load', async () => {
@@ -248,7 +268,9 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
               type: 'gauge',
               tags: ['test:performance']
             }]
-          })})});
+          })
+        })
+      })
 
       const responses = await Promise.all(requests);
       const endTime = Date.now();
@@ -260,12 +282,17 @@ conditionalDescribe('Real Datadog Integration Tests', () => {
       expect(duration).toBeLessThan(30000) // Should complete within 30 seconds
       expect(successCount).toBeGreaterThan(concurrentRequests * 0.8) // 80% success rate
 
-      console.log(`Performance test: ${concurrentRequests} requests in ${duration}ms, ${successCount} successful`)}, 45000)})});
+      console.log(`Performance test: ${concurrentRequests} requests in ${duration}ms, ${successCount} successful`)
+    }, 45000)
+  })
+})
 
 // Conditional test for non-integration environment
-const nonIntegrationDescribe = !shouldRunTests ? describe : describe.skip;
+const nonIntegrationDescribe = !HAS_DD_KEY ? describe : describe.skip;
 
 nonIntegrationDescribe('Datadog Integration Tests (Skipped)', () => {
   test('should skip when integration tests are disabled', () => {
-    console.log('Datadog integration tests skipped. Set ENABLE_DATADOG_INTEGRATION_TESTS=true to run.');
-    expect(true).toBe(true)})});
+    console.log('Datadog integration tests skipped. Set DD_API_KEY to run.')
+    expect(true).toBe(true)
+  })
+})
