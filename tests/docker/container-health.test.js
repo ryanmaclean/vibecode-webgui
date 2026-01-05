@@ -7,7 +7,17 @@ const { exec, execSync } = require('child_process')
 const { promisify } = require('util')
 const execAsync = promisify(exec)
 
-const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
+// Helper to check if Docker is available and daemon is running
+function isDockerAvailable() {
+  try {
+    execSync('docker --version', { stdio: 'pipe' });
+    // Also check if daemon is responsive
+    execSync('docker info', { stdio: 'pipe', timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Helper to check if docker-compose is available
 function isDockerComposeAvailable() {
@@ -24,22 +34,35 @@ function isDockerComposeAvailable() {
   }
 }
 
+// Determine the correct docker-compose command to use
+function getDockerComposeCommand() {
+  try {
+    execSync('docker-compose --version', { stdio: 'pipe' });
+    return 'docker-compose';
+  } catch {
+    try {
+      execSync('docker compose version', { stdio: 'pipe' });
+      return 'docker compose';
+    } catch {
+      return null;
+    }
+  }
+}
+
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1' && isDockerAvailable() && isDockerComposeAvailable();
+const DOCKER_COMPOSE_CMD = getDockerComposeCommand();
+
 const conditionalDescribe = HAS_DOCKER ? describe : describe.skip;
 
 conditionalDescribe('Container Health Tests', () => {
   const HEALTH_CHECK_TIMEOUT = 30000
 
-  beforeAll(() => {
-    // Verify docker-compose is available
-    if (HAS_DOCKER && !isDockerComposeAvailable()) {
-      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
-    }
-  });
+  // No beforeAll check needed - if we're here, HAS_DOCKER is true
 
   describe('Container Health Status', () => {
     test('should report container health status', async () => {
       try {
-        const { stdout } = await execAsync('docker-compose ps --format json')
+        const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps --format json`)
         const containers = stdout.split('\n').filter(line => line.trim()).map(line => JSON.parse(line))
 
         containers.forEach(container => {
@@ -124,7 +147,7 @@ conditionalDescribe('Container Health Tests', () => {
 
       for (const service of services) {
         try {
-          const { stdout, stderr } = await execAsync(`docker-compose logs --tail=5 ${service}`)
+          const { stdout, stderr } = await execAsync(`${DOCKER_COMPOSE_CMD} logs --tail=5 ${service}`)
 
           // Should have either logs or no errors
           expect(stderr).not.toContain('ERROR')
@@ -141,7 +164,7 @@ conditionalDescribe('Container Health Tests', () => {
 
     test('should not have critical errors in logs', async () => {
       try {
-        const { stdout } = await execAsync('docker-compose logs --tail=20')
+        const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} logs --tail=20`)
 
         // Check for critical error patterns
         const criticalErrors = [
@@ -165,7 +188,7 @@ conditionalDescribe('Container Health Tests', () => {
     test('should handle container restart gracefully', async () => {
       try {
         // Test Redis restart (safest to test)
-        await execAsync('docker-compose restart redis')
+        await execAsync(`${DOCKER_COMPOSE_CMD} restart redis`)
 
         // Wait for restart
         await new Promise(resolve => setTimeout(resolve, 5000))
@@ -184,7 +207,7 @@ conditionalDescribe('Container Health Tests', () => {
         await execAsync('docker exec vibecode-webgui-redis-1 redis-cli set test_key "test_value"')
 
         // Restart Redis
-        await execAsync('docker-compose restart redis')
+        await execAsync(`${DOCKER_COMPOSE_CMD} restart redis`)
         await new Promise(resolve => setTimeout(resolve, 5000))
 
         // Check if value persists
@@ -204,7 +227,7 @@ conditionalDescribe('Container Health Tests', () => {
       try {
         // Test that web container can resolve postgres by service name
         const { stdout } = await execAsync(
-          'docker-compose exec -T web nslookup postgres || echo "DNS resolution test"'
+          `${DOCKER_COMPOSE_CMD} exec -T web nslookup postgres || echo "DNS resolution test"`
         )
 
         // Should either resolve successfully or show DNS test message
@@ -226,12 +249,7 @@ conditionalDescribe('Container Health Tests', () => {
 })
 
 conditionalDescribe('Performance and Load Tests', () => {
-  beforeAll(() => {
-    // Verify docker-compose is available
-    if (HAS_DOCKER && !isDockerComposeAvailable()) {
-      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
-    }
-  });
+  // No beforeAll check needed - if we're here, HAS_DOCKER is true
 
   describe('Database Performance', () => {
     test('should handle basic database operations efficiently', async () => {
@@ -300,8 +318,8 @@ conditionalDescribe('Performance and Load Tests', () => {
         const startTime = Date.now()
 
         // Stop and start a lightweight service
-        await execAsync('docker-compose stop redis')
-        await execAsync('docker-compose start redis')
+        await execAsync(`${DOCKER_COMPOSE_CMD} stop redis`)
+        await execAsync(`${DOCKER_COMPOSE_CMD} start redis`)
 
         // Wait for health check
         let attempts = 0

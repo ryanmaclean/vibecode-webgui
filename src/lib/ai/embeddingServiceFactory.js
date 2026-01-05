@@ -4,4 +4,4 @@
  */
 
 // Re-export the TypeScript implementation
-export { EmbeddingServiceFactory, EmbeddingProvider } from './embeddingServiceFactory.js';
+export { EmbeddingServiceFactory, EmbeddingProvider } from './embeddingServiceFactory.ts';

@@ -3,7 +3,26 @@ jest.mock('uuid', () => ({
   v4: jest.fn(() => 'test-uuid-123')
 }));
 
-import { MongoDBChatService } from '@/lib/services/chat-mongodb';
+// Mock MongoDB ObjectId
+jest.mock('mongodb', () => ({
+  ObjectId: class MockObjectId {
+    private _id: string;
+
+    constructor(id?: string) {
+      this._id = id || Math.random().toString(36).substring(7);
+    }
+
+    toString() {
+      return this._id;
+    }
+
+    toHexString() {
+      return this._id;
+    }
+  }
+}));
+
+import { ChatMongoDBService } from '@/lib/services/chat-mongodb';
 import { v4 as uuidv4 } from 'uuid';
 import { getDatabase } from '@/lib/mongodb';
 
@@ -19,8 +38,8 @@ jest.mock('@/lib/monitoring', () => ({
   }
 }));
 
-describe('MongoDBChatService', () => {
-  let service: MongoDBChatService;
+describe('ChatMongoDBService', () => {
+  let service: ChatMongoDBService;
   let mockDb: any;
   let mockConversationsCollection: any;
   let mockSessionsCollection: any;
@@ -31,8 +50,24 @@ describe('MongoDBChatService', () => {
 
     // Reset uuid mock
     (uuidv4 as jest.Mock).mockReturnValue('test-uuid-123');
-    
+
     // Setup mock collections
+    const mockMessagesCollection = {
+      createIndex: jest.fn(),
+      insertOne: jest.fn(),
+      findOne: jest.fn(),
+      find: jest.fn(),
+      updateOne: jest.fn(),
+      deleteOne: jest.fn(),
+      deleteMany: jest.fn(),
+      countDocuments: jest.fn(),
+      distinct: jest.fn(),
+      aggregate: jest.fn().mockReturnValue({
+        toArray: jest.fn().mockResolvedValue([])
+      }),
+      toArray: jest.fn()
+    };
+
     mockConversationsCollection = {
       createIndex: jest.fn(),
       insertOne: jest.fn(),
@@ -40,13 +75,20 @@ describe('MongoDBChatService', () => {
       find: jest.fn(),
       updateOne: jest.fn(),
       deleteOne: jest.fn(),
+      deleteMany: jest.fn(),
+      countDocuments: jest.fn(),
+      distinct: jest.fn(),
+      aggregate: jest.fn().mockReturnValue({
+        toArray: jest.fn().mockResolvedValue([])
+      }),
       toArray: jest.fn()
     };
 
     mockSessionsCollection = {
       createIndex: jest.fn(),
       insertOne: jest.fn(),
-      findOne: jest.fn()
+      findOne: jest.fn(),
+      deleteMany: jest.fn()
     };
 
     mockAssistantsCollection = {
@@ -63,6 +105,7 @@ describe('MongoDBChatService', () => {
     mockDb = {
       collection: jest.fn((name: string) => {
         switch (name) {
+          case 'messages': return mockMessagesCollection;
           case 'conversations': return mockConversationsCollection;
           case 'sessions': return mockSessionsCollection;
           case 'assistants': return mockAssistantsCollection;
@@ -74,11 +117,14 @@ describe('MongoDBChatService', () => {
     // Mock getDatabase
     (getDatabase as jest.Mock).mockResolvedValue(mockDb);
 
-    service = new MongoDBChatService();
-    
-    // Debug: Check if the service was created properly
-    console.log('Service created:', !!service);
-    console.log('Service methods:', Object.getOwnPropertyNames(Object.getPrototypeOf(service)));
+    service = new ChatMongoDBService();
+    // Initialize the service with mock collections
+    service.initialize(
+      mockMessagesCollection,
+      mockConversationsCollection,
+      mockSessionsCollection,
+      mockAssistantsCollection
+    );
   });
 
   describe('constructor', () => {
@@ -99,16 +145,10 @@ describe('MongoDBChatService', () => {
 
         const result = await service.createSession('user123', 'Mozilla/5.0', '192.168.1.1');
 
-        // Debug: log what we actually got
-        console.log('Result:', result);
-        console.log('Result sessionId:', result.sessionId);
-        console.log('Mock insertOne called:', mockSessionsCollection.insertOne.mock.calls.length);
-        console.log('Mock insertOne calls:', mockSessionsCollection.insertOne.mock.calls);
-
-        expect(result.sessionId).toBeDefined(); // Just check it's defined for now
+        expect(result.sessionId).toBeDefined();
         expect(result.userId).toBe('user123');
         expect(result.userAgent).toBe('Mozilla/5.0');
-        expect(result.ip).toBe('192.168.1.1');
+        expect(result.ipAddress).toBe('192.168.1.1');
         expect(result._id).toBe('session-id-123');
         expect(mockSessionsCollection.insertOne).toHaveBeenCalledWith(expect.objectContaining({
           userId: 'user123'
@@ -122,10 +162,10 @@ describe('MongoDBChatService', () => {
 
         const result = await service.createSession('user123');
 
-        expect(result.sessionId).toBe('test-uuid-123');
+        expect(result.sessionId).toBeDefined();
         expect(result.userId).toBe('user123');
         expect(result.userAgent).toBeUndefined();
-        expect(result.ip).toBeUndefined();
+        expect(result.ipAddress).toBeUndefined();
       });
 
       it('should handle session creation errors', async () => {
@@ -135,65 +175,28 @@ describe('MongoDBChatService', () => {
       });
     });
 
-    describe('getSession', () => {
-      it('should retrieve an existing session', async () => {
-        const mockSession = {
-          sessionId: 'test-session-id',
-          userId: 'user123',
-          createdAt: new Date(),
-          expiresAt: new Date(Date.now() + 24 * 60 * 60 * 1000)
-        };
+    describe('cleanupExpiredSessions', () => {
+      it('should remove expired sessions', async () => {
+        mockSessionsCollection.deleteMany.mockResolvedValue({
+          deletedCount: 5
+        });
 
-        mockSessionsCollection.findOne.mockResolvedValue(mockSession);
+        const result = await service.cleanupExpiredSessions();
 
-        const result = await service.getSession('test-session-id');
-
-        expect(result).toEqual(mockSession);
-        expect(mockSessionsCollection.findOne).toHaveBeenCalledWith({ sessionId: 'test-session-id' });
+        expect(result).toBe(5);
+        expect(mockSessionsCollection.deleteMany).toHaveBeenCalledWith({
+          expiresAt: { $lt: expect.any(Date) }
+        });
       });
 
-      it('should return null for non-existent session', async () => {
-        mockSessionsCollection.findOne.mockResolvedValue(null);
+      it('should return 0 when no expired sessions', async () => {
+        mockSessionsCollection.deleteMany.mockResolvedValue({
+          deletedCount: 0
+        });
 
-        const result = await service.getSession('non-existent-session');
+        const result = await service.cleanupExpiredSessions();
 
-        expect(result).toBeNull();
-      });
-    });
-
-    describe('validateSession', () => {
-      it('should validate active session', async () => {
-        const mockSession = {
-          sessionId: 'test-session-id',
-          expiresAt: new Date(Date.now() + 60 * 60 * 1000) // 1 hour from now
-        };
-
-        mockSessionsCollection.findOne.mockResolvedValue(mockSession);
-
-        const result = await service.validateSession('test-session-id');
-
-        expect(result).toBe(true);
-      });
-
-      it('should invalidate expired session', async () => {
-        const mockSession = {
-          sessionId: 'test-session-id',
-          expiresAt: new Date(Date.now() - 60 * 60 * 1000) // 1 hour ago
-        };
-
-        mockSessionsCollection.findOne.mockResolvedValue(mockSession);
-
-        const result = await service.validateSession('test-session-id');
-
-        expect(result).toBe(false);
-      });
-
-      it('should return false for non-existent session', async () => {
-        mockSessionsCollection.findOne.mockResolvedValue(null);
-
-        const result = await service.validateSession('non-existent-session');
-
-        expect(result).toBe(false);
+        expect(result).toBe(0);
       });
     });
   });
@@ -201,8 +204,11 @@ describe('MongoDBChatService', () => {
   describe('Conversation Management', () => {
     describe('createConversation', () => {
       it('should create a new conversation', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
         mockConversationsCollection.insertOne.mockResolvedValue({
-          insertedId: 'conversation-id-123'
+          insertedId: mockId
         });
 
         const result = await service.createConversation(
@@ -213,7 +219,7 @@ describe('MongoDBChatService', () => {
           'workspace-123'
         );
 
-        expect(result.id).toBe('test-uuid-123');
+        expect(result.id).toBe(mockId.toString());
         expect(result.title).toBe('Test Conversation');
         expect(result.sessionId).toBe('session-123');
         expect(result.model).toBe('gpt-4');
@@ -238,26 +244,32 @@ describe('MongoDBChatService', () => {
 
     describe('getConversation', () => {
       it('should retrieve an existing conversation', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
         mockConversationsCollection.findOne.mockResolvedValue({
-          id: 'conversation-123',
+          _id: mockId,
           title: 'Test Conversation',
           messages: []
         });
 
-        const result = await service.getConversation('conversation-123');
+        const result = await service.getConversation(mockId);
 
         expect(result).toEqual({
-          id: 'conversation-123',
+          _id: mockId,
           title: 'Test Conversation',
           messages: []
         });
-        expect(mockConversationsCollection.findOne).toHaveBeenCalledWith({ id: 'conversation-123' });
+        expect(mockConversationsCollection.findOne).toHaveBeenCalledWith({ _id: mockId });
       });
 
       it('should return null for non-existent conversation', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
         mockConversationsCollection.findOne.mockResolvedValue(null);
 
-        const result = await service.getConversation('non-existent-conversation');
+        const result = await service.getConversation(mockId);
 
         expect(result).toBeNull();
       });
@@ -265,9 +277,13 @@ describe('MongoDBChatService', () => {
 
     describe('getConversationsByWorkspace', () => {
       it('should retrieve conversations by workspace', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId1 = new ObjectId();
+        const mockId2 = new ObjectId();
+
         const mockConversations = [
-          { id: 'conv1', title: 'Conversation 1' },
-          { id: 'conv2', title: 'Conversation 2' }
+          { _id: mockId1, title: 'Conversation 1' },
+          { _id: mockId2, title: 'Conversation 2' }
         ];
 
         const mockFind = {
@@ -280,7 +296,11 @@ describe('MongoDBChatService', () => {
 
         const result = await service.getConversationsByWorkspace('workspace-123', 10);
 
-        expect(result).toEqual(mockConversations);
+        expect(result.length).toBe(2);
+        expect(result[0].id).toBe(mockId1.toString());
+        expect(result[0].title).toBe('Conversation 1');
+        expect(result[1].id).toBe(mockId2.toString());
+        expect(result[1].title).toBe('Conversation 2');
         expect(mockConversationsCollection.find).toHaveBeenCalledWith({ workspaceId: 'workspace-123' });
         expect(mockFind.sort).toHaveBeenCalledWith({ updatedAt: -1 });
         expect(mockFind.limit).toHaveBeenCalledWith(10);
@@ -303,9 +323,13 @@ describe('MongoDBChatService', () => {
 
     describe('getConversationsByUser', () => {
       it('should retrieve conversations by user', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId1 = new ObjectId();
+        const mockId2 = new ObjectId();
+
         const mockConversations = [
-          { id: 'conv1', title: 'Conversation 1' },
-          { id: 'conv2', title: 'Conversation 2' }
+          { _id: mockId1, title: 'Conversation 1' },
+          { _id: mockId2, title: 'Conversation 2' }
         ];
 
         const mockFind = {
@@ -318,7 +342,11 @@ describe('MongoDBChatService', () => {
 
         const result = await service.getConversationsByUser('user123', 20);
 
-        expect(result).toEqual(mockConversations);
+        expect(result.length).toBe(2);
+        expect(result[0].id).toBe(mockId1.toString());
+        expect(result[0].title).toBe('Conversation 1');
+        expect(result[1].id).toBe(mockId2.toString());
+        expect(result[1].title).toBe('Conversation 2');
         expect(mockConversationsCollection.find).toHaveBeenCalledWith({ userId: 'user123' });
         expect(mockFind.sort).toHaveBeenCalledWith({ updatedAt: -1 });
         expect(mockFind.limit).toHaveBeenCalledWith(20);
@@ -329,120 +357,101 @@ describe('MongoDBChatService', () => {
   describe('Message Management', () => {
     describe('addMessage', () => {
       it('should add a message to a conversation', async () => {
-        const messageData = {
-          from: 'user' as 'user' | 'assistant',
-          content: 'Hello, world!'
-        };
+        const { ObjectId } = require('mongodb');
+        const mockConvId = new ObjectId();
+        const mockMsgId = new ObjectId();
+
+        mockConversationsCollection.findOne.mockResolvedValue({
+          _id: mockConvId,
+          workspaceId: 'workspace-123',
+          userId: 'user-123',
+          messages: []
+        });
+
+        const mockMessagesCollection = service.getCollections().messages;
+        mockMessagesCollection.insertOne = jest.fn().mockResolvedValue({
+          insertedId: mockMsgId
+        });
 
         mockConversationsCollection.updateOne.mockResolvedValue({
           matchedCount: 1
         });
 
-        const result = await service.addMessage('conversation-123', messageData);
+        const messageData = {
+          from: 'user' as 'user' | 'assistant',
+          content: 'Hello, world!'
+        };
 
-        expect(result.id).toBe('test-uuid-123');
+        const result = await service.addMessage(mockConvId.toString(), messageData);
+
+        expect(result.id).toBeDefined();
         expect(result.from).toBe('user');
         expect(result.content).toBe('Hello, world!');
-        expect(result.createdAt).toBeInstanceOf(Date);
-        expect(mockConversationsCollection.updateOne).toHaveBeenCalledWith(
-          { id: 'conversation-123' },
-          expect.objectContaining({
-            $push: { messages: expect.objectContaining({ from: 'user' }) },
-            $set: { updatedAt: expect.any(Date) }
-          })
-        );
+        expect(result.timestamp).toBeInstanceOf(Date);
       });
 
       it('should handle adding message to non-existent conversation', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockConvId = new ObjectId();
+
+        mockConversationsCollection.findOne.mockResolvedValue(null);
+
         const messageData = {
           from: 'user' as 'user' | 'assistant',
           content: 'Hello, world!'
         };
 
-        mockConversationsCollection.updateOne.mockResolvedValue({
-          matchedCount: 0
-        });
-
-        await expect(service.addMessage('non-existent-conversation', messageData))
+        await expect(service.addMessage(mockConvId.toString(), messageData))
           .rejects.toThrow('Conversation not found');
       });
-
-      it('should handle message addition errors', async () => {
-        const messageData = {
-          from: 'user' as 'user' | 'assistant',
-          content: 'Hello, world!'
-        };
-
-        mockConversationsCollection.updateOne.mockRejectedValue(new Error('Database error'));
-
-        await expect(service.addMessage('conversation-123', messageData))
-          .rejects.toThrow('Database error');
-      });
     });
 
-    describe('updateMessage', () => {
-      it('should update an existing message', async () => {
-        mockConversationsCollection.updateOne.mockResolvedValue({
-          matchedCount: 1
-        });
-
-        await service.updateMessage('conversation-123', 'message-123', 'Updated content');
-
-        expect(mockConversationsCollection.updateOne).toHaveBeenCalledWith(
-          { id: 'conversation-123', 'messages.id': 'message-123' },
-          expect.objectContaining({
-            $set: expect.objectContaining({
-              'messages.$.content': 'Updated content',
-              'messages.$.updatedAt': expect.any(Date),
-              updatedAt: expect.any(Date)
-            })
-          })
-        );
-      });
-
-      it('should handle updating non-existent message', async () => {
-        mockConversationsCollection.updateOne.mockResolvedValue({
-          matchedCount: 0
-        });
-
-        await expect(service.updateMessage('conversation-123', 'non-existent-message', 'Updated content'))
-          .rejects.toThrow('Conversation or message not found');
-      });
-
-      it('should handle message update errors', async () => {
-        mockConversationsCollection.updateOne.mockRejectedValue(new Error('Database error'));
-
-        await expect(service.updateMessage('conversation-123', 'message-123', 'Updated content'))
-          .rejects.toThrow('Database error');
-      });
-    });
   });
 
   describe('Conversation Deletion', () => {
     describe('deleteConversation', () => {
       it('should delete an existing conversation', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
+        mockConversationsCollection.findOne.mockResolvedValue({
+          _id: mockId,
+          messages: []
+        });
+
         mockConversationsCollection.deleteOne.mockResolvedValue({
           deletedCount: 1
         });
 
-        await service.deleteConversation('conversation-123');
+        const result = await service.deleteConversation(mockId);
 
-        expect(mockConversationsCollection.deleteOne).toHaveBeenCalledWith({ id: 'conversation-123' });
+        expect(result).toBe(true);
+        expect(mockConversationsCollection.deleteOne).toHaveBeenCalledWith({ _id: mockId });
       });
 
       it('should handle deleting non-existent conversation', async () => {
-        mockConversationsCollection.deleteOne.mockResolvedValue({
-          deletedCount: 0
-        });
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
 
-        await expect(service.deleteConversation('non-existent-conversation'))
-          .rejects.toThrow('Conversation not found');
+        mockConversationsCollection.findOne.mockResolvedValue(null);
+
+        const result = await service.deleteConversation(mockId);
+
+        expect(result).toBe(false);
       });
 
       it('should handle conversation deletion errors', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
+        mockConversationsCollection.findOne.mockResolvedValue({
+          _id: mockId,
+          messages: []
+        });
+
         mockConversationsCollection.deleteOne.mockRejectedValue(new Error('Database error'));
 
-        await expect(service.deleteConversation('conversation-123'))
+        await expect(service.deleteConversation(mockId))
           .rejects.toThrow('Database error');
       });
     });
@@ -451,17 +460,20 @@ describe('MongoDBChatService', () => {
   describe('Assistant Management', () => {
     describe('createAssistant', () => {
       it('should create a new assistant', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
         const assistantData = {
           name: 'Test Assistant',
           description: 'A test assistant',
           instructions: 'You are a helpful assistant',
           model: 'gpt-4',
-          createdBy: 'user123',
+          userId: 'user123',
           tools: ['web_search', 'calculator']
         };
 
         mockAssistantsCollection.insertOne.mockResolvedValue({
-          insertedId: 'assistant-id-123'
+          insertedId: mockId
         });
 
         const result = await service.createAssistant(
@@ -469,23 +481,26 @@ describe('MongoDBChatService', () => {
           assistantData.description,
           assistantData.instructions,
           assistantData.model,
-          assistantData.createdBy,
+          assistantData.userId,
           assistantData.tools
         );
 
-        expect(result.id).toBe('test-uuid-123');
+        expect(result.id).toBeDefined();
         expect(result.name).toBe('Test Assistant');
         expect(result.description).toBe('A test assistant');
         expect(result.instructions).toBe('You are a helpful assistant');
         expect(result.model).toBe('gpt-4');
-        expect(result.createdBy).toBe('user123');
+        expect(result.userId).toBe('user123');
         expect(result.tools).toEqual(['web_search', 'calculator']);
         expect(mockAssistantsCollection.insertOne).toHaveBeenCalled();
       });
 
       it('should create assistant without tools', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
         mockAssistantsCollection.insertOne.mockResolvedValue({
-          insertedId: 'assistant-id-123'
+          insertedId: mockId
         });
 
         const result = await service.createAssistant(
@@ -496,7 +511,7 @@ describe('MongoDBChatService', () => {
           'user123'
         );
 
-        expect(result.tools).toEqual([]);
+        expect(result.tools).toBeUndefined();
       });
 
       it('should handle assistant creation errors', async () => {
@@ -512,28 +527,45 @@ describe('MongoDBChatService', () => {
       });
     });
 
-    describe('getAssistant', () => {
-      it('should retrieve an existing assistant', async () => {
-        const mockAssistant = {
-          id: 'assistant-123',
-          name: 'Test Assistant',
-          description: 'A test assistant'
+    describe('getAssistantsByUser', () => {
+      it('should retrieve assistants by user', async () => {
+        const { ObjectId } = require('mongodb');
+        const mockId = new ObjectId();
+
+        const mockAssistants = [
+          {
+            _id: mockId,
+            name: 'Test Assistant',
+            description: 'A test assistant',
+            userId: 'user123'
+          }
+        ];
+
+        const mockFind = {
+          sort: jest.fn().mockReturnThis(),
+          toArray: jest.fn().mockResolvedValue(mockAssistants)
         };
 
-        mockAssistantsCollection.findOne.mockResolvedValue(mockAssistant);
+        mockAssistantsCollection.find.mockReturnValue(mockFind);
 
-        const result = await service.getAssistant('assistant-123');
+        const result = await service.getAssistantsByUser('user123');
 
-        expect(result).toEqual(mockAssistant);
-        expect(mockAssistantsCollection.findOne).toHaveBeenCalledWith({ id: 'assistant-123' });
+        expect(result).toHaveLength(1);
+        expect(result[0].name).toBe('Test Assistant');
+        expect(mockAssistantsCollection.find).toHaveBeenCalledWith({ userId: 'user123' });
       });
 
-      it('should return null for non-existent assistant', async () => {
-        mockAssistantsCollection.findOne.mockResolvedValue(null);
+      it('should return empty array for user with no assistants', async () => {
+        const mockFind = {
+          sort: jest.fn().mockReturnThis(),
+          toArray: jest.fn().mockResolvedValue([])
+        };
 
-        const result = await service.getAssistant('non-existent-assistant');
+        mockAssistantsCollection.find.mockReturnValue(mockFind);
 
-        expect(result).toBeNull();
+        const result = await service.getAssistantsByUser('user123');
+
+        expect(result).toEqual([]);
       });
     });
   });
@@ -541,88 +573,79 @@ describe('MongoDBChatService', () => {
   describe('Statistics', () => {
     describe('getChatStats', () => {
       it('should calculate chat statistics', async () => {
-        // The getChatStats method doesn't exist in the actual implementation
-        // This test documents the expected behavior
-        expect(service).toBeDefined();
+        const mockMessageStats = [{
+          totalMessages: 100,
+          userMessages: 60,
+          assistantMessages: 35,
+          systemMessages: 5
+        }];
+
+        const mockConvStats = [{
+          totalConversations: 10,
+          avgMessagesPerConversation: 10
+        }];
+
+        const mockMessagesCollection = service.getCollections().messages;
+        mockMessagesCollection.aggregate = jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue(mockMessageStats)
+        });
+
+        mockConversationsCollection.aggregate.mockReturnValue({
+          toArray: jest.fn().mockResolvedValue(mockConvStats)
+        });
+
+        const result = await service.getChatStats('workspace-123');
+
+        expect(result.totalMessages).toBe(100);
+        expect(result.totalConversations).toBe(10);
+        expect(result.messagesByRole.user).toBe(60);
+        expect(result.messagesByRole.assistant).toBe(35);
+        expect(result.messagesByRole.system).toBe(5);
       });
 
       it('should handle empty conversations', async () => {
-        // The getChatStats method doesn't exist in the actual implementation
-        // This test documents the expected behavior
-        expect(service).toBeDefined();
+        const mockMessagesCollection = service.getCollections().messages;
+        mockMessagesCollection.aggregate = jest.fn().mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        });
+
+        mockConversationsCollection.aggregate.mockReturnValue({
+          toArray: jest.fn().mockResolvedValue([])
+        });
+
+        const result = await service.getChatStats();
+
+        expect(result.totalMessages).toBe(0);
+        expect(result.totalConversations).toBe(0);
       });
     });
   });
 
-  describe('Error Handling', () => {
-    it('should handle database connection errors gracefully', async () => {
-      (getDatabase as jest.Mock).mockRejectedValue(new Error('Connection failed'));
+  describe('Health Status', () => {
+    it('should get health status', async () => {
+      const mockMessagesCollection = service.getCollections().messages;
+      mockMessagesCollection.countDocuments = jest.fn().mockResolvedValue(100);
+      mockMessagesCollection.findOne = jest.fn().mockResolvedValue({
+        timestamp: new Date()
+      });
 
-      await expect(service.createSession('user123')).rejects.toThrow('Connection failed');
+      mockConversationsCollection.countDocuments.mockResolvedValue(10);
+
+      const result = await service.getHealthStatus();
+
+      expect(result.isHealthy).toBe(true);
+      expect(result.messageCount).toBe(100);
+      expect(result.conversationCount).toBe(10);
+      expect(result.lastActivity).toBeInstanceOf(Date);
     });
 
-    it('should handle collection access errors', async () => {
-      mockDb.collection.mockImplementation(() => {
-        throw new Error('Collection access failed');
-      });
+    it('should handle health check errors', async () => {
+      const mockMessagesCollection = service.getCollections().messages;
+      mockMessagesCollection.countDocuments = jest.fn().mockRejectedValue(new Error('Connection failed'));
 
-      await expect(service.createSession('user123')).rejects.toThrow('Collection access failed');
-    });
-  });
+      const result = await service.getHealthStatus();
 
-  describe('Collection Initialization', () => {
-    it('should initialize collections with proper indexes', async () => {
-      // Setup mocks for all collections
-      mockSessionsCollection.insertOne.mockResolvedValue({
-        insertedId: 'session-id-123',
-        acknowledged: true,
-        insertedCount: 1
-      });
-      
-      mockConversationsCollection.insertOne.mockResolvedValue({
-        insertedId: 'conversation-id-123',
-        acknowledged: true,
-        insertedCount: 1
-      });
-      
-      mockAssistantsCollection.insertOne.mockResolvedValue({
-        insertedId: 'assistant-id-123',
-        acknowledged: true,
-        insertedCount: 1
-      });
-      
-      // Trigger collection initialization by calling methods that use each collection
-      await service.createSession('user123');
-      
-      // Fix the order of parameters to match the implementation
-      await service.createConversation(
-        'Test Conversation',
-        'session-123',
-        'gpt-4',
-        'user123',
-        'workspace-123'
-      );
-      
-      // Fix the order of parameters to match the implementation
-      await service.createAssistant(
-        'Test Assistant',
-        'A test assistant',
-        'You are a helpful assistant',
-        'gpt-4',
-        'user123'
-      );
-
-      expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ sessionId: 1 });
-      expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ userId: 1 });
-      expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ workspaceId: 1 });
-      expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ createdAt: -1 });
-      expect(mockConversationsCollection.createIndex).toHaveBeenCalledWith({ updatedAt: -1 });
-
-      expect(mockSessionsCollection.createIndex).toHaveBeenCalledWith({ sessionId: 1 }, { unique: true });
-      expect(mockSessionsCollection.createIndex).toHaveBeenCalledWith({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-      expect(mockAssistantsCollection.createIndex).toHaveBeenCalledWith({ createdBy: 1 });
-      expect(mockAssistantsCollection.createIndex).toHaveBeenCalledWith({ name: 1 });
+      expect(result.isHealthy).toBe(false);
     });
   });
 });

@@ -325,8 +325,19 @@ async function handleThreadRoutes(
     }
   } else {
     // Thread operations
+    // Try to get session, but if not found, verify thread exists via API
     const session = _threadManager.getSession(id)
-    if (!session || session.userId !== userId) {
+
+    // If no session, verify thread exists via OpenAI API
+    if (!session) {
+      try {
+        const { client } = getClient()
+        await client.getThread(id)
+        // Thread exists in OpenAI, continue without session check
+      } catch (error) {
+        return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
+      }
+    } else if (session.userId !== userId) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
 
@@ -470,21 +481,34 @@ async function handleFileRoutes(
 ) {
   const { client } = getClient()
   if (method === 'POST' && !fileId) {
-    const formData = await request.formData()
-    const fileEntry = formData.get('file')
-    const fileCtor = typeof globalThis.File !== 'undefined' ? globalThis.File : undefined
-    const file = fileCtor && fileEntry instanceof fileCtor ? fileEntry : null
-    const purpose = (formData.get('purpose') as 'assistants' | 'vision') || 'assistants'
+    try {
+      const formData = await request.formData()
+      const fileEntry = formData.get('file')
+      const fileCtor = typeof globalThis.File !== 'undefined' ? globalThis.File : undefined
+      const file = fileCtor && fileEntry instanceof fileCtor ? fileEntry : null
+      const purpose = (formData.get('purpose') as 'assistants' | 'vision') || 'assistants'
 
-    if (!file) {
-      return NextResponse.json({ error: 'File is required' }, { status: 400 })
+      if (!file) {
+        return NextResponse.json({ error: 'File is required' }, { status: 400 })
+      }
+
+      const fileObject = await client.uploadFile(file, file.name, purpose)
+
+      logger.info('File uploaded', { fileId: fileObject.id, userId })
+
+      return NextResponse.json(fileObject, { status: 201 })
+    } catch (error) {
+      logger.error('File upload failed', {
+        error: error instanceof Error ? error.message : error,
+      })
+      return NextResponse.json(
+        {
+          error: 'File upload failed',
+          message: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 }
+      )
     }
-
-    const fileObject = await client.uploadFile(file, file.name, purpose)
-
-    logger.info('File uploaded', { fileId: fileObject.id, userId })
-
-    return NextResponse.json(fileObject, { status: 201 })
   }
 
   if (fileId) {

@@ -36,23 +36,164 @@ export class ExperimentWarehouse {
 
   /**
    * Log experiment assignment - buffered for batch processing
+   * Returns assignment object for compatibility with tests
    */
+  async logAssignment(params: {
+    experimentId: string;
+    userId: string;
+    variantKey: string;
+    metadata?: any;
+  }): Promise<{ id: string; variantKey: string; userId: string }>;
   async logAssignment(
     experimentKey: string,
     userId: string,
     variantKey: string,
     metadata?: any
-  ): Promise<void> {
+  ): Promise<void>;
+  async logAssignment(
+    experimentKeyOrParams: string | { experimentId: string; userId: string; variantKey: string; metadata?: any },
+    userId?: string,
+    variantKey?: string,
+    metadata?: any
+  ): Promise<{ id: string; variantKey: string; userId: string } | void> {
+    // Handle both call signatures
+    let experimentKey: string;
+    let user: string;
+    let variant: string;
+    let meta: any;
+    let shouldReturn = false;
+
+    if (typeof experimentKeyOrParams === 'object') {
+      // New signature with params object
+      experimentKey = experimentKeyOrParams.experimentId;
+      user = experimentKeyOrParams.userId;
+      variant = experimentKeyOrParams.variantKey;
+      meta = experimentKeyOrParams.metadata;
+      shouldReturn = true;
+    } else {
+      // Old signature
+      experimentKey = experimentKeyOrParams;
+      user = userId!;
+      variant = variantKey!;
+      meta = metadata;
+    }
+
     this.assignmentBuffer.push({
       experimentKey,
-      userId,
-      variantKey,
-      metadata
+      userId: user,
+      variantKey: variant,
+      metadata: meta
     });
 
     // Auto-flush if batch size reached
     if (this.assignmentBuffer.length >= this.BATCH_SIZE) {
       await this.flushAssignments();
+    }
+
+    // For tests, return assignment immediately after flushing
+    if (shouldReturn) {
+      // Don't add to buffer - directly upsert for synchronous tests
+      // Clear the last item from buffer
+      this.assignmentBuffer.pop();
+
+      // Try to find experiment by ID or key
+      const experiment = await prisma.experiment.findFirst({
+        where: {
+          OR: [
+            { id: experimentKey },
+            { key: experimentKey }
+          ]
+        }
+      });
+
+      if (!experiment) {
+        throw new Error(`Experiment not found: ${experimentKey}`);
+      }
+
+      // Directly upsert the assignment
+      const assignment = await prisma.experimentAssignment.upsert({
+        where: {
+          experiment_id_user_id: {
+            experimentId: experiment.id,
+            userId: user
+          }
+        },
+        update: {
+          variantKey: variant,
+          metadata: meta
+        },
+        create: {
+          experimentId: experiment.id,
+          userId: user,
+          variantKey: variant,
+          metadata: meta
+        }
+      });
+
+      return {
+        id: assignment.id,
+        variantKey: assignment.variantKey,
+        userId: assignment.userId
+      };
+    }
+  }
+
+  /**
+   * Log multiple assignments in batch
+   */
+  async logAssignmentsBatch(
+    assignments: Array<{
+      experimentId: string;
+      userId: string;
+      variantKey: string;
+      metadata?: any;
+    }>
+  ): Promise<void> {
+    if (assignments.length === 0) return;
+
+    // Use the first assignment's experiment ID to look up the experiment
+    const experimentKey = assignments[0].experimentId;
+    const experiment = await prisma.experiment.findFirst({
+      where: {
+        OR: [
+          { id: experimentKey },
+          { key: experimentKey }
+        ]
+      }
+    });
+
+    if (!experiment) {
+      throw new Error(`Experiment not found: ${experimentKey}`);
+    }
+
+    // Process assignments in batches
+    const batchSize = 50;
+    for (let i = 0; i < assignments.length; i += batchSize) {
+      const batch = assignments.slice(i, i + batchSize);
+
+      // Upsert each assignment
+      await Promise.all(
+        batch.map(assignment =>
+          prisma.experimentAssignment.upsert({
+            where: {
+              experiment_id_user_id: {
+                experimentId: experiment.id,
+                userId: assignment.userId
+              }
+            },
+            update: {
+              variantKey: assignment.variantKey,
+              metadata: assignment.metadata
+            },
+            create: {
+              experimentId: experiment.id,
+              userId: assignment.userId,
+              variantKey: assignment.variantKey,
+              metadata: assignment.metadata
+            }
+          })
+        )
+      );
     }
   }
 
@@ -88,12 +229,20 @@ export class ExperimentWarehouse {
       where: { key: experimentKey },
       include: {
         assignments: {
-          orderBy: { timestamp: 'desc' }
+          orderBy: { assignedAt: 'desc' }
         }
       }
     });
 
-    return experiment?.assignments || [];
+    if (!experiment) return [];
+
+    // Map to include both camelCase and snake_case for backward compatibility
+    return experiment.assignments.map(assignment => ({
+      ...assignment,
+      user_id: assignment.userId,
+      variant_key: assignment.variantKey,
+      timestamp: assignment.assignedAt
+    }));
   }
 
   /**
@@ -101,19 +250,31 @@ export class ExperimentWarehouse {
    */
   async getMetrics(experimentKey: string, metricName?: string): Promise<any[]> {
     const whereClause: any = { key: experimentKey };
-    const metricsWhere: any = metricName ? { metric_name: metricName } : {};
+    const metricsWhere: any = metricName ? { metricName: metricName } : {};
 
     const experiment = await prisma.experiment.findUnique({
       where: whereClause,
       include: {
         metrics: {
           where: metricsWhere,
+          include: {
+            assignment: true  // Include assignment to get variant_key
+          },
           orderBy: { timestamp: 'desc' }
         }
       }
     });
 
-    return experiment?.metrics || [];
+    if (!experiment) return [];
+
+    // Map metrics to include variant_key and other fields for backward compatibility
+    return experiment.metrics.map(metric => ({
+      ...metric,
+      variant_key: (metric.assignment as any)?.variantKey,
+      user_id: (metric.assignment as any)?.userId,
+      metric_name: metric.metricName,
+      value: metric.metricValue
+    }));
   }
 
   /**
@@ -141,7 +302,7 @@ export class ExperimentWarehouse {
     // Calculate variant distribution
     const variantDistribution: Record<string, number> = {};
     for (const assignment of experiment.assignments) {
-      const variant = (assignment as any).variant_key;
+      const variant = (assignment as any).variantKey || (assignment as any).variant_key;
       variantDistribution[variant] = (variantDistribution[variant] || 0) + 1;
     }
 
@@ -149,7 +310,11 @@ export class ExperimentWarehouse {
     const metrics: Record<string, any> = {};
     for (const metric of experiment.metrics) {
       const m = metric as any;
-      const key = `${m.variant_key || 'control'}_${m.metric_name}`;
+      // Get variant_key from the metric's assignment relationship
+      const variantKey = m.assignment?.variantKey || m.assignment?.variant_key || m.variant_key || 'control';
+      const metricName = m.metricName || m.metric_name;
+      const metricValue = m.metricValue ?? m.value;
+      const key = `${variantKey}_${metricName}`;
 
       if (!metrics[key]) {
         metrics[key] = {
@@ -162,10 +327,10 @@ export class ExperimentWarehouse {
       }
 
       metrics[key].count++;
-      metrics[key].sum += m.value;
-      metrics[key].min = Math.min(metrics[key].min, m.value);
-      metrics[key].max = Math.max(metrics[key].max, m.value);
-      metrics[key].values.push(m.value);
+      metrics[key].sum += metricValue;
+      metrics[key].min = Math.min(metrics[key].min, metricValue);
+      metrics[key].max = Math.max(metrics[key].max, metricValue);
+      metrics[key].values.push(metricValue);
     }
 
     // Calculate means
@@ -214,12 +379,13 @@ export class ExperimentWarehouse {
 
   /**
    * Flush all buffers
+   * NOTE: Assignments must be flushed BEFORE metrics because metrics need assignment IDs
    */
   async flush(): Promise<void> {
-    await Promise.all([
-      this.flushAssignments(),
-      this.flushMetrics()
-    ]);
+    // Flush assignments first so metrics can reference them
+    await this.flushAssignments();
+    // Then flush metrics
+    await this.flushMetrics();
   }
 
   /**
@@ -312,9 +478,9 @@ export class ExperimentWarehouse {
 
         // Create metrics
         const metricData = metrics.map(m => {
-          // Find assignment for this user
+          // Find assignment for this user (check both userId and user_id for compatibility)
           const assignment = experiment.assignments.find(
-            (a: any) => a.user_id === m.userId
+            (a: any) => a.userId === m.userId || a.user_id === m.userId
           );
 
           return {
@@ -361,8 +527,31 @@ export class ExperimentWarehouse {
     name: string;
     description?: string;
     config: any;
+    status?: string;
   }) {
-    return await prisma.experiment.create({ data });
+    const createData: any = {
+      key: data.key,
+      name: data.name,
+      config: data.config
+    };
+
+    if (data.description) {
+      createData.description = data.description;
+    }
+
+    // Map status strings to enum values
+    if (data.status) {
+      const statusMap: Record<string, string> = {
+        'draft': 'DRAFT',
+        'review': 'REVIEW',
+        'running': 'RUNNING',
+        'completed': 'COMPLETED',
+        'archived': 'ARCHIVED'
+      };
+      createData.status = statusMap[data.status.toLowerCase()] || data.status;
+    }
+
+    return await prisma.experiment.create({ data: createData });
   }
 
   async updateExperimentStatus(

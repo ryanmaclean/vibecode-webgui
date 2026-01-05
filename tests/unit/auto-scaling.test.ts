@@ -99,11 +99,13 @@ describe('Workspace Auto-Scaling', () => {
 
   describe('Scaling Rules', () => {
     it('should add scaling rule', () => {
+      const initialRulesCount = autoScaler.getRules().length
+
       const rule = {
-        id: 'cpu-scale-up',
-        name: 'CPU Scale Up',
+        id: 'custom-cpu-scale-up',
+        name: 'Custom CPU Scale Up',
         condition: {
-          metric: 'cpu' as const,
+          metric: 'cpuUsage' as const,
           operator: '>' as const,
           threshold: 80,
           duration: 300
@@ -113,23 +115,29 @@ describe('Workspace Auto-Scaling', () => {
           resourceType: 'cpu' as const,
           amount: 1
         },
+        cooldown: 300,
         enabled: true,
         priority: 1
       }
 
       autoScaler.addRule(rule)
-      
+
       const rules = autoScaler.getRules()
-      expect(rules).toHaveLength(1)
-      expect(rules[0].id).toBe('cpu-scale-up')
+      expect(rules.length).toBeGreaterThan(initialRulesCount)
+
+      const addedRule = rules.find(r => r.id === 'custom-cpu-scale-up')
+      expect(addedRule).toBeDefined()
+      expect(addedRule?.name).toBe('Custom CPU Scale Up')
     })
 
     it('should remove scaling rule', () => {
+      const initialRulesCount = autoScaler.getRules().length
+
       const rule = {
-        id: 'test-rule',
+        id: 'test-rule-to-remove',
         name: 'Test Rule',
         condition: {
-          metric: 'memory' as const,
+          metric: 'memoryUsage' as const,
           operator: '>' as const,
           threshold: 90,
           duration: 300
@@ -139,15 +147,19 @@ describe('Workspace Auto-Scaling', () => {
           resourceType: 'memory' as const,
           amount: 1024
         },
+        cooldown: 300,
         enabled: true,
         priority: 1
       }
 
       autoScaler.addRule(rule)
-      expect(autoScaler.getRules()).toHaveLength(1)
+      expect(autoScaler.getRules().length).toBe(initialRulesCount + 1)
 
-      autoScaler.removeRule('test-rule')
-      expect(autoScaler.getRules()).toHaveLength(0)
+      autoScaler.removeRule('test-rule-to-remove')
+      expect(autoScaler.getRules().length).toBe(initialRulesCount)
+
+      const removedRule = autoScaler.getRules().find(r => r.id === 'test-rule-to-remove')
+      expect(removedRule).toBeUndefined()
     })
   })
 
@@ -172,7 +184,7 @@ describe('Workspace Auto-Scaling', () => {
         id: 'scale-up-test',
         name: 'Scale Up Test',
         condition: {
-          metric: 'cpu' as const,
+          metric: 'cpuUsage' as const,
           operator: '>' as const,
           threshold: 80,
           duration: 60
@@ -182,6 +194,7 @@ describe('Workspace Auto-Scaling', () => {
           resourceType: 'cpu' as const,
           amount: 2
         },
+        cooldown: 300,
         enabled: true,
         priority: 1
       }

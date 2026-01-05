@@ -307,8 +307,8 @@ describe('Speech-to-Text Experiment', () => {
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
-      expect(result.passed).toBe(true);
-      expect(result.pValue).toBeGreaterThan(0.05);
+      expect(result.hasMismatch).toBe(false);
+      expect(result.pValue).toBeGreaterThan(0.001); // Using 0.001 since that's the alpha in SRM detector
     });
 
     it('should fail SRM check for imbalanced allocation', () => {
@@ -317,8 +317,8 @@ describe('Speech-to-Text Experiment', () => {
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
-      expect(result.passed).toBe(false);
-      expect(result.pValue).toBeLessThan(0.05);
+      expect(result.hasMismatch).toBe(true);
+      expect(result.pValue).toBeLessThan(0.001); // Using 0.001 since that's the alpha in SRM detector
     });
   });
 

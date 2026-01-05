@@ -11,6 +11,9 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 const BASE_URL = process.env.TEST_BASE_URL || 'http://localhost:3000'
 
+// Skip tests if DATABASE_URL is not set
+const describeIf = process.env.DATABASE_URL ? describe : describe.skip
+
 // Helper to make API requests
 async function apiRequest(endpoint: string, options: RequestInit = {}) {
   const response = await fetch(`${BASE_URL}${endpoint}`, {
@@ -45,7 +48,7 @@ const testExperiment = {
   }
 }
 
-describe('Experiments E2E Tests', () => {
+describeIf('Experiments E2E Tests', () => {
   beforeAll(async () => {
     // Clean up any existing test data
     await prisma.experimentMetric.deleteMany({

@@ -11,6 +11,49 @@ import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
 // import { logger } from '@/lib/logger';
 
+/**
+ * Collects health snapshot with performance metrics
+ * Exported for testing purposes
+ */
+export async function collectHealthSnapshot(startTime: number) {
+  const healthChecks = {
+    status: 'healthy',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime(),
+    version: process.env.npm_package_version || '1.0.0',
+    environment: process.env.NODE_ENV || 'development',
+    checks: {
+      memory: checkMemoryUsage(),
+      disk: await checkDiskSpace(),
+      database: await monitoring.checkDatabase(),
+      valkey: await monitoring.checkValkey(),
+      ai: await monitoring.checkAIService()
+    }
+  }
+
+  // Calculate response time
+  const responseTime = Date.now() - startTime
+  const memoryUsage = process.memoryUsage()
+
+  const snapshot = {
+    ...healthChecks,
+    responseTime: `${responseTime}ms`,
+    performance: {
+      responseTime,
+      memoryUsage: {
+        rss: memoryUsage.rss,
+        heapTotal: memoryUsage.heapTotal,
+        heapUsed: memoryUsage.heapUsed,
+        external: memoryUsage.external,
+        arrayBuffers: memoryUsage.arrayBuffers
+      },
+      cpuUsage: process.cpuUsage().user / 1000000 // Convert to seconds
+    }
+  }
+
+  return { snapshot, responseTime, healthChecks }
+}
+
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
@@ -39,28 +82,9 @@ export async function GET(request: NextRequest) {
   const { filter: _filter, format: _format, verbose: _verbose } = validation.data
 
   try {
-    // Basic health checks
-    const healthChecks = {
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      uptime: process.uptime(),
-      version: process.env.npm_package_version || '1.0.0',
-      environment: process.env.NODE_ENV || 'development',
-      checks: {
-        memory: checkMemoryUsage(),
-        disk: await checkDiskSpace(),
-        database: await monitoring.checkDatabase(),
-        valkey: await monitoring.checkValkey(),
-        ai: await monitoring.checkAIService()
-      }
-    }
-
-    // Calculate response time
-    const responseTime = Date.now() - startTime
-    const healthCheckResponse = {
-      ...healthChecks,
-      responseTime: `${responseTime}ms`
-    }
+    // Collect health snapshot
+    const { snapshot, responseTime, healthChecks } = await collectHealthSnapshot(startTime)
+    const healthCheckResponse = snapshot
 
     // Submit health check metrics to Datadog
     await monitoring.trackMetrics()

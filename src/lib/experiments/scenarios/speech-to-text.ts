@@ -356,6 +356,7 @@ function calculateCost(model: string, tokens: number): number {
  * Calculate Word Error Rate (WER) between transcript and reference
  *
  * WER = (Substitutions + Deletions + Insertions) / Total Words in Reference
+ * WER is capped at 1.0 (100% error rate)
  */
 function calculateWordErrorRate(transcript: string, reference: string): number {
   const transcriptWords = transcript.toLowerCase().split(/\s+/).filter(w => w.length > 0);
@@ -366,7 +367,8 @@ function calculateWordErrorRate(transcript: string, reference: string): number {
 
   if (referenceWords.length === 0) return 0;
 
-  return distance / referenceWords.length;
+  // Cap WER at 1.0 (100% error rate) - it cannot exceed 100%
+  return Math.min(1.0, distance / referenceWords.length);
 }
 
 /**
@@ -611,7 +613,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
       }
     },
     srmStatus: {
-      hasMismatch: !srmCheck.passed,
+      hasMismatch: srmCheck.hasMismatch,
       pValue: srmCheck.pValue,
       expectedRatio: { gpt4: 50, gpt41: 50 },
       observedCounts: {

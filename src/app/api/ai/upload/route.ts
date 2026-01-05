@@ -85,8 +85,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Validate workspace ID format
-    if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId)) {
+    // Validate workspace ID format (prevent path traversal)
+    if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.includes('..')) {
       return NextResponse.json(
         { error: 'Invalid workspace ID format' },
         { status: 400 }

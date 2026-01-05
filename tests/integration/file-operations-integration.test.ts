@@ -70,7 +70,10 @@ describe('File Operations Integration', () => {
       const stats = await fs.stat(testFile)
       expect(stats.isFile()).toBe(true)
       expect(stats.size).toBeGreaterThan(0)
-      expect(stats.mtime).toBeInstanceOf(Date)
+      // mtime is a Date object
+      expect(stats.mtime).toBeDefined()
+      expect(typeof stats.mtime.getTime()).toBe('number')
+      expect(stats.mtime.getTime()).toBeGreaterThan(0)
     })
   })
 

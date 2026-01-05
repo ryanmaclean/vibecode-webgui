@@ -28,7 +28,7 @@ jest.mock('@/lib/ai', () => ({
   }
 }));
 
-import { ai } from '..';
+import { ai } from '@/lib/ai';
 
 describe('AI Integration', () => {
   beforeAll(async () => {

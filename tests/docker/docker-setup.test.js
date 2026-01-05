@@ -7,7 +7,17 @@ const { exec, execSync } = require('child_process')
 const { promisify } = require('util')
 const execAsync = promisify(exec)
 
-const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
+// Helper to check if Docker is available and daemon is running
+function isDockerAvailable() {
+  try {
+    execSync('docker --version', { stdio: 'pipe' });
+    // Also check if daemon is responsive
+    execSync('docker info', { stdio: 'pipe', timeout: 5000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
 
 // Helper to check if docker-compose is available
 function isDockerComposeAvailable() {
@@ -24,28 +34,42 @@ function isDockerComposeAvailable() {
   }
 }
 
+// Determine the correct docker-compose command to use
+function getDockerComposeCommand() {
+  try {
+    execSync('docker-compose --version', { stdio: 'pipe' });
+    return 'docker-compose';
+  } catch {
+    try {
+      execSync('docker compose version', { stdio: 'pipe' });
+      return 'docker compose';
+    } catch {
+      return null;
+    }
+  }
+}
+
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1' && isDockerAvailable() && isDockerComposeAvailable();
+const DOCKER_COMPOSE_CMD = getDockerComposeCommand();
+
 const conditionalDescribe = HAS_DOCKER ? describe : describe.skip;
 
 conditionalDescribe('Docker Setup Tests', () => {
   const TIMEOUT = 60000 // 60 seconds for Docker operations
 
   beforeAll(async () => {
-    // Verify docker-compose is available
-    if (HAS_DOCKER && !isDockerComposeAvailable()) {
-      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
-    }
-
-    // Ensure Docker is running
+    // If we reach here, HAS_DOCKER is true, so Docker and docker-compose are available
+    // Just verify Docker daemon is responsive
     try {
-      await execAsync('docker --version')
+      await execAsync('docker info', { timeout: 5000 })
     } catch (error) {
-      throw new Error('Docker is not installed or not running')
+      console.warn('Docker daemon may not be running:', error.message)
     }
   }, TIMEOUT)
 
   describe('Docker Compose Configuration', () => {
     test('should have valid docker-compose.yml', async () => {
-      const { stdout, stderr } = await execAsync('docker-compose config')
+      const { stdout, stderr } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // Filter out expected warnings about environment variables
       const filteredStderr = stderr
@@ -67,13 +91,13 @@ conditionalDescribe('Docker Setup Tests', () => {
     })
 
     test('should have proper network configuration', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
       expect(stdout).toContain('vibecode-network')
       expect(stdout).toContain('driver: bridge')
     })
 
     test('should have volume configurations', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
       expect(stdout).toContain('postgres_data')
       expect(stdout).toContain('redis_data')
       expect(stdout).toContain('code_server_data')
@@ -84,7 +108,7 @@ conditionalDescribe('Docker Setup Tests', () => {
     beforeAll(async () => {
       // Start essential services for testing
       try {
-        await execAsync('docker-compose up -d postgres redis', { timeout: 30000 })
+        await execAsync(`${DOCKER_COMPOSE_CMD} up -d postgres redis`, { timeout: 30000 })
         // Wait for services to start
         await new Promise(resolve => setTimeout(resolve, 10000))
       } catch (error) {
@@ -95,7 +119,7 @@ conditionalDescribe('Docker Setup Tests', () => {
     afterAll(async () => {
       // Clean up test containers
       try {
-        await execAsync('docker-compose down', { timeout: 20000 })
+        await execAsync(`${DOCKER_COMPOSE_CMD} down`, { timeout: 20000 })
       } catch (error) {
         console.warn('Could not clean up Docker containers:', error.message)
       }
@@ -103,7 +127,7 @@ conditionalDescribe('Docker Setup Tests', () => {
 
     test('should have PostgreSQL container running with health check', async () => {
       try {
-        const { stdout } = await execAsync('docker-compose ps postgres')
+        const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps postgres`)
         expect(stdout).toContain('vibecode-webgui-postgres-1')
         expect(stdout).toMatch(/(healthy|starting)/)
       } catch (error) {
@@ -113,7 +137,7 @@ conditionalDescribe('Docker Setup Tests', () => {
 
     test('should have Redis container running with health check', async () => {
       try {
-        const { stdout } = await execAsync('docker-compose ps redis')
+        const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps redis`)
         expect(stdout).toContain('vibecode-webgui-redis-1')
         expect(stdout).toMatch(/(healthy|starting)/)
       } catch (error) {
@@ -146,7 +170,7 @@ conditionalDescribe('Docker Setup Tests', () => {
 
   describe('Docker Images and Security', () => {
     test('should use official base images', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // Check for official images (actual images used in the compose file)
       expect(stdout).toContain('pgvector/pgvector:pg15')
@@ -155,7 +179,7 @@ conditionalDescribe('Docker Setup Tests', () => {
     })
 
     test('should have security configurations', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // Check for basic security configurations (labels, healthchecks, or networks)
       // For development environment, basic network isolation is sufficient
@@ -164,7 +188,7 @@ conditionalDescribe('Docker Setup Tests', () => {
     })
 
     test('should have resource limits', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // For development environment, check for basic container configuration
       // Resource limits are typically added in production environments
@@ -175,7 +199,7 @@ conditionalDescribe('Docker Setup Tests', () => {
 
   describe('Environment and Configuration', () => {
     test('should load environment variables correctly', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // Check that environment variables from .env.docker are loaded
       expect(stdout).toContain('NODE_ENV')
@@ -184,11 +208,11 @@ conditionalDescribe('Docker Setup Tests', () => {
     })
 
     test('should have proper port mappings', async () => {
-      const { stdout } = await execAsync('docker-compose config')
+      const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
 
       // Check for correct port mappings (docker-compose config format)
       expect(stdout).toContain('published: "3000"') // Web app
-      expect(stdout).toContain('published: "3001"') // WebSocket  
+      expect(stdout).toContain('published: "3001"') // WebSocket
       expect(stdout).toContain('published: "5432"') // PostgreSQL
       expect(stdout).toContain('published: "6379"') // Redis
       expect(stdout).toContain('published: "8080"') // Code-server
@@ -197,12 +221,7 @@ conditionalDescribe('Docker Setup Tests', () => {
 })
 
 conditionalDescribe('Container Integration Tests', () => {
-  beforeAll(() => {
-    // Verify docker-compose is available
-    if (HAS_DOCKER && !isDockerComposeAvailable()) {
-      throw new Error('docker-compose is not available. Set SKIP_DOCKER_TESTS=1 to skip these tests.');
-    }
-  });
+  // No beforeAll check needed - if we're here, HAS_DOCKER is true
 
   describe('Database Schema Validation', () => {
     test('should have all required tables initialized', async () => {
@@ -254,7 +273,7 @@ conditionalDescribe('Container Integration Tests', () => {
       try {
         // Test that web service can reach postgres service by name
         const { stdout } = await execAsync(
-          'docker-compose exec -T web ping -c 1 postgres || echo "Service not running"'
+          `${DOCKER_COMPOSE_CMD} exec -T web ping -c 1 postgres || echo "Service not running"`
         )
 
         // Either ping succeeds or service is not running (both acceptable)

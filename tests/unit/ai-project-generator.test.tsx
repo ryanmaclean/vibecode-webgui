@@ -132,21 +132,40 @@ describe('AIProjectGenerator Component', () => {
   })
 
   it('handles project generation completion', async () => {
+    // Mock fetch for the actual API call made by the component
+    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
+      ok: true,
+      json: jest.fn().mockResolvedValue({
+        success: true,
+        workspaceUrl: '/workspace/ai-project-123',
+        projectStructure: {
+          name: 'test-project',
+          description: 'Test project description',
+          language: 'JavaScript',
+          framework: 'React',
+          files: [],
+          fileCount: 0
+        }
+      })
+    })
+
     render(
       <SessionProvider session={mockSession}>
         <AIProjectGenerator />
       </SessionProvider>
     )
-    
+
     const promptInput = screen.getByTestId('prompt-input')
     const generateButton = screen.getByTestId('generate-button')
-    
+
     fireEvent.change(promptInput, { target: { value: 'Create a todo app' } })
     fireEvent.click(generateButton)
-    
+
     // Check loading state
-    expect(screen.getByTestId('loading-state')).toBeInTheDocument()
-    
+    await waitFor(() => {
+      expect(screen.getByTestId('loading-state')).toBeInTheDocument()
+    })
+
     // Wait for completion and redirect (component has 1500ms delay + mock has 100ms delay)
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/workspace/ai-project-123')

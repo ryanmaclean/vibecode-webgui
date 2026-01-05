@@ -18,7 +18,10 @@ const prisma = new PrismaClient();
 const warehouse = new ExperimentWarehouse();
 const queries = new ExperimentQueries();
 
-describe('Experiment Warehouse Integration Tests', () => {
+// Skip tests if DATABASE_URL is not set
+const describeIf = process.env.DATABASE_URL ? describe : describe.skip;
+
+describeIf('Experiment Warehouse Integration Tests', () => {
   let testExperimentId: string;
   let testExperimentKey: string;
 

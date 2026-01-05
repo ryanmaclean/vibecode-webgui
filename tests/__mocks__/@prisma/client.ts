@@ -82,6 +82,11 @@ const usersStore: Array<{
   name: string | null
 }> = []
 
+// In-memory storage for experiments
+const experimentsStore: Array<any> = []
+const experimentAssignmentsStore: Array<any> = []
+const experimentMetricsStore: Array<any> = []
+
 // Create a mock PrismaClient instance
 const createPrismaClientMock = () => ({
   // Core Prisma methods
@@ -305,10 +310,186 @@ const createPrismaClientMock = () => ({
   // Setting model
   setting: createModelMock(),
 
-  // Experiment models
-  experiment: createModelMock(),
-  experimentAssignment: createModelMock(),
-  experimentMetric: createModelMock(),
+  // Experiment models with in-memory storage
+  experiment: {
+    ...createModelMock(),
+    findUnique: jest.fn((args) => {
+      const exp = experimentsStore.find(e =>
+        (args.where.id && e.id === args.where.id) ||
+        (args.where.key && e.key === args.where.key)
+      );
+      if (!exp) return Promise.resolve(null);
+
+      // Include related data if requested
+      const result = { ...exp };
+      if (args.include?.assignments !== undefined) {
+        result.assignments = experimentAssignmentsStore.filter(a => a.experimentId === exp.id);
+      }
+      if (args.include?.metrics !== undefined) {
+        // Handle both boolean and object includes
+        const metricsInclude = typeof args.include.metrics === 'object' ? args.include.metrics : {};
+        const metricsWhere = metricsInclude.where || {};
+        let metrics = experimentMetricsStore.filter(m => m.experimentId === exp.id);
+
+        // Apply metric name filter if specified
+        if (metricsWhere.metricName) {
+          metrics = metrics.filter(m => m.metricName === metricsWhere.metricName);
+        }
+
+        // Include assignment relationship if requested
+        if (metricsInclude.include?.assignment) {
+          metrics = metrics.map(m => ({
+            ...m,
+            assignment: experimentAssignmentsStore.find(a => a.id === m.assignmentId) || null
+          }));
+        }
+
+        result.metrics = metrics;
+      }
+      return Promise.resolve(result);
+    }),
+    findFirst: jest.fn((args) => {
+      const exp = experimentsStore.find(e => {
+        if (args.where?.id && e.id === args.where.id) return true;
+        if (args.where?.key && e.key === args.where.key) return true;
+        if (args.where?.OR) {
+          return args.where.OR.some((cond: any) =>
+            (cond.id && e.id === cond.id) || (cond.key && e.key === cond.key)
+          );
+        }
+        return false;
+      });
+      return Promise.resolve(exp || null);
+    }),
+    create: jest.fn((args) => {
+      const id = String(mockIdCounter++);
+      const created = {
+        id,
+        key: args.data.key,
+        name: args.data.name,
+        config: args.data.config,
+        hypothesis: args.data.hypothesis || null,
+        status: args.data.status || 'DRAFT',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        startedAt: null,
+        completedAt: null,
+      };
+      experimentsStore.push(created);
+      return Promise.resolve(created);
+    }),
+    upsert: jest.fn((args) => {
+      const existing = experimentsStore.find(e => e.key === args.where.key);
+      if (existing) {
+        Object.assign(existing, args.update, { updatedAt: new Date() });
+        return Promise.resolve(existing);
+      } else {
+        const id = String(mockIdCounter++);
+        const created = {
+          id,
+          ...args.create,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+          startedAt: null,
+          completedAt: null,
+        };
+        experimentsStore.push(created);
+        return Promise.resolve(created);
+      }
+    }),
+    update: jest.fn((args) => {
+      const exp = experimentsStore.find(e => e.id === args.where.id);
+      if (exp) {
+        Object.assign(exp, args.data, { updatedAt: new Date() });
+        return Promise.resolve(exp);
+      }
+      return Promise.reject(new Error('Experiment not found'));
+    }),
+  },
+  experimentAssignment: {
+    ...createModelMock(),
+    upsert: jest.fn((args) => {
+      const key = args.where.experiment_id_user_id;
+      const existing = experimentAssignmentsStore.find(a =>
+        a.experimentId === key.experimentId && a.userId === key.userId
+      );
+      if (existing) {
+        Object.assign(existing, args.update);
+        return Promise.resolve(existing);
+      } else {
+        const id = String(mockIdCounter++);
+        const created = {
+          id,
+          experimentId: key.experimentId,
+          userId: key.userId,
+          variantKey: args.create.variantKey,
+          metadata: args.create.metadata || null,
+          assignedAt: new Date(),
+        };
+        experimentAssignmentsStore.push(created);
+        return Promise.resolve(created);
+      }
+    }),
+    groupBy: jest.fn((args) => {
+      const filtered = experimentAssignmentsStore.filter(a =>
+        a.experimentId === args.where?.experimentId
+      );
+      const grouped = filtered.reduce((acc, a) => {
+        const existing = acc.find((g: any) => g.variantKey === a.variantKey);
+        if (existing) {
+          existing._count.id++;
+        } else {
+          acc.push({ variantKey: a.variantKey, _count: { id: 1 } });
+        }
+        return acc;
+      }, [] as any[]);
+      return Promise.resolve(grouped);
+    }),
+  },
+  experimentMetric: {
+    ...createModelMock(),
+    createMany: jest.fn((args) => {
+      const created = args.data.map((d: any) => {
+        // Skip if assignmentId is empty/null and skipDuplicates is true
+        if (args.skipDuplicates && (!d.assignmentId || d.assignmentId === '')) {
+          return null;
+        }
+
+        const id = String(mockIdCounter++);
+        const metric = {
+          id,
+          experimentId: d.experimentId,
+          assignmentId: d.assignmentId,
+          metricName: d.metricName,
+          metricValue: d.metricValue,
+          metadata: d.metadata || null,
+          timestamp: new Date(),
+        };
+        experimentMetricsStore.push(metric);
+        return metric;
+      }).filter(Boolean); // Remove nulls
+      return Promise.resolve({ count: created.length });
+    }),
+    findMany: jest.fn((args) => {
+      let filtered = [...experimentMetricsStore];
+      if (args?.where?.experimentId) {
+        filtered = filtered.filter(m => m.experimentId === args.where.experimentId);
+      }
+      if (args?.where?.metricName) {
+        filtered = filtered.filter(m => m.metricName === args.where.metricName);
+      }
+
+      // Include assignment if requested
+      if (args?.include?.assignment) {
+        filtered = filtered.map(m => ({
+          ...m,
+          assignment: experimentAssignmentsStore.find(a => a.id === m.assignmentId) || null
+        }));
+      }
+
+      return Promise.resolve(filtered);
+    }),
+  },
 })
 
 // Create a singleton mock instance (recreate it to get the updated createModelMock behavior)
@@ -400,6 +581,9 @@ export const resetPrismaMock = () => {
   // Clear in-memory stores
   workspaceMembersStore.splice(0, workspaceMembersStore.length);
   usersStore.splice(0, usersStore.length);
+  experimentsStore.splice(0, experimentsStore.length);
+  experimentAssignmentsStore.splice(0, experimentAssignmentsStore.length);
+  experimentMetricsStore.splice(0, experimentMetricsStore.length);
 
   // Reset all mocks on the global instance
   Object.values(globalMockInstance).forEach((value) => {

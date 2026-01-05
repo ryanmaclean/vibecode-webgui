@@ -5,17 +5,19 @@
 
 const { execSync } = require('child_process');
 
-const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1';
-
-// Helper to check if docker is available
+// Helper to check if Docker is available and daemon is running
 function isDockerAvailable() {
   try {
     execSync('docker --version', { stdio: 'pipe' });
+    // Also check if daemon is responsive
+    execSync('docker info', { stdio: 'pipe', timeout: 5000 });
     return true;
   } catch {
     return false;
   }
 }
+
+const HAS_DOCKER = process.env.SKIP_DOCKER_TESTS !== '1' && isDockerAvailable();
 
 (HAS_DOCKER ? describe : describe.skip)('Code-Server Extensions', () => {
   const IMAGE_NAME = 'vibecode/code-server:latest';
@@ -23,12 +25,7 @@ function isDockerAvailable() {
   let containerAvailable = false;
 
   beforeAll(() => {
-    // Verify Docker is available
-    if (HAS_DOCKER && !isDockerAvailable()) {
-      console.warn('Docker is not available. Skipping code-server extension tests.');
-      return;
-    }
-
+    // If we reach here, HAS_DOCKER is true, so Docker daemon is available
     // Check if image exists, if not, skip tests
     try {
       execSync(`docker image inspect ${IMAGE_NAME}`, { stdio: 'pipe' });

@@ -644,6 +644,173 @@ export class WorkspaceAutoScaler {
   }
 
   /**
+   * Get workspace metrics
+   */
+  async getMetrics(workspaceId: string): Promise<WorkspaceMetrics | undefined> {
+    return this.metrics.get(workspaceId)
+  }
+
+  /**
+   * Add scaling rule
+   */
+  addRule(rule: ScalingRule): void {
+    // Remove existing rule with same ID if it exists
+    this.config.rules = this.config.rules.filter(r => r.id !== rule.id)
+    // Add new rule
+    this.config.rules.push(rule)
+    // Sort by priority (highest first)
+    this.config.rules.sort((a, b) => b.priority - a.priority)
+  }
+
+  /**
+   * Remove scaling rule
+   */
+  removeRule(ruleId: string): void {
+    this.config.rules = this.config.rules.filter(r => r.id !== ruleId)
+  }
+
+  /**
+   * Get all scaling rules
+   */
+  getRules(): ScalingRule[] {
+    return [...this.config.rules]
+  }
+
+  /**
+   * Evaluate specific workspace for scaling
+   */
+  async evaluateWorkspace(workspaceId: string): Promise<void> {
+    const metrics = this.metrics.get(workspaceId)
+    const resources = this.resources.get(workspaceId)
+
+    if (!metrics || !resources) {
+      return
+    }
+
+    // Skip if already scaling
+    if (resources.scaling.isScaling) {
+      return
+    }
+
+    // Evaluate each rule
+    for (const rule of this.config.rules) {
+      if (!rule.enabled) continue
+
+      // Check cooldown
+      const cooldownKey = `${workspaceId}-${rule.id}`
+      const lastExecution = this.ruleCooldowns.get(cooldownKey)
+      if (lastExecution && (Date.now() - lastExecution.getTime()) < (rule.cooldown * 1000)) {
+        continue
+      }
+
+      // Check if rule condition is met
+      if (await this.evaluateRuleCondition(rule, metrics, resources)) {
+        await this.executeScalingAction(workspaceId, rule, metrics, resources)
+        this.ruleCooldowns.set(cooldownKey, new Date())
+        break // Only execute one rule per evaluation
+      }
+    }
+
+    // Check for idle workspaces
+    if (this.config.costOptimization.enabled) {
+      await this.checkIdleWorkspace(workspaceId, metrics, resources)
+    }
+  }
+
+  /**
+   * Get scaling history for a workspace
+   */
+  async getScalingHistory(workspaceId: string): Promise<ScalingAction[]> {
+    const resources = this.resources.get(workspaceId)
+    if (!resources) {
+      return []
+    }
+
+    // Return copy of pending and completed actions
+    return [...resources.scaling.pendingActions]
+  }
+
+  /**
+   * Get resource utilization for a workspace
+   */
+  async getResourceUtilization(workspaceId: string): Promise<{
+    cpu: number
+    memory: number
+    disk: number
+  }> {
+    const metrics = this.metrics.get(workspaceId)
+    const resources = this.resources.get(workspaceId)
+
+    if (!metrics || !resources) {
+      return { cpu: 0, memory: 0, disk: 0 }
+    }
+
+    return {
+      cpu: metrics.cpuUsage,
+      memory: metrics.memoryUsage,
+      disk: metrics.diskUsage
+    }
+  }
+
+  /**
+   * Get cost savings for a workspace
+   */
+  async getCostSavings(workspaceId: string): Promise<{
+    estimatedMonthlySavings: number
+    optimizationRecommendations: {
+      scaleDown: boolean
+      reduceInstances: boolean
+      idleShutdown: boolean
+    }
+  }> {
+    const metrics = this.metrics.get(workspaceId)
+    const resources = this.resources.get(workspaceId)
+
+    if (!metrics || !resources) {
+      return {
+        estimatedMonthlySavings: 0,
+        optimizationRecommendations: {
+          scaleDown: false,
+          reduceInstances: false,
+          idleShutdown: false
+        }
+      }
+    }
+
+    // Calculate potential savings based on resource utilization
+    let savings = 0
+    const recommendations = {
+      scaleDown: false,
+      reduceInstances: false,
+      idleShutdown: false
+    }
+
+    // Check if resources are underutilized
+    if (metrics.cpuUsage < 20 && metrics.memoryUsage < 30) {
+      recommendations.scaleDown = true
+      savings += 50 // $50/month estimated savings
+    }
+
+    // Check if too many instances
+    if (resources.current.instanceCount > 1 && metrics.activeConnections < 2) {
+      recommendations.reduceInstances = true
+      savings += 100 // $100/month estimated savings
+    }
+
+    // Check if idle
+    const idleThreshold = Date.now() - (30 * 60 * 1000) // 30 minutes
+    if (metrics.lastActivity.getTime() < idleThreshold && metrics.activeConnections === 0) {
+      recommendations.idleShutdown = true
+      savings += 200 // $200/month estimated savings
+    }
+
+    return {
+      estimatedMonthlySavings: savings,
+      optimizationRecommendations: recommendations
+    }
+  }
+
+  /**
    * Get scaling statistics
    */
   getScalingStats(): {

@@ -36,6 +36,9 @@ import {
 const TEST_ENDPOINT_SSE = process.env.TEST_SSE_ENDPOINT || 'http://localhost:3000/api/test/sse'
 const TEST_ENDPOINT_WS = process.env.TEST_WS_ENDPOINT || 'ws://localhost:3000/api/test/ws'
 
+// Skip tests requiring live endpoints unless explicitly enabled
+const SKIP_LIVE_TESTS = !process.env.TEST_LIVE_ENDPOINTS
+
 // Test thresholds from requirements
 const REQUIREMENTS = {
   MAX_CONNECTIONS: 10000,
@@ -51,6 +54,14 @@ const REQUIREMENTS = {
 describe('SSE Client Performance Tests', () => {
   // Skip in CI unless explicitly enabled
   const runLoadTests = process.env.RUN_LOAD_TESTS === 'true'
+
+  // Skip all tests if live endpoints are not available
+  if (SKIP_LIVE_TESTS) {
+    it.skip('should skip all SSE tests (no live endpoints available)', () => {
+      console.log('Set TEST_LIVE_ENDPOINTS=true to enable these tests')
+    })
+    return
+  }
 
   describe('Connection Scalability', () => {
     it('should support 100 concurrent connections', async () => {
@@ -446,6 +457,14 @@ describe('SSE Client Performance Tests', () => {
 describe('WebSocket Client Performance Tests', () => {
   const runLoadTests = process.env.RUN_LOAD_TESTS === 'true'
 
+  // Skip all tests if live endpoints are not available
+  if (SKIP_LIVE_TESTS) {
+    it.skip('should skip all WebSocket tests (no live endpoints available)', () => {
+      console.log('Set TEST_LIVE_ENDPOINTS=true to enable these tests')
+    })
+    return
+  }
+
   describe('Bidirectional Communication', () => {
     it('should support 100 concurrent WebSocket connections', async () => {
       // MEMORY FIX: Reduced from 100 to 10 clients
@@ -580,6 +599,14 @@ describe('WebSocket Client Performance Tests', () => {
 // ============================================================================
 
 describe('Real-Time Communication Integration', () => {
+  // Skip all tests if live endpoints are not available
+  if (SKIP_LIVE_TESTS) {
+    it.skip('should skip all integration tests (no live endpoints available)', () => {
+      console.log('Set TEST_LIVE_ENDPOINTS=true to enable these tests')
+    })
+    return
+  }
+
   it('should integrate with Prometheus monitoring', async () => {
     const sseConfig: OptimizedSSEClientConfig = {
       url: TEST_ENDPOINT_SSE,

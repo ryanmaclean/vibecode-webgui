@@ -18,6 +18,9 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
+  tracer.addTags({ 'service.component': 'health-monitoring' })
+} else {
+  globalThis.console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -64,7 +67,8 @@ const logger = createLogger({
   ]
 })
 
-// Console logging removed from module level to avoid Jest isolateModules issues
+// Initialize logger
+logger.info('Winston logger initialized')
 
 /**
  * Custom metrics collector (compatible with Datadog)
@@ -73,20 +77,23 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    console.info(`📊 Metric increment: ${name}`, tags)
+    // Use global console for metrics logging
+    globalThis.console.log(`📊 Metric increment: ${name}`, tags)
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.info(`📊 Metric gauge: ${name} = ${value}`, tags)
+    // Use global console for metrics logging
+    globalThis.console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    console.info(`📊 Metric histogram: ${name} = ${value}`, tags)
+    // Use global console for metrics logging
+    globalThis.console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []
@@ -115,7 +122,7 @@ class ApplicationLogger {
     responseTime: number
     memoryUsage: number
   }): void {
-    console.info(`Performance: ${context.method} ${context.endpoint}`, {
+    logger.info(`Performance: ${context.method} ${context.endpoint}`, {
       category: 'performance',
       ...context
     })
@@ -141,7 +148,7 @@ class ApplicationLogger {
     blocked?: boolean
     metadata?: Record<string, any>
   }): void {
-    console.warn(`Security: ${event}`, {
+    logger.warn(`Security: ${event}`, {
       category: 'security',
       ...context
     })
@@ -163,7 +170,7 @@ class ApplicationLogger {
     value?: number
     metadata?: Record<string, any>
   }): void {
-    console.info(`Business: ${event}`, {
+    logger.info(`Business: ${event}`, {
       category: 'business',
       ...context
     })
@@ -203,7 +210,7 @@ function performanceMiddleware() {
 
       // Log slow requests
       if (responseTime > 1000) {
-        console.warn('Slow request detected', {
+        logger.warn('Slow request detected', {
           endpoint: req.path,
           method: req.method,
           responseTime,

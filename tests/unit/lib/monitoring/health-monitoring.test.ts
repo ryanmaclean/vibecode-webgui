@@ -44,12 +44,18 @@ const instrumentModulePath = path.join(process.cwd(), 'src/instrument')
 const loadHealthMonitoring = () => {
   let module: any
   jest.isolateModules(() => {
+    // Mock all possible import paths for the instrument module
     jest.doMock('../../instrument', () => ({
       __esModule: true,
       default: mockTracer
     }), { virtual: true })
 
     jest.doMock(instrumentModulePath, () => ({
+      __esModule: true,
+      default: mockTracer
+    }), { virtual: true })
+
+    jest.doMock('@/instrument', () => ({
       __esModule: true,
       default: mockTracer
     }), { virtual: true })
@@ -92,6 +98,8 @@ describe('Health Monitoring Module', () => {
 
   afterEach(() => {
     jest.restoreAllMocks()
+    mockTracer.init.mockClear()
+    mockTracer.addTags.mockClear()
     delete (mockTracer as any).__healthMonitoringInitialized
   })
 

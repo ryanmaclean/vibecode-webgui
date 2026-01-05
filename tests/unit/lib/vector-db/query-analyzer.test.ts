@@ -3,7 +3,7 @@
  */
 
 import { QueryAnalyzer } from '@/lib/vector-db/query-analyzer';
-import { QueryType } from '@/lib/vector-db/sharding-types';
+import { QueryType } from '@/lib/vector-db/types';
 
 describe('QueryAnalyzer', () => {
   let analyzer: QueryAnalyzer;

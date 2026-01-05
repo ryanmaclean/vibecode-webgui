@@ -5,6 +5,62 @@ import * as dotenv from 'dotenv';
 
 dotenv.config();
 
+// Mock embedding service to avoid requiring real API keys
+jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
+  const mockEmbeddingService = {
+    storeDocument: jest.fn().mockImplementation(async (id, content, metadata) => {
+      return { id, content, metadata };
+    }),
+    findSimilarDocuments: jest.fn().mockImplementation(async (query, options) => {
+      return [
+        {
+          document_id: 'test-doc-1',
+          content: 'This is a test document for vector search',
+          similarity: 0.95,
+          metadata: { test: true }
+        }
+      ];
+    }),
+    ragQuery: jest.fn().mockImplementation(async (query, options) => {
+      return {
+        query,
+        documents: [
+          {
+            document_id: 'test-doc-1',
+            content: 'This is a test document for vector search',
+            similarity: 0.95,
+            metadata: { test: true }
+          }
+        ]
+      };
+    })
+  };
+
+  const originalModule = jest.requireActual('../src/lib/ai/embeddingServiceFactory');
+
+  return {
+    ...originalModule,
+    EmbeddingServiceFactory: jest.fn().mockImplementation((prisma) => ({
+      createEmbeddingServiceFromEnv: jest.fn().mockReturnValue(mockEmbeddingService)
+    }))
+  };
+});
+
+// Mock VectorService for database operations
+jest.mock('../src/lib/db/vector', () => {
+  return {
+    VectorService: jest.fn().mockImplementation(() => ({
+      getEmbeddingStats: jest.fn().mockResolvedValue([
+        {
+          hour_bucket: new Date(),
+          total_embeddings: 10
+        }
+      ]),
+      cleanupOldEmbeddings: jest.fn().mockResolvedValue({ deletedCount: 5 })
+    }))
+  };
+});
+
 describe('GenAI Workflow with PostgreSQL', () => {
   let prisma: PrismaClient;
   let embeddingService: any;
@@ -16,9 +72,6 @@ describe('GenAI Workflow with PostgreSQL', () => {
     vectorService = new VectorService(prisma);
     factory = new EmbeddingServiceFactory(prisma);
     embeddingService = factory.createEmbeddingServiceFromEnv();
-    
-    // Ensure database is clean
-    await prisma.$executeRaw`TRUNCATE TABLE document_embeddings CASCADE`;
   });
 
   afterAll(async () => {

@@ -1,6 +1,6 @@
 import { PrismaClient } from '@prisma/client';
 import { EmbeddingServiceFactory, EmbeddingProvider } from '../src/lib/ai/embeddingServiceFactory';
-import { AzureEmbeddingService } from '../src/lib/ai/azureEmbeddingService';
+import { AzureEmbeddingService } from '../src/lib/ai/azure-embedding-service';
 import * as dotenv from 'dotenv';
 
 dotenv.config();
