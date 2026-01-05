@@ -16,6 +16,7 @@ const { getDatadogApiKey, getDatadogSite } = require('../../src/lib/monitoring/d
 // Skip these tests if DD_API_KEY not set or databases unavailable
 const HAS_DD_KEY = process.env.DD_API_KEY !== undefined;
 const SKIP_TESTS = SKIP_POSTGRES || SKIP_REDIS || !HAS_DD_KEY;
+const shouldRunRealTests = !SKIP_TESTS;
 
 (SKIP_TESTS ? describe.skip : describe)('Real Monitoring Integration Tests (NO MOCKING)', () => {
   beforeAll(() => {

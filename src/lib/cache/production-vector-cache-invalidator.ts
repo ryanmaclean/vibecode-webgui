@@ -213,6 +213,43 @@ export class ProductionVectorCacheInvalidator {
   }
 
   /**
+   * Invalidate entire workspace with configurable options
+   */
+  public async invalidateWorkspace(
+    workspaceId: string,
+    options: {
+      contentTypes?: string[];
+      excludePatterns?: string[];
+      batchSize?: number;
+    } = {}
+  ): Promise<void> {
+    const { contentTypes = ['workspace', 'file', 'embedding', 'search'], excludePatterns = [], batchSize } = options;
+
+    if (this.config.enableLogging) {
+      console.info(`Workspace invalidation: ${workspaceId}, content types: ${contentTypes.join(', ')}`);
+    }
+
+    if (this.config.enableMetrics) {
+      metrics.increment('cache_invalidation.workspace_requests_total');
+    }
+
+    // Generate patterns for each content type
+    const patterns = contentTypes.flatMap(contentType =>
+      this.generateContentTypePatterns(contentType, workspaceId)
+    );
+
+    // Filter out excluded patterns
+    const filteredPatterns = patterns.filter(pattern =>
+      !excludePatterns.some(exclude => pattern.includes(exclude))
+    );
+
+    // Process each pattern
+    for (const pattern of filteredPatterns) {
+      await this.invalidateByPattern(pattern, 'medium', `workspace-invalidation:${workspaceId}`);
+    }
+  }
+
+  /**
    * Get invalidation statistics
    */
   public getStats(): {
@@ -440,17 +477,16 @@ export class ProductionVectorCacheInvalidator {
    */
   private generateContentTypePatterns(contentType: string, workspaceId?: string): string[] {
     const patterns = [];
-    
+
     if (workspaceId) {
-      patterns.push(`workspace:${workspaceId}:${contentType}:*`);
-      patterns.push(`embedding:${workspaceId}:${contentType}:*`);
-      patterns.push(`search:${workspaceId}:${contentType}:*`);
+      // Generate patterns for workspace-specific content
+      // Pattern format: {contentType}:{workspaceId}:*
+      patterns.push(`${contentType}:${workspaceId}:*`);
     } else {
+      // Generate patterns for global content type
       patterns.push(`${contentType}:*`);
-      patterns.push(`embedding:*:${contentType}:*`);
-      patterns.push(`search:*:${contentType}:*`);
     }
-    
+
     return patterns;
   }
 

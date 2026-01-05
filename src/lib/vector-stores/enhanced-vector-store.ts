@@ -633,6 +633,55 @@ export class EnhancedVectorStore {
       averageResponseTime
     };
   }
+
+  /**
+   * Get provider selection insights for testing and debugging
+   */
+  getProviderSelectionInsights(): {
+    pgvector: { score: number; reasons: string[] };
+    weaviate: { score: number; reasons: string[] };
+    recommendation: string;
+  } {
+    const pgvectorMetrics = this.metrics.get('postgres');
+    const redisMetrics = this.metrics.get('redis');
+
+    // Calculate scores based on metrics (0-1 scale)
+    const pgvectorScore = pgvectorMetrics
+      ? Math.max(0, 1 - pgvectorMetrics.errorRate) *
+        (pgvectorMetrics.averageResponseTime > 0 ? Math.min(1, 100 / pgvectorMetrics.averageResponseTime) : 0.5)
+      : 0.5;
+
+    const weaviateScore = redisMetrics
+      ? Math.max(0, 1 - redisMetrics.errorRate) *
+        (redisMetrics.averageResponseTime > 0 ? Math.min(1, 100 / redisMetrics.averageResponseTime) : 0.5)
+      : 0.5;
+
+    const pgvectorReasons: string[] = [];
+    const weaviateReasons: string[] = [];
+
+    if (pgvectorMetrics) {
+      if (pgvectorMetrics.errorRate < 0.05) pgvectorReasons.push('Low error rate');
+      if (pgvectorMetrics.isHealthy) pgvectorReasons.push('Provider is healthy');
+    }
+
+    if (redisMetrics) {
+      if (redisMetrics.errorRate < 0.05) weaviateReasons.push('Low error rate');
+      if (redisMetrics.isHealthy) weaviateReasons.push('Provider is healthy');
+    }
+
+    let recommendation = 'balanced';
+    if (pgvectorScore > weaviateScore * 1.2) {
+      recommendation = 'pgvector';
+    } else if (weaviateScore > pgvectorScore * 1.2) {
+      recommendation = 'weaviate';
+    }
+
+    return {
+      pgvector: { score: pgvectorScore, reasons: pgvectorReasons },
+      weaviate: { score: weaviateScore, reasons: weaviateReasons },
+      recommendation
+    };
+  }
 }
 
 // Export singleton instance for global use

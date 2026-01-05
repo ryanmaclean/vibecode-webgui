@@ -1,0 +1,73 @@
+# KIND cluster configuration for local Kubernetes development
+# This configuration creates a multi-node cluster suitable for testing
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-local
+
+# Networking configuration
+networking:
+  # Set the IP family to IPv4
+  ipFamily: ipv4
+  # API server port on the host
+  apiServerAddress: "127.0.0.1"
+  apiServerPort: 6443
+  # Service CIDR
+  serviceSubnet: "10.96.0.0/12"
+  # Pod CIDR
+  podSubnet: "10.244.0.0/16"
+
+# Node configuration
+nodes:
+  # Control plane node
+  - role: control-plane
+    image: kindest/node:v1.27.3
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "ingress-ready=true"
+    extraPortMappings:
+      # Map container port 80 to host port 80 (HTTP)
+      - containerPort: 80
+        hostPort: 80
+        protocol: TCP
+      # Map container port 443 to host port 443 (HTTPS)
+      - containerPort: 443
+        hostPort: 443
+        protocol: TCP
+      # Map container port 30000 for NodePort services
+      - containerPort: 30000
+        hostPort: 30000
+        protocol: TCP
+    extraMounts:
+      # Mount local docker registry data
+      - hostPath: /var/lib/docker
+        containerPath: /var/lib/docker
+
+  # Worker node 1
+  - role: worker
+    image: kindest/node:v1.27.3
+    extraMounts:
+      - hostPath: /var/lib/docker
+        containerPath: /var/lib/docker
+
+  # Worker node 2
+  - role: worker
+    image: kindest/node:v1.27.3
+    extraMounts:
+      - hostPath: /var/lib/docker
+        containerPath: /var/lib/docker
+
+# Feature gates
+featureGates:
+  # Enable topology aware routing
+  TopologyAwareHints: true
+  # Enable graceful node shutdown
+  GracefulNodeShutdown: true
+
+# Runtime configuration
+containerdConfigPatches:
+  - |-
+    [plugins."io.containerd.grpc.v1.cri".registry.mirrors."localhost:5001"]
+      endpoint = ["http://localhost:5001"]

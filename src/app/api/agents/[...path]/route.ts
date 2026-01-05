@@ -199,22 +199,35 @@ async function handleRequest(
 // Agent Handlers
 
 async function handleCreateAgent(request: NextRequest, userId: string) {
-  const { client } = getClient()
-  const body = await request.json()
-  const validated = createAgentSchema.parse(body)
+  try {
+    const { client } = getClient()
+    const body = await request.json()
+    const validated = createAgentSchema.parse(body)
 
-  const agent = await client.createAgent({
-    ...validated,
-    metadata: {
-      ...validated.metadata,
-      userId,
-      createdAt: new Date().toISOString(),
-    },
-  })
+    const agent = await client.createAgent({
+      ...validated,
+      metadata: {
+        ...validated.metadata,
+        userId,
+        createdAt: new Date().toISOString(),
+      },
+    })
 
-  logger.info('Agent created', { agentId: agent.id, userId })
+    logger.info('Agent created', { agentId: agent.id, userId })
 
-  return NextResponse.json(agent, { status: 201 })
+    return NextResponse.json(agent, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        {
+          error: 'Validation failed',
+          details: error.errors,
+        },
+        { status: 400 }
+      )
+    }
+    throw error
+  }
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
@@ -226,9 +239,9 @@ async function handleListAgents(request: NextRequest, userId: string) {
   const response = await client.listAgents({ limit, order })
 
   // Filter to user's agents
-  const userAgents = response.data.filter(
+  const userAgents = response?.data?.filter(
     (agent) => agent.metadata.userId === userId
-  )
+  ) || []
 
   // console.debug('Listed agents', { userId, count: userAgents.length })
 

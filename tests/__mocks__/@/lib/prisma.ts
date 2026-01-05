@@ -59,7 +59,7 @@ export async function createWorkspace(data: {
   })
 }
 
-export async function logAIRequest(data: {
+export const logAIRequest = jest.fn(async (data: {
   user_id: number
   project_id?: number
   request_type: string
@@ -73,11 +73,11 @@ export async function logAIRequest(data: {
   status: string
   response?: any
   error?: string
-}) {
+}) => {
   return prisma.aIRequest.create({
     data: {
       ...data,
       completed_at: data.status === 'completed' ? new Date() : undefined,
     },
   })
-}
+})

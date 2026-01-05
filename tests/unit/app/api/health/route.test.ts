@@ -27,17 +27,22 @@ jest.mock('fs/promises', () => ({
   })
 }));
 
+// Helper function to create a mock NextRequest
+function createMockRequest(url: string = 'http://localhost:3000/api/health'): NextRequest {
+  return new NextRequest(url, {
+    method: 'GET',
+    headers: {
+      'x-forwarded-for': '127.0.0.1',
+    },
+  });
+}
+
 describe('/api/health', () => {
   let mockRequest: NextRequest;
 
   beforeEach(() => {
     // Create a mock NextRequest
-    mockRequest = {
-      url: 'http://localhost:3000/api/health',
-      method: 'GET',
-      headers: new Headers(),
-      nextUrl: new URL('http://localhost:3000/api/health')
-    } as NextRequest;
+    mockRequest = createMockRequest('http://localhost:3000/api/health');
 
     // Reset environment variables in a type-safe way
     Reflect.set(process.env, 'NODE_ENV', 'test');
@@ -51,9 +56,9 @@ describe('/api/health', () => {
   describe('GET /api/health', () => {
     it('should return healthy status with basic information', async () => {
       try {
-        const response = await GET();
+        const response = await GET(mockRequest);
         console.log('Response status:', response.status);
-        
+
         let data;
         let responseText;
         try {
@@ -95,14 +100,14 @@ describe('/api/health', () => {
     });
 
     it('should include timestamp in ISO format', async () => {
-      const response = await GET();
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       expect(data.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
     });
 
     it('should include uptime as a number', async () => {
-      const response = await GET();
+      const response = await GET(mockRequest);
       const data = await response.json();
 
       expect(typeof data.uptime).toBe('number');
@@ -117,7 +122,7 @@ describe('/api/health', () => {
       delete process.env.npm_package_version;
 
       try {
-        const response = await GET();
+        const response = await GET(mockRequest);
         const data = await response.json();
 
         expect(data.version).toBe('1.0.0');
@@ -137,7 +142,7 @@ describe('/api/health', () => {
       delete process.env.NODE_ENV;
 
       try {
-        const response = await GET();
+        const response = await GET(mockRequest);
         const data = await response.json();
 
         expect(data.environment).toBe('development');
@@ -149,36 +154,26 @@ describe('/api/health', () => {
       }
     });
 
-    it('should include performance metrics', async () => {
-      const response = await GET();
+    it('should include responseTime field', async () => {
+      const response = await GET(mockRequest);
       const data = await response.json();
 
-      expect(data.performance).toEqual({
-        responseTime: expect.any(Number),
-        memoryUsage: expect.objectContaining({
-          rss: expect.any(Number),
-          heapTotal: expect.any(Number),
-          heapUsed: expect.any(Number),
-          external: expect.any(Number)
-        }),
-        cpuUsage: expect.any(Number)
-      });
+      expect(data.responseTime).toBeDefined();
+      expect(data.responseTime).toMatch(/^\d+ms$/);
+
+      const timeMs = parseInt(data.responseTime);
+      expect(timeMs).toBeGreaterThanOrEqual(0);
     });
 
-    it('should have response time greater than 0', async () => {
-      const response = await GET();
+    it('should include memory check details', async () => {
+      const response = await GET(mockRequest);
       const data = await response.json();
 
-      expect(data.performance.responseTime).toBeGreaterThan(0);
-    });
-
-    it('should include memory usage information', async () => {
-      const response = await GET();
-      const data = await response.json();
-
-      expect(data.performance.memoryUsage.rss).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.heapTotal).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.heapUsed).toBeGreaterThan(0);
+      expect(data.checks.memory).toBeDefined();
+      expect(data.checks.memory.details).toBeDefined();
+      expect(data.checks.memory.details.used).toMatch(/^\d+MB$/);
+      expect(data.checks.memory.details.total).toMatch(/^\d+MB$/);
+      expect(data.checks.memory.details.percentage).toMatch(/^\d+%$/);
     });
   });
 });

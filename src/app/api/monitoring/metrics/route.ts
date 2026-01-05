@@ -157,8 +157,8 @@ async function performHealthChecks(): Promise<boolean> {
  */
 export async function POST(request: NextRequest) {
   try {
-    // Check authentication - any authenticated user can post metrics
-    const auth = await checkMonitoringAuth(request);
+    // Check authentication - any authenticated user can post metrics (not just admins)
+    const auth = await checkMonitoringAuth(request, false);
     if (!auth.isAuthorized) {
       return getUnauthorizedResponse(auth.error);
     }

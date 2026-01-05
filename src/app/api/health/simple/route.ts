@@ -16,10 +16,19 @@ export async function GET(request: NextRequest) {
     return validation.error
   }
 
+  // Safely get system metrics
+  let uptime = 0;
+  try {
+    uptime = process.uptime();
+  } catch (error) {
+    // If system metrics fail, continue with 0
+    uptime = 0;
+  }
+
   return NextResponse.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
-    uptime: process.uptime(),
+    uptime,
     environment: process.env.NODE_ENV || 'development',
     version: process.env.npm_package_version || '1.0.0',
   })

@@ -18,23 +18,52 @@ jest.mock('@/lib/auth', () => ({
   authOptions: {}
 }));
 
-jest.mock('openai', () => ({
-  OpenAI: jest.fn().mockImplementation(() => ({
-    chat: {
-      completions: {
-        create: jest.fn().mockImplementation(async () => {
-          // Return an object that can be used with for-await-of
-          return {
-            async *[Symbol.asyncIterator]() {
-              yield { choices: [{ delta: { content: 'Hello' } }] };
-              yield { choices: [{ delta: { content: ' World' } }] };
-            }
-          };
-        })
-      }
+jest.mock('@/lib/api/validation/middleware', () => ({
+  validateRequestBody: jest.fn(async (req, schema) => {
+    try {
+      const body = await req.json();
+      const validated = schema.parse(body);
+      return { success: true, data: validated };
+    } catch (error) {
+      return {
+        success: false,
+        error: {
+          error: 'Invalid request data',
+          details: error.errors || []
+        }
+      };
     }
-  }))
+  })
 }));
+
+jest.mock('openai', () => {
+  const mockCreate = jest.fn().mockImplementation(async (params) => {
+    // Return an async iterable for streaming
+    if (params.stream) {
+      return {
+        async *[Symbol.asyncIterator]() {
+          yield { choices: [{ delta: { content: 'Hello' } }] };
+          yield { choices: [{ delta: { content: ' World' } }] };
+        }
+      };
+    }
+    // Return regular response for non-streaming
+    return {
+      choices: [{ message: { content: 'Hello World' } }]
+    };
+  });
+
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: mockCreate
+        }
+      }
+    }))
+  };
+});
 
 jest.mock('@/lib/prisma', () => ({
   prisma: {
@@ -54,6 +83,15 @@ jest.mock('@/lib/vector-store', () => ({
   vectorStore: {
     similaritySearch: jest.fn().mockResolvedValue([]),
     getContext: jest.fn().mockResolvedValue('Mock context for testing')
+  }
+}));
+
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
   }
 }));
 
@@ -121,8 +159,9 @@ describe('Integration: /api/ai/chat/stream', () => {
     });
 
     const response = await POST(mockRequest);
-    // JSON parsing errors are caught by the outer try-catch and return 500
-    // This is acceptable behavior for integration testing
-    expect(response.status).toBe(500);
+    // JSON parsing errors are caught and return 400 for bad request
+    expect(response.status).toBe(400);
+    const data = await response.json();
+    expect(data).toHaveProperty('error');
   });
 });

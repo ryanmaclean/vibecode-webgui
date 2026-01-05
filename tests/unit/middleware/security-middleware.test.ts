@@ -169,11 +169,10 @@ describe('Security Middleware Module', () => {
 
     it('should handle OPTIONS requests', async () => {
       setNodeEnv('production')
+      process.env.CI = 'false'
 
-      // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      // Re-initialize with bypass disabled
+      await initializeSecurityModules(false)
 
       mockRequest.method = 'OPTIONS'
       mockRequest.nextUrl.pathname = '/api/test'
@@ -192,15 +191,10 @@ describe('Security Middleware Module', () => {
 
     it('should validate CORS for production requests', async () => {
       setNodeEnv('production')
+      process.env.CI = 'false'
 
-      // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
-
-      // Temporarily disable MOCK_ORIGINS for this test
-      const oldMockOrigins = process.env.MOCK_ORIGINS
-      process.env.MOCK_ORIGINS = 'false'
+      // Re-initialize with bypass disabled
+      await initializeSecurityModules(false)
 
       mockRequest.nextUrl.pathname = '/api/test'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -209,9 +203,6 @@ describe('Security Middleware Module', () => {
       })
 
       const result = await apiSecurityMiddleware(mockRequest)
-
-      // Restore MOCK_ORIGINS
-      process.env.MOCK_ORIGINS = oldMockOrigins
 
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
@@ -454,11 +445,10 @@ describe('Security Middleware Module', () => {
 
     it('should require authentication for high security endpoints', async () => {
       setNodeEnv('production')
+      process.env.CI = 'false'
 
-      // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      // Re-initialize with bypass disabled
+      await initializeSecurityModules(false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -467,9 +457,7 @@ describe('Security Middleware Module', () => {
       })
 
       // Mocking JWT token
-      mockGetToken.mockImplementation(() => {
-        return Promise.resolve(null);
-      });
+      mockGetToken.mockResolvedValueOnce(null);
 
       const result = await apiSecurityMiddleware(mockRequest)
       expect(result).toBeDefined()
@@ -481,11 +469,10 @@ describe('Security Middleware Module', () => {
 
     it('should require admin role for critical endpoints', async () => {
       setNodeEnv('production')
+      process.env.CI = 'false'
 
-      // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      // Re-initialize with bypass disabled
+      await initializeSecurityModules(false)
 
       mockRequest.nextUrl.pathname = '/api/admin/users'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -494,13 +481,11 @@ describe('Security Middleware Module', () => {
       })
 
       // Mocking JWT token
-      mockGetToken.mockImplementation(() => {
-        return Promise.resolve({
-          sub: 'user123',
-          id: 'user123',
-          role: 'user',
-          email: 'user@example.com'
-        });
+      mockGetToken.mockResolvedValueOnce({
+        sub: 'user123',
+        id: 'user123',
+        role: 'user',
+        email: 'user@example.com'
       });
 
       const result = await apiSecurityMiddleware(mockRequest)
@@ -561,11 +546,10 @@ describe('Security Middleware Module', () => {
 
     it('should check rate limits for AI endpoints', async () => {
       setNodeEnv('production')
+      process.env.CI = 'false'
 
-      // Ensure security checks are enabled
-      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
-        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
-      }
+      // Re-initialize with bypass disabled
+      await initializeSecurityModules(false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'
@@ -575,13 +559,11 @@ describe('Security Middleware Module', () => {
       })
 
       // Mocking JWT token
-      mockGetToken.mockImplementation(() => {
-        return Promise.resolve({
-          sub: 'user123',
-          id: 'user123',
-          role: 'user',
-          email: 'user@example.com'
-        });
+      mockGetToken.mockResolvedValueOnce({
+        sub: 'user123',
+        id: 'user123',
+        role: 'user',
+        email: 'user@example.com'
       });
 
       mockValidateAIQuery.mockReturnValue({ query: 'test query' })

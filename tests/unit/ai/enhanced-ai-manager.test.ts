@@ -2,7 +2,22 @@ import { EnhancedAIManager, createEnhancedAIManager } from '@/lib/ai/enhanced-ai
 import { MultiAgentWorkflow } from '@/lib/ai/agents/multi-agent-workflow';
 
 // Mock the external dependencies
-jest.mock('@/lib/ai/agents/multi-agent-workflow');
+const mockExecuteWorkflow = jest.fn();
+const mockGetResult = jest.fn();
+const mockGetAllResults = jest.fn();
+const mockClearResults = jest.fn();
+const mockAddAgentRole = jest.fn();
+
+jest.mock('@/lib/ai/agents/multi-agent-workflow', () => ({
+  MultiAgentWorkflow: jest.fn().mockImplementation(() => ({
+    executeWorkflow: mockExecuteWorkflow,
+    getResult: mockGetResult,
+    getAllResults: mockGetAllResults,
+    clearResults: mockClearResults,
+    addAgentRole: mockAddAgentRole
+  }))
+}));
+
 jest.mock('@/lib/ai/vector-stores/pgvector-client', () => ({
   PGVectorClient: jest.fn().mockImplementation(() => ({
     initialize: jest.fn().mockResolvedValue(true),
@@ -15,6 +30,7 @@ jest.mock('@/lib/ai/vector-stores/pgvector-client', () => ({
     CODE_SNIPPETS: { name: 'code_snippets', properties: {} }
   }
 }));
+
 jest.mock('@/lib/ai/local/ollama-client', () => ({
   createOllamaClient: jest.fn().mockImplementation(() => ({
     healthCheck: jest.fn().mockResolvedValue(true),
@@ -75,30 +91,24 @@ describe('EnhancedAIManager', () => {
       }
     };
 
-    // Mock MultiAgentWorkflow
-    (MultiAgentWorkflow as jest.MockedClass<typeof MultiAgentWorkflow>).mockImplementation(() => ({
-      executeWorkflow: jest.fn().mockImplementation(async () => {
-        // Add a small delay to ensure timing is measurable
-        await new Promise(resolve => setTimeout(resolve, 10));
-        return [
-          {
-            stepId: 'test-step',
-            agentRole: 'test-agent',
-            input: 'test input',
-            output: 'test output',
-            metadata: {
-              model: 'gpt-4',
-              duration: 1000,
-              timestamp: new Date().toISOString()
-            }
+    // Setup default mock behavior
+    mockExecuteWorkflow.mockImplementation(async () => {
+      // Add a small delay to ensure timing is measurable
+      await new Promise(resolve => setTimeout(resolve, 10));
+      return [
+        {
+          stepId: 'test-step',
+          agentRole: 'test-agent',
+          input: 'test input',
+          output: 'test output',
+          metadata: {
+            model: 'gpt-4',
+            duration: 1000,
+            timestamp: new Date().toISOString()
           }
-        ];
-      }),
-      getResult: jest.fn(),
-      getAllResults: jest.fn(),
-      clearResults: jest.fn(),
-      addAgentRole: jest.fn()
-    }));
+        }
+      ];
+    });
 
     aiManager = new EnhancedAIManager(mockConfig);
   });
@@ -178,8 +188,7 @@ describe('EnhancedAIManager', () => {
 
     it('should handle workflow execution errors', async () => {
       // Mock the workflow to throw an error
-      const mockWorkflow = (aiManager as any).multiAgentWorkflow;
-      (mockWorkflow.executeWorkflow as jest.Mock).mockRejectedValue(new Error('Workflow failed'));
+      mockExecuteWorkflow.mockRejectedValueOnce(new Error('Workflow failed'));
 
       const request = {
         type: 'code-generation' as const,

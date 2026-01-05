@@ -330,40 +330,5 @@ if (!Response.json) {
   };
 }
 
-// Add NextRequest and NextResponse for Next.js compatibility
-global.NextRequest = global.Request;
-
-// NextResponse extends Response with additional static methods
-class NextResponse extends Response {
-  static next(init) {
-    return new NextResponse(null, {
-      status: 200,
-      ...init,
-    });
-  }
-
-  static redirect(url, init) {
-    const urlObj = typeof url === 'string' ? new URL(url) : url;
-    return new NextResponse(null, {
-      status: 307,
-      ...init,
-      headers: {
-        Location: urlObj.toString(),
-        ...init?.headers,
-      },
-    });
-  }
-
-  static json(data, init) {
-    return new NextResponse(JSON.stringify(data), {
-      status: 200,
-      ...init,
-      headers: {
-        'Content-Type': 'application/json',
-        ...init?.headers,
-      },
-    });
-  }
-}
-
-global.NextResponse = NextResponse;
+// Note: NextRequest and NextResponse from next/server work fine in Node.js test environment
+// We don't need to mock them here - the real implementations work correctly

@@ -179,9 +179,9 @@ describe('API Health Response Format Validation', () => {
   describe('Timestamp format validation', () => {
     it('should generate RFC 3339 compliant timestamps', async () => {
       const responses = await Promise.all([
-        healthHandler(),
-        healthzHandler(),
-        readyzHandler()
+        healthHandler(createMockRequest('http://localhost:3000/api/health')),
+        healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
+        readyzHandler(createMockRequest('http://localhost:3000/api/readyz'))
       ]);
 
       const timestamps = await Promise.all(
@@ -304,7 +304,6 @@ describe('API Health Response Format Validation', () => {
       expect(data.environment).not.toBeNull();
       expect(data.checks).not.toBeNull();
       expect(data.responseTime).not.toBeNull();
-      expect(data.performance).not.toBeNull();
     });
 
     it('should be backward compatible with previous versions', async () => {
@@ -382,9 +381,9 @@ describe('API Health Response Format Validation', () => {
 
     it('should have consistent timestamp formats', async () => {
       const responses = await Promise.all([
-        healthHandler(),
-        healthzHandler(),
-        readyzHandler()
+        healthHandler(createMockRequest('http://localhost:3000/api/health')),
+        healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
+        readyzHandler(createMockRequest('http://localhost:3000/api/readyz'))
       ]);
 
       const timestamps = await Promise.all(

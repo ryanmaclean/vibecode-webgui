@@ -426,6 +426,9 @@ export class SSEClient {
       this.eventSource = null
     }
 
+    // Increment attempt counter before checking
+    this.reconnectAttempts++
+
     // Attempt reconnection
     if (this.reconnectAttempts < this.reconnectionConfig.maxAttempts) {
       this.scheduleReconnect()
@@ -441,7 +444,6 @@ export class SSEClient {
 
   private scheduleReconnect(): void {
     this.setState('reconnecting')
-    this.reconnectAttempts++
     this.metrics.reconnectionCount++
 
     // Calculate delay with exponential backoff
