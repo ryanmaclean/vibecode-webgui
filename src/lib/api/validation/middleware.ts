@@ -50,12 +50,18 @@ export async function validateRequestBody<T extends ZodSchema>(
     if (error instanceof ZodError) {
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
+      // Use the first error's message as the main message, or a generic fallback
+      const firstError = error.errors[0]
+      const mainMessage = firstError
+        ? (options.customMessages?.[firstError.path.join('.')] || firstError.message)
+        : 'Request body contains invalid or missing fields'
+
       return {
         success: false,
         error: NextResponse.json(
           {
             error: 'Validation failed',
-            message: 'Request body contains invalid or missing fields',
+            message: mainMessage,
             ...(verboseErrors && {
               details: error.errors.map(err => ({
                 field: err.path.join('.'),

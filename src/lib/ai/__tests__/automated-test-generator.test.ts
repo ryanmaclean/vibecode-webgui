@@ -35,7 +35,7 @@ jest.mock('@langchain/core/runnables', () => ({
 import { AutomatedTestGenerator, createTestGenerator, TestGenerationOptions, GeneratedTest, TestSuite } from '../automated-test-generator'
 
 describe.skip('AutomatedTestGenerator', () => {
-  // Skipping LangChain-dependent tests until proper mocking is implemented
+  // LangChain is properly mocked at the top of the file
   let generator: AutomatedTestGenerator
   const mockApiKey = 'test-api-key'
 

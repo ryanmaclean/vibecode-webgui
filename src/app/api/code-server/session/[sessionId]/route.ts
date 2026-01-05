@@ -154,7 +154,15 @@ export async function PATCH(
       return paramValidation.error as NextResponse
     }
 
+    // Validate request body BEFORE checking session existence
+    // This ensures we return 400 for invalid input before 404 for missing resource
+    const bodyValidation = await validateRequestBody(request, codeServerSessionUpdateSchema)
+    if (!bodyValidation.success) {
+      return bodyValidation.error as NextResponse
+    }
+
     const { sessionId } = paramValidation.data
+    const body = bodyValidation.data
     const codeServerSession = activeSessions.get(sessionId)
 
     if (!codeServerSession) {
@@ -164,14 +172,6 @@ export async function PATCH(
     if (codeServerSession.userId !== session.user.id) {
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
     }
-
-    // Validate request body
-    const bodyValidation = await validateRequestBody(request, codeServerSessionUpdateSchema)
-    if (!bodyValidation.success) {
-      return bodyValidation.error as NextResponse
-    }
-
-    const body = bodyValidation.data
 
     // Update session properties
     if (body.status) {

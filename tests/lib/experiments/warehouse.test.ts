@@ -230,6 +230,9 @@ describe('ExperimentWarehouse', () => {
         include: {
           metrics: {
             where: { metric_name: 'conversion' },
+            include: {
+              assignment: true
+            },
             orderBy: { timestamp: 'desc' }
           }
         }

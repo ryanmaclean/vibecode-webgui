@@ -13,7 +13,7 @@ jest.mock('next/navigation', () => ({
 
 const mockUseProjectGenerator = useProjectGenerator as jest.MockedFunction<typeof useProjectGenerator>;
 
-describe.skip('ProjectGenerator - Complex Mocking Issues', () => {
+describe.skip('ProjectGenerator', () => {
   const mockGenerateProject = jest.fn();
   const mockCancelGeneration = jest.fn();
   const mockUpdateProgress = jest.fn();

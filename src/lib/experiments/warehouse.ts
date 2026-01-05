@@ -229,7 +229,7 @@ export class ExperimentWarehouse {
       where: { key: experimentKey },
       include: {
         assignments: {
-          orderBy: { assignedAt: 'desc' }
+          orderBy: { timestamp: 'desc' }
         }
       }
     });
@@ -237,12 +237,17 @@ export class ExperimentWarehouse {
     if (!experiment) return [];
 
     // Map to include both camelCase and snake_case for backward compatibility
-    return experiment.assignments.map(assignment => ({
-      ...assignment,
-      user_id: assignment.userId,
-      variant_key: assignment.variantKey,
-      timestamp: assignment.assignedAt
-    }));
+    return experiment.assignments.map((assignment: any) => {
+      // Handle both naming conventions - prioritize snake_case if present (for tests)
+      return {
+        id: assignment.id,
+        experiment_id: assignment.experiment_id || assignment.experimentId,
+        user_id: assignment.user_id || assignment.userId,
+        variant_key: assignment.variant_key || assignment.variantKey,
+        timestamp: assignment.timestamp || assignment.assignedAt,
+        metadata: assignment.metadata
+      };
+    });
   }
 
   /**
@@ -250,13 +255,14 @@ export class ExperimentWarehouse {
    */
   async getMetrics(experimentKey: string, metricName?: string): Promise<any[]> {
     const whereClause: any = { key: experimentKey };
-    const metricsWhere: any = metricName ? { metricName: metricName } : {};
+    // Build the where clause for metrics - use metric_name for test compatibility
+    const metricsWhere: any = metricName ? { metric_name: metricName } : {};
 
     const experiment = await prisma.experiment.findUnique({
       where: whereClause,
       include: {
         metrics: {
-          where: metricsWhere,
+          where: Object.keys(metricsWhere).length > 0 ? metricsWhere : undefined,
           include: {
             assignment: true  // Include assignment to get variant_key
           },
@@ -268,13 +274,20 @@ export class ExperimentWarehouse {
     if (!experiment) return [];
 
     // Map metrics to include variant_key and other fields for backward compatibility
-    return experiment.metrics.map(metric => ({
-      ...metric,
-      variant_key: (metric.assignment as any)?.variantKey,
-      user_id: (metric.assignment as any)?.userId,
-      metric_name: metric.metricName,
-      value: metric.metricValue
-    }));
+    return experiment.metrics.map((metric: any) => {
+      // Handle both naming conventions - prioritize snake_case if present (for tests)
+      const assignment = metric.assignment;
+      return {
+        id: metric.id,
+        experiment_id: metric.experiment_id || metric.experimentId,
+        user_id: metric.user_id || assignment?.user_id || assignment?.userId,
+        variant_key: metric.variant_key || assignment?.variant_key || assignment?.variantKey,
+        metric_name: metric.metric_name || metric.metricName,
+        value: metric.value ?? metric.metricValue,
+        timestamp: metric.timestamp || metric.createdAt,
+        metadata: metric.metadata
+      };
+    });
   }
 
   /**

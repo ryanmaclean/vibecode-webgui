@@ -55,24 +55,12 @@ describe('/api/health', () => {
 
   describe('GET /api/health', () => {
     it('should return healthy status with basic information', async () => {
-      try {
-        const response = await GET(mockRequest);
-        console.log('Response status:', response.status);
+      const response = await GET(mockRequest);
 
-        let data;
-        let responseText;
-        try {
-          responseText = await response.text();
-          console.log('Response text:', responseText);
-          data = JSON.parse(responseText);
-          console.log('Response data:', data);
-        } catch (parseError) {
-          console.log('Parse error:', parseError);
-          console.log('Raw response text:', responseText);
-        }
+      const data = await response.json();
 
-        expect(response.status).toBe(200);
-        expect(data).toEqual({
+      expect(response.status).toBe(200);
+      expect(data).toEqual({
         status: 'healthy',
         timestamp: expect.any(String),
         uptime: expect.any(Number),
@@ -91,12 +79,19 @@ describe('/api/health', () => {
           valkey: { status: 'healthy' },
           ai: { status: 'healthy' }
         },
-        responseTime: expect.stringMatching(/^\d+ms$/)
+        responseTime: expect.stringMatching(/^\d+ms$/),
+        performance: expect.objectContaining({
+          responseTime: expect.any(Number),
+          memoryUsage: expect.objectContaining({
+            rss: expect.any(Number),
+            heapTotal: expect.any(Number),
+            heapUsed: expect.any(Number),
+            external: expect.any(Number),
+            arrayBuffers: expect.any(Number)
+          }),
+          cpuUsage: expect.any(Number)
+        })
       });
-      } catch (error) {
-        console.log('Test error:', error);
-        throw error;
-      }
     });
 
     it('should include timestamp in ISO format', async () => {

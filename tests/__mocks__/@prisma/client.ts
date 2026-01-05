@@ -323,7 +323,16 @@ const createPrismaClientMock = () => ({
       // Include related data if requested
       const result = { ...exp };
       if (args.include?.assignments !== undefined) {
-        result.assignments = experimentAssignmentsStore.filter(a => a.experimentId === exp.id);
+        let assignments = experimentAssignmentsStore.filter(a => a.experimentId === exp.id);
+        // Map to include both camelCase and snake_case fields
+        assignments = assignments.map(a => ({
+          ...a,
+          experiment_id: a.experimentId,
+          user_id: a.userId,
+          variant_key: a.variantKey,
+          timestamp: a.assignedAt
+        }));
+        result.assignments = assignments;
       }
       if (args.include?.metrics !== undefined) {
         // Handle both boolean and object includes
@@ -331,16 +340,46 @@ const createPrismaClientMock = () => ({
         const metricsWhere = metricsInclude.where || {};
         let metrics = experimentMetricsStore.filter(m => m.experimentId === exp.id);
 
-        // Apply metric name filter if specified
+        // Apply metric name filter if specified (support both metricName and metric_name)
         if (metricsWhere.metricName) {
           metrics = metrics.filter(m => m.metricName === metricsWhere.metricName);
+        }
+        if (metricsWhere.metric_name) {
+          metrics = metrics.filter(m => m.metricName === metricsWhere.metric_name);
+        }
+        // Handle OR conditions
+        if (metricsWhere.OR) {
+          metrics = metrics.filter(m =>
+            metricsWhere.OR.some((cond: any) =>
+              (cond.metricName && m.metricName === cond.metricName) ||
+              (cond.metric_name && m.metricName === cond.metric_name)
+            )
+          );
         }
 
         // Include assignment relationship if requested
         if (metricsInclude.include?.assignment) {
+          metrics = metrics.map(m => {
+            const assignment = experimentAssignmentsStore.find(a => a.id === m.assignmentId);
+            return {
+              ...m,
+              experiment_id: m.experimentId,
+              metric_name: m.metricName,
+              value: m.metricValue,
+              assignment: assignment ? {
+                ...assignment,
+                user_id: assignment.userId,
+                variant_key: assignment.variantKey
+              } : null
+            };
+          });
+        } else {
+          // Still map field names even without assignment
           metrics = metrics.map(m => ({
             ...m,
-            assignment: experimentAssignmentsStore.find(a => a.id === m.assignmentId) || null
+            experiment_id: m.experimentId,
+            metric_name: m.metricName,
+            value: m.metricValue
           }));
         }
 

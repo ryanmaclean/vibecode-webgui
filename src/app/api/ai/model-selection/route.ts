@@ -5,12 +5,14 @@ import { z } from '@/lib/zod-compat'
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const modelSelectionRequestSchema = z.object({
-  prompt: z.string().min(1).max(50_000),
+  prompt: z.string().min(1).max(10_000, 'Prompt must not exceed 10KB (approximately 10,000 characters)'),
   metadata: z.object({
     taskType: z.enum(['code', 'chat', 'analysis', 'creative', 'reasoning']).optional(),
     contextLength: z.number().int().positive().optional(),
     hasImages: z.boolean().optional(),
-    hasFiles: z.boolean().optional()
+    hasFiles: z.boolean().optional(),
+    fileTypes: z.array(z.string()).max(10, 'Maximum 10 file types allowed').optional(),
+    conversationHistory: z.number().int().min(0).max(100, 'Conversation history must not exceed 100').optional()
   }).optional(),
   preferences: z.object({
     prioritizeSpeed: z.boolean().optional(),

@@ -75,20 +75,49 @@ export const paginationSchema = z.object({
 export const containerOptionsSchema = z.object({
   cpus: z.number().positive().max(16).optional(),
   memory: z.string().regex(/^\d+[MGT]$/).optional(),
-  ports: z.array(z.string().regex(/^\d+:\d+$/)).optional(),
+  ports: z.array(z.string().regex(/^\d+:\d+$/)).max(20, 'Maximum 20 port mappings allowed').optional(),
   volumes: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
   workingDir: z.string().optional(),
-  command: z.array(z.string()).optional()
-})
+  command: z.array(z.string()).optional(),
+  name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Container name must contain only alphanumeric characters, hyphens, and underscores').optional()
+}).refine(
+  (data) => {
+    // Validate that host ports are >= 1024 (no privileged ports)
+    if (data.ports) {
+      for (const portMapping of data.ports) {
+        const [hostPort] = portMapping.split(':').map(p => parseInt(p))
+        if (hostPort < 1024) {
+          return false
+        }
+      }
+    }
+    return true
+  },
+  {
+    message: 'Host port must be >= 1024 (privileged ports not allowed)'
+  }
+)
 
 export const createContainerSchema = z.object({
-  image: z.string().min(1).max(255),
+  image: z.string().min(1).max(255).refine(
+    (image) => {
+      // Reject directory traversal patterns
+      if (image.includes('../') || image.includes('..\\') || image.includes('//')) {
+        return false
+      }
+      // Validate Docker image format: [registry/][namespace/]image[:tag]
+      // Allow alphanumeric, dots, hyphens, underscores, colons, and forward slashes in proper positions
+      const imagePattern = /^([a-z0-9._-]+\/)*[a-z0-9._-]+(:[a-z0-9._-]+)?$/i
+      return imagePattern.test(image)
+    },
+    'Invalid Docker image format or contains path traversal patterns'
+  ),
   options: containerOptionsSchema.optional()
 })
 
 export const containerIdSchema = z.object({
-  id: z.string().min(1).max(100)
+  id: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Container ID must contain only alphanumeric characters, hyphens, and underscores')
 })
 
 // ============================================================================

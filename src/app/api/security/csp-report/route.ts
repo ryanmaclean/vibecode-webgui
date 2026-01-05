@@ -21,18 +21,21 @@ const cspViolationSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    // Check size limit (10KB)
-    const contentLength = request.headers.get('content-length')
     const maxSize = 10 * 1024 // 10KB
 
-    if (contentLength && parseInt(contentLength) > maxSize) {
+    // Get the raw body as text to check actual size
+    const bodyText = await request.text()
+
+    // Check actual body size (not just header)
+    if (bodyText.length > maxSize) {
       return NextResponse.json(
         { error: 'CSP report exceeds 10KB limit' },
         { status: 413 }
       )
     }
 
-    const body = await request.json()
+    // Parse the JSON body
+    const body = JSON.parse(bodyText)
 
     // Validate structure - must have 'csp-report' key
     if (!body['csp-report']) {

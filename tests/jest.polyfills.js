@@ -315,6 +315,13 @@ global.Request = class Request {
     }
     return typeof this.body === 'undefined' ? '' : JSON.stringify(this.body);
   }
+  async formData() {
+    // Return the body if it's already FormData, otherwise create empty FormData
+    if (this.body instanceof FormData) {
+      return this.body;
+    }
+    return new FormData();
+  }
 };
 
 // Add Response.json polyfill for API tests
@@ -425,5 +432,41 @@ if (!global.WritableStream) {
     }
 
     get locked() { return false; }
+  };
+}
+
+// Add arrayBuffer() method to File prototype for tests
+if (typeof File !== 'undefined' && !File.prototype.arrayBuffer) {
+  File.prototype.arrayBuffer = async function() {
+    // Convert the file content to an ArrayBuffer
+    if (this.size === 0) {
+      return new ArrayBuffer(0);
+    }
+
+    // Read the file as text and convert to buffer
+    const text = await this.text();
+    const encoder = new TextEncoder();
+    return encoder.encode(text).buffer;
+  };
+}
+
+// Add text() method to File prototype if missing
+if (typeof File !== 'undefined' && !File.prototype.text) {
+  File.prototype.text = async function() {
+    // For test purposes, return the content as string
+    // In real browser, this reads the file content
+    return this._content || '';
+  };
+}
+
+// Enhance File constructor to store content for testing
+if (typeof File !== 'undefined') {
+  const OriginalFile = File;
+  global.File = class File extends OriginalFile {
+    constructor(parts, name, options) {
+      super(parts, name, options);
+      // Store the content for text() and arrayBuffer() methods
+      this._content = parts.join('');
+    }
   };
 }

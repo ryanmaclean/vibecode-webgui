@@ -18,7 +18,7 @@ import { z } from '@/lib/zod-compat';
 export const dynamic = 'force-dynamic';
 
 const dockerActionSchema = z.object({
-  action: z.enum(['start-colima']),
+  action: z.enum(['start-colima', 'status', 'info']),
 }).strict();
 
 /**
@@ -81,25 +81,50 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { action } = dockerActionSchema.parse(body);
 
-    const result = await startColima();
+    // Handle different actions
+    if (action === 'start-colima') {
+      const result = await startColima();
 
-    if (result.success) {
-      console.info('Colima started successfully');
+      if (result.success) {
+        console.info('Colima started successfully');
 
+        return NextResponse.json({
+          success: true,
+          message: result.message,
+        });
+      }
+
+      console.error('Failed to start Colima', { message: result.message });
+
+      return NextResponse.json(
+        {
+          success: false,
+          error: result.message,
+        },
+        { status: 500 }
+      );
+    } else if (action === 'status') {
+      // Return Docker status
+      const status = await detectDockerRuntime();
       return NextResponse.json({
         success: true,
-        message: result.message,
+        data: status,
+      });
+    } else if (action === 'info') {
+      // Return detailed Docker info
+      const report = await getDockerStatusReport();
+      return NextResponse.json({
+        success: true,
+        data: report,
       });
     }
-
-    console.error('Failed to start Colima', { message: result.message });
 
     return NextResponse.json(
       {
         success: false,
-        error: result.message,
+        error: 'Invalid action',
       },
-      { status: 500 }
+      { status: 400 }
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
