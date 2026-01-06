@@ -175,9 +175,12 @@ async function handleRequest(
         return handleToolRoutes(request, method, userId, id)
 
       default:
-        // Agent CRUD operations
+        // Agent CRUD operations - check if first path element is an agent ID
         if (id) {
           return handleAgentOperations(request, method, userId, resource, subResource)
+        } else if (resource?.startsWith('asst_') || resource?.startsWith('thread_') || resource?.startsWith('file_')) {
+          // First path element is an agent/thread/file ID
+          return handleAgentOperations(request, method, userId, resource, id)
         }
     }
 
