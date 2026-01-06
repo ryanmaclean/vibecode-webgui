@@ -20,16 +20,20 @@ describe('DatadogIntegration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
+    jest.resetModules() // Clear module cache
+
     // Create mock socket
     mockSocket = {
-      send: jest.fn(),
+      send: jest.fn((buffer, port, host, callback) => {
+        // Call the callback immediately to simulate successful send
+        if (callback) callback(null)
+      }),
       close: jest.fn()
     }
-    
+
     // Mock dgram.createSocket to return our mock socket
     ;(dgram.createSocket as jest.Mock).mockReturnValue(mockSocket)
-    
+
     // Import the class after mocking
     const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
     datadogIntegration = new DatadogIntegration()
