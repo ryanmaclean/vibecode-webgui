@@ -12,10 +12,10 @@ import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 const describeIf = process.env.ENABLE_DATADOG_API_TESTS === '1' ? describe : describe.skip;
 
 // Datadog API configuration
-const DD_API_KEY = 'REDACTED_API_KEY';
+const DD_API_KEY = process.env.DD_API_KEY || '';
 const DD_SITE = process.env.DD_SITE || 'datadoghq.com';
 const DD_API_BASE_URL = `https://api.${DD_SITE}`;
-const DD_APP_KEY = process.env.DD_APP_KEY || process.env.DATADOG_APP_KEY;
+const DD_APP_KEY = process.env.DD_APP_KEY || process.env.DATADOG_APP_KEY || '';
 
 // Test timeout configuration
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
