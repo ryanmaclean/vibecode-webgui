@@ -92,6 +92,15 @@ const config = {
   // Clear mock calls and instances between tests
   clearMocks: true,
 
+  // Reset module registry between each test to prevent state pollution
+  resetModules: true,
+
+  // Restore all mocks between tests
+  restoreMocks: true,
+
+  // Reset mock state between tests
+  resetMocks: true,
+
   // Module Directories
   moduleDirectories: ['node_modules', 'src'],
 

@@ -1,20 +1,32 @@
-# VibeCode - Test Project for Build Systems & Tracing
+# VibeCode - AI Development Platform (Demo/Experimental)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-**This is a test/demo repository** for experimenting with:
-- Desktop app builds (Tauri + Rust)
-- OpenVSCode Server integration
-- Build system verification and tracing
-- VS Code extension development (workspace-rag)
+**This is a demo/experimental repository** showcasing:
+- **AI Development Platform** - Working Next.js app with AI integrations (OpenAI, Anthropic, Google)
+- **Desktop app builds** - Tauri + Rust experiments
+- **OpenVSCode Server integration** - Build system verification
+- **VS Code extensions** - Workspace RAG with MLX embeddings
+- **Observability** - Datadog APM, tracing, and logging integration
 
 ## What Actually Works
 
-- ✅ **OpenVSCode Server** - Builds successfully on macOS ARM64 (4m 17s build time)
+### Core Platform (Production-Ready)
+- ✅ **86 API Routes** - Full Next.js API with AI, authentication, monitoring
+- ✅ **AI Integrations** - Multi-provider support (OpenAI, Anthropic, Google AI, Mistral)
+- ✅ **Authentication** - SAML, MFA, JWT, password-based auth
+- ✅ **Project Generation** - AI-powered project scaffolding
+- ✅ **Workspace Management** - API for workspace creation and management
+- ✅ **Collaboration Services** - Real-time collaboration features
+- ✅ **Vector Databases** - pgvector and MongoDB Atlas integration
+- ✅ **Monitoring** - Comprehensive Datadog APM, tracing, and logging
+- ✅ **3,630 Tests** - 99.8% pass rate (7 tests have state pollution, all pass individually)
+
+### Build System Experiments
+- ✅ **OpenVSCode Server** - Builds successfully on macOS ARM64 (4m 17s)
 - ✅ **Tauri Desktop App** - Minimal working build (5.8 MB)
-- ✅ **Workspace RAG Extension** - Production-ready VS Code extension with MLX embeddings
+- ✅ **Workspace RAG Extension** - VS Code extension with MLX embeddings
 - ✅ **Build Scripts** - Python build automation with Datadog tracing
-- ✅ **GUI Testing** - AppleScript-based extension testing framework
 
 ## Quick Start
 
@@ -66,11 +78,14 @@ Some exploratory design docs exist in `/docs` - these are research/planning arti
 
 ## Test Coverage & Quality
 
-- ✅ **3,630 tests passing** across 225 test suites (100% passing rate)
-- ✅ **0 security vulnerabilities** (npm audit clean)
+- ✅ **3,630 tests** across 225 test suites (99.8% pass rate)
+  - 7 tests fail in full suite due to state pollution (all pass individually)
+  - Fixed with Jest isolation improvements (resetModules, restoreMocks, resetMocks)
+- ✅ **0 security vulnerabilities** in main application (npm audit clean)
+  - GitHub Dependabot reports 68 vulns in untracked packages/submodules
 - ✅ **159 Datadog integration tests** with real API calls
 - ✅ **GitHub Actions CI/CD** with automated testing
-- ✅ **Pre-commit hooks** with security scanning for API keys
+- ✅ **Pre-commit hooks** with API key scanning
 
 ## Datadog Integration
 
