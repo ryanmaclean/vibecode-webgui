@@ -6,6 +6,9 @@
 
 import { exec } from 'child_process'
 import { promisify } from 'util'
+import { MetricsCollector } from '@/lib/monitoring/health-monitoring'
+
+const metrics = new MetricsCollector()
 
 jest.mock('child_process', () => ({
   exec: jest.fn(),
@@ -46,6 +49,14 @@ describe('Monitoring Infrastructure Deployment', () => {
       expect(stdout).toContain('namespace/datadog');
       expect(stdout).toContain('namespace/monitoring');
       expect(stdout).toContain('namespace/security');
+
+      // Submit Datadog metrics for namespace creation
+      ['datadog', 'monitoring', 'security'].forEach(ns => {
+        metrics.gauge('k8s.namespace.ready', 1, {
+          cluster: 'vibecode-cluster',
+          namespace: ns
+        })
+      })
     });
   });
 
@@ -134,6 +145,19 @@ describe('Monitoring Infrastructure Deployment', () => {
       phases.forEach(phase => {
         expect(phase).toBe('Running');
       });
+
+      // Submit Datadog metrics for pod health
+      metrics.gauge('k8s.pod.health', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        pod_name: 'datadog-agent'
+      })
+
+      metrics.gauge('k8s.pod.running', phases.length, {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        app: 'datadog-agent'
+      })
     });
 
     test('should verify Datadog Agent service is accessible', async () => {
@@ -148,6 +172,19 @@ describe('Monitoring Infrastructure Deployment', () => {
       const ports = stdout.split(' ');
       expect(ports).toContain('8125') // DogStatsD port
       expect(ports).toContain('8126') // APM port
+
+      // Submit Datadog metrics for service availability
+      metrics.gauge('k8s.service.available', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        service_name: 'datadog-agent'
+      })
+
+      metrics.increment('k8s.service.ports.validated', {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        service_name: 'datadog-agent'
+      })
     });
   });
 
@@ -198,6 +235,19 @@ describe('Monitoring Infrastructure Deployment', () => {
       phases.forEach(phase => {
         expect(phase).toBe('Running');
       });
+
+      // Submit Datadog metrics for Vector pod health
+      metrics.gauge('k8s.pod.health', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'monitoring',
+        pod_name: 'vector'
+      })
+
+      metrics.gauge('k8s.pod.running', phases.length, {
+        cluster: 'vibecode-cluster',
+        namespace: 'monitoring',
+        app: 'vector'
+      })
     });
 
     test('should verify Vector service endpoints', async () => {
@@ -280,6 +330,19 @@ describe('Monitoring Infrastructure Deployment', () => {
       // Check pod status
       const { stdout } = await execAsync('kubectl get pods -l app=kubehound -n security -o jsonpath="{.items[0].status.phase}"');
       expect(stdout.trim()).toBe('Running');
+
+      // Submit Datadog metrics for KubeHound pod health
+      metrics.gauge('k8s.pod.health', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'security',
+        pod_name: 'kubehound'
+      })
+
+      metrics.gauge('k8s.deployment.ready', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'security',
+        deployment_name: 'kubehound'
+      })
     });
 
     test('should verify KubeHound RBAC permissions', async () => {

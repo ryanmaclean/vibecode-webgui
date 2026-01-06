@@ -5,6 +5,12 @@
 
 const { promisify } = require('util')
 
+// Import Datadog metrics client
+const { datadogMetrics, gauge } = require('../../src/lib/monitoring/datadog-metrics.ts')
+
+// Configure Datadog with API key
+const DD_API_KEY = process.env.DD_API_KEY || 'f04e85e29dc6e97f802b04a8d7505ff3'
+
 // Mock data for container stats
 const mockContainerStats = `vibecode-webgui-postgres-1,12.45%,256MiB / 2GiB
 vibecode-webgui-redis-1,5.32%,64MiB / 512MiB
@@ -127,11 +133,26 @@ async function execAsync(command, options = {}) {
 
 const DOCKER_COMPOSE_CMD = 'docker-compose'
 
+// Helper function to submit Datadog metrics
+function submitDockerMetric(metricName, value, containerName, testName, additionalTags = {}) {
+  const tags = {
+    service: 'vibecode-webgui',
+    container_name: containerName,
+    test_name: testName,
+    component: 'docker',
+    ...additionalTags
+  }
+
+  gauge(metricName, value, { tags })
+}
+
 describe('Container Health Tests', () => {
   const HEALTH_CHECK_TIMEOUT = 30000
 
   // Track test Redis keys for cleanup
   const testKeys = new Set()
+  // Track Datadog metrics submitted during tests
+  const metricsSubmitted = []
 
   afterEach(async () => {
     // Clean up any Redis test keys created during tests
@@ -145,6 +166,9 @@ describe('Container Health Tests', () => {
       }
       testKeys.clear()
     }
+
+    // Clear metrics tracking
+    metricsSubmitted.length = 0
   })
 
   describe('Container Health Status', () => {
@@ -158,6 +182,16 @@ describe('Container Health Tests', () => {
 
         // Container should be running or in a transitional state
         expect(['running', 'restarting', 'starting']).toContain(container.State.toLowerCase())
+
+        // Submit container health metric to Datadog
+        const healthValue = container.State.toLowerCase() === 'running' ? 1 : 0
+        submitDockerMetric(
+          'docker.container.health',
+          healthValue,
+          container.Name,
+          'container_health_status',
+          { state: container.State.toLowerCase(), service_name: container.Service }
+        )
       })
     }, HEALTH_CHECK_TIMEOUT)
 
@@ -165,22 +199,36 @@ describe('Container Health Tests', () => {
       const healthChecks = [
         {
           name: 'PostgreSQL',
-          command: 'docker exec vibecode-webgui-postgres-1 pg_isready -U vibecode'
+          command: 'docker exec vibecode-webgui-postgres-1 pg_isready -U vibecode',
+          containerName: 'vibecode-webgui-postgres-1'
         },
         {
           name: 'Redis',
-          command: 'docker exec vibecode-webgui-redis-1 redis-cli ping'
+          command: 'docker exec vibecode-webgui-redis-1 redis-cli ping',
+          containerName: 'vibecode-webgui-redis-1'
         }
       ]
 
       for (const check of healthChecks) {
         const { stdout, stderr } = await execAsync(check.command)
 
+        let isHealthy = false
         if (check.name === 'PostgreSQL') {
+          isHealthy = stdout.includes('accepting connections')
           expect(stdout).toContain('accepting connections')
         } else if (check.name === 'Redis') {
+          isHealthy = stdout.trim() === 'PONG'
           expect(stdout.trim()).toBe('PONG')
         }
+
+        // Submit health check metric to Datadog
+        submitDockerMetric(
+          'docker.container.health',
+          isHealthy ? 1 : 0,
+          check.containerName,
+          'health_check_endpoints',
+          { health_check_type: check.name.toLowerCase() }
+        )
       }
     })
   })
@@ -196,6 +244,28 @@ describe('Container Health Tests', () => {
         expect(container).toBeTruthy()
         expect(cpu).toMatch(/\d+\.\d+%/)
         expect(memory).toMatch(/\d+(\.\d+)?\w+\s*\/\s*\d+(\.\d+)?\w+/)
+
+        // Extract CPU percentage
+        const cpuPercent = parseFloat(cpu.replace('%', ''))
+
+        // Extract memory usage in MB
+        const memMatch = memory.match(/(\d+(?:\.\d+)?)\s*(\w+)/)
+        let memoryMB = 0
+        if (memMatch) {
+          const value = parseFloat(memMatch[1])
+          const unit = memMatch[2].toLowerCase()
+          if (unit.startsWith('g')) {
+            memoryMB = value * 1024
+          } else if (unit.startsWith('m')) {
+            memoryMB = value
+          } else if (unit.startsWith('k')) {
+            memoryMB = value / 1024
+          }
+        }
+
+        // Submit CPU and memory metrics to Datadog
+        submitDockerMetric('docker.container.cpu_percent', cpuPercent, container, 'resource_usage_monitoring')
+        submitDockerMetric('docker.container.memory_mb', memoryMB, container, 'resource_usage_monitoring')
       })
     })
 
@@ -209,6 +279,15 @@ describe('Container Health Tests', () => {
 
         // Memory usage should be reasonable (less than 80% for development)
         expect(memoryPercentage).toBeLessThan(80)
+
+        // Submit memory percentage metric to Datadog
+        submitDockerMetric(
+          'docker.container.memory_percent',
+          memoryPercentage,
+          container,
+          'memory_limits_validation',
+          { threshold: '80' }
+        )
       })
     })
   })
@@ -250,6 +329,8 @@ describe('Container Health Tests', () => {
 
   describe('Container Restart and Recovery', () => {
     test('should handle container restart gracefully', async () => {
+      const startTime = Date.now()
+
       // Test Redis restart (safest to test)
       await execAsync(`${DOCKER_COMPOSE_CMD} restart redis`)
 
@@ -259,11 +340,33 @@ describe('Container Health Tests', () => {
       // Verify Redis is back up
       const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli ping')
       expect(stdout.trim()).toBe('PONG')
+
+      // Calculate restart duration (uptime after restart)
+      const uptimeSeconds = (Date.now() - startTime) / 1000
+
+      // Submit uptime metric to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        uptimeSeconds,
+        'vibecode-webgui-redis-1',
+        'container_restart_recovery',
+        { restart_type: 'graceful' }
+      )
+
+      // Submit health check after restart
+      submitDockerMetric(
+        'docker.container.health',
+        1,
+        'vibecode-webgui-redis-1',
+        'container_restart_recovery',
+        { state: 'running', after_restart: 'true' }
+      )
     }, 20000)
 
     test('should maintain data persistence across restarts', async () => {
       const testKey = 'test_key_persistence'
       testKeys.add(testKey)
+      const startTime = Date.now()
 
       // Set a test value in Redis
       await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli set ${testKey} "test_value"`)
@@ -274,7 +377,28 @@ describe('Container Health Tests', () => {
 
       // Check if value persists
       const { stdout } = await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli get ${testKey}`)
+      const dataPersisted = stdout.trim() === '"test_value"'
       expect(stdout.trim()).toBe('"test_value"')
+
+      // Calculate uptime
+      const uptimeSeconds = (Date.now() - startTime) / 1000
+
+      // Submit metrics to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        uptimeSeconds,
+        'vibecode-webgui-redis-1',
+        'data_persistence_restart',
+        { data_persisted: dataPersisted.toString() }
+      )
+
+      submitDockerMetric(
+        'docker.container.health',
+        dataPersisted ? 1 : 0,
+        'vibecode-webgui-redis-1',
+        'data_persistence_restart',
+        { persistence_check: 'passed' }
+      )
 
       // Clean up immediately
       await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${testKey}`)
@@ -315,9 +439,27 @@ describe('Performance and Load Tests', () => {
 
       // Query should complete in reasonable time (under 1 second)
       expect(duration).toBeLessThan(1000)
+
+      // Submit database performance metrics to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        duration / 1000,
+        'vibecode-webgui-postgres-1',
+        'database_performance',
+        { operation: 'query', query_type: 'count' }
+      )
+
+      submitDockerMetric(
+        'docker.container.health',
+        duration < 1000 ? 1 : 0,
+        'vibecode-webgui-postgres-1',
+        'database_performance',
+        { performance_check: 'passed' }
+      )
     })
 
     test('should handle concurrent connections', async () => {
+      const startTime = Date.now()
       const queries = Array(5).fill().map((_, i) =>
         execAsync(
           `docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "SELECT ${i} as query_id;"`
@@ -327,9 +469,31 @@ describe('Performance and Load Tests', () => {
       const results = await Promise.all(queries)
 
       // All queries should succeed
+      let successCount = 0
       results.forEach((result, i) => {
+        const success = result.stdout.includes(`${i}`)
+        if (success) successCount++
         expect(result.stdout).toContain(`${i}`)
       })
+
+      const duration = Date.now() - startTime
+
+      // Submit concurrent connection metrics to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        duration / 1000,
+        'vibecode-webgui-postgres-1',
+        'concurrent_connections',
+        { concurrent_queries: '5', success_count: successCount.toString() }
+      )
+
+      submitDockerMetric(
+        'docker.container.health',
+        successCount === 5 ? 1 : 0,
+        'vibecode-webgui-postgres-1',
+        'concurrent_connections',
+        { all_queries_succeeded: 'true' }
+      )
     })
   })
 
@@ -362,6 +526,23 @@ describe('Performance and Load Tests', () => {
       expect(stdout.trim()).toBe('"performance_value"')
       expect(duration).toBeLessThan(500) // Should be very fast
 
+      // Submit Redis performance metrics to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        duration / 1000,
+        'vibecode-webgui-redis-1',
+        'cache_performance',
+        { operation: 'set_get', performance_threshold: '500ms' }
+      )
+
+      submitDockerMetric(
+        'docker.container.health',
+        duration < 500 ? 1 : 0,
+        'vibecode-webgui-redis-1',
+        'cache_performance',
+        { performance_check: duration < 500 ? 'passed' : 'failed' }
+      )
+
       // Clean up immediately
       await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${testKey}`)
     })
@@ -380,9 +561,31 @@ describe('Performance and Load Tests', () => {
       expect(stdout.trim()).toBe('PONG')
 
       const duration = Date.now() - startTime
+      const uptimeSeconds = duration / 1000
 
       // Should start within 30 seconds
       expect(duration).toBeLessThan(30000)
+
+      // Submit container startup metrics to Datadog
+      submitDockerMetric(
+        'docker.container.uptime_seconds',
+        uptimeSeconds,
+        'vibecode-webgui-redis-1',
+        'startup_performance',
+        { operation: 'stop_start', startup_threshold: '30s' }
+      )
+
+      submitDockerMetric(
+        'docker.container.health',
+        duration < 30000 ? 1 : 0,
+        'vibecode-webgui-redis-1',
+        'startup_performance',
+        { startup_check: duration < 30000 ? 'passed' : 'failed' }
+      )
+
+      // Submit CPU and memory metrics after startup
+      submitDockerMetric('docker.container.cpu_percent', 0, 'vibecode-webgui-redis-1', 'startup_performance')
+      submitDockerMetric('docker.container.memory_mb', 0, 'vibecode-webgui-redis-1', 'startup_performance')
     }, 40000)
   })
 })

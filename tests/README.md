@@ -394,6 +394,167 @@ az consumption budget list
 az advisor recommendation list --category Cost
 ```
 
+## Datadog Integration
+
+The test suite integrates with Datadog to submit performance and operational metrics during test execution.
+
+### Running Tests with Datadog Metrics
+
+**Development (Local Testing):**
+```bash
+# Tests run with console logging only
+npm test
+
+# Or with Jest directly
+jest --config=jest.config.js
+```
+
+**Production (CI/CD):**
+```bash
+# Set DD_API_KEY to enable real metric submission
+DD_API_KEY=your-api-key npm test
+
+# With additional Datadog configuration
+DD_API_KEY=your-api-key DD_SITE=datadoghq.com DD_ENV=ci npm test
+```
+
+### Environment Variables
+
+| Variable | Required | Description | Default |
+|----------|----------|-------------|---------|
+| `DD_API_KEY` | Yes (prod) | Datadog API key for metric submission | None (logs to console) |
+| `DATADOG_API_KEY` | No | Legacy fallback for DD_API_KEY | None |
+| `DD_SITE` | No | Datadog site (e.g., datadoghq.com, datadoghq.eu) | datadoghq.com |
+| `DD_ENV` | No | Environment tag for metrics | `production` or `development` |
+| `DD_SERVICE` | No | Service name tag | vibecode-webgui |
+| `DD_VERSION` | No | Application version tag | package.json version |
+
+**Priority:** `DD_*` variables take precedence over `DATADOG_*` variables.
+
+### Metrics Submitted
+
+All metrics are prefixed with `vibecode.` and include standard tags (env, service, version, team, component).
+
+**API Metrics:**
+- `vibecode.api.response_time` - API endpoint response duration (ms)
+  - Tags: endpoint, method, status_code
+- `vibecode.api.errors` - API error count
+  - Tags: error_type, endpoint
+
+**Frontend Metrics:**
+- `vibecode.frontend.page_load_time` - Page load duration (ms)
+  - Tags: page
+
+**Database Metrics:**
+- `vibecode.backend.database_query_duration` - Database query duration (ms)
+  - Tags: operation, collection
+
+**Chat/AI Metrics:**
+- `vibecode.chat.message_processing_time` - Chat message processing duration (ms)
+  - Tags: model, message_size (small/medium/large/xlarge)
+- `vibecode.huggingface.inference_time` - HuggingFace model inference duration (ms)
+  - Tags: model, input_size, output_size
+
+**Upload Metrics:**
+- `vibecode.upload.file_processing_duration` - File upload processing time (ms)
+  - Tags: file_type, size_category
+
+**RAG Metrics:**
+- `vibecode.rag.context_build_time` - RAG context building duration (ms)
+  - Tags: sources_count, relevance_tier
+- `vibecode.websearch.query_duration` - Web search query duration (ms)
+  - Tags: search_engine, results_tier
+
+**Function Metrics:**
+- `vibecode.functions.execution_time` - Function execution duration (ms)
+  - Tags: function_name, success
+
+**User Metrics:**
+- `vibecode.user.actions` - User action count
+  - Tags: action, user_type, workspace_type
+
+### Troubleshooting
+
+**Metrics Not Appearing in Datadog:**
+
+1. **Verify API Key:**
+   ```bash
+   # Test API authentication
+   node tests/scripts/test-datadog-api.js
+   ```
+   Expected output: "✅ API authentication successful"
+
+2. **Check Environment:**
+   - Metrics only send to Datadog API in production (NODE_ENV=production)
+   - In development, metrics log to console with "📊 Datadog Metric:" prefix
+   - Tests run with NODE_ENV=test by default
+
+3. **Enable Production Mode for Testing:**
+   ```bash
+   NODE_ENV=production DD_API_KEY=your-key npm test
+   ```
+
+4. **Verify API Response:**
+   - Failed submissions log: "Failed to send metric to Datadog: [status]"
+   - Check console for error messages
+   - Verify network connectivity to api.datadoghq.com
+
+5. **Check Metric Format:**
+   - Metrics must have valid names (lowercase, no special chars except dots/underscores)
+   - Tags must be in format "key:value"
+   - Timestamps must be Unix epoch seconds
+
+**Common Issues:**
+
+| Issue | Solution |
+|-------|----------|
+| "API authentication failed" | Verify DD_API_KEY is correct and has permissions |
+| "No metrics in Datadog UI" | Wait 2-5 minutes for ingestion; check time range |
+| "Metrics logged but not sent" | Set NODE_ENV=production to enable API submission |
+| "Network timeout" | Check firewall/proxy settings for api.datadoghq.com |
+| "Invalid metric name" | Check for special characters or spaces in metric names |
+
+### Querying Metrics in Datadog UI
+
+**1. Metrics Explorer:**
+   - Navigate to: Metrics → Explorer
+   - Search for: `vibecode.*`
+   - Filter by tags: `env:production`, `service:vibecode-webgui`
+
+**2. Create a Dashboard:**
+   ```
+   1. Go to Dashboards → New Dashboard
+   2. Add widget → Timeseries
+   3. Metric: vibecode.api.response_time
+   4. Group by: endpoint, method
+   5. Add filters: env:production
+   ```
+
+**3. Common Queries:**
+   ```
+   # Average API response time by endpoint
+   avg:vibecode.api.response_time{env:production} by {endpoint}
+
+   # Chat processing time for GPT-4
+   avg:vibecode.chat.message_processing_time{model:gpt-4}
+
+   # Database query duration by operation
+   avg:vibecode.backend.database_query_duration{*} by {operation}
+
+   # Error rate by component
+   sum:vibecode.*.errors{*} by {component}.as_rate()
+   ```
+
+**4. Set Up Alerts:**
+   - Monitors → New Monitor → Metric
+   - Alert when: `avg(last_5m):avg:vibecode.api.response_time{*} > 2000`
+   - Notify: Your team channel
+
+**5. View in Notebooks:**
+   - Notebooks → New Notebook
+   - Add cells with metric queries for analysis
+   - Share with team for collaboration
+
 ## Contributing
 
 ### Test Development Guidelines
@@ -417,4 +578,5 @@ az advisor recommendation list --category Cost
 - [OpenTofu Documentation](https://opentofu.org/docs/)
 - [Azure AKS Documentation](https://docs.microsoft.com/en-us/azure/aks/)
 - [Datadog Kubernetes Integration](https://docs.datadoghq.com/containers/kubernetes/)
+- [Datadog Metrics API](https://docs.datadoghq.com/api/latest/metrics/)
 - [PostgreSQL on Kubernetes](https://kubernetes.io/docs/tutorials/stateful-application/postgresql/)

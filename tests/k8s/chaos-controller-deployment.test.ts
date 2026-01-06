@@ -5,6 +5,9 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { MetricsCollector } from '@/lib/monitoring/health-monitoring';
+
+const metrics = new MetricsCollector();
 
 jest.mock('child_process', () => ({
   exec: jest.fn(),
@@ -87,6 +90,18 @@ describe('Chaos Controller Deployment Tests', () => {
 
       const { stdout } = await execAsync(`kubectl get deployment chaos-controller -n ${namespace} -o jsonpath='{.status.readyReplicas}'`);
       expect(parseInt(stdout.trim())).toBe(1);
+
+      // Submit Datadog metrics for chaos controller deployment
+      metrics.gauge('k8s.deployment.ready', 1, {
+        cluster: 'vibecode-cluster',
+        namespace,
+        deployment_name: 'chaos-controller'
+      })
+
+      metrics.increment('k8s.chaos.controller.deployed', {
+        cluster: 'vibecode-cluster',
+        namespace
+      })
     });
 
     it('should create service account with proper RBAC', async () => {
@@ -130,6 +145,13 @@ describe('Chaos Controller Deployment Tests', () => {
 
       const { stdout } = await execAsync(`kubectl get pods -n ${namespace} -l app.kubernetes.io/name=chaos-controller -o jsonpath='{.items[0].status.phase}'`);
       expect(stdout.trim()).toBe('Running');
+
+      // Submit Datadog metrics for chaos controller pod health
+      metrics.gauge('k8s.pod.health', 1, {
+        cluster: 'vibecode-cluster',
+        namespace,
+        pod_name: 'chaos-controller'
+      })
     });
   });
 

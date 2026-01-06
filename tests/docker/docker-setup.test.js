@@ -5,6 +5,9 @@
 
 const { promisify } = require('util')
 
+// Import Datadog metrics client
+const { datadogMetrics, increment, gauge } = require('../../src/lib/monitoring/datadog-metrics.ts')
+
 // Mock implementations for Docker commands
 const mockDockerResponses = {
   'docker --version': 'Docker version 24.0.0, build 1234567',
@@ -248,6 +251,14 @@ describe('Docker Setup Tests', () => {
     // Mock setup - verify Docker daemon is responsive
     const result = await execAsync('docker info', { timeout: 5000 })
     expect(result.stdout).toBeTruthy()
+
+    // Submit Docker daemon availability metric
+    gauge('docker.daemon.available', 1, {
+      tags: {
+        component: 'docker',
+        test_name: 'docker_setup_tests'
+      }
+    })
   }, TIMEOUT)
 
   describe('Docker Compose Configuration', () => {
@@ -266,6 +277,16 @@ describe('Docker Setup Tests', () => {
       expect(stdout).toContain('db:')
       expect(stdout).toContain('redis:')
       expect(stdout).toContain('app:')
+
+      // Submit Docker Compose version detection metric
+      const version = DOCKER_COMPOSE_CMD.includes('compose') ? 'v2' : 'v1'
+      increment('docker.compose.version_detected', 1, {
+        tags: {
+          component: 'docker',
+          version,
+          test_name: 'docker_compose_config'
+        }
+      })
     })
 
     test('should validate environment file exists', async () => {
@@ -277,6 +298,15 @@ describe('Docker Setup Tests', () => {
       const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} config`)
       expect(stdout).toContain('vibecode-network')
       expect(stdout).toContain('driver: bridge')
+
+      // Submit network creation metric
+      increment('docker.network.created', 1, {
+        tags: {
+          component: 'docker',
+          network_name: 'vibecode-network',
+          test_name: 'network_configuration'
+        }
+      })
     })
 
     test('should have volume configurations', async () => {
@@ -297,29 +327,61 @@ describe('Docker Setup Tests', () => {
 
     afterAll(async () => {
       // Mock: Clean up test containers - ensure cleanup runs even if tests fail
+      let cleanupSuccess = false
       try {
         await execAsync(`${DOCKER_COMPOSE_CMD} down`, { timeout: 20000 })
+        cleanupSuccess = true
       } catch (error) {
         console.warn('Failed to clean up Docker containers:', error.message)
         // Try force cleanup
         try {
           await execAsync(`${DOCKER_COMPOSE_CMD} down -v --remove-orphans`, { timeout: 20000 })
+          cleanupSuccess = true
         } catch (forceError) {
           // Ignore final cleanup errors
         }
       }
+
+      // Submit cleanup metric
+      increment('docker.cleanup.completed', 1, {
+        tags: {
+          component: 'docker',
+          success: cleanupSuccess.toString(),
+          test_name: 'container_health_checks'
+        }
+      })
     }, TIMEOUT)
 
     test('should have PostgreSQL container running with health check', async () => {
       const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps postgres`)
       expect(stdout).toContain('vibecode-webgui-postgres-1')
       expect(stdout).toMatch(/(healthy|starting)/)
+
+      // Submit container health metric
+      const isHealthy = stdout.includes('healthy') ? 1 : 0
+      gauge('docker.container.health', isHealthy, {
+        tags: {
+          component: 'docker',
+          container_name: 'postgres',
+          test_name: 'postgres_health_check'
+        }
+      })
     })
 
     test('should have Redis container running with health check', async () => {
       const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps redis`)
       expect(stdout).toContain('vibecode-webgui-redis-1')
       expect(stdout).toMatch(/(healthy|starting)/)
+
+      // Submit container health metric
+      const isHealthy = stdout.includes('healthy') ? 1 : 0
+      gauge('docker.container.health', isHealthy, {
+        tags: {
+          component: 'docker',
+          container_name: 'redis',
+          test_name: 'redis_health_check'
+        }
+      })
     })
 
     test('should be able to connect to PostgreSQL', async () => {
@@ -327,6 +389,15 @@ describe('Docker Setup Tests', () => {
         'docker exec vibecode-webgui-postgres-1 psql -U vibecode -d vibecode_dev -c "SELECT version();"'
       )
       expect(stdout).toContain('PostgreSQL')
+
+      // Submit database connectivity metric
+      increment('docker.database.connection_test', 1, {
+        tags: {
+          component: 'docker',
+          database_type: 'postgresql',
+          test_name: 'postgres_connectivity'
+        }
+      })
     })
 
     test('should be able to connect to Redis', async () => {
@@ -334,6 +405,15 @@ describe('Docker Setup Tests', () => {
         'docker exec vibecode-webgui-redis-1 redis-cli ping'
       )
       expect(stdout.trim()).toBe('PONG')
+
+      // Submit Redis connectivity metric
+      increment('docker.database.connection_test', 1, {
+        tags: {
+          component: 'docker',
+          database_type: 'redis',
+          test_name: 'redis_connectivity'
+        }
+      })
     })
   })
 
@@ -422,6 +502,15 @@ describe('Container Integration Tests', () => {
     test('should have services on same network', async () => {
       const { stdout } = await execAsync('docker network ls')
       expect(stdout).toContain('vibecode-webgui_vibecode-network')
+
+      // Submit network validation metric
+      increment('docker.network.validated', 1, {
+        tags: {
+          component: 'docker',
+          network_name: 'vibecode-webgui_vibecode-network',
+          test_name: 'network_existence'
+        }
+      })
     })
 
     test('should allow inter-service communication', async () => {

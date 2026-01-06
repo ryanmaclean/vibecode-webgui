@@ -3,6 +3,9 @@
  * Verifies all required extensions are installed in the Docker image
  */
 
+// Import Datadog metrics client
+import { datadogMetrics } from '../src/lib/monitoring/datadog-metrics';
+
 // Mock installed extensions list
 const mockInstalledExtensions = `continue.continue
 codeium.codeium
@@ -94,8 +97,12 @@ describe('Code-Server Extensions', () => {
   const IMAGE_NAME = 'vibecode/code-server:latest';
   let containerName;
   let containerAvailable = false;
+  let startupStartTime;
 
   beforeAll(() => {
+    // Track container startup time
+    startupStartTime = Date.now();
+
     // Mock: Check if image exists
     const imageInfo = execSync(`docker image inspect ${IMAGE_NAME}`, { stdio: 'pipe' })
     expect(imageInfo).toBeTruthy()
@@ -110,6 +117,16 @@ describe('Code-Server Extensions', () => {
     // Mock: Wait for container to be ready
     execSync('sleep 3')
     containerAvailable = true
+
+    // Record container startup time
+    const startupTime = Date.now() - startupStartTime;
+    datadogMetrics.histogram('code_server.startup_time_ms', startupTime, {
+      tags: {
+        component: 'code_server',
+        test_name: 'code-server-extensions',
+        status: 'success'
+      }
+    });
   })
 
   afterAll(() => {
@@ -130,11 +147,30 @@ describe('Code-Server Extensions', () => {
 
   const testExtension = (extensionId, extensionName) => {
     test(`should have ${extensionName} installed`, () => {
-      const output = execSync(
-        `docker exec ${containerName} code-server --list-extensions`,
-        { encoding: 'utf-8' }
-      )
-      expect(output).toContain(extensionId)
+      let testStatus = 'success';
+      let error = null;
+
+      try {
+        const output = execSync(
+          `docker exec ${containerName} code-server --list-extensions`,
+          { encoding: 'utf-8' }
+        )
+        expect(output).toContain(extensionId)
+      } catch (e) {
+        testStatus = 'failure';
+        error = e;
+        throw e;
+      } finally {
+        // Submit metrics for extension installation check
+        datadogMetrics.increment('code_server.extension.install', 1, {
+          tags: {
+            component: 'code_server',
+            extension_name: extensionId,
+            status: testStatus,
+            test_name: `extension_check_${extensionName.replace(/\s+/g, '_').toLowerCase()}`
+          }
+        });
+      }
     })
   }
 
@@ -199,5 +235,26 @@ describe('Code-Server Extensions', () => {
       expect(result).toBeTruthy()
       expect(result).toContain('/usr/local/bin/')
     })
+  })
+
+  test('should count total extensions and submit metrics', () => {
+    const output = execSync(
+      `docker exec ${containerName} code-server --list-extensions`,
+      { encoding: 'utf-8' }
+    )
+
+    const extensionList = output.trim().split('\n').filter(line => line.length > 0)
+    const totalExtensions = extensionList.length
+
+    // Submit gauge metric for total extension count
+    datadogMetrics.histogram('code_server.extensions.total', totalExtensions, {
+      tags: {
+        component: 'code_server',
+        test_name: 'total_extensions_count',
+        status: 'success'
+      }
+    });
+
+    expect(totalExtensions).toBeGreaterThan(0)
   })
 })

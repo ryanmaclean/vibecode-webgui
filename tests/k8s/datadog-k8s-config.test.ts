@@ -1,6 +1,9 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { load, loadAll } from 'js-yaml'
+import { MetricsCollector } from '@/lib/monitoring/health-monitoring'
+
+const metrics = new MetricsCollector()
 
 type HelmValues = {
   datadog: {
@@ -71,6 +74,19 @@ describe('Datadog Kubernetes configurations', () => {
       expect(values.systemProbe?.enableTCPQueueLength).toBe(true)
       expect(values.systemProbe?.enableHTTPMonitoring).toBe(true)
       expect(values.systemProbe?.collectDNSStats).toBe(true)
+
+      // Submit Datadog metrics for configuration validation
+      metrics.gauge('k8s.datadog.config.valid', 1, {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        config_file: relative
+      })
+
+      metrics.increment('k8s.datadog.config.validation.success', {
+        cluster: 'vibecode-cluster',
+        namespace: 'datadog',
+        config_file: relative
+      })
     }
   })
 
@@ -87,5 +103,18 @@ describe('Datadog Kubernetes configurations', () => {
     expect(annotations['ad.datadoghq.com/valkey.init_configs']).toBeDefined()
     expect(annotations['ad.datadoghq.com/valkey.instances']).toBeDefined()
     expect(annotations['ad.datadoghq.com/valkey.logs']).toBeDefined()
+
+    // Submit Datadog metrics for Valkey autodiscovery validation
+    metrics.gauge('k8s.deployment.ready', 1, {
+      cluster: 'vibecode-cluster',
+      namespace: 'default',
+      deployment_name: 'valkey'
+    })
+
+    metrics.increment('k8s.datadog.autodiscovery.configured', {
+      cluster: 'vibecode-cluster',
+      namespace: 'default',
+      pod_name: 'valkey'
+    })
   })
 })

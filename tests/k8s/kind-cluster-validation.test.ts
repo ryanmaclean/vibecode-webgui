@@ -6,12 +6,43 @@
 
 import { describe, test, beforeAll, afterAll, expect, beforeEach } from '@jest/globals';
 import { execSync } from 'child_process';
+import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
 
 // Mock child_process to avoid actual kubectl/kind calls
 jest.mock('child_process');
 
 const CLUSTER_NAME = 'vibecode-cluster';
 const TIMEOUT = 300000; // 5 minutes
+
+// Track metrics for batch submission
+const metricsBuffer: Array<{
+  name: string;
+  value: number;
+  tags: Record<string, string>;
+  timestamp?: number;
+}> = [];
+
+// Helper function to record metrics
+function recordMetric(name: string, value: number, tags: Record<string, string> = {}) {
+  metricsBuffer.push({
+    name,
+    value,
+    tags: {
+      cluster_name: CLUSTER_NAME,
+      test_phase: 'validation',
+      ...tags
+    },
+    timestamp: Math.floor(Date.now() / 1000)
+  });
+}
+
+// Helper function to submit all buffered metrics
+async function submitMetrics() {
+  if (metricsBuffer.length > 0) {
+    await datadogMetrics.sendBatchMetrics([...metricsBuffer]);
+    metricsBuffer.length = 0; // Clear buffer
+  }
+}
 
 // Mock data factory
 const createMockKubectlResponse = (cmd: string): Buffer => {
@@ -324,10 +355,20 @@ const createMockKubectlResponse = (cmd: string): Buffer => {
 
 describe('KIND Cluster Validation', () => {
   let mockExecSync: jest.MockedFunction<typeof execSync>;
+  let clusterCreationStart: number;
 
   beforeAll(async () => {
+    clusterCreationStart = Date.now();
+
     // Setup mocks for kubectl and kind commands
     mockExecSync = execSync as jest.MockedFunction<typeof execSync>;
+
+    // Simulate cluster creation time and record metric
+    const clusterCreationTime = Date.now() - clusterCreationStart;
+    recordMetric('kind.cluster.creation_time_ms', clusterCreationTime, {
+      cluster_type: 'multi-node',
+      node_count: '3'
+    });
   }, TIMEOUT);
 
   beforeEach(() => {
@@ -349,6 +390,13 @@ describe('KIND Cluster Validation', () => {
   });
 
   afterAll(async () => {
+    // Submit all buffered metrics before cleanup
+    try {
+      await submitMetrics();
+    } catch (error) {
+      console.error('Failed to submit metrics:', error);
+    }
+
     // Cleanup test resources - ensure cleanup runs even if tests fail
     try {
       // Clean up any test resources that may have been created
@@ -402,6 +450,23 @@ describe('KIND Cluster Validation', () => {
 
     expect(codeServerWorker).toBeDefined();
     expect(monitoringWorker).toBeDefined();
+
+    // Submit Datadog metrics for cluster node configuration
+    datadogMetrics.histogram('k8s.cluster.nodes', 3, {
+      tags: {
+        cluster: CLUSTER_NAME,
+        namespace: 'kube-system',
+        component: 'k8s'
+      }
+    });
+
+    datadogMetrics.histogram('k8s.cluster.workers', 2, {
+      tags: {
+        cluster: CLUSTER_NAME,
+        namespace: 'kube-system',
+        component: 'k8s'
+      }
+    });
   });
 
   test('All nodes should be ready', () => {
@@ -411,6 +476,19 @@ describe('KIND Cluster Validation', () => {
     nodeData.items.forEach((node: any) => {
       const readyCondition = node.status.conditions.find((condition: any) => condition.type === 'Ready');
       expect(readyCondition.status).toBe('True');
+
+      // Record node readiness metric (gauge: 1 for ready, 0 for not ready)
+      recordMetric('kind.node.ready', readyCondition.status === 'True' ? 1 : 0, {
+        node_name: node.metadata.name,
+        node_role: node.metadata.labels['node-role.kubernetes.io/control-plane'] ? 'control-plane' : 'worker'
+      });
+
+      // K8s-specific metrics for node health
+      recordMetric('k8s.node.health', readyCondition.status === 'True' ? 1 : 0, {
+        cluster: CLUSTER_NAME,
+        namespace: 'kube-system',
+        node_name: node.metadata.name
+      });
     });
   });
 
@@ -432,6 +510,23 @@ describe('KIND Cluster Validation', () => {
       const pod = podData.items.find((pod: any) => pod.metadata.name.includes(podName));
       expect(pod).toBeDefined();
       expect(pod.status.phase).toBe('Running');
+
+      // Record pod scheduling metric (count: increment for each scheduled pod)
+      if (pod) {
+        recordMetric('kind.pod.scheduled', 1, {
+          pod_name: pod.metadata.name,
+          namespace: 'kube-system',
+          pod_phase: pod.status.phase,
+          component: podName
+        });
+
+        // K8s-specific metrics for pod health
+        recordMetric('k8s.pod.health', pod.status.phase === 'Running' ? 1 : 0, {
+          cluster: CLUSTER_NAME,
+          namespace: 'kube-system',
+          pod_name: pod.metadata.name
+        });
+      }
     });
   });
 
@@ -487,6 +582,8 @@ spec:
   });
 
   test('Can deploy NGINX Ingress Controller', async () => {
+    const deployStart = Date.now();
+
     // Install NGINX Ingress Controller
     execSync(`kubectl apply -f https://raw.githubusercontent.com/kubernetes/ingress-nginx/main/deploy/static/provider/kind/deploy.yaml`, {
       stdio: 'inherit'
@@ -519,6 +616,16 @@ spec:
     expect(ingressPod).toBeDefined();
     expect(ingressPod.status.phase).toBe('Running');
 
+    // Record ingress controller pod scheduled metric
+    if (ingressPod) {
+      recordMetric('kind.pod.scheduled', 1, {
+        pod_name: ingressPod.metadata.name,
+        namespace: 'ingress-nginx',
+        pod_phase: ingressPod.status.phase,
+        component: 'ingress-controller'
+      });
+    }
+
     // Verify service is created
     const services = execSync('kubectl get svc -n ingress-nginx -o json', { encoding: 'utf8' });
     const serviceData = JSON.parse(services);
@@ -527,6 +634,22 @@ spec:
       svc.metadata.name.includes('ingress-nginx-controller')
     );
     expect(ingressService).toBeDefined();
+
+    // K8s-specific metrics for service availability
+    if (ingressService) {
+      recordMetric('k8s.service.available', 1, {
+        cluster: CLUSTER_NAME,
+        namespace: 'ingress-nginx',
+        service_name: ingressService.metadata.name
+      });
+    }
+
+    // Record deployment time metric
+    const deployTime = Date.now() - deployStart;
+    recordMetric('kind.cluster.creation_time_ms', deployTime, {
+      cluster_type: 'ingress-controller',
+      component: 'nginx-ingress'
+    });
   }, TIMEOUT);
 
   test('Port mappings should be configured correctly', () => {
@@ -614,6 +737,19 @@ spec:
       const ingress = execSync('kubectl get ingress test-app-ingress -o json', { encoding: 'utf8' });
       const ingressData = JSON.parse(ingress);
       expect(ingressData.spec.rules[0].host).toBe('test.local');
+
+      // K8s-specific metrics for test deployment
+      recordMetric('k8s.deployment.ready', 1, {
+        cluster: CLUSTER_NAME,
+        namespace: 'default',
+        deployment_name: 'test-app'
+      });
+
+      recordMetric('k8s.service.available', 1, {
+        cluster: CLUSTER_NAME,
+        namespace: 'default',
+        service_name: 'test-app-service'
+      });
 
       // Test connectivity within cluster
       execSync(`kubectl run test-pod --image=curlimages/curl --rm -it --restart=Never -- curl -s http://test-app-service.default.svc.cluster.local`, {
@@ -737,6 +873,8 @@ spec:
   });
 
   test('Can install and use cert-manager', async () => {
+    const certManagerStart = Date.now();
+
     // Install cert-manager
     execSync(`kubectl apply -f https://github.com/cert-manager/cert-manager/releases/download/v1.13.3/cert-manager.yaml`, {
       stdio: 'inherit'
@@ -760,6 +898,23 @@ spec:
     // Check that at least one pod is running (more lenient)
     const runningPods = certManagerPods.filter((pod: any) => pod.status.phase === 'Running');
     expect(runningPods.length).toBeGreaterThan(0);
+
+    // Record pod scheduling metrics for cert-manager pods
+    certManagerPods.forEach((pod: any) => {
+      recordMetric('kind.pod.scheduled', 1, {
+        pod_name: pod.metadata.name,
+        namespace: 'cert-manager',
+        pod_phase: pod.status.phase,
+        component: 'cert-manager'
+      });
+    });
+
+    // Record cert-manager deployment time
+    const certManagerTime = Date.now() - certManagerStart;
+    recordMetric('kind.cluster.creation_time_ms', certManagerTime, {
+      cluster_type: 'cert-manager',
+      component: 'cert-manager'
+    });
 
     // Test creating a simple ClusterIssuer
     const clusterIssuerManifest = `apiVersion: cert-manager.io/v1
@@ -808,6 +963,15 @@ spec:
         const ns = nsData.items.find((ns: any) => ns.metadata.name === testNs);
         expect(ns).toBeDefined();
         expect(ns.status.phase).toBe('Active');
+
+        // Record namespace readiness metric
+        if (ns) {
+          recordMetric('kind.node.ready', ns.status.phase === 'Active' ? 1 : 0, {
+            node_name: ns.metadata.name,
+            node_role: 'namespace',
+            namespace_status: ns.status.phase
+          });
+        }
       });
 
     } finally {

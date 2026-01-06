@@ -5,12 +5,15 @@
 
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
 
 jest.mock('child_process', () => ({
   exec: jest.fn(),
   execSync: jest.fn(),
   spawn: jest.fn(),
 }));
+
+jest.mock('@/lib/monitoring/datadog-metrics');
 
 const execAsync = promisify(exec);
 
@@ -20,6 +23,11 @@ describe('Helm Chart Deployment Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExec = require('child_process').exec as jest.MockedFunction<typeof exec>;
+  });
+
+  afterEach(async () => {
+    // Allow time for async metric submissions to complete before cleanup
+    await new Promise(resolve => setTimeout(resolve, 10));
   });
 
   describe('Helm Version and Prerequisites', () => {
@@ -54,6 +62,8 @@ describe('Helm Chart Deployment Tests', () => {
 
   describe('Helm Chart Installation', () => {
     it('should install VibeCode platform chart', async () => {
+      const startTime = Date.now();
+
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('helm install vibecode-platform')) {
           callback(null, {
@@ -65,8 +75,60 @@ describe('Helm Chart Deployment Tests', () => {
       });
 
       const { stdout } = await execAsync('helm install vibecode-platform ./charts/vibecode-platform --wait');
+      const deploymentTime = Date.now() - startTime;
+
       expect(stdout).toContain('STATUS: deployed');
       expect(stdout).toContain('vibecode-platform');
+
+      // Submit Datadog metrics
+      datadogMetrics.histogram('helm.deployment.time_ms', deploymentTime, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          component: 'helm'
+        }
+      });
+
+      datadogMetrics.increment('helm.release.deployed', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          component: 'helm'
+        }
+      });
+
+      // Submit K8s-specific metrics for deployment status
+      datadogMetrics.histogram('k8s.deployment.ready', 1, {
+        tags: {
+          cluster: 'vibecode-cluster',
+          namespace: 'default',
+          deployment_name: 'vibecode-platform',
+          component: 'helm'
+        }
+      });
+
+      datadogMetrics.histogram('k8s.service.available', 1, {
+        tags: {
+          cluster: 'vibecode-cluster',
+          namespace: 'default',
+          service_name: 'vibecode-platform',
+          component: 'helm'
+        }
+      });
+
+      expect(datadogMetrics.histogram).toHaveBeenCalledWith(
+        'helm.deployment.time_ms',
+        expect.any(Number),
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            chart_name: 'vibecode-platform',
+            release_name: 'vibecode-platform',
+            namespace: 'default'
+          })
+        })
+      );
     });
 
     it('should validate chart template rendering', async () => {
@@ -92,9 +154,31 @@ spec:
       const { stdout } = await execAsync('helm template vibecode-platform ./charts/vibecode-platform');
       expect(stdout).toContain('kind: Service');
       expect(stdout).toContain('vibecode-platform');
+
+      // Submit chart validation success metric
+      datadogMetrics.increment('helm.chart.validated', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          component: 'helm'
+        }
+      });
+
+      expect(datadogMetrics.increment).toHaveBeenCalledWith(
+        'helm.chart.validated',
+        1,
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            chart_name: 'vibecode-platform'
+          })
+        })
+      );
     });
 
     it('should install chart with custom values', async () => {
+      const startTime = Date.now();
+
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('helm install') && cmd.includes('--set')) {
           callback(null, {
@@ -106,12 +190,35 @@ spec:
       });
 
       const { stdout } = await execAsync('helm install vibecode-custom ./charts/vibecode-platform --set replicaCount=3');
+      const deploymentTime = Date.now() - startTime;
+
       expect(stdout).toContain('STATUS: deployed');
+
+      // Submit Datadog metrics
+      datadogMetrics.histogram('helm.deployment.time_ms', deploymentTime, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-custom',
+          namespace: 'default',
+          component: 'helm'
+        }
+      });
+
+      datadogMetrics.increment('helm.release.deployed', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-custom',
+          namespace: 'default',
+          component: 'helm'
+        }
+      });
     });
   });
 
   describe('Helm Chart Upgrades', () => {
     it('should upgrade existing helm release', async () => {
+      const startTime = Date.now();
+
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('helm upgrade')) {
           callback(null, {
@@ -123,8 +230,31 @@ spec:
       });
 
       const { stdout } = await execAsync('helm upgrade vibecode-platform ./charts/vibecode-platform --wait');
+      const upgradeTime = Date.now() - startTime;
+
       expect(stdout).toContain('has been upgraded');
       expect(stdout).toContain('REVISION: 2');
+
+      // Submit Datadog metrics
+      datadogMetrics.histogram('helm.deployment.time_ms', upgradeTime, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          operation: 'upgrade',
+          component: 'helm'
+        }
+      });
+
+      datadogMetrics.increment('helm.release.deployed', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          operation: 'upgrade',
+          component: 'helm'
+        }
+      });
     });
 
     it('should perform upgrade with rollback on failure', async () => {
@@ -195,6 +325,27 @@ spec:
 
       const { stdout } = await execAsync('helm status vibecode-platform');
       expect(stdout).toContain('STATUS: deployed');
+
+      // Submit release status gauge metric (1 = deployed, 0 = not deployed)
+      datadogMetrics.histogram('helm.release.deployed', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          status: 'deployed',
+          component: 'helm'
+        }
+      });
+
+      expect(datadogMetrics.histogram).toHaveBeenCalledWith(
+        'helm.release.deployed',
+        1,
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            status: 'deployed'
+          })
+        })
+      );
     });
 
     it('should get release values', async () => {
@@ -277,6 +428,27 @@ spec:
       const { stdout } = await execAsync('helm lint ./charts/vibecode-platform');
       expect(stdout).toContain('chart(s) linted');
       expect(stdout).toContain('0 chart(s) failed');
+
+      // Submit chart validation success metric
+      datadogMetrics.increment('helm.chart.validated', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          validation_type: 'lint',
+          component: 'helm'
+        }
+      });
+
+      expect(datadogMetrics.increment).toHaveBeenCalledWith(
+        'helm.chart.validated',
+        1,
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            validation_type: 'lint'
+          })
+        })
+      );
     });
 
     it('should perform dry-run installation', async () => {
@@ -293,6 +465,17 @@ spec:
       const { stdout } = await execAsync('helm install vibecode-platform ./charts/vibecode-platform --dry-run');
       expect(stdout).toContain('pending-install');
       expect(stdout).toContain('MANIFEST:');
+
+      // Submit chart validation success metric for dry-run
+      datadogMetrics.increment('helm.chart.validated', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          validation_type: 'dry-run',
+          component: 'helm'
+        }
+      });
     });
 
     it('should validate chart dependencies', async () => {
@@ -309,6 +492,17 @@ spec:
       const { stdout } = await execAsync('helm dependency update ./charts/vibecode-platform');
       expect(stdout).toContain('Saving');
       expect(stdout).toContain('charts');
+
+      // Submit chart validation success metric for dependencies
+      datadogMetrics.increment('helm.chart.validated', 1, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          validation_type: 'dependency',
+          component: 'helm'
+        }
+      });
     });
   });
 
@@ -326,6 +520,27 @@ spec:
 
       const { stdout } = await execAsync('helm uninstall vibecode-platform');
       expect(stdout).toContain('uninstalled');
+
+      // Submit release status metric (0 = uninstalled/not deployed)
+      datadogMetrics.histogram('helm.release.deployed', 0, {
+        tags: {
+          chart_name: 'vibecode-platform',
+          release_name: 'vibecode-platform',
+          namespace: 'default',
+          status: 'uninstalled',
+          component: 'helm'
+        }
+      });
+
+      expect(datadogMetrics.histogram).toHaveBeenCalledWith(
+        'helm.release.deployed',
+        0,
+        expect.objectContaining({
+          tags: expect.objectContaining({
+            status: 'uninstalled'
+          })
+        })
+      );
     });
 
     it('should uninstall with cleanup', async () => {
