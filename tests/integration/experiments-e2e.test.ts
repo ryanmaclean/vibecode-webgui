@@ -12,8 +12,8 @@ import { PrismaClient, ExperimentStatus, Prisma } from '@prisma/client'
 
 const prisma = new PrismaClient()
 
-// Skip tests if DATABASE_URL is not set
-const SKIP_E2E = !process.env.DATABASE_URL
+// Skip tests if PostgreSQL is not available (set by jest.globalSetup.js)
+const SKIP_E2E = process.env.SKIP_POSTGRES_TESTS === '1'
 const describeIf = SKIP_E2E ? describe.skip : describe
 
 // Helper functions that implement experiment business logic
