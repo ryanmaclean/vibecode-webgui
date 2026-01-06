@@ -7,9 +7,9 @@
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 
-// Skip this test suite unless explicitly enabled with ENABLE_DATADOG_API_TESTS=1
-// These tests make real API calls to Datadog and are not needed for regular CI/CD
-const describeIf = process.env.ENABLE_DATADOG_API_TESTS === '1' ? describe : describe.skip;
+// These tests make real API calls to Datadog
+// Note: Some tests require DD_APP_KEY which cannot be created programmatically
+const describeIf = describe;
 
 // Datadog API configuration
 const DD_API_KEY = process.env.DD_API_KEY || '';

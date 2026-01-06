@@ -72,6 +72,10 @@ describe('Health Monitoring Module', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+    // Reset tracer mock specifically
+    mockTracer.init.mockClear()
+    mockTracer.addTags.mockClear()
+
     // Mock console methods
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
     jest.spyOn(console, 'warn').mockImplementation(() => {})
