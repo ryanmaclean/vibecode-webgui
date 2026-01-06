@@ -5,6 +5,15 @@ Purpose: Automatically fix common TypeScript errors to establish clean baseline
 Issue: #408
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import re
 import os
 import sys

@@ -3,6 +3,15 @@
 Native VM Manager - Using Apple's Virtualization Framework APIs
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import subprocess
 import os
 import json

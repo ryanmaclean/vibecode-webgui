@@ -5,6 +5,15 @@ This script is intentionally lightweight and focuses on orchestration via the
 Azure CLI so it can run from developer laptops or CI without extra SDKs.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 from __future__ import annotations
 
 import argparse

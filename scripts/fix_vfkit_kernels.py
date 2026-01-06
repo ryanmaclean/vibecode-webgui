@@ -26,6 +26,15 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import sys
 import subprocess
 import gzip

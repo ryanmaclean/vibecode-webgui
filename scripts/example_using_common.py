@@ -5,6 +5,15 @@ Example script showing how to use vibecode_common library.
 This demonstrates all the common utilities available to scripts.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import sys
 from pathlib import Path
 

@@ -7,6 +7,15 @@ Complete automation script:
 4. Create GitHub releases
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import sys
 import subprocess

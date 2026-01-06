@@ -13,6 +13,15 @@ Usage:
     ./scripts/vibecode_vm_menu.py
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import sys
 import subprocess

@@ -23,6 +23,15 @@ DEFAULT_WAIT_TIMEOUT = 600
 class CommandError(RuntimeError):
     """Raised when an underlying command fails."""
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
+
 
 def require_tool(name: str) -> None:
     if shutil.which(name) is None:

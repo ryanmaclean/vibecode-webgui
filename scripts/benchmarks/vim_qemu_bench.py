@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 """Measure vi launch latency inside qemu-based guests (OpenWrt, Yocto, etc.)."""
 from __future__ import annotations
 

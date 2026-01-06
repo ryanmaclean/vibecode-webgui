@@ -4,6 +4,15 @@ Offline testing suite for AWS ECS/Fargate cloud deployment.
 Tests Terraform configuration without creating actual AWS resources.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import json
 import os
 import subprocess

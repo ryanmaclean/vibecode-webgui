@@ -223,6 +223,15 @@ def ensure_namespace(namespace: str, *, dry_run: bool) -> None:
         metadata:
           name: {namespace}
         """
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
     )
     run(["kubectl", "apply", "-f", "-"], input_text=manifest, dry_run=dry_run)
 

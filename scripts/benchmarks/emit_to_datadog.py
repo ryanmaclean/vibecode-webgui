@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 """Read benchmark JSON output and emit DogStatsD metrics."""
 from __future__ import annotations
 

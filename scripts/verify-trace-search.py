@@ -1,4 +1,13 @@
 #!/usr/bin/env python3
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 """Verify Datadog Trace Search access for a given service/env window."""
 from __future__ import annotations
 

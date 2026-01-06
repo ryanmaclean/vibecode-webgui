@@ -5,6 +5,15 @@ End-to-end GUI interaction testing using AppleScript
 Tests clicking buttons, starting VMs, checking status
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import sys
 import time

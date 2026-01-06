@@ -6,6 +6,15 @@ This script verifies the health check endpoints of the VibeCode application.
 It supports checking both public endpoints and direct pod access via port-forward.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import argparse
 import json
 import subprocess

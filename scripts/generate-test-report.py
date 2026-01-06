@@ -4,6 +4,15 @@ Generate consolidated test report from multiple test result sources.
 Combines unit, integration, E2E, and security test results into unified report.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import argparse
 import json
 import sys

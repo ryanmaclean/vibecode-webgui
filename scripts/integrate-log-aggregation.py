@@ -4,6 +4,15 @@ Automated Log Aggregation Integration Script
 Automatically integrates Datadog log aggregation into existing deployment scripts
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import sys
 import re

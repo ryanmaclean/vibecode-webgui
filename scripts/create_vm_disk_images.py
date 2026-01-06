@@ -11,6 +11,15 @@ Copyright (c) 2025 VibeCode Contributors
 MIT License
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import sys
 import subprocess
 import time

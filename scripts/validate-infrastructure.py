@@ -4,6 +4,15 @@ Infrastructure validation script for AKS deployment.
 Validates configuration, dependencies, and readiness for deployment.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import json
 import os
 import subprocess

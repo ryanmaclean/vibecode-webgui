@@ -3,6 +3,15 @@
 VirtualBuddy VM Manager with interactive menu
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import subprocess
 import shutil

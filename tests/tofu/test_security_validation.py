@@ -4,6 +4,15 @@ Security validation tests for cloud infrastructure configurations.
 Tests security best practices, encryption, IAM policies, and secure defaults.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import unittest
 import json
 from pathlib import Path

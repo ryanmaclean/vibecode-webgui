@@ -8,6 +8,15 @@ from typing import Iterable
 class DogStatsDSender:
   """Minimal DogStatsD/StatsD client."""
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
+
   def __init__(
       self,
       host: str = "127.0.0.1",

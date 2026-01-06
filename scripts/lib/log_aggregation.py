@@ -5,6 +5,15 @@ Provides centralized logging functionality for all deployment scripts
 Usage: from scripts.lib.log_aggregation import LogAggregation
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import os
 import sys
 import json

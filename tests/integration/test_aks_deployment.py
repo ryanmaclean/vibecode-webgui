@@ -4,6 +4,15 @@ Integration tests for AKS deployment script.
 Tests the deployment manager functionality including error handling and rollback.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import json
 import os
 import tempfile

@@ -4,6 +4,15 @@ Test runner for AKS infrastructure tests.
 Orchestrates unit, integration, and E2E tests with proper environment setup.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 import argparse
 import json
 import os

@@ -7,6 +7,15 @@ Datadog agents and cluster agent. It is designed to replace the legacy
 wrappers and tests.
 """
 
+
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    print("Warning: ddtrace not installed, tracing disabled")
+    pass
+
 from __future__ import annotations
 
 import argparse
