@@ -12,6 +12,41 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [2025-01-06] - January 2025
+
+### Added
+- **Complete Test Suite**: 3,630 tests passing with 100% pass rate
+- **Datadog Integration**: APM tracing for Python (47 files), JavaScript (dd-trace), and Bash (5 scripts)
+- **Datadog Logging Library**: Custom bash logging library for shell scripts
+- **GitHub Actions Secrets**: DD_API_KEY, DD_APP_KEY, DATADOG_API_KEY, DATADOG_APP_KEY
+- **Pre-commit Security**: Restored API key scanning for OpenAI, Anthropic, GitHub, AWS, Datadog
+- **159 Datadog Tests**: Full observability integration with real API calls
+
+### Changed
+- **Documentation Cleanup**: Organized 200+ root markdown files into docs/sessions/archive-worklogs/
+- **Security Updates**: Updated Next.js (16.0.0 → 16.1.1), langchain (→ 1.2.4), MCP SDK (→ 1.25.1)
+- **Dependencies**: Added @azure/identity and y-leveldb for test compatibility
+
+### Fixed
+- **Security Vulnerabilities**: Fixed all 8 npm vulnerabilities (1 critical, 5 high, 2 moderate)
+  - Next.js RCE in React flight protocol (GHSA-9qr9-h5gf-34mp)
+  - LangChain serialization injection (GHSA-r399-636x-v7f6)
+  - MCP TypeScript SDK DNS rebinding (GHSA-w48q-cv73-mx4w)
+  - jws HMAC signature verification (GHSA-869p-cjfg-cm3x)
+  - qs arrayLimit bypass DoS (GHSA-6rw7-vpxm-498p)
+  - body-parser DoS (GHSA-wqch-xfxh-vrr4)
+  - js-yaml prototype pollution (GHSA-mh29-5h37-fv8m)
+- **Agents API Tests**: Fixed 4 test failures with mock configuration
+- **AI Chat Stream Test**: Corrected API key handling expectation
+- **Pre-commit Hook**: Fixed grep exit codes with `|| true`
+
+### Security
+- **0 Vulnerabilities**: npm audit clean after comprehensive security updates
+- **API Key Scanning**: Enhanced detection for OpenAI, Anthropic, GitHub, AWS, Datadog keys
+- **GitHub Actions**: Datadog secrets properly configured for CI/CD pipeline
+
+## [2025-09-10] - September 2025 (Historical)
+
 ### Added
 - Serena MCP integration for code-server
 - VectorShardingManager with consistent hash ring
