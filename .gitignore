@@ -137,3 +137,4 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
+.pre-commit-cache/

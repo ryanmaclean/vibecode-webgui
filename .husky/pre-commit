@@ -38,11 +38,56 @@ if [ ! -z "$DOC_FILES" ]; then
   echo "✅ Documentation validation complete"
 fi
 
+# Security scan for API keys and sensitive data (always run)
+echo "🔒 Scanning for API keys and sensitive data..."
+
+# Enhanced API key detection patterns
+for file in $(git diff --cached --name-only); do
+  # Skip .env files, node_modules, and non-existent files
+  if [[ -f "$file" && "$file" != *.env && "$file" != *.env.local && "$file" != *.env.* && "$file" != *node_modules* ]]; then
+    # Check for OpenAI/OpenRouter API keys (sk-...)
+    if grep -E "sk-[a-zA-Z0-9]{40,}" "$file" > /dev/null 2>&1; then
+      echo "❌ ERROR: Potential OpenAI/OpenRouter API key found in $file"
+      echo "   Please remove the API key and use environment variables"
+      exit 1
+    fi
+
+    # Check for Anthropic API keys (sk-ant-...)
+    if grep -E "sk-ant-[a-zA-Z0-9]{40,}" "$file" > /dev/null 2>&1; then
+      echo "❌ ERROR: Potential Anthropic API key found in $file"
+      echo "   Please remove the API key and use environment variables"
+      exit 1
+    fi
+
+    # Check for GitHub tokens (ghp_, gho_, ghu_, ghs_, ghr_)
+    if grep -E "(ghp|gho|ghu|ghs|ghr)_[a-zA-Z0-9]{36}" "$file" > /dev/null 2>&1; then
+      echo "❌ ERROR: Potential GitHub token found in $file"
+      echo "   Please remove the token and use GitHub secrets"
+      exit 1
+    fi
+
+    # Check for AWS Access Keys (AKIA...)
+    if grep -E "AKIA[0-9A-Z]{16}" "$file" > /dev/null 2>&1; then
+      echo "❌ ERROR: Potential AWS Access Key found in $file"
+      echo "   Please remove the key and use AWS credentials properly"
+      exit 1
+    fi
+
+    # Check for Datadog API keys (32 hex characters in context)
+    if grep -E "(api.key|datadog|dd_api_key|DD_API_KEY).*[a-f0-9]{32}" "$file" > /dev/null 2>&1; then
+      echo "⚠️  WARNING: Potential Datadog API key found in $file"
+      echo "   Verify this is not a real API key"
+    fi
+  fi
+done
+
+echo "✅ Security scan passed"
+
 # Run quick tests on staged files
 echo "🧪 Running pre-commit tests..."
 
 # Only run tests if JS/TS files changed
-STAGED_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | grep -v '__tests__' | grep -v '.test.' | grep -v '.spec.')
+STAGED_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | grep -v '__tests__' | grep -v '\.test\.' | grep -v '\.spec\.')
 
 if [ ! -z "$STAGED_FILES" ]; then
   echo "📝 Testing changed files..."
