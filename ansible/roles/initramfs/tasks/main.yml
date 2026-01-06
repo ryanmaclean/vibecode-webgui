@@ -1,0 +1,73 @@
+---
+# Role: initramfs
+# Build a Linux initramfs with specified packages and services
+
+- name: Create build directories
+  file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ initramfs_build_dir }}"
+    - "{{ initramfs_rootfs_dir }}"
+    - "{{ initramfs_packages_dir }}"
+
+- name: Download Ubuntu packages
+  get_url:
+    url: "{{ item.url }}"
+    dest: "{{ initramfs_packages_dir }}/{{ item.name }}.deb"
+    mode: '0644'
+  loop: "{{ initramfs_packages }}"
+  register: download_result
+  ignore_errors: true
+  when: item.url is defined
+
+- name: Extract packages
+  shell: |
+    cd {{ initramfs_packages_dir }}
+    mkdir -p {{ item.name }}
+    cd {{ item.name }}
+    ar x ../{{ item.name }}.deb 2>/dev/null || true
+    if [ -f data.tar.zst ]; then
+      zstd -d -f data.tar.zst && tar -xf data.tar
+    elif [ -f data.tar.xz ]; then
+      xz -d -f data.tar.xz && tar -xf data.tar
+    elif [ -f data.tar.gz ]; then
+      tar -xzf data.tar.gz
+    fi
+    rm -f control.tar.* data.tar* debian-binary
+  loop: "{{ initramfs_packages }}"
+  args:
+    creates: "{{ initramfs_packages_dir }}/{{ item.name }}/usr"
+  ignore_errors: true
+  when: item.url is defined
+
+- name: Include package installation tasks
+  include_tasks: "install_{{ item }}.yml"
+  loop: "{{ initramfs_install_tasks | default(['libraries']) }}"
+
+- name: Generate init script from template
+  template:
+    src: "{{ initramfs_init_template | default('init.j2') }}"
+    dest: "{{ initramfs_rootfs_dir }}/init"
+    mode: '0755'
+  when: initramfs_init_template is defined
+
+- name: Build initramfs archive
+  shell: |
+    cd {{ initramfs_rootfs_dir }}
+    find . -print0 | cpio --null -ov --format=newc 2>/dev/null | gzip -9 > {{ initramfs_output_path }}
+  register: build_result
+
+- name: Get initramfs size
+  stat:
+    path: "{{ initramfs_output_path }}"
+  register: initramfs_stat
+
+- name: Report build result
+  debug:
+    msg: |
+      Initramfs built successfully!
+      Path: {{ initramfs_output_path }}
+      Size: {{ (initramfs_stat.stat.size / 1024 / 1024) | round(1) }} MB
+

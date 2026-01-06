@@ -1,0 +1,69 @@
+schema-version: v2.2
+dd-service: vibecode-postgres
+team: platform-engineering
+contacts:
+  - name: Kim Smith
+    type: email
+    contact: kim.smith@vibecode.com
+  - name: Jessie
+    type: email
+    contact: jessie@vibecode.com
+  - name: Platform Engineering Slack
+    type: slack
+    contact: https://vibecode.slack.com/archives/platform-engineering
+  - name: Platform Engineering Email
+    type: email
+    contact: platform-engineering@vibecode.com
+description: Managed Azure PostgreSQL Flexible Server backing the VibeCode application stack.
+tier: tier0
+lifecycle: production
+application: vibecode-platform
+languages:
+  - sql
+  - terraform
+type: db
+ci-pipeline-fingerprints:
+  - github-actions:deploy-aks-monitoring
+  - github-actions:db-monitoring-deployment
+links:
+  - name: Database Dashboard
+    type: dashboard
+    url: https://app.datadoghq.com/dashboard/vibecode-postgres
+  - name: PostgreSQL Manifest
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/k8s/postgresql-aks-statefulset.yaml
+  - name: Database Setup Script
+    type: repo
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/scripts/postgres_setup.py
+  - name: Database Schema Documentation
+    type: doc
+    provider: github
+    url: https://github.com/vibecode/vibecode-webgui/blob/main/docs/database-schema.md
+  - name: PostgreSQL Operations Guide
+    type: doc
+    provider: confluence
+    url: https://vibecode.atlassian.net/wiki/spaces/OPS/pages/postgres-operations
+tags:
+  - env:production
+  - platform:aks
+  - database:postgresql
+  - version:16
+  - extension:pgvector
+  - monitoring:datadog
+  - business-unit:platform
+  - cost-center:engineering
+  - backup:enabled
+  - encryption:at-rest
+extensions:
+  datadoghq.com/dora-metrics:
+    repository: vibecode/vibecode-webgui
+    source_patterns:
+      - k8s/postgresql-aks-statefulset.yaml
+      - scripts/postgres_setup.py
+      - infrastructure/**
+  datadoghq.com/cd-visibility:
+    deployment_patterns:
+      - Deploy PostgreSQL Monitoring
+      - Apply Database Schema Migrations

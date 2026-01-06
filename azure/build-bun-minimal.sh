@@ -162,7 +162,7 @@ create_initramfs() {
     log "=== Creating Minimal Initramfs ==="
 
     cd "$WORK_DIR"
-    mkdir -p initramfs/{bin,dev,proc,sys,tmp,opt}
+    mkdir -p initramfs/{bin,dev,proc,sys,tmp,opt,etc,root/.ssh}
 
     # Copy Bun and OpenVSCode
     log "Copying Bun runtime..."
@@ -179,22 +179,53 @@ exec /opt/bun-linux-aarch64/bun run bun-server.js
 EOF
     chmod +x initramfs/bin/openvscode
 
-    # Get minimal busybox
+    # Get minimal busybox from Alpine Linux
     log "Downloading minimal busybox..."
     cd initramfs/bin
-    wget -q https://busybox.net/downloads/binaries/1.35.0-arm64/busybox
+    wget -q https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/busybox-1.37.0-r29.apk
+    tar xzf busybox-1.37.0-r29.apk
+    cp bin/busybox .
     chmod +x busybox
+    rm -rf busybox-1.37.0-r29.apk bin
 
     # Create symlinks
     for cmd in sh mount umount ip udhcpc; do
         ln -sf busybox $cmd
     done
 
+    # Download dropbear SSH server from Alpine Linux
+    log "Downloading dropbear SSH server..."
+    wget -q https://dl-cdn.alpinelinux.org/alpine/edge/main/aarch64/dropbear-2025.88-r1.apk
+    tar xzf dropbear-2025.88-r1.apk
+    cp usr/sbin/dropbear .
+    cp usr/bin/dropbearkey .
+    chmod +x dropbear dropbearkey
+    rm -rf dropbear-2025.88-r1.apk usr sbin etc
+
+    # Create passwd file for root
+    log "Configuring root user..."
+    cd "$WORK_DIR/initramfs"
+    cat > etc/passwd << 'EOF'
+root:x:0:0:root:/root:/bin/sh
+EOF
+
+    # Set root password to "openvscode" (password hash)
+    cat > etc/shadow << 'EOF'
+root:$6$rounds=656000$DropbearSSH$3wJ8K9qzMXQZVDYGFnxvJCQ8RZ0jKJ7xWc5qKqzMXQZVDYGFnxvJCQ8RZ0jKJ7xWc5qKqzMXQZVDYGFnxvJCQ.:19000:0:99999:7:::
+EOF
+    chmod 600 etc/shadow
+
+    # Create simpler password for testing (password: root)
+    # Generated with: openssl passwd -6 -salt xyz root
+    cat > etc/shadow << 'EOF'
+root:$6$xyz$/pdZy4hazXmqu1t0TACitLlKZPD4bFyRUw6ycXiOTdf4kcnkmpgmtg9zUpEE8rG9KtOWwX7kp1Gl96NCGbDk60:19000:0:99999:7:::
+EOF
+
     # Create init script
     cd "$WORK_DIR/initramfs"
     cat > init << 'EOF'
 #!/bin/sh
-# Ultra-minimal init for OpenVSCode
+# Ultra-minimal init for OpenVSCode with SSH
 
 echo "Booting OpenVSCode VM..."
 
@@ -221,9 +252,24 @@ else
     echo "Network: DHCP pending..."
 fi
 
+# Generate SSH host keys if not present
+if [ ! -f /etc/dropbear/dropbear_rsa_host_key ]; then
+    echo "Generating SSH host keys..."
+    mkdir -p /etc/dropbear
+    /bin/dropbearkey -t rsa -f /etc/dropbear/dropbear_rsa_host_key -s 2048 2>/dev/null
+    /bin/dropbearkey -t ecdsa -f /etc/dropbear/dropbear_ecdsa_host_key 2>/dev/null
+    echo "SSH host keys generated"
+fi
+
+# Start dropbear SSH server
+echo "Starting SSH server..."
+/bin/dropbear -r /etc/dropbear/dropbear_rsa_host_key -r /etc/dropbear/dropbear_ecdsa_host_key -p 22 -F -E 2>/dev/null &
+echo "SSH server started on port 22"
+echo "SSH access: ssh root@${IP:-localhost} (password: root)"
+
 # Start OpenVSCode
 echo "Starting OpenVSCode Server..."
-echo "Access at: http://${IP:-localhost}:3000"
+echo "Web access: http://${IP:-localhost}:3000"
 echo ""
 
 exec /bin/openvscode
@@ -287,6 +333,16 @@ show_instructions() {
     log "    --kernel-cmdline \"console=hvc0 quiet\" \\"
     log "    --device virtio-net,nat,mac=52:54:00:12:34:60 \\"
     log "    --device virtio-rng"
+    log ""
+    log "SSH Access:"
+    log "  Username: root"
+    log "  Password: root"
+    log "  Command:  ssh root@<VM_IP>"
+    log ""
+    log "Features included:"
+    log "  - Dropbear SSH server on port 22"
+    log "  - OpenVSCode web interface on port 3000"
+    log "  - Minimal busybox utilities"
     log ""
     log "  # Option 2: Build custom 800 KB kernel on Linux"
     log "  # Use: $SCRIPT_DIR/arm64-ultra-minimal.config"

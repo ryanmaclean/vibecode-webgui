@@ -5,11 +5,11 @@ import Foundation
 
 struct TestDHCPParser {
     static func main() {
-        print("=== DHCP Lease Parser Test Suite ===\n")
+        print("=== DHCP Lease Monitor Test Suite ===\n")
 
         // Test 1: Read and parse actual DHCP leases file
         print("Test 1: Reading actual /var/db/dhcpd_leases file")
-        if let ip = DHCPLeaseParser.findVMIPAddress() {
+        if let ip = DHCPLeaseMonitor.findIPAddress(for: "52:54:00:12:34:90") {
             print("✓ Successfully found VM IP: \(ip)")
         } else {
             print("✗ No VM IP found (this might be expected if VM isn't running)")
@@ -98,10 +98,10 @@ struct TestDHCPParser {
         print("\n=== Test Suite Complete ===\n")
 
         // Summary
-        print("DHCP Parser Information:")
-        print("- Monitoring MAC: \(DHCPLeaseParser.vmMACAddress)")
-        print("- DHCP file path: \(DHCPLeaseParser.dhcpLeasesPath)")
-        print("- File readable: \(FileManager.default.fileExists(atPath: DHCPLeaseParser.dhcpLeasesPath))")
+        print("DHCP Lease Monitor Information:")
+        print("- Default VM MAC: 52:54:00:12:34:90")
+        print("- DHCP file path: /var/db/dhcpd_leases")
+        print("- File readable: \(FileManager.default.fileExists(atPath: "/var/db/dhcpd_leases"))")
     }
 
     // Helper to test parsing content for specific MAC

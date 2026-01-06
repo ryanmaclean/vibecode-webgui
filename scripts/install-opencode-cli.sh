@@ -123,6 +123,30 @@ import os
 import time
 from typing import Optional, Dict, Any, List
 import requests
+
+# Setup Datadog LLM Observability if enabled
+try:
+    # Try to import from scripts directory
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    sys.path.insert(0, script_dir)
+    from datadog_python_setup import setup_datadog_llmobs
+    setup_datadog_llmobs()
+except ImportError:
+    # Fallback: try direct ddtrace import
+    try:
+        from ddtrace import patch_all
+        from ddtrace.llmobs import LLMObs
+        if os.getenv('DD_LLMOBS_ENABLED') == '1':
+            patch_all()
+            LLMObs.enable(
+                ml_app=os.getenv('DD_LLMOBS_ML_APP', 'vibecode-ai'),
+                agentless_enabled=True,
+                api_key=os.getenv('DD_API_KEY'),
+                site=os.getenv('DD_SITE', 'datadoghq.com')
+            )
+    except ImportError:
+        pass  # ddtrace not available, continue without instrumentation
+
 import openai
 import anthropic
 

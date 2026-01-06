@@ -1,0 +1,16 @@
+[Unit]
+Description=Install VS Code Extensions on First Boot
+After=network-online.target
+Wants=network-online.target
+ConditionPathExists=!/var/lib/vscode-extensions-installed
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/share/extensions/install-extensions.sh
+ExecStartPost=/usr/bin/touch /var/lib/vscode-extensions-installed
+StandardOutput=journal
+StandardError=journal
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

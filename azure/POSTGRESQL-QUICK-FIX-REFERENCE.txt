@@ -1,0 +1,208 @@
+╔════════════════════════════════════════════════════════════════════════════╗
+║                 PostgreSQL Build Script - Fix Reference                    ║
+║                         Quick Reference Card                               ║
+╚════════════════════════════════════════════════════════════════════════════╝
+
+FILE: build-postgresql-with-datadog.sh
+STATUS: ✅ FIXED - Syntax Validated
+DATE: 2025-12-01
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ WHAT WAS FIXED                                                             │
+└────────────────────────────────────────────────────────────────────────────┘
+
+1. Missing su command       → Added shadow package
+2. Missing cut command      → Added coreutils package  
+3. Missing utilities        → Added util-linux package
+4. BusyBox grep -P fails    → Auto-convert to grep -E
+5. No kernel modules        → Added documentation + warnings
+6. No validation            → Added pre-package validation
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ KEY CODE CHANGES                                                           │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Lines 145-161: Added 3 new Alpine packages
+┌──────────────────────────────────────────────────────────────────────┐
+│ wget shadow-*.apk      # Provides su command                        │
+│ wget coreutils-*.apk   # Provides cut command                       │
+│ wget util-linux-*.apk  # Additional utilities                       │
+└──────────────────────────────────────────────────────────────────────┘
+
+Lines 831-839: Fixed BusyBox grep compatibility
+┌──────────────────────────────────────────────────────────────────────┐
+│ sed 's/grep -P/grep -E/g' init                                       │
+│ sed 's/grep -oP .../grep -o .../g' init                              │
+└──────────────────────────────────────────────────────────────────────┘
+
+Lines 845-918: NEW FUNCTION add_kernel_module_awareness()
+┌──────────────────────────────────────────────────────────────────────┐
+│ - Creates /lib/modules/README.txt                                    │
+│ - Documents virtio_net requirements                                  │
+│ - Warns about kernel dependencies                                    │
+└──────────────────────────────────────────────────────────────────────┘
+
+Lines 920-977: NEW FUNCTION validate_commands()
+┌──────────────────────────────────────────────────────────────────────┐
+│ - Validates: su, cut, grep, mount, ip, etc.                          │
+│ - Checks PostgreSQL binaries                                         │
+│ - Reports missing commands EARLY                                     │
+└──────────────────────────────────────────────────────────────────────┘
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ BUILD FLOW                                                                 │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Before:                          After:
+  check_dependencies               check_dependencies
+  download_alpine_packages         download_alpine_packages
+  create_initramfs_structure       create_initramfs_structure
+  install_packages                 install_packages
+  configure_libraries              configure_libraries
+  configure_busybox                configure_busybox
+  configure_postgresql             configure_postgresql
+  configure_ssh                    configure_ssh
+  create_datadog_bridge            create_datadog_bridge
+  create_init_script               create_init_script
+  package_initramfs            →   add_kernel_module_awareness ← NEW
+  verify_build                     validate_commands           ← NEW
+  show_instructions                package_initramfs
+                                   verify_build
+                                   show_instructions
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ VALIDATION CHECKS                                                          │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Commands:    su, cut, grep, mount, umount, ip, ifconfig, sh
+Linker:      ld-musl-aarch64.so.1
+PostgreSQL:  postgres, initdb, pg_ctl, psql
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ EXPECTED OUTPUT                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✓ Packages downloaded: 18 APK files
+✓ BusyBox compatibility fixes applied
+✓ Kernel module awareness documentation added
+✓ All required commands present
+✓ Initramfs created: 80-150MB
+
+⚠️ Warnings (expected):
+  NOTE: Kernel must have virtio_net built-in or as loadable module
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ USAGE                                                                      │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Option A: Use Pre-Built VM (RECOMMENDED) ⭐
+  $ cp unified-services-restored.cpio.gz \
+       SwiftUI-Apps/Apps/PostgreSQLVibeCodeApp/Resources/postgresql-complete.cpio.gz
+  Why: Already tested, includes all dependencies
+
+Option B: Test Fixed Build Script
+  $ cd ~/vibecode-webgui/azure
+  $ ./build-postgresql-with-datadog.sh
+  Why: Test if fixes work
+
+Option C: Build in Linux
+  $ # Use Linux ARM64 system or container
+  Why: No cross-compilation issues
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ KERNEL REQUIREMENTS                                                        │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Required: CONFIG_VIRTIO_NET=y (built-in)
+
+Recommended kernels:
+  1. vmlinux-cloud (Ubuntu cloud kernel)
+  2. Custom kernel with built-in virtio
+  3. Kernel with modules + /lib/modules/
+
+Without virtio_net:
+  ✗ eth0 not found
+  ✗ No IP address
+  ✗ No connectivity
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ QUICK TEST                                                                 │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Syntax check:
+  $ bash -n build-postgresql-with-datadog.sh
+  (no output = success ✅)
+
+Build:
+  $ ./build-postgresql-with-datadog.sh
+  Expected: postgresql-complete.cpio.gz (80-150MB)
+
+Boot:
+  $ vfkit --cpus 2 --memory 1024 \
+      --kernel ~/.vfkit/.../vmlinux \
+      --initrd postgresql-complete.cpio.gz \
+      --kernel-cmdline "console=hvc0" \
+      --device virtio-net,nat \
+      --device virtio-rng
+
+Test:
+  $ ssh root@<VM-IP>           # Password: root
+  $ psql -h <VM-IP> -U postgres
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTATION                                                              │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Files created:
+  ✓ POSTGRESQL-BUILD-FIXES.md          (technical details)
+  ✓ POSTGRESQL-FIX-SUMMARY.txt         (executive summary)
+  ✓ POSTGRESQL-FIXES-APPLIED.md        (visual guide)
+  ✓ POSTGRESQL-QUICK-FIX-REFERENCE.txt (this file)
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ TROUBLESHOOTING                                                            │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Problem: su: command not found
+  Fix: ✅ Added shadow package
+
+Problem: cut: command not found
+  Fix: ✅ Added coreutils package
+
+Problem: grep: unrecognized option: P
+  Fix: ✅ Auto-convert grep -P to grep -E
+
+Problem: eth0 not found
+  Fix: ⚠️ Need kernel with virtio_net (documented)
+
+Problem: Validation fails
+  Fix: ✅ Clear error messages, fix and rebuild
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ STATUS                                                                     │
+└────────────────────────────────────────────────────────────────────────────┘
+
+Build Script:       ✅ Fixed
+Syntax:             ✅ Validated  
+Packages:           ✅ Added (3 new)
+Compatibility:      ✅ Fixed (grep -P → grep -E)
+Validation:         ✅ Added (2 new functions)
+Documentation:      ✅ Complete (4 files)
+Testing:            ⏳ Pending (not run per request)
+
+RECOMMENDATION: Use unified-services-restored.cpio.gz for production
+
+┌────────────────────────────────────────────────────────────────────────────┐
+│ SUMMARY                                                                    │
+└────────────────────────────────────────────────────────────────────────────┘
+
+✅ All requested fixes applied
+✅ Script syntax validated
+✅ Comprehensive documentation created
+✅ Ready for testing
+
+Next: Test build or use pre-built VM
+
+╔════════════════════════════════════════════════════════════════════════════╗
+║                            END OF REFERENCE                                ║
+╚════════════════════════════════════════════════════════════════════════════╝

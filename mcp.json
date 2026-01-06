@@ -1,0 +1,25 @@
+{
+  "mcpServers": {
+    "vibecode": {
+      "command": "node",
+      "args": ["--loader", "ts-node/esm", "src/mcp/server.ts"],
+      "env": {
+        "NODE_ENV": "development"
+      }
+    },
+    "sequential-thinking": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@modelcontextprotocol/server-sequential-thinking"
+      ]
+    },
+    "zen": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@beehiveinnovations/zen-mcp-server"
+      ]
+    }
+  }
+}

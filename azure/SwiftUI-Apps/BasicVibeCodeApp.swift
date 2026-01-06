@@ -1,3 +1,16 @@
+//
+// BasicVibeCodeApp.swift
+// VibeCode
+//
+// Created: 2025-11-25 (Migrated from inline VMManager)
+// Migration Status: MIGRATED
+// Purpose: SwiftUI app for VibeCode with OpenVSCode Server
+//
+// Part of refactoring effort: See REFACTORING-IN-PROGRESS.md
+// Previously: Lines 107-284 contained inline VMManager (now removed)
+// Now uses: Apps/BasicVibeCodeApp/BasicVMManager.swift
+//
+
 import SwiftUI
 import Virtualization
 
@@ -11,7 +24,7 @@ struct VibeCodeApp: App {
 }
 
 struct ContentView: View {
-    @StateObject private var vmManager = VMManager()
+    @StateObject private var vmManager = BasicVMManager()
 
     var body: some View {
         VStack(spacing: 20) {
@@ -97,175 +110,9 @@ struct ContentView: View {
         }
         .padding(40)
         .frame(minWidth: 600, minHeight: 500)
-    }
-}
-
-class VMManager: ObservableObject {
-    @Published var status = "Stopped"
-    @Published var isRunning = false
-    @Published var consoleOutput = ""
-    @Published var serverURL: String?
-    @Published var vmIPAddress: String?
-
-    private var vm: VZVirtualMachine?
-    private var consoleFileHandle: FileHandle?
-    private let consoleLogPath = URL(fileURLWithPath: "/tmp/vibecode-console.log")
-    private var consoleTimer: Timer?
-    private var dhcpMonitorTimer: Timer?
-    private let vmMACAddress = "52:54:00:12:34:90"
-
-    func startVM() {
-        guard !isRunning else { return }
-
-        status = "Starting..."
-        consoleOutput = ""
-
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            guard let self = self else { return }
-
-            do {
-                let config = try self.createVMConfiguration()
-
-                DispatchQueue.main.async {
-                    self.vm = VZVirtualMachine(configuration: config)
-                    self.vm?.start { result in
-                        switch result {
-                        case .success:
-                            self.onVMStarted()
-                        case .failure(let error):
-                            self.onVMError(error)
-                        }
-                    }
-                }
-            } catch {
-                DispatchQueue.main.async {
-                    self.status = "Error: \(error.localizedDescription)"
-                }
-            }
-        }
-    }
-
-    func stopVM() {
-        guard isRunning else { return }
-
-        status = "Stopping..."
-        consoleTimer?.invalidate()
-        consoleTimer = nil
-        dhcpMonitorTimer?.invalidate()
-        dhcpMonitorTimer = nil
-
-        vm?.stop { _ in
-            DispatchQueue.main.async {
-                self.isRunning = false
-                self.status = "Stopped"
-                self.serverURL = nil
-                self.vmIPAddress = nil
-                try? self.consoleFileHandle?.close()
-            }
-        }
-    }
-
-    private func createVMConfiguration() throws -> VZVirtualMachineConfiguration {
-        let config = VZVirtualMachineConfiguration()
-        config.cpuCount = 2
-        config.memorySize = 1024 * 1024 * 1024 // 1GB
-
-        // Linux bootloader with our optimized initramfs - use bundled resources
-        guard let kernel = Bundle.main.url(forResource: "vmlinux-raw", withExtension: nil) else {
-            throw NSError(domain: "VMManager", code: 1, userInfo: [NSLocalizedDescriptionKey: "Kernel not found in bundle"])
-        }
-        guard let initrd = Bundle.main.url(forResource: "bun-openvscode", withExtension: "cpio.gz") else {
-            throw NSError(domain: "VMManager", code: 2, userInfo: [NSLocalizedDescriptionKey: "Initramfs not found in bundle"])
-        }
-
-        let bootloader = VZLinuxBootLoader(kernelURL: kernel)
-        bootloader.initialRamdiskURL = initrd
-        bootloader.commandLine = "console=hvc0 debug loglevel=8"
-        config.bootLoader = bootloader
-
-        // Network
-        let net = VZVirtioNetworkDeviceConfiguration()
-        // Set specific MAC address for DHCP lease identification
-        let macAddress = VZMACAddress(string: vmMACAddress)!
-        net.macAddress = macAddress
-        net.attachment = VZNATNetworkDeviceAttachment()
-        config.networkDevices = [net]
-
-        // Serial console for output
-        FileManager.default.createFile(atPath: consoleLogPath.path, contents: nil)
-        consoleFileHandle = try FileHandle(forWritingTo: consoleLogPath)
-
-        let serial = VZVirtioConsoleDeviceSerialPortConfiguration()
-        serial.attachment = VZFileHandleSerialPortAttachment(
-            fileHandleForReading: nil,
-            fileHandleForWriting: consoleFileHandle
-        )
-        config.serialPorts = [serial]
-
-        // Entropy
-        config.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]
-
-        // Platform
-        let platform = VZGenericPlatformConfiguration()
-        platform.machineIdentifier = VZGenericMachineIdentifier()
-        config.platform = platform
-
-        try config.validate()
-        return config
-    }
-
-    private func onVMStarted() {
-        DispatchQueue.main.async {
-            self.isRunning = true
-            self.status = "Running"
-
-            // Start monitoring console output
-            self.consoleTimer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { _ in
-                self.updateConsoleOutput()
-            }
-
-            // Start monitoring DHCP leases for VM IP address
-            self.dhcpMonitorTimer = DHCPLeaseParser.startMonitoring(
-                macAddress: self.vmMACAddress,
-                interval: 1.0,
-                onIPFound: { ip in
-                    DispatchQueue.main.async {
-                        self.vmIPAddress = ip
-                        print("VM IP Address detected: \(ip)")
-                    }
-                },
-                onNotFound: {
-                    DispatchQueue.main.async {
-                        self.vmIPAddress = nil
-                    }
-                }
-            )
-        }
-    }
-
-    private func onVMError(_ error: Error) {
-        DispatchQueue.main.async {
-            self.isRunning = false
-            self.status = "Error: \(error.localizedDescription)"
-        }
-    }
-
-    private func updateConsoleOutput() {
-        guard let output = try? String(contentsOf: consoleLogPath, encoding: .utf8) else { return }
-
-        DispatchQueue.main.async {
-            self.consoleOutput = String(output.suffix(2000))
-
-            // Check if OpenVSCode server is ready
-            if output.contains("Server will be available") && self.serverURL == nil {
-                // Use actual VM IP if available, otherwise fallback to localhost
-                if let vmIP = self.vmIPAddress {
-                    self.serverURL = "http://\(vmIP):3000"
-                } else {
-                    self.serverURL = "http://localhost:3000"
-                }
-                self.status = "Ready"
-            }
+        .onAppear {
+            // Autostart VM when app launches
+            vmManager.startVM()
         }
     }
 }

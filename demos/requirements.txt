@@ -1,0 +1,5 @@
+ddtrace>=2.0.0
+# CrewAI - Python 3.14 support may be limited
+# crewai>=0.1.0
+# crewai-tools>=0.1.0  # Not yet available for Python 3.14
+

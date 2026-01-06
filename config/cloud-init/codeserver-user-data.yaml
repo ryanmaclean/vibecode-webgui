@@ -25,7 +25,11 @@ runcmd:
   # Install code-server
   - mkdir -p /opt/code-server
   - cd /opt/code-server
-  - curl -fsSL https://code-server.dev/install.sh | sh || echo "code-server install may have failed"
+  - |
+    # Try to install code-server, with fallback options
+    if ! curl -fsSL https://code-server.dev/install.sh | sh; then
+      echo "WARNING: code-server installation failed, will be available for manual install" >> /var/log/vibecode-setup.log
+    fi
   
   # Configure code-server
   - mkdir -p /home/vibecode/.config/code-server
@@ -37,11 +41,21 @@ runcmd:
   - echo "PasswordAuthentication yes" >> /etc/ssh/sshd_config
   - rc-service sshd start
   
-  # Start code-server
+  # Enable local service for auto-start
   - rc-update add local default
   
+  # Try to start code-server if installed
+  - |
+    if command -v code-server >/dev/null 2>&1; then
+      rc-service local start
+      echo "code-server installed and started" >> /var/log/vibecode-setup.log
+    else
+      echo "code-server not installed, skipping start" >> /var/log/vibecode-setup.log
+    fi
+  
   # Log completion
-  - echo "OpenVSCode VM setup complete" > /var/log/vibecode-setup.log
+  - echo "OpenVSCode VM setup complete" >> /var/log/vibecode-setup.log
+  - date >> /var/log/vibecode-setup.log
 
 write_files:
   - path: /etc/motd
@@ -62,6 +76,11 @@ write_files:
   - path: /etc/local.d/start-code-server.start
     content: |
       #!/bin/sh
-      su - vibecode -c "code-server --config /home/vibecode/.config/code-server/config.yaml > /var/log/code-server.log 2>&1 &"
+      # Only start code-server if it's installed
+      if command -v code-server >/dev/null 2>&1; then
+        su -s /bin/sh vibecode -c "code-server --config /home/vibecode/.config/code-server/config.yaml > /var/log/code-server.log 2>&1 &"
+      else
+        echo "code-server not found, skipping start" >> /var/log/code-server.log
+      fi
     permissions: '0755'
 

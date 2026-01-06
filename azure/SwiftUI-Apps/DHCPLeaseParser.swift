@@ -1,8 +1,23 @@
 import Foundation
 
+/// DEPRECATED: Use Shared/Networking/DHCPLeaseMonitor.swift instead
+///
+/// This legacy parser is replaced by DHCPLeaseMonitor which consolidates
+/// both V1 and V2 parser functionality with improved organization and
+/// thread-safe operation.
+///
+/// Migration path:
+/// - Replace: DHCPLeaseParser.startMonitoring(...) -> DHCPLeaseMonitor.startMonitoring(...)
+/// - Replace: DHCPLeaseParser.findVMIPAddress(macAddress:) -> DHCPLeaseMonitor.findIPAddress(for:)
+/// - Replace: DHCPLeaseParser.vmMACAddress -> "52:54:00:12:34:90" (use constructor param instead)
+///
+/// See: /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/DHCPLeaseMonitor.swift
+/// See: MIGRATION-STATUS.md
+///
 /// Parses DHCP lease information from /var/db/dhcpd_leases
 /// MAC addresses are stored in format: hw_address=1,xx:xx:xx:xx:xx:xx
 /// where 1 is the hardware type (Ethernet) and xx:xx:xx:xx:xx:xx is the MAC
+@available(macOS, deprecated: 14.0, message: "Use DHCPLeaseMonitor from Shared/Networking/DHCPLeaseMonitor.swift instead")
 struct DHCPLeaseParser {
 
     /// Standard location of DHCP leases file on macOS

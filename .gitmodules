@@ -10,10 +10,6 @@
 	url = https://github.com/ryanmaclean/nestjs-embedjs-template.git
 	update = none
 
-[submodule "code-server"]
-	path = code-server
-	url = https://github.com/coder/code-server.git
-	ignore = dirty
 [submodule "openvscode-server"]
 	path = openvscode-server
 	url = https://github.com/gitpod-io/openvscode-server.git

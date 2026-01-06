@@ -1,0 +1,294 @@
+# Cursor IDE / Claude Code / AI Assistant Rules
+# These rules apply to ALL AI-powered code assistants
+
+## 🚧 CRITICAL: Refactoring in Progress
+
+READ FIRST: REFACTORING-IN-PROGRESS.md
+CHECK BEFORE CHANGES: MIGRATION-STATUS.md
+
+## Architecture Enforcement
+
+### NEVER Duplicate These Patterns:
+- VM lifecycle management (use BaseVMManager)
+- Console monitoring (use Shared/ConsoleMonitoring/)
+- DHCP parsing (use Shared/Networking/DHCPLeaseMonitor)
+- Observability (use Shared/Observability/ObservabilityProvider)
+- Network configuration (use Shared/Core/VMConfiguration/)
+
+### ALWAYS Use These Abstractions:
+- Extend `BaseVMManager` for new VM apps
+- Implement `NetworkingStrategy` for new network types
+- Implement `ObservabilityProvider` for new observability backends
+- Use `VMConfigurationBuilder` for VM setup
+
+## Code Location Rules
+
+```
+✅ CORRECT:
+Apps/MyNewApp/MyAppVMManager.swift extends BaseVMManager
+Shared/Networking/BridgeNetworkStrategy.swift implements NetworkingStrategy
+Shared/Observability/PrometheusProvider.swift implements ObservabilityProvider
+
+❌ INCORRECT:
+Apps/MyNewApp/MyAppVMManager.swift with inline VM configuration
+Apps/MyNewApp/DHCPParser.swift (use Shared/)
+Apps/MyNewApp/ConsoleMonitor.swift (use Shared/)
+```
+
+## Pre-Commit Mental Checklist
+
+Before suggesting ANY code change:
+
+1. [ ] Is this adding duplicate VM management code? → Use BaseVMManager
+2. [ ] Is this parsing DHCP? → Use DHCPLeaseMonitor
+3. [ ] Is this monitoring console output? → Use ConsoleMonitoring
+4. [ ] Is this adding observability? → Use ObservabilityProvider
+5. [ ] Is this modifying LEGACY code? → Add @deprecated marker
+6. [ ] Have I checked MIGRATION-STATUS.md?
+
+## Code Generation Templates
+
+### New VM App
+```swift
+// Apps/{AppName}/{AppName}VMManager.swift
+import Foundation
+import Virtualization
+
+final class {AppName}VMManager: BaseVMManager {
+    // Customize networking
+    override func createNetworkingStrategy() -> NetworkingStrategy {
+        return NATNetworkStrategy() // or VsockNetworkStrategy(), etc.
+    }
+
+    // Customize kernel command line if needed
+    override func getKernelCommandLine() -> String {
+        return "console=hvc0 debug loglevel=8"
+    }
+
+    // Customize initramfs if needed
+    override func getInitramfsResource() -> String {
+        return "bun-openvscode"
+    }
+}
+```
+
+### New Network Strategy
+```swift
+// Shared/Networking/{Name}NetworkStrategy.swift
+import Virtualization
+
+class {Name}NetworkStrategy: NetworkingStrategy {
+    func configure(_ config: VZVirtualMachineConfiguration) throws {
+        // Configure networking devices
+    }
+
+    func setupConnectivity(_ manager: BaseVMManager) {
+        // Set up monitoring/proxy/etc.
+    }
+
+    func teardown() {
+        // Cleanup
+    }
+}
+```
+
+### New Observability Provider
+```swift
+// Shared/Observability/{Name}Provider.swift
+import Foundation
+
+class {Name}Provider: ObservabilityProvider {
+    func startSpan(name: String, attributes: [String: Any]) -> SpanContext {
+        // Implementation
+    }
+
+    func log(level: LogLevel, message: String, attributes: [String: Any]) {
+        // Implementation
+    }
+
+    // ... other protocol methods
+}
+```
+
+## File Header Template
+
+ALL new Swift files must have:
+```swift
+//
+// {FileName}.swift
+// VibeCode
+//
+// Created: {ISO8601 Date}
+// Migration Status: NEW
+// Purpose: {Brief description}
+//
+// Part of refactoring effort: See REFACTORING-IN-PROGRESS.md
+//
+```
+
+## Legacy Code Marker Template
+
+When modifying legacy code, add at top:
+```swift
+// @deprecated: Part of legacy implementation
+// @migrate-to: Shared/Core/BaseVMManager.swift
+// @tracking: MIGRATION-STATUS.md
+// @phase: 3
+//
+// This file will be refactored to use BaseVMManager.
+// Avoid adding new features here. Put new code in Shared/ instead.
+```
+
+## Testing Requirements
+
+- New shared components MUST have unit tests
+- Tests go in `Tests/SharedTests/`
+- Use `MockVM` from `Shared/Testing/MockVM.swift`
+- Integration tests go in `Tests/IntegrationTests/`
+
+## Import Conventions
+
+```swift
+// ✅ CORRECT
+import Foundation
+import Virtualization
+// Shared imports
+import Shared.Core.BaseVMManager
+import Shared.Networking.DHCPLeaseMonitor
+import Shared.Observability.ObservabilityProvider
+
+// ❌ INCORRECT - these are being deprecated
+import DHCPLeaseParser  // Use DHCPLeaseMonitor
+import DatadogLogger    // Use ObservabilityProvider
+```
+
+## Error Prevention
+
+If you're about to generate code that:
+- Creates a new VMManager class that doesn't extend BaseVMManager
+- Duplicates console monitoring logic
+- Copies DHCP parsing code
+- Adds observability without using ObservabilityProvider
+
+**STOP** and suggest using the shared components instead.
+
+## Common Mistakes to Avoid
+
+### ❌ DON'T:
+```swift
+// Creating inline VMManager
+class MyAppVMManager: ObservableObject {
+    private func createVMConfiguration() -> VZVirtualMachineConfiguration {
+        let config = VZVirtualMachineConfiguration()
+        config.cpuCount = 2
+        // ... 50 lines of duplication
+    }
+}
+```
+
+### ✅ DO:
+```swift
+// Extending BaseVMManager
+final class MyAppVMManager: BaseVMManager {
+    // Only customize what's different
+    override func getKernelCommandLine() -> String {
+        return "console=hvc0 custom=option"
+    }
+}
+```
+
+## Conflict Resolution
+
+If you encounter conflicting instructions:
+1. REFACTORING-IN-PROGRESS.md rules take precedence
+2. Check MIGRATION-STATUS.md for current status
+3. When in doubt, ask the human
+4. Document the conflict in REFACTORING-CONFLICTS.md
+
+## Success Criteria
+
+Your code change is good if:
+- ✅ Uses shared components from Shared/
+- ✅ No duplication of VM management logic
+- ✅ Follows NetworkingStrategy pattern
+- ✅ Uses ObservabilityProvider for metrics/logs
+- ✅ Added tests for new functionality
+- ✅ Updated MIGRATION-STATUS.md if completing migration
+- ✅ Documented public interfaces
+
+## Python Script Guidelines
+
+ALL Python scripts MUST include:
+1. **ddtrace integration** with graceful fallback
+2. **Colors class** for terminal output
+3. **Proper error handling** with colored messages
+4. **Type hints** where appropriate
+5. **Docstrings** for modules and functions
+
+### Python Script Template
+```python
+#!/usr/bin/env python3
+"""
+Script description here
+
+Usage:
+    python script_name.py [arguments]
+
+Example:
+    python script_name.py --option value
+"""
+
+import sys
+import os
+from pathlib import Path
+from typing import Optional
+
+# Try to import ddtrace for observability
+try:
+    import ddtrace
+    from ddtrace import tracer
+    DDTRACE_AVAILABLE = True
+except ImportError:
+    DDTRACE_AVAILABLE = False
+    print("⚠️  ddtrace not available, running without tracing", file=sys.stderr)
+
+
+class Colors:
+    """ANSI color codes for terminal output"""
+    RED = '\033[0;31m'
+    GREEN = '\033[0;32m'
+    YELLOW = '\033[1;33m'
+    BLUE = '\033[0;34m'
+    CYAN = '\033[0;36m'
+    NC = '\033[0m'  # No Color
+
+
+def log(msg: str, color=Colors.GREEN):
+    """Log a message with color"""
+    print(f"{color}[SCRIPT]{Colors.NC} {msg}")
+
+
+def error(msg: str):
+    """Log an error and exit"""
+    print(f"{Colors.RED}[ERROR]{Colors.NC} {msg}", file=sys.stderr)
+    sys.exit(1)
+
+
+def main():
+    """Main entry point"""
+    if DDTRACE_AVAILABLE:
+        with tracer.trace("operation_name", service="vibecode-service") as span:
+            span.set_tag("key", "value")
+            # Do work with tracing
+    else:
+        # Do work without tracing
+
+
+if __name__ == "__main__":
+    main()
+```
+
+## Questions?
+
+See: docs/FAQ-REFACTORING.md
+Or add your question to: REFACTORING-QUESTIONS.md

@@ -175,9 +175,9 @@ async function handleRequest(
         return handleToolRoutes(request, method, userId, id)
 
       default:
-        // Agent CRUD operations - if resource looks like an agent ID
-        if (resource && !['create', 'list', 'threads', 'files', 'tools'].includes(resource)) {
-          return handleAgentOperations(request, method, userId, resource, id)
+        // Agent CRUD operations
+        if (id) {
+          return handleAgentOperations(request, method, userId, resource, subResource)
         }
     }
 
@@ -199,35 +199,22 @@ async function handleRequest(
 // Agent Handlers
 
 async function handleCreateAgent(request: NextRequest, userId: string) {
-  try {
-    const { client } = getClient()
-    const body = await request.json()
-    const validated = createAgentSchema.parse(body)
+  const { client } = getClient()
+  const body = await request.json()
+  const validated = createAgentSchema.parse(body)
 
-    const agent = await client.createAgent({
-      ...validated,
-      metadata: {
-        ...validated.metadata,
-        userId,
-        createdAt: new Date().toISOString(),
-      },
-    })
+  const agent = await client.createAgent({
+    ...validated,
+    metadata: {
+      ...validated.metadata,
+      userId,
+      createdAt: new Date().toISOString(),
+    },
+  })
 
-    logger.info('Agent created', { agentId: agent.id, userId })
+  logger.info('Agent created', { agentId: agent.id, userId })
 
-    return NextResponse.json(agent, { status: 201 })
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          error: 'Validation failed',
-          details: error.errors,
-        },
-        { status: 400 }
-      )
-    }
-    throw error
-  }
+  return NextResponse.json(agent, { status: 201 })
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
@@ -239,9 +226,9 @@ async function handleListAgents(request: NextRequest, userId: string) {
   const response = await client.listAgents({ limit, order })
 
   // Filter to user's agents
-  const userAgents = response?.data?.filter(
+  const userAgents = response.data.filter(
     (agent) => agent.metadata.userId === userId
-  ) || []
+  )
 
   // console.debug('Listed agents', { userId, count: userAgents.length })
 
@@ -325,19 +312,8 @@ async function handleThreadRoutes(
     }
   } else {
     // Thread operations
-    // Try to get session, but if not found, verify thread exists via API
     const session = _threadManager.getSession(id)
-
-    // If no session, verify thread exists via OpenAI API
-    if (!session) {
-      try {
-        const { client } = getClient()
-        await client.getThread(id)
-        // Thread exists in OpenAI, continue without session check
-      } catch (error) {
-        return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
-      }
-    } else if (session.userId !== userId) {
+    if (!session || session.userId !== userId) {
       return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
 
@@ -481,34 +457,21 @@ async function handleFileRoutes(
 ) {
   const { client } = getClient()
   if (method === 'POST' && !fileId) {
-    try {
-      const formData = await request.formData()
-      const fileEntry = formData.get('file')
-      const fileCtor = typeof globalThis.File !== 'undefined' ? globalThis.File : undefined
-      const file = fileCtor && fileEntry instanceof fileCtor ? fileEntry : null
-      const purpose = (formData.get('purpose') as 'assistants' | 'vision') || 'assistants'
+    const formData = await request.formData()
+    const fileEntry = formData.get('file')
+    const fileCtor = typeof globalThis.File !== 'undefined' ? globalThis.File : undefined
+    const file = fileCtor && fileEntry instanceof fileCtor ? fileEntry : null
+    const purpose = (formData.get('purpose') as 'assistants' | 'vision') || 'assistants'
 
-      if (!file) {
-        return NextResponse.json({ error: 'File is required' }, { status: 400 })
-      }
-
-      const fileObject = await client.uploadFile(file, file.name, purpose)
-
-      logger.info('File uploaded', { fileId: fileObject.id, userId })
-
-      return NextResponse.json(fileObject, { status: 201 })
-    } catch (error) {
-      logger.error('File upload failed', {
-        error: error instanceof Error ? error.message : error,
-      })
-      return NextResponse.json(
-        {
-          error: 'File upload failed',
-          message: error instanceof Error ? error.message : 'Unknown error',
-        },
-        { status: 500 }
-      )
+    if (!file) {
+      return NextResponse.json({ error: 'File is required' }, { status: 400 })
     }
+
+    const fileObject = await client.uploadFile(file, file.name, purpose)
+
+    logger.info('File uploaded', { fileId: fileObject.id, userId })
+
+    return NextResponse.json(fileObject, { status: 201 })
   }
 
   if (fileId) {

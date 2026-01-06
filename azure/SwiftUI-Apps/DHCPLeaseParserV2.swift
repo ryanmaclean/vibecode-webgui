@@ -1,7 +1,23 @@
 import Foundation
 
+/// DEPRECATED: Use Shared/Networking/DHCPLeaseMonitor.swift instead
+///
+/// This enhanced V2 parser is replaced by DHCPLeaseMonitor which consolidates
+/// both V1 and V2 parser functionality. All features from V2 (findMostRecentIP,
+/// getAllLeasedMACs, startMonitoringWithFallback) are available in DHCPLeaseMonitor.
+///
+/// Migration path:
+/// - Replace: DHCPLeaseParserV2.findMostRecentIP() -> DHCPLeaseMonitor.findMostRecentIP()
+/// - Replace: DHCPLeaseParserV2.getAllLeasedMACs() -> DHCPLeaseMonitor.getAllLeases()
+/// - Replace: DHCPLeaseParserV2.startMonitoringWithFallback(...) -> DHCPLeaseMonitor.startMonitoring(...) with fallback logic
+/// - Replace: DHCPLeaseParserV2.findVMIPAddress(macAddress:) -> DHCPLeaseMonitor.findIPAddress(for:)
+///
+/// See: /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Shared/Networking/DHCPLeaseMonitor.swift
+/// See: MIGRATION-STATUS.md
+///
 /// Enhanced DHCP Lease Parser that can auto-discover VM MAC address
 /// or use a specific target MAC
+@available(macOS, deprecated: 14.0, message: "Use DHCPLeaseMonitor from Shared/Networking/DHCPLeaseMonitor.swift instead")
 struct DHCPLeaseParserV2 {
 
     /// Standard location of DHCP leases file on macOS

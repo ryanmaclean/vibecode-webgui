@@ -1,103 +1,127 @@
-# VM Operations Script Reference
+# Automation Framework Quick Reference
 
-## Quick Reference
-
-### List all VMs
-```bash
-./scripts/vm-ops.sh list
-```
-
-### Create a new VM
-```bash
-# Create VM from default source
-./scripts/vm-ops.sh create my-vm
-
-# Create VM from specific source
-./scripts/vm-ops.sh create my-vm "Supporting Anteater"
-```
-
-### Start a VM
-```bash
-# Start VM in VirtualBuddy GUI
-./scripts/vm-ops.sh start my-vm
-```
-
-### Check VM status
-```bash
-./scripts/vm-ops.sh status my-vm
-```
-
-### Test VM connectivity
-```bash
-./scripts/vm-ops.sh test my-vm
-```
-
-### Install code-server
-```bash
-./scripts/vm-ops.sh install-code my-vm
-```
-
-### Remove a VM
-```bash
-./scripts/vm-ops.sh remove my-vm
-```
-
-### Clone a VM
-```bash
-./scripts/vm-ops.sh clone source-vm target-vm
-```
-
-### Cleanup all test VMs
-```bash
-./scripts/vm-ops.sh cleanup
-```
-
-## Testing Scripts
-
-### Create and test VM
-```bash
-./scripts/test-codeserver-build.sh create-test
-./scripts/vm-ops.sh start test-codeserver-1
-# Wait for VM to boot...
-./scripts/test-codeserver-build.sh run-test
-```
-
-### Show test VM status
-```bash
-./scripts/test-codeserver-build.sh status
-```
-
-### Cleanup test VMs
-```bash
-./scripts/test-codeserver-build.sh cleanup
-```
-
-## Complete Workflow Example
+## One-Command Operations
 
 ```bash
-# 1. Create a test VM
-./scripts/test-codeserver-build.sh create-test
+# Build everything
+bash scripts/build-all-vms.sh
 
-# 2. Start the VM in VirtualBuddy GUI
-./scripts/vm-ops.sh start test-codeserver-1
+# Test everything
+bash scripts/test-specialized-vms.sh
 
-# 3. Wait for VM to boot (30-60 seconds)
-echo "Waiting for VM to boot..."
-sleep 60
-
-# 4. Run tests
-./scripts/test-codeserver-build.sh run-test test-codeserver-1
-
-# 5. Access code-server in browser
-open http://test-codeserver-1.local:8080
-
-# 6. Cleanup when done
-./scripts/test-codeserver-build.sh cleanup
+# Build + Test (CI)
+bash scripts/ci-test.sh
 ```
 
-## Files
+## Individual VM Operations
 
-- `vm-ops.sh` - Main VM operations script
-- `test-codeserver-build.sh` - Automated testing workflow
-- `clone-vm-and-setup-codeserver.sh` - Legacy clone script
-- `setup-codeserver-in-vm.sh` - Legacy setup script
+### Valkey
+```bash
+# Build
+bash scripts/build-valkey-vm.sh
+
+# Test
+bash scripts/test-valkey-vm.sh
+
+# Deploy
+bash scripts/deploy-vm.sh valkey valkey-standalone-complete.cpio.gz
+```
+
+### PostgreSQL
+```bash
+# Build
+bash scripts/rebuild-postgresql-docker.sh
+
+# Test
+bash scripts/test-postgresql-vm.sh
+
+# Deploy
+bash scripts/deploy-vm.sh postgresql postgresql-standalone-complete.cpio.gz
+```
+
+### Unified
+```bash
+# Build
+bash scripts/build-unified-vm.sh
+
+# Test
+bash scripts/test-unified-vm.sh
+
+# Deploy
+bash scripts/deploy-vm.sh unified unified-services-restored.cpio.gz
+```
+
+## Prerequisites
+
+### Required
+- Docker: `brew install docker`
+
+### Optional (for testing)
+- redis-cli: `brew install redis`
+- psql: `brew install postgresql`
+
+## Troubleshooting
+
+### Check VM Files
+```bash
+ls -lh ~/vibecode-webgui/azure/*.cpio.gz
+```
+
+### Inspect Initramfs
+```bash
+mkdir /tmp/inspect
+cd /tmp/inspect
+gunzip -c ~/vibecode-webgui/azure/valkey-standalone-complete.cpio.gz | cpio -idm
+ls -lR
+```
+
+### Check Running VMs
+```bash
+ps aux | grep NodeJSVibeCode
+```
+
+### View Console
+```bash
+tail -f /tmp/vibecode-console-*.log
+```
+
+### Find VM IP
+```bash
+for ip in 192.168.64.{1..10}; do
+    ping -c 1 $ip 2>/dev/null && echo "Found: $ip"
+done
+```
+
+## File Locations
+
+- Scripts: `~/vibecode-webgui/scripts/`
+- VMs: `~/vibecode-webgui/azure/`
+- Docs: `~/vibecode-webgui/docs/`
+- Console logs: `/tmp/vibecode-console-*.log`
+
+## Exit Codes
+
+- 0 = Success
+- 1 = Failure
+
+All scripts use `set -e` for fail-fast behavior.
+
+## CI/CD Integration
+
+```yaml
+# .github/workflows/vm-tests.yml
+name: VM Tests
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: bash scripts/ci-test.sh
+```
+
+## Getting Help
+
+- Usage guide: `scripts/README-AUTOMATION.md`
+- Detailed docs: `docs/AUTOMATION_FRAMEWORK.md`
+- This file: `scripts/QUICK-REFERENCE.md`

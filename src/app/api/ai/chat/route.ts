@@ -18,40 +18,17 @@ const { ReadableStream, TextEncoder } = globalThis
 
 // Zod validation schema for chat requests
 const chatRequestSchema = z.object({
-  // Support both single message and messages array
-  message: z.string()
-    .min(1, 'Message is required')
-    .max(100 * 1024, 'Message exceeds 100KB limit')
-    .refine(
-      (msg) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(msg),
-      'Message contains invalid control characters'
-    )
-    .optional(),
   messages: z.array(
     z.object({
       role: z.enum(['user', 'assistant', 'system']),
-      content: z.string()
-        .min(1)
-        .max(100 * 1024, 'Message content exceeds 100KB limit')
-        .refine(
-          (msg) => !/[\x00-\x08\x0B\x0C\x0E-\x1F]/.test(msg),
-          'Message contains invalid control characters'
-        ),
+      content: z.string().min(1).max(10000, 'Message content too long'),
     })
-  ).min(1, 'Messages array must contain at least one message').max(100, 'Maximum 100 messages allowed').optional(),
+  ).min(1, 'At least one message is required').max(50, 'Too many messages'),
   model: z.string().optional().default('ai/smollm2:360M-Q4_K_M'),
   stream: z.boolean().optional().default(false),
-  temperature: z.number().min(0).max(2, 'Temperature must be between 0 and 2').optional().default(0.7),
-  max_tokens: z.number().min(1).max(32000, 'max_tokens must not exceed 32000').optional(),
-  maxTokens: z.number().min(1).max(32000, 'maxTokens must not exceed 32000').optional().default(1000),
-  context: z.object({
-    workspaceId: z.string().optional(),
-    files: z.array(z.string()).max(20, 'Maximum 20 context files allowed').optional()
-  }).optional()
-}).refine(
-  (data) => data.message || data.messages,
-  { message: 'Either message or messages must be provided' }
-)
+  temperature: z.number().min(0).max(2).optional().default(0.7),
+  maxTokens: z.number().min(1).max(4000).optional().default(1000),
+}).strict()
 
 // Log AI interaction events to Datadog
 function logAIInteraction(
@@ -116,21 +93,13 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       );
     }
 
-    let { messages, message, model, stream, temperature, maxTokens, max_tokens, context } = validation.data as z.infer<typeof chatRequestSchema>;
-
-    // Normalize: convert single message to messages array
-    if (message && !messages) {
-      messages = [{ role: 'user', content: message }];
-    }
-
-    // Use max_tokens if maxTokens not provided
-    const tokenLimit = maxTokens || max_tokens || 1000;
+    const { messages, model, stream, temperature, maxTokens } = validation.data as z.infer<typeof chatRequestSchema>;
     
     // Generate cache key for AI chat responses (30-50% cost reduction)
     // Only cache non-streaming, deterministic responses
     let cacheKey: string | null = null;
-    if (!stream && temperature && temperature <= 0.3 && messages) {
-      cacheKey = generateAIChatCacheKey(messages, model, temperature, tokenLimit);
+    if (!stream && temperature <= 0.3) {
+      cacheKey = generateAIChatCacheKey(messages, model, temperature, maxTokens);
       
       const cached = await cache.get<{choices: Array<{message: {content: string}}>, [key: string]: unknown}>(cacheKey);
       if (cached) {
@@ -155,9 +124,9 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     // Log the chat request
     logAIInteraction(request, 'chat_request', {
       model,
-      message_count: messages?.length || 0,
+      message_count: messages.length,
       stream,
-      last_message_length: messages?.[messages.length - 1]?.content?.length || 0,
+      last_message_length: messages[messages.length - 1]?.content?.length || 0,
       userId: request.user?.id,
       userRole: request.user?.role,
       requestId

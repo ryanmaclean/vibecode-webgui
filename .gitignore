@@ -1,26 +1,26 @@
 # Dependencies
 node_modules/
-.pnpm-store/
+.pnp
+.pnp.js
 
-# Build outputs
-dist/
-.next/
-out/
+# Testing
+coverage/
+*.log
+
+# Production
 build/
-.build/
-target/
-bin/
-vendor/
+dist/
 
 # Environment
 .env
 .env.local
-.env.*.local
-*.log
+.env.development.local
+.env.test.local
+.env.production.local
 
 # IDE
-.idea/
 .vscode/
+.idea/
 *.swp
 *.swo
 *~
@@ -29,68 +29,111 @@ vendor/
 .DS_Store
 Thumbs.db
 
-# VM images and data
-dist/vm-images/*.img
-dist/vm-images/*-efi.nvram
-*.qcow2
-*.iso
+# Large binary files - use GitHub Releases
+*.cpio.gz
+azure/*.img
+azure/*.qcow2
+azure/*.iso
+releases/
 
 # Temporary files
-/tmp/
+tmp/
+temp/
 *.tmp
-*-debug.log
+demos/venv311/
+__pycache__/
+*.pyc
+.next/
+vz-swift/.build/
+VibeCodeSwift/.build/
 
-# Test coverage (auto-generated)
-coverage/
-.test-results/
-*.lcov
+# Kernel build artifacts
+azure/*.cpio.gz
+azure/ValkeyVibeCodeBinary
+azure/PostgreSQLVibeCodeBinary
+azure/SwiftUI-Apps/ValkeyVibeCodeBinary
+azure/SwiftUI-Apps/PostgreSQLVibeCodeBinary
 
-# Build artifacts
-.eslintcache
-circular-deps.txt
-.cleanupignore
+# Logs
+logs/
+*.log
 
-# VM manifest files (user-specific)
-scripts/vm-manifest.json
-scripts/vm-manifest.local.json
+# Temp and caches
+tmp/
+.next/
+.git/
+git-*.tar.gz
+git-*/
 
-# Session worklogs and agent reports
-*_REPORT.md
-*_SUMMARY.md
-*_COMPLETE.md
-*_RESULTS.md
-AGENT_*.md
-TEAM*.md
-BUILD_*.md
-BUILDS_*.md
 
-# Exception: Technical status docs in docs/ are not worklogs
-!docs/*_STATUS.md
-!docs/**/*_STATUS.md
+# Build artifacts - do not commit
+artifacts/
+*.o
+*.a
+*.so
 
-# Datadog
-DATADOG_SOLUTIONS_VERIFIED.md
-DATADOG_SOLUTIONS_SUMMARY.md
+# Swift build artifacts
+**/.build/
+**/ModuleCache/
+*.swiftmodule
+*.pcm
 
-# Documentation drafts
-docs/research/
-docs/sessions/archive-worklogs/
+# Backup files
+*.backup
+*.backup-*
+*.conflict-backup-*
 
-# macOS specific
-*.app
-*.dSYM
-xcuserdata/
-DerivedData/
+# Large binary files that should be in releases
+azure/linux-kernel-arm64*
+azure/vmlinux*
+azure/nodejs-complete*
+src-tauri/resources/vfkit*
+release-artifacts/
+pkg-build/
 
-# Lima VMs
-.lima/
+# OpenVSCode server (large)
+openvscode-server/
 
-# Rust
-Cargo.lock
+# More large files
+dist-pkg/
 bench-images/
-test-output*.txt
-test-results.txt
-test_failure_analysis.json
-error-analysis-report.json
-analyze-errors.js
-analyze_test_failures.py
+tmp-codeium-example/
+.serena/
+patches/*.patch
+bin/apple-container-runtime
+scripts/vibecode-demo
+src-tauri/resources/codeserver/
+azure/SwiftUI-Apps/*Binary
+azure/SwiftUI-Apps/LiquidGlassVibeCodeApp
+
+# Astro cache
+docs/.astro/
+
+# Playwright reports
+playwright-report/
+tests/playwright-reports/
+.playwright-mcp/
+
+# Tauri binaries
+src-tauri/binaries/
+src-tauri/release-artifacts/
+
+# Datadog logs
+datadog/*.txt
+ops/monitoring/datadog/*.txt
+
+# Swift app binaries (compiled)
+azure/SwiftUI-Apps/*App
+azure/SwiftUI-Apps/*AppBinary
+!azure/SwiftUI-Apps/*.app/
+
+# Performance test results
+tests/performance/
+performance-results/
+
+# Migration reports
+migration-report.txt
+
+# Conflict backups
+*.conflict-backup-*
+

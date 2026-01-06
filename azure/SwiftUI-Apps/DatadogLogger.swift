@@ -13,7 +13,7 @@ class DatadogLogger {
     private init() {
         // Ensure log directory exists
         let logDir = (logFilePath as NSString).deletingLastPathComponent
-        try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
+        _ = try? FileManager.default.createDirectory(atPath: logDir, withIntermediateDirectories: true)
         
         // Create or open log file
         if !FileManager.default.fileExists(atPath: logFilePath) {
@@ -33,7 +33,7 @@ class DatadogLogger {
     }
     
     deinit {
-        try? fileHandle?.close()
+        _ = try? fileHandle?.close()
     }
     
     /// Log a structured message

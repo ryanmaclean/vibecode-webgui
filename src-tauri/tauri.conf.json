@@ -5,7 +5,7 @@
   "identifier": "com.vibecode.app",
   "build": {
     "beforeDevCommand": "echo 'OpenVSCode should be running on :8080'",
-    "beforeBuildCommand": "echo 'Skipping Next.js build for Rust-only binary'",
+    "beforeBuildCommand": "test -f ../public/index.html || echo 'index.html missing'",
     "frontendDist": "../public",
     "devUrl": "http://localhost:8080"
   },

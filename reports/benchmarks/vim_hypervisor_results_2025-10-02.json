@@ -1,0 +1,82 @@
+{
+  "timestamp": 1759454257.8123908,
+  "runs": 3,
+  "results": [
+    {
+      "name": "native",
+      "description": "Host macOS (no hypervisor)",
+      "runs": 3,
+      "avg_seconds": 2.0466303090409688,
+      "stdev_seconds": 0.023863636790847475,
+      "min_seconds": 2.029546062927693,
+      "max_seconds": 2.0803777121473104,
+      "samples": [
+        2.0803777121473104,
+        2.029546062927693,
+        2.0299671520479023
+      ],
+      "stderr_samples": [
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal"
+      ]
+    },
+    {
+      "name": "lima_vz",
+      "description": "Lima vmType=vz (Virtualization.framework)",
+      "runs": 3,
+      "avg_seconds": 2.077234607965996,
+      "stdev_seconds": 0.0012048065095280709,
+      "min_seconds": 2.0756616559810936,
+      "max_seconds": 2.0785882740747184,
+      "samples": [
+        2.0785882740747184,
+        2.0756616559810936,
+        2.0774538938421756
+      ],
+      "stderr_samples": [
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal"
+      ]
+    },
+    {
+      "name": "lima_qemu",
+      "description": "Lima vmType=qemu (HVF accelerated)",
+      "runs": 3,
+      "avg_seconds": 1.9626715399790555,
+      "stdev_seconds": 0.04321779875799877,
+      "min_seconds": 1.9267548299394548,
+      "max_seconds": 2.023456985130906,
+      "samples": [
+        2.023456985130906,
+        1.9378028048668057,
+        1.9267548299394548
+      ],
+      "stderr_samples": [
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal"
+      ]
+    },
+    {
+      "name": "lima_ide",
+      "description": "Lima IDE instance (Alpine, vim)",
+      "runs": 3,
+      "avg_seconds": 2.0262656012394777,
+      "stdev_seconds": 0.04199131321123975,
+      "min_seconds": 1.9843028869945556,
+      "max_seconds": 2.0836372529156506,
+      "samples": [
+        2.0108566638082266,
+        1.9843028869945556,
+        2.0836372529156506
+      ],
+      "stderr_samples": [
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal",
+        "Vim: Warning: Output is not to a terminal\nVim: Warning: Input is not from a terminal"
+      ]
+    }
+  ]
+}

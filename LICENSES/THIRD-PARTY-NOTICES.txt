@@ -1,0 +1,58 @@
+# VibeCode Third-Party Software Notices
+
+This application includes the following third-party software components:
+
+## GPL-Licensed Components (Source Code Available)
+
+### Linux Kernel
+- License: GPL-2.0
+- Source: https://kernel.org
+- Build scripts: https://github.com/ryanmaclean/vibecode-webgui/tree/main/ansible
+
+### BusyBox
+- License: GPL-2.0
+- Source: https://busybox.net
+
+**GPL Source Code Offer**: In compliance with the GNU General Public License v2,
+we offer to provide the complete corresponding source code for the GPL-licensed
+components used in this application. To request source code, please open an issue
+at: https://github.com/ryanmaclean/vibecode-webgui/issues
+
+## Permissively Licensed Components
+
+### Valkey
+- License: BSD 3-Clause
+- Source: https://github.com/valkey-io/valkey
+
+### PostgreSQL
+- License: PostgreSQL License (BSD-like)
+- Source: https://www.postgresql.org
+
+### Dropbear SSH
+- License: MIT
+- Source: https://matt.ucc.asn.au/dropbear/
+
+### OpenVSCode Server
+- License: MIT
+- Source: https://github.com/gitpod-io/openvscode-server
+
+### Alpine Linux Packages
+- Various licenses (MIT, BSD, GPL)
+- Source: https://pkgs.alpinelinux.org
+
+## Apple Frameworks
+
+This application uses Apple's Virtualization.framework to run virtual machines.
+Virtualization.framework is proprietary Apple software and is not redistributed
+with this application.
+
+## Full License Texts
+
+See the individual license files in this directory:
+- LINUX-KERNEL.txt
+- BUSYBOX.txt
+- VALKEY.txt
+- POSTGRESQL.txt
+- DROPBEAR.txt
+- OPENVSCODE.txt
+

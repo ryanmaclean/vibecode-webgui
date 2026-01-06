@@ -1,74 +1,119 @@
-# Ansible Quick Start
+# VibeCode Ansible Playbooks
 
-Deploy sandboxed GenAI coding editors across all your machines.
+Ansible playbooks for building and managing VibeCode VM infrastructure.
 
-## Setup
+## Prerequisites
 
 ```bash
 # Install Ansible
-brew install ansible  # macOS
-# or
-pip install ansible   # Linux
+brew install ansible
 
-# Configure hosts
-vim ansible/hosts.ini  # Edit IPs and users
+# Install required collections
+cd ansible
+ansible-galaxy install -r requirements.yml
 ```
 
-## Deploy
+## Quick Start
+
+### Build the Services Initramfs
 
 ```bash
-# Deploy to all machines
-ansible-playbook -i ansible/hosts.ini ansible/setup_k3s.yml
-
-# Deploy to specific group
-ansible-playbook -i ansible/hosts.ini ansible/setup_k3s.yml --limit macos
+cd ansible
+ansible-playbook playbooks/build-initramfs.yml
 ```
 
-## What It Does
+This will:
+1. Download Ubuntu 22.04 packages for arm64
+2. Extract and install them into the initramfs
+3. Generate the init script from template
+4. Build `azure/unified-services-glibc-fixed.cpio.gz`
 
-1. **Installs K3s** on all nodes
-2. **Sets up cluster** (control-plane + workers)
-3. **Deploys OLLama** (local AI models)
-4. **Deploys MLflow** (experiment tracking)
-5. **Creates namespaces** and services
+### Customizing the Build
 
-## Result
+Edit `playbooks/build-initramfs.yml` to:
+- Change package versions
+- Enable/disable services
+- Modify the VM hostname
 
-Each machine gets:
-- K3s cluster joined
-- OLLama running (port 11434)
-- MLflow tracking (port 5000)
-- Sandboxed environment
-
-## Access Services
+Or override variables at runtime:
 
 ```bash
-# Forward ports
-kubectl port-forward -n mlflow-ollama svc/ollama 11434:11434 &
-kubectl port-forward -n mlflow-ollama svc/mlflow 5000:5000 &
-
-# Test OLLama
-curl http://localhost:11434/api/tags
-
-# Test MLflow
-curl http://localhost:5000/health
+ansible-playbook playbooks/build-initramfs.yml \
+  -e "vm_hostname=my-custom-vm" \
+  -e "services.postgresql.enabled=false"
 ```
 
-## Customize
+## Directory Structure
 
-Edit `ansible/hosts.ini` to add your machines:
-```ini
-[all]
-your-host ansible_host=YOUR_IP ansible_user=YOUR_USER ansible_connection=ssh
+```
+ansible/
+├── ansible.cfg           # Ansible configuration
+├── inventory/
+│   └── localhost.yml     # Local inventory
+├── playbooks/
+│   └── build-initramfs.yml  # Main build playbook
+├── roles/
+│   └── initramfs/        # Reusable initramfs role
+│       ├── tasks/
+│       │   ├── main.yml
+│       │   └── install_libraries.yml
+│       └── defaults/
+│           └── main.yml
+├── templates/
+│   └── init.j2           # Init script template
+└── requirements.yml      # Galaxy dependencies
 ```
 
-Edit `ansible/setup_k3s.yml` to customize deployments.
+## Services Included
 
-## What Gets Deployed
+| Service    | Port | Description |
+|------------|------|-------------|
+| Valkey     | 6379 | Redis-compatible in-memory store |
+| PostgreSQL | 5432 | Relational database |
+| OpenVSCode | 8080 | Web-based VS Code |
+| SSH        | 22   | Dropbear SSH server |
+| Avahi      | 5353 | mDNS for hostname resolution |
 
-- **K3s**: Lightweight Kubernetes
-- **OLLama**: Local LLM inference
-- **MLflow**: ML experiment tracking
-- **Namespace**: mlflow-ollama (sandboxed)
+## Accessing the VM
 
-All on your local machines!
+After boot, the VM is accessible via:
+
+```bash
+# Via mDNS hostname
+ssh root@vibecode-vm.local
+
+# Via IP (check console for address)
+ssh root@192.168.64.x
+```
+
+## Troubleshooting
+
+### Package Download Failures
+
+If packages fail to download, check:
+1. Network connectivity
+2. Ubuntu mirror availability
+3. Package version exists (versions change frequently)
+
+Update URLs in `playbooks/build-initramfs.yml` if needed.
+
+### Missing Libraries
+
+If services fail with "cannot open shared object file":
+1. Check which library is missing from the error
+2. Find the Ubuntu package containing it
+3. Add to the `packages` list in the playbook
+
+### Ansible Errors
+
+```bash
+# Verbose output
+ansible-playbook playbooks/build-initramfs.yml -vvv
+
+# Check syntax
+ansible-playbook playbooks/build-initramfs.yml --syntax-check
+```
+
+## License
+
+MIT

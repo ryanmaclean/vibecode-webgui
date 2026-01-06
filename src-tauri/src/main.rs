@@ -9,6 +9,8 @@ mod mdns;
 mod menu;
 mod ml;
 mod vm;
+mod service;
+mod tailscale;
 
 // use tauri::Manager; // Removed unused import
 
@@ -73,14 +75,39 @@ fn main() {
             ai::agent_create_task,
             ai::agent_get_status,
             ai::agent_cancel_task,
+<<<<<<< HEAD
             // VM commands
             vm::vm_list,
+            vm::vm_start_openvscode,
             vm::vm_start,
             vm::vm_stop,
             vm::vm_status,
             vm::vm_setup_first_run,
+=======
+            // Tailscale commands (if implemented)
+            // tailscale::commands::tailscale_status,
+            // tailscale::commands::tailscale_get_ip,
+>>>>>>> feat/unified-launcher-openvscode-vm
         ])
         .setup(|app| {
+            // Check if running in service mode (for Electron)
+            let service_mode = std::env::var("VIBECODE_SERVICE_MODE").is_ok();
+            
+            if service_mode {
+                // Start HTTP service in background
+                let port = std::env::var("VIBECODE_SERVICE_PORT")
+                    .unwrap_or_else(|_| "3030".to_string())
+                    .parse::<u16>()
+                    .unwrap_or(3030);
+                
+                let app_handle = app.handle().clone();
+                tauri::async_runtime::spawn(async move {
+                    if let Err(e) = service::start_service(port).await {
+                        eprintln!("Failed to start HTTP service: {}", e);
+                    }
+                });
+            }
+            
             // Initialize system tray
             if let Err(e) = menu::create_system_tray(app.handle()) {
                 eprintln!("Failed to create system tray: {}", e);
@@ -90,7 +117,7 @@ fn main() {
             let _app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 // Start code-server first for fast local UX
-                match commands::start_code_server(_app_handle.clone()).await {
+                match vm::vm_start_openvscode(_app_handle.clone()).await {
                     Ok(msg) => {
                         println!("✅ {}", msg);
                         // Optionally try vfkit VM in the background (non-blocking)

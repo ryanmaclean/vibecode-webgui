@@ -7,6 +7,37 @@ VERSION=${BUSYBOX_VERSION:-1.36.1}
 BUILD_ROOT="$ROOT_DIR/bench-images/busybox"
 SRC_DIR="$BUILD_ROOT/busybox-${VERSION}"
 
+set_bool_config() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=" .config; then
+    sed -i "s/^${key}=.*$/${key}=${value}/" .config
+  else
+    sed -i "s/^# ${key} is not set$/${key}=${value}/" .config || echo "${key}=${value}" >> .config
+  fi
+}
+
+set_string_config() {
+  local key="$1"
+  local value="$2"
+  if grep -q "^${key}=\"" .config; then
+    sed -i "s|^${key}=\".*\"$|${key}=\"${value}\"|" .config
+  elif grep -q "^# ${key} is not set" .config; then
+    sed -i "s|^# ${key} is not set$|${key}=\"${value}\"|" .config
+  else
+    echo "${key}=\"${value}\"" >> .config
+  fi
+}
+
+disable_config() {
+  local key="$1"
+  if grep -q "^${key}=" .config; then
+    sed -i "s/^${key}=.*$/# ${key} is not set/" .config
+  elif ! grep -q "^# ${key} is not set" .config; then
+    echo "# ${key} is not set" >> .config
+  fi
+}
+
 mkdir -p "$BUILD_ROOT"
 cd "$BUILD_ROOT"
 
@@ -24,81 +55,46 @@ pushd "$SRC_DIR" >/dev/null
 make distclean >/dev/null 2>&1 || true
 make defconfig >/dev/null
 
-# Force tiny config for reproducible builds
-cat > .config <<'EOF'
-CONFIG_HAVE_DOT_CONFIG=y
-CONFIG_STATIC=y
-CONFIG_SUID=y
-CONFIG_BUILD_LIBBUSYBOX=n
-CONFIG_FEATURE_SHARED_BUSYBOX=n
-CONFIG_FEATURE_CLEAN_UP=y
-CONFIG_SH_IS_ASH=y
-CONFIG_ASH=y
-CONFIG_LS=y
-CONFIG_CAT=y
-CONFIG_ECHO=y
-CONFIG_GREP=y
-CONFIG_TAR=y
-CONFIG_CP=y
-CONFIG_MKDIR=y
-CONFIG_MV=y
-CONFIG_RM=y
-CONFIG_PWD=y
-CONFIG_SLEEP=y
-CONFIG_INIT=y
-CONFIG_PING=y
-CONFIG_IP=y
-CONFIG_UDHCPC=y
-CONFIG_UDHCPC_DEFAULT_SCRIPT="/udhcpc.script"
-CONFIG_UDHCP_WITHOUT_IFUPDOWN=y
-CONFIG_IFUP=y
-CONFIG_IFDOWN=y
-# CONFIG_FEATURE_IPV6 is not set
-# CONFIG_FEATURE_IP_TUNNEL is not set
-# CONFIG_SYSLOGD is not set
-# CONFIG_KLOGD is not set
-# CONFIG_TC is not set
-# CONFIG_FEATURE_SYSLOG is not set
-EOF
+set_bool_config CONFIG_STATIC y
+set_bool_config CONFIG_UDHCPC y
+set_string_config CONFIG_UDHCPC_DEFAULT_SCRIPT /udhcpc.script
+set_bool_config CONFIG_IP y
+set_bool_config CONFIG_SH_IS_ASH y
+set_bool_config CONFIG_ASH y
+set_bool_config CONFIG_LS y
+set_bool_config CONFIG_CAT y
+set_bool_config CONFIG_ECHO y
+set_bool_config CONFIG_GREP y
+set_bool_config CONFIG_TAR y
+set_bool_config CONFIG_CP y
+set_bool_config CONFIG_MKDIR y
+set_bool_config CONFIG_MV y
+set_bool_config CONFIG_RM y
+set_bool_config CONFIG_PWD y
+set_bool_config CONFIG_SLEEP y
+set_bool_config CONFIG_INIT y
+set_bool_config CONFIG_PING y
+
+disable_config CONFIG_TC
+disable_config CONFIG_FEATURE_IP_TUNNEL
+disable_config CONFIG_FEATURE_SYSLOG
+disable_config CONFIG_FEATURE_IPV6
+disable_config CONFIG_SYSLOGD
+disable_config CONFIG_KLOGD
 
 set +o pipefail
 yes "" | make oldconfig >/dev/null
 set -o pipefail
 
-# Determine build args
 CROSS_ARGS=()
-CC=clang
-LD=ld.lld
 if [[ "$ARCH" == "arm64" ]]; then
-  if command -v aarch64-linux-gnu-gcc >/dev/null 2>&1; then
-    CROSS_ARGS=(ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-)
-    CC="${CROSS_ARGS[1]}gcc"
-    LD="${CROSS_ARGS[1]}ld"
-  else
-    echo "⚠️  aarch64-linux-gnu-gcc not found; building natively with clang" >&2
-    CROSS_ARGS=(ARCH=arm64 CROSS_COMPILE="")
-    CC="clang -target aarch64-apple-darwin"
-    LD="ld.lld"
-  fi
+  CROSS_ARGS=(ARCH=arm64 CROSS_COMPILE=aarch64-linux-gnu-)
 elif [[ "$ARCH" == "armv7" ]]; then
-  if command -v arm-linux-gnueabihf-gcc >/dev/null 2>&1; then
-    CROSS_ARGS=(ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-)
-    CC="${CROSS_ARGS[1]}gcc"
-    LD="${CROSS_ARGS[1]}ld"
-  else
-    echo "⚠️  arm-linux-gnueabihf-gcc not found; building natively with clang" >&2
-    CROSS_ARGS=(ARCH=arm CROSS_COMPILE="")
-    CC="clang -target armv7-apple-darwin"
-    LD="ld.lld"
-  fi
-else
-  CROSS_ARGS=(ARCH=x86_64)
+  CROSS_ARGS=(ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf-)
 fi
-
-make -j"$(sysctl -n hw.ncpu 2>/dev/null || nproc)" "${CROSS_ARGS[@]}" CC="$CC" LD="$LD" LDFLAGS="-static"
-make install "${CROSS_ARGS[@]}" CC="$CC" LD="$LD" LDFLAGS="-static" CONFIG_PREFIX="$BUILD_ROOT/rootfs"
+make -j"$(nproc)" "${CROSS_ARGS[@]}" >/dev/null
+make install "${CROSS_ARGS[@]}" CONFIG_PREFIX="$BUILD_ROOT/rootfs"
 
 popd >/dev/null
 
 echo "BusyBox rootfs stored in $BUILD_ROOT/rootfs"
-

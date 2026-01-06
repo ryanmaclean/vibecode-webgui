@@ -27,6 +27,7 @@ export default defineConfig({
           items: [
             { label: 'New Features Overview', link: '/new-features/', badge: 'New' },
             { label: 'ASIF + Virtualization Framework', link: '/asif-virtualization/', badge: 'New' },
+            { label: 'Build Guide', link: '/build-guide/', badge: 'New' },
           ]
         },
         {
@@ -58,6 +59,17 @@ export default defineConfig({
             { label: 'PostgreSQL Test Results', link: '/PRISMA_PGVECTOR_TEST_RESULTS/' },
             { label: 'PostgreSQL GenAI Demo', link: '/postgresql-genai-demo-guide/' },
             { label: 'PostgreSQL Sample Queries', link: '/postgresql-sample-queries/' },
+          ]
+        },
+        {
+          label: 'Docker & OpenVSCode Setup',
+          badge: 'New',
+          items: [
+            { label: 'Complete Setup Guide', link: '/docker-database/openvscode-postgres-setup/' },
+            { label: 'Docker Compose Setup', link: '/docker-database/docker-compose-setup/' },
+            { label: 'Auto-Generated Passwords', link: '/docker-database/auto-password-setup/', badge: 'Recommended' },
+            { label: 'Password Setup Complete', link: '/docker-database/random-password-complete/' },
+            { label: 'Database Connection Fix', link: '/docker-database/db-connection-fixed/' },
           ]
         },
         {

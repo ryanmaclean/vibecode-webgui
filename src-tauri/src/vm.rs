@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::process::{Command, Stdio};
 use tauri::{AppHandle, Manager};
 use std::path::PathBuf;
+use tokio::time::{sleep, Duration};
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct VMStatus {
@@ -215,3 +216,64 @@ pub async fn vm_setup_first_run(app: AppHandle) -> Result<String, String> {
     Ok(format!("Setup complete: {} VM files copied to {}", copied_count, user_vm_dir.display()))
 }
 
+
+/// Start OpenVSCode Server VM with port forwarding
+#[tauri::command]
+
+pub async fn vm_start_openvscode(app: AppHandle) -> Result<String, String> {
+
+    
+    let vm_binary = get_vm_manager_path(&app)?;
+    
+    // Start VM in background
+    let mut cmd = Command::new(&vm_binary);
+    cmd.arg("openvscode")
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    
+    let mut child = cmd.spawn()
+        .map_err(|e| format!("Failed to start VM: {}", e))?;
+    
+    // Wait for VM to boot (30 seconds for Alpine to boot and start OpenVSCode Server)
+    println!("Waiting for VM to boot and OpenVSCode Server to start...");
+    sleep(Duration::from_secs(30)).await;
+    
+    // Set up SSH port forwarding
+    // Try common NAT IP ranges: 192.168.64.x, 10.0.2.x
+    // We'll try to connect via SSH and forward port 8080
+    let vm_ips = vec!["192.168.64.2", "192.168.64.3", "10.0.2.15"];
+    let mut forwarded = false;
+    
+    for vm_ip in vm_ips {
+        // Try SSH port forwarding: ssh -L 8080:localhost:8080 root@vm-ip -N -f
+        let ssh_cmd = Command::new("ssh")
+            .arg("-L")
+            .arg("8080:localhost:8080")
+            .arg("-o")
+            .arg("StrictHostKeyChecking=no")
+            .arg("-o")
+            .arg("UserKnownHostsFile=/dev/null")
+            .arg("-o")
+            .arg("ConnectTimeout=5")
+            .arg(format!("root@{}", vm_ip))
+            .arg("-N")
+            .arg("-f")
+            .output();
+        
+        if let Ok(output) = ssh_cmd {
+            if output.status.success() {
+                println!("✅ Port forwarding set up to {}", vm_ip);
+                forwarded = true;
+                break;
+            }
+        }
+    }
+    
+    if !forwarded {
+        println!("⚠️  Could not set up automatic port forwarding. VM may need manual SSH configuration.");
+    }
+    
+    let pid = child.id();
+    Ok(format!("OpenVSCode VM started with PID {}. OpenVSCode Server should be accessible at http://localhost:8080", pid))
+}

@@ -1,0 +1,44 @@
+# Swift Format Configuration
+# Agent 23 - Shopify Code Style
+
+--swiftversion 5.9
+
+# Indentation
+--indent 4
+--indentcase false
+--tabwidth 4
+--xcodeindentation enabled
+
+# Wrapping
+--maxwidth 120
+--wraparguments before-first
+--wrapparameters before-first
+--wrapcollections before-first
+
+# Spacing
+--trimwhitespace always
+--commas inline
+--semicolons never
+--operatorfunc spaced
+
+# Organization
+--stripunusedargs closure-only
+--self insert
+--importgrouping testable-bottom
+--extensionacl on-declarations
+
+# Braces
+--allman false
+--elseposition same-line
+
+# Comments
+--header strip
+
+# Rules
+--enable isEmpty
+--enable sortedImports
+--enable redundantReturn
+--enable blankLinesAroundMark
+--enable consecutiveBlankLines
+
+--disable redundantSelf
