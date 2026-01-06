@@ -18,7 +18,8 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  tracer.addTags({ 'service.component': 'health-monitoring' })
+  // Tags should be added via tracer.init() tags option, not addTags()
+  // tracer.addTags({ 'service.component': 'health-monitoring' })
 } else {
   globalThis.console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }

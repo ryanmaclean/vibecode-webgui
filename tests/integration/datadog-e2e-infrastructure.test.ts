@@ -23,7 +23,7 @@ import { promisify } from 'node:util'
 const execAsync = promisify(exec)
 
 // Configuration
-const DD_API_KEY = process.env.DD_API_KEY || 'f04e85e29dc6e97f802b04a8d7505ff3'
+const DD_API_KEY = process.env.DD_API_KEY || 'REDACTED_API_KEY'
 const DD_APP_KEY = process.env.DD_APP_KEY || ''
 const DD_SITE = process.env.DD_SITE || 'datadoghq.com'
 const DD_API_URL = `https://api.${DD_SITE}`

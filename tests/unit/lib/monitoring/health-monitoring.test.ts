@@ -628,7 +628,8 @@ describe('Health Monitoring Module', () => {
         profiling: true,
         appsec: true
       })
-      expect(mockTracer.addTags).toHaveBeenCalledWith({ 'service.component': 'health-monitoring' })
+      // Note: addTags removed as it's not a valid method on the tracer object
+      // expect(mockTracer.addTags).toHaveBeenCalledWith({ 'service.component': 'health-monitoring' })
     })
 
     it('should warn when DD_API_KEY is missing', () => {

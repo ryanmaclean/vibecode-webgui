@@ -4,7 +4,7 @@
  */
 
 // Import Datadog metrics client
-import { datadogMetrics } from '../src/lib/monitoring/datadog-metrics';
+const { datadogMetrics } = require('../../src/lib/monitoring/datadog-metrics');
 
 // Mock installed extensions list
 const mockInstalledExtensions = `continue.continue

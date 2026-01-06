@@ -9,7 +9,7 @@ const { promisify } = require('util')
 const { datadogMetrics, gauge } = require('../../src/lib/monitoring/datadog-metrics.ts')
 
 // Configure Datadog with API key
-const DD_API_KEY = process.env.DD_API_KEY || 'f04e85e29dc6e97f802b04a8d7505ff3'
+const DD_API_KEY = process.env.DD_API_KEY || 'REDACTED_API_KEY'
 
 // Mock data for container stats
 const mockContainerStats = `vibecode-webgui-postgres-1,12.45%,256MiB / 2GiB

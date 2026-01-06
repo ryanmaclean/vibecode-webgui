@@ -7,8 +7,12 @@
 
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
 
+// Skip this test suite unless explicitly enabled with ENABLE_DATADOG_API_TESTS=1
+// These tests make real API calls to Datadog and are not needed for regular CI/CD
+const describeIf = process.env.ENABLE_DATADOG_API_TESTS === '1' ? describe : describe.skip;
+
 // Datadog API configuration
-const DD_API_KEY = 'f04e85e29dc6e97f802b04a8d7505ff3';
+const DD_API_KEY = 'REDACTED_API_KEY';
 const DD_SITE = process.env.DD_SITE || 'datadoghq.com';
 const DD_API_BASE_URL = `https://api.${DD_SITE}`;
 const DD_APP_KEY = process.env.DD_APP_KEY || process.env.DATADOG_APP_KEY;
@@ -133,7 +137,7 @@ async function waitWithBackoff(baseDelayMs: number, attempt: number, maxAttempts
   await new Promise(resolve => setTimeout(resolve, delay));
 }
 
-describe('Datadog Metrics Retrieval Integration Tests', () => {
+describeIf('Datadog Metrics Retrieval Integration Tests', () => {
   const testStartTime = Math.floor(Date.now() / 1000);
   let testMetricNames: string[] = [];
 
