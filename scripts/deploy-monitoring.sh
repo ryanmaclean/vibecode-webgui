@@ -4,6 +4,10 @@
 
 set -euo pipefail
 
+# Source Datadog logging library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/datadog-logging.sh"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -11,22 +15,26 @@ YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
-# Logging functions
+# Logging functions - now using Datadog
 log() {
     echo -e "${GREEN}[$(date +'%Y-%m-%d %H:%M:%S')] $1${NC}"
+    dd_info "$1" "script:deploy-monitoring"
 }
 
 warn() {
     echo -e "${YELLOW}[$(date +'%Y-%m-%d %H:%M:%S')] WARNING: $1${NC}"
+    dd_warn "$1" "script:deploy-monitoring"
 }
 
 error() {
     echo -e "${RED}[$(date +'%Y-%m-%d %H:%M:%S')] ERROR: $1${NC}"
+    dd_error "$1" "script:deploy-monitoring"
     exit 1
 }
 
 info() {
     echo -e "${BLUE}[$(date +'%Y-%m-%d %H:%M:%S')] INFO: $1${NC}"
+    dd_info "$1" "script:deploy-monitoring"
 }
 
 # Script configuration
@@ -166,6 +174,7 @@ main() {
     fi
 
     display_access_info
+    dd_metric "monitoring.deployment.success" "1" "count" "method:$DEPLOY_METHOD,environment:$ENVIRONMENT"
     log "Monitoring deployment completed successfully! 🚀"
 }
 

@@ -8,6 +8,9 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 TEST_NAMESPACE="verification-test"
 
+# Source Datadog logging library
+source "$SCRIPT_DIR/lib/datadog-logging.sh"
+
 GREEN='\033[0;32m'
 RED='\033[0;31m'
 BLUE='\033[0;34m'
@@ -19,12 +22,14 @@ fail_count=0
 check() {
     local name="$1"
     local command="$2"
-    
+
     if eval "$command" >/dev/null 2>&1; then
         echo -e "${GREEN}✅ $name${NC}"
+        dd_info "Component check passed: $name" "script:component-verification,status:pass"
         ((pass_count++))
     else
         echo -e "${RED}❌ $name${NC}"
+        dd_error "Component check failed: $name" "script:component-verification,status:fail"
         ((fail_count++))
     fi
 }
@@ -165,11 +170,14 @@ echo "Success Rate: ${success_rate}%"
 
 echo ""
 if [[ $fail_count -eq 0 ]]; then
+    dd_metric "component.verification.passed" "$pass_count" "count" "script:component-verification"
+    dd_metric "component.verification.failed" "0" "count" "script:component-verification"
+    dd_metric "component.verification.success_rate" "100" "gauge" "script:component-verification"
     echo "🎉 ALL COMPONENTS VERIFIED!"
     echo ""
     echo "✅ Every component of the KIND/K8s installation has been tested:"
     echo "   • KIND cluster core components (7 tests)"
-    echo "   • Secrets management system (6 tests)"  
+    echo "   • Secrets management system (6 tests)"
     echo "   • Helm chart structure (11 tests)"
     echo "   • Database monitoring setup (5 tests)"
     echo "   • Datadog integration (7 tests)"
@@ -182,6 +190,9 @@ if [[ $fail_count -eq 0 ]]; then
     echo "🔍 COMPREHENSIVE COVERAGE - Every component has a specific test!"
     exit 0
 else
+    dd_metric "component.verification.passed" "$pass_count" "count" "script:component-verification"
+    dd_metric "component.verification.failed" "$fail_count" "count" "script:component-verification"
+    dd_metric "component.verification.success_rate" "$success_rate" "gauge" "script:component-verification"
     echo "❌ COMPONENT ISSUES DETECTED!"
     echo ""
     echo "⚠️  $fail_count components failed verification."

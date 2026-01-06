@@ -5,11 +5,15 @@
 
 set -e
 
+# Source Datadog logging library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/datadog-logging.sh"
+
 CLUSTER_NAME="vibecode-test"
 NAMESPACE="vibecode"
 TEST_RESULTS_FILE="kind-test-results.log"
 
-echo "🚀 Starting Comprehensive KIND Cluster Testing" | tee $TEST_RESULTS_FILE
+dd_info "🚀 Starting Comprehensive KIND Cluster Testing" | tee $TEST_RESULTS_FILE
 echo "=================================================" | tee -a $TEST_RESULTS_FILE
 echo "Timestamp: $(date)" | tee -a $TEST_RESULTS_FILE
 echo "" | tee -a $TEST_RESULTS_FILE
@@ -27,8 +31,12 @@ log_test() {
 
     if [ "$status" = "FAIL" ]; then
         color=$RED
+        dd_error "$message" "test:kind-testing,status:fail"
     elif [ "$status" = "WARN" ]; then
         color=$YELLOW
+        dd_warn "$message" "test:kind-testing,status:warn"
+    else
+        dd_info "$message" "test:kind-testing,status:$status"
     fi
 
     echo -e "${color}[$status]${NC} $message" | tee -a $TEST_RESULTS_FILE
@@ -349,11 +357,15 @@ log_test "INFO" "Warnings: $warnings"
 
 if [ "$failed_tests" -eq 0 ]; then
     log_test "PASS" "KIND cluster testing completed successfully"
+    dd_metric "kind.cluster.tests.passed" "$total_tests" "count" "test:kind-testing"
+    dd_metric "kind.cluster.tests.failed" "0" "count" "test:kind-testing"
     echo "" | tee -a $TEST_RESULTS_FILE
     echo "✅ KIND cluster is ready for production deployment" | tee -a $TEST_RESULTS_FILE
     exit 0
 else
     log_test "FAIL" "KIND cluster testing completed with failures"
+    dd_metric "kind.cluster.tests.passed" "$total_tests" "count" "test:kind-testing"
+    dd_metric "kind.cluster.tests.failed" "$failed_tests" "count" "test:kind-testing"
     echo "" | tee -a $TEST_RESULTS_FILE
     echo "❌ KIND cluster needs attention before production deployment" | tee -a $TEST_RESULTS_FILE
     exit 1
