@@ -619,10 +619,13 @@ describe('Health Monitoring Module', () => {
   describe('Module initialization', () => {
     it('should initialize tracer when DD_API_KEY is present', () => {
       process.env.DD_API_KEY = 'test-key'
-      
+
+      // Reset mock call history
+      mockTracer.init.mockClear()
+
       // Reset modules to trigger initialization
       loadHealthMonitoring()
-      
+
       expect(mockTracer.init).toHaveBeenCalledWith({
         service: 'vibecode-webgui',
         env: 'test',
