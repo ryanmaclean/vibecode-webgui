@@ -5,7 +5,9 @@
  * This includes metrics from Docker tests, Kubernetes tests, and tag validation.
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
+// Use cross-fetch for real API calls (bypassing Jest mocks)
+import crossFetch from 'cross-fetch';
 
 // These tests make real API calls to Datadog
 // Note: Some tests require DD_APP_KEY which cannot be created programmatically
@@ -150,6 +152,11 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
     console.log('Starting Datadog metrics retrieval tests');
     console.log(`Test start time: ${new Date(testStartTime * 1000).toISOString()}`);
     console.log(`Datadog site: ${DD_SITE}`);
+  });
+
+  beforeEach(() => {
+    // Use cross-fetch for real API calls (bypassing Jest's mock)
+    global.fetch = crossFetch as unknown as typeof global.fetch;
   });
 
   afterAll(() => {

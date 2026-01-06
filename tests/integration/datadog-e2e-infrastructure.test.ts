@@ -16,9 +16,11 @@
  * - DD_APP_KEY environment variable set (for query API)
  */
 
-import { describe, test, expect, beforeAll, afterAll, jest } from '@jest/globals'
+import { describe, test, expect, beforeAll, afterAll, beforeEach, jest } from '@jest/globals'
 import { exec } from 'node:child_process'
 import { promisify } from 'node:util'
+// Use cross-fetch for real API calls (bypassing Jest mocks)
+import crossFetch from 'cross-fetch';
 
 const execAsync = promisify(exec)
 
@@ -240,6 +242,11 @@ describe('Datadog E2E Infrastructure Integration', () => {
     await cleanupDockerContainer()
     await cleanupK8sPod()
   })
+
+  beforeEach(() => {
+    // Use cross-fetch for real API calls (bypassing Jest's mock)
+    global.fetch = crossFetch as unknown as typeof global.fetch;
+  });
 
   describe('Docker Container Metrics', () => {
     test('should run Docker container and submit metrics', async () => {
