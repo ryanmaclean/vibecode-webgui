@@ -447,16 +447,87 @@ const createPrismaClientMock = () => ({
       }
     }),
     update: jest.fn((args) => {
-      const exp = experimentsStore.find(e => e.id === args.where.id);
+      const exp = experimentsStore.find(e =>
+        (args.where.id && e.id === args.where.id) ||
+        (args.where.key && e.key === args.where.key)
+      );
       if (exp) {
         Object.assign(exp, args.data, { updatedAt: new Date() });
         return Promise.resolve(exp);
       }
       return Promise.reject(new Error('Experiment not found'));
     }),
+    findMany: jest.fn((args) => {
+      let filtered = [...experimentsStore];
+      if (args?.where?.status) {
+        filtered = filtered.filter(e => e.status === args.where.status);
+      }
+      if (args?.where?.key?.startsWith) {
+        filtered = filtered.filter(e => e.key.startsWith(args.where.key.startsWith));
+      }
+      if (args?.orderBy) {
+        const orderBy = Array.isArray(args.orderBy) ? args.orderBy[0] : args.orderBy;
+        const key = Object.keys(orderBy)[0];
+        const direction = orderBy[key];
+        filtered.sort((a, b) => {
+          const aVal = a[key];
+          const bVal = b[key];
+          if (direction === 'desc') {
+            return aVal < bVal ? 1 : -1;
+          }
+          return aVal < bVal ? -1 : 1;
+        });
+      }
+      return Promise.resolve(filtered);
+    }),
+    deleteMany: jest.fn((args) => {
+      const initialLength = experimentsStore.length;
+      if (args?.where?.key?.startsWith) {
+        experimentsStore.splice(0, experimentsStore.length,
+          ...experimentsStore.filter(e => !e.key.startsWith(args.where.key.startsWith))
+        );
+      }
+      return Promise.resolve({ count: initialLength - experimentsStore.length });
+    }),
   },
   experimentAssignment: {
     ...createModelMock(),
+    findUnique: jest.fn((args) => {
+      const key = args.where.experiment_id_user_id;
+      const assignment = experimentAssignmentsStore.find(a =>
+        a.experimentId === key.experimentId && a.userId === key.userId
+      );
+      return Promise.resolve(assignment || null);
+    }),
+    create: jest.fn((args) => {
+      const id = String(mockIdCounter++);
+      const created = {
+        id,
+        experimentId: args.data.experimentId,
+        userId: args.data.userId,
+        variantKey: args.data.variantKey,
+        metadata: args.data.metadata || null,
+        assignedAt: args.data.assignedAt || new Date(),
+      };
+      experimentAssignmentsStore.push(created);
+      return Promise.resolve(created);
+    }),
+    createMany: jest.fn((args) => {
+      const created = args.data.map((d: any) => {
+        const id = String(mockIdCounter++);
+        const assignment = {
+          id,
+          experimentId: d.experimentId,
+          userId: d.userId,
+          variantKey: d.variantKey,
+          metadata: d.metadata || null,
+          assignedAt: d.assignedAt || new Date(),
+        };
+        experimentAssignmentsStore.push(assignment);
+        return assignment;
+      });
+      return Promise.resolve({ count: created.length });
+    }),
     upsert: jest.fn((args) => {
       const key = args.where.experiment_id_user_id;
       const existing = experimentAssignmentsStore.find(a =>
@@ -494,9 +565,39 @@ const createPrismaClientMock = () => ({
       }, [] as any[]);
       return Promise.resolve(grouped);
     }),
+    deleteMany: jest.fn((args) => {
+      const initialLength = experimentAssignmentsStore.length;
+      if (args?.where?.experiment) {
+        const keyMatch = args.where.experiment.key?.startsWith;
+        if (keyMatch) {
+          // Filter based on experiment key starting with pattern
+          const experimentsToDelete = experimentsStore
+            .filter(e => e.key.startsWith(keyMatch))
+            .map(e => e.id);
+          experimentAssignmentsStore.splice(0, experimentAssignmentsStore.length,
+            ...experimentAssignmentsStore.filter(a => !experimentsToDelete.includes(a.experimentId))
+          );
+        }
+      }
+      return Promise.resolve({ count: initialLength - experimentAssignmentsStore.length });
+    }),
   },
   experimentMetric: {
     ...createModelMock(),
+    create: jest.fn((args) => {
+      const id = String(mockIdCounter++);
+      const metric = {
+        id,
+        experimentId: args.data.experimentId,
+        assignmentId: args.data.assignmentId,
+        metricName: args.data.metricName,
+        metricValue: args.data.metricValue,
+        metadata: args.data.metadata || null,
+        timestamp: args.data.timestamp || new Date(),
+      };
+      experimentMetricsStore.push(metric);
+      return Promise.resolve(metric);
+    }),
     createMany: jest.fn((args) => {
       const created = args.data.map((d: any) => {
         // Skip if assignmentId is empty/null and skipDuplicates is true
@@ -538,6 +639,22 @@ const createPrismaClientMock = () => ({
 
       return Promise.resolve(filtered);
     }),
+    deleteMany: jest.fn((args) => {
+      const initialLength = experimentMetricsStore.length;
+      if (args?.where?.experiment) {
+        const keyMatch = args.where.experiment.key?.startsWith;
+        if (keyMatch) {
+          // Filter based on experiment key starting with pattern
+          const experimentsToDelete = experimentsStore
+            .filter(e => e.key.startsWith(keyMatch))
+            .map(e => e.id);
+          experimentMetricsStore.splice(0, experimentMetricsStore.length,
+            ...experimentMetricsStore.filter(m => !experimentsToDelete.includes(m.experimentId))
+          );
+        }
+      }
+      return Promise.resolve({ count: initialLength - experimentMetricsStore.length });
+    }),
   },
 })
 
@@ -558,6 +675,16 @@ export { MockPrismaClient as PrismaClient }
 // Export the global instance for direct access
 export { globalMockInstance as prismaMock }
 
+// Export ExperimentStatus enum for direct imports
+export const ExperimentStatus = {
+  DRAFT: 'DRAFT',
+  REVIEW: 'REVIEW',
+  RUNNING: 'RUNNING',
+  PAUSED: 'PAUSED',
+  COMPLETED: 'COMPLETED',
+  ARCHIVED: 'ARCHIVED',
+} as const
+
 // Export Prisma namespace types (these won't affect runtime)
 export const Prisma = {
   // Enums
@@ -565,6 +692,7 @@ export const Prisma = {
     DRAFT: 'DRAFT',
     REVIEW: 'REVIEW',
     RUNNING: 'RUNNING',
+    PAUSED: 'PAUSED',
     COMPLETED: 'COMPLETED',
     ARCHIVED: 'ARCHIVED',
   },

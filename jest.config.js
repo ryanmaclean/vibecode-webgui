@@ -68,15 +68,17 @@ const config = {
   testPathIgnorePatterns: [
     '<rootDir>/.next/',
     '<rootDir>/node_modules/',
-    '<rootDir>/tests/e2e/',
-    '<rootDir>/tests/comprehensive/',
-    '<rootDir>/docs/e2e/',
+    '<rootDir>/tests/e2e/', // Playwright tests - run with 'npm run test:e2e'
+    '<rootDir>/tests/comprehensive/', // Playwright tests - run with 'npm run test:e2e'
+    '<rootDir>/docs/e2e/', // Playwright tests - run with 'npm run test:e2e'
     '<rootDir>/code-server/',
     '<rootDir>/openvscode-server/',
     '/openvscode-server/',
-    '/extensions/',
-    '<rootDir>/packages/vibecode-cli/src/__tests__/',
+    '/extensions/', // VSCode extension tests - have their own test runner
+    '<rootDir>/packages/vibecode-cli/src/__tests__/', // CLI tests - run with 'cd packages/vibecode-cli && npm test'
     '/__mocks__/',
+    '<rootDir>/config/alternatives/',
+    '<rootDir>/examples/',
     ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
 

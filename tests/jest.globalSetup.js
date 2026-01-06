@@ -3,6 +3,11 @@
 
 import { execSync } from 'child_process';
 import { createConnection } from 'net';
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load .env.local if it exists
+config({ path: resolve(process.cwd(), '.env.local') });
 
 /**
  * Check if a TCP port is accessible

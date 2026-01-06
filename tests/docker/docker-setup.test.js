@@ -296,8 +296,18 @@ describe('Docker Setup Tests', () => {
     }, TIMEOUT)
 
     afterAll(async () => {
-      // Mock: Clean up test containers
-      await execAsync(`${DOCKER_COMPOSE_CMD} down`, { timeout: 20000 })
+      // Mock: Clean up test containers - ensure cleanup runs even if tests fail
+      try {
+        await execAsync(`${DOCKER_COMPOSE_CMD} down`, { timeout: 20000 })
+      } catch (error) {
+        console.warn('Failed to clean up Docker containers:', error.message)
+        // Try force cleanup
+        try {
+          await execAsync(`${DOCKER_COMPOSE_CMD} down -v --remove-orphans`, { timeout: 20000 })
+        } catch (forceError) {
+          // Ignore final cleanup errors
+        }
+      }
     }, TIMEOUT)
 
     test('should have PostgreSQL container running with health check', async () => {

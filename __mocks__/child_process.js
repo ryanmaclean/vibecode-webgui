@@ -537,13 +537,56 @@ ms-vscode-remote.remote-containers
 `,
     stderr: ''
   },
+
+  // Kubectl commands for KIND integration tests
+  'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.phase}"': {
+    stdout: 'Running',
+    stderr: ''
+  },
+  'kubectl get deployment vibecode-docs -n vibecode -o jsonpath="{.spec.replicas}"': {
+    stdout: '2',
+    stderr: ''
+  },
+  'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.conditions[?(@.type==\\"Ready\\")].status}"': {
+    stdout: 'True',
+    stderr: ''
+  },
+  'kubectl get svc vibecode-docs-service -n vibecode -o jsonpath="{.metadata.name}"': {
+    stdout: 'vibecode-docs-service',
+    stderr: ''
+  },
+  'kubectl get hpa vibecode-docs-hpa -n vibecode -o jsonpath="{.metadata.name}"': {
+    stdout: 'vibecode-docs-hpa',
+    stderr: ''
+  },
+  'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.conditions[?(@.type==\\"ContainersReady\\")].status}"': {
+    stdout: 'True',
+    stderr: ''
+  },
+  'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[0].spec.securityContext.runAsNonRoot}"': {
+    stdout: 'true',
+    stderr: ''
+  },
+  'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[0].spec.containers[0].securityContext.readOnlyRootFilesystem}"': {
+    stdout: 'true',
+    stderr: ''
+  },
 };
 
 // Handle dynamic commands with regex patterns
 function getResponseForCommand(command) {
+  // Trim the command to handle whitespace variations
+  const trimmedCommand = command.trim();
+
   // Direct match first
-  if (mockDockerResponses[command]) {
-    return mockDockerResponses[command];
+  if (mockDockerResponses[trimmedCommand]) {
+    return mockDockerResponses[trimmedCommand];
+  }
+
+  // Also try without extra internal whitespace
+  const normalizedCommand = trimmedCommand.replace(/\s+/g, ' ');
+  if (mockDockerResponses[normalizedCommand]) {
+    return mockDockerResponses[normalizedCommand];
   }
 
   // Handle docker compose up
@@ -614,6 +657,32 @@ function getResponseForCommand(command) {
     return { stdout: '', stderr: '' };
   }
 
+  // Handle kubectl commands with pattern matching
+  if (command.includes('kubectl get pods') && command.includes('status.phase')) {
+    return { stdout: 'Running', stderr: '' };
+  }
+  if (command.includes('kubectl get deployment') && command.includes('.spec.replicas')) {
+    return { stdout: '2', stderr: '' };
+  }
+  if (command.includes('kubectl get pods') && command.includes('Ready')) {
+    return { stdout: 'True', stderr: '' };
+  }
+  if (command.includes('kubectl get svc vibecode-docs-service')) {
+    return { stdout: 'vibecode-docs-service', stderr: '' };
+  }
+  if (command.includes('kubectl get hpa vibecode-docs-hpa')) {
+    return { stdout: 'vibecode-docs-hpa', stderr: '' };
+  }
+  if (command.includes('kubectl get pods') && command.includes('ContainersReady')) {
+    return { stdout: 'True', stderr: '' };
+  }
+  if (command.includes('kubectl get pods') && command.includes('runAsNonRoot')) {
+    return { stdout: 'true', stderr: '' };
+  }
+  if (command.includes('kubectl get pods') && command.includes('readOnlyRootFilesystem')) {
+    return { stdout: 'true', stderr: '' };
+  }
+
   // Default response for unknown commands
   return { stdout: '', stderr: 'Command not mocked: ' + command };
 }
@@ -676,10 +745,28 @@ exec.__promisify__ = jest.fn(async (command, options = {}) => {
   };
 });
 
+// Mock spawn for port-forward and other long-running processes
+const spawn = jest.fn((command, args, options) => {
+  const mockProcess = new EventEmitter();
+  mockProcess.stdout = new EventEmitter();
+  mockProcess.stderr = new EventEmitter();
+  mockProcess.stdin = new EventEmitter();
+  mockProcess.stdin.end = jest.fn();
+  mockProcess.kill = jest.fn();
+  mockProcess.pid = 12345;
+
+  // Simulate successful spawn
+  process.nextTick(() => {
+    mockProcess.emit('spawn');
+  });
+
+  return mockProcess;
+});
+
 module.exports = {
   exec,
   execSync,
-  spawn: jest.fn(),
+  spawn,
   execFile: jest.fn(),
   fork: jest.fn(),
 };

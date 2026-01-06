@@ -130,6 +130,23 @@ const DOCKER_COMPOSE_CMD = 'docker-compose'
 describe('Container Health Tests', () => {
   const HEALTH_CHECK_TIMEOUT = 30000
 
+  // Track test Redis keys for cleanup
+  const testKeys = new Set()
+
+  afterEach(async () => {
+    // Clean up any Redis test keys created during tests
+    if (testKeys.size > 0) {
+      for (const key of testKeys) {
+        try {
+          await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${key}`)
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+      testKeys.clear()
+    }
+  })
+
   describe('Container Health Status', () => {
     test('should report container health status', async () => {
       const { stdout } = await execAsync(`${DOCKER_COMPOSE_CMD} ps --format json`)
@@ -245,19 +262,23 @@ describe('Container Health Tests', () => {
     }, 20000)
 
     test('should maintain data persistence across restarts', async () => {
+      const testKey = 'test_key_persistence'
+      testKeys.add(testKey)
+
       // Set a test value in Redis
-      await execAsync('docker exec vibecode-webgui-redis-1 redis-cli set test_key "test_value"')
+      await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli set ${testKey} "test_value"`)
 
       // Restart Redis
       await execAsync(`${DOCKER_COMPOSE_CMD} restart redis`)
       await new Promise(resolve => setTimeout(resolve, 100))
 
       // Check if value persists
-      const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli get test_key')
+      const { stdout } = await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli get ${testKey}`)
       expect(stdout.trim()).toBe('"test_value"')
 
-      // Clean up
-      await execAsync('docker exec vibecode-webgui-redis-1 redis-cli del test_key')
+      // Clean up immediately
+      await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${testKey}`)
+      testKeys.delete(testKey)
     }, 20000)
   })
 
@@ -313,20 +334,36 @@ describe('Performance and Load Tests', () => {
   })
 
   describe('Cache Performance', () => {
+    const perfTestKeys = []
+
+    afterAll(async () => {
+      // Clean up all performance test keys
+      for (const key of perfTestKeys) {
+        try {
+          await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${key}`)
+        } catch (error) {
+          // Ignore cleanup errors
+        }
+      }
+    })
+
     test('should handle Redis operations efficiently', async () => {
+      const testKey = 'perf_test_efficient'
+      perfTestKeys.push(testKey)
+
       const startTime = Date.now()
 
       // Set and get operations
-      await execAsync('docker exec vibecode-webgui-redis-1 redis-cli set perf_test "performance_value"')
-      const { stdout } = await execAsync('docker exec vibecode-webgui-redis-1 redis-cli get perf_test')
+      await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli set ${testKey} "performance_value"`)
+      const { stdout } = await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli get ${testKey}`)
 
       const duration = Date.now() - startTime
 
       expect(stdout.trim()).toBe('"performance_value"')
       expect(duration).toBeLessThan(500) // Should be very fast
 
-      // Clean up
-      await execAsync('docker exec vibecode-webgui-redis-1 redis-cli del perf_test')
+      // Clean up immediately
+      await execAsync(`docker exec vibecode-webgui-redis-1 redis-cli del ${testKey}`)
     })
   })
 

@@ -113,10 +113,18 @@ describe('Code-Server Extensions', () => {
   })
 
   afterAll(() => {
-    // Mock: Cleanup
+    // Mock: Cleanup - ensure container is removed even if tests fail
     if (containerName) {
-      execSync(`docker stop ${containerName}`, { stdio: 'pipe' })
-      execSync(`docker rm ${containerName}`, { stdio: 'pipe' })
+      try {
+        execSync(`docker stop ${containerName}`, { stdio: 'pipe' })
+      } catch (error) {
+        // Container may already be stopped
+      }
+      try {
+        execSync(`docker rm ${containerName}`, { stdio: 'pipe' })
+      } catch (error) {
+        // Container may already be removed
+      }
     }
   })
 

@@ -491,12 +491,6 @@ class PgvectorCacheIntegrationTest {
 
 // Jest test wrapper
 describe('PGVector Cache End-to-End', () => {
-  // Skip if PostgreSQL not available
-  if (SKIP_POSTGRES) {
-    test.skip('PostgreSQL not available - skipping end-to-end tests', () => {});
-    return;
-  }
-
   test('should run all integration tests', async () => {
     const tester = new PgvectorCacheIntegrationTest();
 

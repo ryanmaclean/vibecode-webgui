@@ -349,6 +349,25 @@ describe('KIND Cluster Validation', () => {
   });
 
   afterAll(async () => {
+    // Cleanup test resources - ensure cleanup runs even if tests fail
+    try {
+      // Clean up any test resources that may have been created
+      execSync('kubectl delete pod test-pod --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete pod security-test-pod --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete pvc test-pvc --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete deployment test-app --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete service test-app-service --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete ingress test-app-ingress --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete networkpolicy test-network-policy --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete resourcequota test-resource-quota --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete clusterissuer test-selfsigned-issuer --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete namespace test-ns-1 --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete namespace test-ns-2 --ignore-not-found=true', { stdio: 'pipe' });
+      execSync('kubectl delete namespace test-ns-3 --ignore-not-found=true', { stdio: 'pipe' });
+    } catch (error) {
+      // Ignore cleanup errors in mock environment
+    }
+
     // Cleanup mocks
     jest.clearAllMocks();
   }, 60000);
@@ -441,24 +460,30 @@ spec:
       storage: 1Gi
 `;
 
-    // Create PVC
-    execSync('kubectl apply -f -', {
-      input: pvcManifest,
-      stdio: 'inherit'
-    });
+    try {
+      // Create PVC
+      execSync('kubectl apply -f -', {
+        input: pvcManifest,
+        stdio: 'inherit'
+      });
 
-    // Wait for PVC to be bound
-    execSync('kubectl wait --for=condition=Bound pvc/test-pvc --timeout=60s', {
-      stdio: 'inherit'
-    });
+      // Wait for PVC to be bound
+      execSync('kubectl wait --for=condition=Bound pvc/test-pvc --timeout=60s', {
+        stdio: 'inherit'
+      });
 
-    // Verify PVC status
-    const pvc = execSync('kubectl get pvc test-pvc -o json', { encoding: 'utf8' });
-    const pvcData = JSON.parse(pvc);
-    expect(pvcData.status.phase).toBe('Bound');
-
-    // Cleanup
-    execSync('kubectl delete pvc test-pvc', { stdio: 'inherit' });
+      // Verify PVC status
+      const pvc = execSync('kubectl get pvc test-pvc -o json', { encoding: 'utf8' });
+      const pvcData = JSON.parse(pvc);
+      expect(pvcData.status.phase).toBe('Bound');
+    } finally {
+      // Cleanup - ensure PVC is deleted even if test fails
+      try {
+        execSync('kubectl delete pvc test-pvc --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+    }
   });
 
   test('Can deploy NGINX Ingress Controller', async () => {
@@ -596,10 +621,22 @@ spec:
       });
 
     } finally {
-      // Cleanup test resources
-      execSync('kubectl delete deployment test-app --ignore-not-found=true', { stdio: 'inherit' });
-      execSync('kubectl delete service test-app-service --ignore-not-found=true', { stdio: 'inherit' });
-      execSync('kubectl delete ingress test-app-ingress --ignore-not-found=true', { stdio: 'inherit' });
+      // Cleanup test resources - ensure cleanup runs even if test fails
+      try {
+        execSync('kubectl delete deployment test-app --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+      try {
+        execSync('kubectl delete service test-app-service --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+      try {
+        execSync('kubectl delete ingress test-app-ingress --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   }, TIMEOUT);
 
@@ -649,8 +686,12 @@ spec:
       expect(npData.spec.policyTypes).toContain('Egress');
 
     } finally {
-      // Cleanup
-      execSync('kubectl delete networkpolicy test-network-policy --ignore-not-found=true', { stdio: 'inherit' });
+      // Cleanup - ensure network policy is deleted even if test fails
+      try {
+        execSync('kubectl delete networkpolicy test-network-policy --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   });
 
@@ -686,8 +727,12 @@ spec:
       expect(rqData.spec.hard['requests.memory']).toBe('8Gi');
 
     } finally {
-      // Cleanup
-      execSync('kubectl delete resourcequota test-resource-quota --ignore-not-found=true', { stdio: 'inherit' });
+      // Cleanup - ensure resource quota is deleted even if test fails
+      try {
+        execSync('kubectl delete resourcequota test-resource-quota --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   });
 
@@ -737,8 +782,12 @@ spec:
       expect(issuerData.metadata.name).toBe('test-selfsigned-issuer');
 
     } finally {
-      // Cleanup
-      execSync('kubectl delete clusterissuer test-selfsigned-issuer --ignore-not-found=true', { stdio: 'inherit' });
+      // Cleanup - ensure ClusterIssuer is deleted even if test fails
+      try {
+        execSync('kubectl delete clusterissuer test-selfsigned-issuer --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   }, TIMEOUT);
 
@@ -762,9 +811,13 @@ spec:
       });
 
     } finally {
-      // Cleanup
+      // Cleanup - ensure test namespaces are deleted even if test fails
       testNamespaces.forEach(ns => {
-        execSync(`kubectl delete namespace ${ns} --ignore-not-found=true`, { stdio: 'inherit' });
+        try {
+          execSync(`kubectl delete namespace ${ns} --ignore-not-found=true`, { stdio: 'inherit' });
+        } catch (error) {
+          // Ignore cleanup errors
+        }
       });
     }
   });
@@ -828,8 +881,12 @@ spec:
       expect(container.securityContext.readOnlyRootFilesystem).toBe(true);
 
     } finally {
-      // Cleanup
-      execSync('kubectl delete pod security-test-pod --ignore-not-found=true', { stdio: 'inherit' });
+      // Cleanup - ensure security test pod is deleted even if test fails
+      try {
+        execSync('kubectl delete pod security-test-pod --ignore-not-found=true', { stdio: 'inherit' });
+      } catch (error) {
+        // Ignore cleanup errors
+      }
     }
   });
 });
