@@ -166,9 +166,8 @@ const nextConfig = {
     DD_VERSION: process.env.DD_VERSION || '1.0.0',
   },
   poweredByHeader: false,
-  // Disable Turbopack for production builds - use Webpack for reliable builds
+  // Disable Turbopack - use Webpack for all builds for reliable behavior
   // Turbopack in Next.js 16 has tree-shaking issues with worker threads
-  turbopack: process.env.NODE_ENV === 'development' ? {} : undefined,
   serverExternalPackages,
   async headers() {
     return [
