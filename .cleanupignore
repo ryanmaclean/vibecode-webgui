@@ -1,0 +1,10 @@
+# Worklog patterns to ignore
+*_REPORT.md
+*_STATUS.md
+*_SUMMARY.md
+*_COMPLETE.md
+*_RESULTS.md
+AGENT_*.md
+TEAM*.md
+SWIFT_*.md
+VM_*.md
