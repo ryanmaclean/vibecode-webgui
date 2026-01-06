@@ -2,20 +2,12 @@
  * Unit tests for Multi-Factor Authentication provider
  */
 
-// Mock speakeasy for TOTP generation
-jest.mock('speakeasy', () => ({
-  generateSecret: jest.fn(() => ({
-    base32: 'MOCKBASE32SECRET',
-    otpauth_url: 'otpauth://totp/TestApp:user@example.com?secret=MOCKBASE32SECRET&issuer=TestApp'
-  })),
-  totp: {
-    verify: jest.fn(() => ({ delta: 0 }))
-  }
-}))
+// Use manual mock for speakeasy (in __mocks__/speakeasy.js)
+jest.mock('speakeasy')
 
-// Mock qrcode for QR generation  
+// Mock qrcode for QR generation
 jest.mock('qrcode', () => ({
-  toDataURL: jest.fn(() => Promise.resolve('data:image/png;base64,mockqrcode'))
+  toDataURL: () => Promise.resolve('data:image/png;base64,mockqrcode')
 }))
 
 import { MFAProvider } from '@/lib/auth/mfa-provider'
@@ -63,11 +55,14 @@ describe('MFA Authentication Provider', () => {
   describe('TOTP Verification', () => {
     beforeEach(async () => {
       await mfaProvider.setupTOTP('user123', 'Test Device')
+      // Reset mock return value
+      const speakeasy = require('speakeasy')
+      speakeasy.totp.__setVerifyReturnValue({ delta: 0 })
     })
 
     it('should verify valid TOTP code', async () => {
       const speakeasy = require('speakeasy')
-      speakeasy.totp.verify.mockReturnValue({ delta: 0 })
+      speakeasy.totp.__setVerifyReturnValue({ delta: 0 })
 
       const result = await mfaProvider.verifyTOTP('user123', '123456')
 
@@ -77,7 +72,7 @@ describe('MFA Authentication Provider', () => {
 
     it('should reject invalid TOTP code', async () => {
       const speakeasy = require('speakeasy')
-      speakeasy.totp.verify.mockReturnValue(false)
+      speakeasy.totp.__setVerifyReturnValue(false)
 
       const result = await mfaProvider.verifyTOTP('user123', '000000')
 
@@ -88,7 +83,7 @@ describe('MFA Authentication Provider', () => {
     it('should handle rate limiting', async () => {
       const speakeasy = require('speakeasy')
       // Simulate multiple failed attempts
-      speakeasy.totp.verify.mockReturnValue(false)
+      speakeasy.totp.__setVerifyReturnValue(false)
 
       for (let i = 0; i < 5; i++) {
         await mfaProvider.verifyTOTP('user123', '000000')
