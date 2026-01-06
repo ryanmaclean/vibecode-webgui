@@ -54,6 +54,11 @@ jobs:
 
       - name: Run unit tests with coverage
         run: npm run test:coverage
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
@@ -93,6 +98,10 @@ jobs:
         env:
           REDIS_URL: redis://localhost:6379
           CI: true
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
         continue-on-error: true
 
   security:
