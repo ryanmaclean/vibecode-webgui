@@ -34,7 +34,7 @@ describe('Agents API Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    mockFetch.mockClear()
+    mockFetch.mockReset()
   })
 
   describe('Agent Management', () => {

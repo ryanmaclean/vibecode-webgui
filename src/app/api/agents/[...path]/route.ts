@@ -204,20 +204,31 @@ async function handleRequest(
 async function handleCreateAgent(request: NextRequest, userId: string) {
   const { client } = getClient()
   const body = await request.json()
-  const validated = createAgentSchema.parse(body)
 
-  const agent = await client.createAgent({
-    ...validated,
-    metadata: {
-      ...validated.metadata,
-      userId,
-      createdAt: new Date().toISOString(),
-    },
-  })
+  try {
+    const validated = createAgentSchema.parse(body)
 
-  logger.info('Agent created', { agentId: agent.id, userId })
+    const agent = await client.createAgent({
+      ...validated,
+      metadata: {
+        ...validated.metadata,
+        userId,
+        createdAt: new Date().toISOString(),
+      },
+    })
 
-  return NextResponse.json(agent, { status: 201 })
+    logger.info('Agent created', { agentId: agent.id, userId })
+
+    return NextResponse.json(agent, { status: 201 })
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      return NextResponse.json(
+        { error: 'Validation error', message: error.message, issues: error.errors },
+        { status: 400 }
+      )
+    }
+    throw error
+  }
 }
 
 async function handleListAgents(request: NextRequest, userId: string) {
@@ -228,8 +239,8 @@ async function handleListAgents(request: NextRequest, userId: string) {
 
   const response = await client.listAgents({ limit, order })
 
-  // Filter to user's agents
-  const userAgents = response.data.filter(
+  // Filter to user's agents - handle empty response
+  const userAgents = (response.data || []).filter(
     (agent) => agent.metadata.userId === userId
   )
 
@@ -297,35 +308,56 @@ async function handleThreadRoutes(
   if (!id) {
     // Create new thread
     if (method === 'POST') {
-      const body = await request.json()
-      const validated = createThreadSchema.parse(body)
+      try {
+        const body = await request.json()
+        const validated = createThreadSchema.parse(body)
 
-      const session = await _threadManager.createThread(
-        userId,
-        validated.assistantId,
-        {
-          messages: validated.messages,
-          metadata: validated.metadata,
+        const session = await _threadManager.createThread(
+          userId,
+          validated.assistantId,
+          {
+            messages: validated.messages,
+            metadata: validated.metadata,
+          }
+        )
+
+        logger.info('Thread created', { threadId: session.threadId, userId })
+
+        return NextResponse.json(session, { status: 201 })
+      } catch (error) {
+        if (error instanceof z.ZodError) {
+          return NextResponse.json(
+            { error: 'Validation error', message: error.message, issues: error.errors },
+            { status: 400 }
+          )
         }
-      )
-
-      logger.info('Thread created', { threadId: session.threadId, userId })
-
-      return NextResponse.json(session, { status: 201 })
+        throw error
+      }
     }
   } else {
-    // Thread operations
+    // Thread operations - validate session if exists, but allow operations even if not in cache
     const session = _threadManager.getSession(id)
-    if (!session || session.userId !== userId) {
-      return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
-    }
 
+    // For message and run operations, allow even if session not cached (may be from external thread)
     if (subResource === 'messages') {
+      // Only validate userId if session exists in cache
+      if (session && session.userId !== userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       return handleThreadMessages(request, method, id, subId)
     }
 
     if (subResource === 'run' || subResource === 'runs') {
+      // Only validate userId if session exists in cache
+      if (session && session.userId !== userId) {
+        return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+      }
       return handleThreadRuns(request, method, id, subId)
+    }
+
+    // For other operations, require session
+    if (!session || session.userId !== userId) {
+      return NextResponse.json({ error: 'Thread not found' }, { status: 404 })
     }
 
     if (method === 'GET') {
@@ -358,17 +390,27 @@ async function handleThreadMessages(
   }
 
   if (method === 'POST') {
-    const body = await request.json()
-    const validated = addMessageSchema.parse(body)
+    try {
+      const body = await request.json()
+      const validated = addMessageSchema.parse(body)
 
-    const message = await _threadManager.addMessage(
-      threadId,
-      validated.role,
-      validated.content,
-      validated.attachments
-    )
+      const message = await _threadManager.addMessage(
+        threadId,
+        validated.role,
+        validated.content,
+        validated.attachments
+      )
 
-    return NextResponse.json(message, { status: 201 })
+      return NextResponse.json(message, { status: 201 })
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: 'Validation error', message: error.message, issues: error.errors },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
   }
 
   if (method === 'GET') {
@@ -392,11 +434,12 @@ async function handleThreadRuns(
 ) {
   const { client, _threadManager, toolRegistry } = getClient()
   if (method === 'POST' && !runId) {
-    const body = await request.json()
-    const validated = createRunSchema.parse(body)
+    try {
+      const body = await request.json()
+      const validated = createRunSchema.parse(body)
 
-    // Get tools from registry if not provided
-    const tools = validated.tools || toolRegistry.getDefinitions()
+      // Get tools from registry if not provided
+      const tools = validated.tools || toolRegistry.getDefinitions()
 
     if (validated.stream) {
       const encoder = new TextEncoder()
@@ -429,16 +472,25 @@ async function handleThreadRuns(
       })
     }
 
-    const run = await client.createRun(threadId, {
-      assistant_id: validated.assistantId,
-      instructions: validated.instructions,
-      tools,
-    })
+      const run = await client.createRun(threadId, {
+        assistant_id: validated.assistantId,
+        instructions: validated.instructions,
+        tools,
+      })
 
-    // Poll until run completes or requires action
-    const finalRun = await pollRun(threadId, run.id)
+      // Poll until run completes or requires action
+      const finalRun = await pollRun(threadId, run.id)
 
-    return NextResponse.json(finalRun)
+      return NextResponse.json(finalRun)
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        return NextResponse.json(
+          { error: 'Validation error', message: error.message, issues: error.errors },
+          { status: 400 }
+        )
+      }
+      throw error
+    }
   }
 
   if (method === 'GET' && runId) {

@@ -250,7 +250,7 @@ export class ThreadManager {
       order: 'desc',
     })
 
-    return response.data.reverse() // Return in chronological order
+    return (response.data || []).reverse() // Return in chronological order
   }
 
   /**
