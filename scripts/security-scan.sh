@@ -6,7 +6,11 @@
 
 set -euo pipefail
 
-echo "🔒 Starting comprehensive security scan..."
+# Source Datadog logging library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/datadog-logging.sh"
+
+dd_info "🔒 Starting comprehensive security scan" "script:security-scan"
 
 # Function to scan for API keys using BFG Docker
 scan_with_bfg() {
@@ -130,10 +134,14 @@ while IFS= read -r -d '' file; do
 done < <(find . -type f -not -path "./node_modules/*" -not -path "./.git/*" -not -path "./.*" -not -path "./venv/*" -not -path "./build/*" -not -path "./dist/*" -print0)
 
 if [ "$found_keys" = true ]; then
+    dd_error "API keys found in working directory" "script:security-scan,status:fail"
+    dd_metric "security.scan.api_keys_found" "1" "count" "script:security-scan,location:working_directory"
     echo "❌ API keys found in working directory!"
     echo "   Please remove them and use environment variables"
     rm -f /tmp/security-patterns.txt
     exit 1
+else
+    dd_metric "security.scan.api_keys_found" "0" "count" "script:security-scan,location:working_directory"
 fi
 
 # Scan git history with BFG
@@ -144,9 +152,13 @@ scan_result=$?
 rm -f /tmp/security-patterns.txt
 
 if [ $scan_result -eq 0 ]; then
+    dd_info "Security scan completed successfully" "script:security-scan,status:success"
+    dd_metric "security.scan.result" "0" "gauge" "script:security-scan,status:success"
     echo "✅ Security scan completed successfully"
     echo "🛡️  No API keys or sensitive data detected"
 else
+    dd_error "Security scan failed - API keys detected" "script:security-scan,status:fail"
+    dd_metric "security.scan.result" "1" "gauge" "script:security-scan,status:fail"
     echo "❌ Security scan failed"
     echo "🚨 API keys or sensitive data detected in repository"
     exit 1

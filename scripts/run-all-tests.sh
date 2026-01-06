@@ -4,7 +4,11 @@ set -e
 # Master Test Runner
 # Orchestrates all component tests across all environments
 
-echo "🧪 VibeCode Master Test Suite"
+# Source Datadog logging library
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+source "$SCRIPT_DIR/lib/datadog-logging.sh"
+
+dd_info "🧪 VibeCode Master Test Suite" "script:run-all-tests"
 echo "============================="
 echo "Running comprehensive tests for all components across all deployment methods"
 
@@ -31,24 +35,28 @@ run_test_suite() {
     local suite_name="$1"
     local script_path="$2"
     local description="$3"
-    
+
     echo -e "\n${CYAN}📋 Test Suite: $suite_name${NC}"
     echo -e "${BLUE}Description: $description${NC}"
     echo "Script: $script_path"
     echo "────────────────────────────────────────────────────"
-    
+
     ((TOTAL_SUITES++))
-    
+    dd_info "Starting test suite: $suite_name" "script:run-all-tests,suite:$suite_name"
+
     if [ -x "$script_path" ]; then
         if "$script_path"; then
             echo -e "${GREEN}✅ $suite_name: PASSED${NC}"
+            dd_info "Test suite passed: $suite_name" "script:run-all-tests,suite:$suite_name,status:pass"
             ((PASSED_SUITES++))
         else
             echo -e "${RED}❌ $suite_name: FAILED${NC}"
+            dd_error "Test suite failed: $suite_name" "script:run-all-tests,suite:$suite_name,status:fail"
             ((FAILED_SUITES++))
         fi
     else
         echo -e "${RED}❌ $suite_name: SCRIPT NOT EXECUTABLE${NC}"
+        dd_error "Test suite script not executable: $suite_name" "script:run-all-tests,suite:$suite_name,status:not_executable"
         ((FAILED_SUITES++))
     fi
 }
@@ -160,7 +168,15 @@ echo "└─────────────────┴─────�
 
 # Final verdict
 echo -e "\n${PURPLE}🎯 FINAL VERDICT:${NC}"
+
+# Send metrics to Datadog
+dd_metric "test.suites.total" "$TOTAL_SUITES" "count" "script:run-all-tests"
+dd_metric "test.suites.passed" "$PASSED_SUITES" "count" "script:run-all-tests"
+dd_metric "test.suites.failed" "$FAILED_SUITES" "count" "script:run-all-tests"
+
 if [ $FAILED_SUITES -eq 0 ]; then
+    dd_metric "test.suites.success_rate" "100" "gauge" "script:run-all-tests"
+    dd_info "ALL TEST SUITES PASSED - Production ready" "script:run-all-tests,status:success"
     echo -e "${GREEN}✅ ALL TEST SUITES PASSED!${NC}"
     echo -e "${GREEN}🚀 VibeCode is ready for production deployment!${NC}"
     echo ""
@@ -176,6 +192,9 @@ if [ $FAILED_SUITES -eq 0 ]; then
     echo ""
     echo "🎉 Ready for 'terraform apply' to deploy to Azure!"
 else
+    success_rate=$(echo "scale=1; $PASSED_SUITES * 100 / $TOTAL_SUITES" | bc -l)
+    dd_metric "test.suites.success_rate" "$success_rate" "gauge" "script:run-all-tests"
+    dd_error "SOME TEST SUITES FAILED - Not production ready" "script:run-all-tests,status:failure,failed_count:$FAILED_SUITES"
     echo -e "${RED}❌ SOME TEST SUITES FAILED!${NC}"
     echo -e "${YELLOW}⚠️  Please fix the failing tests before production deployment.${NC}"
     echo ""
