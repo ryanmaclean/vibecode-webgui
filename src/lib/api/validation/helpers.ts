@@ -19,22 +19,39 @@ export { validateRequestBody, validateQueryParams }
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
 export function checkRateLimit(
-  request: NextRequest,
-  options: {
+  identifierOrRequest: string | NextRequest,
+  maxRequestsOrOptions?: number | {
     maxRequests?: number
     windowMs?: number
     keyGenerator?: (req: NextRequest) => string
-  } = {}
+  },
+  windowMs?: number
 ): { allowed: boolean; remaining: number; resetTime: number } {
-  const {
-    maxRequests = 100,
-    windowMs = 60 * 1000, // 1 minute
-    keyGenerator = (req) => req.ip || 'unknown'
-  } = options
+  // Handle overloaded function signatures
+  let key: string
+  let maxRequests: number
+  let window: number
 
-  const key = keyGenerator(request)
+  if (typeof identifierOrRequest === 'string') {
+    // Simple signature: checkRateLimit(identifier, maxRequests, windowMs)
+    key = identifierOrRequest
+    maxRequests = typeof maxRequestsOrOptions === 'number' ? maxRequestsOrOptions : 100
+    window = windowMs || 60 * 1000
+  } else {
+    // Request-based signature: checkRateLimit(request, options)
+    const options = typeof maxRequestsOrOptions === 'object' ? maxRequestsOrOptions : {}
+    const {
+      maxRequests: max = 100,
+      windowMs: win = 60 * 1000,
+      keyGenerator = (req) => req.ip || 'unknown'
+    } = options
+
+    key = keyGenerator(identifierOrRequest)
+    maxRequests = max
+    window = win
+  }
+
   const now = Date.now()
-  const windowStart = now - windowMs
 
   // Clean up expired entries
   for (const [k, v] of rateLimitStore.entries()) {
@@ -44,18 +61,18 @@ export function checkRateLimit(
   }
 
   const current = rateLimitStore.get(key)
-  
+
   if (!current || current.resetTime < now) {
     // New window or expired
     rateLimitStore.set(key, {
       count: 1,
-      resetTime: now + windowMs
+      resetTime: now + window
     })
-    
+
     return {
       allowed: true,
       remaining: maxRequests - 1,
-      resetTime: now + windowMs
+      resetTime: now + window
     }
   }
 

@@ -341,6 +341,7 @@ enum ExperimentStatus {
   DRAFT
   REVIEW
   RUNNING
+  PAUSED
   COMPLETED
   ARCHIVED
 }

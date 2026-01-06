@@ -5,8 +5,15 @@
  * Creates realistic conversation patterns with performance metrics.
  */
 
-import { experimentWarehouse } from '../warehouse'
 import { CHATBOT_EXPERIMENT } from './chatbot-speed'
+
+// Mock warehouse for test data generation
+const warehouse = {
+  async upsertExperiment(...args: any[]) { return Promise.resolve(); },
+  async logAssignment(...args: any[]) { return Promise.resolve(); },
+  async logMetric(...args: any[]) { return Promise.resolve(); },
+  async flush() { return Promise.resolve(); }
+};
 
 // ==================== TYPES ====================
 

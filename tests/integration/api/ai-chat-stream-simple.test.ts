@@ -12,14 +12,49 @@ jest.mock('next-auth', () => ({
   }),
 }));
 
-jest.mock('@/lib/prisma', () => ({
-  prisma: {
-    workspace: {
-      findFirst: jest.fn().mockResolvedValue({ id: 1, workspace_id: 'test-workspace' }),
-    },
-  },
-  logAIRequest: jest.fn().mockResolvedValue(undefined),
+jest.mock('next-auth/jwt', () => ({
+  getToken: jest.fn(async () => ({
+    id: '1',
+    email: 'test@example.com',
+    name: 'Test User',
+    role: 'developer',
+  })),
 }));
+
+jest.mock('@/lib/rate-limiting', () => ({
+  createAuthRateLimit: jest.fn(() => {
+    return jest.fn(async () => ({
+      success: true,
+      limit: 100,
+      remaining: 99,
+      reset: Date.now() + 60000,
+    }));
+  }),
+  createAPIRateLimit: jest.fn(() => {
+    return jest.fn(async () => ({
+      success: true,
+      limit: 100,
+      remaining: 99,
+      reset: Date.now() + 60000,
+    }));
+  }),
+}));
+
+jest.mock('@/lib/auth/user-manager', () => ({
+  logSecurityEvent: jest.fn(),
+}));
+
+// Mock prisma - use the comprehensive mock
+jest.mock('@/lib/prisma');
+
+// Import after mocking to get the mock instance
+import { prisma, logAIRequest } from '@/lib/prisma';
+
+// Configure specific mocks
+beforeAll(() => {
+  (prisma.workspace.findFirst as jest.Mock).mockResolvedValue({ id: 1, workspace_id: 'test-workspace' });
+  (logAIRequest as jest.Mock).mockResolvedValue(undefined);
+});
 
 jest.mock('@/lib/vector-store', () => ({
   vectorStore: {
@@ -125,7 +160,7 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(400);
       if (data) {
-        expect(data.error).toBe('Messages array is required and cannot be empty');
+        expect(data.error).toContain('Invalid request format');
       }
     });
 
@@ -147,7 +182,7 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(400);
       if (data) {
-        expect(data.error).toBe('Messages array is required and cannot be empty');
+        expect(data.error).toContain('Invalid request format');
       }
     });
 
@@ -172,11 +207,11 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(200);
       if (data) {
-        expect(data).toHaveProperty('content');
-        expect(data).toHaveProperty('model');
-        expect(data).toHaveProperty('timestamp');
-        expect(typeof data.content).toBe('string');
-        expect(data.content.length).toBeGreaterThan(0);
+        expect(data).toHaveProperty('choices');
+        expect(data.choices[0]).toHaveProperty('message');
+        expect(data.choices[0].message).toHaveProperty('content');
+        expect(typeof data.choices[0].message.content).toBe('string');
+        expect(data.choices[0].message.content.length).toBeGreaterThan(0);
       }
     });
 
@@ -229,7 +264,7 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       }
     });
 
-    it('should reject streaming request parameter', async () => {
+    it('should accept streaming request parameter', async () => {
       const requestBody = {
         messages: [
           { role: 'user', content: 'Test streaming message' }
@@ -247,12 +282,9 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       });
 
       const response = await POST(request);
-      const data = await parseResponse(response);
 
-      expect(response.status).toBe(400);
-      if (data) {
-        expect(data.error).toContain('Streaming is not supported');
-      }
+      // Streaming returns 200 with SSE or plain text response
+      expect(response.status).toBe(200);
     });
 
     it('should handle multiple messages in conversation', async () => {
@@ -278,8 +310,9 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(200);
       if (data) {
-        expect(data).toHaveProperty('content');
-        expect(typeof data.content).toBe('string');
+        expect(data).toHaveProperty('choices');
+        expect(data.choices[0].message).toHaveProperty('content');
+        expect(typeof data.choices[0].message.content).toBe('string');
       }
     });
 
@@ -324,9 +357,10 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(200);
       if (data) {
-        expect(data).toHaveProperty('timestamp');
+        expect(data).toHaveProperty('processing_time_ms');
+        expect(typeof data.processing_time_ms).toBe('number');
       }
-      
+
       // Processing should be reasonably fast for mock responses
       const processingTime = endTime - startTime;
       expect(processingTime).toBeLessThan(1000); // Less than 1 second
@@ -348,11 +382,11 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(400);
       if (data) {
-        expect(data.error).toBe('Messages array is required and cannot be empty');
+        expect(data.error).toContain('Invalid request format');
       }
     });
 
-    it('should handle empty message content', async () => {
+    it('should reject empty message content', async () => {
       const requestBody = {
         messages: [
           { role: 'user', content: '' }
@@ -370,8 +404,8 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       const response = await POST(request);
 
-      // Should still work with empty content (mock doesn't validate content)
-      expect(response.status).toBe(200);
+      // Empty content should be rejected by validation
+      expect(response.status).toBe(400);
     });
   });
 
@@ -398,17 +432,22 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       expect(response.status).toBe(200);
       if (data) {
         expect(data).toMatchObject({
-          content: expect.any(String),
+          id: expect.any(String),
+          object: 'chat.completion',
           model: expect.any(String),
-          timestamp: expect.any(String),
+          choices: expect.arrayContaining([
+            expect.objectContaining({
+              message: expect.objectContaining({
+                role: 'assistant',
+                content: expect.any(String),
+              }),
+            }),
+          ]),
         });
-
-        // Validate timestamp format (ISO string)
-        expect(() => new Date(data.timestamp)).not.toThrow();
       }
     });
 
-    it('should return one of the predefined mock responses', async () => {
+    it('should return response from AI model', async () => {
       const requestBody = {
         messages: [
           { role: 'user', content: 'Test mock responses' }
@@ -428,18 +467,12 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
       const data = await parseResponse(response);
 
       expect(response.status).toBe(200);
-      
+
       if (data) {
-        // Check that the response is one of the expected mock responses
-        const expectedResponses = [
-          "I'll help you build that! Let me create a modern React component with TypeScript and Tailwind CSS.",
-          "Great idea! I'll implement that feature using Next.js best practices and ensure it's fully responsive.",
-          "Perfect! I'll add proper error handling, loading states, and accessibility features to make it production-ready.",
-          "Excellent! I'll optimize the performance using React hooks and implement proper state management.",
-          "I'll create that with voice integration support, making it compatible with the multimodal interface we built.",
-        ];
-        
-        expect(expectedResponses).toContain(data.content);
+        // Check that the response has the expected structure
+        expect(data.choices[0].message.content).toBeTruthy();
+        expect(typeof data.choices[0].message.content).toBe('string');
+        expect(data.choices[0].message.content.length).toBeGreaterThan(0);
       }
     });
   });

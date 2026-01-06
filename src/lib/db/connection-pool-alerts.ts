@@ -304,4 +304,36 @@ export class ConnectionPoolAlertService {
   }
 }
 
+// Test-only exports for accessing internal state
+let vectorConnectionPoolModule: typeof import('./vector-connection-pool') | null = null
+let isBrowserEnvironment: boolean | null = null
+let isVectorModuleUnavailable = false
+
+export function __loadVectorConnectionPoolModuleForTest(): Promise<typeof import('./vector-connection-pool') | null> {
+  if (isBrowserEnvironment === true) {
+    return Promise.resolve(null)
+  }
+  if (isVectorModuleUnavailable) {
+    return Promise.resolve(null)
+  }
+  return Promise.resolve(vectorConnectionPoolModule)
+}
+
+export function __resetVectorConnectionPoolModule(): void {
+  vectorConnectionPoolModule = null
+  isVectorModuleUnavailable = false
+}
+
+export function __setBrowserEnvironmentForTest(value: boolean | null): void {
+  isBrowserEnvironment = value
+}
+
+export function __setVectorConnectionPoolModule(module: typeof import('./vector-connection-pool') | null): void {
+  vectorConnectionPoolModule = module
+}
+
+export function __forceVectorModuleUnavailableForTest(): void {
+  isVectorModuleUnavailable = true
+}
+
 export default ConnectionPoolAlertService

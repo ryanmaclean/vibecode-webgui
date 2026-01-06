@@ -21,9 +21,42 @@ const cspViolationSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json()
-    const violation = cspViolationSchema.parse(body)
-    
+    const maxSize = 10 * 1024 // 10KB
+
+    // Get the raw body as text to check actual size
+    const bodyText = await request.text()
+
+    // Check actual body size (not just header)
+    if (bodyText.length > maxSize) {
+      return NextResponse.json(
+        { error: 'CSP report exceeds 10KB limit' },
+        { status: 413 }
+      )
+    }
+
+    // Parse the JSON body
+    const body = JSON.parse(bodyText)
+
+    // Validate structure - must have 'csp-report' key
+    if (!body['csp-report']) {
+      return NextResponse.json(
+        { error: 'Invalid CSP report structure: missing csp-report object' },
+        { status: 400 }
+      )
+    }
+
+    const violation = cspViolationSchema.parse(body['csp-report'])
+
+    // Sanitize violation fields (truncate long strings)
+    const sanitizedViolation = Object.fromEntries(
+      Object.entries(violation).map(([key, value]) => {
+        if (typeof value === 'string' && value.length > 500) {
+          return [key, value.substring(0, 500) + '...[truncated]']
+        }
+        return [key, value]
+      })
+    )
+
     // Log CSP violation
     const logData = {
       timestamp: new Date().toISOString(),

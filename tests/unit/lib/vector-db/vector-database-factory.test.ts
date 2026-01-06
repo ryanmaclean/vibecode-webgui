@@ -3,8 +3,8 @@
  * Tests the factory logic and documents real implementation issues
  */
 
-import { VectorDatabaseFactory } from '@/lib/vector-database-factory';
-import { VectorDatabaseProvider } from '@/lib/vector-types';
+import { VectorDatabaseFactory } from '@/lib/vector-db/vector-database-factory';
+import { VectorDatabaseProvider } from '@/lib/vector-db/vector-types';
 
 describe('VectorDatabaseFactory', () => {
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('VectorDatabaseFactory', () => {
   });
 
   describe('Implementation Issues Documentation', () => {
-    it('should document that PostgreSQL adapter has Prisma connection issues', async () => {
+    it('should successfully create PostgreSQL adapter with proper config', async () => {
       const config = {
         provider: VectorDatabaseProvider.POSTGRES,
         host: 'localhost',
@@ -68,9 +68,10 @@ describe('VectorDatabaseFactory', () => {
         password: 'testpass'
       };
 
-      // This test documents the real issue: Prisma client needs DATABASE_URL or connectionString
-      await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Invalid value undefined for datasource "db" provided to PrismaClient constructor');
+      // PostgreSQL adapter should be created without errors
+      const adapter = await VectorDatabaseFactory.create(config);
+      expect(adapter).toBeDefined();
+      expect(adapter).toBeInstanceOf(Object);
     });
 
     it('should document that SQL Server adapter is not implemented', async () => {
@@ -85,7 +86,7 @@ describe('VectorDatabaseFactory', () => {
 
       // This test documents the real issue: SQL Server adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('SQL Server adapter not yet implemented');
+        .rejects.toThrow('Unsupported vector database provider: sqlserver');
     });
 
     it('should document that Cosmos DB adapter is not implemented', async () => {
@@ -95,11 +96,11 @@ describe('VectorDatabaseFactory', () => {
         key: 'testkey',
         database: 'testdb',
         container: 'testcontainer'
-      };
+      } as any;
 
       // This test documents the real issue: Cosmos DB adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Cosmos DB adapter not yet implemented');
+        .rejects.toThrow('Unsupported vector database provider: cosmosdb');
     });
 
     it('should document that Redis adapter is not implemented', async () => {
@@ -109,11 +110,11 @@ describe('VectorDatabaseFactory', () => {
         port: 6379,
         password: 'testpass',
         database: '0'
-      };
+      } as any;
 
       // This test documents the real issue: Redis adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Redis adapter not yet implemented');
+        .rejects.toThrow('Unsupported vector database provider: redis');
     });
   });
 

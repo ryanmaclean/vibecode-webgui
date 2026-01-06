@@ -222,7 +222,9 @@ export function msprt(
   }
 
   // Calculate log-likelihood ratio using truncated normal approximation
-  const h0Variance = estimateVariance(observations);
+  const variance = estimateVariance(observations);
+  // Ensure variance is non-zero to avoid division by zero
+  const h0Variance = variance > 0 ? variance : 1;
   const h1Variance = h0Variance; // Assume equal variance
 
   let logLR = 0;
@@ -233,7 +235,11 @@ export function msprt(
     const logL1 = -Math.pow(clippedX - h1Mean, 2) / (2 * h1Variance);
     const logL0 = -Math.pow(clippedX - h0Mean, 2) / (2 * h0Variance);
 
-    logLR += logL1 - logL0;
+    const diff = logL1 - logL0;
+    // Guard against NaN/Infinity
+    if (isFinite(diff)) {
+      logLR += diff;
+    }
   }
 
   const upperBound = Math.log((1 - beta) / alpha);
@@ -316,12 +322,18 @@ export function confidenceSequence(
     mean.push(currentMean);
 
     // Empirical variance
-    const variance = t > 1 ? (sumSquares - sum * sum / t) / (t - 1) : 0;
+    let variance = t > 1 ? (sumSquares - sum * sum / t) / (t - 1) : 0;
+    // Ensure variance is non-negative (can be negative due to floating point errors)
+    variance = Math.max(0, variance);
+
+    // For constant data with zero variance, use a minimum variance to avoid division by zero
+    const minVariance = 1e-10;
+    const effectiveVariance = Math.max(variance, minVariance);
 
     // Confidence radius using mixture method
     // Based on Howard et al. (2021) - uses log(1/α) and log(t) terms
     const radius = Math.sqrt(
-      (2 * variance * (Math.log(1 / alpha) + Math.log(t))) / t
+      (2 * effectiveVariance * (Math.log(1 / alpha) + Math.log(t))) / t
     );
 
     lower.push(currentMean - radius);
@@ -415,13 +427,26 @@ export function alwaysValidPValue(
 
   const n = observations.length;
   const sampleMean = observations.reduce((sum, x) => sum + x, 0) / n;
-  const sampleVariance =
-    observations.reduce((sum, x) => sum + Math.pow(x - sampleMean, 2), 0) /
-    (n - 1);
+
+  // Handle case where all observations are equal
+  let sampleVariance = n > 1
+    ? observations.reduce((sum, x) => sum + Math.pow(x - sampleMean, 2), 0) / (n - 1)
+    : 0;
+
+  // Ensure variance is non-negative
+  sampleVariance = Math.max(0, sampleVariance);
+
+  // If variance is zero (constant data), check if mean equals null
+  if (sampleVariance === 0) {
+    return Math.abs(sampleMean - nullMean) < 1e-10 ? 1 : 0;
+  }
 
   // Use mixture method with exponential prior on precision
   // This gives always-valid inference
   const t = (sampleMean - nullMean) / Math.sqrt(sampleVariance / n);
+
+  // Guard against invalid t-statistic
+  if (!isFinite(t)) return 1;
 
   // Adjust for sequential testing using log(n) penalty
   const adjustedT = t / Math.sqrt(1 + Math.log(n));
@@ -429,7 +454,7 @@ export function alwaysValidPValue(
   // Convert to p-value
   const pValue = 2 * (1 - normalCDF(Math.abs(adjustedT)));
 
-  return Math.min(1, pValue);
+  return Math.min(1, Math.max(0, pValue));
 }
 
 /**

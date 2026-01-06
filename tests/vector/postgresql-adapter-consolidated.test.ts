@@ -3,16 +3,15 @@
  * Tests all merged functionality from the 3 original implementations
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { PostgreSQLVectorAdapter } from '@/lib/vector/adapters/postgresql-vector-adapter';
 import { IVectorEmbeddingProvider } from '@/lib/vector/interfaces/vector-embedding-provider';
 import { IVectorCacheAdapter } from '@/lib/vector/interfaces/vector-cache-adapter';
 import { VectorDatabaseConfig } from '@/lib/vector/interfaces/vector-types';
 
 // Mock dependencies
-vi.mock('@prisma/client');
-vi.mock('@/lib/server-monitoring');
-vi.mock('@/lib/logger');
+jest.mock('@prisma/client');
+jest.mock('@/lib/server-monitoring');
+jest.mock('@/lib/logger');
 
 describe('PostgreSQLVectorAdapter - Consolidated Features', () => {
   let adapter: PostgreSQLVectorAdapter;
@@ -23,19 +22,19 @@ describe('PostgreSQLVectorAdapter - Consolidated Features', () => {
   beforeEach(() => {
     // Setup mock embedding provider
     mockEmbeddingProvider = {
-      generateEmbedding: vi.fn().mockResolvedValue(new Array(1536).fill(0.1)),
-      generateEmbeddings: vi.fn(),
-      getDimension: vi.fn().mockReturnValue(1536),
-      getModel: vi.fn().mockReturnValue('text-embedding-3-small'),
-      validateConnection: vi.fn().mockResolvedValue(true)
+      generateEmbedding: jest.fn().mockResolvedValue(new Array(1536).fill(0.1)),
+      generateEmbeddings: jest.fn(),
+      getDimension: jest.fn().mockReturnValue(1536),
+      getModel: jest.fn().mockReturnValue('text-embedding-3-small'),
+      validateConnection: jest.fn().mockResolvedValue(true)
     };
 
     // Setup mock cache adapter
     mockCacheAdapter = {
-      getCachedResults: vi.fn().mockResolvedValue(null),
-      cacheResults: vi.fn().mockResolvedValue(undefined),
-      invalidateCache: vi.fn().mockResolvedValue(undefined),
-      getCacheStats: vi.fn().mockReturnValue({ hitRate: 0.75, totalHits: 100, totalMisses: 33 })
+      getCachedResults: jest.fn().mockResolvedValue(null),
+      cacheResults: jest.fn().mockResolvedValue(undefined),
+      invalidateCache: jest.fn().mockResolvedValue(undefined),
+      getCacheStats: jest.fn().mockReturnValue({ hitRate: 0.75, totalHits: 100, totalMisses: 33 })
     };
 
     // Setup configuration
@@ -53,7 +52,7 @@ describe('PostgreSQLVectorAdapter - Consolidated Features', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('Feature: Enhanced Error Handling (from -new variant)', () => {
@@ -267,11 +266,11 @@ describe('PostgreSQLVectorAdapter - Consolidated Features', () => {
 describe('PostgreSQLVectorAdapter - Backward Compatibility', () => {
   it('should maintain compatibility with existing VectorDatabaseConfig', () => {
     const mockEmbeddingProvider: IVectorEmbeddingProvider = {
-      generateEmbedding: vi.fn().mockResolvedValue([]),
-      generateEmbeddings: vi.fn(),
-      getDimension: vi.fn().mockReturnValue(1536),
-      getModel: vi.fn(),
-      validateConnection: vi.fn()
+      generateEmbedding: jest.fn().mockResolvedValue([]),
+      generateEmbeddings: jest.fn(),
+      getDimension: jest.fn().mockReturnValue(1536),
+      getModel: jest.fn(),
+      validateConnection: jest.fn()
     };
 
     const config: VectorDatabaseConfig = {
@@ -287,11 +286,11 @@ describe('PostgreSQLVectorAdapter - Backward Compatibility', () => {
 
   it('should work without cache adapter (optional parameter)', () => {
     const mockEmbeddingProvider: IVectorEmbeddingProvider = {
-      generateEmbedding: vi.fn().mockResolvedValue([]),
-      generateEmbeddings: vi.fn(),
-      getDimension: vi.fn().mockReturnValue(1536),
-      getModel: vi.fn(),
-      validateConnection: vi.fn()
+      generateEmbedding: jest.fn().mockResolvedValue([]),
+      generateEmbeddings: jest.fn(),
+      getDimension: jest.fn().mockReturnValue(1536),
+      getModel: jest.fn(),
+      validateConnection: jest.fn()
     };
 
     const config: VectorDatabaseConfig = {

@@ -549,9 +549,9 @@ export function validateAgainstTemplate(
   }
 
   // Check sample size
-  if (config.sampleSize < template.defaultConfig.sampleSize / 2) {
+  if (config.sampleSize !== undefined && config.sampleSize < template.defaultConfig.sampleSize / 2) {
     errors.push(
-      `Sample size ${config.sampleSize} is too small. Recommended: ${template.defaultConfig.sampleSize}`
+      `sample size ${config.sampleSize} is too small. Recommended: ${template.defaultConfig.sampleSize}`
     );
   }
 

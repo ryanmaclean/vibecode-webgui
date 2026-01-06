@@ -66,8 +66,19 @@ export class LimaProvider implements VMProvider {
   
   async list(): Promise<VM[]> {
     const { stdout } = await exec('limactl list --json');
+
+    // Handle empty output
+    if (!stdout || stdout.trim() === '') {
+      return [];
+    }
+
     const limaVMs = JSON.parse(stdout);
-    
+
+    // Handle null or non-array responses
+    if (!limaVMs || !Array.isArray(limaVMs)) {
+      return [];
+    }
+
     return limaVMs.map((vm: any) => ({
       id: vm.name,
       name: vm.name,

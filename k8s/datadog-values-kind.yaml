@@ -12,6 +12,7 @@ datadog:
   logs:
     enabled: true
     containerCollectAll: true
+    containerCollectUsingFiles: true
   apm:
     enabled: true
     env: local
@@ -22,12 +23,42 @@ datadog:
   kubelet:
     tlsVerify: false
   networkMonitoring:
-    enabled: false
-  securityAgent:
-    runtime:
-      enabled: false
-    compliance:
-      enabled: false
+    enabled: true
+
+  collectEvents: true
+
+  kubeStateMetricsCore:
+    enabled: true
+  kubeStateMetricsScrape:
+    enabled: true
+
+  databaseMonitoring:
+    enabled: true
+
+  env:
+    - name: DD_APPSEC_ENABLED
+      value: "true"
+    - name: DD_IAST_ENABLED
+      value: "true"
+    - name: DD_PROFILING_ENABLED
+      value: "true"
+    - name: DD_TRACE_ENABLED
+      value: "true"
+    - name: DD_LOGS_ENABLED
+      value: "true"
+    - name: DD_APM_FEATURES
+      value: "appsec,profiling,ci_visibility"
+
+  confd:
+    redisdb.yaml: |
+      init_config:
+      instances:
+        - host: valkey-service.vibecode-platform.svc.cluster.local
+          port: 6379
+          tags:
+            - env:local
+            - service:vibecode-valkey
+            - component:cache
 
 agents:
   tolerations:
@@ -79,3 +110,15 @@ kube-state-metrics:
 
 apiService:
   create: false
+
+systemProbe:
+  enabled: true
+  enableTCPQueueLength: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
+
+securityAgent:
+  runtime:
+    enabled: true
+  compliance:
+    enabled: true

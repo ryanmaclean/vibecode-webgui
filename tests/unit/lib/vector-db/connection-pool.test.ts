@@ -2,10 +2,10 @@
  * Unit tests for ConnectionPool
  */
 
-import { ConnectionPool, ConnectionPoolConfig } from '@/lib/connection-pool';
+import { ConnectionPool, ConnectionPoolConfig } from '@/lib/vector-db/connection-pool';
 
 // Mock the dependencies
-jest.mock('../../server-monitoring', () => ({
+jest.mock('@/lib/server-monitoring', () => ({
   metrics: {
     gauge: jest.fn(),
     increment: jest.fn(),
@@ -13,7 +13,7 @@ jest.mock('../../server-monitoring', () => ({
   }
 }));
 
-jest.mock('../../logger', () => ({
+jest.mock('@/lib/logger', () => ({
   logger: {
     info: jest.fn(),
     error: jest.fn(),
@@ -145,19 +145,20 @@ describe('ConnectionPool', () => {
       const shortTimeoutPool = new ConnectionPool({
         ...config,
         acquireTimeoutMs: 50,
+        minConnections: 1,
         maxConnections: 1
       });
-      
+
       // Wait for initial connection
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Acquire the only connection
       const connection = await shortTimeoutPool.acquire();
       expect(connection).toBeDefined();
-      
+
       // Try to acquire another connection - should timeout
       await expect(shortTimeoutPool.acquire()).rejects.toThrow('Timed out waiting for connection');
-      
+
       await shortTimeoutPool.close();
     });
   });
@@ -338,19 +339,22 @@ describe('ConnectionPool', () => {
     it('should reject waiting requests when closing', async () => {
       // Wait for initial connections
       await new Promise(resolve => setTimeout(resolve, 100));
-      
+
       // Acquire all connections
       const connections: MockConnection[] = [];
       for (let i = 0; i < config.maxConnections!; i++) {
         connections.push(await pool.acquire());
       }
-      
+
       // Start acquiring (should wait)
       const acquirePromise = pool.acquire();
-      
+
+      // Give the acquire a chance to start waiting
+      await new Promise(resolve => setTimeout(resolve, 10));
+
       // Close the pool
       await pool.close();
-      
+
       // The waiting acquire should be rejected
       await expect(acquirePromise).rejects.toThrow('Connection pool is closing');
     });

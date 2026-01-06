@@ -14,13 +14,18 @@ export const dynamic = 'force-dynamic'
 const setupSchema = z.object({
   type: z.enum(['totp', 'sms', 'email']),
   name: z.string().min(1).max(50),
-  phoneNumber: z.string().optional(),
+  phoneNumber: z.string()
+    .regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format (E.164 format required)')
+    .optional(),
   email: z.string().email().optional()
 })
 
 const verifySchema = z.object({
   deviceId: z.string(),
-  token: z.string().min(6).max(8),
+  token: z.string()
+    .min(6)
+    .max(8)
+    .regex(/^\d+$/, 'Token must contain only digits'),
   setupToken: z.string()
 })
 

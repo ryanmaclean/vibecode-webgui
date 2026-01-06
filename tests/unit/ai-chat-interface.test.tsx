@@ -2,25 +2,12 @@
 // Tests core functionality, state management, and user interactions
 
 import React from 'react'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { screen, fireEvent, waitFor, renderWithProviders } from '@/../tests/test-utils'
 import userEvent from '@testing-library/user-event'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
 import AIChatInterface from '@/components/ai/AIChatInterface'
 
-// Mock fetch for API calls
-const mockFetch = jest.fn();
-global.fetch = mockFetch as any;
-
-// Mock file reader for file uploads
-const mockFileReader = {
-  readAsArrayBuffer: jest.fn(),
-  result: null,
-  onload: null,
-  onerror: null
-};
-global.FileReader = jest.fn(() => mockFileReader) as any;
-
-// Mock URL.createObjectURL for file previews
+// Mock minimal global APIs needed for file handling
 global.URL.createObjectURL = jest.fn((file: Blob) => `blob:${(file as File).name}`);
 
 describe('AIChatInterface', () => {
@@ -33,13 +20,13 @@ describe('AIChatInterface', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
-    // Mock successful conversation history fetch
-    mockFetch.mockResolvedValueOnce({
+    // Mock fetch for API calls
+    global.fetch = jest.fn().mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ messages: [] }) as any, 
-      text: () => Promise.resolve('') as any,
-      blob: () => Promise.resolve(new Blob()) as any,
-    })
+      json: () => Promise.resolve({ messages: [] }),
+      text: () => Promise.resolve(''),
+      blob: () => Promise.resolve(new Blob()),
+    }) as any;
   })
 
   afterEach(() => {
@@ -48,7 +35,7 @@ describe('AIChatInterface', () => {
 
   describe('Rendering', () => {
     it('renders with default state', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       expect(screen.getByText('AI Assistant')).toBeInTheDocument()
       expect(screen.getByText('Claude 3 Sonnet')).toBeInTheDocument()
@@ -57,7 +44,7 @@ describe('AIChatInterface', () => {
     })
 
     it('shows context files badge when provided', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Check individual context file badges are displayed
       expect(screen.getByText('file1.ts')).toBeInTheDocument()
@@ -65,9 +52,11 @@ describe('AIChatInterface', () => {
     })
 
     it('applies custom className', async () => {
-      const { container } = render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
-      expect(container.firstChild).toHaveClass('test-class')
+      // The className is applied to the main container div with role="region"
+      const chatInterface = screen.getByRole('region', { name: /AI Chat Interface/i })
+      expect(chatInterface).toHaveClass('test-class')
     })
   })
 
@@ -80,24 +69,24 @@ describe('AIChatInterface', () => {
           content: 'Hello',
           timestamp: new Date().toISOString()
         }
-      ]
+      ];
 
-      mockFetch.mockResolvedValueOnce({
+      (global.fetch as jest.Mock).mockResolvedValueOnce({
         ok: true,
         json: () => Promise.resolve({ messages: mockMessages })
-      })
+      });
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/ai/conversations/test-workspace')
+        expect(global.fetch).toHaveBeenCalledWith('/api/ai/conversations/test-workspace')
       })
     })
 
     it('handles conversation history load failure gracefully', async () => {
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Should not crash and show empty state
       // Component shows empty messages list when no messages, not placeholder text
@@ -106,7 +95,7 @@ describe('AIChatInterface', () => {
 
   describe('Model Selection', () => {
     it('shows model selector when settings are opened', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Click settings button
       const settingsButton = screen.getByRole('button', { name: /settings/i })
@@ -117,7 +106,7 @@ describe('AIChatInterface', () => {
     })
 
     it('allows model selection change', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Open settings
       const settingsButton = screen.getByRole('button', { name: /settings/i })
@@ -153,10 +142,10 @@ describe('AIChatInterface', () => {
           })
           .mockResolvedValueOnce({ done: true, value: undefined })
       }
-      mockResponse.body = { getReader: () => mockReader } as any
-      mockFetch.mockResolvedValueOnce(mockResponse)
+      mockResponse.body = { getReader: () => mockReader } as any;
+      (global.fetch as jest.Mock).mockResolvedValueOnce(mockResponse)
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Type message
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
@@ -168,7 +157,7 @@ describe('AIChatInterface', () => {
 
       // Verify API call
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/ai/chat/stream', {
+        expect(global.fetch).toHaveBeenCalledWith('/api/ai/chat/stream', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -187,7 +176,7 @@ describe('AIChatInterface', () => {
     it('sends message when Enter is pressed', async () => {
       const user = userEvent.setup()
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
       await user.type(textarea, 'Test message{Enter}')
@@ -199,18 +188,26 @@ describe('AIChatInterface', () => {
     it('does not send empty messages', async () => {
       const user = userEvent.setup()
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const sendButton = screen.getByRole('button', { name: /send/i })
+
+      // Wait for initial load to complete
+      await waitFor(() => {
+        expect(global.fetch).toHaveBeenCalledWith('/api/ai/conversations/test-workspace')
+      })
+
+      const callCountBeforeClick = (global.fetch as jest.Mock).mock.calls.length
+
       await user.click(sendButton)
 
-      // Should not make API call for empty message
-      expect(mockFetch).toHaveBeenCalledTimes(1) // Only the initial conversation load
+      // Should not make additional API call for empty message
+      expect(global.fetch).toHaveBeenCalledTimes(callCountBeforeClick)
     })
 
     it('disables send button while streaming', async () => {
       const user = userEvent.setup()
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const sendButton = screen.getByRole('button', { name: /send/i })
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
@@ -231,7 +228,7 @@ describe('AIChatInterface', () => {
         new File(['test content'], 'test.js', { type: 'application/javascript' })
       ]
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       // Find upload button and click it
       const uploadButton = screen.getByRole('button', { name: /upload/i })
@@ -253,7 +250,7 @@ describe('AIChatInterface', () => {
     })
 
     it('accepts specified file types', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const fileInput = document.querySelector('input[type="file"]') as HTMLInputElement
       expect(fileInput).toHaveAttribute('accept', '.txt,.md,.js,.ts,.jsx,.tsx,.py,.java,.cpp,.c,.html,.css,.json,.xml,.yml,.yaml')
@@ -262,7 +259,7 @@ describe('AIChatInterface', () => {
 
   describe('Context Management', () => {
     it('displays context files as badges', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       expect(screen.getByText('file1.ts')).toBeInTheDocument()
       expect(screen.getByText('file2.js')).toBeInTheDocument()
@@ -271,7 +268,7 @@ describe('AIChatInterface', () => {
     it('shows "more" indicator when there are many context files', async () => {
       const manyFiles = ['file1.js', 'file2.js', 'file3.js', 'file4.js', 'file5.js']
 
-      render(<AIChatInterface {...defaultProps} initialContext={manyFiles} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} initialContext={manyFiles} />)
 
       expect(screen.getByText('+2 more')).toBeInTheDocument()
     })
@@ -279,7 +276,7 @@ describe('AIChatInterface', () => {
 
   describe('Accessibility', () => {
     it('has proper ARIA labels and roles', async () => {
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const textarea = screen.getByRole('textbox')
       expect(textarea).toHaveAttribute('placeholder', 'Ask anything... (Shift+Enter for new line)')
@@ -291,7 +288,7 @@ describe('AIChatInterface', () => {
     it('supports keyboard navigation', async () => {
       const user = userEvent.setup()
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const textarea = screen.getByRole('textbox')
       
@@ -303,11 +300,11 @@ describe('AIChatInterface', () => {
 
   describe('Error Handling', () => {
     it('handles streaming errors gracefully', async () => {
-      const user = userEvent.setup()
+      const user = userEvent.setup();
 
-      mockFetch.mockRejectedValueOnce(new Error('Network error'))
+      (global.fetch as jest.Mock).mockRejectedValueOnce(new Error('Network error'));
 
-      render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
       await user.type(textarea, 'Test message')
@@ -325,7 +322,7 @@ describe('AIChatInterface', () => {
     describe('File Upload', () => {
     it('allows a user to select a file and displays it in the input area', async () => {
       const user = userEvent.setup();
-      render(<AIChatInterface {...defaultProps} />);
+      renderWithProviders(<AIChatInterface {...defaultProps} />);
 
       const file = new File(['hello'], 'hello.txt', { type: 'text/plain' });
       const uploadButton = screen.getByLabelText('Upload files');
@@ -343,10 +340,13 @@ describe('AIChatInterface', () => {
 
   describe('Responsive Design', () => {
     it('adapts to different screen sizes', async () => {
-      const { container } = render(<AIChatInterface {...defaultProps} />)
+      renderWithProviders(<AIChatInterface {...defaultProps} />)
 
-      // Test that component has responsive classes
-      expect(container.firstChild).toHaveClass('test-class')
+      // Test that component has responsive classes and custom className
+      const chatInterface = screen.getByRole('region', { name: /AI Chat Interface/i })
+      expect(chatInterface).toHaveClass('test-class')
+      // Check for responsive flex classes
+      expect(chatInterface).toHaveClass('flex', 'flex-col')
     })
   })
 })

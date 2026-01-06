@@ -38,5 +38,23 @@ if [ ! -z "$DOC_FILES" ]; then
   echo "✅ Documentation validation complete"
 fi
 
-# Run existing optimized pre-commit tests (light mode by default for local commits)
-SKIP_EXPENSIVE_TESTS=${SKIP_EXPENSIVE_TESTS:-true} ./scripts/pre-commit-tests-optimized.sh
+# Run quick tests on staged files
+echo "🧪 Running pre-commit tests..."
+
+# Only run tests if JS/TS files changed
+STAGED_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | grep -v '__tests__' | grep -v '.test.' | grep -v '.spec.')
+
+if [ ! -z "$STAGED_FILES" ]; then
+  echo "📝 Testing changed files..."
+
+  # Run quick unit tests (skip infrastructure tests)
+  SKIP_DOCKER_TESTS=1 SKIP_K8S_TESTS=1 npm run quick-test 2>/dev/null || {
+    echo "❌ Tests failed. Run 'npm test' to see details."
+    echo "💡 Tip: Use 'git commit --no-verify' to skip tests (not recommended)"
+    exit 1
+  }
+
+  echo "✅ Tests passed"
+else
+  echo "⏭️  No testable files changed, skipping tests"
+fi

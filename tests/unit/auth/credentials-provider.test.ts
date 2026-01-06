@@ -1,24 +1,40 @@
 import { authOptions } from '@/lib/auth';
 
 describe('Credentials Provider authorize', () => {
-  const credentialsProvider = authOptions.providers.find(
-    (provider: any) => provider.id === 'credentials'
-  ) as { authorize?: (credentials: Record<string, string>) => Promise<any> };
+  let authorize: (credentials: Record<string, string>) => Promise<any>;
 
-  if (!credentialsProvider?.authorize) {
-    throw new Error('Credentials provider is not configured');
-  }
+  beforeAll(() => {
+    const credentialsProvider = authOptions.providers.find(
+      (provider: any) => {
+        // Check multiple conditions for matching credentials provider
+        return provider.type === 'credentials' ||
+               provider.id === 'credentials' ||
+               provider.name === 'Credentials';
+      }
+    ) as { authorize?: (credentials: Record<string, string>) => Promise<any>; options?: { authorize?: (credentials: Record<string, string>) => Promise<any> } };
 
-  const authorize = credentialsProvider.authorize;
+    if (!credentialsProvider) {
+      throw new Error('Credentials provider is not found in authOptions');
+    }
 
-  it('returns legacy user for valid credentials', async () => {
+    // Handle both NextAuth v4 and v5 patterns - authorize can be in options or top-level
+    const authorizeFn = credentialsProvider.options?.authorize || credentialsProvider.authorize;
+
+    if (!authorizeFn) {
+      throw new Error('Credentials provider authorize function is not configured');
+    }
+
+    authorize = authorizeFn;
+  });
+
+  it('returns user for valid credentials', async () => {
     const user = await authorize({
       email: 'admin@vibecode.dev',
       password: 'admin123',
     });
 
     expect(user).toEqual({
-      id: 'legacy-admin',
+      id: '1',
       name: 'Admin User',
       email: 'admin@vibecode.dev',
       role: 'admin',

@@ -27,6 +27,7 @@ import {
   AgentTaskConfig,
   ConditionConfig,
   ParallelConfig,
+  MergeConfig,
   LoopConfig,
   TransformConfig,
   DelayConfig,
@@ -111,13 +112,22 @@ function getNodeDependencies(nodeId: string, edges: WorkflowEdge[]): string[] {
 function areDependenciesSatisfied(
   nodeId: string,
   edges: WorkflowEdge[],
-  nodeExecutions: Map<string, NodeExecution>
+  nodeExecutions: Map<string, NodeExecution>,
+  nodes: WorkflowNode[]
 ): boolean {
   const dependencies = getNodeDependencies(nodeId, edges);
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-    return depExec?.status === 'completed';
+    if (depExec?.status === 'completed') {
+      return true;
+    }
+    // Allow failed dependencies if they have continueOnError enabled
+    if (depExec?.status === 'failed') {
+      const node = nodes.find(n => n.id === depId);
+      return node?.continueOnError === true;
+    }
+    return false;
   });
 }
 
@@ -160,7 +170,7 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-    const contextVars = { ...context.input, ...context.globals, nodes: context.nodes };
+    const contextVars = { input: context.input, ...context.globals, nodes: context.nodes };
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -328,7 +338,7 @@ export class WorkflowEngine extends EventEmitter {
       // Find nodes ready to execute (dependencies satisfied, under concurrency limit)
       const readyNodes = Array.from(pendingNodes).filter(nodeId => {
         if (runningNodes.size >= maxConcurrency) return false;
-        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes);
+        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes, definition.nodes);
       });
 
       if (readyNodes.length === 0 && runningNodes.size === 0) {
@@ -343,7 +353,7 @@ export class WorkflowEngine extends EventEmitter {
         runningNodes.add(nodeId);
 
         try {
-          await this.executeNode(node, execution);
+          await this.executeNode(node, execution, definition.edges);
         } finally {
           runningNodes.delete(nodeId);
         }
@@ -364,7 +374,8 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeNode(
     node: WorkflowNode,
-    execution: WorkflowExecution
+    execution: WorkflowExecution,
+    edges?: WorkflowEdge[]
   ): Promise<void> {
     const nodeExec = execution.nodes.get(node.id)!;
     nodeExec.status = 'running';
@@ -390,6 +401,10 @@ export class WorkflowEngine extends EventEmitter {
 
         case 'parallel':
           output = await this.executeParallel(node.config as ParallelConfig, execution);
+          break;
+
+        case 'merge':
+          output = await this.executeMerge(node, execution, edges || []);
           break;
 
         case 'loop':
@@ -487,6 +502,46 @@ export class WorkflowEngine extends EventEmitter {
   ): Promise<unknown> {
     // Parallel execution handled by executeNodes
     return { parallel: true };
+  }
+
+  /**
+   * Execute merge node
+   */
+  private async executeMerge(
+    node: WorkflowNode,
+    execution: WorkflowExecution,
+    edges: WorkflowEdge[]
+  ): Promise<unknown> {
+    const config = node.config as MergeConfig;
+
+    // Get outputs from all incoming nodes
+    const dependencies = getNodeDependencies(node.id, edges);
+    const inputs: unknown[] = dependencies.map(depId => execution.context.nodes[depId]);
+
+    switch (config.strategy) {
+      case 'all':
+        // Return all inputs as an array
+        return { inputs, merged: true };
+
+      case 'any':
+        // Return first available input
+        return { input: inputs[0], merged: true };
+
+      case 'first':
+        // Return first input
+        return { input: inputs[0], merged: true };
+
+      case 'custom':
+        // Execute custom merge function
+        if (config.mergeFunction) {
+          const mergeFunc = new Function('inputs', `return ${config.mergeFunction}`);
+          return mergeFunc(inputs);
+        }
+        return { inputs, merged: true };
+
+      default:
+        return { inputs, merged: true };
+    }
   }
 
   /**

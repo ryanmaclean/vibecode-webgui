@@ -1,14 +1,13 @@
 /**
  * Automated Accessibility Testing with axe-core
- * 
+ *
  * This test suite provides automated accessibility testing for all pages
  * and components using axe-core engine with WCAG 2.1 AA compliance rules.
  */
 
-import { describe, it, expect, afterEach, jest } from '@jest/globals'
-import { JSDOM } from 'jsdom'
+import { describe, it, expect, afterEach, beforeEach } from '@jest/globals'
 // @ts-ignore
-import { axe, toHaveNoViolations, configureAxe } from 'jest-axe'
+import { axe, toHaveNoViolations } from 'jest-axe'
 
 // @ts-expect-error -- jest-axe types are not compatible with the latest Jest version
 expect.extend(toHaveNoViolations)
@@ -30,7 +29,7 @@ const mockAxeWithViolations = (ruleId: string) => {
 }
 
 // Configure axe with all necessary rules and options
-const runAxe = (element: Element, options = {}) => {
+const runAxe = (element: HTMLElement | Document, options = {}) => {
   // Default configuration for all tests
   const defaultConfig = {
     rules: {
@@ -48,25 +47,18 @@ const runAxe = (element: Element, options = {}) => {
       'landmark-one-main': { enabled: true }
     }
   };
-  
+
   // Merge with any custom options
   return axe(element, { ...defaultConfig, ...options });
 }
 
 /**
- * Mock DOM environment for component testing
+ * Create DOM structure using Jest's JSDOM environment (no direct JSDOM import needed)
  */
 function createMockDOM(html: string) {
-  const dom = new JSDOM(html, {
-    pretendToBeVisual: true,
-    resources: 'usable'
-  })
-  
-  global.window = dom.window as any
-  global.document = dom.window.document
-  global.navigator = dom.window.navigator
-  
-  return dom
+  // Use Jest's built-in JSDOM environment
+  document.documentElement.innerHTML = html
+  return document
 }
 
 /**
@@ -142,10 +134,10 @@ const pageTemplates = {
       <main id="main" role="main">
         <section aria-labelledby="chat-heading">
           <h1 id="chat-heading">Chat with AI Assistant</h1>
-          
+
           <div role="log" aria-label="Chat messages" aria-live="polite">
             <div role="article" aria-labelledby="msg1-author">
-              <h3 id="msg1-author" class="sr-only">Assistant</h3>
+              <h2 id="msg1-author" class="sr-only">Assistant</h2>
               <p>Hello! How can I help you today?</p>
             </div>
           </div>
@@ -283,7 +275,7 @@ const pageTemplates = {
         
         <div id="progress" role="status" aria-live="polite" class="hidden">
           <p>Generating your project...</p>
-          <div role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">
+          <div role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" aria-label="Project generation progress">
             <div class="progress-bar" style="width: 0%"></div>
           </div>
         </div>
@@ -405,46 +397,40 @@ const pageTemplates = {
 }
 
 describe('Automated Accessibility Testing - Page Templates', () => {
-  let dom: JSDOM
-  
   afterEach(() => {
-    if (dom) {
-      dom.window.close()
-    }
+    // Clean up the DOM after each test
+    document.documentElement.innerHTML = '<html><head></head><body></body></html>'
   })
-  
+
   it('should pass WCAG 2.1 AA for main page template', async () => {
-    dom = createMockDOM(pageTemplates.mainPage)
-    const results = await runAxe(document.body)
+    createMockDOM(pageTemplates.mainPage)
+    const results = await runAxe(document.documentElement)
     expect(results).toHaveNoViolations()
   })
-  
+
   it('should pass WCAG 2.1 AA for chat interface template', async () => {
-    dom = createMockDOM(pageTemplates.chatInterface)
-    const results = await runAxe(document.body)
+    createMockDOM(pageTemplates.chatInterface)
+    const results = await runAxe(document.documentElement)
     expect(results).toHaveNoViolations()
   })
-  
+
   it('should pass WCAG 2.1 AA for project generator template', async () => {
-    dom = createMockDOM(pageTemplates.projectGenerator)
-    const results = await runAxe(document.body)
+    createMockDOM(pageTemplates.projectGenerator)
+    const results = await runAxe(document.documentElement)
     expect(results).toHaveNoViolations()
   })
-  
+
   it('should pass WCAG 2.1 AA for monitoring dashboard template', async () => {
-    dom = createMockDOM(pageTemplates.monitoringDashboard)
-    const results = await runAxe(document.body)
+    createMockDOM(pageTemplates.monitoringDashboard)
+    const results = await runAxe(document.documentElement)
     expect(results).toHaveNoViolations()
   })
 })
 
 describe('Accessibility Rule Testing', () => {
-  let dom: JSDOM
-  
   afterEach(() => {
-    if (dom) {
-      dom.window.close()
-    }
+    // Clean up the DOM after each test
+    document.documentElement.innerHTML = '<html><head></head><body></body></html>'
   })
   
   describe('Color Contrast', () => {
@@ -453,214 +439,218 @@ describe('Accessibility Rule Testing', () => {
       // This is just a note that we can't test color contrast in JSDOM
       expect(true).toBe(true);
     });
-    
+
     it('should pass with sufficient color contrast', async () => {
       const goodContrastHTML = `
-        <div style="color: #000; background: #fff;">
-          This text has sufficient contrast
-        </div>
+        <html lang="en">
+          <head><title>Test</title></head>
+          <body>
+            <main role="main">
+              <div style="color: #000; background: #fff;">
+                This text has sufficient contrast
+              </div>
+            </main>
+          </body>
+        </html>
       `
-      dom = createMockDOM(`<html><body>${goodContrastHTML}</body></html>`)
-      
-      const results = await runAxe(document.body)
-      
+      createMockDOM(goodContrastHTML)
+
+      const results = await runAxe(document.documentElement)
+
       expect(results).toHaveNoViolations()
     });
   })
   
   describe('Form Labels', () => {
     it('should detect unlabeled form inputs', async () => {
-      const unlabeledFormHTML = `
-        <form>
-          <input type="text" placeholder="Enter name">
-          <button type="submit">Submit</button>
-        </form>
-      `
-      dom = createMockDOM(`<html><body>${unlabeledFormHTML}</body></html>`)
-      
       // Use our mock for this test to simulate a violation
       const results = await mockAxeWithViolations('label');
-      
+
       expect(results.violations.length).toBeGreaterThan(0)
       expect(results.violations[0].id).toBe('label')
     })
-    
+
     it('should pass with properly labeled inputs', async () => {
       const labeledFormHTML = `
-        <form>
-          <label for="name">Name:</label>
-          <input type="text" id="name" name="name">
-          <button type="submit">Submit</button>
-        </form>
+        <html lang="en">
+          <head><title>Test</title></head>
+          <body>
+            <main role="main">
+              <form>
+                <label for="name">Name:</label>
+                <input type="text" id="name" name="name">
+                <button type="submit">Submit</button>
+              </form>
+            </main>
+          </body>
+        </html>
       `
-      dom = createMockDOM(`<html><body>${labeledFormHTML}</body></html>`)
-      
-      const results = await runAxe(document.body)
-      
+      createMockDOM(labeledFormHTML)
+
+      const results = await runAxe(document.documentElement)
+
       expect(results).toHaveNoViolations()
     })
   })
   
   describe('Heading Order', () => {
     it('should detect skipped heading levels', async () => {
-      const badHeadingHTML = `
-        <h1>Main Title</h1>
-        <h3>Skipped H2</h3>
-        <p>Content</p>
-      `
-      dom = createMockDOM(`<html><body>${badHeadingHTML}</body></html>`)
-      
       // Use mock to simulate violation
       const results = await mockAxeWithViolations('heading-order')
-      
+
       expect(results.violations.length).toBeGreaterThan(0)
       expect(results.violations[0].id).toBe('heading-order')
     })
-    
+
     it('should pass with proper heading hierarchy', async () => {
       const goodHeadingHTML = `
-        <h1>Main Title</h1>
-        <h2>Section Title</h2>
-        <h3>Subsection Title</h3>
-        <p>Content</p>
+        <html lang="en">
+          <head><title>Test</title></head>
+          <body>
+            <main role="main">
+              <h1>Main Title</h1>
+              <h2>Section Title</h2>
+              <h3>Subsection Title</h3>
+              <p>Content</p>
+            </main>
+          </body>
+        </html>
       `
-      dom = createMockDOM(`<html><body>${goodHeadingHTML}</body></html>`)
-      
-      const results = await runAxe(document.body)
-      
+      createMockDOM(goodHeadingHTML)
+
+      const results = await runAxe(document.documentElement)
+
       expect(results).toHaveNoViolations()
     })
   })
   
   describe('Image Alt Text', () => {
     it('should detect images without alt text', async () => {
-      const missingAltHTML = `
-        <img src="logo.png" width="100" height="50">
-      `
-      dom = createMockDOM(`<html><body>${missingAltHTML}</body></html>`)
-      
       // Use mock to simulate violation
       const results = await mockAxeWithViolations('image-alt')
-      
+
       expect(results.violations.length).toBeGreaterThan(0)
       expect(results.violations[0].id).toBe('image-alt')
     })
-    
+
     it('should pass with proper alt text', async () => {
       const properAltHTML = `
-        <img src="logo.png" alt="VibeCode company logo" width="100" height="50">
+        <html lang="en">
+          <head><title>Test</title></head>
+          <body>
+            <main role="main">
+              <img src="logo.png" alt="VibeCode company logo" width="100" height="50">
+            </main>
+          </body>
+        </html>
       `
-      dom = createMockDOM(`<html><body>${properAltHTML}</body></html>`)
-      
-      const results = await runAxe(document.body)
-      
+      createMockDOM(properAltHTML)
+
+      const results = await runAxe(document.documentElement)
+
       expect(results).toHaveNoViolations()
     })
   })
   
   describe('Landmark Regions', () => {
     it('should detect missing main landmark', async () => {
-      const noMainHTML = `
-        <div>
-          <h1>Title</h1>
-          <p>Content without main landmark</p>
-        </div>
-      `
-      dom = createMockDOM(`<html><body>${noMainHTML}</body></html>`)
-      
       // Use mock to simulate violation
       const results = await mockAxeWithViolations('landmark-one-main')
-      
+
       expect(results.violations.length).toBeGreaterThan(0)
       expect(results.violations[0].id).toBe('landmark-one-main')
     })
-    
+
     it('should pass with proper landmark structure', async () => {
       const properLandmarkHTML = `
-        <header role="banner">
-          <h1>Site Title</h1>
-        </header>
-        <main role="main">
-          <h1>Page Title</h1>
-          <p>Main content</p>
-        </main>
-        <footer role="contentinfo">
-          <p>Footer content</p>
-        </footer>
+        <html lang="en">
+          <head><title>Test</title></head>
+          <body>
+            <header role="banner">
+              <h1>Site Title</h1>
+            </header>
+            <main role="main">
+              <h2>Page Title</h2>
+              <p>Main content</p>
+            </main>
+            <footer role="contentinfo">
+              <p>Footer content</p>
+            </footer>
+          </body>
+        </html>
       `
-      dom = createMockDOM(`<html><body>${properLandmarkHTML}</body></html>`)
-      
-      const results = await runAxe(document.body)
-      
+      createMockDOM(properLandmarkHTML)
+
+      const results = await runAxe(document.documentElement)
+
       expect(results).toHaveNoViolations()
     })
   })
 })
 
 describe('ARIA Testing', () => {
-  let dom: JSDOM
-  
   afterEach(() => {
-    if (dom) {
-      dom.window.close()
-    }
+    // Clean up the DOM after each test
+    document.documentElement.innerHTML = '<html><head></head><body></body></html>'
   })
-  
+
   it('should validate ARIA attributes', async () => {
     const ariaHTML = `
-      <div role="tablist">
-        <button role="tab" aria-selected="true" aria-controls="panel1" id="tab1">Tab 1</button>
-        <button role="tab" aria-selected="false" aria-controls="panel2" id="tab2">Tab 2</button>
-      </div>
-      <div id="panel1" role="tabpanel" aria-labelledby="tab1">Panel 1 content</div>
-      <div id="panel2" role="tabpanel" aria-labelledby="tab2" hidden>Panel 2 content</div>
+      <html lang="en">
+        <head><title>Test</title></head>
+        <body>
+          <main role="main">
+            <div role="tablist">
+              <button role="tab" aria-selected="true" aria-controls="panel1" id="tab1">Tab 1</button>
+              <button role="tab" aria-selected="false" aria-controls="panel2" id="tab2">Tab 2</button>
+            </div>
+            <div id="panel1" role="tabpanel" aria-labelledby="tab1">Panel 1 content</div>
+            <div id="panel2" role="tabpanel" aria-labelledby="tab2" hidden>Panel 2 content</div>
+          </main>
+        </body>
+      </html>
     `
-    dom = createMockDOM(`<html><body>${ariaHTML}</body></html>`)
-    
-    const results = await runAxe(document.body)
-    
+    createMockDOM(ariaHTML)
+
+    const results = await runAxe(document.documentElement)
+
     expect(results).toHaveNoViolations()
   })
-  
+
   it('should detect invalid ARIA usage', async () => {
-    const invalidAriaHTML = `
-      <div role="button" aria-invalid-attribute="true">
-        Invalid ARIA
-      </div>
-    `
-    dom = createMockDOM(`<html><body>${invalidAriaHTML}</body></html>`)
-    
     // Use mock to simulate violation
     const results = await mockAxeWithViolations('aria-allowed-attr')
-    
+
     expect(results.violations.length).toBeGreaterThan(0)
   })
 })
 
 describe('Live Region Testing', () => {
-  let dom: JSDOM
-  
   afterEach(() => {
-    if (dom) {
-      dom.window.close()
-    }
+    // Clean up the DOM after each test
+    document.documentElement.innerHTML = '<html><head></head><body></body></html>'
   })
-  
+
   it('should validate live regions for dynamic content', async () => {
     const liveRegionHTML = `
-      <div id="status" role="status" aria-live="polite">
-        Ready
-      </div>
-      <div id="alerts" role="alert" aria-live="assertive">
-        <!-- Alert messages will appear here -->
-      </div>
-      <div id="log" role="log" aria-live="polite" aria-label="Activity log">
-        <p>System started</p>
-      </div>
+      <html lang="en">
+        <head><title>Test</title></head>
+        <body>
+          <div id="status" role="status" aria-live="polite">
+            Ready
+          </div>
+          <div id="alerts" role="alert" aria-live="assertive">
+            <!-- Alert messages will appear here -->
+          </div>
+          <div id="log" role="log" aria-live="polite" aria-label="Activity log">
+            <p>System started</p>
+          </div>
+        </body>
+      </html>
     `
-    dom = createMockDOM(`<html><body>${liveRegionHTML}</body></html>`)
-    
-    const results = await axe(document.body)
+    createMockDOM(liveRegionHTML)
+
+    const results = await runAxe(document.documentElement)
     expect(results).toHaveNoViolations()
   })
 })
@@ -682,16 +672,16 @@ export const a11yUtils = {
    * Check if element is keyboard accessible
    */
   isKeyboardAccessible: (element: string): boolean => {
-    const dom = createMockDOM(`<html><body>${element}</body></html>`)
-    const el = dom.window.document.querySelector('*')
-    
+    createMockDOM(`<html lang="en"><head><title>Test</title></head><body>${element}</body></html>`)
+    const el = document.body.querySelector('*')
+
     if (!el) return false
-    
+
     // Check if element is focusable
     const tagName = el.tagName.toLowerCase()
     const tabIndex = el.getAttribute('tabindex')
     const role = el.getAttribute('role')
-    
+
     return (
       ['a', 'button', 'input', 'textarea', 'select'].includes(tagName) ||
       tabIndex !== null ||
@@ -704,26 +694,26 @@ export const a11yUtils = {
    * Validate heading structure
    */
   validateHeadingStructure: (html: string): { valid: boolean; issues: string[] } => {
-    const dom = createMockDOM(`<html><body>${html}</body></html>`)
-    const headings = Array.from(dom.window.document.querySelectorAll('h1, h2, h3, h4, h5, h6'))
-    
+    createMockDOM(`<html lang="en"><head><title>Test</title></head><body>${html}</body></html>`)
+    const headings = Array.from(document.body.querySelectorAll('h1, h2, h3, h4, h5, h6'))
+
     const issues: string[] = []
     let previousLevel = 0
-    
+
     headings.forEach((heading, index) => {
       const level = parseInt(heading.tagName.charAt(1))
-      
+
       if (index === 0 && level !== 1) {
         issues.push('First heading should be h1')
       }
-      
+
       if (level > previousLevel + 1) {
         issues.push(`Heading level ${level} skips level ${previousLevel + 1}`)
       }
-      
+
       previousLevel = level
     })
-    
+
     return {
       valid: issues.length === 0,
       issues

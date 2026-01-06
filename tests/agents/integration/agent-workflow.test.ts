@@ -1,7 +1,7 @@
 /**
  * Integration Tests for Agent Workflows
  *
- * Tests end-to-end agent workflows with real API interactions
+ * Tests end-to-end agent workflows with mocked API interactions
  */
 
 import { Agent, createAgent } from '@/lib/agent-framework';
@@ -9,16 +9,59 @@ import { CodeAgent, ResearchAgent } from '@/lib/agent-framework/agents';
 import type { ToolDefinition } from '@/lib/agent-framework';
 import { UnifiedAIClient } from '@/lib/unified-ai-client';
 
+// UnifiedAIClient is globally mocked by jest.setup.js
+jest.mock('@/lib/unified-ai-client');
+
 describe('Agent Workflow - Integration Tests', () => {
-  let client: UnifiedAIClient;
+  let client: jest.Mocked<UnifiedAIClient>;
 
-  beforeAll(() => {
-    // Use test API keys from environment
-    client = new UnifiedAIClient();
-  });
-
-  afterEach(() => {
+  beforeEach(() => {
+    // Reset and configure the mock client
     jest.clearAllMocks();
+    client = new UnifiedAIClient() as jest.Mocked<UnifiedAIClient>;
+
+    // Context-aware mock response that checks the message content
+    client.chat = jest.fn().mockImplementation(async (messages: any[]) => {
+      const lastMessage = messages[messages.length - 1]?.content || '';
+      const allMessages = messages.map(m => m.content).join(' ');
+
+      let responseContent = 'Mock response';
+
+      // Context-aware responses
+      if (lastMessage.toLowerCase().includes('what is my name') || lastMessage.toLowerCase().includes('what was the first topic')) {
+        // Check conversation history for name or topic
+        if (allMessages.toLowerCase().includes('alice')) {
+          responseContent = 'Your name is Alice.';
+        } else if (allMessages.toLowerCase().includes('python')) {
+          responseContent = 'The first topic we discussed was Python.';
+        }
+      } else if (lastMessage.toLowerCase().includes('reverse a string')) {
+        responseContent = 'Here is a TypeScript function to reverse a string:\n\nfunction reverseString(str: string): string {\n  return str.split(\'\').reverse().join(\'\');\n}';
+      } else if (lastMessage.toLowerCase().includes('fix this bug') || lastMessage.toLowerCase().includes('fix the bug')) {
+        responseContent = 'The bug is on line 2. The function should use + instead of - to add numbers:\n\nfunction add(a, b) {\n  return a + b;\n}';
+      } else if (lastMessage.toLowerCase().includes('recursion')) {
+        responseContent = 'Recursion is a programming technique where a function calls itself to solve a problem by breaking it down into smaller sub-problems.';
+      } else if (lastMessage.toLowerCase().includes('rest') && lastMessage.toLowerCase().includes('graphql')) {
+        responseContent = 'REST APIs use multiple endpoints and HTTP methods, while GraphQL uses a single endpoint with a query language to request specific data.';
+      }
+
+      return {
+        content: responseContent,
+        model: 'gpt-4o-mini',
+        provider: 'openai',
+        usage: {
+          promptTokens: 10,
+          completionTokens: 20,
+          totalTokens: 30,
+        },
+      };
+    });
+
+    client.chatStream = jest.fn().mockImplementation(async function* () {
+      yield { content: 'Mock ', model: 'gpt-4o-mini', provider: 'openai', done: false };
+      yield { content: 'stream ', model: 'gpt-4o-mini', provider: 'openai', done: false };
+      yield { content: 'response', model: 'gpt-4o-mini', provider: 'openai', done: true };
+    });
   });
 
   describe('Multi-turn Conversations', () => {
@@ -95,6 +138,27 @@ describe('Agent Workflow - Integration Tests', () => {
           return { processed: params.data.toUpperCase() };
         },
       };
+
+      // Mock client to trigger tool call
+      client.chat = jest.fn()
+        .mockResolvedValueOnce({
+          content: '',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+          tool_calls: [{
+            id: 'call_1',
+            type: 'function',
+            function: {
+              name: 'get_data',
+              arguments: JSON.stringify({ source: 'database' }),
+            },
+          }],
+        })
+        .mockResolvedValueOnce({
+          content: 'I retrieved and processed the data successfully.',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+        });
 
       const agent = createAgent({
         tools: [tool1, tool2],
@@ -343,6 +407,11 @@ function processUser(user) {
     }, 15000);
 
     it('should handle invalid model names', async () => {
+      // Mock client to reject invalid model
+      client.chat = jest.fn().mockRejectedValue(
+        new Error('Invalid model: invalid-model-name')
+      );
+
       const agent = createAgent({
         model: 'invalid-model-name',
         client,
@@ -379,6 +448,21 @@ function processUser(user) {
       const agent = createAgent({
         model: 'gpt-4o-mini',
         client,
+      });
+
+      // Add small delay to mock to ensure measurable time
+      client.chat = jest.fn().mockImplementation(async () => {
+        await new Promise(resolve => setTimeout(resolve, 10));
+        return {
+          content: 'Response',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+          usage: {
+            promptTokens: 10,
+            completionTokens: 20,
+            totalTokens: 30,
+          },
+        };
       });
 
       const startTime = Date.now();

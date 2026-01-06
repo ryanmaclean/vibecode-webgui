@@ -22,9 +22,21 @@ const workspaceMetricsSchema = z.object({
   memoryUsage: z.number().min(0).max(100).optional(),
   diskUsage: z.number().min(0).max(100).optional(),
   networkIO: z.number().min(0).optional(),
-  activeConnections: z.number().int().min(0).optional(),
+  activeConnections: z.number().int().min(0).max(10000, 'Maximum 10000 active connections allowed').optional(),
   resourceRequests: z.number().int().min(0).optional(),
   queueLength: z.number().int().min(0).optional()
+})
+
+const instanceSchema = z.object({
+  instanceId: z.string().min(1),
+  status: z.enum(['starting', 'running', 'stopping', 'stopped', 'error']),
+  resources: z.object({
+    cpu: z.number().positive().max(32, 'CPU must not exceed 32 cores'),
+    memory: z.number().positive().max(128, 'Memory must not exceed 128 GB'),
+    disk: z.number().positive().max(1000, 'Disk must not exceed 1000 GB')
+  }),
+  podName: z.string().optional(),
+  namespace: z.string().optional()
 })
 
 const workspaceRegistrationSchema = z.object({
@@ -32,7 +44,8 @@ const workspaceRegistrationSchema = z.object({
   resources: z.object({
     cpu: z.number().optional(),
     memory: z.number().optional(),
-    storage: z.number().optional()
+    storage: z.number().optional(),
+    instances: z.array(instanceSchema).max(10, 'Maximum 10 instances per workspace').optional()
   }).optional()
 })
 
@@ -44,7 +57,13 @@ const autoScalingConfigSchema = z.object({
   targetMemoryUtilization: z.number().min(0).max(100).optional(),
   scaleUpThreshold: z.number().min(0).max(100).optional(),
   scaleDownThreshold: z.number().min(0).max(100).optional(),
-  cooldownPeriod: z.number().int().min(0).optional()
+  cooldownPeriod: z.number().int().min(0).optional(),
+  evaluationInterval: z.number().int().min(10, 'Evaluation interval must be at least 10 seconds').optional(),
+  resourceLimits: z.object({
+    maxInstancesPerWorkspace: z.number().int().min(1).max(100, 'Maximum 100 instances per workspace').optional(),
+    maxCpuPerInstance: z.number().positive().max(32).optional(),
+    maxMemoryPerInstance: z.number().positive().max(128).optional()
+  }).optional()
 })
 
 /**

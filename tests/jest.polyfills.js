@@ -1,11 +1,43 @@
 // Jest Polyfills for Browser APIs
 // ==============================
 
+// Mock openai package BEFORE any modules load to prevent OOM
+jest.mock('openai', () => {
+  return {
+    __esModule: true,
+    default: jest.fn().mockImplementation(() => ({
+      chat: {
+        completions: {
+          create: jest.fn().mockResolvedValue({
+            choices: [{
+              message: { content: 'mock response' },
+              finish_reason: 'stop'
+            }],
+            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+          })
+        }
+      },
+      models: {
+        list: jest.fn().mockResolvedValue({ data: [] })
+      }
+    }))
+  };
+});
+
 // Add setImmediate polyfill for Winston and other Node.js modules
 global.setImmediate = global.setImmediate || ((fn, ...args) => setTimeout(fn, 0, ...args));
 global.clearImmediate = global.clearImmediate || clearTimeout;
 
-// Do not define a default fetch here; jest.setup.js provides a default mock and restores it per-test.
+// Define a default jest mock for fetch (can be customized in individual tests)
+if (!global.fetch || typeof global.fetch !== 'function') {
+  const { jest } = require('@jest/globals');
+  global.fetch = jest.fn(() =>
+    Promise.resolve(new Response(JSON.stringify({}), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' }
+    }))
+  );
+}
 
 // Minimal TextEncoder/TextDecoder implementations (non-mocked)
 global.TextEncoder = class TextEncoder {
@@ -220,6 +252,36 @@ global.Request = class Request {
     this.integrity = init.integrity || '';
     this.keepalive = init.keepalive || false;
     this.signal = init.signal;
+    // Next.js specific properties
+    // Use Object.defineProperty for readonly properties in real NextRequest
+    // nextUrl should be a URL object, not a string
+    Object.defineProperty(this, 'nextUrl', {
+      value: new URL(this._url),
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'cookies', {
+      value: {
+        get: jest.fn(() => null),
+        getAll: jest.fn(() => []),
+        has: jest.fn(() => false),
+        set: jest.fn(),
+        delete: jest.fn(),
+        clear: jest.fn(),
+      },
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'geo', {
+      value: {},
+      writable: false,
+      enumerable: true
+    });
+    Object.defineProperty(this, 'ip', {
+      value: '',
+      writable: false,
+      enumerable: true
+    });
   }
   
   get url() {
@@ -253,6 +315,13 @@ global.Request = class Request {
     }
     return typeof this.body === 'undefined' ? '' : JSON.stringify(this.body);
   }
+  async formData() {
+    // Return the body if it's already FormData, otherwise create empty FormData
+    if (this.body instanceof FormData) {
+      return this.body;
+    }
+    return new FormData();
+  }
 };
 
 // Add Response.json polyfill for API tests
@@ -265,5 +334,139 @@ if (!Response.json) {
         ...init.headers
       }
     });
+  };
+}
+
+// Note: NextRequest and NextResponse from next/server work fine in Node.js test environment
+// We don't need to mock them here - the real implementations work correctly
+
+// Add BroadcastChannel polyfill for MSW (required for chaos tests)
+if (!global.BroadcastChannel) {
+  global.BroadcastChannel = class BroadcastChannel {
+    constructor(name) {
+      this.name = name;
+      this._listeners = [];
+    }
+    postMessage(message) {
+      this._listeners.forEach(listener => {
+        listener({ data: message });
+      });
+    }
+    addEventListener(type, listener) {
+      if (type === 'message') {
+        this._listeners.push(listener);
+      }
+    }
+    removeEventListener(type, listener) {
+      if (type === 'message') {
+        this._listeners = this._listeners.filter(l => l !== listener);
+      }
+    }
+    close() {
+      this._listeners = [];
+    }
+  };
+}
+
+// Add TransformStream polyfill for Playwright tests
+if (!global.TransformStream) {
+  global.TransformStream = class TransformStream {
+    constructor(transformer = {}) {
+      this._transformer = transformer;
+      this._chunks = [];
+      this._closed = false;
+
+      this.readable = new ReadableStream({
+        start: (controller) => {
+          this._readableController = controller;
+        }
+      });
+
+      this.writable = new WritableStream({
+        write: async (chunk) => {
+          if (this._transformer.transform) {
+            await this._transformer.transform(chunk, this._readableController);
+          } else {
+            this._readableController?.enqueue(chunk);
+          }
+        },
+        close: () => {
+          if (this._transformer.flush) {
+            this._transformer.flush(this._readableController);
+          }
+          this._readableController?.close();
+        }
+      });
+    }
+  };
+}
+
+// Add WritableStream polyfill
+if (!global.WritableStream) {
+  global.WritableStream = class WritableStream {
+    constructor(underlyingSink = {}) {
+      this._underlyingSink = underlyingSink;
+      this._closed = false;
+    }
+
+    getWriter() {
+      return {
+        write: async (chunk) => {
+          if (this._underlyingSink.write) {
+            await this._underlyingSink.write(chunk);
+          }
+        },
+        close: async () => {
+          if (this._underlyingSink.close) {
+            await this._underlyingSink.close();
+          }
+          this._closed = true;
+        },
+        abort: async () => {
+          if (this._underlyingSink.abort) {
+            await this._underlyingSink.abort();
+          }
+        },
+        releaseLock: () => {},
+      };
+    }
+
+    get locked() { return false; }
+  };
+}
+
+// Add arrayBuffer() method to File prototype for tests
+if (typeof File !== 'undefined' && !File.prototype.arrayBuffer) {
+  File.prototype.arrayBuffer = async function() {
+    // Convert the file content to an ArrayBuffer
+    if (this.size === 0) {
+      return new ArrayBuffer(0);
+    }
+
+    // Read the file as text and convert to buffer
+    const text = await this.text();
+    const encoder = new TextEncoder();
+    return encoder.encode(text).buffer;
+  };
+}
+
+// Add text() method to File prototype if missing
+if (typeof File !== 'undefined' && !File.prototype.text) {
+  File.prototype.text = async function() {
+    // For test purposes, return the content as string
+    // In real browser, this reads the file content
+    return this._content || '';
+  };
+}
+
+// Enhance File constructor to store content for testing
+if (typeof File !== 'undefined') {
+  const OriginalFile = File;
+  global.File = class File extends OriginalFile {
+    constructor(parts, name, options) {
+      super(parts, name, options);
+      // Store the content for text() and arrayBuffer() methods
+      this._content = parts.join('');
+    }
   };
 }

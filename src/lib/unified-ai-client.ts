@@ -377,11 +377,25 @@ export class UnifiedAIClient {
   }
 }
 
-// Export singleton instance
-export const unifiedAI = new UnifiedAIClient({
-  openrouter: process.env.OPENROUTER_API_KEY || '',
-  openai: process.env.OPENAI_API_KEY || '',
-  anthropic: process.env.ANTHROPIC_API_KEY || ''
-})
+// Export singleton instance (lazy-loaded to avoid initialization during tests)
+let _unifiedAI: UnifiedAIClient | null = null;
 
-export default unifiedAI
+export function getUnifiedAI(): UnifiedAIClient {
+  if (!_unifiedAI) {
+    _unifiedAI = new UnifiedAIClient({
+      openrouter: process.env.OPENROUTER_API_KEY || '',
+      openai: process.env.OPENAI_API_KEY || '',
+      anthropic: process.env.ANTHROPIC_API_KEY || ''
+    });
+  }
+  return _unifiedAI;
+}
+
+// Keep legacy export for backward compatibility (but lazy)
+export const unifiedAI: UnifiedAIClient = new Proxy({} as UnifiedAIClient, {
+  get(target, prop) {
+    return (getUnifiedAI() as any)[prop];
+  }
+});
+
+export default unifiedAI;

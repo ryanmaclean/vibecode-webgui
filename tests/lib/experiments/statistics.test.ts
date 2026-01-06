@@ -78,14 +78,14 @@ describe('Statistical Analysis - Core Tests', () => {
 
     test('should match known benchmark from R', () => {
       // R: prop.test(c(48, 52), c(100, 100))
-      // Expected z ≈ -0.8, p ≈ 0.424
+      // Expected z ≈ 0.566 (for difference of 4%), p ≈ 0.57
       const control = Array(100).fill(0).map((_, i) => i < 48 ? 1 : 0);
       const treatment = Array(100).fill(0).map((_, i) => i < 52 ? 1 : 0);
 
       const result = zTest(control, treatment, 0.05);
 
-      expect(Math.abs(result.zScore)).toBeCloseTo(0.4, 1);
-      expect(result.pValue).toBeGreaterThan(0.3);
+      expect(Math.abs(result.zScore)).toBeCloseTo(0.566, 1);
+      expect(result.pValue).toBeGreaterThan(0.4);
       expect(result.pValue).toBeLessThan(0.7);
     });
   });
@@ -116,15 +116,15 @@ describe('Statistical Analysis - Core Tests', () => {
 
     test('should match known benchmark from R', () => {
       // R: t.test(c(2, 4, 6, 8, 10), c(1, 3, 5, 7, 9))
-      // Expected t ≈ 1, df = 8, p ≈ 0.347
+      // Means: 6 vs 5, SD both = 3.16, Expected t ≈ 0.5, df = 8, p ≈ 0.63
       const control = [2, 4, 6, 8, 10];
       const treatment = [1, 3, 5, 7, 9];
 
       const result = tTest(control, treatment, 0.05);
 
-      expect(Math.abs(result.tStatistic)).toBeCloseTo(1, 0);
+      expect(Math.abs(result.tStatistic)).toBeCloseTo(0.5, 0);
       expect(result.degreesOfFreedom).toBeCloseTo(8, 0);
-      expect(result.pValue).toBeGreaterThan(0.2);
+      expect(result.pValue).toBeGreaterThan(0.5);
     });
 
     test('should handle edge case: too few samples', () => {
@@ -225,20 +225,20 @@ describe('Statistical Analysis - Core Tests', () => {
     });
 
     test('should match known benchmark', () => {
-      // R: t.test(c(1, 2, 3, 4, 5))$conf.int
-      // Expected CI ≈ [1.76, 4.24]
+      // Data: [1, 2, 3, 4, 5], mean=3, sd=1.58, n=5
+      // 95% CI using t(4) = 2.776: 3 ± 2.776 * 1.58/sqrt(5) = 3 ± 1.96 = [1.04, 4.96]
       const data = [1, 2, 3, 4, 5];
       const result = confidenceInterval(data, 0.95);
 
-      expect(result.lower).toBeCloseTo(1.76, 0);
-      expect(result.upper).toBeCloseTo(4.24, 0);
+      expect(result.lower).toBeCloseTo(1.04, 0);
+      expect(result.upper).toBeCloseTo(4.96, 0);
     });
   });
 
   describe('cohensD', () => {
     test('should calculate small effect size', () => {
-      const control = [10, 11, 10, 11, 10];
-      const treatment = [11, 12, 11, 12, 11]; // Small difference
+      const control = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19];
+      const treatment = [11, 12, 13, 14, 15, 16, 17, 18, 19, 20]; // Mean diff = 1, SD ≈ 3, d ≈ 0.33
 
       const d = cohensD(control, treatment);
 
@@ -321,10 +321,11 @@ describe('Statistical Analysis - Core Tests', () => {
     test('should calculate sample size for typical A/B test', () => {
       // Baseline: 10%, MDE: 10% relative (1% absolute)
       // Power: 80%, Alpha: 5%
+      // Correct calculation yields ~14,749 per group
       const n = calculateMinimumSampleSize(0.10, 0.10, 0.8, 0.05);
 
-      expect(n).toBeGreaterThan(1000);
-      expect(n).toBeLessThan(10000);
+      expect(n).toBeGreaterThan(10000);
+      expect(n).toBeLessThan(20000);
     });
 
     test('should require larger sample for smaller effect', () => {
@@ -348,20 +349,23 @@ describe('Statistical Analysis - Core Tests', () => {
     });
 
     test('should match known power analysis benchmark', () => {
-      // From pwr.2p.test in R: baseline=0.05, MDE=0.01 absolute, power=0.8, alpha=0.05
-      // Expected n ≈ 1570 per group
+      // baseline=0.05, MDE=0.20 relative (0.01 absolute), power=0.8, alpha=0.05
+      // Correct calculation yields ~8,155 per group
       const n = calculateMinimumSampleSize(0.05, 0.20, 0.8, 0.05);
 
-      expect(n).toBeGreaterThan(1000);
-      expect(n).toBeLessThan(2500);
+      expect(n).toBeGreaterThan(5000);
+      expect(n).toBeLessThan(10000);
     });
   });
 
   describe('estimatePower', () => {
     test('should estimate high power for large sample', () => {
+      // 10k samples with 10% baseline and 10% relative effect gives ~64% power
+      // Need ~15k for 80% power with this effect size
       const power = estimatePower(10000, 0.10, 0.10, 0.05);
 
-      expect(power).toBeGreaterThan(0.8);
+      expect(power).toBeGreaterThan(0.5);
+      expect(power).toBeLessThan(0.8);
     });
 
     test('should estimate low power for small sample', () => {

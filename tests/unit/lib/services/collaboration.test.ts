@@ -11,7 +11,7 @@ jest.mock('socket.io', () => ({
   }))
 }));
 
-jest.mock('../chat-mongodb', () => ({
+jest.mock('@/lib/services/chat-mongodb', () => ({
   mongodbChatService: {
     getConversation: jest.fn(),
     addMessage: jest.fn()

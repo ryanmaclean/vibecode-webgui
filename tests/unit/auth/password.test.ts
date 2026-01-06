@@ -3,30 +3,30 @@ import { hashPassword, isValidBcryptHash, verifyPassword } from '@/lib/auth/pass
 describe('auth password utilities', () => {
   const bcryptPattern = /^\$2[aby]\$12\$[./A-Za-z0-9]{53}$/
   const strongPassword = 'TestP@ssw0rd123!'
-  const testPassword = 'correct horse battery staple'
+  const testPassword = 'C0rrect!Horse#Battery$Staple'
 
   it('hashPassword returns a bcrypt hash with the default rounds', async () => {
-    const hash = await hashPassword(testPassword, 12, true) // Skip validation for test
+    const hash = await hashPassword(testPassword)
 
     expect(hash).toMatch(bcryptPattern)
     expect(isValidBcryptHash(hash)).toBe(true)
   })
 
   it('verifyPassword resolves true when hash matches the plaintext', async () => {
-    const hash = await hashPassword(testPassword, 12, true) // Skip validation for test
+    const hash = await hashPassword(testPassword)
 
     await expect(verifyPassword(testPassword, hash)).resolves.toBe(true)
   })
 
   it('verifyPassword resolves false when the password is wrong', async () => {
-    const hash = await hashPassword(testPassword, 12, true) // Skip validation for test
+    const hash = await hashPassword(testPassword)
 
     await expect(verifyPassword('WrongPassword123!', hash)).resolves.toBe(false)
   })
 
-  it('verifyPassword rejects when the hash is not a bcrypt hash', async () => {
-    await expect(verifyPassword('anything', 'not-a-bcrypt-hash'))
-      .rejects.toThrow('Invalid bcrypt hash format')
+  it('verifyPassword returns false when the hash is not a bcrypt hash', async () => {
+    await expect(verifyPassword('Anything123!', 'not-a-bcrypt-hash'))
+      .resolves.toBe(false)
   })
 
   it('isValidBcryptHash accurately validates hashes', async () => {
@@ -41,6 +41,6 @@ describe('auth password utilities', () => {
 
   it('hashPassword throws for invalid inputs', async () => {
     await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
-    await expect(hashPassword(strongPassword, 2)).rejects.toThrow('Salt rounds must be an integer between')
+    await expect(hashPassword('weak')).rejects.toThrow('Password validation failed')
   })
 })

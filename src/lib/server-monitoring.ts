@@ -85,6 +85,9 @@ const logger = createLogger({
 // Custom metrics tracking
 class MetricsCollector {
   private metrics: Map<string, { count: number; lastValue?: number; sum?: number }> = new Map()
+  private responseTimes: Record<string, number[]> = {}
+  private errors: Record<string, string[]> = {}
+  private requestCounts: Record<string, number> = {}
 
   /**
    * Increment a counter metric
@@ -139,10 +142,87 @@ class MetricsCollector {
   }
 
   /**
+   * Record response time for an endpoint
+   */
+  recordResponseTime(endpoint: string, duration: number): void {
+    if (!this.responseTimes) this.responseTimes = {}
+    if (!this.responseTimes[endpoint]) {
+      this.responseTimes[endpoint] = []
+    }
+    this.responseTimes[endpoint].push(duration)
+
+    // Limit to 1000 entries per endpoint
+    if (this.responseTimes[endpoint].length > 1000) {
+      this.responseTimes[endpoint] = this.responseTimes[endpoint].slice(-1000)
+    }
+  }
+
+  /**
+   * Record error for an endpoint
+   */
+  recordError(endpoint: string, errorType: string): void {
+    if (!this.errors) this.errors = {}
+    if (!this.errors[endpoint]) {
+      this.errors[endpoint] = []
+    }
+    this.errors[endpoint].push(errorType)
+  }
+
+  /**
+   * Increment request count for an endpoint
+   */
+  incrementRequestCount(endpoint: string): void {
+    if (!this.requestCounts) this.requestCounts = {}
+    this.requestCounts[endpoint] = (this.requestCounts[endpoint] || 0) + 1
+  }
+
+  /**
+   * Record custom metric (gauge)
+   */
+  recordCustomMetric(name: string, value: number): void {
+    const current = this.metrics.get(name) || { count: 0 }
+    current.lastValue = value
+    this.metrics.set(name, current)
+  }
+
+  /**
+   * Get average response time for an endpoint
+   */
+  getAverageResponseTime(endpoint: string): number {
+    const times = this.responseTimes?.[endpoint] || []
+    if (times.length === 0) return 0
+    return times.reduce((a, b) => a + b, 0) / times.length
+  }
+
+  /**
+   * Get error rate for an endpoint
+   */
+  getErrorRate(endpoint: string): number {
+    const errorCount = this.errors?.[endpoint]?.length || 0
+    const requestCount = this.requestCounts?.[endpoint] || 0
+    if (requestCount === 0) return 0
+    return (errorCount / requestCount) * 100
+  }
+
+  /**
+   * Reset all metrics
+   */
+  resetMetrics(): void {
+    this.metrics.clear()
+    this.responseTimes = {}
+    this.errors = {}
+    this.requestCounts = {}
+  }
+
+  /**
    * Get all current metrics
    */
   getMetrics(): Record<string, any> {
-    const result: Record<string, any> = {}
+    const result: Record<string, any> = {
+      responseTimes: this.responseTimes || {},
+      errors: this.errors || {},
+      requestCounts: this.requestCounts || {}
+    }
     this.metrics.forEach((value, key) => {
       result[key] = value
     })
@@ -293,12 +373,56 @@ class ApplicationLogger {
   }
 
   /**
+   * Log API requests
+   */
+  logAPIRequest(
+    method: string,
+    endpoint: string,
+    statusCode: number,
+    responseTime: number,
+    userId?: string
+  ): void {
+    logger.info('API Request', {
+      category: 'api',
+      method,
+      endpoint,
+      statusCode,
+      responseTime,
+      userId
+    })
+
+    metrics.histogram('http.response_time', responseTime, {
+      endpoint,
+      method,
+      status: statusCode.toString()
+    })
+  }
+
+  /**
+   * Log errors
+   */
+  logError(message: string, error: Error, context?: Record<string, any>): void {
+    logger.error(message, {
+      category: 'error',
+      error: error.message,
+      stack: error.stack,
+      ...context
+    })
+
+    metrics.increment('errors', {
+      message: message.substring(0, 50) // Truncate for metric tag
+    })
+  }
+
+  /**
    * Log security events
    */
   logSecurity(event: string, context: {
     userId?: string
     ip?: string
     userAgent?: string
+    resource?: string
+    action?: string
     severity: 'low' | 'medium' | 'high' | 'critical'
     details?: Record<string, any>
     blocked?: boolean
@@ -387,14 +511,33 @@ function getHealthCheck(): {
   status: 'healthy' | 'unhealthy'
   timestamp: string
   uptime: number
-  memory: NodeJS.MemoryUsage
-  metrics: Record<string, any>
+  memory: {
+    used: number
+    total: number
+    percentage: number
+  }
+  cpu: {
+    usage: number
+  }
+  metrics?: Record<string, any>
 } {
+  const memUsage = process.memoryUsage()
+  const totalMemory = require('os').totalmem()
+  const usedMemory = memUsage.heapUsed
+  const cpuUsageRaw = process.cpuUsage()
+
   return {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
-    memory: process.memoryUsage(),
+    memory: {
+      used: usedMemory,
+      total: totalMemory,
+      percentage: (usedMemory / totalMemory) * 100
+    },
+    cpu: {
+      usage: ((cpuUsageRaw.user + cpuUsageRaw.system) / 1000000) // Convert to percentage-like value
+    },
     metrics: metrics.getMetrics()
   }
 }

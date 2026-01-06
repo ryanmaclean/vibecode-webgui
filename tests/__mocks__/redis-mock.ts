@@ -33,8 +33,9 @@ export const mockRedisClient = {
   }),
   
   keys: jest.fn().mockImplementation(async (pattern) => {
-    // Simple pattern matching for tests
-    const regex = new RegExp(pattern.replace('*', '.*'));
+    // Simple pattern matching for tests - escape special regex chars except *
+    const escapedPattern = pattern.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
+    const regex = new RegExp('^' + escapedPattern.replace(/\*/g, '.*') + '$');
     return Object.keys(mockRedisClient.store).filter(key => regex.test(key));
   }),
   

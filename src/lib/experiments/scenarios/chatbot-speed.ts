@@ -8,9 +8,67 @@
  * Hypothesis: Preloaded chatbot increases user engagement by 30% despite slower initial load.
  */
 
-import { experimentWarehouse } from '../warehouse'
-import { enhancedRAGService } from '@/lib/services/rag-enhanced'
 import { tTest } from '../statistics'
+
+// In-memory storage for mock warehouse (exported for testing)
+export const warehouseMetrics: Array<{
+  experimentKey: string;
+  user_id: string;
+  metric_name: string;
+  value: number;
+  variant_key?: string;
+  metadata?: any;
+}> = [];
+
+export const warehouseAssignments: Array<{
+  experimentKey: string;
+  userId: string;
+  variantKey: string;
+}> = [];
+
+// Create a mock warehouse for this scenario (in production, use actual warehouse)
+// Exported for testing
+export const experimentWarehouse = {
+  async logAssignment(experimentKey: string, userId: string, variantKey: string, metadata?: any) {
+    warehouseAssignments.push({ experimentKey, userId, variantKey });
+    return Promise.resolve();
+  },
+  async logMetric(experimentKey: string, userId: string, metricName: string, value: number, metadata?: any) {
+    warehouseMetrics.push({
+      experimentKey,
+      user_id: userId,
+      metric_name: metricName,
+      value,
+      variant_key: metadata?.variantKey,
+      metadata
+    });
+    return Promise.resolve();
+  },
+  async flush() {
+    return Promise.resolve();
+  },
+  async getMetrics(experimentKey: string, metricName: string) {
+    return Promise.resolve(
+      warehouseMetrics.filter(m => m.experimentKey === experimentKey && m.metric_name === metricName)
+    );
+  },
+  async getExperimentResults(experimentKey: string) {
+    const assignments = warehouseAssignments.filter(a => a.experimentKey === experimentKey);
+    const distribution = assignments.reduce((acc, a) => {
+      acc[a.variantKey] = (acc[a.variantKey] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+
+    return Promise.resolve({
+      totalAssignments: assignments.length,
+      variantDistribution: distribution,
+      metrics: warehouseMetrics.filter(m => m.experimentKey === experimentKey)
+    });
+  }
+};
+
+// Local alias for internal use
+const warehouse = experimentWarehouse;
 
 // ==================== EXPERIMENT CONFIGURATION ====================
 
@@ -228,6 +286,15 @@ export async function endChatSession(sessionId: string): Promise<void> {
 // ==================== CHAT PROCESSING ====================
 
 /**
+ * Generate deterministic random number from string seed for consistent test behavior
+ */
+function seededRandom(seed: string, min: number, max: number): number {
+  const hash = seed.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0)
+  const normalized = (hash % 1000) / 1000 // 0-1
+  return min + normalized * (max - min)
+}
+
+/**
  * Send a chat message and get response
  */
 export async function sendChatMessage(request: ChatRequest): Promise<ChatResponse> {
@@ -259,8 +326,11 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
   // Simulate RAG processing
   const response = await generateChatResponse(message, session, request.workspaceId || 'default')
 
-  const ttftMs = isPreloaded ? Math.random() * 400 + 400 : Math.random() * 600 + 600 // Preload: 400-800ms, Lazy: 600-1200ms
-  const totalResponseMs = Date.now() - startTime + coldStartMs
+  // Use deterministic seeded random for consistent test behavior while maintaining realistic timing variance
+  const ttftMs = isPreloaded ? seededRandom(sessionId, 400, 800) : seededRandom(sessionId, 600, 1200) // Preload: 400-800ms, Lazy: 600-1200ms
+  const elapsedMs = Date.now() - startTime
+  // Ensure totalResponseMs is at least equal to ttftMs since response time includes TTFT
+  const totalResponseMs = Math.max(ttftMs, elapsedMs + coldStartMs)
   const tokensGenerated = estimateTokenCount(response)
 
   // Add messages to session

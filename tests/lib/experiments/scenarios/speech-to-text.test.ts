@@ -5,7 +5,7 @@
  * SRM detection, and guardrail evaluation.
  */
 
-import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
 import {
   runSpeechToTextExperiment,
   getSpeechExperimentSummary,
@@ -18,9 +18,9 @@ import { experimentWarehouse } from '@/lib/experiments/warehouse';
 import { detectSampleRatioMismatch } from '@/lib/experiments/srm-detector';
 
 // Mock OpenRouter to avoid real API calls
-vi.mock('@/lib/openrouter-client', () => ({
-  OpenRouter: vi.fn().mockImplementation(() => ({
-    createChatCompletion: vi.fn().mockResolvedValue({
+jest.mock('@/lib/openrouter-client', () => ({
+  OpenRouter: jest.fn().mockImplementation(() => ({
+    createChatCompletion: jest.fn().mockResolvedValue({
       id: 'test-id',
       object: 'chat.completion',
       created: Date.now(),
@@ -302,27 +302,23 @@ describe('Speech-to-Text Experiment', () => {
 
   describe('Sample Ratio Mismatch Detection', () => {
     it('should pass SRM check for balanced allocation', () => {
-      const assignments = [
-        ...Array(500).fill('gpt4'),
-        ...Array(500).fill('gpt41')
-      ];
+      // detectSampleRatioMismatch expects Record<string, number> not an array
+      const assignments = { gpt4: 500, gpt41: 500 };
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
-      expect(result.passed).toBe(true);
-      expect(result.pValue).toBeGreaterThan(0.05);
+      expect(result.hasMismatch).toBe(false);
+      expect(result.pValue).toBeGreaterThan(0.001); // Using 0.001 since that's the alpha in SRM detector
     });
 
     it('should fail SRM check for imbalanced allocation', () => {
-      const assignments = [
-        ...Array(700).fill('gpt4'),
-        ...Array(300).fill('gpt41')
-      ];
+      // detectSampleRatioMismatch expects Record<string, number> not an array
+      const assignments = { gpt4: 700, gpt41: 300 };
 
       const result = detectSampleRatioMismatch(assignments, { gpt4: 50, gpt41: 50 });
 
-      expect(result.passed).toBe(false);
-      expect(result.pValue).toBeLessThan(0.05);
+      expect(result.hasMismatch).toBe(true);
+      expect(result.pValue).toBeLessThan(0.001); // Using 0.001 since that's the alpha in SRM detector
     });
   });
 

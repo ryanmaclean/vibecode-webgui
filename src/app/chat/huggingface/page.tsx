@@ -95,9 +95,9 @@ export default function HuggingFaceChatPage() {
             </div>
             
             <div className="flex items-center space-x-3">
-              <Button 
+              <Button
                 onClick={createNewConversation}
-                className="bg-orange-500 hover:bg-orange-600 text-white"
+                className="bg-orange-700 hover:bg-orange-800 text-white"
               >
                 🤗 Start New Chat
               </Button>

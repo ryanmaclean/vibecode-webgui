@@ -75,20 +75,49 @@ export const paginationSchema = z.object({
 export const containerOptionsSchema = z.object({
   cpus: z.number().positive().max(16).optional(),
   memory: z.string().regex(/^\d+[MGT]$/).optional(),
-  ports: z.array(z.string().regex(/^\d+:\d+$/)).optional(),
+  ports: z.array(z.string().regex(/^\d+:\d+$/)).max(20, 'Maximum 20 port mappings allowed').optional(),
   volumes: z.array(z.string()).optional(),
   env: z.record(z.string()).optional(),
   workingDir: z.string().optional(),
-  command: z.array(z.string()).optional()
-})
+  command: z.array(z.string()).optional(),
+  name: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Container name must contain only alphanumeric characters, hyphens, and underscores').optional()
+}).refine(
+  (data) => {
+    // Validate that host ports are >= 1024 (no privileged ports)
+    if (data.ports) {
+      for (const portMapping of data.ports) {
+        const [hostPort] = portMapping.split(':').map(p => parseInt(p))
+        if (hostPort < 1024) {
+          return false
+        }
+      }
+    }
+    return true
+  },
+  {
+    message: 'Host port must be >= 1024 (privileged ports not allowed)'
+  }
+)
 
 export const createContainerSchema = z.object({
-  image: z.string().min(1).max(255),
+  image: z.string().min(1).max(255).refine(
+    (image) => {
+      // Reject directory traversal patterns
+      if (image.includes('../') || image.includes('..\\') || image.includes('//')) {
+        return false
+      }
+      // Validate Docker image format: [registry/][namespace/]image[:tag]
+      // Allow alphanumeric, dots, hyphens, underscores, colons, and forward slashes in proper positions
+      const imagePattern = /^([a-z0-9._-]+\/)*[a-z0-9._-]+(:[a-z0-9._-]+)?$/i
+      return imagePattern.test(image)
+    },
+    'Invalid Docker image format or contains path traversal patterns'
+  ),
   options: containerOptionsSchema.optional()
 })
 
 export const containerIdSchema = z.object({
-  id: z.string().min(1).max(100)
+  id: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Container ID must contain only alphanumeric characters, hyphens, and underscores')
 })
 
 // ============================================================================
@@ -234,7 +263,7 @@ export const fileSyncBulkSchema = z.object({
       content: z.string().max(10_000_000), // 10MB limit per file
       type: z.string().min(1).max(50)
     })
-  ).min(1).max(1000) // Max 1000 files per bulk operation
+  ).min(1).max(100) // Max 100 files per bulk operation
 })
 
 // ============================================================================
@@ -311,7 +340,7 @@ export const terminalWebSocketQuerySchema = z.object({
 export const healthCheckQuerySchema = z.object({
   filter: z.enum(['database', 'redis', 'ai', 'memory', 'disk', 'all']).optional().default('all'),
   format: z.enum(['json', 'text', 'metrics']).optional().default('json'),
-  verbose: z.boolean().optional().default(false)
+  verbose: z.union([z.boolean(), z.string().transform(val => val === 'true')]).optional().default(false)
 })
 
 // ============================================================================
@@ -327,6 +356,10 @@ export const monitoringQuerySchema = z.object({
   endTime: z.string().datetime().optional()
 }).refine(
   (data) => {
+    // If startTime is provided, endTime must also be provided
+    if (data.startTime && !data.endTime) {
+      return false
+    }
     if (data.startTime && data.endTime) {
       const start = new Date(data.startTime)
       const end = new Date(data.endTime)
@@ -336,13 +369,13 @@ export const monitoringQuerySchema = z.object({
     return true
   },
   {
-    message: 'Time range must be positive and max 30 days'
+    message: 'Time range must be positive and max 30 days. If startTime is provided, endTime is required.'
   }
 )
 
 export const monitoringMetricsBodySchema = z.object({
   type: z.enum(['performance', 'error']),
-  duration: z.number().max(300000), // Max 5 minutes
+  duration: z.number().nonnegative().max(300000).optional(), // Max 5 minutes, optional for error type
   metrics: z.record(z.unknown()).refine(
     (obj) => JSON.stringify(obj).length <= 100_000,
     'Metrics object must not exceed 100KB'
@@ -434,6 +467,7 @@ export const samlMetadataQuerySchema = z.object({
       (provider) => ['okta', 'azure', 'google', 'onelogin', 'auth0'].includes(provider),
       'Provider must be one of: okta, azure, google, onelogin, auth0'
     )
+    .default('okta')
 })
 
 // ============================================================================
@@ -502,5 +536,134 @@ export const claudeSessionQuerySchema = z.object({
 /** Code Server session creation and management */
 export const codeServerSessionSchema = z.object({
   workspaceId: workspaceIdSchema,
-  userId: z.string().min(1).max(50).optional()
+  userId: z.string().min(1).max(50).regex(/^[a-zA-Z0-9_-]+$/).optional(),
+  projectPath: z.string().max(500).refine(
+    (path) => !path.includes('..') && (path.startsWith('/workspace') || path.startsWith('/tmp/workspaces')),
+    'Project path must be within workspace directories and not contain directory traversal'
+  ).optional()
+})
+
+// ============================================================================
+// Init Goose (Database Migrations) Schemas
+// ============================================================================
+
+/** Init Goose parameter validation */
+export const initGooseParamSchema = z.object({
+  id: workspaceIdSchema
+})
+
+/** Init Goose body validation */
+export const initGooseSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  migrationName: z.string().min(1).max(100).regex(/^[a-zA-Z0-9_-]+$/, 'Migration name must contain only alphanumeric characters, hyphens, and underscores')
+})
+
+// ============================================================================
+// Security Schemas
+// ============================================================================
+
+/** Absolute path validation - restricts to safe directories */
+export const absolutePathSchema = z.string().refine(
+  (path) => {
+    if (!path.startsWith('/')) return false
+    if (path.includes('..')) return false
+    if (!/^[a-zA-Z0-9/_-]+$/.test(path)) return false
+    return path.startsWith('/workspaces') || path.startsWith('/tmp/workspaces')
+  },
+  'Path must be absolute, within allowed directories, and not contain directory traversal or shell metacharacters'
+)
+
+/** Shell command validation - prevents command injection */
+export const shellCommandSchema = z.string().max(1000).refine(
+  (cmd) => {
+    // Reject shell metacharacters
+    if (/[;|&`$()<>]/.test(cmd)) return false
+    // Reject directory traversal
+    if (cmd.includes('..')) return false
+    return true
+  },
+  'Command must not contain shell metacharacters or directory traversal'
+)
+
+/** Provider name validation - enforces allowlist */
+export const providerNameSchema = z.string().regex(/^[a-z0-9-]+$/).refine(
+  (provider) => ['okta', 'azure', 'google', 'onelogin', 'auth0'].includes(provider),
+  'Provider must be one of: okta, azure, google, onelogin, auth0'
+)
+
+// ============================================================================
+// AI Operations Schemas
+// ============================================================================
+
+/** Function name allowlist for AI function calls */
+export const functionNameSchema = z.string().regex(/^[a-zA-Z0-9_-]+$/).refine(
+  (name) => [
+    'web_search',
+    'create_file',
+    'read_file',
+    'update_file',
+    'delete_file',
+    'execute_code',
+    'list_files',
+    'terminal_execute'
+  ].includes(name),
+  'Function name must be from allowlist'
+)
+
+/** AI function call schema */
+export const aiFunctionCallSchema = z.object({
+  function_call: z.object({
+    name: functionNameSchema,
+    arguments: z.record(z.unknown()).refine(
+      (args) => JSON.stringify(args).length <= 100_000,
+      'Function arguments must not exceed 100KB'
+    )
+  }),
+  workspaceId: workspaceIdSchema.optional()
+})
+
+/** Programming language allowlist */
+export const programmingLanguageSchema = z.enum([
+  'javascript',
+  'typescript',
+  'python',
+  'react',
+  'nextjs',
+  'vue',
+  'node',
+  'go',
+  'rust',
+  'java'
+])
+
+/** Project generation schema */
+export const generateProjectSchema = z.object({
+  prompt: z.string().min(1).max(10_000),
+  projectName: z.string().max(100).regex(/^[a-zA-Z0-9_-]+$/).optional(),
+  language: programmingLanguageSchema.optional(),
+  framework: z.string().max(50).optional(),
+  features: z.array(z.string().max(50)).max(20).optional()
+})
+
+/** Vector store schema */
+export const vectorStoreSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  content: z.string().min(1).max(1_000_000),
+  metadata: z.record(z.unknown()).optional(),
+  chunkSize: z.number().int().positive().max(10_000).optional()
+})
+
+/** Vector search schema */
+export const vectorSearchSchema = z.object({
+  workspaceId: workspaceIdSchema,
+  query: z.string().min(1).max(5_000),
+  maxResults: z.number().int().positive().max(100).optional().default(5),
+  threshold: z.number().min(0).max(1).optional()
+})
+
+/** Sequential thinking schema */
+export const sequentialThinkingSchema = z.object({
+  problem: z.string().min(1).max(50_000),
+  context: z.array(z.string()).max(10).optional(),
+  maxSteps: z.number().int().positive().max(50).optional().default(20)
 })

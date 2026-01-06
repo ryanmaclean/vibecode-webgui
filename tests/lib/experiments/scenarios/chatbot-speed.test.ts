@@ -10,9 +10,9 @@ import {
   getChatSession,
   endChatSession,
   calculateEngagementScore,
-  getChatbotExperimentSummary
+  getChatbotExperimentSummary,
+  experimentWarehouse
 } from '@/lib/experiments/scenarios/chatbot-speed'
-import { experimentWarehouse } from '@/lib/experiments/warehouse'
 import { generateChatbotSyntheticData, TEST_SESSIONS } from '@/lib/experiments/scenarios/chatbot-test-data'
 
 describe('Chatbot Performance Experiment', () => {

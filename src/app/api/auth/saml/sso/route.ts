@@ -76,6 +76,14 @@ export async function POST(req: NextRequest) {
     // Server error logged
     
     if (error instanceof z.ZodError) {
+      // Check if it's a provider validation error
+      const providerError = error.errors.find(e => e.path.includes('provider'))
+      if (providerError) {
+        return NextResponse.json({
+          error: providerError.message,
+          details: error.errors
+        }, { status: 400 })
+      }
       return NextResponse.json({
         error: 'Invalid request parameters',
         details: error.errors

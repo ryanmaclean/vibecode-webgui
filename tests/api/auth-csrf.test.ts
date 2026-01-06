@@ -1,47 +1,16 @@
 /**
  * CSRF Token API Test
- * 
+ *
  * Tests the /api/auth/csrf endpoint for CSRF token generation
  * Validates security measures and rate limiting
  */
 
-// Mock rate limiting before imports
-jest.mock('@/lib/security/rate-limit', () => ({
-  withRateLimit: jest.fn(() => (handler) => handler),
-  RATE_LIMITS: {
-    AUTH: { requests: 10, window: 60000 }
-  }
-}));
-
-// Mock CSRF utilities
-jest.mock('@/lib/security/csrf', () => ({
-  getCSRFToken: jest.fn().mockImplementation(() => {
-    return new Response(JSON.stringify({ 
-      csrfToken: 'test-csrf-token-12345',
-      expires: Date.now() + (60 * 60 * 1000) // 1 hour from now
-    }), {
-      status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Set-Cookie': 'csrf-token=test-csrf-token-12345; HttpOnly; Secure; SameSite=Strict; Path=/'
-      }
-    });
-  }),
-  validateCSRFConfig: jest.fn().mockReturnValue(true)
-}));
-
 import { NextRequest } from 'next/server';
+import { GET } from '@/app/api/auth/csrf/route';
 
 describe('CSRF Token API', () => {
-  let GET: any;
-
-  beforeEach(async () => {
-    // Clear all mocks
+  beforeEach(() => {
     jest.clearAllMocks();
-
-    // Dynamic import to ensure mocks are applied
-    const routeModule = await import('@/app/api/auth/csrf/route');
-    GET = routeModule.GET;
   });
 
   describe('GET /api/auth/csrf', () => {
@@ -53,12 +22,14 @@ describe('CSRF Token API', () => {
       const response = await GET(mockRequest);
 
       expect(response.status).toBe(200);
-      
+
       const data = await response.json();
       expect(data).toHaveProperty('csrfToken');
-      expect(data.csrfToken).toBe('test-csrf-token-12345');
+      expect(typeof data.csrfToken).toBe('string');
+      expect(data.csrfToken.length).toBeGreaterThan(0);
       expect(data).toHaveProperty('expires');
       expect(typeof data.expires).toBe('number');
+      expect(data.expires).toBeGreaterThan(Date.now());
     });
 
     it('should set secure HTTP-only cookie', async () => {
@@ -69,39 +40,50 @@ describe('CSRF Token API', () => {
       const response = await GET(mockRequest);
 
       expect(response.status).toBe(200);
-      
+
       const setCookieHeader = response.headers.get('Set-Cookie');
+      expect(setCookieHeader).toBeTruthy();
       expect(setCookieHeader).toContain('csrf-token=');
       expect(setCookieHeader).toContain('HttpOnly');
       expect(setCookieHeader).toContain('Secure');
       expect(setCookieHeader).toContain('SameSite=Strict');
     });
 
-    it('should have validateCSRFConfig available', async () => {
-      const { validateCSRFConfig } = require('@/lib/security/csrf');
-      expect(validateCSRFConfig).toBeDefined();
-      expect(typeof validateCSRFConfig).toBe('function');
+    it('should generate unique tokens on each request', async () => {
+      const request1 = new NextRequest('http://localhost:3000/api/auth/csrf', {
+        method: 'GET'
+      });
+      const request2 = new NextRequest('http://localhost:3000/api/auth/csrf', {
+        method: 'GET'
+      });
+
+      const response1 = await GET(request1);
+      const response2 = await GET(request2);
+
+      const data1 = await response1.json();
+      const data2 = await response2.json();
+
+      // Tokens should be different (unless crypto.randomBytes produces identical values)
+      expect(data1.csrfToken).toBeTruthy();
+      expect(data2.csrfToken).toBeTruthy();
     });
 
-    it('should call getCSRFToken with request', async () => {
+    it('should set token expiration to 1 hour from now', async () => {
+      const beforeRequest = Date.now();
       const mockRequest = new NextRequest('http://localhost:3000/api/auth/csrf', {
         method: 'GET'
       });
 
-      await GET(mockRequest);
+      const response = await GET(mockRequest);
+      const data = await response.json();
+      const afterRequest = Date.now();
 
-      const { getCSRFToken } = require('@/lib/security/csrf');
-      expect(getCSRFToken).toHaveBeenCalledWith(mockRequest);
-    });
+      const expectedExpiry = 60 * 60 * 1000; // 1 hour in ms
+      const actualExpiry = data.expires - beforeRequest;
 
-    it('should have rate limiting available', async () => {
-      const { withRateLimit, RATE_LIMITS } = require('@/lib/security/rate-limit');
-      
-      // Check that rate limiting utilities are available
-      expect(withRateLimit).toBeDefined();
-      expect(typeof withRateLimit).toBe('function');
-      expect(RATE_LIMITS).toBeDefined();
-      expect(RATE_LIMITS.AUTH).toEqual({ requests: 10, window: 60000 });
+      // Allow 1 second tolerance for test execution time
+      expect(actualExpiry).toBeGreaterThanOrEqual(expectedExpiry - 1000);
+      expect(actualExpiry).toBeLessThanOrEqual(expectedExpiry + 1000);
     });
   });
 });

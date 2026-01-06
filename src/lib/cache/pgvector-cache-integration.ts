@@ -35,7 +35,7 @@ export class CachedVectorSearchService extends VectorSearchService {
     processing_time_ms: number;
   }> {
     const startTime = performance.now();
-    
+
     // Convert to cache query format
     const cacheQuery: VectorSimilarityQuery = {
       embedding: queryEmbedding,
@@ -51,21 +51,26 @@ export class CachedVectorSearchService extends VectorSearchService {
 
     // Check cache first (unless force refresh)
     if (!options.force_refresh) {
-      const cachedResults = await VectorCacheManager.getCachedResults(
-        cacheQuery,
-        options.workspace
-      );
+      try {
+        const cachedResults = await VectorCacheManager.getCachedResults(
+          cacheQuery,
+          options.workspace
+        );
 
-      if (cachedResults) {
-        const processingTime = performance.now() - startTime;
-        metrics.histogram('vector_search.cached.duration', processingTime);
-        
-        return {
-          results: cachedResults,
-          from_cache: true,
-          cache_key: VectorCacheManager.calculateCacheKey(cacheQuery, options.workspace),
-          processing_time_ms: processingTime
-        };
+        if (cachedResults) {
+          const processingTime = performance.now() - startTime;
+          metrics.histogram('vector_search.cached.duration', processingTime);
+
+          return {
+            results: cachedResults,
+            from_cache: true,
+            cache_key: VectorCacheManager.calculateCacheKey(cacheQuery, options.workspace),
+            processing_time_ms: processingTime
+          };
+        }
+      } catch (err) {
+        // Cache read error - fall through to database query
+        metrics.increment('vector_cache.read_error');
       }
     }
 
@@ -88,12 +93,17 @@ export class CachedVectorSearchService extends VectorSearchService {
       contentType: result.content_type
     }));
 
-    // Cache the results
-    await VectorCacheManager.cacheResults(
-      cacheQuery,
-      cacheResults,
-      options.workspace
-    );
+    // Cache the results (don't fail if caching fails)
+    try {
+      await VectorCacheManager.cacheResults(
+        cacheQuery,
+        cacheResults,
+        options.workspace
+      );
+    } catch (err) {
+      // Cache write error - log but don't fail the request
+      metrics.increment('vector_cache.write_error');
+    }
 
     const processingTime = performance.now() - startTime;
     metrics.histogram('vector_search.uncached.duration', processingTime);
@@ -116,14 +126,21 @@ export class CachedVectorSearchService extends VectorSearchService {
     limit: number = 5,
     workspace?: string
   ) {
-    return this.cachedSimilaritySearch(queryEmbedding, {
+    // Build options without workspace for similaritySearch call
+    const searchOptions: any = {
       content_type: 'code',
       language,
       framework,
       limit,
-      similarity_threshold: 0.8,
-      workspace
-    });
+      similarity_threshold: 0.8
+    };
+
+    // Add workspace to search options
+    if (workspace) {
+      searchOptions.workspace = workspace;
+    }
+
+    return this.cachedSimilaritySearch(queryEmbedding, searchOptions);
   }
 
   /**
@@ -134,12 +151,19 @@ export class CachedVectorSearchService extends VectorSearchService {
     limit: number = 3,
     workspace?: string
   ) {
-    return this.cachedSimilaritySearch(queryEmbedding, {
+    // Build options without workspace for similaritySearch call
+    const searchOptions: any = {
       content_type: 'documentation',
       limit,
-      similarity_threshold: 0.7,
-      workspace
-    });
+      similarity_threshold: 0.7
+    };
+
+    // Add workspace to search options
+    if (workspace) {
+      searchOptions.workspace = workspace;
+    }
+
+    return this.cachedSimilaritySearch(queryEmbedding, searchOptions);
   }
 
   /**

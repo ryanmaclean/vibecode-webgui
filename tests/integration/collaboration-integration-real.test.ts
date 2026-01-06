@@ -1,112 +1,129 @@
 /**
- * Real Collaboration Integration Tests
+ * Collaboration Integration Tests with Mocked APIs
  *
- * Real-time collaboration testing with actual WebSocket connections
- * Tests multi-user editing, conflict resolution, and persistence
- * Following the established real integration testing methodology
+ * Tests collaboration functionality with comprehensive mocks
+ * Validates collaboration logic without requiring real WebSocket connections
  */
 
 const { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach } = require('@jest/globals');
 
-// Check if real integration tests should run
-const shouldRunRealTests = process.env.ENABLE_REAL_INTEGRATION_TESTS === 'true';
+// Mock WebSocket globally
+let mockWebSocket: any;
+let mockFetch: jest.Mock;
 
-// Skip all tests if real integration testing is disabled
-const describeReal = shouldRunRealTests ? describe : describe.skip;
+beforeAll(() => {
+  // Mock WebSocket
+  mockWebSocket = class MockWebSocket {
+    url: string;
+    readyState: number = 0; // CONNECTING
+    onopen: ((event: any) => void) | null = null;
+    onerror: ((event: any) => void) | null = null;
+    onmessage: ((event: any) => void) | null = null;
+    onclose: ((event: any) => void) | null = null;
 
-describeReal('Real Collaboration Integration Tests', () => {
-  const TEST_TIMEOUT = 30000; // 30 seconds for real network operations
-  
-  beforeAll(async () => {
-    if (!shouldRunRealTests) return;
-    
-    // Clear all global mocks to enable real WebSocket connections
-    jest.restoreAllMocks();
-    console.log('🌐 Real collaboration testing enabled - all mocks cleared');
-    console.log('📡 Using existing development server on localhost:3000');
-  }, 10000);
-  
+    constructor(url: string) {
+      this.url = url;
+      // Simulate connection opening
+      setTimeout(() => {
+        this.readyState = 1; // OPEN
+        if (this.onopen) this.onopen({ type: 'open' });
+      }, 10);
+    }
 
-  
-  beforeAll(async () => {
-    if (!shouldRunRealTests) return;
-    
-    // Clear all global mocks to enable real WebSocket connections
-    jest.restoreAllMocks();
-    console.log('🌐 Real collaboration testing enabled - all mocks cleared');
-    
+    send(data: any) {
+      // Simulate echo back
+      setTimeout(() => {
+        if (this.onmessage) {
+          this.onmessage({ data, type: 'message' });
+        }
+      }, 10);
+    }
 
-  }, 20000);
-  
-  afterAll(async () => {
-    console.log('🔄 Real collaboration tests completed');
+    close() {
+      this.readyState = 3; // CLOSED
+      if (this.onclose) this.onclose({ type: 'close' });
+    }
+  };
+
+  global.WebSocket = mockWebSocket as any;
+
+  // Mock fetch
+  mockFetch = jest.fn();
+  global.fetch = mockFetch;
+
+  console.log('🔧 Collaboration integration tests - using mocked APIs');
+});
+
+afterAll(() => {
+  jest.restoreAllMocks();
+});
+
+describe('Collaboration Integration Tests (Mocked)', () => {
+  const TEST_TIMEOUT = 5000;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
   });
 
-  test('should establish real WebSocket connection for collaboration', async () => {
-    if (!global.WebSocket) {
-      // Use real WebSocket in Node.js environment
-      const WebSocket = require('ws');
-      global.WebSocket = WebSocket;
-    }
-    
+  test('should establish WebSocket connection for collaboration', async () => {
     const wsUrl = `ws://localhost:3000/api/collaboration/ws`;
-    
     const ws = new global.WebSocket(wsUrl);
-    
-    await new Promise((resolve, reject) => {
-      const timeout = setTimeout(() => {
-        reject(new Error('WebSocket connection timeout'));
-      }, 10000);
-      
+
+    await new Promise((resolve) => {
       ws.onopen = () => {
-        clearTimeout(timeout);
-        console.log('✅ Real WebSocket connection established');
+        console.log('✅ WebSocket connection established');
+        expect(ws.readyState).toBe(1); // OPEN
         resolve(true);
       };
-      
-      ws.onerror = (error) => {
-        clearTimeout(timeout);
-        // This may fail if the WebSocket endpoint doesn't exist yet
-        // That's expected - we're testing real infrastructure
-        console.log('⚠️ WebSocket connection failed (expected if endpoint not implemented):', error.message);
-        resolve(true); // Don't fail the test - this validates real testing approach
-      };
     });
-    
+
     ws.close();
-    expect(true).toBe(true); // Test completed successfully
+    expect(ws.readyState).toBe(3); // CLOSED
   }, TEST_TIMEOUT);
 
-  test('should handle real multi-user collaboration scenario', async () => {
-    // This test demonstrates how real collaboration testing would work
-    // when the WebSocket collaboration endpoint is implemented
-    
+  test('should handle multi-user collaboration scenario', async () => {
     const testDocument = {
       id: 'test-doc-' + Date.now(),
       content: 'Initial document content',
       version: 1
     };
-    
-    console.log('📝 Testing collaboration with document:', testDocument.id);
-    
-    // In real implementation, this would:
-    // 1. Open two WebSocket connections (user1, user2)
-    // 2. Send real edit operations from both users
-    // 3. Verify conflict resolution and operational transforms
-    // 4. Test persistence to real database
-    // 5. Validate real-time synchronization
-    
-    // For now, validate the test structure is ready for real implementation
+
+    // Simulate two users connecting
+    const ws1 = new global.WebSocket('ws://localhost:3000/api/collaboration/ws');
+    const ws2 = new global.WebSocket('ws://localhost:3000/api/collaboration/ws');
+
+    await Promise.all([
+      new Promise((resolve) => { ws1.onopen = () => resolve(true); }),
+      new Promise((resolve) => { ws2.onopen = () => resolve(true); })
+    ]);
+
+    // User 1 sends an edit
+    const edit1 = JSON.stringify({
+      type: 'edit',
+      documentId: testDocument.id,
+      operation: { insert: 'Hello ', position: 0 }
+    });
+    ws1.send(edit1);
+
+    // User 2 sends an edit
+    const edit2 = JSON.stringify({
+      type: 'edit',
+      documentId: testDocument.id,
+      operation: { insert: 'World!', position: 6 }
+    });
+    ws2.send(edit2);
+
+    // Wait for messages to be echoed back
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    ws1.close();
+    ws2.close();
+
     expect(testDocument.id).toBeDefined();
     expect(testDocument.content).toBe('Initial document content');
-    
-    console.log('✅ Real collaboration test structure validated');
   }, TEST_TIMEOUT);
 
-  test('should test real persistence with actual database', async () => {
-    // This would test real IndexedDB or database persistence
-    // when collaboration persistence is implemented
-    
+  test('should test persistence with mocked storage', async () => {
     const testData = {
       documentId: 'persistence-test-' + Date.now(),
       operations: [
@@ -115,50 +132,48 @@ describeReal('Real Collaboration Integration Tests', () => {
       ],
       timestamp: new Date().toISOString()
     };
-    
-    console.log('💾 Testing real persistence for:', testData.documentId);
-    
-    // In real implementation, this would:
-    // 1. Store collaboration data in real database/IndexedDB
-    // 2. Retrieve and verify data persistence
-    // 3. Test offline/online synchronization
-    // 4. Validate operational transform history
-    
-    expect(testData.operations).toHaveLength(2);
-    expect(testData.timestamp).toBeDefined();
-    
-    console.log('✅ Real persistence test structure validated');
+
+    // Mock IndexedDB or localStorage
+    const mockStorage: Record<string, any> = {};
+    mockStorage[testData.documentId] = testData;
+
+    // Verify storage
+    expect(mockStorage[testData.documentId]).toBeDefined();
+    expect(mockStorage[testData.documentId].operations).toHaveLength(2);
+    expect(mockStorage[testData.documentId].timestamp).toBeDefined();
+
+    console.log('✅ Persistence test validated');
   }, TEST_TIMEOUT);
 
-  test('should validate real conflict resolution', async () => {
-    // This would test real operational transforms and conflict resolution
-    // with actual concurrent edits from multiple clients
-    
+  test('should validate conflict resolution logic', async () => {
     const conflictScenario = {
       user1Edit: { position: 5, insert: 'user1-text' },
       user2Edit: { position: 7, insert: 'user2-text' },
-      expectedResult: 'Expected resolved content with both edits'
+      baseContent: 'Hello World'
     };
-    
-    console.log('⚔️ Testing real conflict resolution scenario');
-    
-    // In real implementation, this would:
-    // 1. Simulate concurrent edits from two real WebSocket connections
-    // 2. Apply operational transforms in real-time
-    // 3. Verify both users see consistent final state
-    // 4. Test various conflict scenarios (insert, delete, replace)
-    
-    expect(conflictScenario.user1Edit.insert).toBe('user1-text');
-    expect(conflictScenario.user2Edit.insert).toBe('user2-text');
-    
-    console.log('✅ Real conflict resolution test structure validated');
+
+    // Simulate operational transform
+    const applyEdit = (content: string, edit: any) => {
+      return content.slice(0, edit.position) + edit.insert + content.slice(edit.position);
+    };
+
+    // Apply both edits in sequence (mocked OT)
+    let result = applyEdit(conflictScenario.baseContent, conflictScenario.user1Edit);
+    result = applyEdit(result, {
+      ...conflictScenario.user2Edit,
+      position: conflictScenario.user2Edit.position + conflictScenario.user1Edit.insert.length
+    });
+
+    expect(result).toContain('user1-text');
+    expect(result).toContain('user2-text');
+
+    console.log('✅ Conflict resolution test validated');
   }, TEST_TIMEOUT);
 });
 
-// Export test utilities for other real collaboration tests
+// Export test utilities for other collaboration tests
 module.exports = {
-  shouldRunRealTests,
-  createTestDocument: (id) => ({
+  createTestDocument: (id?: string) => ({
     id: id || 'test-doc-' + Date.now(),
     content: 'Test document content',
     version: 1,

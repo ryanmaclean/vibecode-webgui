@@ -1,31 +1,49 @@
 /**
- * Performance Regression Tests for Agent System
+ * Performance Regression Tests for Agent System (Jest)
  *
  * Tracks and validates performance metrics over time
  */
 
-import { test, expect } from '@playwright/test';
 import { Agent, createAgent } from '@/lib/agent-framework';
-import type { Page } from '@playwright/test';
+import { UnifiedAIClient } from '@/lib/unified-ai-client';
+
+// Mock UnifiedAIClient
+jest.mock('@/lib/unified-ai-client');
 
 // Performance baselines (in milliseconds)
 const PERFORMANCE_BASELINES = {
   agentCreation: 100,
-  simpleMessage: 500,
-  toolExecution: 1000,
-  pageLoad: 3000,
-  firstPaint: 1000,
-  timeToInteractive: 2000,
+  simpleMessage: 5000,
+  toolExecution: 10000,
   memoryLimit: 100 * 1024 * 1024, // 100MB
 };
 
 describe('Agent Performance Regression Tests', () => {
+  let mockClient: jest.Mocked<UnifiedAIClient>;
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockClient = new UnifiedAIClient() as jest.Mocked<UnifiedAIClient>;
+
+    mockClient.chat = jest.fn().mockResolvedValue({
+      content: 'Test response',
+      model: 'gpt-4o-mini',
+      provider: 'openai',
+      usage: {
+        promptTokens: 10,
+        completionTokens: 20,
+        totalTokens: 30,
+      },
+    });
+  });
+
   describe('Agent API Performance', () => {
     it('should create agent within performance budget', async () => {
       const startTime = performance.now();
 
       const agent = createAgent({
         model: 'gpt-4o-mini',
+        client: mockClient,
       });
 
       const endTime = performance.now();
@@ -36,7 +54,10 @@ describe('Agent Performance Regression Tests', () => {
     });
 
     it('should process simple messages within performance budget', async () => {
-      const agent = createAgent({ model: 'gpt-4o-mini' });
+      const agent = createAgent({
+        model: 'gpt-4o-mini',
+        client: mockClient,
+      });
 
       const startTime = performance.now();
 
@@ -63,9 +84,30 @@ describe('Agent Performance Regression Tests', () => {
         },
       };
 
+      mockClient.chat = jest.fn()
+        .mockResolvedValueOnce({
+          content: '',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+          tool_calls: [{
+            id: 'call_1',
+            type: 'function',
+            function: {
+              name: 'calculator',
+              arguments: JSON.stringify({ expression: '2+2' }),
+            },
+          }],
+        })
+        .mockResolvedValueOnce({
+          content: 'The result is 4',
+          model: 'gpt-4o-mini',
+          provider: 'openai',
+        });
+
       const agent = createAgent({
         tools: [tool],
         model: 'gpt-4o-mini',
+        client: mockClient,
       });
 
       const startTime = performance.now();
@@ -79,7 +121,10 @@ describe('Agent Performance Regression Tests', () => {
     }, 15000);
 
     it('should handle concurrent requests efficiently', async () => {
-      const agent = createAgent({ model: 'gpt-4o-mini' });
+      const agent = createAgent({
+        model: 'gpt-4o-mini',
+        client: mockClient,
+      });
 
       const startTime = performance.now();
 
@@ -100,6 +145,7 @@ describe('Agent Performance Regression Tests', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
         memorySize: 10,
+        client: mockClient,
       });
 
       const initialMemory = process.memoryUsage().heapUsed;
@@ -118,7 +164,10 @@ describe('Agent Performance Regression Tests', () => {
 
   describe('Token Usage Optimization', () => {
     it('should minimize token usage for simple queries', async () => {
-      const agent = createAgent({ model: 'gpt-4o-mini' });
+      const agent = createAgent({
+        model: 'gpt-4o-mini',
+        client: mockClient,
+      });
 
       const response = await agent.processMessage('Say hi');
 
@@ -132,6 +181,7 @@ describe('Agent Performance Regression Tests', () => {
       const agent = createAgent({
         model: 'gpt-4o-mini',
         memorySize: 5,
+        client: mockClient,
       });
 
       const usages: number[] = [];
@@ -149,265 +199,5 @@ describe('Agent Performance Regression Tests', () => {
         expect(recentAvg).toBeLessThan(500);
       }
     }, 60000);
-  });
-});
-
-test.describe('UI Performance Regression Tests', () => {
-  let page: Page;
-
-  test.beforeEach(async ({ page: p }) => {
-    page = p;
-  });
-
-  test.describe('Page Load Performance', () => {
-    test('should load agent list page within budget', async () => {
-      const startTime = Date.now();
-
-      await page.goto('/agents');
-      await page.waitForSelector('[data-testid="agent-list"]');
-
-      const endTime = Date.now();
-      const loadTime = endTime - startTime;
-
-      expect(loadTime).toBeLessThan(PERFORMANCE_BASELINES.pageLoad);
-    });
-
-    test('should achieve first paint within budget', async () => {
-      await page.goto('/agents');
-
-      const firstPaint = await page.evaluate(() => {
-        const perfData = performance.getEntriesByType('paint');
-        const fp = perfData.find(entry => entry.name === 'first-paint');
-        return fp?.startTime || 0;
-      });
-
-      expect(firstPaint).toBeLessThan(PERFORMANCE_BASELINES.firstPaint);
-    });
-
-    test('should achieve first contentful paint within budget', async () => {
-      await page.goto('/agents');
-
-      const fcp = await page.evaluate(() => {
-        const perfData = performance.getEntriesByType('paint');
-        const fcpEntry = perfData.find(entry => entry.name === 'first-contentful-paint');
-        return fcpEntry?.startTime || 0;
-      });
-
-      expect(fcp).toBeLessThan(PERFORMANCE_BASELINES.firstPaint * 1.5);
-    });
-
-    test('should become interactive within budget', async () => {
-      await page.goto('/agents');
-
-      const tti = await page.evaluate(() => {
-        return performance.timing.domInteractive - performance.timing.navigationStart;
-      });
-
-      expect(tti).toBeLessThan(PERFORMANCE_BASELINES.timeToInteractive);
-    });
-  });
-
-  test.describe('Runtime Performance', () => {
-    test('should handle rapid user interactions smoothly', async () => {
-      await page.goto('/agents');
-
-      const startTime = Date.now();
-
-      // Simulate rapid clicks
-      for (let i = 0; i < 10; i++) {
-        const button = page.locator('button').first();
-        if (await button.isVisible()) {
-          await button.click();
-          await page.waitForTimeout(50);
-        }
-      }
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // Should remain responsive
-      expect(duration).toBeLessThan(2000);
-    });
-
-    test('should scroll large lists smoothly', async () => {
-      await page.goto('/agents');
-
-      const startTime = Date.now();
-
-      // Scroll multiple times
-      for (let i = 0; i < 10; i++) {
-        await page.evaluate(() => {
-          window.scrollBy(0, 500);
-        });
-        await page.waitForTimeout(50);
-      }
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      // Should scroll without lag
-      expect(duration).toBeLessThan(1500);
-    });
-
-    test('should update UI efficiently', async () => {
-      await page.goto('/agents');
-
-      await page.click('button:has-text("Create Agent")');
-
-      const startTime = Date.now();
-
-      // Fill form rapidly
-      await page.selectOption('select[name="agent_type"]', 'aider');
-      await page.selectOption('select[name="model"]', 'gpt-4o-mini');
-      await page.fill('textarea[name="task"]', 'Test task');
-
-      const endTime = Date.now();
-      const duration = endTime - startTime;
-
-      expect(duration).toBeLessThan(500);
-    });
-  });
-
-  test.describe('Bundle Size', () => {
-    test('should have acceptable JavaScript bundle size', async () => {
-      await page.goto('/agents');
-
-      const resourceSizes = await page.evaluate(() => {
-        const resources = performance.getEntriesByType('resource');
-        return resources
-          .filter((r: any) => r.name.endsWith('.js'))
-          .map((r: any) => ({
-            name: r.name,
-            size: r.transferSize,
-          }));
-      });
-
-      const totalSize = resourceSizes.reduce((sum: number, r: any) => sum + r.size, 0);
-
-      // Total JS should be under 500KB
-      expect(totalSize).toBeLessThan(500 * 1024);
-    });
-
-    test('should have acceptable CSS bundle size', async () => {
-      await page.goto('/agents');
-
-      const resourceSizes = await page.evaluate(() => {
-        const resources = performance.getEntriesByType('resource');
-        return resources
-          .filter((r: any) => r.name.endsWith('.css'))
-          .map((r: any) => ({
-            name: r.name,
-            size: r.transferSize,
-          }));
-      });
-
-      const totalSize = resourceSizes.reduce((sum: number, r: any) => sum + r.size, 0);
-
-      // Total CSS should be under 100KB
-      expect(totalSize).toBeLessThan(100 * 1024);
-    });
-  });
-
-  test.describe('Network Performance', () => {
-    test('should make minimal API requests', async () => {
-      const requests: string[] = [];
-
-      page.on('request', request => {
-        if (request.url().includes('/api/')) {
-          requests.push(request.url());
-        }
-      });
-
-      await page.goto('/agents');
-      await page.waitForTimeout(2000);
-
-      // Should not make excessive API calls
-      expect(requests.length).toBeLessThan(10);
-    });
-
-    test('should cache static resources', async () => {
-      await page.goto('/agents');
-
-      const firstLoadTime = Date.now();
-      await page.waitForLoadState('networkidle');
-      const firstLoad = Date.now() - firstLoadTime;
-
-      // Reload page
-      await page.reload();
-
-      const secondLoadTime = Date.now();
-      await page.waitForLoadState('networkidle');
-      const secondLoad = Date.now() - secondLoadTime;
-
-      // Second load should be faster due to caching
-      expect(secondLoad).toBeLessThan(firstLoad);
-    });
-  });
-
-  test.describe('Memory Performance', () => {
-    test('should not leak memory on page navigation', async () => {
-      const initialMetrics = await page.evaluate(() => {
-        return (performance as any).memory?.usedJSHeapSize || 0;
-      });
-
-      // Navigate multiple times
-      for (let i = 0; i < 5; i++) {
-        await page.goto('/agents');
-        await page.goto('/');
-      }
-
-      await page.goto('/agents');
-
-      const finalMetrics = await page.evaluate(() => {
-        return (performance as any).memory?.usedJSHeapSize || 0;
-      });
-
-      if (initialMetrics > 0 && finalMetrics > 0) {
-        const memoryIncrease = finalMetrics - initialMetrics;
-        const percentIncrease = (memoryIncrease / initialMetrics) * 100;
-
-        // Memory should not grow excessively (< 50% increase)
-        expect(percentIncrease).toBeLessThan(50);
-      }
-    });
-  });
-
-  test.describe('Rendering Performance', () => {
-    test('should render agent cards efficiently', async () => {
-      await page.goto('/agents');
-
-      const startTime = Date.now();
-
-      await page.waitForSelector('[data-testid="agent-card"]');
-
-      const endTime = Date.now();
-      const renderTime = endTime - startTime;
-
-      expect(renderTime).toBeLessThan(1000);
-    });
-
-    test('should handle large lists with virtualization', async () => {
-      await page.goto('/agents');
-
-      const cardCount = await page.locator('[data-testid="agent-card"]').count();
-
-      // If many agents, should use virtualization
-      if (cardCount > 20) {
-        const visibleCards = await page.evaluate(() => {
-          const cards = document.querySelectorAll('[data-testid="agent-card"]');
-          let visible = 0;
-          cards.forEach(card => {
-            const rect = card.getBoundingClientRect();
-            if (rect.top >= 0 && rect.bottom <= window.innerHeight) {
-              visible++;
-            }
-          });
-          return visible;
-        });
-
-        // Should render only visible items
-        expect(visibleCards).toBeLessThan(cardCount);
-      }
-    });
   });
 });

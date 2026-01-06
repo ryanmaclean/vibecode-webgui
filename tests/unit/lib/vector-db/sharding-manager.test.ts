@@ -4,7 +4,7 @@
 
 // Mock the dependencies before importing the module
 jest.mock('pg');
-jest.doMock('../consistent-hash-ring', () => ({
+jest.doMock('@/lib/vector-db/consistent-hash-ring', () => ({
   ConsistentHashRing: jest.fn().mockImplementation(() => ({
     addShard: jest.fn(),
     removeShard: jest.fn(),
@@ -47,17 +47,17 @@ jest.doMock('../consistent-hash-ring', () => ({
   }))
 }));
 
-import { VectorShardingManager } from '@/lib/sharding-manager';
-import { DatabasePoolFactory, DatabasePool, DatabasePoolClient } from '@/lib/connection-router';
-import { 
-  ShardInfo, 
-  ShardStatus, 
-  ShardingConfig, 
-  VectorQuery, 
-  ReadConsistency, 
+import { VectorShardingManager } from '@/lib/vector-db/sharding-manager';
+import { DatabasePoolFactory, DatabasePool, DatabasePoolClient } from '@/lib/vector-db/connection-router';
+import {
+  ShardInfo,
+  ShardStatus,
+  ShardingConfig,
+  VectorQuery,
+  ReadConsistency,
   WriteConsistency,
-  QueryType 
-} from '@/lib/types';
+  QueryType
+} from '@/lib/vector-db/types';
 
 // Mock console methods
 const mockConsole = {

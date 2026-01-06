@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from '@jest/globals';
 
 // Mock the AI integration to prevent real API calls
-jest.mock('..', () => ({
+jest.mock('@/lib/ai', () => ({
   ai: {
     initialize: jest.fn().mockResolvedValue(undefined),
     search: {
@@ -28,7 +28,7 @@ jest.mock('..', () => ({
   }
 }));
 
-import { ai } from '..';
+import { ai } from '@/lib/ai';
 
 describe('AI Integration', () => {
   beforeAll(async () => {

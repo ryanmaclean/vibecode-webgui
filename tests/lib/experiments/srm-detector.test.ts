@@ -272,8 +272,9 @@ describe('SRM Detection', () => {
     });
 
     test('should handle very small deviations in large samples', () => {
-      // 0.1% deviation in 1M samples should be detected
-      const assignments = { control: 500500, treatment: 499500 };
+      // 0.35% deviation in 1M samples should be detected
+      // Chi-square = 2 * (1750)² / 500000 ≈ 12.25 > 10.83 (critical value at α=0.001)
+      const assignments = { control: 501750, treatment: 498250 };
       const expectedWeights = { control: 50, treatment: 50 };
 
       const result = detectSampleRatioMismatch(assignments, expectedWeights);

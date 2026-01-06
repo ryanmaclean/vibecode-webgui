@@ -675,7 +675,7 @@ export default function WorkspacePage() {
                 <button
                   data-testid="save-permission-button"
                   onClick={() => {/* Save permissions */}}
-                  className="mt-2 w-full px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700"
+                  className="mt-2 w-full px-4 py-2 bg-green-700 text-white rounded-lg hover:bg-green-800"
                 >
                   Save Permissions
                 </button>

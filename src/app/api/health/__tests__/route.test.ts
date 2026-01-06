@@ -7,7 +7,7 @@
  */
 
 import { NextRequest } from 'next/server';
-import { GET } from '../route';
+import { GET, collectHealthSnapshot } from '../route';
 import { monitoring } from '@/lib/monitoring';
 
 // Mock the monitoring module
@@ -48,7 +48,8 @@ describe('/api/health', () => {
   };
 
   const getSnapshot = async () => {
-    const { snapshot } = await collectHealthSnapshot(Date.now());
+    // Use a timestamp slightly in the past to ensure responseTime > 0
+    const { snapshot } = await collectHealthSnapshot(Date.now() - 1);
     return snapshot;
   };
 

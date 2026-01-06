@@ -2,7 +2,81 @@
  * RAG System Tests
  */
 
-import { describe, it, expect, beforeAll, afterAll } from '@jest/globals';
+import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals';
+
+// Mock the cache module before importing ragSystem
+jest.mock('@/lib/rag/cache', () => {
+  const mockCache = {
+    connect: jest.fn().mockResolvedValue(undefined),
+    disconnect: jest.fn().mockResolvedValue(undefined),
+    get: jest.fn().mockResolvedValue(null),
+    set: jest.fn().mockResolvedValue(undefined),
+    clear: jest.fn().mockResolvedValue(undefined),
+    getStats: jest.fn().mockResolvedValue({
+      keyCount: 0,
+      memoryUsed: '0B',
+      hitRate: '0%'
+    })
+  };
+
+  return {
+    ValkeyCache: jest.fn().mockImplementation(() => mockCache),
+    valkeyCache: mockCache
+  };
+});
+
+// Mock the vector store
+jest.mock('@/lib/rag/vector-store', () => {
+  const mockResults = [
+    { id: '1', content: 'Mock result 1', similarity: 0.95, metadata: {} },
+    { id: '2', content: 'Mock result 2', similarity: 0.85, metadata: {} },
+    { id: '3', content: 'Mock result 3', similarity: 0.75, metadata: {} }
+  ];
+
+  const mockVectorStore = {
+    initialize: jest.fn().mockResolvedValue(undefined),
+    insert: jest.fn().mockResolvedValue('mock-id-1'),
+    insertBatch: jest.fn().mockImplementation((docs) =>
+      Promise.resolve(docs.map((_, i) => `mock-id-${i + 1}`))
+    ),
+    search: jest.fn().mockImplementation((embedding, options) => {
+      const limit = options?.limit || 10;
+      const threshold = options?.threshold || 0.7;
+      return Promise.resolve(
+        mockResults.filter(r => r.similarity > threshold).slice(0, limit)
+      );
+    }),
+    rebuildIndex: jest.fn().mockResolvedValue(undefined),
+    getStats: jest.fn().mockResolvedValue({
+      documentCount: 10,
+      tableSize: '1 MB',
+      indexSize: '512 KB'
+    })
+  };
+
+  return {
+    VectorStore: jest.fn().mockImplementation(() => mockVectorStore),
+    vectorStore: mockVectorStore
+  };
+});
+
+// Mock the embeddings service
+jest.mock('@/lib/rag/embeddings', () => {
+  const mockEmbedding = new Array(1536).fill(0).map(() => Math.random());
+
+  const mockEmbeddingService = {
+    generate: jest.fn().mockResolvedValue(mockEmbedding),
+    generateBatch: jest.fn().mockImplementation((texts) =>
+      Promise.resolve(texts.map(() => mockEmbedding))
+    )
+  };
+
+  return {
+    EmbeddingService: jest.fn().mockImplementation(() => mockEmbeddingService),
+    embeddingService: mockEmbeddingService
+  };
+});
+
 import { ragSystem } from '@/lib/rag';
 
 describe('RAG System', () => {

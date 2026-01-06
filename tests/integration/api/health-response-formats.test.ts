@@ -5,14 +5,25 @@
  * to ensure API contract compliance and consistency.
  */
 
+import { NextRequest } from 'next/server';
 import { GET as healthHandler } from '@/app/api/health/route';
 import { GET as healthzHandler } from '@/app/api/healthz/route';
 import { GET as readyzHandler } from '@/app/api/readyz/route';
 
+// Helper function to create a mock NextRequest
+function createMockRequest(url: string = 'http://localhost:3000/api/health'): NextRequest {
+  return new NextRequest(url, {
+    method: 'GET',
+    headers: {
+      'x-forwarded-for': '127.0.0.1',
+    },
+  });
+}
+
 describe('API Health Response Format Validation', () => {
   describe('/api/health response format', () => {
     it('should match expected schema structure', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Top-level required fields
@@ -23,7 +34,6 @@ describe('API Health Response Format Validation', () => {
       expect(data).toHaveProperty('environment');
       expect(data).toHaveProperty('checks');
       expect(data).toHaveProperty('responseTime');
-      expect(data).toHaveProperty('performance');
 
       // Type validation
       expect(typeof data.status).toBe('string');
@@ -33,11 +43,10 @@ describe('API Health Response Format Validation', () => {
       expect(typeof data.environment).toBe('string');
       expect(typeof data.checks).toBe('object');
       expect(typeof data.responseTime).toBe('string');
-      expect(typeof data.performance).toBe('object');
     });
 
     it('should have correctly structured checks object', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       const requiredChecks = ['memory', 'disk', 'database', 'valkey', 'ai'];
@@ -50,7 +59,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should have correctly structured memory check', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       const memCheck = data.checks.memory;
@@ -60,49 +69,30 @@ describe('API Health Response Format Validation', () => {
       const details = memCheck.details;
       expect(details).toHaveProperty('used');
       expect(details).toHaveProperty('total');
-      expect(details).toHaveProperty('external');
-      expect(details).toHaveProperty('rss');
+      expect(details).toHaveProperty('percentage');
 
-      // All should be numbers
-      expect(typeof details.used).toBe('number');
-      expect(typeof details.total).toBe('number');
-      expect(typeof details.external).toBe('number');
-      expect(typeof details.rss).toBe('number');
-    });
-
-    it('should have correctly structured performance object', async () => {
-      const response = await healthHandler();
-      const data = await response.json();
-
-      expect(data.performance).toHaveProperty('responseTime');
-      expect(data.performance).toHaveProperty('memoryUsage');
-
-      const memUsage = data.performance.memoryUsage;
-      expect(memUsage).toHaveProperty('rss');
-      expect(memUsage).toHaveProperty('heapTotal');
-      expect(memUsage).toHaveProperty('heapUsed');
-      expect(memUsage).toHaveProperty('external');
-
-      // All should be numbers
-      expect(typeof memUsage.rss).toBe('number');
-      expect(typeof memUsage.heapTotal).toBe('number');
-      expect(typeof memUsage.heapUsed).toBe('number');
-      expect(typeof memUsage.external).toBe('number');
+      // All should be strings with units
+      expect(typeof details.used).toBe('string');
+      expect(details.used).toMatch(/^\d+MB$/);
+      expect(typeof details.total).toBe('string');
+      expect(details.total).toMatch(/^\d+MB$/);
+      expect(typeof details.percentage).toBe('string');
+      expect(details.percentage).toMatch(/^\d+%$/);
     });
 
     it('should have response time in correct format', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Should be a string ending with 'ms'
       expect(data.responseTime).toMatch(/^\d+ms$/);
 
-      // Should also be included as number in performance
-      expect(typeof data.performance.responseTime).toBe('number');
+      const responseTimeMs = parseInt(data.responseTime);
+      expect(responseTimeMs).toBeGreaterThanOrEqual(0);
     });
 
     it('should have valid status values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       const validStatuses = ['healthy', 'unhealthy', 'degraded', 'warning'];
@@ -110,7 +100,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should have valid environment values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       const validEnvironments = ['development', 'test', 'production', 'staging'];
@@ -120,7 +110,7 @@ describe('API Health Response Format Validation', () => {
 
   describe('/api/healthz response format', () => {
     it('should match expected minimal schema', async () => {
-      const response = await healthzHandler();
+      const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
       // Should only have these fields
@@ -137,14 +127,14 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should have valid status value', async () => {
-      const response = await healthzHandler();
+      const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
       expect(data.status).toBe('healthy');
     });
 
     it('should have ISO 8601 timestamp', async () => {
-      const response = await healthzHandler();
+      const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
       const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -154,7 +144,7 @@ describe('API Health Response Format Validation', () => {
 
   describe('/api/readyz response format', () => {
     it('should match expected minimal schema', async () => {
-      const response = await readyzHandler();
+      const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
       // Should only have these fields
@@ -171,14 +161,14 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should have valid status value', async () => {
-      const response = await readyzHandler();
+      const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
       expect(data.status).toBe('ready');
     });
 
     it('should have ISO 8601 timestamp', async () => {
-      const response = await readyzHandler();
+      const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
       const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
@@ -189,9 +179,9 @@ describe('API Health Response Format Validation', () => {
   describe('Timestamp format validation', () => {
     it('should generate RFC 3339 compliant timestamps', async () => {
       const responses = await Promise.all([
-        healthHandler(),
-        healthzHandler(),
-        readyzHandler()
+        healthHandler(createMockRequest('http://localhost:3000/api/health')),
+        healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
+        readyzHandler(createMockRequest('http://localhost:3000/api/readyz'))
       ]);
 
       const timestamps = await Promise.all(
@@ -214,7 +204,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should have millisecond precision', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Should include milliseconds
@@ -222,7 +212,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should use UTC timezone', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Should end with 'Z' indicating UTC
@@ -232,69 +222,44 @@ describe('API Health Response Format Validation', () => {
 
   describe('Numeric field validation', () => {
     it('should have non-negative numeric values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Uptime
       expect(data.uptime).toBeGreaterThanOrEqual(0);
 
-      // Memory details
-      expect(data.checks.memory.details.used).toBeGreaterThan(0);
-      expect(data.checks.memory.details.total).toBeGreaterThan(0);
-      expect(data.checks.memory.details.external).toBeGreaterThanOrEqual(0);
-      expect(data.checks.memory.details.rss).toBeGreaterThan(0);
+      // Memory details are strings with units - parse them
+      const mem = data.checks.memory.details;
+      const usedMB = parseInt(mem.used);
+      const totalMB = parseInt(mem.total);
+      const percentage = parseInt(mem.percentage);
 
-      // Performance metrics
-      expect(data.performance.responseTime).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.rss).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.heapTotal).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.heapUsed).toBeGreaterThan(0);
-      expect(data.performance.memoryUsage.external).toBeGreaterThanOrEqual(0);
+      expect(usedMB).toBeGreaterThan(0);
+      expect(totalMB).toBeGreaterThan(0);
+      expect(percentage).toBeGreaterThanOrEqual(0);
+      expect(percentage).toBeLessThanOrEqual(100);
     });
 
     it('should have reasonable memory values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       const mem = data.checks.memory.details;
+      const usedMB = parseInt(mem.used);
+      const totalMB = parseInt(mem.total);
 
       // Used should not exceed total
-      expect(mem.used).toBeLessThanOrEqual(mem.total);
+      expect(usedMB).toBeLessThanOrEqual(totalMB);
 
-      // RSS should be reasonable (not terabytes)
-      expect(mem.rss).toBeLessThan(100000); // Less than 100GB in MB
-    });
-
-    it('should have consistent memory reporting', async () => {
-      const response = await healthHandler();
-      const data = await response.json();
-
-      // Memory should be reported in both places
-      const checkMem = data.checks.memory.details;
-      const perfMem = data.performance.memoryUsage;
-
-      // Performance memory is in bytes, check memory is in MB
-      // So convert and compare
-      const checkMemInBytes = {
-        used: checkMem.used * 1024 * 1024,
-        total: checkMem.total * 1024 * 1024,
-        external: checkMem.external * 1024 * 1024,
-        rss: checkMem.rss * 1024 * 1024
-      };
-
-      // Should be approximately equal (within 10% due to timing and rounding)
-      const withinTolerance = (a: number, b: number, tolerance = 0.1) => {
-        return Math.abs(a - b) / Math.max(a, b) <= tolerance;
-      };
-
-      expect(withinTolerance(checkMemInBytes.rss, perfMem.rss)).toBe(true);
-      expect(withinTolerance(checkMemInBytes.external, perfMem.external)).toBe(true);
+      // Values should be reasonable (not terabytes)
+      expect(usedMB).toBeLessThan(100000); // Less than 100GB
+      expect(totalMB).toBeLessThan(100000); // Less than 100GB
     });
   });
 
   describe('String field validation', () => {
     it('should have non-empty string values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       expect(data.status.length).toBeGreaterThan(0);
@@ -305,7 +270,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should not have whitespace-only values', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       expect(data.status.trim().length).toBe(data.status.length);
@@ -316,11 +281,11 @@ describe('API Health Response Format Validation', () => {
 
   describe('API contract consistency', () => {
     it('should maintain consistent field order', async () => {
-      const response1 = await healthHandler();
+      const response1 = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data1 = await response1.json();
       const keys1 = Object.keys(data1);
 
-      const response2 = await healthHandler();
+      const response2 = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data2 = await response2.json();
       const keys2 = Object.keys(data2);
 
@@ -328,7 +293,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should not include null values where not expected', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Top-level fields should not be null
@@ -339,11 +304,10 @@ describe('API Health Response Format Validation', () => {
       expect(data.environment).not.toBeNull();
       expect(data.checks).not.toBeNull();
       expect(data.responseTime).not.toBeNull();
-      expect(data.performance).not.toBeNull();
     });
 
     it('should be backward compatible with previous versions', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Essential fields that should always exist
@@ -363,7 +327,7 @@ describe('API Health Response Format Validation', () => {
 
   describe('Content type validation', () => {
     it('should return JSON content type', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const contentType = response.headers.get('content-type');
 
       expect(contentType).toBeTruthy();
@@ -371,7 +335,7 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should be parseable as JSON', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const text = await response.text();
 
       // Should be valid JSON
@@ -382,13 +346,13 @@ describe('API Health Response Format Validation', () => {
   describe('Schema validation across all endpoints', () => {
     it('should all return valid JSON objects', async () => {
       const endpoints = [
-        { name: 'health', handler: healthHandler },
-        { name: 'healthz', handler: healthzHandler },
-        { name: 'readyz', handler: readyzHandler }
+        { name: 'health', handler: healthHandler, url: 'http://localhost:3000/api/health' },
+        { name: 'healthz', handler: healthzHandler, url: 'http://localhost:3000/api/healthz' },
+        { name: 'readyz', handler: readyzHandler, url: 'http://localhost:3000/api/readyz' }
       ];
 
       for (const endpoint of endpoints) {
-        const response = await endpoint.handler();
+        const response = await endpoint.handler(createMockRequest(endpoint.url));
         const data = await response.json();
 
         expect(typeof data).toBe('object');
@@ -398,10 +362,14 @@ describe('API Health Response Format Validation', () => {
     });
 
     it('should all include status and timestamp fields', async () => {
-      const endpoints = [healthHandler, healthzHandler, readyzHandler];
+      const endpoints = [
+        { handler: healthHandler, url: 'http://localhost:3000/api/health' },
+        { handler: healthzHandler, url: 'http://localhost:3000/api/healthz' },
+        { handler: readyzHandler, url: 'http://localhost:3000/api/readyz' }
+      ];
 
-      for (const handler of endpoints) {
-        const response = await handler();
+      for (const endpoint of endpoints) {
+        const response = await endpoint.handler(createMockRequest(endpoint.url));
         const data = await response.json();
 
         expect(data).toHaveProperty('status');
@@ -413,9 +381,9 @@ describe('API Health Response Format Validation', () => {
 
     it('should have consistent timestamp formats', async () => {
       const responses = await Promise.all([
-        healthHandler(),
-        healthzHandler(),
-        readyzHandler()
+        healthHandler(createMockRequest('http://localhost:3000/api/health')),
+        healthzHandler(createMockRequest('http://localhost:3000/api/healthz')),
+        readyzHandler(createMockRequest('http://localhost:3000/api/readyz'))
       ]);
 
       const timestamps = await Promise.all(
@@ -435,7 +403,7 @@ describe('API Health Response Format Validation', () => {
 
   describe('Version format validation', () => {
     it('should follow semantic versioning', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
       // Should be semver format (X.Y.Z)
@@ -446,19 +414,25 @@ describe('API Health Response Format Validation', () => {
 
   describe('Memory metrics validation', () => {
     it('should report memory in consistent units', async () => {
-      const response = await healthHandler();
+      const response = await healthHandler(createMockRequest('http://localhost:3000/api/health'));
       const data = await response.json();
 
-      // Checks memory is in MB (rounded)
+      // Checks memory is returned as strings with MB suffix
       const checkMem = data.checks.memory.details;
-      expect(Number.isInteger(checkMem.used)).toBe(true);
-      expect(Number.isInteger(checkMem.total)).toBe(true);
-      expect(Number.isInteger(checkMem.external)).toBe(true);
-      expect(Number.isInteger(checkMem.rss)).toBe(true);
+      expect(typeof checkMem.used).toBe('string');
+      expect(checkMem.used).toMatch(/^\d+MB$/);
+      expect(typeof checkMem.total).toBe('string');
+      expect(checkMem.total).toMatch(/^\d+MB$/);
+      expect(typeof checkMem.percentage).toBe('string');
+      expect(checkMem.percentage).toMatch(/^\d+%$/);
 
-      // Performance memory is in bytes
-      const perfMem = data.performance.memoryUsage;
-      expect(perfMem.rss).toBeGreaterThan(1000000); // More than 1MB in bytes
+      // Parse and verify they are valid numbers
+      const usedMB = parseInt(checkMem.used);
+      const totalMB = parseInt(checkMem.total);
+      expect(Number.isInteger(usedMB)).toBe(true);
+      expect(Number.isInteger(totalMB)).toBe(true);
+      expect(usedMB).toBeGreaterThan(0);
+      expect(totalMB).toBeGreaterThan(0);
     });
   });
 });

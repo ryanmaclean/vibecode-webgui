@@ -3,7 +3,21 @@
  * Tests NextAuth configuration and providers
  */
 
+// Disable mocks for this test - we want to test the real implementation
+jest.unmock('@/lib/auth')
+
+// Mock logger to avoid dependency issues
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+  }
+}))
+
 import { authOptions } from '@/lib/auth'
+import { logger } from '@/lib/logger'
 
 // Type definitions for NextAuth providers and callbacks
 type CredentialsProvider = {
@@ -54,7 +68,7 @@ describe('auth.ts Configuration', () => {
     }
     
     // Clear the module cache to ensure fresh import
-    delete require.cache[require.resolve('../auth')]
+    delete require.cache[require.resolve('@/lib/auth')]
   })
 
   afterEach(() => {
@@ -398,8 +412,9 @@ describe('auth.ts Configuration', () => {
     })
 
     it('should log signIn events', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
-      
+      const mockInfo = logger.info as jest.MockedFunction<typeof logger.info>
+      mockInfo.mockClear()
+
       const signInEvent = authOptions.events?.signIn
       if (signInEvent) {
         await (signInEvent as any)({
@@ -409,13 +424,13 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('User test@example.com signed in via github')
-      consoleSpy.mockRestore()
+      expect(mockInfo).toHaveBeenCalledWith('User test@example.com signed in via github')
     })
 
     it('should log signOut events', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
-      
+      const mockInfo = logger.info as jest.MockedFunction<typeof logger.info>
+      mockInfo.mockClear()
+
       const signOutEvent = authOptions.events?.signOut
       if (signOutEvent) {
         await (signOutEvent as any)({
@@ -423,8 +438,7 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('User test@example.com signed out')
-      consoleSpy.mockRestore()
+      expect(mockInfo).toHaveBeenCalledWith('User test@example.com signed out')
     })
   })
 

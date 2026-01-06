@@ -398,10 +398,10 @@ export const ConnectionPoolMonitoringDashboard: React.FC<ConnectionPoolMonitorin
             </div>
           </div>
           <div className="mt-2 h-2 bg-green-200 rounded-full overflow-hidden">
-            <div 
+            <div
               className={`h-full rounded-full ${
-                metrics.utilization.current > 80 ? 'bg-yellow-500' : 
-                metrics.utilization.current > 95 ? 'bg-red-500' : 'bg-green-600'
+                metrics.utilization.current > 80 ? 'bg-yellow-500' :
+                metrics.utilization.current > 95 ? 'bg-red-500' : 'bg-green-700'
               }`}
               style={{ width: `${metrics.utilization.current}%` }}
             />

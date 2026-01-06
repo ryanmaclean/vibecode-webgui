@@ -1,4 +1,4 @@
-import { FunctionCallingService, FunctionDefinition, FunctionCall, FunctionResult } from '@/lib/function-calling';
+import { FunctionCallingService, FunctionDefinition, FunctionCall, FunctionResult } from '@/lib/services/function-calling';
 
 // Mock external dependencies
 jest.mock('node-fetch', () => jest.fn());
@@ -25,22 +25,23 @@ describe('FunctionCallingService', () => {
     });
   });
 
-  describe('getFunctionDefinitions', () => {
+  describe('getRegisteredFunctions', () => {
     it('should return list of available functions', () => {
-      const functions = service.getFunctionDefinitions();
+      const functions = service.getRegisteredFunctions();
       expect(Array.isArray(functions)).toBe(true);
-      // Note: The current implementation has a bug where definitions aren't stored
-      // This test documents the current behavior
-      expect(functions.length).toBeGreaterThanOrEqual(0);
+      // Common functions are registered during initialization
+      expect(functions.length).toBeGreaterThanOrEqual(8);
     });
 
     it('should include builtin functions', () => {
-      const functions = service.getFunctionDefinitions();
+      const functions = service.getRegisteredFunctions();
       const functionNames = functions.map(f => f.name);
-      
-      // The current implementation doesn't store definitions properly
-      // This test documents the current behavior (empty array)
-      expect(functionNames).toEqual([]);
+
+      // Check for common registered functions
+      expect(functionNames).toContain('read_file');
+      expect(functionNames).toContain('write_file');
+      expect(functionNames).toContain('run_command');
+      expect(functionNames).toContain('search_code');
     });
   });
 
@@ -61,20 +62,18 @@ describe('FunctionCallingService', () => {
         }
       };
 
-      const mockImplementation = jest.fn().mockResolvedValue({
-        success: true,
-        result: 'test result'
-      });
+      service.registerFunction(customFunction);
 
-      service.registerFunction(customFunction, mockImplementation);
-
-      // The function should be executable even if definitions aren't stored properly
-      expect(service.executeFunction).toBeDefined();
+      // Check that the function was registered
+      const functions = service.getRegisteredFunctions();
+      const testFunction = functions.find(f => f.name === 'test_function');
+      expect(testFunction).toBeDefined();
+      expect(testFunction?.description).toBe('A test function');
     });
 
     it('should allow registering duplicate functions (overwrites)', () => {
       const customFunction: FunctionDefinition = {
-        name: 'web_search', // This is a builtin function
+        name: 'read_file', // Overwrite an existing function
         description: 'Duplicate function',
         parameters: {
           type: 'object',
@@ -82,22 +81,22 @@ describe('FunctionCallingService', () => {
         }
       };
 
-      const mockImplementation = jest.fn();
-
       // Should not throw error, just overwrite
       expect(() => {
-        service.registerFunction(customFunction, mockImplementation);
+        service.registerFunction(customFunction);
       }).not.toThrow();
+
+      const definition = service.getFunctionDefinition('read_file');
+      expect(definition?.description).toBe('Duplicate function');
     });
   });
 
   describe('executeFunction', () => {
     it('should execute a registered function', async () => {
       const functionCall: FunctionCall = {
-        name: 'web_search',
+        name: 'read_file',
         arguments: {
-          query: 'test query',
-          maxResults: 3
+          path: '/test/path.txt'
         }
       };
 
@@ -106,7 +105,9 @@ describe('FunctionCallingService', () => {
       expect(result).toHaveProperty('success');
       expect(result).toHaveProperty('result');
       expect(result.success).toBe(true);
-    }, 10000); // 10 second timeout for web search
+      expect(result.result).toHaveProperty('content');
+      expect(result.result).toHaveProperty('path');
+    });
 
     it('should handle function execution errors', async () => {
       const functionCall: FunctionCall = {
@@ -122,10 +123,10 @@ describe('FunctionCallingService', () => {
 
     it('should validate function arguments', async () => {
       const functionCall: FunctionCall = {
-        name: 'web_search',
+        name: 'write_file',
         arguments: {
-          query: 'test query',
-          maxResults: 5
+          path: '/test/output.txt',
+          content: 'test content'
         }
       };
 
@@ -133,17 +134,17 @@ describe('FunctionCallingService', () => {
 
       expect(result.success).toBe(true);
       expect(result.result).toBeDefined();
-    }, 10000); // 10 second timeout for web search
+      expect(result.result.success).toBe(true);
+    });
   });
 
   describe('Builtin Functions', () => {
-    describe('web_search', () => {
-      it('should execute web search with valid arguments', async () => {
+    describe('read_file', () => {
+      it('should execute read file with valid arguments', async () => {
         const functionCall: FunctionCall = {
-          name: 'web_search',
+          name: 'read_file',
           arguments: {
-            query: 'artificial intelligence',
-            maxResults: 3
+            path: '/test/file.txt'
           }
         };
 
@@ -151,67 +152,33 @@ describe('FunctionCallingService', () => {
 
         expect(result.success).toBe(true);
         expect(result.result).toBeDefined();
-        expect(Array.isArray(result.result)).toBe(true);
-      }, 10000); // 10 second timeout for web search
-
-      it('should handle web search errors gracefully', async () => {
-        const functionCall: FunctionCall = {
-          name: 'web_search',
-          arguments: {
-            query: 'test query',
-            maxResults: 5
-          }
-        };
-
-        const result = await service.executeFunction(functionCall);
-
-        // Web search might succeed or fail depending on external service
-        expect(result).toHaveProperty('success');
-        expect(result).toHaveProperty('result');
-      }, 10000); // 10 second timeout for web search
-    });
-
-    describe('create_file', () => {
-      it('should execute file creation with valid arguments', async () => {
-        const functionCall: FunctionCall = {
-          name: 'create_file',
-          arguments: {
-            filename: 'test.txt',
-            content: 'Hello World',
-            workspaceId: 'test-workspace'
-          }
-        };
-
-        const result = await service.executeFunction(functionCall);
-
-        expect(result.success).toBe(true);
-        expect(result.result).toBeDefined();
+        expect(result.result).toHaveProperty('content');
+        expect(result.result).toHaveProperty('path');
       });
 
-      it('should handle file creation errors gracefully', async () => {
+      it('should include file metadata', async () => {
         const functionCall: FunctionCall = {
-          name: 'create_file',
+          name: 'read_file',
           arguments: {
-            filename: '', // Empty filename
-            content: 'test content'
+            path: '/test/file.txt'
           }
         };
 
         const result = await service.executeFunction(functionCall);
 
-        expect(result.success).toBe(false);
-        expect(result.error).toBeDefined();
+        expect(result.success).toBe(true);
+        expect(result.result).toHaveProperty('size');
+        expect(result.result).toHaveProperty('lastModified');
       });
     });
 
-    describe('execute_code', () => {
-      it('should execute code with valid arguments', async () => {
+    describe('write_file', () => {
+      it('should execute file write with valid arguments', async () => {
         const functionCall: FunctionCall = {
-          name: 'execute_code',
+          name: 'write_file',
           arguments: {
-            code: 'console.log("Hello World")',
-            language: 'javascript',
-            workspaceId: 'test-workspace'
+            path: '/test/output.txt',
+            content: 'Hello World'
           }
         };
 
@@ -219,25 +186,77 @@ describe('FunctionCallingService', () => {
 
         expect(result.success).toBe(true);
         expect(result.result).toBeDefined();
-      }, 15000); // 15 second timeout for code execution
+        expect(result.result.success).toBe(true);
+        expect(result.result.path).toBe('/test/output.txt');
+      });
 
-      it('should handle code execution errors gracefully', async () => {
+      it('should report bytes written', async () => {
+        const content = 'test content';
         const functionCall: FunctionCall = {
-          name: 'execute_code',
+          name: 'write_file',
           arguments: {
-            code: 'invalid syntax',
-            language: 'javascript'
+            path: '/test/file.txt',
+            content
           }
         };
 
         const result = await service.executeFunction(functionCall);
 
-        // The execute_code function might succeed or fail depending on implementation
-        expect(result).toHaveProperty('success');
-        if (!result.success) {
-          expect(result.error).toBeDefined();
-        }
-      }, 15000); // 15 second timeout for code execution
+        expect(result.success).toBe(true);
+        expect(result.result.bytesWritten).toBe(content.length);
+      });
+    });
+
+    describe('run_command', () => {
+      it('should execute command with valid arguments', async () => {
+        const functionCall: FunctionCall = {
+          name: 'run_command',
+          arguments: {
+            command: 'echo "Hello World"'
+          }
+        };
+
+        const result = await service.executeFunction(functionCall);
+
+        expect(result.success).toBe(true);
+        expect(result.result).toBeDefined();
+        expect(result.result.success).toBe(true);
+        expect(result.result).toHaveProperty('stdout');
+        expect(result.result).toHaveProperty('exitCode');
+      });
+
+      it('should include execution time', async () => {
+        const functionCall: FunctionCall = {
+          name: 'run_command',
+          arguments: {
+            command: 'test command'
+          }
+        };
+
+        const result = await service.executeFunction(functionCall);
+
+        expect(result.success).toBe(true);
+        expect(result.result.executionTime).toBeDefined();
+        expect(typeof result.result.executionTime).toBe('number');
+      });
+    });
+
+    describe('search_code', () => {
+      it('should search code with valid arguments', async () => {
+        const functionCall: FunctionCall = {
+          name: 'search_code',
+          arguments: {
+            query: 'function test'
+          }
+        };
+
+        const result = await service.executeFunction(functionCall);
+
+        expect(result.success).toBe(true);
+        expect(result.result).toBeDefined();
+        expect(result.result.results).toBeDefined();
+        expect(Array.isArray(result.result.results)).toBe(true);
+      });
     });
   });
 

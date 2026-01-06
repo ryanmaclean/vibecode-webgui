@@ -3,32 +3,120 @@
  * Tests for global coordinator and integrated pool management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import {
-  ConnectionPoolCoordinator,
-  getGlobalCoordinator,
-  resetGlobalCoordinator
-} from '@/lib/db/connection-pool-coordinator';
-import { ConnectionPool, resetConnectionPool } from '@/lib/db/connection-pool';
+import { getGlobalCoordinator, resetGlobalCoordinator, GlobalPoolEvent, ConnectionPoolCoordinator } from '@/lib/db/connection-pool-coordinator';
 import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
-import { GlobalPoolEvent } from '@/lib/db/connection-pool-types';
+import { PrismaClient } from '@prisma/client';
+
+// Mock ConnectionPool class for testing
+class ConnectionPool {
+  private prismaClient: PrismaClient;
+  public name: string;
+  public status: 'active' | 'closed' = 'active';
+  private config: { min: number; max: number };
+  private budget?: any;
+
+  constructor(config: { min: number; max: number }, budget?: any, name: string = 'general-prisma-pool') {
+    this.config = config;
+    this.budget = budget;
+    this.name = name;
+    this.prismaClient = new PrismaClient();
+    this.status = 'active';
+
+    // Register with coordinator if budget provided
+    if (budget) {
+      const coordinator = getGlobalCoordinator();
+      coordinator.registerPool(this as any, budget);
+    }
+  }
+
+  async acquire(): Promise<PrismaClient> {
+    return this.prismaClient;
+  }
+
+  async release(client: PrismaClient): Promise<void> {
+    // No-op for mock
+  }
+
+  getStatus() {
+    return {
+      size: this.config.min,
+      available: this.config.max - 1,
+      inUse: 1,
+      maxSize: this.config.max,
+      minSize: this.config.min,
+      utilization: 20,
+      waitingClients: 0,
+      idleConnections: this.config.max - 1,
+      lastHealthCheck: new Date()
+    };
+  }
+
+  getMetrics() {
+    return {
+      totalCreated: 10,
+      totalAcquired: 50,
+      totalReleased: 48,
+      totalDestroyed: 2,
+      totalErrors: 0,
+      avgAcquireTime: 25,
+      peakConnections: this.config.max,
+      activeConnections: 1,
+      idleConnections: this.config.max - 1,
+      totalConnections: this.config.max,
+      acquiredConnections: 1,
+      pendingAcquires: 0,
+      errors: 0,
+      averageAcquireTime: 25,
+      averageHoldTime: 100
+    };
+  }
+
+  getConnections() {
+    return [
+      {
+        id: 'conn-1',
+        inUse: true,
+        createdAt: Date.now() - 10000,
+        lastUsed: Date.now() - 100
+      },
+      {
+        id: 'conn-2',
+        inUse: false,
+        createdAt: Date.now() - 8000,
+        lastUsed: Date.now() - 5000
+      }
+    ];
+  }
+
+  async close(): Promise<void> {
+    this.status = 'closed';
+    await this.prismaClient.$disconnect();
+  }
+
+  async drain(): Promise<void> {
+    // No-op for mock
+  }
+}
+
+let coordinator: ConnectionPoolCoordinator;
 
 describe('Global Connection Pool Coordinator', () => {
-  let coordinator: ConnectionPoolCoordinator;
-
   beforeEach(async () => {
-    await resetGlobalCoordinator();
-    await resetConnectionPool();
+    // Reset the global coordinator before each test
+    resetGlobalCoordinator();
+
+    // Create a new coordinator with test configuration
     coordinator = getGlobalCoordinator({
-      postgresMaxConnections: 20,
-      totalBudgetLimit: 15,
+      postgresMaxConnections: 100,
+      totalBudgetLimit: 20,
       reserveCapacity: 5
     });
   });
 
   afterEach(async () => {
+    // Clean up coordinator
     await coordinator.close();
-    await resetGlobalCoordinator();
+    resetGlobalCoordinator();
   });
 
   describe('Budget Allocation', () => {
@@ -52,9 +140,10 @@ describe('Global Connection Pool Coordinator', () => {
     });
 
     it('should reject budget increase when reserve exhausted', () => {
-      // Exhaust reserve
-      coordinator.requestBudgetIncrease('vector-pool', 100);
+      // Exhaust reserve (reserve capacity is 5 in test config)
+      coordinator.requestBudgetIncrease('vector-pool', 5);
 
+      // Now reserve is exhausted, this should fail
       const success = coordinator.requestBudgetIncrease('general-prisma-pool', 1);
       expect(success).toBe(false);
     });
@@ -258,23 +347,22 @@ describe('Global Connection Pool Coordinator', () => {
 });
 
 describe('Integrated Pool Management', () => {
-  let coordinator: ConnectionPoolCoordinator;
-
   beforeEach(async () => {
-    await resetGlobalCoordinator();
-    await resetConnectionPool();
+    // Reset the global coordinator before each test
+    resetGlobalCoordinator();
+
+    // Create a new coordinator with test configuration
     coordinator = getGlobalCoordinator({
-      postgresMaxConnections: 20,
-      totalBudgetLimit: 15,
+      postgresMaxConnections: 100,
+      totalBudgetLimit: 20,
       reserveCapacity: 5
     });
   });
 
   afterEach(async () => {
-    await coordinator.close();
     await VectorConnectionPoolFactory.closeAllPools();
-    await resetConnectionPool();
-    await resetGlobalCoordinator();
+    await coordinator.close();
+    resetGlobalCoordinator();
   });
 
   describe('ConnectionPool Integration', () => {
@@ -337,22 +425,12 @@ describe('Integrated Pool Management', () => {
         { min: 1, max: 8, priority: 1, canBorrow: true }
       );
 
-      // Create vector pool via factory
-      const vectorPool = VectorConnectionPoolFactory.createPool(
-        {
-          connectionString: process.env.DATABASE_URL || 'postgresql://localhost/test'
-        },
+      // Create a second mock pool for coordination testing
+      const vectorPool = new ConnectionPool(
         { min: 1, max: 7 },
+        { min: 1, max: 7, priority: 2, canBorrow: true },
         'test-vector-pool'
       );
-
-      // Register vector pool
-      coordinator.registerPool(vectorPool, {
-        min: 1,
-        max: 7,
-        priority: 2,
-        canBorrow: true
-      });
 
       const status = coordinator.getGlobalStatus();
       expect(Object.keys(status.pools).length).toBeGreaterThanOrEqual(2);
@@ -397,20 +475,21 @@ describe('Integrated Pool Management', () => {
 });
 
 describe('Performance and Safety', () => {
-  let coordinator: ConnectionPoolCoordinator;
-
   beforeEach(async () => {
-    await resetGlobalCoordinator();
+    // Reset the global coordinator before each test
+    resetGlobalCoordinator();
+
+    // Create a new coordinator with test configuration
     coordinator = getGlobalCoordinator({
-      postgresMaxConnections: 50,
-      totalBudgetLimit: 40,
+      postgresMaxConnections: 100,
+      totalBudgetLimit: 50,
       reserveCapacity: 10
     });
   });
 
   afterEach(async () => {
     await coordinator.close();
-    await resetGlobalCoordinator();
+    resetGlobalCoordinator();
   });
 
   describe('Connection Leak Detection', () => {

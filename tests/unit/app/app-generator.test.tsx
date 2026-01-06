@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor } from '../../test-utils';
 import { useSession } from 'next-auth/react';
 import { useRouter } from 'next/navigation';
 import { ProjectGenerator } from '@/components/ProjectGenerator';
@@ -38,17 +38,25 @@ jest.mock('@/components/ui/alert', () => ({
   AlertTitle: ({ children, ...props }) => <div {...props}>{children}</div>
 }));
 
-// Mock the useProjectGenerator hook to control behavior in tests
+// Mock only the hook to test component behavior in isolation
 const mockGenerateProject = jest.fn();
 const mockCancelGeneration = jest.fn();
 let mockOnComplete: ((data: any) => void) | undefined;
+let mockOnError: ((error: any) => void) | undefined;
 
 jest.mock('@/hooks/useProjectGenerator', () => ({
-  useProjectGenerator: jest.fn()
+  useProjectGenerator: jest.fn((callbacks) => {
+    // Capture callbacks for test control
+    mockOnComplete = callbacks?.onComplete;
+    mockOnError = callbacks?.onError;
+    return {
+      isGenerating: false,
+      progress: { status: 'idle', message: 'Ready to start', progress: 0 },
+      generateProject: mockGenerateProject,
+      cancelGeneration: mockCancelGeneration
+    };
+  })
 }));
-
-// Get the mocked hook to control its behavior in tests
-const mockUseProjectGenerator = require('@/hooks/useProjectGenerator').useProjectGenerator;
 
 describe('App Generator Integration', () => {
   const mockPush = jest.fn();
@@ -56,30 +64,22 @@ describe('App Generator Integration', () => {
   beforeEach(() => {
     // Reset all mocks
     jest.clearAllMocks();
-    
+    mockOnComplete = undefined;
+    mockOnError = undefined;
+
     // Mock useSession
     (useSession as jest.Mock).mockReturnValue({
       data: { user: { id: 'test-user', email: 'test@example.com' } },
       status: 'authenticated',
     });
-    
+
     // Mock useRouter
     (useRouter as jest.Mock).mockReturnValue({
       push: mockPush,
     });
-    
-    // Mock useProjectGenerator hook to capture callbacks and provide trigger mechanism
+
+    // Mock project generation to resolve successfully
     mockGenerateProject.mockResolvedValue({ workspaceId: 'test-workspace-123', projectName: 'Test Project' });
-    mockUseProjectGenerator.mockImplementation((callbacks) => {
-      // Capture the onComplete callback so we can trigger it in tests
-      mockOnComplete = callbacks?.onComplete;
-      return {
-        isGenerating: false,
-        progress: { status: 'idle', message: 'Ready to start', progress: 0 },
-        generateProject: mockGenerateProject,
-        cancelGeneration: mockCancelGeneration
-      };
-    });
   });
 
   it('renders the project generator input form when no initial prompt', () => {
@@ -164,31 +164,17 @@ describe('App Generator Integration', () => {
   });
 
   it('handles generation errors gracefully', async () => {
-    let mockOnError: ((error: any) => void) | undefined;
-    
-    // Update the mock to capture onError callback
-    mockUseProjectGenerator.mockImplementation((callbacks) => {
-      mockOnComplete = callbacks?.onComplete;
-      mockOnError = callbacks?.onError;
-      return {
-        isGenerating: false,
-        progress: { status: 'idle', message: 'Ready to start', progress: 0 },
-        generateProject: mockGenerateProject,
-        cancelGeneration: mockCancelGeneration
-      };
-    });
-    
     render(
-      <ProjectGenerator 
+      <ProjectGenerator
         initialPrompt="Create a React app"
         onComplete={jest.fn()}
         autoStart={true}
       />
     );
-    
+
     // Simulate an error occurring during generation
     const errorData = { message: 'Generation failed' };
-    
+
     if (mockOnError) {
       mockOnError(errorData);
       // Simulate the analytics call that would happen on error
@@ -197,7 +183,7 @@ describe('App Generator Integration', () => {
         { error: errorData.message }
       );
     }
-    
+
     // Verify error was tracked
     await waitFor(() => {
       expect(logEvent).toHaveBeenCalledWith(

@@ -5,28 +5,8 @@
 import { SAMLProvider } from '@/lib/auth/saml-provider'
 import { MFAProvider } from '@/lib/auth/mfa-provider'
 
-// Mock dependencies
-jest.mock('speakeasy', () => ({
-  generateSecret: jest.fn(() => ({
-    base32: 'MOCKBASE32SECRET',
-    otpauth_url: 'otpauth://totp/TestApp:user@example.com?secret=MOCKBASE32SECRET&issuer=TestApp'
-  })),
-  totp: {
-    verify: jest.fn(() => ({ delta: 0 }))
-  }
-}))
-
-jest.mock('qrcode', () => ({
-  toDataURL: jest.fn(() => Promise.resolve('data:image/png;base64,mockqrcode'))
-}))
-
-jest.mock('crypto', () => ({
-  randomBytes: jest.fn(() => Buffer.from('mockrandomdata', 'utf8')),
-  createHash: jest.fn(() => ({
-    update: jest.fn().mockReturnThis(),
-    digest: jest.fn(() => 'mockedhash')
-  }))
-}))
+// Use real implementations for better test coverage
+// Mocks are only needed if external dependencies are unavailable
 
 describe('Authentication Features', () => {
   describe('SAML Provider', () => {
@@ -103,9 +83,11 @@ describe('Authentication Features', () => {
       expect(result).toHaveProperty('secret')
       expect(result).toHaveProperty('qrCodeUrl')
       expect(result).toHaveProperty('backupCodes')
-      expect(result.secret).toBe('MOCKBASE32SECRET')
-      expect(result.qrCodeUrl).toBe('data:image/png;base64,mockqrcode')
+      expect(typeof result.secret).toBe('string')
+      expect(result.secret.length).toBeGreaterThan(0)
+      expect(result.qrCodeUrl).toMatch(/^data:image\/png;base64,/)
       expect(result.backupCodes).toHaveLength(10)
+      expect(result.backupCodes.every(code => typeof code === 'string' && code.length > 0)).toBe(true)
     })
 
     it('should generate backup codes', async () => {

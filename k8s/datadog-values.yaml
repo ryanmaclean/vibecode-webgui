@@ -2,12 +2,6 @@ datadog:
   site: "datadoghq.com"
   clusterName: "vibecode-kind-test"
 
-  env:
-    - name: DD_HOSTNAME
-      valueFrom:
-        fieldRef:
-          fieldPath: spec.nodeName
-
   # Enable Kubernetes Autoscaling (GA 2025)
   autoscaling:
     workload:
@@ -44,9 +38,25 @@ datadog:
   # Orchestrator Explorer (Required for Pod collection)
   orchestratorExplorer:
     enabled: true
+
+  # Kubernetes State Metrics
+  kubeStateMetricsCore:
+    enabled: true
   kubeStateMetricsScrape:
     enabled: true
+
+  # Collect Kubernetes events
+  collectEvents: true
+
+  # Database Monitoring
+  databaseMonitoring:
+    enabled: true
+
   env:
+    - name: DD_HOSTNAME
+      valueFrom:
+        fieldRef:
+          fieldPath: spec.nodeName
     - name: DD_LLMOBS_ENABLED
       value: "1"
     - name: DD_LLMOBS_AGENTLESS_ENABLED
@@ -129,6 +139,12 @@ securityAgent:
     enabled: true
   compliance:
     enabled: true
+
+systemProbe:
+  enabled: true
+  enableTCPQueueLength: true
+  enableHTTPMonitoring: true
+  collectDNSStats: true
 
 # Target Allocator for advanced metrics
 targetAllocator:

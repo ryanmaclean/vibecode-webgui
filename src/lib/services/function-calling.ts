@@ -22,6 +22,12 @@ export interface FunctionCall {
   arguments: Record<string, any>;
 }
 
+export interface FunctionResult {
+  success: boolean;
+  result?: any;
+  error?: string;
+}
+
 export interface FunctionExecutionResult {
   success: boolean;
   result?: any;
@@ -42,6 +48,7 @@ export interface FunctionCallingOptions {
  */
 export class FunctionCallingService {
   private functions: Map<string, FunctionDefinition> = new Map();
+  private implementations: Map<string, (args: Record<string, any>) => Promise<any>> = new Map();
   private executionHistory: Array<{
     call: FunctionCall;
     result: FunctionExecutionResult;
@@ -54,11 +61,22 @@ export class FunctionCallingService {
     averageExecutionTime: 0
   };
 
+  constructor() {
+    // Register common functions on initialization
+    this.registerCommonFunctions();
+  }
+
   /**
    * Register a function for AI calling
    */
-  registerFunction(definition: FunctionDefinition): void {
+  registerFunction(
+    definition: FunctionDefinition,
+    implementation?: (args: Record<string, any>) => Promise<any>
+  ): void {
     this.functions.set(definition.name, definition);
+    if (implementation) {
+      this.implementations.set(definition.name, implementation);
+    }
   }
 
   /**
@@ -190,9 +208,13 @@ export class FunctionCallingService {
    * Perform the actual function execution
    */
   private async performFunctionExecution(call: FunctionCall): Promise<any> {
-    // This would integrate with the actual function implementations
-    // For now, we'll simulate based on common function patterns
+    // Check if there's a custom implementation
+    const implementation = this.implementations.get(call.name);
+    if (implementation) {
+      return await implementation(call.arguments);
+    }
 
+    // Fall back to built-in simulations
     switch (call.name) {
       case 'read_file':
         return this.simulateReadFile(call.arguments);
@@ -210,6 +232,12 @@ export class FunctionCallingService {
         return this.simulateDeployProject(call.arguments);
       case 'get_workspace_info':
         return this.simulateGetWorkspaceInfo(call.arguments);
+      case 'create_file':
+        return this.simulateCreateFile(call.arguments);
+      case 'list_files':
+        return this.simulateListFiles(call.arguments);
+      case 'web_search':
+        return this.simulateWebSearch(call.arguments);
       default:
         throw new Error(`Unknown function: ${call.name}`);
     }
@@ -326,6 +354,44 @@ export class FunctionCallingService {
   }
 
   /**
+   * Simulate create file function
+   */
+  private simulateCreateFile(args: Record<string, any>): any {
+    return {
+      success: true,
+      filename: args.filename,
+      path: `/workspace/${args.workspaceId}/${args.filename}`,
+      size: args.content?.length || 0
+    };
+  }
+
+  /**
+   * Simulate list files function
+   */
+  private simulateListFiles(args: Record<string, any>): any {
+    return [
+      { name: 'file1.txt', size: 100, type: 'file' },
+      { name: 'file2.js', size: 500, type: 'file' },
+      { name: 'folder1', type: 'directory' }
+    ];
+  }
+
+  /**
+   * Simulate web search function
+   */
+  private simulateWebSearch(args: Record<string, any>): any {
+    return {
+      results: Array(args.maxResults || 5).fill(null).map((_, i) => ({
+        title: `Result ${i + 1}`,
+        url: `https://example.com/result-${i + 1}`,
+        snippet: `This is a search result for: ${args.query}`
+      })),
+      totalResults: args.maxResults || 5,
+      query: args.query
+    };
+  }
+
+  /**
    * Batch execute multiple function calls
    */
   async batchExecuteFunctions(
@@ -433,6 +499,13 @@ export class FunctionCallingService {
       isValid: errors.length === 0,
       errors
     };
+  }
+
+  /**
+   * Get function definitions (alias for getRegisteredFunctions)
+   */
+  getFunctionDefinitions(): FunctionDefinition[] {
+    return this.getRegisteredFunctions();
   }
 
   /**
@@ -545,6 +618,43 @@ export class FunctionCallingService {
           },
           required: ['workspaceId']
         }
+      },
+      {
+        name: 'create_file',
+        description: 'Create a new file in a workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            filename: { type: 'string', description: 'Name of the file to create' },
+            content: { type: 'string', description: 'Content to write to the file' },
+            workspaceId: { type: 'string', description: 'Workspace ID' }
+          },
+          required: ['filename', 'content', 'workspaceId']
+        }
+      },
+      {
+        name: 'list_files',
+        description: 'List files in a workspace',
+        parameters: {
+          type: 'object',
+          properties: {
+            workspaceId: { type: 'string', description: 'Workspace ID' },
+            path: { type: 'string', description: 'Path within workspace (optional)' }
+          },
+          required: ['workspaceId']
+        }
+      },
+      {
+        name: 'web_search',
+        description: 'Search the web for information',
+        parameters: {
+          type: 'object',
+          properties: {
+            query: { type: 'string', description: 'Search query' },
+            maxResults: { type: 'number', description: 'Maximum number of results (optional)' }
+          },
+          required: ['query']
+        }
       }
     ];
 
@@ -616,6 +726,3 @@ Choose the most appropriate function(s) based on the user's request.
 
 // Export singleton instance for global use
 export const functionCallingService = new FunctionCallingService();
-
-// Initialize with common functions
-functionCallingService.registerCommonFunctions();

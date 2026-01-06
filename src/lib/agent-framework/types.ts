@@ -2,7 +2,9 @@
 
 import type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './index';
 
-export * from './index';
+// DO NOT export * from './index' - it creates a circular dependency that causes OOM during module loading
+// Instead, only re-export the specific types needed
+export type { AgentEvent, AgentMessage, AgentResponse, ToolDefinition, Agent } from './index';
 
 /**
  * Base interface for all agent events

@@ -51,6 +51,7 @@ coverage/
 # Temporary files
 *.tmp
 *.temp
+*.log
 
 # Kind cluster configuration
 kind-config.yaml

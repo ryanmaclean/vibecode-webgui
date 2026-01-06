@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '../../../tests/test-utils';
 import { ProjectGenerator } from '../ProjectGenerator';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 
@@ -11,9 +11,32 @@ jest.mock('next/navigation', () => ({
   })),
 }));
 
+// Mock UI components
+jest.mock('@/components/ui/progress', () => ({
+  Progress: ({ value, className }: any) => (
+    <div className={className} role="progressbar" aria-valuenow={value}>
+      {value}%
+    </div>
+  ),
+}));
+
+jest.mock('@/components/ui/alert', () => ({
+  Alert: ({ children, className }: any) => <div className={className}>{children}</div>,
+  AlertTitle: ({ children }: any) => <div>{children}</div>,
+  AlertDescription: ({ children }: any) => <div>{children}</div>,
+}));
+
+jest.mock('@/components/ui/button', () => ({
+  Button: ({ children, onClick, disabled, ...props }: any) => (
+    <button onClick={onClick} disabled={disabled} {...props}>
+      {children}
+    </button>
+  ),
+}));
+
 const mockUseProjectGenerator = useProjectGenerator as jest.MockedFunction<typeof useProjectGenerator>;
 
-describe.skip('ProjectGenerator - Complex Mocking Issues', () => {
+describe('ProjectGenerator', () => {
   const mockGenerateProject = jest.fn();
   const mockCancelGeneration = jest.fn();
   const mockUpdateProgress = jest.fn();
@@ -89,7 +112,7 @@ describe.skip('ProjectGenerator - Complex Mocking Issues', () => {
 
     // Check that progress is displayed
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.getByText(/42%/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/42%/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/generating your project.../i)).toBeInTheDocument();
   });
 

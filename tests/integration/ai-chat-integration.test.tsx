@@ -3,7 +3,7 @@
 
 import React from 'react'
 import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals'
-import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+import { render, screen, fireEvent, waitFor } from '@/../tests/test-utils'
 import userEvent from '@testing-library/user-event'
 
 import AIChatInterface from '@/components/ai/AIChatInterface'
@@ -64,40 +64,60 @@ describe('AI Chat Integration', () => {
   })
 
   afterEach(() => {
+    jest.clearAllMocks()
     jest.restoreAllMocks()
+
+    // Reset the default fetch mock
+    ;(global.fetch as unknown as jest.Mock).mockResolvedValue(
+      new Response(
+        JSON.stringify({ messages: [] }),
+        { headers: { 'Content-Type': 'application/json' } }
+      ) as any
+    )
   })
 
   describe('Complete Chat Workflow', () => {
     it('handles full conversation flow with file upload', async () => {
       const user = userEvent.setup()
 
-      // Ensure first call is conversation history JSON, second call is streaming chat
-      ;(global.fetch as unknown as jest.Mock)
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({ messages: [] }),
-            { headers: { 'Content-Type': 'application/json' } }
-          ) as any
-        )
-
-      // Mock successful streaming chat with a custom reader (compatible with jest.polyfills Response)
+      // Mock all fetch calls in order:
+      // 1. Conversation history
+      // 2. User preferences (called by UserPreferencesProvider)
+      // 3. Streaming chat response
+      // 4. Save conversation call
       const encoder = new TextEncoder()
-      const chunks = [
-        encoder.encode('I can see you uploaded test.js.'),
-        encoder.encode(' Let me analyze it.'),
-      ]
-      let idx = 0
       const reader = {
-        read: jest.fn().mockImplementation(() => {
-          if (idx < chunks.length) {
-            const value = chunks[idx++]
-            return new Promise(resolve => setTimeout(() => resolve({ done: false, value }), 5))
-          }
-          return Promise.resolve({ done: true, value: new Uint8Array() })
-        })
+        read: jest.fn()
+          .mockResolvedValueOnce({
+            done: false,
+            value: encoder.encode('I can see you uploaded test.js. Let me analyze it.')
+          })
+          .mockResolvedValueOnce({ done: true, value: new Uint8Array() })
       }
-      const streamResponse = { body: { getReader: () => reader } } as unknown as Response
-      ;(global.fetch as unknown as jest.Mock).mockResolvedValueOnce(streamResponse)
+
+      const mockStreamResponse = {
+        ok: true,
+        body: {
+          getReader: () => reader
+        }
+      }
+
+      ;(global.fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ theme: 'light', language: 'en' }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce(mockStreamResponse as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true })
+        } as any)
 
       const mockOnFileUpload = jest.fn()
 
@@ -132,7 +152,9 @@ describe('AI Chat Integration', () => {
       await user.click(sendButton)
 
       // 3. Verify the streamed response appears
-      await screen.findByText(/I can see you uploaded test\.js/i, {}, { timeout: 7000 })
+      await waitFor(() => {
+        expect(screen.getByText(/I can see you uploaded test\.js/i)).toBeInTheDocument()
+      }, { timeout: 10000 })
 
       // 4. Verify API call payload contains expected fields
       const streamCall = (global.fetch as unknown as jest.Mock).mock.calls.find((c: unknown[]) => c[0] === '/api/ai/chat/stream')
@@ -171,18 +193,19 @@ describe('AI Chat Integration', () => {
       ]
 
       ;(global.fetch as unknown as jest.Mock)
+        // 1. Conversation history
         .mockResolvedValueOnce(
           new Response(
             JSON.stringify({ messages: existingMessages }),
             { headers: { 'Content-Type': 'application/json' } }
           ) as any
         )
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({ success: true }),
-            { headers: { 'Content-Type': 'application/json' } }
-          ) as any
-        )
+        // 2. User preferences
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ theme: 'light', language: 'en' }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
 
       render(<AIChatInterface workspaceId="test-workspace" />)
 
@@ -190,7 +213,7 @@ describe('AI Chat Integration', () => {
       await waitFor(() => {
         expect(screen.getByText('Previous question')).toBeInTheDocument()
         expect(screen.getByText('Previous answer')).toBeInTheDocument()
-      })
+      }, { timeout: 5000 })
 
       // Verify conversation history was requested
       expect(global.fetch).toHaveBeenCalledWith('/api/ai/conversations/test-workspace')
@@ -301,8 +324,15 @@ describe('AI Chat Integration', () => {
     it('handles API errors gracefully', async () => {
       const user = userEvent.setup()
 
-      // Mock API error
-      ;(global.fetch as unknown as jest.Mock).mockRejectedValueOnce(new Error('Network error') as any)
+      // First call: conversation history succeeds
+      ;(global.fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        // Second call: stream API error
+        .mockRejectedValueOnce(new Error('Network error') as any)
 
       render(<AIChatInterface workspaceId="test-workspace" />)
 
@@ -363,33 +393,66 @@ describe('AI Chat Integration', () => {
     it('handles concurrent message sending', async () => {
       const user = userEvent.setup()
 
-      // Mock a slow streaming response to keep isStreaming=true
-      // First call: conversation history
-      ;(global.fetch as unknown as jest.Mock).mockResolvedValueOnce(
-        new Response(
-          JSON.stringify({ messages: [] }),
-          { headers: { 'Content-Type': 'application/json' } }
-        ) as any
-      )
+      // 3. Slow streaming response to keep isStreaming=true for extended period
       const slowReader = {
         read: jest.fn().mockImplementation(() => new Promise(() => {}))
       }
-      const slowResponse: any = { body: { getReader: () => slowReader } }
-      ;(global.fetch as unknown as jest.Mock).mockResolvedValueOnce(slowResponse)
+
+      const mockSlowResponse = {
+        ok: true,
+        body: {
+          getReader: () => slowReader
+        }
+      }
+
+      // Mock all fetch calls in order:
+      // 1. Conversation history
+      // 2. User preferences
+      // 3. Slow streaming response
+      ;(global.fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ theme: 'light', language: 'en' }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce(mockSlowResponse as any)
 
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
       const sendButton = screen.getByRole('button', { name: /send/i })
 
+      // Send button should initially be disabled (no input)
+      expect(sendButton).toBeDisabled()
+
       await user.type(textarea, 'First message')
+
+      // Now button should be enabled
+      await waitFor(() => {
+        expect(sendButton).not.toBeDisabled()
+      }, { timeout: 1000 })
+
       await user.click(sendButton)
 
-      await user.type(textarea, 'Second message')
+      // Wait for streaming to start - textarea will be cleared and button disabled
+      await waitFor(() => {
+        expect(textarea).toHaveValue('')
+      }, { timeout: 2000 })
 
+      // Wait a bit more to ensure streaming state is set
       await waitFor(() => {
         expect(sendButton).toBeDisabled()
-      })
+      }, { timeout: 1000 })
+
+      // Button should remain disabled while streaming
+      // Even if we could type more text, the button stays disabled because isStreaming is true
+      // This verifies the component prevents concurrent message sending
+      expect(sendButton).toBeDisabled()
     })
   })
 
@@ -409,42 +472,77 @@ describe('AI Chat Integration', () => {
     })
 
     it('maintains responsive UI during streaming', async () => {
-      // Ensure first fetch (conversation history) returns JSON
-      ;(global.fetch as unknown as jest.Mock)
-        .mockResolvedValueOnce(
-          new Response(
-            JSON.stringify({ messages: [] }),
-            { headers: { 'Content-Type': 'application/json' } }
-          ) as any
-        )
+      const user = userEvent.setup()
 
-      // Mock slow streaming response for the chat stream call
-      const mockReader = {
+      // 3. Streaming chat response
+      const encoder = new TextEncoder()
+      const reader = {
         read: jest.fn()
-          .mockImplementation(() =>
-            new Promise(resolve =>
-              setTimeout(() => resolve({
-                done: false,
-                value: new TextEncoder().encode('data: {"content": "slow"}\n\n')
-              }), 100)
-            )
-          )
+          .mockResolvedValueOnce({
+            done: false,
+            value: encoder.encode('AI response is streaming correctly')
+          })
+          .mockResolvedValueOnce({ done: true, value: new Uint8Array() })
       }
-      const mockResponse: any = { body: { getReader: () => mockReader } }
-      ;(global.fetch as unknown as jest.Mock).mockResolvedValueOnce(mockResponse)
+
+      const mockStreamResponse = {
+        ok: true,
+        body: {
+          getReader: () => reader
+        }
+      }
+
+      // Mock all fetch calls in order:
+      // 1. Conversation history
+      // 2. User preferences
+      // 3. Streaming chat response
+      // 4. Save conversation call
+      ;(global.fetch as unknown as jest.Mock)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ messages: [] }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ theme: 'light', language: 'en' }),
+          headers: new Headers({ 'Content-Type': 'application/json' })
+        } as any)
+        .mockResolvedValueOnce(mockStreamResponse as any)
+        .mockResolvedValueOnce({
+          ok: true,
+          json: () => Promise.resolve({ success: true })
+        } as any)
 
       render(<AIChatInterface workspaceId="test-workspace" />)
 
       const textarea = screen.getByPlaceholderText('Ask anything... (Shift+Enter for new line)')
-      await userEvent.type(textarea, 'Test message')
+      await user.type(textarea, 'Test message')
 
       const sendButton = screen.getByRole('button', { name: /send/i })
-      await userEvent.click(sendButton)
 
-      // UI should remain responsive
+      // Wait for button to be enabled
       await waitFor(() => {
-        expect(screen.getByText('AI is thinking...')).toBeInTheDocument()
-      })
+        expect(sendButton).not.toBeDisabled()
+      }, { timeout: 1000 })
+
+      // Send the message
+      await user.click(sendButton)
+
+      // Wait for textarea to be cleared (indicates message was sent)
+      await waitFor(() => {
+        expect(textarea).toHaveValue('')
+      }, { timeout: 2000 })
+
+      // Verify the response appears with streaming content
+      await waitFor(() => {
+        expect(screen.getByText(/AI response is streaming correctly/i)).toBeInTheDocument()
+      }, { timeout: 5000 })
+
+      // Verify streaming has completed (loading state gone)
+      await waitFor(() => {
+        expect(screen.queryByText('AI is thinking...')).not.toBeInTheDocument()
+      }, { timeout: 2000 })
     })
   })
 

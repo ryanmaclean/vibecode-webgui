@@ -5,7 +5,7 @@
  */
 
 import { test, expect } from '@playwright/test';
-import { injectAxe, checkA11y, getViolations } from 'axe-playwright';
+import AxeBuilder from '@axe-core/playwright';
 import type { Page } from '@playwright/test';
 
 test.describe('Agent UI Accessibility - WCAG Compliance', () => {
@@ -14,7 +14,6 @@ test.describe('Agent UI Accessibility - WCAG Compliance', () => {
   test.beforeEach(async ({ page: p }) => {
     page = p;
     await page.goto('/agents');
-    await injectAxe(page);
   });
 
   test.describe('Keyboard Navigation', () => {
@@ -181,15 +180,12 @@ test.describe('Agent UI Accessibility - WCAG Compliance', () => {
 
   test.describe('Color Contrast', () => {
     test('should meet WCAG AA contrast ratios', async () => {
-      const violations = await checkA11y(page, undefined, {
-        detailedReport: true,
-        detailedReportOptions: {
-          html: true,
-        },
-      });
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2aa', 'wcag21aa'])
+        .analyze();
 
       // Check for contrast violations
-      const contrastViolations = violations.filter(v =>
+      const contrastViolations = results.violations.filter(v =>
         v.id === 'color-contrast'
       );
 
@@ -199,9 +195,11 @@ test.describe('Agent UI Accessibility - WCAG Compliance', () => {
     test('should be readable in high contrast mode', async () => {
       await page.emulateMedia({ colorScheme: 'dark' });
 
-      const violations = await checkA11y(page);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2aa', 'wcag21aa'])
+        .analyze();
 
-      expect(violations.length).toBe(0);
+      expect(results.violations.length).toBe(0);
     });
 
     test('should not rely on color alone for information', async () => {
@@ -350,30 +348,32 @@ test.describe('Agent UI Accessibility - WCAG Compliance', () => {
   test.describe('Comprehensive Accessibility Audit', () => {
     test('should pass axe-core accessibility audit - agent list', async () => {
       await page.goto('/agents');
-      await injectAxe(page);
 
-      const violations = await getViolations(page);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+        .analyze();
 
       // Log violations for debugging
-      if (violations.length > 0) {
-        console.log('Accessibility violations found:', violations);
+      if (results.violations.length > 0) {
+        console.log('Accessibility violations found:', results.violations);
       }
 
-      expect(violations.length).toBe(0);
+      expect(results.violations.length).toBe(0);
     });
 
     test('should pass axe-core accessibility audit - agent creation', async () => {
       await page.goto('/agents');
       await page.click('button:has-text("Create Agent")');
-      await injectAxe(page);
 
-      const violations = await getViolations(page);
+      const results = await new AxeBuilder({ page })
+        .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+        .analyze();
 
-      if (violations.length > 0) {
-        console.log('Accessibility violations found:', violations);
+      if (results.violations.length > 0) {
+        console.log('Accessibility violations found:', results.violations);
       }
 
-      expect(violations.length).toBe(0);
+      expect(results.violations.length).toBe(0);
     });
 
     test('should pass axe-core accessibility audit - agent detail', async () => {
@@ -381,15 +381,16 @@ test.describe('Agent UI Accessibility - WCAG Compliance', () => {
 
       if (await firstAgent.isVisible()) {
         await firstAgent.click();
-        await injectAxe(page);
 
-        const violations = await getViolations(page);
+        const results = await new AxeBuilder({ page })
+          .withTags(['wcag2a', 'wcag2aa', 'wcag21aa'])
+          .analyze();
 
-        if (violations.length > 0) {
-          console.log('Accessibility violations found:', violations);
+        if (results.violations.length > 0) {
+          console.log('Accessibility violations found:', results.violations);
         }
 
-        expect(violations.length).toBe(0);
+        expect(results.violations.length).toBe(0);
       }
     });
   });

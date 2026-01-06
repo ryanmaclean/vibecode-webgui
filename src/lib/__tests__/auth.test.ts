@@ -140,7 +140,7 @@ describe('auth.ts Configuration', () => {
       const result = await authorizeFunction(credentials)
 
       expect(result).toEqual({
-        id: 'legacy-developer',
+        id: '2',
         name: 'Developer User',
         email: 'developer@vibecode.dev',
         role: 'developer',
@@ -399,8 +399,10 @@ describe('auth.ts Configuration', () => {
     })
 
     it('should log signIn events', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
-      
+      // Mock the logger module
+      const loggerModule = await import('@/lib/logger')
+      const loggerSpy = jest.spyOn(loggerModule.logger, 'info').mockImplementation()
+
       const signInEvent = authOptions.events?.signIn
       if (signInEvent) {
         await (signInEvent as any)({
@@ -410,13 +412,15 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('User test@example.com signed in via github')
-      consoleSpy.mockRestore()
+      expect(loggerSpy).toHaveBeenCalledWith('User test@example.com signed in via github')
+      loggerSpy.mockRestore()
     })
 
     it('should log signOut events', async () => {
-      const consoleSpy = jest.spyOn(console, 'log').mockImplementation()
-      
+      // Mock the logger module
+      const loggerModule = await import('@/lib/logger')
+      const loggerSpy = jest.spyOn(loggerModule.logger, 'info').mockImplementation()
+
       const signOutEvent = authOptions.events?.signOut
       if (signOutEvent) {
         await (signOutEvent as any)({
@@ -424,8 +428,8 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-      expect(consoleSpy).toHaveBeenCalledWith('User test@example.com signed out')
-      consoleSpy.mockRestore()
+      expect(loggerSpy).toHaveBeenCalledWith('User test@example.com signed out')
+      loggerSpy.mockRestore()
     })
   })
 

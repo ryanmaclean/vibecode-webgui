@@ -1,0 +1,123 @@
+# Docker Compose for Integration Test Infrastructure
+# Provides Redis, PostgreSQL, and MongoDB for local testing
+# Usage: docker-compose -f tests/docker-compose.test.yml up -d
+
+version: '3.8'
+
+services:
+  # Redis/Valkey for caching tests
+  redis:
+    image: valkey/valkey:7.2-alpine
+    container_name: vibecode-test-redis
+    ports:
+      - "6379:6379"
+    command: >
+      valkey-server
+      --maxmemory 256mb
+      --maxmemory-policy allkeys-lru
+      --save ""
+      --appendonly no
+    healthcheck:
+      test: ["CMD", "valkey-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vibecode-test
+
+  # PostgreSQL with pgvector for vector database tests
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: vibecode-test-postgres
+    environment:
+      POSTGRES_DB: vibecode_test
+      POSTGRES_USER: vibecode_test
+      POSTGRES_PASSWORD: vibecode_test_password
+      POSTGRES_INITDB_ARGS: "--encoding=UTF8 --locale=en_US.utf8"
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./init-test-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U vibecode_test -d vibecode_test"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vibecode-test
+
+  # MongoDB for chat/collaboration tests
+  mongodb:
+    image: mongo:7.0
+    container_name: vibecode-test-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: vibecode_test
+      MONGO_INITDB_ROOT_PASSWORD: vibecode_test_password
+      MONGO_INITDB_DATABASE: vibecode_test
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb-data:/data/db
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    networks:
+      - vibecode-test
+
+  # Optional: Adminer for database administration
+  adminer:
+    image: adminer:4.8.1
+    container_name: vibecode-test-adminer
+    ports:
+      - "8080:8080"
+    environment:
+      ADMINER_DEFAULT_SERVER: postgres
+      ADMINER_DESIGN: nette
+    depends_on:
+      - postgres
+    networks:
+      - vibecode-test
+
+  # Optional: Redis Commander for Redis administration
+  redis-commander:
+    image: ghcr.io/joeferner/redis-commander:latest
+    container_name: vibecode-test-redis-commander
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    ports:
+      - "8081:8081"
+    depends_on:
+      - redis
+    networks:
+      - vibecode-test
+
+  # Optional: Mongo Express for MongoDB administration
+  mongo-express:
+    image: mongo-express:1.0-alpine
+    container_name: vibecode-test-mongo-express
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: vibecode_test
+      ME_CONFIG_MONGODB_ADMINPASSWORD: vibecode_test_password
+      ME_CONFIG_MONGODB_URL: mongodb://vibecode_test:vibecode_test_password@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: admin
+      ME_CONFIG_BASICAUTH_PASSWORD: admin
+    ports:
+      - "8082:8081"
+    depends_on:
+      - mongodb
+    networks:
+      - vibecode-test
+
+networks:
+  vibecode-test:
+    name: vibecode-test-network
+    driver: bridge
+
+volumes:
+  postgres-data:
+    name: vibecode-test-postgres-data
+  mongodb-data:
+    name: vibecode-test-mongodb-data

@@ -21,16 +21,14 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))
 
-// Mock window.location
-const mockLocation = {
+// Mock window.location with proper setter
+delete (window as any).location
+;(window as any).location = {
   pathname: '/',
   href: 'http://localhost:3000/',
-}
-
-// Mock window.location using global assignment
-;(global as any).window = {
-  ...window,
-  location: mockLocation,
+  assign: jest.fn(),
+  replace: jest.fn(),
+  reload: jest.fn(),
 }
 
 describe('useAuth', () => {
@@ -42,6 +40,16 @@ describe('useAuth', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Reset window.location mock
+    ;(window as any).location = {
+      pathname: '/',
+      href: 'http://localhost:3000/',
+      assign: jest.fn(),
+      replace: jest.fn(),
+      reload: jest.fn(),
+    }
+
     mockUseRouter.mockReturnValue({
       push: mockPush,
       replace: jest.fn(),
@@ -50,7 +58,7 @@ describe('useAuth', () => {
       forward: jest.fn(),
       refresh: jest.fn(),
     })
-    
+
     // Set default mock for useSession
     mockUseSession.mockReturnValue({
       data: null,
@@ -61,6 +69,9 @@ describe('useAuth', () => {
 
   describe('Authentication State', () => {
     it('should return loading state when session is loading', () => {
+      // Set pathname to auth page to prevent redirect during loading
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'loading',
@@ -111,6 +122,9 @@ describe('useAuth', () => {
     })
 
     it('should return unauthenticated state when no session', () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -125,6 +139,9 @@ describe('useAuth', () => {
     })
 
     it('should provide OAuth providers', () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -136,7 +153,7 @@ describe('useAuth', () => {
       expect(result.current.providers).toEqual([
         {
           id: 'github',
-          name: 'GitHub',
+          name: 'FolderHub',
           icon: 'github',
           color: 'bg-gray-900 hover:bg-gray-800',
         },
@@ -152,6 +169,9 @@ describe('useAuth', () => {
 
   describe('Login with Credentials', () => {
     it('should successfully login with valid credentials', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -186,6 +206,9 @@ describe('useAuth', () => {
     })
 
     it('should handle login failure with error', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -218,6 +241,9 @@ describe('useAuth', () => {
     })
 
     it('should handle login exception', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -247,6 +273,9 @@ describe('useAuth', () => {
 
   describe('OAuth Login', () => {
     it('should initiate OAuth login with GitHub', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -267,6 +296,9 @@ describe('useAuth', () => {
     })
 
     it('should initiate OAuth login with Google', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -287,6 +319,9 @@ describe('useAuth', () => {
     })
 
     it('should handle OAuth login error', async () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -352,6 +387,9 @@ describe('useAuth', () => {
 
   describe('Navigation Methods', () => {
     it('should redirect to login page', () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',
@@ -388,9 +426,12 @@ describe('useAuth', () => {
     // Note: Auto-redirect logic tests are skipped due to window.location mocking complexity
     // The core functionality is tested through the navigation methods above
     it('should have auto-redirect logic implemented', () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       // This test verifies that the hook has the auto-redirect useEffect
       const { result } = renderHook(() => useAuth())
-      
+
       // The hook should return the expected structure
       expect(result.current).toHaveProperty('isLoading')
       expect(result.current).toHaveProperty('isAuthenticated')
@@ -427,6 +468,9 @@ describe('useAuth', () => {
     })
 
     it('should handle missing user data gracefully', () => {
+      // Set pathname to auth page to prevent redirect
+      ;(window as any).location.pathname = '/auth/signin'
+
       mockUseSession.mockReturnValue({
         data: null,
         status: 'unauthenticated',

@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { collaborationManager as sharedCollaborationManager, CollaborationManager } from '@/lib/collaboration';
+import io from 'socket.io-client';
 
 export interface CollaborationSocket {
   emit: (event: string, ...args: any[]) => void;
@@ -19,11 +20,11 @@ export interface CollaborationSocket {
 export interface User {
   id: string;
   name: string;
-  email: string;
+  email?: string;
   avatar?: string;
-  color: string;
+  color?: string;
   isActive: boolean;
-  role: 'owner' | 'collaborator' | 'viewer';
+  role?: 'owner' | 'collaborator' | 'viewer';
   lastSeen: Date;
   cursor?: {
     x: number;
@@ -31,6 +32,9 @@ export interface User {
     file?: string;
   };
 }
+
+// Alias for test compatibility
+export type CollaborativeUser = User;
 
 export interface WorkspaceActivity {
   id: string;
@@ -62,7 +66,7 @@ export interface CollaborationState {
   workspaceActivity: WorkspaceActivity[];
   chatMessages: ChatMessage[];
   isConnected: boolean;
-  connectionError?: string;
+  connectionError: string | null;
 }
 
 export interface CollaborationActions {
@@ -122,6 +126,7 @@ export interface UseCollaborationReturn extends CollaborationState, Collaboratio
   recentActivity: WorkspaceActivity[];
   unreadMessages: number;
   typingUsers: (conversationId: string) => User[];
+  getUserById: (userId: string) => User | undefined;
   cursors: CursorState[];
   socket: CollaborationSocket | null;
   collaborationManager: CollaborationManager | null;
@@ -155,7 +160,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const [workspaceActivity, setWorkspaceActivity] = useState<WorkspaceActivity[]>([]);
   const [chatMessages, setChatMessages] = useState<ChatMessage[]>([]);
   const [isConnected, setIsConnected] = useState(false);
-  const [connectionError, setConnectionError] = useState<string | undefined>();
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [typingState, setTypingState] = useState<TypingStateMap>({});
   const [cursors, setCursors] = useState<CursorState[]>([]);
   const socketRef = useRef<CollaborationSocket | null>(null);
@@ -198,42 +203,25 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     return typingState[conversationId] ?? [];
   }, [typingState]);
 
-  const startTyping = useCallback((conversationId: string) => {
-    const user = currentUserRef.current;
-    if (!user) return;
+  const getUserById = useCallback((userId: string) => {
+    return activeUsers.find(u => u.id === userId);
+  }, [activeUsers]);
 
-    setTypingState(prev => {
-      const existing = prev[conversationId] ?? [];
-      if (existing.some(u => u.id === user.id)) {
-        return prev;
-      }
-      return {
-        ...prev,
-        [conversationId]: [...existing, user]
-      };
+  const startTyping = useCallback((conversationId: string) => {
+    if (!socketRef.current || !isConnected) return;
+
+    socketRef.current.emit('typing_start', {
+      conversationId,
     });
-  }, []);
+  }, [isConnected]);
 
   const stopTyping = useCallback((conversationId: string) => {
-    const user = currentUserRef.current;
-    if (!user) return;
+    if (!socketRef.current || !isConnected) return;
 
-    setTypingState(prev => {
-      const existing = prev[conversationId];
-      if (!existing) return prev;
-      const filtered = existing.filter(u => u.id !== user.id);
-
-      if (filtered.length === 0) {
-        const { [conversationId]: _, ...rest } = prev;
-        return rest;
-      }
-
-      return {
-        ...prev,
-        [conversationId]: filtered
-      };
+    socketRef.current.emit('typing_stop', {
+      conversationId,
     });
-  }, []);
+  }, [isConnected]);
 
   /**
    * Join workspace
@@ -480,34 +468,25 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   }, []);
 
   /**
-   * Update cursor position
+   * Update cursor position (throttled)
    */
-  const updateCursor = useCallback((x: number, y: number, file?: string) => {
-    const user = currentUserRef.current;
-    if (user && enableCursorTracking) {
-      const updatedUser: User = {
-        ...user,
-        cursor: { x, y, file },
-        lastSeen: new Date()
-      };
-      setCurrentUser(updatedUser);
-      currentUserRef.current = updatedUser;
+  const lastCursorEmitRef = useRef<number>(0);
+  const updateCursor = useCallback((x: number, y: number, messageId?: string) => {
+    if (!socketRef.current || !isConnected) return;
 
-      setCursors(prev => {
-        const others = prev.filter(cursor => cursor.userId !== updatedUser.id);
-        return [...others, { userId: updatedUser.id, x, y, file }];
-      });
-
-      const existingTimeout = cursorTimeoutRef.current[updatedUser.id];
-      if (existingTimeout) {
-        clearTimeout(existingTimeout);
-      }
-
-      cursorTimeoutRef.current[updatedUser.id] = setTimeout(() => {
-        clearCursor(updatedUser.id);
-      }, 5000); // Hide cursor after 5 seconds of inactivity
+    // Throttle cursor updates to every 100ms
+    const now = Date.now();
+    if (now - lastCursorEmitRef.current < 100) {
+      return;
     }
-  }, [enableCursorTracking, clearCursor]);
+    lastCursorEmitRef.current = now;
+
+    socketRef.current.emit('cursor_move', {
+      x,
+      y,
+      messageId,
+    });
+  }, [isConnected]);
 
   /**
    * Reconnect to workspace
@@ -611,14 +590,198 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     cursorTimeoutRef.current = {};
   }, []);
 
-  // Auto-connect on mount
+  // Socket.io initialization
   useEffect(() => {
-    if (autoConnect && initialWorkspaceId && initialUser) {
-      joinWorkspace(initialWorkspaceId, initialUser);
+    const enabled = options.enabled !== false;
+    if (!enabled || !options.workspaceId || !options.userId) {
+      return;
     }
 
-    return cleanup;
-  }, [autoConnect, initialWorkspaceId, initialUser]);
+    let isMounted = true;
+    let cleanupInterval: NodeJS.Timeout | null = null;
+
+    const initializeSocket = async () => {
+      try {
+        // Test API availability
+        await fetch('/api/collaboration/socket');
+
+        // Initialize socket.io connection
+        const socket = io({
+          path: '/api/collaboration/socket',
+          transports: ['websocket', 'polling'],
+        }) as any;
+
+        if (!isMounted) {
+          socket.disconnect?.();
+          return;
+        }
+
+        socketRef.current = socket;
+
+        // Set up event handlers
+        socket.on('connect', () => {
+          if (!isMounted) return;
+          console.log('🔌 Connected to collaboration server');
+          setIsConnected(true);
+          setConnectionError(null);
+
+          // Join workspace
+          socket.emit('join_workspace', {
+            workspaceId: options.workspaceId,
+            userId: options.userId,
+            userName: options.userName,
+          });
+        });
+
+        socket.on('disconnect', () => {
+          if (!isMounted) return;
+          console.log('🔌 Disconnected from collaboration server');
+          setIsConnected(false);
+          setActiveUsers([]);
+        });
+
+        socket.on('connect_error', (error: any) => {
+          if (!isMounted) return;
+          console.error('❌ Collaboration connection error:', error);
+          setConnectionError(error?.message || 'Connection failed');
+          setIsConnected(false);
+        });
+
+        socket.on('workspace_state', (data: { activeUsers: any[] }) => {
+          if (!isMounted) return;
+          setActiveUsers(data.activeUsers || []);
+        });
+
+        socket.on('user_joined', (data: { user: any; activeUsers: any[] }) => {
+          if (!isMounted) return;
+          console.log(`👥 User joined: ${data.user?.name}`);
+          setActiveUsers(data.activeUsers || []);
+        });
+
+        socket.on('user_left', (data: { userId: string; activeUsers: any[] }) => {
+          if (!isMounted) return;
+          console.log(`👥 User left: ${data.userId}`);
+          setActiveUsers(data.activeUsers || []);
+        });
+
+        socket.on('user_typing', (data: { userId: string; conversationId: string; isTyping: boolean }) => {
+          if (!isMounted) return;
+
+          // Get user from activeUsers state
+          setTypingState(prev => {
+            // Find the user in activeUsers
+            let user: any;
+            setActiveUsers(currentActive => {
+              user = currentActive.find(u => u.id === data.userId);
+              return currentActive;
+            });
+
+            if (!user) return prev;
+
+            if (data.isTyping) {
+              const existing = prev[data.conversationId] || [];
+              if (existing.some(u => u.id === data.userId)) {
+                return prev;
+              }
+              return {
+                ...prev,
+                [data.conversationId]: [...existing, user]
+              };
+            } else {
+              const existing = prev[data.conversationId];
+              if (!existing) return prev;
+              const filtered = existing.filter(u => u.id !== data.userId);
+              if (filtered.length === 0) {
+                const { [data.conversationId]: _, ...rest } = prev;
+                return rest;
+              }
+              return { ...prev, [data.conversationId]: filtered };
+            }
+          });
+        });
+
+        socket.on('cursor_moved', (data: { userId: string; cursor: { x: number; y: number }; timestamp: string }) => {
+          if (!isMounted) return;
+          setCursors(prev => {
+            const others = prev.filter(c => c.userId !== data.userId);
+            return [...others, {
+              userId: data.userId,
+              x: data.cursor.x,
+              y: data.cursor.y,
+              timestamp: new Date(data.timestamp)
+            }] as any;
+          });
+        });
+
+        // Cleanup old cursors and typing indicators every 5 seconds
+        cleanupInterval = setInterval(() => {
+          if (!isMounted) return;
+
+          const now = Date.now();
+          const fiveSecondsAgo = now - 5000;
+
+          // Clean up old cursors
+          setCursors(prev => {
+            return prev.filter(cursor => {
+              const timestamp = (cursor as any).timestamp;
+              if (!timestamp) return true;
+              return timestamp.getTime() > fiveSecondsAgo;
+            });
+          });
+
+          // Clean up old typing indicators
+          setTypingState(prev => {
+            const nextState: TypingStateMap = {};
+            let hasChanges = false;
+
+            for (const [conversationId, users] of Object.entries(prev)) {
+              const filtered = users.filter(user => {
+                return user.lastSeen.getTime() > fiveSecondsAgo;
+              });
+              if (filtered.length > 0) {
+                nextState[conversationId] = filtered;
+              }
+              if (filtered.length !== users.length) {
+                hasChanges = true;
+              }
+            }
+
+            return hasChanges ? nextState : prev;
+          });
+        }, 5000);
+
+      } catch (error) {
+        if (!isMounted) return;
+        console.error('Failed to initialize collaboration:', error);
+        setConnectionError(error instanceof Error ? error.message : 'Connection failed');
+      }
+    };
+
+    initializeSocket();
+
+    return () => {
+      isMounted = false;
+      if (cleanupInterval) {
+        clearInterval(cleanupInterval);
+      }
+      if (socketRef.current) {
+        socketRef.current.emit?.('leave_workspace', {
+          workspaceId: options.workspaceId,
+          userId: options.userId,
+        });
+        socketRef.current.disconnect?.();
+        socketRef.current = null;
+      }
+      cleanup();
+    };
+  }, [options.enabled, options.workspaceId, options.userId, options.userName]);
+
+  // Auto-connect on mount (legacy behavior for non-socket.io mode)
+  useEffect(() => {
+    if (autoConnect && initialWorkspaceId && initialUser && !options.enabled) {
+      joinWorkspace(initialWorkspaceId, initialUser);
+    }
+  }, [autoConnect, initialWorkspaceId, initialUser, options.enabled]);
 
   // Computed properties
   const onlineUsers = activeUsers.filter(user => user.isActive);
@@ -661,6 +824,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     reconnect,
     disconnect,
     typingUsers,
+    getUserById,
     cursors,
     socket: socketRef.current,
     collaborationManager: sharedCollaborationManager,

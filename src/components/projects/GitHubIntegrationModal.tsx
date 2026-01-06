@@ -366,7 +366,7 @@ export function GitHubIntegrationModal({
                   className={`w-full px-4 py-2 rounded-md font-medium ${
                     isCreating || !repoSettings.name.trim()
                       ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-                      : 'bg-green-600 hover:bg-green-700 text-white'
+                      : 'bg-green-700 hover:bg-green-800 text-white'
                   }`}
                   data-testid="create-repo-button"
                 >

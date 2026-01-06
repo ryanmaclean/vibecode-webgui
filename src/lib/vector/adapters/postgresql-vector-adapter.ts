@@ -692,4 +692,88 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       };
     }
   }
+
+  /**
+   * Fallback text search when vector search is not available
+   * @private
+   */
+  private async fallbackTextSearch(query: string, options: VectorSearchOptions = {}): Promise<SearchResult[]> {
+    if (!this.prisma) {
+      throw this.errorHandler.handleError(
+        new Error('PostgreSQL adapter not initialized'),
+        'fallbackTextSearch',
+        VectorDbErrorType.INITIALIZATION,
+        true
+      );
+    }
+
+    try {
+      const { workspaceId, fileIds, limit = 10 } = options;
+
+      const whereClause: any = {
+        content: query ? {
+          contains: query,
+          mode: 'insensitive'
+        } : undefined
+      };
+
+      if (workspaceId) {
+        whereClause.file = { is: { workspace_id: workspaceId } };
+      }
+
+      if (fileIds && fileIds.length > 0) {
+        whereClause.file_id = { in: fileIds };
+      }
+
+      const chunks = await this.prisma.rAGChunk.findMany({
+        where: whereClause,
+        include: {
+          file: {
+            select: {
+              id: true,
+              name: true,
+              language: true
+            }
+          }
+        },
+        take: limit,
+        orderBy: {
+          created_at: 'desc'
+        }
+      });
+
+      return chunks.map((chunk: any) => ({
+        chunk: {
+          id: chunk.chunk_id,
+          content: chunk.content,
+          embedding: [],
+          metadata: {
+            fileId: chunk.file_id,
+            fileName: chunk.file.name,
+            startLine: chunk.start_line || undefined,
+            endLine: chunk.end_line || undefined,
+            language: chunk.file.language || undefined,
+            tokens: chunk.tokens || 0
+          }
+        },
+        similarity: 0.5 // Default similarity for text search
+      }));
+    } catch (error) {
+      // Handle fallback search errors but don't throw - return empty results
+      console.error('Error in fallback text search:', {
+        error: this.errorHandler.handleError(
+          error,
+          'fallbackTextSearch',
+          VectorDbErrorType.QUERY_FAILED,
+          false,
+          {
+            query: query.length > 100 ? query.substring(0, 100) + '...' : query,
+            workspaceId: options.workspaceId,
+            fileCount: options.fileIds?.length
+          }
+        )
+      });
+      return [];
+    }
+  }
 }

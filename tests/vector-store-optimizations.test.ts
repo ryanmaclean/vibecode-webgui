@@ -51,10 +51,18 @@ describe('Enhanced Vector Store Optimizations', () => {
   let metricsCollector: any
 
   beforeEach(() => {
-    vectorStore = new EnhancedVectorStore()
+    // Create vectorStore with proper configuration
+    vectorStore = new EnhancedVectorStore({
+      primaryProvider: 'postgres',
+      fallbackProviders: ['redis'],
+      enableCaching: true,
+      cacheTTL: 60000,
+      enableMetrics: true,
+      enableHealthChecks: false
+    })
     queryCache = new VectorQueryCache()
     metricsCollector = getMetricsCollector()
-    
+
     // Clear any existing cache and metrics
     queryCache.clear()
   })
@@ -241,13 +249,12 @@ describe('Enhanced Vector Store Optimizations', () => {
 
     test('should provide comprehensive health check data', async () => {
       const healthCheck = await vectorStore.healthCheck()
-      
+
       expect(healthCheck).toHaveProperty('providers')
-      expect(healthCheck).toHaveProperty('performance')
-      expect(healthCheck).toHaveProperty('totalDocuments')
-      
+      expect(healthCheck).toHaveProperty('overall')
+
       expect(Array.isArray(healthCheck.providers)).toBe(true)
-      expect(typeof healthCheck.performance.avgQueryTime).toBe('number')
+      expect(['healthy', 'degraded', 'unhealthy']).toContain(healthCheck.overall)
     })
   })
 
@@ -283,8 +290,16 @@ describe('Enhanced Vector Store Optimizations', () => {
 describe('Performance Benchmark Integration', () => {
   test('should measure and compare provider performance', () => {
     // Test that we can collect performance metrics
-    const insights = new EnhancedVectorStore().getProviderSelectionInsights()
-    
+    const testStore = new EnhancedVectorStore({
+      primaryProvider: 'postgres',
+      fallbackProviders: ['redis'],
+      enableCaching: true,
+      cacheTTL: 60000,
+      enableMetrics: true,
+      enableHealthChecks: false
+    })
+    const insights = testStore.getProviderSelectionInsights()
+
     expect(insights.pgvector.score).toBeGreaterThanOrEqual(0)
     expect(insights.pgvector.score).toBeLessThanOrEqual(1)
     expect(insights.weaviate.score).toBeGreaterThanOrEqual(0)

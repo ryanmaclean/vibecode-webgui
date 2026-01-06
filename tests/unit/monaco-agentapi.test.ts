@@ -33,6 +33,7 @@ const mockModel = {
   getValue: jest.fn(() => 'const x = 1;'),
   getLanguageId: jest.fn(() => 'typescript'),
   getValueInRange: jest.fn(() => 'x'),
+  pushEditOperations: jest.fn(),
   uri: { path: '/test.ts' },
 } as unknown as monaco.editor.ITextModel
 
@@ -83,6 +84,11 @@ describe('MonacoAgentAPI', () => {
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
     ;(mockEditor.getSelection as jest.Mock).mockReturnValue(mockSelection)
+
+    // Setup WebSocket client mocks
+    mockWSClient.connect.mockResolvedValue(undefined)
+    mockWSClient.isConnected.mockReturnValue(true)
+    mockWSClient.stream.mockImplementation(async () => 'default-request-id')
 
     agentAPI = new MonacoAgentAPI(mockEditor, {
       baseUrl: '/api/agents',
@@ -285,8 +291,11 @@ describe('MonacoAgentAPI', () => {
         contents: [{ value: 'Variable x: number' }],
       }
 
-      mockWSClient.stream.mockImplementation(async (payload, handlers) => {
+      mockWSClient.stream.mockImplementationOnce(async (payload, handlers) => {
+        // Simulate async behavior
+        await Promise.resolve()
         handlers.onChunk({ data: { hover: mockHover } })
+        handlers.onComplete?.()
         return 'request-id'
       })
 
@@ -322,8 +331,11 @@ describe('MonacoAgentAPI', () => {
         },
       ]
 
-      mockWSClient.stream.mockImplementation(async (payload, handlers) => {
+      mockWSClient.stream.mockImplementationOnce(async (payload, handlers) => {
+        // Simulate async behavior
+        await Promise.resolve()
         handlers.onChunk({ data: { actions: mockActions } })
+        handlers.onComplete?.()
         return 'request-id'
       })
 
@@ -361,6 +373,12 @@ describe('MonacoAgentAPI', () => {
   // ==========================================================================
 
   describe('applySuggestion', () => {
+    beforeEach(() => {
+      // Reset the mock before each test
+      ;(mockModel.pushEditOperations as jest.Mock).mockClear()
+      ;(mockEditor.getSelections as jest.Mock).mockReturnValue([])
+    })
+
     it('should apply suggestion to editor', async () => {
       const suggestion = {
         text: 'const y = 2;',
@@ -388,7 +406,7 @@ describe('MonacoAgentAPI', () => {
     })
 
     it('should handle no model', async () => {
-      ;(mockEditor.getModel as jest.Mock).mockReturnValue(null)
+      ;(mockEditor.getModel as jest.Mock).mockReturnValueOnce(null)
 
       const suggestion = {
         text: 'test',
@@ -480,8 +498,15 @@ describe('Performance', () => {
   let agentAPI: MonacoAgentAPI
 
   beforeEach(async () => {
+    jest.clearAllMocks()
+
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
+
+    // Setup WebSocket client mocks
+    mockWSClient.connect.mockResolvedValue(undefined)
+    mockWSClient.isConnected.mockReturnValue(true)
+    mockWSClient.stream.mockImplementation(async () => 'default-request-id')
 
     agentAPI = new MonacoAgentAPI(mockEditor, {
       completionTimeout: 300,
@@ -517,11 +542,15 @@ describe('Performance', () => {
   it('should handle multiple concurrent requests', async () => {
     const mockCompletions = [{ label: 'test', kind: 1, insertText: 'test' }]
 
+    // Clear the default mock and set up a persistent implementation for all 5 calls
+    mockWSClient.stream.mockClear()
+    let requestCount = 0
     mockWSClient.stream.mockImplementation(async (payload, handlers) => {
-      await new Promise(resolve => setTimeout(resolve, 100))
+      requestCount++
+      await new Promise(resolve => setTimeout(resolve, 50))
       handlers.onChunk({ data: { completions: mockCompletions } })
       handlers.onComplete?.()
-      return 'request-id'
+      return `request-${requestCount}`
     })
 
     const requests = Array.from({ length: 5 }, () =>

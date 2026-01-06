@@ -8,29 +8,8 @@
 import { ExperimentWarehouse } from '@/lib/experiments/warehouse'
 import { PrismaClient } from '@prisma/client'
 
-// Mock Prisma
-jest.mock('@prisma/client', () => {
-  const mockPrisma = {
-    experiment: {
-      findUnique: jest.fn(),
-      upsert: jest.fn(),
-      create: jest.fn()
-    },
-    experimentAssignment: {
-      upsert: jest.fn(),
-      findMany: jest.fn(),
-      createMany: jest.fn()
-    },
-    experimentMetric: {
-      createMany: jest.fn(),
-      findMany: jest.fn()
-    }
-  }
-
-  return {
-    PrismaClient: jest.fn(() => mockPrisma)
-  }
-})
+// Mock Prisma - use the comprehensive mock
+jest.mock('@prisma/client')
 
 // Mock monitoring
 jest.mock('@/lib/server-monitoring', () => ({
@@ -45,18 +24,25 @@ jest.mock('@/lib/server-monitoring', () => ({
   }
 }))
 
+// Import the global mock instance
+import { prismaMock } from '../../__mocks__/@prisma/client'
+
 describe('ExperimentWarehouse', () => {
   let warehouse: ExperimentWarehouse
-  let mockPrisma: any
+  let mockPrisma: typeof prismaMock
 
   beforeEach(() => {
     jest.clearAllMocks()
     warehouse = new ExperimentWarehouse()
-    mockPrisma = new PrismaClient()
+    // Use the global mock instance that PrismaClient returns
+    mockPrisma = prismaMock
   })
 
   afterEach(async () => {
-    await warehouse.stop()
+    // Only call stop if it exists (warehouse may not have this method)
+    if (warehouse && typeof warehouse.stop === 'function') {
+      await warehouse.stop()
+    }
   })
 
   describe('logAssignment', () => {
@@ -244,6 +230,9 @@ describe('ExperimentWarehouse', () => {
         include: {
           metrics: {
             where: { metric_name: 'conversion' },
+            include: {
+              assignment: true
+            },
             orderBy: { timestamp: 'desc' }
           }
         }

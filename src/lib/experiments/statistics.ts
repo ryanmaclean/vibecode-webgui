@@ -123,7 +123,21 @@ export function zTest(
   }
 
   const zScore = (mean2 - mean1) / standardError;
-  const pValue = 2 * (1 - normalCDF(Math.abs(zScore))); // Two-tailed test
+
+  // Two-tailed test: calculate p-value with care for extreme values
+  const absZ = Math.abs(zScore);
+  let pValue: number;
+  if (absZ > 37) {
+    // For very large z-scores, p-value approaches 0 but shouldn't be exactly 0
+    // Use a very small but non-zero value
+    pValue = 1e-300;
+  } else {
+    pValue = 2 * (1 - normalCDF(absZ));
+    // Ensure p-value never underflows to exactly 0
+    if (pValue === 0) {
+      pValue = 1e-300;
+    }
+  }
 
   return {
     zScore,
@@ -480,7 +494,7 @@ export function bonferroniCorrection(
   alpha: number = 0.05
 ): boolean[] {
   const adjustedAlpha = alpha / pValues.length;
-  return pValues.map(p => p < adjustedAlpha);
+  return pValues.map(p => p <= adjustedAlpha);
 }
 
 /**
@@ -573,6 +587,10 @@ function calculateStdDev(data: number[]): number {
  * @returns P(Z ≤ z) for standard normal distribution
  */
 function normalCDF(z: number): number {
+  // Handle extreme values to prevent underflow
+  if (z < -10) return 0;
+  if (z > 10) return 1;
+
   return 0.5 * (1 + erf(z / Math.sqrt(2)));
 }
 
