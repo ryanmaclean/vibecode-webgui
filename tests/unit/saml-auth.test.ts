@@ -2,24 +2,20 @@
  * Unit tests for SAML authentication provider
  */
 
-// Mock crypto BEFORE importing SAMLProvider
-jest.mock('crypto', () => ({
-  randomBytes: jest.fn(() => Buffer.from('mockrandomdata', 'utf8')),
-  createHash: jest.fn(() => ({
-    update: jest.fn().mockReturnThis(),
-    digest: jest.fn(() => 'mockedhash')
-  }))
-}))
+// Use manual mock for crypto module (in __mocks__/crypto.js)
+jest.mock('crypto')
 
 import { SAMLProvider } from '@/lib/auth/saml-provider'
 import crypto from 'crypto'
 
-const mockCrypto = crypto as jest.Mocked<typeof crypto>
-
 describe('SAML Authentication Provider', () => {
   let samlProvider: SAMLProvider
+  let mockRandomBytes: jest.SpyInstance
 
   beforeEach(() => {
+    // Spy on randomBytes for tests that need custom behavior
+    mockRandomBytes = jest.spyOn(crypto, 'randomBytes')
+
     samlProvider = new SAMLProvider({
       entityId: 'https://test-idp.com',
       singleSignOnUrl: 'https://test-idp.com/sso',
@@ -35,6 +31,10 @@ describe('SAML Authentication Provider', () => {
       privateKey: 'test-private-key',
       certificate: 'test-cert'
     })
+  })
+
+  afterEach(() => {
+    jest.restoreAllMocks()
   })
 
   describe('SAML Request Generation', () => {
@@ -55,7 +55,7 @@ describe('SAML Authentication Provider', () => {
     })
 
     it('should generate unique request IDs', () => {
-      mockCrypto.randomBytes
+      mockRandomBytes
         .mockReturnValueOnce(Buffer.from('random1', 'utf8'))
         .mockReturnValueOnce(Buffer.from('random2', 'utf8'))
 
