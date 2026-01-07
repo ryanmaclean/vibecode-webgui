@@ -107,12 +107,12 @@ jest.mock('../../src/lib/vector-store', () => {
 
   return {
     vectorStore: {
-      generateEmbedding: jest.fn(async (text) => {
+      generateEmbedding: jest.fn().mockImplementation(async (text) => {
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 10))
         return generateMockEmbedding(1536)
       }),
-      storeChunks: jest.fn(async (fileId, chunks) => {
+      storeChunks: jest.fn().mockImplementation(async (fileId, chunks) => {
         chunks.forEach((chunk, idx) => {
           const id = `${fileId}-${idx}`
           mockChunksStorage.set(id, {
@@ -121,8 +121,9 @@ jest.mock('../../src/lib/vector-store', () => {
             embedding: generateMockEmbedding(1536)
           })
         })
+        return Promise.resolve()
       }),
-      search: jest.fn(async (query, options = {}) => {
+      search: jest.fn().mockImplementation(async (query, options = {}) => {
         const { workspaceId, fileIds, limit = 5, threshold = 0 } = options
 
         // Simulate semantic search with mock similarity scores
@@ -175,11 +176,13 @@ jest.mock('../../src/lib/vector-store', () => {
         ]
 
         // Filter by threshold and limit
-        return results
+        const filtered = results
           .filter(r => r.similarity >= threshold)
           .slice(0, limit)
+
+        return filtered
       }),
-      getContext: jest.fn(async (query, workspaceId, maxTokens = 2000, threshold = 0) => {
+      getContext: jest.fn().mockImplementation(async (query, workspaceId, maxTokens = 2000, threshold = 0) => {
         // Mock search results
         const mockResults = [
           {
@@ -212,12 +215,13 @@ jest.mock('../../src/lib/vector-store', () => {
           `---\n${r.chunk.content}\n---`
         ).join('\n\n')
       }),
-      deleteFileChunks: jest.fn(async (fileId) => {
+      deleteFileChunks: jest.fn().mockImplementation(async (fileId) => {
         const keysToDelete = Array.from(mockChunksStorage.keys())
           .filter(key => key.startsWith(`${fileId}-`))
         keysToDelete.forEach(key => mockChunksStorage.delete(key))
+        return Promise.resolve()
       }),
-      getStats: jest.fn(async () => ({
+      getStats: jest.fn().mockImplementation(async () => ({
         totalChunks: mockChunksStorage.size,
         totalFiles: new Set(Array.from(mockChunksStorage.values()).map(c => c.fileId)).size,
         averageChunkSize: 512

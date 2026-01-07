@@ -122,8 +122,7 @@ jest.mock('../../src/app/api/ai/chat/stream/route', () => {
   const { getServerSession } = require('next-auth')
   const { vectorStore } = require('../../src/lib/vector-store')
 
-  return {
-    POST: jest.fn(async (request) => {
+  const mockPOST = jest.fn(async (request) => {
       const session = await getServerSession()
       if (!session) {
         return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401 })
@@ -184,6 +183,9 @@ jest.mock('../../src/app/api/ai/chat/stream/route', () => {
         }
       })
     })
+
+  return {
+    POST: mockPOST
   }
 })
 

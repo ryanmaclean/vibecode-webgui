@@ -18,7 +18,7 @@ jest.mock('pg', () => ({
   Client: jest.fn().mockImplementation(() => ({
     connect: jest.fn().mockResolvedValue(undefined),
     end: jest.fn().mockResolvedValue(undefined),
-    query: jest.fn().mockImplementation((sql, params = []) => {
+    query: jest.fn((sql, params = []) => {
       // Mock responses based on query type
       if (sql.includes('information_schema.tables')) {
         return Promise.resolve({ rows: [{ table_name: 'feature_flags' }] });
@@ -153,9 +153,9 @@ jest.mock('pg', () => ({
           if (params[1] !== undefined) row.rollout_percentage = params[1];
           row.updated_at = new Date().toISOString();
           mockDatabase.set(id, row);
-          return Promise.resolve({ rowCount: 1 });
+          return Promise.resolve({ rows: [], rowCount: 1 });
         }
-        return Promise.resolve({ rowCount: 0 });
+        return Promise.resolve({ rows: [], rowCount: 0 });
       }
       if (sql.includes('DELETE FROM feature_flags')) {
         if (sql.includes('WHERE id =') && params[0]) {
@@ -164,9 +164,9 @@ jest.mock('pg', () => ({
           if (row) {
             mockUsedKeys.delete(row.key);
             mockDatabase.delete(id);
-            return Promise.resolve({ rowCount: 1 });
+            return Promise.resolve({ rows: [], rowCount: 1 });
           }
-          return Promise.resolve({ rowCount: 0 });
+          return Promise.resolve({ rows: [], rowCount: 0 });
         }
         if (sql.includes('WHERE key =') && params[0]) {
           const key = params[0];
@@ -174,9 +174,9 @@ jest.mock('pg', () => ({
           if (row) {
             mockUsedKeys.delete(key);
             mockDatabase.delete(row.id);
-            return Promise.resolve({ rowCount: 1 });
+            return Promise.resolve({ rows: [], rowCount: 1 });
           }
-          return Promise.resolve({ rowCount: 0 });
+          return Promise.resolve({ rows: [], rowCount: 0 });
         }
         if (sql.includes('WHERE key LIKE') && params[0]) {
           const pattern = params[0].replace('%', '');
@@ -185,14 +185,15 @@ jest.mock('pg', () => ({
             mockUsedKeys.delete(row.key);
             mockDatabase.delete(row.id);
           });
-          return Promise.resolve({ rowCount: rowsToDelete.length });
+          return Promise.resolve({ rows: [], rowCount: rowsToDelete.length });
         }
-        return Promise.resolve({ rowCount: 0 });
+        return Promise.resolve({ rows: [], rowCount: 0 });
       }
       if (sql.includes('COUNT(*)')) {
         return Promise.resolve({ rows: [{ count: '10' }] });
       }
-      return Promise.resolve({ rows: [] });
+      // Default fallback - ensure all queries return an object with rows property
+      return Promise.resolve({ rows: [], rowCount: 0 });
     })
   }))
 }));
