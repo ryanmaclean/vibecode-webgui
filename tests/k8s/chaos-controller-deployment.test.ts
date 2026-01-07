@@ -4,7 +4,6 @@
  */
 
 import { exec } from 'child_process';
-import { promisify } from 'util';
 import { MetricsCollector } from '@/lib/monitoring/health-monitoring';
 
 const metrics = new MetricsCollector();
@@ -15,7 +14,21 @@ jest.mock('child_process', () => ({
   spawn: jest.fn(),
 }));
 
-const execAsync = promisify(exec);
+// Create a custom execAsync that works with our mocked exec
+// This wraps the callback-based exec in a promise that returns { stdout, stderr }
+const execAsync = (cmd: string): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    // Get the mocked exec from require() to ensure we use the jest mock
+    const { exec: mockedExec } = require('child_process');
+    mockedExec(cmd, (error: any, stdout: any, stderr: any) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+};
 
 describe('Chaos Controller Deployment Tests', () => {
   const namespace = 'chaos-engineering';
@@ -24,16 +37,6 @@ describe('Chaos Controller Deployment Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExec = require('child_process').exec as jest.MockedFunction<typeof exec>;
-
-    // Add custom promisify support to the mock so promisify(exec) returns { stdout, stderr }
-    (mockExec as any)[promisify.custom] = function(cmd: string) {
-      return new Promise((resolve, reject) => {
-        mockExec(cmd, (error: any, stdout: any, stderr: any) => {
-          if (error) reject(error);
-          else resolve({ stdout, stderr });
-        });
-      });
-    };
   });
 
   describe('Namespace and CRD Setup', () => {
