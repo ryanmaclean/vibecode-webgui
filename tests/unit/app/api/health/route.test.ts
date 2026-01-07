@@ -5,16 +5,16 @@
 import { NextRequest } from 'next/server';
 import { GET } from '@/app/api/health/route';
 
-// Mock the monitoring module
+// Mock the monitoring module with proper method implementations
 jest.mock('@/lib/monitoring', () => ({
   monitoring: {
-    recordMetric: jest.fn(),
-    recordTrace: jest.fn(),
-    checkDatabase: jest.fn().mockResolvedValue({ status: 'healthy' }),
-    checkValkey: jest.fn().mockResolvedValue({ status: 'healthy' }),
-    checkAIService: jest.fn().mockResolvedValue({ status: 'healthy' }),
-    trackMetrics: jest.fn().mockResolvedValue(undefined),
-    submitEvent: jest.fn().mockResolvedValue(undefined)
+    recordMetric: () => {},
+    recordTrace: () => {},
+    checkDatabase: () => Promise.resolve({ status: 'healthy' }),
+    checkValkey: () => Promise.resolve({ status: 'healthy' }),
+    checkAIService: () => Promise.resolve({ status: 'healthy' }),
+    trackMetrics: () => Promise.resolve(undefined),
+    submitEvent: () => Promise.resolve(undefined)
   }
 }));
 
