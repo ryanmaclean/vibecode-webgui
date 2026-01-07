@@ -1,5 +1,8 @@
-// Mock the multimodal agent
-jest.mock('../../src/lib/multimodal-agent', () => require('../mocks/multimodal-agent'));
+// Mock the multimodal agent before importing - using ES6 module syntax
+jest.mock('../../src/lib/multimodal-agent', () => {
+  const mockModule = jest.requireActual<typeof import('../mocks/multimodal-agent')>('../mocks/multimodal-agent');
+  return mockModule;
+});
 
 import { MultimodalAgent, MultimodalInput } from '../../src/lib/multimodal-agent';
 import { MultimodalSampleGenerator } from '../../src/samples/multimodal-agent-samples';
