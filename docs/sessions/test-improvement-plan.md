@@ -17,17 +17,23 @@
 - **Commit:** 18baf5f47
 - **Solution:** Used jest.doMock() after jest.resetModules() with dynamic imports
 
-### Iteration 9: AGENT 2 - IsolationEngineer
+### Iteration 9: AGENT 2 - IsolationEngineer ⚠️ IN PROGRESS
 - **Issue:** #765
 - **Task:** Fix 9 state pollution tests (2 MFA + 7 integration)
 - **Expected Result:** 435 → 426 failures (9 fixed)
-- **Time:** 3-4 hours
+- **Time:** 3-4 hours (blocked on MFA tests)
+- **Status:** MFA tests require deeper investigation of module caching
+- **Commits:** 358444850 (WIP)
+- **Problem:** Module caching prevents mock state changes from affecting production code
 
-### Iteration 10: AGENT 3 - CryptoFixer
-- **Issue:** #766
+### Iteration 10: AGENT 3 - CryptoFixer ✅ COMPLETED
+- **Issue:** #766 (CLOSED)
 - **Task:** Fix SAML crypto mocking issues
-- **Expected Result:** 426 → 416 failures (~10 fixed)
-- **Time:** 2-3 hours
+- **Expected Result:** 10 tests fixed
+- **Actual Result:** 10/10 SAML tests passing ✅
+- **Time:** 15 minutes (much faster than estimated!)
+- **Commit:** 3a9344cd9
+- **Solution:** Created `__mocks__/crypto.js` + jest.spyOn() for randomBytes
 
 ### Iteration 11: AGENT 4 - PatternAnalyst
 - **Issue:** #767 (EPIC)
