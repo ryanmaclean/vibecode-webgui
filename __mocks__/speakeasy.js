@@ -12,16 +12,18 @@ let verifyReturnValue = { delta: 0 }
 
 const totp = {
   verify: (options) => {
-    // Return current value
-    const currentValue = verifyReturnValue
-    // Reset to default after each call for test isolation
-    verifyReturnValue = { delta: 0 }
-    return currentValue
+    // Return current value without auto-reset
+    // Tests should reset via __reset() in beforeEach/afterEach
+    return verifyReturnValue
   },
   generate: (secret) => '123456',
   // Helper to allow tests to change return value for next call
   __setVerifyReturnValue: (value) => {
     verifyReturnValue = value
+  },
+  // Helper to reset to default state (for beforeEach/afterEach)
+  __reset: () => {
+    verifyReturnValue = { delta: 0 }
   }
 }
 
