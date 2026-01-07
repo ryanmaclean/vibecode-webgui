@@ -17,6 +17,11 @@ type MockPoolInstance = EventEmitter & {
 const mockPoolInstances: MockPoolInstance[] = [];
 const mockVectorStore = new Map<number, any[]>();
 
+// Store references for Prisma mock (must be prefixed with 'mock' for jest.mock)
+let mockPrismaQueryRawUnsafe: jest.Mock;
+let mockPrismaExecuteRawUnsafe: jest.Mock;
+let mockPrismaQueryRaw: jest.Mock;
+
 jest.mock('pg', () => {
   const { EventEmitter } = require('events');
 
@@ -139,116 +144,142 @@ jest.mock('../../src/lib/cache/pgvector-search', () => ({
   }
 }));
 
-// Mock Prisma Client
-const mockPrismaClient = {
-  $connect: jest.fn().mockResolvedValue(undefined),
-  $disconnect: jest.fn().mockResolvedValue(undefined),
-  $queryRaw: jest.fn().mockImplementation((query: any, ...args: any[]) => {
-    // Handle tagged template literals
-    let queryStr = '';
-    if (Array.isArray(query)) {
-      // Tagged template literal: query is array of strings
-      queryStr = query.join('');
-    } else if (typeof query === 'string') {
-      queryStr = query;
-    } else if (query?.strings) {
-      // Template literal object
-      queryStr = query.strings.join('');
-    }
+// Initialize Prisma mock functions
+mockPrismaQueryRawUnsafe = jest.fn().mockImplementation((sql: string, ...params: any[]) => {
+  // Handle vector search queries
+  if (sql.includes('SELECT') && sql.includes('embedding')) {
+    // Check if fileIds filter is present
+    const fileIdsMatch = params.find(p => typeof p === 'string' && p.startsWith('{'));
 
-    queryStr = queryStr.toLowerCase();
-
-    // Handle pgvector extension check
-    if (queryStr.includes('pg_extension') && queryStr.includes('vector')) {
-      return Promise.resolve([{ extname: 'vector' }]);
-    }
-
-    // Handle vector type check
-    if (queryStr.includes('pg_type') && queryStr.includes('vector')) {
-      return Promise.resolve([{ typname: 'vector' }]);
-    }
-
-    // Handle health check
-    if (queryStr.includes('select 1')) {
-      return Promise.resolve([{ '?column?': 1 }]);
-    }
-
-    return Promise.resolve([]);
-  }),
-  $queryRawUnsafe: jest.fn().mockImplementation((sql: string, ...params: any[]) => {
-    // Handle vector search queries
-    if (sql.includes('SELECT') && sql.includes('embedding')) {
-      const fileIds = params.find(p => typeof p === 'string' && p.startsWith('{'));
-      if (fileIds) {
-        const ids = fileIds.replace(/[{}]/g, '').split(',').map(Number);
-        const results: any[] = [];
-        ids.forEach((id: number) => {
-          const chunks = mockVectorStore.get(id) || [];
-          chunks.forEach((chunk, idx) => {
-            results.push({
-              chunk_id: `${id}-chunk-${idx}`,
-              content: chunk.content,
-              start_line: chunk.startLine || null,
-              end_line: chunk.endLine || null,
-              tokens: chunk.tokens,
-              file_id: id,
-              file_name: `file_${id}.ts`,
-              language: 'typescript',
-              similarity: 0.95
-            });
+    if (fileIdsMatch) {
+      const ids = fileIdsMatch.replace(/[{}]/g, '').split(',').map(Number);
+      const results: any[] = [];
+      ids.forEach((id: number) => {
+        const chunks = mockVectorStore.get(id) || [];
+        chunks.forEach((chunk, idx) => {
+          results.push({
+            chunk_id: `${id}-chunk-${idx}`,
+            content: chunk.content,
+            start_line: chunk.startLine || null,
+            end_line: chunk.endLine || null,
+            tokens: chunk.tokens,
+            file_id: id,
+            file_name: `file_${id}.ts`,
+            language: 'typescript',
+            similarity: 0.95
           });
         });
-        return Promise.resolve(results);
-      }
-    }
-    return Promise.resolve([]);
-  }),
-  $executeRawUnsafe: jest.fn().mockImplementation((sql: string, ...params: any[]) => {
-    // Handle INSERT operations
-    if (sql.includes('INSERT INTO') && sql.includes('rag_chunks')) {
-      const fileId = params[0];
-      const content = params[2];
-      const startLine = params[3];
-      const endLine = params[4];
-      const tokens = params[5];
-
-      if (!mockVectorStore.has(fileId)) {
-        mockVectorStore.set(fileId, []);
-      }
-
-      mockVectorStore.get(fileId)!.push({
-        content,
-        startLine,
-        endLine,
-        tokens
       });
-
-      return Promise.resolve(1);
+      return Promise.resolve(results);
     }
-    return Promise.resolve(0);
-  }),
-  rAGChunk: {
-    deleteMany: jest.fn().mockImplementation(({ where }: any) => {
-      if (where?.file_id) {
-        mockVectorStore.delete(where.file_id);
+
+    // If no fileIds filter, return all chunks from mockVectorStore
+    const results: any[] = [];
+    mockVectorStore.forEach((chunks, id) => {
+      chunks.forEach((chunk, idx) => {
+        results.push({
+          chunk_id: `${id}-chunk-${idx}`,
+          content: chunk.content,
+          start_line: chunk.startLine || null,
+          end_line: chunk.endLine || null,
+          tokens: chunk.tokens,
+          file_id: id,
+          file_name: `file_${id}.ts`,
+          language: 'typescript',
+          similarity: 0.95
+        });
+      });
+    });
+    return Promise.resolve(results);
+  }
+  return Promise.resolve([]);
+});
+
+mockPrismaExecuteRawUnsafe = jest.fn().mockImplementation((sql: string, ...params: any[]) => {
+  // Handle INSERT operations
+  if (sql.includes('INSERT INTO') && sql.includes('rag_chunks')) {
+    const fileId = params[0];
+    const content = params[2];
+    const startLine = params[3];
+    const endLine = params[4];
+    const tokens = params[5];
+
+    if (!mockVectorStore.has(fileId)) {
+      mockVectorStore.set(fileId, []);
+    }
+
+    mockVectorStore.get(fileId)!.push({
+      content,
+      startLine,
+      endLine,
+      tokens
+    });
+
+    return Promise.resolve(1);
+  }
+  return Promise.resolve(0);
+});
+
+mockPrismaQueryRaw = jest.fn().mockImplementation((query: any, ...args: any[]) => {
+  // Handle tagged template literals
+  let queryStr = '';
+  if (Array.isArray(query)) {
+    queryStr = query.join('');
+  } else if (typeof query === 'string') {
+    queryStr = query;
+  } else if (query?.strings) {
+    queryStr = query.strings.join('');
+  }
+
+  queryStr = queryStr.toLowerCase();
+
+  // Handle pgvector extension check
+  if (queryStr.includes('pg_extension') && queryStr.includes('vector')) {
+    return Promise.resolve([{ extname: 'vector' }]);
+  }
+
+  // Handle vector type check
+  if (queryStr.includes('pg_type') && queryStr.includes('vector')) {
+    return Promise.resolve([{ typname: 'vector' }]);
+  }
+
+  // Handle health check
+  if (queryStr.includes('select 1')) {
+    return Promise.resolve([{ '?column?': 1 }]);
+  }
+
+  return Promise.resolve([]);
+});
+
+// Mock Prisma Client with custom implementation for this test
+jest.mock('@prisma/client', () => {
+  return {
+    PrismaClient: jest.fn().mockImplementation(() => ({
+      $connect: jest.fn().mockResolvedValue(undefined),
+      $disconnect: jest.fn().mockResolvedValue(undefined),
+      $queryRaw: mockPrismaQueryRaw,
+      $queryRawUnsafe: mockPrismaQueryRawUnsafe,
+      $executeRawUnsafe: mockPrismaExecuteRawUnsafe,
+      rAGChunk: {
+        deleteMany: jest.fn().mockImplementation(({ where }: any) => {
+          if (where?.file_id) {
+            mockVectorStore.delete(where.file_id);
+          }
+          return Promise.resolve({ count: 1 });
+        }),
+        findMany: jest.fn().mockResolvedValue([]),
+        count: jest.fn().mockResolvedValue(0),
+        groupBy: jest.fn().mockResolvedValue([]),
+        aggregate: jest.fn().mockResolvedValue({ _avg: { tokens: 0 } })
       }
-      return Promise.resolve({ count: 1 });
-    }),
-    findMany: jest.fn().mockResolvedValue([]),
-    count: jest.fn().mockResolvedValue(0),
-    groupBy: jest.fn().mockResolvedValue([]),
-    aggregate: jest.fn().mockResolvedValue({ _avg: { tokens: 0 } })
-  }
-};
-
-jest.mock('@prisma/client', () => ({
-  PrismaClient: jest.fn().mockImplementation(() => mockPrismaClient),
-  Prisma: {
-    QueryMode: {
-      insensitive: 'insensitive'
+    })),
+    Prisma: {
+      QueryMode: {
+        insensitive: 'insensitive'
+      }
     }
-  }
-}));
+  };
+});
 
 import { PostgresVectorDatabaseAdapter } from '../../src/lib/vector-db/postgres-vector-database-adapter';
 import { VectorDatabaseProvider } from '../../src/lib/vector-db/vector-types';

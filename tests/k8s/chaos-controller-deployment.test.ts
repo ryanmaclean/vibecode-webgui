@@ -24,6 +24,16 @@ describe('Chaos Controller Deployment Tests', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockExec = require('child_process').exec as jest.MockedFunction<typeof exec>;
+
+    // Add custom promisify support to the mock so promisify(exec) returns { stdout, stderr }
+    (mockExec as any)[promisify.custom] = function(cmd: string) {
+      return new Promise((resolve, reject) => {
+        mockExec(cmd, (error: any, stdout: any, stderr: any) => {
+          if (error) reject(error);
+          else resolve({ stdout, stderr });
+        });
+      });
+    };
   });
 
   describe('Namespace and CRD Setup', () => {
@@ -31,20 +41,17 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl get namespace')) {
-            callback(null, {
-              stdout: JSON.stringify({
-                metadata: { name: namespace },
-                status: { phase: 'Active' }
-              }),
-              stderr: ''
-            });
+            callback(null, JSON.stringify({
+              metadata: { name: namespace },
+              status: { phase: 'Active' }
+            }), '');
           } else if (cmd.includes('kubectl create namespace')) {
-            callback(null, { stdout: `namespace/${namespace} created`, stderr: '' });
+            callback(null, `namespace/${namespace} created`, '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -58,19 +65,16 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm template') && cmd.includes('include-crds')) {
-            callback(null, {
-              stdout: `apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: disruptions.chaos.datadoghq.com`,
-              stderr: ''
-            });
+            callback(null, `apiVersion: apiextensions.k8s.io/v1\nkind: CustomResourceDefinition\nmetadata:\n  name: disruptions.chaos.datadoghq.com`, '');
           } else if (cmd.includes('kubectl apply')) {
-            callback(null, { stdout: 'customresourcedefinition.apiextensions.k8s.io/disruptions.chaos.datadoghq.com created', stderr: '' });
+            callback(null, 'customresourcedefinition.apiextensions.k8s.io/disruptions.chaos.datadoghq.com created', '');
           } else if (cmd.includes('kubectl get crd')) {
-            callback(null, { stdout: 'disruptions.chaos.datadoghq.com', stderr: '' });
+            callback(null, 'disruptions.chaos.datadoghq.com', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -85,17 +89,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm upgrade --install')) {
-            callback(null, {
-              stdout: 'Release "vibecode-chaos" has been upgraded. Happy Helming!\nNAME: vibecode-chaos\nSTATUS: deployed',
-              stderr: ''
-            });
+            callback(null, 'Release "vibecode-chaos" has been upgraded. Happy Helming!\nNAME: vibecode-chaos\nSTATUS: deployed', '');
           } else if (cmd.includes('kubectl get deployment chaos-controller')) {
-            callback(null, { stdout: '1', stderr: '' });
+            callback(null, '1', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -120,14 +121,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl get serviceaccount')) {
-            callback(null, { stdout: 'chaos-controller', stderr: '' });
+            callback(null, 'chaos-controller', '');
           } else if (cmd.includes('kubectl get clusterrolebinding')) {
-            callback(null, { stdout: 'chaos-controller', stderr: '' });
+            callback(null, 'chaos-controller', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -142,9 +143,9 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should expose metrics endpoint', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get service chaos-controller-metrics')) {
-          callback(null, { stdout: '8080', stderr: '' });
+          callback(null, '8080', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -156,9 +157,9 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should have healthy controller pod', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get pods')) {
-          callback(null, { stdout: 'Running', stderr: '' });
+          callback(null, 'Running', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -180,14 +181,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm upgrade')) {
-            callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
+            callback(null, 'Release "vibecode-chaos" has been upgraded', '');
           } else if (cmd.includes('kubectl get disruption')) {
-            callback(null, { stdout: 'chat-ui-network-stress', stderr: '' });
+            callback(null, 'chat-ui-network-stress', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -200,14 +201,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm upgrade')) {
-            callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
+            callback(null, 'Release "vibecode-chaos" has been upgraded', '');
           } else if (cmd.includes('kubectl get disruption')) {
-            callback(null, { stdout: 'mongodb-cpu-pressure', stderr: '' });
+            callback(null, 'mongodb-cpu-pressure', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -220,14 +221,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm upgrade')) {
-            callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
+            callback(null, 'Release "vibecode-chaos" has been upgraded', '');
           } else if (cmd.includes('kubectl get configmap')) {
-            callback(null, { stdout: 'chaos-gameday-scenarios', stderr: '' });
+            callback(null, 'chaos-gameday-scenarios', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -242,14 +243,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl apply') && cmd.includes('Deployment')) {
-            callback(null, { stdout: 'deployment.apps/chaos-test-target created', stderr: '' });
+            callback(null, 'deployment.apps/chaos-test-target created', '');
           } else if (cmd.includes('kubectl wait')) {
-            callback(null, { stdout: 'deployment.apps/chaos-test-target condition met', stderr: '' });
+            callback(null, 'deployment.apps/chaos-test-target condition met', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -259,14 +260,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl apply')) {
-            callback(null, { stdout: 'disruption.chaos.datadoghq.com/test-network-disruption created', stderr: '' });
+            callback(null, 'disruption.chaos.datadoghq.com/test-network-disruption created', '');
           } else if (cmd.includes('kubectl get disruption')) {
-            callback(null, { stdout: 'Running', stderr: '' });
+            callback(null, 'Running', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -281,16 +282,16 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl apply') && cmd.includes('-')) {
-            callback(null, { stdout: 'disruption.chaos.datadoghq.com/invalid-experiment created', stderr: '' });
+            callback(null, 'disruption.chaos.datadoghq.com/invalid-experiment created', '');
           } else if (cmd.includes('kubectl get disruption invalid-experiment')) {
-            callback(null, { stdout: 'invalid-experiment', stderr: '' });
+            callback(null, 'invalid-experiment', '');
           } else if (cmd.includes('kubectl delete disruption invalid-experiment')) {
-            callback(null, { stdout: 'disruption.chaos.datadoghq.com "invalid-experiment" deleted', stderr: '' });
+            callback(null, 'disruption.chaos.datadoghq.com "invalid-experiment" deleted', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -316,12 +317,9 @@ describe('Chaos Controller Deployment Tests', () => {
 
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('curl')) {
-          callback(null, {
-            stdout: '# HELP chaos_controller_disruptions_total Total number of disruptions\n# TYPE chaos_controller_disruptions_total counter\nchaos_controller_disruptions_total 5',
-            stderr: ''
-          });
+          callback(null, '# HELP chaos_controller_disruptions_total Total number of disruptions\n# TYPE chaos_controller_disruptions_total counter\nchaos_controller_disruptions_total 5', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -339,12 +337,9 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should be discoverable by Datadog agent', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get pods')) {
-          callback(null, {
-            stdout: '{"ad.datadoghq.com/chaos-controller.check_names":"[\\\"openmetrics\\\"]","ad.datadoghq.com/chaos-controller.init_configs":"[{}]"}',
-            stderr: ''
-          });
+          callback(null, '{"ad.datadoghq.com/chaos-controller.check_names":"[\\\"openmetrics\\\"]","ad.datadoghq.com/chaos-controller.init_configs":"[{}]"}', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -359,9 +354,9 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should deploy with security context', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get deployment')) {
-          callback(null, { stdout: 'true', stderr: '' });
+          callback(null, 'true', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -374,14 +369,14 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('helm upgrade')) {
-            callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
+            callback(null, 'Release "vibecode-chaos" has been upgraded', '');
           } else if (cmd.includes('kubectl get networkpolicy')) {
-            callback(null, { stdout: 'chaos-controller', stderr: '' });
+            callback(null, 'chaos-controller', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -397,16 +392,16 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string') {
           if (cmd.includes('kubectl apply')) {
-            callback(null, { stdout: 'disruption.chaos.datadoghq.com/cleanup-test created', stderr: '' });
+            callback(null, 'disruption.chaos.datadoghq.com/cleanup-test created', '');
           } else if (cmd.includes('kubectl get disruption cleanup-test')) {
-            callback(null, { stdout: 'True', stderr: '' });
+            callback(null, 'True', '');
           } else if (cmd.includes('kubectl delete disruption cleanup-test')) {
-            callback(null, { stdout: 'disruption.chaos.datadoghq.com "cleanup-test" deleted', stderr: '' });
+            callback(null, 'disruption.chaos.datadoghq.com "cleanup-test" deleted', '');
           } else if (callback) {
-            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+            callback(new Error(`Unmocked command: ${cmd}`), '', '');
           }
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -425,18 +420,15 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should verify controller deployment is healthy', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get deployment')) {
-          callback(null, {
-            stdout: JSON.stringify({
-              status: {
-                availableReplicas: 1,
-                readyReplicas: 1,
-                replicas: 1
-              }
-            }),
-            stderr: ''
-          });
+          callback(null, JSON.stringify({
+            status: {
+              availableReplicas: 1,
+              readyReplicas: 1,
+              replicas: 1
+            }
+          }), '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -450,22 +442,19 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should validate chaos controller pod readiness', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get pods')) {
-          callback(null, {
-            stdout: JSON.stringify({
-              items: [{
-                status: {
-                  phase: 'Running',
-                  conditions: [
-                    { type: 'Ready', status: 'True' },
-                    { type: 'ContainersReady', status: 'True' }
-                  ]
-                }
-              }]
-            }),
-            stderr: ''
-          });
+          callback(null, JSON.stringify({
+            items: [{
+              status: {
+                phase: 'Running',
+                conditions: [
+                  { type: 'Ready', status: 'True' },
+                  { type: 'ContainersReady', status: 'True' }
+                ]
+              }
+            }]
+          }), '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -482,12 +471,9 @@ describe('Chaos Controller Deployment Tests', () => {
     it('should validate disruption spec schema', async () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl apply')) {
-          callback(null, {
-            stdout: 'disruption.chaos.datadoghq.com/valid-disruption created',
-            stderr: ''
-          });
+          callback(null, 'disruption.chaos.datadoghq.com/valid-disruption created', '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });
@@ -518,28 +504,26 @@ spec:
 
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get crd')) {
-          callback(null, {
-            stdout: JSON.stringify({
-              spec: {
-                versions: [{
-                  schema: {
-                    openAPIV3Schema: {
-                      properties: {
-                        spec: {
-                          properties: Object.fromEntries(
-                            disruptionTypes.map(type => [type, { type: 'object' }])
-                          )
-                        }
+          const crdData = {
+            spec: {
+              versions: [{
+                schema: {
+                  openAPIV3Schema: {
+                    properties: {
+                      spec: {
+                        properties: Object.fromEntries(
+                          disruptionTypes.map(type => [type, { type: 'object' }])
+                        )
                       }
                     }
                   }
-                }]
-              }
-            }),
-            stderr: ''
-          });
+                }
+              }]
+            }
+          };
+          callback(null, JSON.stringify(crdData), '');
         } else if (callback) {
-          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
+          callback(new Error(`Unmocked command: ${cmd}`), '', '');
         }
         return {} as any;
       });

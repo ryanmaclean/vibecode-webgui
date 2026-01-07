@@ -8,7 +8,7 @@ jest.mock('@prisma/client');
 
 dotenv.config();
 
-// Mock embedding service to avoid requiring real API keys
+// Mock embedding service factory
 jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
   const mockEmbeddingService = {
     storeDocument: jest.fn().mockImplementation(async (id, content, metadata) => {
@@ -39,10 +39,7 @@ jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
     })
   };
 
-  const originalModule = jest.requireActual('../src/lib/ai/embeddingServiceFactory');
-
   return {
-    ...originalModule,
     EmbeddingServiceFactory: jest.fn().mockImplementation((prisma) => ({
       createEmbeddingServiceFromEnv: jest.fn().mockReturnValue(mockEmbeddingService)
     }))
@@ -51,16 +48,18 @@ jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
 
 // Mock VectorService for database operations
 jest.mock('../src/lib/db/vector', () => {
+  const mockVectorService = {
+    getEmbeddingStats: jest.fn().mockResolvedValue([
+      {
+        hour_bucket: new Date(),
+        total_embeddings: 10
+      }
+    ]),
+    cleanupOldEmbeddings: jest.fn().mockResolvedValue({ deletedCount: 5 })
+  };
+
   return {
-    VectorService: jest.fn().mockImplementation(() => ({
-      getEmbeddingStats: jest.fn().mockResolvedValue([
-        {
-          hour_bucket: new Date(),
-          total_embeddings: 10
-        }
-      ]),
-      cleanupOldEmbeddings: jest.fn().mockResolvedValue({ deletedCount: 5 })
-    }))
+    VectorService: jest.fn().mockImplementation(() => mockVectorService)
   };
 });
 

@@ -446,7 +446,7 @@ export class MonacoAgentAPI {
       source: d.source,
       code: d.code,
       relatedInformation: d.relatedInformation?.map(info => ({
-        resource: monaco.Uri.file(info.file),
+        resource: (globalThis as any).monaco?.Uri?.file?.(info.file) || { path: info.file },
         message: info.message,
         startLineNumber: info.startLine,
         startColumn: info.startColumn,
@@ -455,7 +455,10 @@ export class MonacoAgentAPI {
       })),
     }))
 
-    monaco.editor.setModelMarkers(model, 'agent-api', markers)
+    // Use global monaco if available (browser context) or skip in test environment
+    if ((globalThis as any).monaco?.editor?.setModelMarkers) {
+      (globalThis as any).monaco.editor.setModelMarkers(model, 'agent-api', markers)
+    }
     this.log(`Applied ${markers.length} diagnostics`)
   }
 

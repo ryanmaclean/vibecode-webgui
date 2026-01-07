@@ -10,17 +10,124 @@ import { exec, spawn } from 'child_process';
 import { promisify } from 'util';
 import fetch from 'node-fetch';
 
-const mockExec = exec as jest.MockedFunction<typeof exec> & { __promisify__?: any };
-const execAsync = mockExec.__promisify__ ? mockExec.__promisify__.bind(mockExec) : promisify(mockExec);
+const mockExec = exec as jest.MockedFunction<typeof exec>;
+const mockSpawn = spawn as jest.MockedFunction<typeof spawn>;
 const mockFetch = fetch as jest.MockedFunction<typeof fetch>;
+
+// Create a manual async wrapper for exec instead of using promisify
+// This is more reliable with Jest mocks
+const execAsync = (cmd: string): Promise<{ stdout: string; stderr: string }> => {
+  return new Promise((resolve, reject) => {
+    mockExec(cmd, (error, stdout, stderr) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve({ stdout, stderr });
+      }
+    });
+  });
+};
+
+// Mock kubectl response generator
+function getMockKubectlResponse(cmd: string): string {
+  // Pod status phase (check this first, before other conditions)
+  if (cmd.includes('status.phase')) {
+    return 'Running Running';
+  }
+
+  // Deployment replicas
+  if (cmd.includes('kubectl get deployment vibecode-docs') && cmd.includes('spec.replicas')) {
+    return '2';
+  }
+
+  // Pod Ready status
+  if (cmd.includes('kubectl get pods') && cmd.includes('app=vibecode-docs') && cmd.includes('Ready')) {
+    return 'True True';
+  }
+
+  // Service name
+  if (cmd.includes('kubectl get svc vibecode-docs-service') && cmd.includes('metadata.name')) {
+    return 'vibecode-docs-service';
+  }
+
+  // HPA name
+  if (cmd.includes('kubectl get hpa vibecode-docs-hpa') && cmd.includes('metadata.name')) {
+    return 'vibecode-docs-hpa';
+  }
+
+  // ContainersReady status
+  if (cmd.includes('ContainersReady')) {
+    return 'True True';
+  }
+
+  // Security context - runAsNonRoot
+  if (cmd.includes('securityContext.runAsNonRoot')) {
+    return 'true';
+  }
+
+  // Security context - readOnlyRootFilesystem
+  if (cmd.includes('readOnlyRootFilesystem')) {
+    return 'true';
+  }
+
+  // Default empty response
+  return '';
+}
 
 describe('VibeCode Docs KIND Integration Tests', () => {
     let portForwardProcess: import('child_process').ChildProcess | null;
     const TEST_PORT = 8091;
     const BASE_URL = `http://localhost:${TEST_PORT}`;
 
+    // Setup mocks once before all tests
+    beforeAll(async () => {
+      // Setup exec mock for kubectl commands
+      mockExec.mockImplementation(((cmd: string, callback?: (error: Error | null, stdout: string, stderr: string) => void) => {
+        const stdout = getMockKubectlResponse(cmd);
+        const stderr = '';
+
+        // For promisify to work, we MUST call the callback
+        if (callback) {
+          // Use setImmediate to make it async
+          setImmediate(() => callback(null, stdout, stderr));
+        }
+
+        // Return a mock ChildProcess
+        return {
+          stdout: null,
+          stderr: null,
+          stdin: null,
+        } as any;
+      }) as any);
+
+      // Setup spawn mock for port-forward
+      mockSpawn.mockReturnValue({
+        kill: jest.fn(),
+        on: jest.fn(),
+        stdout: { on: jest.fn() },
+        stderr: { on: jest.fn() },
+      } as any);
+
+      // Verify deployment is ready
+      const { stdout: podStatus } = await execAsync(
+        'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.phase}"'
+      );
+      expect(podStatus).toContain('Running');
+
+      // Start port forwarding for tests
+      portForwardProcess = spawn('kubectl', [
+        'port-forward',
+        '-n', 'vibecode',
+        'svc/vibecode-docs-service',
+        `${TEST_PORT}:80`
+      ]);
+
+      // Wait for port forward to be ready (mocked, so instant)
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }, 30000);
+
     beforeEach(() => {
-      // Setup fetch mock for HTTP requests
+      // Setup fetch mock for HTTP requests (refresh for each test)
       mockFetch.mockImplementation((url: any) => {
         const urlString = typeof url === 'string' ? url : url.toString();
 
@@ -64,25 +171,6 @@ describe('VibeCode Docs KIND Integration Tests', () => {
         } as any);
       });
     });
-
-    beforeAll(async () => {
-      // Verify deployment is ready
-      const { stdout: podStatus } = await execAsync(
-        'kubectl get pods -n vibecode -l app=vibecode-docs -o jsonpath="{.items[*].status.phase}"'
-      );
-      expect(podStatus).toContain('Running');
-
-      // Start port forwarding for tests
-      portForwardProcess = spawn('kubectl', [
-        'port-forward',
-        '-n', 'vibecode',
-        'svc/vibecode-docs-service',
-        `${TEST_PORT}:80`
-      ]);
-
-      // Wait for port forward to be ready (mocked, so instant)
-      await new Promise(resolve => setTimeout(resolve, 100));
-    }, 30000);
 
     afterAll(() => {
       if (portForwardProcess) {

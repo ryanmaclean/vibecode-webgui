@@ -9,11 +9,44 @@
 
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals'
 import type * as monaco from 'monaco-editor'
-import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
 
 // ============================================================================
-// Mocks
+// Mocks - Must be defined before imports
 // ============================================================================
+
+// Mock the WebSocket streaming client module
+// Create mock client inside the factory to avoid hoisting issues
+jest.mock('@/lib/streaming/websocket-streaming-client', () => {
+  const mockWSClient = {
+    connect: jest.fn(() => Promise.resolve()),
+    disconnect: jest.fn(),
+    stream: jest.fn(() => Promise.resolve('request-id')),
+    isConnected: jest.fn(() => true),
+  }
+
+  return {
+    createWebSocketStreamingClient: jest.fn(() => mockWSClient),
+    __mockWSClient: mockWSClient, // Export for testing
+  }
+})
+
+// Now import the actual modules
+import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
+import {
+  __mockWSClient as mockWSClient,
+  createWebSocketStreamingClient
+} from '@/lib/streaming/websocket-streaming-client'
+
+// Setup global monaco object for runtime usage in implementation
+// The implementation uses monaco.editor.setModelMarkers and monaco.Uri.file at runtime
+;(global as any).monaco = {
+  editor: {
+    setModelMarkers: jest.fn(),
+  },
+  Uri: {
+    file: jest.fn((path: string) => ({ path })),
+  },
+}
 
 // Mock monaco editor
 const mockEditor = {
@@ -32,8 +65,14 @@ const mockEditor = {
 const mockModel = {
   getValue: jest.fn(() => 'const x = 1;'),
   getLanguageId: jest.fn(() => 'typescript'),
-  getValueInRange: jest.fn(() => 'x'),
-  pushEditOperations: jest.fn(),
+  getValueInRange: jest.fn((range: monaco.IRange) => 'x'),
+  pushEditOperations: jest.fn((selections, edits, inverseEditOperations) => {
+    // Simulate successful edit
+    if (inverseEditOperations) {
+      inverseEditOperations()
+    }
+    return true
+  }),
   uri: { path: '/test.ts' },
 } as unknown as monaco.editor.ITextModel
 
@@ -57,19 +96,6 @@ const mockSelection: monaco.Selection = {
   getPosition: jest.fn(() => mockPosition),
 } as unknown as monaco.Selection
 
-// Mock WebSocket client
-const mockWSClient = {
-  connect: jest.fn().mockResolvedValue(undefined),
-  disconnect: jest.fn(),
-  stream: jest.fn(),
-  isConnected: jest.fn(() => true),
-}
-
-// Mock createWebSocketStreamingClient
-jest.mock('@/lib/streaming/websocket-streaming-client', () => ({
-  createWebSocketStreamingClient: jest.fn(() => mockWSClient),
-}))
-
 // ============================================================================
 // Test Suite
 // ============================================================================
@@ -80,15 +106,28 @@ describe('MonacoAgentAPI', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+    // Restore mockModel methods after clearAllMocks
+    ;(mockModel.getValue as jest.Mock).mockReturnValue('const x = 1;')
+    ;(mockModel.getLanguageId as jest.Mock).mockReturnValue('typescript')
+    ;(mockModel.getValueInRange as jest.Mock).mockImplementation((range: monaco.IRange) => 'x')
+
     // Setup default mocks
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
     ;(mockEditor.getSelection as jest.Mock).mockReturnValue(mockSelection)
+    // Restore editor event listeners that return disposables
+    ;(mockEditor.onDidChangeModelContent as jest.Mock).mockReturnValue({ dispose: jest.fn() })
+    ;(mockEditor.onDidChangeCursorPosition as jest.Mock).mockReturnValue({ dispose: jest.fn() })
+    ;(mockEditor.onDidChangeCursorSelection as jest.Mock).mockReturnValue({ dispose: jest.fn() })
 
     // Setup WebSocket client mocks
-    mockWSClient.connect.mockResolvedValue(undefined)
-    mockWSClient.isConnected.mockReturnValue(true)
-    mockWSClient.stream.mockImplementation(async () => 'default-request-id')
+    ;(mockWSClient.connect as jest.Mock).mockImplementation(() => Promise.resolve())
+    ;(mockWSClient.isConnected as jest.Mock).mockReturnValue(true)
+    ;(mockWSClient.stream as jest.Mock).mockImplementation(() => Promise.resolve('default-request-id'))
+    ;(mockWSClient.disconnect as jest.Mock).mockImplementation(() => {})
+
+    // Restore createWebSocketStreamingClient mock after clearAllMocks
+    ;(createWebSocketStreamingClient as jest.Mock).mockReturnValue(mockWSClient)
 
     agentAPI = new MonacoAgentAPI(mockEditor, {
       baseUrl: '/api/agents',
@@ -458,6 +497,10 @@ describe('registerMonacoAgentProviders', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Restore mock implementations after clearAllMocks
+    mockMonaco.languages.registerCompletionItemProvider.mockReturnValue({ dispose: jest.fn() })
+    mockMonaco.languages.registerHoverProvider.mockReturnValue({ dispose: jest.fn() })
+    mockMonaco.languages.registerCodeActionProvider.mockReturnValue({ dispose: jest.fn() })
   })
 
   it('should register all providers', () => {
@@ -502,11 +545,19 @@ describe('Performance', () => {
 
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
+    // Restore editor event listeners that return disposables
+    ;(mockEditor.onDidChangeModelContent as jest.Mock).mockReturnValue({ dispose: jest.fn() })
+    ;(mockEditor.onDidChangeCursorPosition as jest.Mock).mockReturnValue({ dispose: jest.fn() })
+    ;(mockEditor.onDidChangeCursorSelection as jest.Mock).mockReturnValue({ dispose: jest.fn() })
 
     // Setup WebSocket client mocks
-    mockWSClient.connect.mockResolvedValue(undefined)
-    mockWSClient.isConnected.mockReturnValue(true)
-    mockWSClient.stream.mockImplementation(async () => 'default-request-id')
+    ;(mockWSClient.connect as jest.Mock).mockImplementation(() => Promise.resolve())
+    ;(mockWSClient.isConnected as jest.Mock).mockReturnValue(true)
+    ;(mockWSClient.stream as jest.Mock).mockImplementation(() => Promise.resolve('default-request-id'))
+    ;(mockWSClient.disconnect as jest.Mock).mockImplementation(() => {})
+
+    // Restore createWebSocketStreamingClient mock after clearAllMocks
+    ;(createWebSocketStreamingClient as jest.Mock).mockReturnValue(mockWSClient)
 
     agentAPI = new MonacoAgentAPI(mockEditor, {
       completionTimeout: 300,

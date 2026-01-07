@@ -56,7 +56,7 @@ export const mockDatadogAPI = {
   /**
    * Mock /api/v1/validate endpoint
    */
-  validate: jest.fn().mockImplementation(async (apiKey: string) => {
+  validate: async (apiKey: string) => {
     if (!apiKey || apiKey.includes('invalid')) {
       return {
         ok: false,
@@ -70,12 +70,12 @@ export const mockDatadogAPI = {
       status: 200,
       json: async () => ({ valid: true })
     };
-  }),
+  },
 
   /**
    * Mock /api/v1/series endpoint (metrics submission)
    */
-  submitMetrics: jest.fn().mockImplementation(async (metrics: { series: DatadogMetricPoint[] }) => {
+  submitMetrics: async (metrics: { series: DatadogMetricPoint[] }) => {
     submittedMetrics.push(...metrics.series);
 
     return {
@@ -83,12 +83,12 @@ export const mockDatadogAPI = {
       status: 202,
       json: async () => ({ status: 'ok' })
     };
-  }),
+  },
 
   /**
    * Mock /api/v1/events endpoint
    */
-  submitEvent: jest.fn().mockImplementation(async (event: DatadogEvent) => {
+  submitEvent: async (event: DatadogEvent) => {
     submittedEvents.push(event);
 
     return {
@@ -102,12 +102,12 @@ export const mockDatadogAPI = {
         }
       })
     };
-  }),
+  },
 
   /**
    * Mock /api/v1/check_run endpoint (service checks)
    */
-  submitServiceCheck: jest.fn().mockImplementation(async (check: DatadogServiceCheck) => {
+  submitServiceCheck: async (check: DatadogServiceCheck) => {
     submittedServiceChecks.push(check);
 
     return {
@@ -115,7 +115,7 @@ export const mockDatadogAPI = {
       status: 202,
       json: async () => ({ status: 'ok' })
     };
-  }),
+  },
 
   /**
    * Reset all tracked submissions
@@ -125,8 +125,6 @@ export const mockDatadogAPI = {
     submittedEvents.length = 0;
     submittedServiceChecks.length = 0;
     submittedLogs.length = 0;
-
-    jest.clearAllMocks();
   }
 };
 
@@ -241,36 +239,52 @@ export const mockDatadogTracing = {
 export const mockDatadogFetch = () => {
   const originalFetch = global.fetch;
 
-  global.fetch = jest.fn().mockImplementation(async (url: string, options?: any) => {
+  // Create a proper mock implementation
+  const mockFetch = jest.fn(async (url: string | URL, options?: RequestInit) => {
     const urlStr = typeof url === 'string' ? url : url.toString();
 
     // Mock Datadog API validation endpoint
     if (urlStr.includes('/api/v1/validate')) {
-      const apiKey = options?.headers?.['DD-API-KEY'];
-      return mockDatadogAPI.validate(apiKey);
+      const apiKey = options?.headers?.['DD-API-KEY' as any];
+      const result = await mockDatadogAPI.validate(apiKey);
+      return Promise.resolve(result);
     }
 
     // Mock Datadog metrics endpoint
     if (urlStr.includes('/api/v1/series')) {
-      const body = JSON.parse(options?.body || '{}');
-      return mockDatadogAPI.submitMetrics(body);
+      const body = JSON.parse((options?.body as string) || '{}');
+      const result = await mockDatadogAPI.submitMetrics(body);
+      return Promise.resolve(result);
     }
 
     // Mock Datadog events endpoint
     if (urlStr.includes('/api/v1/events')) {
-      const body = JSON.parse(options?.body || '{}');
-      return mockDatadogAPI.submitEvent(body);
+      const body = JSON.parse((options?.body as string) || '{}');
+      const result = await mockDatadogAPI.submitEvent(body);
+      return Promise.resolve(result);
     }
 
     // Mock Datadog service checks endpoint
     if (urlStr.includes('/api/v1/check_run')) {
-      const body = JSON.parse(options?.body || '{}');
-      return mockDatadogAPI.submitServiceCheck(body);
+      const body = JSON.parse((options?.body as string) || '{}');
+      const result = await mockDatadogAPI.submitServiceCheck(body);
+      return Promise.resolve(result);
     }
 
     // Fallback to original fetch for non-Datadog URLs
-    return originalFetch(url, options);
-  }) as any;
+    if (originalFetch) {
+      return originalFetch(url, options as any);
+    }
+
+    // If no original fetch and no match, return a basic error response
+    return Promise.resolve({
+      ok: false,
+      status: 404,
+      json: async () => ({ error: 'Not found' })
+    });
+  });
+
+  global.fetch = mockFetch as any;
 
   return () => {
     global.fetch = originalFetch;
