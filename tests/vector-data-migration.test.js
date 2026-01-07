@@ -96,11 +96,8 @@ jest.mock('commander', () => {
   };
 });
 
-// Import the migration script - must use dynamic import
+// Import the migration script - reload it in beforeEach to pick up fresh mocks
 let migrateVectorData;
-jest.isolateModules(() => {
-  migrateVectorData = require('../scripts/vector-db-migrations/migrate-vector-data.js');
-});
 
 describe('Vector Data Migration Utility', () => {
   let mockPool;
@@ -108,10 +105,28 @@ describe('Vector Data Migration Utility', () => {
   let consoleSpy;
 
   beforeEach(async () => {
-    jest.clearAllMocks();
+    // NOTE: jest.config has clearMocks/restoreMocks/resetMocks/resetModules all set to true,
+    // which clears mock implementations between tests. We need to re-establish the Pool mock
+    // BEFORE requiring the migration module so it picks up the correct mock.
 
-    // Mock Pool and Client
-    mockPool = new Pool();
+    const { Pool: MockPool } = require('pg');
+    const mockQuery = jest.fn();
+    const mockRelease = jest.fn();
+
+    // Re-establish Pool mock implementation
+    MockPool.mockImplementation(() => ({
+      connect: jest.fn().mockResolvedValue({
+        query: mockQuery,
+        release: mockRelease
+      }),
+      end: jest.fn().mockResolvedValue(undefined)
+    }));
+
+    // Reload the migration module to pick up fresh mocks
+    migrateVectorData = require('../scripts/vector-db-migrations/migrate-vector-data.js');
+
+    // Create fresh mock instances for this test
+    mockPool = new MockPool();
     mockClient = await mockPool.connect();
 
     // Mock console.log and console.error
@@ -124,10 +139,15 @@ describe('Vector Data Migration Utility', () => {
     // Reset process.exit
     process.exit = jest.fn();
   });
-  
+
   afterEach(() => {
-    consoleSpy.mockRestore();
-    jest.spyOn(console, 'error').mockRestore();
+    if (consoleSpy) {
+      consoleSpy.mockRestore();
+    }
+    const errorSpy = jest.spyOn(console, 'error');
+    if (errorSpy) {
+      errorSpy.mockRestore();
+    }
   });
   
   /**

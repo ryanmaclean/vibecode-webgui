@@ -21,24 +21,24 @@ jest.mock('next-auth/jwt', () => ({
   })),
 }));
 
-jest.mock('@/lib/rate-limiting', () => ({
-  createAuthRateLimit: jest.fn(() => {
-    return jest.fn(async () => ({
+jest.mock('@/lib/rate-limiting', () => {
+  // Use plain functions that return promises to avoid jest.fn() being cleared by resetModules
+  const createRateLimitChecker = () => {
+    return async () => ({
       success: true,
       limit: 100,
       remaining: 99,
       reset: Date.now() + 60000,
-    }));
-  }),
-  createAPIRateLimit: jest.fn(() => {
-    return jest.fn(async () => ({
-      success: true,
-      limit: 100,
-      remaining: 99,
-      reset: Date.now() + 60000,
-    }));
-  }),
-}));
+    });
+  };
+
+  return {
+    __esModule: true,
+    createAuthRateLimit: createRateLimitChecker,
+    createAPIRateLimit: createRateLimitChecker,
+    default: () => createRateLimitChecker(),
+  };
+});
 
 jest.mock('@/lib/auth/user-manager', () => ({
   logSecurityEvent: jest.fn(),
@@ -127,8 +127,16 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
   };
 
   beforeEach(() => {
-    jest.clearAllMocks();
-    
+    // NOTE: Avoiding jest.clearAllMocks() because jest.config has resetModules: true
+    // which already resets modules between tests. clearAllMocks() would break the mocks
+    // established at the top of this file.
+
+    // Clear only specific mocks we control
+    const { logAIRequest } = require('@/lib/prisma');
+    if (logAIRequest && jest.isMockFunction(logAIRequest)) {
+      (logAIRequest as jest.Mock).mockClear();
+    }
+
     // Set required environment variables
     process.env.OPENROUTER_API_KEY = 'test-key';
     process.env.OPENROUTER_API_BASE = 'https://openrouter.ai/api/v1';
