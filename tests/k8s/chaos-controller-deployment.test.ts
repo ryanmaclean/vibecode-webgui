@@ -40,7 +40,11 @@ describe('Chaos Controller Deployment Tests', () => {
             });
           } else if (cmd.includes('kubectl create namespace')) {
             callback(null, { stdout: `namespace/${namespace} created`, stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -62,7 +66,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'customresourcedefinition.apiextensions.k8s.io/disruptions.chaos.datadoghq.com created', stderr: '' });
           } else if (cmd.includes('kubectl get crd')) {
             callback(null, { stdout: 'disruptions.chaos.datadoghq.com', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -83,7 +91,11 @@ describe('Chaos Controller Deployment Tests', () => {
             });
           } else if (cmd.includes('kubectl get deployment chaos-controller')) {
             callback(null, { stdout: '1', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -111,7 +123,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'chaos-controller', stderr: '' });
           } else if (cmd.includes('kubectl get clusterrolebinding')) {
             callback(null, { stdout: 'chaos-controller', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -127,6 +143,8 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get service chaos-controller-metrics')) {
           callback(null, { stdout: '8080', stderr: '' });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -139,6 +157,8 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get pods')) {
           callback(null, { stdout: 'Running', stderr: '' });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -163,7 +183,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
           } else if (cmd.includes('kubectl get disruption')) {
             callback(null, { stdout: 'chat-ui-network-stress', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -179,7 +203,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
           } else if (cmd.includes('kubectl get disruption')) {
             callback(null, { stdout: 'mongodb-cpu-pressure', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -195,7 +223,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
           } else if (cmd.includes('kubectl get configmap')) {
             callback(null, { stdout: 'chaos-gameday-scenarios', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -213,7 +245,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'deployment.apps/chaos-test-target created', stderr: '' });
           } else if (cmd.includes('kubectl wait')) {
             callback(null, { stdout: 'deployment.apps/chaos-test-target condition met', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -226,7 +262,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'disruption.chaos.datadoghq.com/test-network-disruption created', stderr: '' });
           } else if (cmd.includes('kubectl get disruption')) {
             callback(null, { stdout: 'Running', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -246,7 +286,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'invalid-experiment', stderr: '' });
           } else if (cmd.includes('kubectl delete disruption invalid-experiment')) {
             callback(null, { stdout: 'disruption.chaos.datadoghq.com "invalid-experiment" deleted', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -276,6 +320,8 @@ describe('Chaos Controller Deployment Tests', () => {
             stdout: '# HELP chaos_controller_disruptions_total Total number of disruptions\n# TYPE chaos_controller_disruptions_total counter\nchaos_controller_disruptions_total 5',
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -297,6 +343,8 @@ describe('Chaos Controller Deployment Tests', () => {
             stdout: '{"ad.datadoghq.com/chaos-controller.check_names":"[\\\"openmetrics\\\"]","ad.datadoghq.com/chaos-controller.init_configs":"[{}]"}',
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -312,6 +360,8 @@ describe('Chaos Controller Deployment Tests', () => {
       mockExec.mockImplementation((cmd: any, callback: any) => {
         if (typeof cmd === 'string' && cmd.includes('kubectl get deployment')) {
           callback(null, { stdout: 'true', stderr: '' });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -327,7 +377,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'Release "vibecode-chaos" has been upgraded', stderr: '' });
           } else if (cmd.includes('kubectl get networkpolicy')) {
             callback(null, { stdout: 'chaos-controller', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -348,7 +402,11 @@ describe('Chaos Controller Deployment Tests', () => {
             callback(null, { stdout: 'True', stderr: '' });
           } else if (cmd.includes('kubectl delete disruption cleanup-test')) {
             callback(null, { stdout: 'disruption.chaos.datadoghq.com "cleanup-test" deleted', stderr: '' });
+          } else if (callback) {
+            callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
           }
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -377,6 +435,8 @@ describe('Chaos Controller Deployment Tests', () => {
             }),
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -404,6 +464,8 @@ describe('Chaos Controller Deployment Tests', () => {
             }),
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -424,6 +486,8 @@ describe('Chaos Controller Deployment Tests', () => {
             stdout: 'disruption.chaos.datadoghq.com/valid-disruption created',
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
@@ -474,6 +538,8 @@ spec:
             }),
             stderr: ''
           });
+        } else if (callback) {
+          callback(new Error(`Unmocked command: ${cmd}`), { stdout: '', stderr: '' });
         }
         return {} as any;
       });
