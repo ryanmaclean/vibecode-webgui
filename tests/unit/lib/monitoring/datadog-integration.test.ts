@@ -17,8 +17,9 @@ jest.mock('dgram', () => ({
 describe('DatadogIntegration', () => {
   let mockSocket: any
   let datadogIntegration: any
+  let DatadogIntegration: any
 
-  beforeEach(() => {
+  beforeEach(async () => {
     jest.clearAllMocks()
     jest.resetModules() // Clear module cache
 
@@ -31,11 +32,14 @@ describe('DatadogIntegration', () => {
       close: jest.fn()
     }
 
-    // Mock dgram.createSocket to return our mock socket
-    ;(dgram.createSocket as jest.Mock).mockReturnValue(mockSocket)
+    // Re-mock dgram module after resetModules
+    jest.doMock('dgram', () => ({
+      createSocket: jest.fn(() => mockSocket)
+    }))
 
     // Import the class after mocking
-    const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
+    const module = await import('@/lib/monitoring/datadog-integration')
+    DatadogIntegration = module.DatadogIntegration
     datadogIntegration = new DatadogIntegration()
   })
 
@@ -57,10 +61,9 @@ describe('DatadogIntegration', () => {
         prefix: 'custom.',
         globalTags: ['custom:tag']
       }
-      
-      const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
+
       const customIntegration = new DatadogIntegration(customConfig)
-      
+
       expect(customIntegration).toBeDefined()
     })
   })
