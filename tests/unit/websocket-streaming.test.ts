@@ -15,6 +15,7 @@ jest.mock('@/lib/websocket-connection-pooling', () => ({
 
 // Import after mocks are set up
 import { WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client';
+import { getPooledWebSocket, releasePooledWebSocket } from '@/lib/websocket-connection-pooling';
 
 describe('WebSocketStreamingClient', () => {
   let client: WebSocketStreamingClient;
@@ -49,8 +50,7 @@ describe('WebSocketStreamingClient', () => {
     };
 
     // Setup getPooledWebSocket mock
-    const poolingModule = require('@/lib/websocket-connection-pooling');
-    poolingModule.getPooledWebSocket.mockResolvedValue(mockPooledConnection);
+    (getPooledWebSocket as jest.Mock).mockResolvedValue(mockPooledConnection);
 
     // Capture handlers when subscribeToConnection is called
     mockPool.subscribeToConnection.mockImplementation((connectionId, subscriberId, handlers) => {
@@ -71,8 +71,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle connection errors during connect', async () => {
-      const poolingModule = require('@/lib/websocket-connection-pooling');
-      poolingModule.getPooledWebSocket.mockRejectedValueOnce(new Error('Connection failed'));
+      (getPooledWebSocket as jest.Mock).mockRejectedValueOnce(new Error('Connection failed'));
 
       await expect(client.connect()).rejects.toThrow('Connection failed');
       expect(client.isConnected()).toBe(false);
@@ -381,7 +380,6 @@ describe('WebSocketStreamingClient', () => {
 
   describe('Priority Handling', () => {
     test('should use high priority connection', async () => {
-      const poolingModule = require('@/lib/websocket-connection-pooling');
       const highPriorityClient = new WebSocketStreamingClient(
         { url: 'ws://test', priority: 'high' },
         mockPool as any
@@ -389,16 +387,15 @@ describe('WebSocketStreamingClient', () => {
 
       await highPriorityClient.connect();
 
-      expect(poolingModule.getPooledWebSocket).toHaveBeenCalledWith('ws://test', 'high');
+      expect(getPooledWebSocket).toHaveBeenCalledWith('ws://test', 'high');
     });
 
     test('should use normal priority by default', async () => {
-      const poolingModule = require('@/lib/websocket-connection-pooling');
       const normalClient = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
 
       await normalClient.connect();
 
-      expect(poolingModule.getPooledWebSocket).toHaveBeenCalledWith('ws://test', 'normal');
+      expect(getPooledWebSocket).toHaveBeenCalledWith('ws://test', 'normal');
     });
 
     test('should send priority in stream request', async () => {
@@ -503,12 +500,11 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should release connection to pool on disconnect', async () => {
-      const poolingModule = require('@/lib/websocket-connection-pooling');
       await client.connect();
 
       client.disconnect();
 
-      expect(poolingModule.releasePooledWebSocket).toHaveBeenCalledWith(
+      expect(releasePooledWebSocket).toHaveBeenCalledWith(
         mockPooledConnection.id,
         expect.any(String)
       );
@@ -608,7 +604,7 @@ describe('WebSocketStreamingClient', () => {
       // Wait for promise to resolve
       await Promise.resolve();
 
-      expect(require('@/lib/websocket-connection-pooling').getPooledWebSocket).toHaveBeenCalled();
+      expect(getPooledWebSocket).toHaveBeenCalled();
 
       jest.useRealTimers();
     });
@@ -632,7 +628,7 @@ describe('WebSocketStreamingClient', () => {
       // Fast-forward
       jest.advanceTimersByTime(5000);
 
-      expect(require('@/lib/websocket-connection-pooling').getPooledWebSocket).not.toHaveBeenCalled();
+      expect(getPooledWebSocket).not.toHaveBeenCalled();
 
       jest.useRealTimers();
     });

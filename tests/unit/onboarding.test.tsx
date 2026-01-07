@@ -10,13 +10,7 @@ jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
 }))
 
-// Mock next-themes
-jest.mock('next-themes', () => ({
-  useTheme: jest.fn(() => ({
-    theme: 'light',
-    setTheme: jest.fn(),
-  })),
-}))
+// Note: next-themes is mocked globally in jest.setup.js
 
 // Import after mocks
 const OnboardingPage = require('@/app/onboarding/page').default

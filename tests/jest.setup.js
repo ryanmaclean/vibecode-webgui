@@ -112,6 +112,16 @@ jest.mock('@/lib/security/macos-keychain-server');
 // Mock UnifiedAIClient globally to prevent OOM during tests
 jest.mock('@/lib/unified-ai-client');
 
+// Mock next-themes globally to fix onboarding tests
+jest.mock('next-themes', () => ({
+  useTheme: () => ({
+    theme: 'light',
+    setTheme: jest.fn(),
+    themes: ['light', 'dark'],
+  }),
+  ThemeProvider: ({ children }) => children,
+}));
+
 jest.mock('@/instrument', () => ({
   __esModule: true,
   default: {
