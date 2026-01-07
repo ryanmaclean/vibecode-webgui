@@ -7,6 +7,9 @@ import { getGlobalCoordinator, resetGlobalCoordinator, GlobalPoolEvent, Connecti
 import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
 import { PrismaClient } from '@prisma/client';
 
+// Mock Prisma Client
+jest.mock('@prisma/client');
+
 // Mock ConnectionPool class for testing
 class ConnectionPool {
   private prismaClient: PrismaClient;

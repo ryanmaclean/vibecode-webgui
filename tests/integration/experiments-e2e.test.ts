@@ -10,6 +10,9 @@
 import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
 import { PrismaClient, ExperimentStatus, Prisma } from '@prisma/client'
 
+// Mock Prisma Client using the comprehensive mock
+jest.mock('@prisma/client')
+
 const prisma = new PrismaClient()
 
 // Skip tests if PostgreSQL is not available (set by jest.globalSetup.js)

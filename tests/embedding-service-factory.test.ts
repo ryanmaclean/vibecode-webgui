@@ -3,6 +3,9 @@ import { EmbeddingServiceFactory, EmbeddingProvider } from '../src/lib/ai/embedd
 import { AzureEmbeddingService } from '../src/lib/ai/azure-embedding-service';
 import * as dotenv from 'dotenv';
 
+// Mock Prisma Client
+jest.mock('@prisma/client');
+
 dotenv.config();
 
 describe('Embedding Service Factory', () => {

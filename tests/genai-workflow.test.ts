@@ -3,6 +3,9 @@ import { EmbeddingServiceFactory } from '../src/lib/ai/embeddingServiceFactory';
 import { VectorService } from '../src/lib/db/vector';
 import * as dotenv from 'dotenv';
 
+// Mock Prisma Client
+jest.mock('@prisma/client');
+
 dotenv.config();
 
 // Mock embedding service to avoid requiring real API keys
