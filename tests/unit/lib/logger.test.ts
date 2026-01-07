@@ -3,6 +3,9 @@
  * Tests use real Pino logger, not mocks
  */
 
+// Explicitly unmock the logger module to use the real implementation
+jest.unmock('@/lib/logger');
+
 import {
   logger,
   createChildLogger,
