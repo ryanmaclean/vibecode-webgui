@@ -3,17 +3,8 @@
  * Tests the actual public API methods
  */
 
-// Mock ioredis module completely
-jest.mock('ioredis', () => ({
-  Redis: jest.fn().mockImplementation(() => ({
-    publish: jest.fn().mockResolvedValue(1),
-    subscribe: jest.fn().mockResolvedValue('OK'),
-    unsubscribe: jest.fn().mockResolvedValue('OK'),
-    on: jest.fn(),
-    off: jest.fn(),
-    quit: jest.fn().mockResolvedValue('OK')
-  }))
-}));
+// Mock ioredis module - uses __mocks__/ioredis.js
+jest.mock('ioredis');
 
 jest.mock('ws', () => {
   return jest.fn().mockImplementation(() => ({
