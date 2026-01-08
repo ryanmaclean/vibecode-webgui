@@ -108,11 +108,30 @@ const config = {
   // Reporters
   reporters: [
     'default',
+    ...(process.env.CI ? [
+      ['jest-junit', {
+        outputDirectory: './test-results',
+        outputName: 'junit.xml',
+        classNameTemplate: '{classname}',
+        titleTemplate: '{title}',
+        ancestorSeparator: ' › ',
+        usePathForSuiteName: true,
+      }],
+    ] : []),
   ],
 
   // Coverage
   coverageDirectory: 'coverage',
-  coverageReporters: ['json', 'lcov', 'text', 'clover', 'html', 'text-summary'],
+  coverageReporters: [
+    'json',
+    'json-summary',
+    'lcov',
+    'text',
+    'text-summary',
+    'clover',
+    'html',
+    ...(process.env.CI ? ['cobertura'] : []),
+  ],
   coverageThreshold: {
     global: {
       branches: 60,

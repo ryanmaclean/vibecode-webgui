@@ -138,3 +138,9 @@ migration-report.txt
 *.conflict-backup-*
 
 .pre-commit-cache/
+
+# Test artifacts
+test-results/
+.test-results/
+junit.xml
+*.junit.xml

@@ -1,0 +1,315 @@
+name: PR Checks
+
+on:
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened, ready_for_review]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: write
+
+jobs:
+  pr-info:
+    name: PR Information
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Analyze PR changes
+        id: analyze
+        run: |
+          # Get changed files
+          CHANGED_FILES=$(git diff --name-only origin/${{ github.event.pull_request.base.ref }}...HEAD)
+
+          # Count file types
+          JS_TS_COUNT=$(echo "$CHANGED_FILES" | grep -E '\.(js|jsx|ts|tsx)$' | wc -l || echo "0")
+          TEST_COUNT=$(echo "$CHANGED_FILES" | grep -E '\.(test|spec)\.(js|jsx|ts|tsx)$' | wc -l || echo "0")
+          DOC_COUNT=$(echo "$CHANGED_FILES" | grep -E '\.(md|mdx)$' | wc -l || echo "0")
+          CONFIG_COUNT=$(echo "$CHANGED_FILES" | grep -E '(package\.json|tsconfig\.json|\.yml|\.yaml|\.config\.(js|ts))$' | wc -l || echo "0")
+
+          echo "js_ts_count=$JS_TS_COUNT" >> $GITHUB_OUTPUT
+          echo "test_count=$TEST_COUNT" >> $GITHUB_OUTPUT
+          echo "doc_count=$DOC_COUNT" >> $GITHUB_OUTPUT
+          echo "config_count=$CONFIG_COUNT" >> $GITHUB_OUTPUT
+
+      - name: Comment PR analysis
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const jsTs = '${{ steps.analyze.outputs.js_ts_count }}';
+            const tests = '${{ steps.analyze.outputs.test_count }}';
+            const docs = '${{ steps.analyze.outputs.doc_count }}';
+            const configs = '${{ steps.analyze.outputs.config_count }}';
+
+            const body = `## PR Analysis 📊
+
+            **Changed Files Summary:**
+            - JavaScript/TypeScript files: ${jsTs}
+            - Test files: ${tests}
+            - Documentation files: ${docs}
+            - Configuration files: ${configs}
+
+            **CI Status:** Running automated checks...
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+  quick-checks:
+    name: Quick Checks
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run ESLint
+        id: eslint
+        run: |
+          npm run lint 2>&1 | tee eslint-output.txt
+          echo "status=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Run TypeScript check
+        id: typecheck
+        run: |
+          npm run type-check 2>&1 | tee typecheck-output.txt
+          echo "status=$?" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Post check results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const eslintStatus = '${{ steps.eslint.outputs.status }}' === '0' ? '✅' : '❌';
+            const typecheckStatus = '${{ steps.typecheck.outputs.status }}' === '0' ? '✅' : '❌';
+
+            const body = `## Quick Checks Results
+
+            | Check | Status |
+            |-------|--------|
+            | ESLint | ${eslintStatus} |
+            | TypeScript | ${typecheckStatus} |
+
+            ${eslintStatus === '❌' || typecheckStatus === '❌' ? '⚠️ Some checks failed. Please review the logs.' : '✅ All quick checks passed!'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail if checks failed
+        if: steps.eslint.outputs.status != '0' || steps.typecheck.outputs.status != '0'
+        run: exit 1
+
+  test-pr:
+    name: Test PR Changes
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    timeout-minutes: 30
+    services:
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Run all tests
+        id: tests
+        run: |
+          npm test 2>&1 | tee test-output.txt
+          echo "status=$?" >> $GITHUB_OUTPUT
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
+          DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          REDIS_URL: redis://localhost:6379
+          CI: true
+        continue-on-error: true
+
+      - name: Extract test results
+        if: always()
+        id: extract
+        run: |
+          if grep -q "Test Suites:" test-output.txt; then
+            SUITES=$(grep "Test Suites:" test-output.txt | tail -1 | sed 's/Test Suites: //')
+            TESTS=$(grep "Tests:" test-output.txt | tail -1 | sed 's/Tests: //')
+            echo "suites=$SUITES" >> $GITHUB_OUTPUT
+            echo "tests=$TESTS" >> $GITHUB_OUTPUT
+          else
+            echo "suites=N/A" >> $GITHUB_OUTPUT
+            echo "tests=N/A" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment test results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.tests.outputs.status }}' === '0' ? '✅ Passed' : '❌ Failed';
+            const suites = '${{ steps.extract.outputs.suites }}';
+            const tests = '${{ steps.extract.outputs.tests }}';
+
+            const body = `## Test Results ${status}
+
+            **Test Suites:** ${suites}
+            **Tests:** ${tests}
+
+            ${status.includes('❌') ? '⚠️ Tests failed. Please fix the failing tests before merging.' : '✅ All tests passed! Ready for review.'}
+
+            <details>
+            <summary>View test output</summary>
+
+            Check the Actions tab for detailed test output.
+            </details>
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail if tests failed
+        if: steps.tests.outputs.status != '0'
+        run: exit 1
+
+  build-pr:
+    name: Build PR
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build application
+        id: build
+        run: |
+          npm run build 2>&1 | tee build-output.txt
+          echo "status=$?" >> $GITHUB_OUTPUT
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+        continue-on-error: true
+
+      - name: Comment build results
+        if: always()
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const status = '${{ steps.build.outputs.status }}' === '0' ? '✅ Build successful' : '❌ Build failed';
+
+            const body = `## Build Status ${status}
+
+            ${status.includes('❌') ? '⚠️ Build failed. Please fix the build errors before merging.' : '✅ Build completed successfully!'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+      - name: Fail if build failed
+        if: steps.build.outputs.status != '0'
+        run: exit 1
+
+  pr-status:
+    name: PR Status Check
+    runs-on: ubuntu-latest
+    needs: [quick-checks, test-pr, build-pr]
+    if: always() && github.event.pull_request.draft == false
+    steps:
+      - name: Check PR status
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const checks = '${{ needs.quick-checks.result }}';
+            const tests = '${{ needs.test-pr.result }}';
+            const build = '${{ needs.build-pr.result }}';
+
+            const allPassed = checks === 'success' && tests === 'success' && build === 'success';
+
+            const body = `## PR Status Summary
+
+            | Check | Status |
+            |-------|--------|
+            | Quick Checks | ${checks === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | Tests | ${tests === 'success' ? '✅ Passed' : '❌ Failed'} |
+            | Build | ${build === 'success' ? '✅ Passed' : '❌ Failed'} |
+
+            ${allPassed ? '✅ **All checks passed! This PR is ready to merge.** 🎉' : '❌ **Some checks failed. Please review and fix the issues.**'}
+            `;
+
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: body
+            });
+
+            if (!allPassed) {
+              core.setFailed('Some PR checks failed');
+            }
+
+      - name: Final status
+        run: |
+          if [[ "${{ needs.quick-checks.result }}" != "success" ]] || \
+             [[ "${{ needs.test-pr.result }}" != "success" ]] || \
+             [[ "${{ needs.build-pr.result }}" != "success" ]]; then
+            echo "PR checks failed"
+            exit 1
+          fi
+          echo "All PR checks passed!"

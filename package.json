@@ -132,7 +132,10 @@
     "verify": "node scripts/verify-monacopilot.js && ./scripts/verify-setup.sh",
     "mcp": "npm run mcp:start",
     "check": "npm run lint && npm run type-check",
+    "check:ci": "npm run lint && npm run type-check && npm run test:coverage && npm run build",
     "quick-test": "npm run test:unit -- --maxWorkers=2",
+    "ci:local": "npm run check:ci",
+    "ci:validate": "echo 'Validating CI workflows...' && (command -v actionlint >/dev/null 2>&1 && actionlint .github/workflows/*.yml || echo 'Install actionlint to validate workflows: brew install actionlint')",
     "test:unit:monaco": "jest --runTestsByPath tests/unit/monaco-monacopilot.test.ts",
     "lint:markdown": "markdownlint-cli2"
   },
