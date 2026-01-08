@@ -68,7 +68,7 @@ export class OpenRouter {
       });
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`);
+        throw new Error(`OpenRouter API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`);
       }
 
       return await response.json();

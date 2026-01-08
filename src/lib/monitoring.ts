@@ -63,7 +63,7 @@ class MonitoringService {
       })
 
       if (!response.ok) {
-        throw new Error(`Datadog API error: ${response.status} ${response.statusText}`)
+        throw new Error(`Datadog API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`)
       }
 
       return true
@@ -99,7 +99,7 @@ class MonitoringService {
       })
 
       if (!response.ok) {
-        throw new Error(`Datadog API error: ${response.status} ${response.statusText}`)
+        throw new Error(`Datadog API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`)
       }
 
       return true
@@ -279,7 +279,7 @@ class MonitoringService {
       })
 
       if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status} ${response.statusText}`)
+        throw new Error(`OpenRouter API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`)
       }
 
       const data = await response.json()

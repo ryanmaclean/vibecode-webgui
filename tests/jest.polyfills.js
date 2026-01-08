@@ -3,24 +3,27 @@
 
 // Mock openai package BEFORE any modules load to prevent OOM
 jest.mock('openai', () => {
+  const mockOpenAI = jest.fn().mockImplementation(() => ({
+    chat: {
+      completions: {
+        create: jest.fn().mockResolvedValue({
+          choices: [{
+            message: { content: 'mock response' },
+            finish_reason: 'stop'
+          }],
+          usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
+        })
+      }
+    },
+    models: {
+      list: jest.fn().mockResolvedValue({ data: [] })
+    }
+  }));
+
   return {
     __esModule: true,
-    default: jest.fn().mockImplementation(() => ({
-      chat: {
-        completions: {
-          create: jest.fn().mockResolvedValue({
-            choices: [{
-              message: { content: 'mock response' },
-              finish_reason: 'stop'
-            }],
-            usage: { prompt_tokens: 10, completion_tokens: 20, total_tokens: 30 }
-          })
-        }
-      },
-      models: {
-        list: jest.fn().mockResolvedValue({ data: [] })
-      }
-    }))
+    default: mockOpenAI,
+    OpenAI: mockOpenAI  // Add named export for import { OpenAI } from 'openai'
   };
 });
 
