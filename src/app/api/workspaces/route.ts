@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { createErrorResponse, getErrorMessage } from '@/lib/api-utils'
+import { createErrorResponse, getErrorMessage, createProblemDetailsFromError } from '@/lib/api-utils'
 import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),

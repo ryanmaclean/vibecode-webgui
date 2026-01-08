@@ -6,6 +6,47 @@
 import { jest } from '@jest/globals'
 import { NextRequest, NextResponse } from 'next/server'
 
+// Mock NextResponse with cookies API
+const mockCookiesSet = jest.fn()
+jest.mock('next/server', () => {
+  const actual = jest.requireActual<typeof import('next/server')>('next/server')
+
+  const mockNextResponseJson = jest.fn((data: any, init?: any) => {
+    const mockHeaders = new Map<string, string>()
+    const response = {
+      status: init?.status || 200,
+      headers: {
+        get: (name: string) => mockHeaders.get(name.toLowerCase()) || null,
+        set: (name: string, value: string) => mockHeaders.set(name.toLowerCase(), value),
+        has: (name: string) => mockHeaders.has(name.toLowerCase()),
+        append: (name: string, value: string) => mockHeaders.set(name.toLowerCase(), value),
+        delete: (name: string) => mockHeaders.delete(name.toLowerCase()),
+        entries: () => mockHeaders.entries(),
+        keys: () => mockHeaders.keys(),
+        values: () => mockHeaders.values(),
+        forEach: (fn: any) => mockHeaders.forEach(fn),
+      },
+      json: async () => data,
+      text: async () => JSON.stringify(data),
+      cookies: {
+        set: mockCookiesSet,
+        get: jest.fn(),
+        delete: jest.fn(),
+        getAll: jest.fn(() => []),
+        has: jest.fn(() => false),
+      },
+    }
+    return response as any
+  })
+
+  return {
+    ...actual,
+    NextResponse: class MockNextResponse extends actual.NextResponse {
+      static json = mockNextResponseJson
+    },
+  }
+})
+
 // Mock crypto module before importing
 jest.mock('crypto', () => {
   const actualCrypto = jest.requireActual<typeof import('crypto')>('crypto')
@@ -42,6 +83,7 @@ describe('CSRF Protection with HMAC Signing', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
+    mockCookiesSet.mockClear()
     process.env = { ...originalEnv }
     process.env.CSRF_SECRET = 'test-secret-32-characters-long!!'
     jest.useFakeTimers()

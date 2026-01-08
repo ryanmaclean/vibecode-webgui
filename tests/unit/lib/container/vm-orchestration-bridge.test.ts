@@ -519,6 +519,9 @@ describe('allocateVMWithRetry', () => {
   })
 
   it('should retry on failure and eventually succeed', async () => {
+    // Use real timers for this test since allocateVMWithRetry uses setTimeout
+    jest.useRealTimers()
+
     let attemptCount = 0
 
     ;(global.fetch as jest.Mock).mockImplementation(() => {
@@ -549,15 +552,24 @@ describe('allocateVMWithRetry', () => {
 
     expect(result.id).toBe('vm-123')
     expect(attemptCount).toBe(3)
+
+    // Restore fake timers for other tests
+    jest.useFakeTimers()
   })
 
   it('should throw error after all retries fail', async () => {
+    // Use real timers for this test since allocateVMWithRetry uses setTimeout
+    jest.useRealTimers()
+
     mockFetch({
       ok: false,
       json: async () => ({ message: 'Pool exhausted' }),
     })
 
     await expect(allocateVMWithRetry(3, 10)).rejects.toThrow()
+
+    // Restore fake timers for other tests
+    jest.useFakeTimers()
   })
 })
 

@@ -9,14 +9,10 @@ import { Client } from 'pg';
 
 // Mock pg Client
 jest.mock('pg', () => {
-  const mockQuery = jest.fn();
-  const mockConnect = jest.fn();
-  const mockEnd = jest.fn();
-
   const MockClient = jest.fn().mockImplementation(() => ({
-    query: mockQuery,
-    connect: mockConnect,
-    end: mockEnd
+    query: jest.fn(),
+    connect: jest.fn(),
+    end: jest.fn()
   }));
 
   return { Client: MockClient };
@@ -38,8 +34,15 @@ describe('Vector DB Migrations', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
-    // Create mock client instance
-    mockClient = new Client();
+    // Create mock client instance with fresh mock functions
+    mockClient = {
+      query: jest.fn(),
+      connect: jest.fn(),
+      end: jest.fn()
+    };
+
+    // Mock the Client constructor to return our mockClient
+    Client.mockImplementation(() => mockClient);
 
     // Setup default mock responses
     mockClient.query.mockImplementation((sql) => {

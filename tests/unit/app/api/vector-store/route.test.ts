@@ -15,18 +15,18 @@ jest.mock('@/lib/auth', () => ({
   authOptions: {}
 }));
 
-// Mock enhanced vector store
-const mockVectorStore = {
-  healthCheck: jest.fn(),
-  search: jest.fn(),
-  storeDocuments: jest.fn(),
-  deleteDocuments: jest.fn()
-};
-
-// Replace the stub with our mock
+// Mock enhanced vector store - must be defined inside jest.mock due to hoisting
 jest.mock('@/lib/vector-stores/enhanced-vector-store', () => ({
-  enhancedVectorStore: mockVectorStore
-}), { virtual: true });
+  enhancedVectorStore: {
+    healthCheck: jest.fn(),
+    search: jest.fn(),
+    storeDocuments: jest.fn(),
+    deleteDocuments: jest.fn()
+  }
+}));
+
+// Get reference to the mocked vector store for test assertions
+const mockVectorStore = require('@/lib/vector-stores/enhanced-vector-store').enhancedVectorStore;
 
 // Helper function to create a mock NextRequest
 function createMockRequest(url: string, method: string, body?: any): NextRequest {

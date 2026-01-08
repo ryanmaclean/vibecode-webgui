@@ -88,8 +88,8 @@ describe('VibeCode Docs KIND Integration Tests', () => {
 
         // For promisify to work, we MUST call the callback
         if (callback) {
-          // Use setImmediate to make it async
-          setImmediate(() => callback(null, stdout, stderr));
+          // Call callback immediately/synchronously for Jest compatibility
+          callback(null, stdout, stderr);
         }
 
         // Return a mock ChildProcess

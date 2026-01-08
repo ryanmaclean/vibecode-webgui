@@ -175,7 +175,8 @@ describe('/api/auth/csrf', () => {
       const response = await OPTIONS();
       const body = await response.text();
 
-      expect(body).toBe('');
+      // NextResponse with null body returns string "null" when calling .text()
+      expect(body).toBe('null');
     });
   });
 });
