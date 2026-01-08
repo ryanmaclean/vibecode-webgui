@@ -8,15 +8,12 @@ jest.mock('@/hooks/useProjectGenerator');
 
 const mockUseProjectGenerator = useProjectGenerator as jest.MockedFunction<typeof useProjectGenerator>;
 
-describe.skip('ProjectGenerator - Needs Test Updates', () => {
-  // Tests need to be updated to match the current component structure
-  // The component has been refactored and the test selectors are outdated
+describe('ProjectGenerator', () => {
   const mockGenerateProject = jest.fn();
   const mockCancelGeneration = jest.fn();
   const mockUpdateProgress = jest.fn();
 
   const defaultProps = {
-    initialPrompt: 'test prompt',
     onComplete: jest.fn(),
     autoStart: false,
   };
@@ -24,7 +21,10 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
   beforeEach(() => {
     // Reset all mocks before each test
     jest.clearAllMocks();
-    
+
+    // Mock generateProject to return a resolved promise by default
+    mockGenerateProject.mockResolvedValue(undefined);
+
     // Default mock implementation
     mockUseProjectGenerator.mockReturnValue({
       isGenerating: false,
@@ -38,30 +38,34 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
 
   it('renders with initial state', () => {
     render(<ProjectGenerator {...defaultProps} />);
-    
-    // Check that the input field is rendered with initial prompt
-    const input = screen.getByRole('textbox') as HTMLInputElement;
-    expect(input.value).toBe('test prompt');
-    
+
+    // Check that the input field is rendered
+    const input = screen.getByTestId('prompt-input') as HTMLInputElement;
+    expect(input.value).toBe('');
+
     // Check that the generate button is rendered
-    expect(screen.getByRole('button', { name: /generate project/i })).toBeInTheDocument();
+    expect(screen.getByTestId('generate-button')).toBeInTheDocument();
+    expect(screen.getByText('Generate a New Project')).toBeInTheDocument();
   });
 
   it('calls generateProject when form is submitted', () => {
     render(<ProjectGenerator {...defaultProps} />);
-    
-    const button = screen.getByRole('button', { name: /generate project/i });
+
+    const input = screen.getByTestId('prompt-input');
+    const button = screen.getByTestId('generate-button');
+
+    fireEvent.change(input, { target: { value: 'test prompt' } });
     fireEvent.click(button);
-    
-    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt');
+
+    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt', expect.any(Object));
   });
 
   it('updates prompt when input changes', () => {
     render(<ProjectGenerator {...defaultProps} />);
-    
-    const input = screen.getByRole('textbox');
+
+    const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'new prompt' } });
-    
+
     expect((input as HTMLInputElement).value).toBe('new prompt');
   });
 
@@ -90,9 +94,9 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
   it('shows error state when generation fails', () => {
     mockUseProjectGenerator.mockReturnValue({
       isGenerating: false,
-      progress: { 
-        status: 'error', 
-        progress: 0, 
+      progress: {
+        status: 'error',
+        progress: 0,
         message: 'Failed to generate project',
         error: 'Network error',
       },
@@ -103,9 +107,9 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
     });
 
     render(<ProjectGenerator {...defaultProps} />);
-    
-    // Check that error is displayed
-    expect(screen.getByText(/error/i)).toBeInTheDocument();
+
+    // Check that error is displayed (there are multiple matches due to title and icon)
+    expect(screen.getAllByText(/error/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/failed to generate project/i)).toBeInTheDocument();
   });
 
@@ -145,18 +149,22 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
   });
 
   it('auto-starts generation when autoStart is true', () => {
-    render(<ProjectGenerator {...defaultProps} autoStart={true} />);
-    
-    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt');
+    // Mock generateProject to return a resolved promise
+    mockGenerateProject.mockResolvedValue(undefined);
+
+    render(<ProjectGenerator {...defaultProps} initialPrompt="test prompt" autoStart={true} />);
+
+    // Wait for useEffect to trigger
+    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt', expect.any(Object));
   });
 
   it('shows cancel button when generating', () => {
     mockUseProjectGenerator.mockReturnValue({
       isGenerating: true,
-      progress: { 
-        status: 'generating', 
-        progress: 42, 
-        message: 'Generating...' 
+      progress: {
+        status: 'generating',
+        progress: 42,
+        message: 'Generating...'
       },
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
@@ -165,10 +173,10 @@ describe.skip('ProjectGenerator - Needs Test Updates', () => {
     });
 
     render(<ProjectGenerator {...defaultProps} />);
-    
-    const cancelButton = screen.getByRole('button', { name: /cancel/i });
+
+    const cancelButton = screen.getByText(/cancel/i);
     fireEvent.click(cancelButton);
-    
+
     expect(mockCancelGeneration).toHaveBeenCalled();
   });
 });

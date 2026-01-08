@@ -1,5 +1,5 @@
 /**
- * Comprehensive test suite for Winston-based logger utility
+ * Comprehensive test suite for Pino-based logger utility
  *
  * Test Coverage:
  * - Logger initialization and configuration
@@ -8,10 +8,8 @@
  * - Helper functions (logPerformance, logApiRequest, logDatabaseOperation)
  * - Environment-specific behavior
  * - Metadata handling
- * - Transport configuration
  */
 
-import * as winston from 'winston';
 import {
   logger,
   createChildLogger,
@@ -21,46 +19,42 @@ import {
   LogLevel,
 } from '@/lib/logger';
 
-// Mock winston to intercept log calls
-jest.mock('winston', () => {
+// Mock Pino to intercept log calls
+// Use a factory function to avoid hoisting issues
+jest.mock('pino', () => {
   const mockChildLogger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
-    http: jest.fn(),
     child: jest.fn(),
   };
 
-  const mockLogger = {
+  const mockPinoLogger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
-    http: jest.fn(),
     child: jest.fn(() => mockChildLogger),
+    level: 'debug',
   };
 
-  const mockTransports = {
-    Console: jest.fn(),
-    File: jest.fn(),
+  const mockPino = jest.fn(() => mockPinoLogger);
+  mockPino.stdTimeFunctions = {
+    isoTime: ',isoTime',
   };
 
-  const mockFormat = {
-    timestamp: jest.fn(() => 'timestamp-format'),
-    errors: jest.fn(() => 'errors-format'),
-    colorize: jest.fn(() => 'colorize-format'),
-    printf: jest.fn(() => 'printf-format'),
-    json: jest.fn(() => 'json-format'),
-    combine: jest.fn((...args) => args),
-  };
+  // Attach the mock instances for access in tests
+  (mockPino as any).__mockPinoLogger = mockPinoLogger;
+  (mockPino as any).__mockChildLogger = mockChildLogger;
 
-  return {
-    createLogger: jest.fn(() => mockLogger),
-    transports: mockTransports,
-    format: mockFormat,
-  };
+  return mockPino;
 });
+
+// Import pino to get access to the mock
+import pino from 'pino';
+const mockPinoLogger = (pino as any).__mockPinoLogger;
+const mockChildLogger = (pino as any).__mockChildLogger;
 
 describe('Logger Utility', () => {
   let originalEnv: NodeJS.ProcessEnv;
@@ -120,63 +114,67 @@ describe('Logger Utility', () => {
   });
 
   describe('Log Levels', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     test('should log info messages', () => {
       logger.info('Test info message');
-      expect(logger.info).toHaveBeenCalledWith('Test info message');
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, 'Test info message');
     });
 
     test('should log info messages with metadata', () => {
       const metadata = { userId: '123', action: 'login' };
       logger.info('User logged in', metadata);
-      expect(logger.info).toHaveBeenCalledWith('User logged in', metadata);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(metadata, 'User logged in');
     });
 
     test('should log warn messages', () => {
       logger.warn('Test warning message');
-      expect(logger.warn).toHaveBeenCalledWith('Test warning message');
+      expect(mockPinoLogger.warn).toHaveBeenCalledWith({}, 'Test warning message');
     });
 
     test('should log warn messages with metadata', () => {
       const metadata = { threshold: 90, current: 95 };
       logger.warn('High memory usage', metadata);
-      expect(logger.warn).toHaveBeenCalledWith('High memory usage', metadata);
+      expect(mockPinoLogger.warn).toHaveBeenCalledWith(metadata, 'High memory usage');
     });
 
     test('should log error messages', () => {
       logger.error('Test error message');
-      expect(logger.error).toHaveBeenCalledWith('Test error message');
+      expect(mockPinoLogger.error).toHaveBeenCalledWith({}, 'Test error message');
     });
 
     test('should log error messages with error object', () => {
       const error = new Error('Something went wrong');
       logger.error('Operation failed', { error });
-      expect(logger.error).toHaveBeenCalledWith('Operation failed', { error });
+      expect(mockPinoLogger.error).toHaveBeenCalledWith({ error }, 'Operation failed');
     });
 
     test('should log error messages with stack trace', () => {
       const error = new Error('Critical failure');
       error.stack = 'Error: Critical failure\n    at test.js:123';
       logger.error('System error', { error, errorStack: error.stack });
-      expect(logger.error).toHaveBeenCalledWith('System error', {
+      expect(mockPinoLogger.error).toHaveBeenCalledWith({
         error,
         errorStack: error.stack,
-      });
+      }, 'System error');
     });
 
     test('should log debug messages', () => {
       logger.debug('Test debug message');
-      expect(logger.debug).toHaveBeenCalledWith('Test debug message');
+      expect(mockPinoLogger.debug).toHaveBeenCalledWith({}, 'Test debug message');
     });
 
     test('should log debug messages with metadata', () => {
       const metadata = { cacheKey: 'user:123', ttl: 3600 };
       logger.debug('Cache hit', metadata);
-      expect(logger.debug).toHaveBeenCalledWith('Cache hit', metadata);
+      expect(mockPinoLogger.debug).toHaveBeenCalledWith(metadata, 'Cache hit');
     });
 
     test('should log http messages', () => {
       logger.http('GET /api/users');
-      expect(logger.http).toHaveBeenCalledWith('GET /api/users');
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, 'GET /api/users');
     });
 
     test('should log http messages with request details', () => {
@@ -187,23 +185,27 @@ describe('Logger Utility', () => {
         responseTime: 45,
       };
       logger.http('API Request', metadata);
-      expect(logger.http).toHaveBeenCalledWith('API Request', metadata);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(metadata, 'API Request');
     });
   });
 
   describe('Child Logger', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     test('should create child logger with metadata', () => {
       const metadata = { module: 'database', requestId: '123' };
       const childLogger = createChildLogger(metadata);
 
-      expect(logger.child).toHaveBeenCalledWith(metadata);
+      expect(mockPinoLogger.child).toHaveBeenCalledWith(metadata);
       expect(childLogger).toBeDefined();
       expect(childLogger).not.toBeNull();
     });
 
     test('should create child logger for specific module', () => {
       const moduleLogger = createChildLogger({ module: 'auth' });
-      expect(logger.child).toHaveBeenCalledWith({ module: 'auth' });
+      expect(mockPinoLogger.child).toHaveBeenCalledWith({ module: 'auth' });
     });
 
     test('should create child logger with multiple context fields', () => {
@@ -214,7 +216,7 @@ describe('Logger Utility', () => {
         correlationId: 'corr-789',
       };
       createChildLogger(context);
-      expect(logger.child).toHaveBeenCalledWith(context);
+      expect(mockPinoLogger.child).toHaveBeenCalledWith(context);
     });
 
     test('should create child logger with nested metadata', () => {
@@ -227,11 +229,15 @@ describe('Logger Utility', () => {
         },
       };
       createChildLogger(metadata);
-      expect(logger.child).toHaveBeenCalledWith(metadata);
+      expect(mockPinoLogger.child).toHaveBeenCalledWith(metadata);
     });
   });
 
   describe('Helper Functions', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     describe('logPerformance', () => {
       test('should log performance metrics', () => {
         const operation = 'databaseQuery';
@@ -239,10 +245,10 @@ describe('Logger Utility', () => {
 
         logPerformance(operation, duration);
 
-        expect(logger.info).toHaveBeenCalledWith('Performance metric', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           operation,
           durationMs: duration,
-        });
+        }, 'Performance metric');
       });
 
       test('should log performance metrics with additional metadata', () => {
@@ -252,41 +258,41 @@ describe('Logger Utility', () => {
 
         logPerformance(operation, duration, metadata);
 
-        expect(logger.info).toHaveBeenCalledWith('Performance metric', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           operation,
           durationMs: duration,
           endpoint: '/api/users',
           method: 'GET',
-        });
+        }, 'Performance metric');
       });
 
       test('should handle zero duration', () => {
         logPerformance('fastOperation', 0);
 
-        expect(logger.info).toHaveBeenCalledWith('Performance metric', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           operation: 'fastOperation',
           durationMs: 0,
-        });
+        }, 'Performance metric');
       });
 
       test('should handle large durations', () => {
         const duration = 30000; // 30 seconds
         logPerformance('slowOperation', duration);
 
-        expect(logger.info).toHaveBeenCalledWith('Performance metric', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           operation: 'slowOperation',
           durationMs: duration,
-        });
+        }, 'Performance metric');
       });
 
       test('should handle fractional milliseconds', () => {
         const duration = 12.456;
         logPerformance('preciseOperation', duration);
 
-        expect(logger.info).toHaveBeenCalledWith('Performance metric', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           operation: 'preciseOperation',
           durationMs: duration,
-        });
+        }, 'Performance metric');
       });
     });
 
@@ -299,12 +305,12 @@ describe('Logger Utility', () => {
 
         logApiRequest(method, url, statusCode, responseTime);
 
-        expect(logger.http).toHaveBeenCalledWith('API Request', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           method,
           url,
           statusCode,
           responseTimeMs: responseTime,
-        });
+        }, 'API Request');
       });
 
       test('should log API requests with metadata', () => {
@@ -316,14 +322,14 @@ describe('Logger Utility', () => {
 
         logApiRequest(method, url, statusCode, responseTime, metadata);
 
-        expect(logger.http).toHaveBeenCalledWith('API Request', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           method,
           url,
           statusCode,
           responseTimeMs: responseTime,
           userId: '123',
           contentType: 'application/json',
-        });
+        }, 'API Request');
       });
 
       test('should log failed API requests', () => {
@@ -334,12 +340,12 @@ describe('Logger Utility', () => {
 
         logApiRequest(method, url, statusCode, responseTime);
 
-        expect(logger.http).toHaveBeenCalledWith('API Request', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           method,
           url,
           statusCode,
           responseTimeMs: responseTime,
-        });
+        }, 'API Request');
       });
 
       test('should log server error responses', () => {
@@ -351,26 +357,27 @@ describe('Logger Utility', () => {
 
         logApiRequest(method, url, statusCode, responseTime, metadata);
 
-        expect(logger.http).toHaveBeenCalledWith('API Request', {
+        expect(mockPinoLogger.info).toHaveBeenCalledWith({
           method,
           url,
           statusCode,
           responseTimeMs: responseTime,
           error: 'Internal server error',
-        });
+        }, 'API Request');
       });
 
       test('should handle different HTTP methods', () => {
         const methods = ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'];
 
         methods.forEach(method => {
+          jest.clearAllMocks();
           logApiRequest(method, '/api/resource', 200, 50);
-          expect(logger.http).toHaveBeenCalledWith('API Request', {
+          expect(mockPinoLogger.info).toHaveBeenCalledWith({
             method,
             url: '/api/resource',
             statusCode: 200,
             responseTimeMs: 50,
-          });
+          }, 'API Request');
         });
       });
     });
@@ -383,11 +390,11 @@ describe('Logger Utility', () => {
 
         logDatabaseOperation(operation, table, duration);
 
-        expect(logger.debug).toHaveBeenCalledWith('Database operation', {
+        expect(mockPinoLogger.debug).toHaveBeenCalledWith({
           operation,
           table,
           durationMs: duration,
-        });
+        }, 'Database operation');
       });
 
       test('should log database operations with metadata', () => {
@@ -398,13 +405,13 @@ describe('Logger Utility', () => {
 
         logDatabaseOperation(operation, table, duration, metadata);
 
-        expect(logger.debug).toHaveBeenCalledWith('Database operation', {
+        expect(mockPinoLogger.debug).toHaveBeenCalledWith({
           operation,
           table,
           durationMs: duration,
           rowCount: 1,
           userId: '123',
-        });
+        }, 'Database operation');
       });
 
       test('should log slow database queries', () => {
@@ -415,25 +422,26 @@ describe('Logger Utility', () => {
 
         logDatabaseOperation(operation, table, duration, metadata);
 
-        expect(logger.debug).toHaveBeenCalledWith('Database operation', {
+        expect(mockPinoLogger.debug).toHaveBeenCalledWith({
           operation,
           table,
           durationMs: duration,
           slow: true,
           rowCount: 100000,
-        });
+        }, 'Database operation');
       });
 
       test('should handle different database operations', () => {
         const operations = ['SELECT', 'INSERT', 'UPDATE', 'DELETE', 'CREATE', 'DROP'];
 
         operations.forEach(operation => {
+          jest.clearAllMocks();
           logDatabaseOperation(operation, 'test_table', 10);
-          expect(logger.debug).toHaveBeenCalledWith('Database operation', {
+          expect(mockPinoLogger.debug).toHaveBeenCalledWith({
             operation,
             table: 'test_table',
             durationMs: 10,
-          });
+          }, 'Database operation');
         });
       });
 
@@ -448,50 +456,54 @@ describe('Logger Utility', () => {
 
         logDatabaseOperation(operation, table, duration, metadata);
 
-        expect(logger.debug).toHaveBeenCalledWith('Database operation', {
+        expect(mockPinoLogger.debug).toHaveBeenCalledWith({
           operation,
           table,
           durationMs: duration,
           transactionId: 'txn-123',
           operations: ['INSERT', 'UPDATE', 'SELECT'],
-        });
+        }, 'Database operation');
       });
     });
   });
 
   describe('Metadata Handling', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     test('should handle empty metadata', () => {
       logger.info('Message without metadata');
-      expect(logger.info).toHaveBeenCalledWith('Message without metadata');
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, 'Message without metadata');
     });
 
     test('should handle string metadata values', () => {
       logger.info('Message', { key: 'value' });
-      expect(logger.info).toHaveBeenCalledWith('Message', { key: 'value' });
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({ key: 'value' }, 'Message');
     });
 
     test('should handle number metadata values', () => {
       logger.info('Message', { count: 42, duration: 123.45 });
-      expect(logger.info).toHaveBeenCalledWith('Message', {
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({
         count: 42,
         duration: 123.45,
-      });
+      }, 'Message');
     });
 
     test('should handle boolean metadata values', () => {
       logger.info('Message', { success: true, cached: false });
-      expect(logger.info).toHaveBeenCalledWith('Message', {
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({
         success: true,
         cached: false,
-      });
+      }, 'Message');
     });
 
     test('should handle array metadata values', () => {
       logger.info('Message', { tags: ['api', 'production'], ids: [1, 2, 3] });
-      expect(logger.info).toHaveBeenCalledWith('Message', {
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({
         tags: ['api', 'production'],
         ids: [1, 2, 3],
-      });
+      }, 'Message');
     });
 
     test('should handle nested object metadata', () => {
@@ -507,42 +519,46 @@ describe('Logger Utility', () => {
         },
       };
       logger.info('Complex metadata', metadata);
-      expect(logger.info).toHaveBeenCalledWith('Complex metadata', metadata);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(metadata, 'Complex metadata');
     });
 
     test('should handle null and undefined metadata values', () => {
       logger.info('Message', { nullValue: null, undefinedValue: undefined });
-      expect(logger.info).toHaveBeenCalledWith('Message', {
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({
         nullValue: null,
         undefinedValue: undefined,
-      });
+      }, 'Message');
     });
   });
 
   describe('Edge Cases', () => {
+    beforeEach(() => {
+      jest.clearAllMocks();
+    });
+
     test('should handle extremely long messages', () => {
       const longMessage = 'A'.repeat(10000);
       logger.info(longMessage);
-      expect(logger.info).toHaveBeenCalledWith(longMessage);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, longMessage);
     });
 
     test('should handle special characters in messages', () => {
       const specialMessage = 'Test: \n\t\r\\ "quotes" \'apostrophes\' <tags>';
       logger.info(specialMessage);
-      expect(logger.info).toHaveBeenCalledWith(specialMessage);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, specialMessage);
     });
 
     test('should handle unicode characters', () => {
       const unicodeMessage = '测试 テスト 테스트 🚀 ✨ ⚡';
       logger.info(unicodeMessage);
-      expect(logger.info).toHaveBeenCalledWith(unicodeMessage);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith({}, unicodeMessage);
     });
 
     test('should handle circular references in metadata (gracefully fail)', () => {
       const circular: any = { name: 'test' };
       circular.self = circular;
 
-      // Winston should handle this internally, we just ensure it doesn't crash
+      // Pino should handle this internally, we just ensure it doesn't crash
       expect(() => {
         logger.info('Circular reference', { circular });
       }).not.toThrow();
@@ -555,7 +571,7 @@ describe('Logger Utility', () => {
       }
 
       logger.info('Large metadata', largeMetadata);
-      expect(logger.info).toHaveBeenCalledWith('Large metadata', largeMetadata);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(largeMetadata, 'Large metadata');
     });
 
     test('should handle rapid successive logging', () => {
@@ -564,7 +580,7 @@ describe('Logger Utility', () => {
         logger.info(`Message ${i}`, { index: i });
       }
 
-      expect(logger.info).toHaveBeenCalledTimes(iterations);
+      expect(mockPinoLogger.info).toHaveBeenCalledTimes(iterations);
     });
   });
 
@@ -581,7 +597,7 @@ describe('Logger Utility', () => {
       const duration = end - start;
       const avgPerLog = duration / iterations;
 
-      // Average should be less than 1ms per log (with mocked winston)
+      // Average should be less than 1ms per log (with mocked pino)
       expect(avgPerLog).toBeLessThan(1);
     });
 
@@ -628,7 +644,7 @@ describe('Logger Utility', () => {
       };
 
       logger.info('User action', metadata);
-      expect(logger.info).toHaveBeenCalledWith('User action', metadata);
+      expect(mockPinoLogger.info).toHaveBeenCalledWith(metadata, 'User action');
     });
   });
 });

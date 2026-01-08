@@ -585,6 +585,33 @@ open class BaseVMManager: NSObject, ObservableObject {
         return ProcessInfo.processInfo.environment["DD_SITE"] ?? "datadoghq.com"
     }
 
+    /// Configure VirtioFS file sharing for persistent storage.
+    ///
+    /// Default implementation: No file sharing (returns nil)
+    ///
+    /// Override to enable persistent storage:
+    /// ```swift
+    /// override func configureFileSharing() -> [(tag: String, url: URL)]? {
+    ///     let appSupport = FileManager.default.urls(
+    ///         for: .applicationSupportDirectory,
+    ///         in: .userDomainMask
+    ///     ).first!
+    ///     let vmData = appSupport.appendingPathComponent("VibeCode/vm-data")
+    ///     try? FileManager.default.createDirectory(at: vmData, withIntermediateDirectories: true)
+    ///     return [("vmdata", vmData)]
+    /// }
+    /// ```
+    ///
+    /// The mount tag is used in the guest to mount the share:
+    /// ```
+    /// mount -t virtiofs vmdata /mnt/host
+    /// ```
+    ///
+    /// - Returns: Array of (tag, url) tuples for shared directories, or nil for no sharing
+    open func configureFileSharing() -> [(tag: String, url: URL)]? {
+        return nil
+    }
+
     // MARK: - Private Implementation
 
     /// Create VM configuration.
@@ -614,6 +641,11 @@ open class BaseVMManager: NSObject, ObservableObject {
 
         // Standard devices
         configureStandardDevices(config)
+
+        // File sharing (VirtioFS)
+        if let shares = configureFileSharing() {
+            try configureVirtioFS(config, shares: shares)
+        }
 
         // Validate configuration
         try config.validate()
@@ -732,6 +764,58 @@ open class BaseVMManager: NSObject, ObservableObject {
         let platform = VZGenericPlatformConfiguration()
         platform.machineIdentifier = VZGenericMachineIdentifier()
         config.platform = platform
+    }
+
+    /// Configure VirtioFS file sharing devices.
+    ///
+    /// - Parameters:
+    ///   - config: The VM configuration
+    ///   - shares: Array of (tag, url) tuples for shared directories
+    /// - Throws: Configuration errors
+    private func configureVirtioFS(_ config: VZVirtualMachineConfiguration, shares: [(tag: String, url: URL)]) throws {
+        VMLogger.info("Configuring VirtioFS file sharing", metadata: [
+            "vm_id": vmID,
+            "share_count": shares.count
+        ])
+
+        var devices: [VZVirtioFileSystemDeviceConfiguration] = []
+
+        for (tag, directoryURL) in shares {
+            VMLogger.debug("Adding file share", metadata: [
+                "vm_id": vmID,
+                "tag": tag,
+                "path": directoryURL.path
+            ])
+
+            // Create directory if it doesn't exist
+            try FileManager.default.createDirectory(
+                at: directoryURL,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+
+            // Create shared directory configuration
+            let sharedDirectory = VZSharedDirectory(url: directoryURL, readOnly: false)
+
+            // Create file system device
+            let fileSystemDevice = VZVirtioFileSystemDeviceConfiguration(tag: tag)
+            fileSystemDevice.share = VZSingleDirectoryShare(directory: sharedDirectory)
+
+            devices.append(fileSystemDevice)
+
+            VMLogger.info("File share configured", metadata: [
+                "vm_id": vmID,
+                "tag": tag,
+                "path": directoryURL.path,
+                "read_only": false
+            ])
+        }
+
+        config.directorySharingDevices = devices
+        VMLogger.info("VirtioFS configuration complete", metadata: [
+            "vm_id": vmID,
+            "device_count": devices.count
+        ])
     }
 
     /// Handle successful VM start.

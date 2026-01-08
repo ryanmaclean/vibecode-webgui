@@ -7,12 +7,21 @@
  * @jest-environment jsdom
  */
 
+// ============================================================================
+// Mocks - MUST be before imports
+// ============================================================================
+
+// Mock the websocket-streaming-client module
+jest.mock('@/lib/streaming/websocket-streaming-client')
+
 import { describe, it, expect, jest, beforeEach, afterEach } from '@jest/globals'
 import type * as monaco from 'monaco-editor'
 import { MonacoAgentAPI, registerMonacoAgentProviders } from '@/lib/editor/monaco-agentapi'
+import { createMockWebSocketStreamingClient } from '../__mocks__/websocket-streaming-client'
+import type { MockWebSocketStreamingClient } from '../__mocks__/websocket-streaming-client'
 
 // ============================================================================
-// Mocks
+// Test Data Mocks
 // ============================================================================
 
 // Mock monaco editor
@@ -33,6 +42,7 @@ const mockModel = {
   getValue: jest.fn(() => 'const x = 1;'),
   getLanguageId: jest.fn(() => 'typescript'),
   getValueInRange: jest.fn(() => 'x'),
+  pushEditOperations: jest.fn(),
   uri: { path: '/test.ts' },
 } as unknown as monaco.editor.ITextModel
 
@@ -56,44 +66,44 @@ const mockSelection: monaco.Selection = {
   getPosition: jest.fn(() => mockPosition),
 } as unknown as monaco.Selection
 
-// Mock WebSocket client
-const mockWSClient = {
-  connect: jest.fn().mockResolvedValue(undefined),
-  disconnect: jest.fn(),
-  stream: jest.fn(),
-  isConnected: jest.fn(() => true),
-}
-
-// Mock createWebSocketStreamingClient
-jest.mock('@/lib/streaming/websocket-streaming-client', () => ({
-  createWebSocketStreamingClient: jest.fn(() => mockWSClient),
-}))
-
 // ============================================================================
 // Test Suite
 // ============================================================================
 
 describe('MonacoAgentAPI', () => {
   let agentAPI: MonacoAgentAPI
+  let mockWSClient: MockWebSocketStreamingClient
 
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Create a fresh mock for each test
+    mockWSClient = createMockWebSocketStreamingClient({
+      defaultLatency: 50,
+      autoConnect: false,
+      autoComplete: true,
+    })
 
     // Setup default mocks
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
     ;(mockEditor.getSelection as jest.Mock).mockReturnValue(mockSelection)
 
-    agentAPI = new MonacoAgentAPI(mockEditor, {
-      baseUrl: '/api/agents',
-      wsUrl: '/api/agents/ws',
-      model: 'claude-3-5-sonnet-20241022',
-      debug: false,
-      completionTimeout: 300,
-      enableInlineSuggestions: true,
-      enableDiagnostics: true,
-      diagnosticsDebounce: 1000,
-    })
+    // Use dependency injection to inject mock client
+    agentAPI = new MonacoAgentAPI(
+      mockEditor,
+      {
+        baseUrl: '/api/agents',
+        wsUrl: '/api/agents/ws',
+        model: 'claude-3-5-sonnet-20241022',
+        debug: false,
+        completionTimeout: 300,
+        enableInlineSuggestions: true,
+        enableDiagnostics: true,
+        diagnosticsDebounce: 1000,
+      },
+      mockWSClient as any
+    )
   })
 
   afterEach(() => {
@@ -438,12 +448,21 @@ describe('registerMonacoAgentProviders', () => {
     },
   } as any
 
+  let mockWSClient: MockWebSocketStreamingClient
+
   beforeEach(() => {
     jest.clearAllMocks()
+
+    // Create mock client for this test suite
+    mockWSClient = createMockWebSocketStreamingClient({
+      defaultLatency: 50,
+      autoConnect: false,
+      autoComplete: true,
+    })
   })
 
   it('should register all providers', () => {
-    const agentAPI = new MonacoAgentAPI(mockEditor, {})
+    const agentAPI = new MonacoAgentAPI(mockEditor, {}, mockWSClient as any)
     const disposables = registerMonacoAgentProviders(mockMonaco, 'typescript', agentAPI)
 
     expect(mockMonaco.languages.registerCompletionItemProvider).toHaveBeenCalledWith(
@@ -463,7 +482,7 @@ describe('registerMonacoAgentProviders', () => {
   })
 
   it('should dispose all providers', () => {
-    const agentAPI = new MonacoAgentAPI(mockEditor, {})
+    const agentAPI = new MonacoAgentAPI(mockEditor, {}, mockWSClient as any)
     const disposables = registerMonacoAgentProviders(mockMonaco, 'typescript', agentAPI)
 
     disposables.forEach(d => d.dispose())
@@ -478,15 +497,29 @@ describe('registerMonacoAgentProviders', () => {
 
 describe('Performance', () => {
   let agentAPI: MonacoAgentAPI
+  let mockWSClient: MockWebSocketStreamingClient
 
   beforeEach(async () => {
+    jest.clearAllMocks()
+
+    // Create a fresh mock for performance tests
+    mockWSClient = createMockWebSocketStreamingClient({
+      defaultLatency: 100,
+      autoConnect: false,
+      autoComplete: true,
+    })
+
     ;(mockEditor.getModel as jest.Mock).mockReturnValue(mockModel)
     ;(mockEditor.getPosition as jest.Mock).mockReturnValue(mockPosition)
 
-    agentAPI = new MonacoAgentAPI(mockEditor, {
-      completionTimeout: 300,
-      diagnosticsDebounce: 1000,
-    })
+    agentAPI = new MonacoAgentAPI(
+      mockEditor,
+      {
+        completionTimeout: 300,
+        diagnosticsDebounce: 1000,
+      },
+      mockWSClient as any
+    )
 
     await agentAPI.initialize()
   })

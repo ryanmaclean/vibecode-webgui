@@ -5,15 +5,13 @@
 import { SAMLProvider } from '@/lib/auth/saml-provider'
 
 // Mock crypto for SAML request generation
-const mockCrypto = {
+jest.mock('crypto', () => ({
   randomBytes: jest.fn(() => Buffer.from('mockrandomdata', 'utf8')),
   createHash: jest.fn(() => ({
     update: jest.fn().mockReturnThis(),
     digest: jest.fn(() => 'mockedhash')
   }))
-}
-
-jest.mock('crypto', () => mockCrypto)
+}))
 
 describe('SAML Authentication Provider', () => {
   let samlProvider: SAMLProvider
@@ -56,11 +54,12 @@ describe('SAML Authentication Provider', () => {
         destination
       })
 
-      expect(result.url).toContain(encodeURIComponent(destination))
+      expect(result.url).toContain(destination)
     })
 
     it('should generate unique request IDs', () => {
-      mockCrypto.randomBytes
+      const crypto = require('crypto')
+      crypto.randomBytes
         .mockReturnValueOnce(Buffer.from('random1', 'utf8'))
         .mockReturnValueOnce(Buffer.from('random2', 'utf8'))
 
@@ -70,7 +69,7 @@ describe('SAML Authentication Provider', () => {
       })
 
       const result2 = samlProvider.generateAuthRequest({
-        assertionConsumerServiceURL: 'https://app.com/saml/acs', 
+        assertionConsumerServiceURL: 'https://app.com/saml/acs',
         destination: 'https://idp.com/sso'
       })
 
@@ -81,7 +80,9 @@ describe('SAML Authentication Provider', () => {
   describe('SAML Response Processing', () => {
     const mockSamlResponse = `
       <samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol">
+        <saml:Issuer xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">https://test-idp.com</saml:Issuer>
         <saml:Assertion xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
+          <saml:Issuer>https://test-idp.com</saml:Issuer>
           <saml:Subject>
             <saml:NameID Format="urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress">
               test@example.com
@@ -101,14 +102,17 @@ describe('SAML Authentication Provider', () => {
 
     it('should process valid SAML response', async () => {
       const encodedResponse = Buffer.from(mockSamlResponse).toString('base64')
-      
+
       const result = await samlProvider.processResponse(encodedResponse)
 
-      expect(result).toHaveProperty('nameId')
-      expect(result).toHaveProperty('attributes')
-      expect(result.nameId).toBe('test@example.com')
-      expect(result.attributes.firstName).toBe('John')
-      expect(result.attributes.lastName).toBe('Doe')
+      expect(result).toHaveProperty('id')
+      expect(result).toHaveProperty('email')
+      expect(result).toHaveProperty('samlAttributes')
+      expect(result.id).toBe('test@example.com')
+      expect(result.email).toBe('test@example.com')
+      expect(result.samlAttributes.firstName).toBe('John')
+      expect(result.samlAttributes.lastName).toBe('Doe')
+      expect(result.provider).toBe('saml')
     })
 
     it('should reject empty SAML response', async () => {

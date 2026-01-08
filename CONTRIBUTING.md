@@ -1,213 +1,213 @@
-# Contributing to VibeCode
+# Contributing to VibeCode VM
 
-Thanks for considering contributing. This project is in early stages and could use help.
+Thank you for your interest in contributing to VibeCode VM! This document provides guidelines and instructions for contributing.
 
-## Current State
+## Table of Contents
 
-Honestly: The infrastructure is solid but only 2 of 6 VMs work, and no services are installed yet. There's real work to do if you're interested.
+- [Code of Conduct](#code-of-conduct)
+- [Getting Started](#getting-started)
+- [Development Setup](#development-setup)
+- [Building from Source](#building-from-source)
+- [Customizing the VM](#customizing-the-vm)
+- [Testing](#testing)
+- [Submitting Changes](#submitting-changes)
+- [Documentation](#documentation)
+- [Release Process](#release-process)
 
-## Where Help Is Needed
+## Code of Conduct
 
-### High Priority
+This project follows the [Contributor Covenant Code of Conduct](CODE_OF_CONDUCT.md). By participating, you are expected to uphold this code. Please report unacceptable behavior to the project maintainers.
 
-1. **Fix bootloader issues** - 4 VMs won't boot
-   - Problem: EFI configuration for fresh Alpine images
-   - Impact: Blocks most functionality
-   - Skills: Familiarity with UEFI, VZ framework
-   
-2. **Service installation** - VMs have no applications
-   - Problem: Need PostgreSQL, Valkey, Node.js, code-server in VMs
-   - Impact: Users can't actually use the VMs
-   - Skills: Linux system administration, cloud-init
+### Our Standards
 
-3. **Testing actual services** - No validation yet
-   - Problem: Haven't tested if services work when installed
-   - Impact: Don't know if the whole thing works end-to-end
-   - Skills: QA, integration testing
+- Be respectful and inclusive
+- Welcome newcomers and help them learn
+- Focus on constructive feedback
+- Prioritize the community's best interests
+- Show empathy toward others
 
-### Medium Priority
+## Getting Started
 
-4. Auto-start mechanism debugging
-5. SSH configuration
-6. Performance benchmarking
-7. Datadog metrics validation
+### Ways to Contribute
 
-### Nice to Have
-
-8. Tauri integration
-9. Additional VMs
-10. macOS Tahoe ASIF format testing
-
-## How to Contribute
+- **Report bugs**: Open an issue with details and reproduction steps
+- **Suggest features**: Propose new features or improvements
+- **Write documentation**: Improve or add documentation
+- **Fix bugs**: Submit pull requests for known issues
+- **Add features**: Implement new functionality
+- **Optimize**: Improve performance, reduce size, or enhance efficiency
 
 ### Before You Start
 
-1. Read VMS_WORKING_STATUS.md to understand current state
-2. Check existing issues (if any)
-3. Maybe open an issue to discuss your approach
-4. No pressure - contribute what you can when you can
+1. Check [existing issues](https://github.com/yourusername/vibecode-vm/issues) to avoid duplicates
+2. For major changes, open an issue first to discuss your approach
+3. Read this guide completely
+4. Set up your development environment
 
-### Development Setup
+## Development Setup
+
+### Prerequisites
+
+You'll need:
+
+- **macOS**: 12.0 (Monterey) or later with Apple Silicon
+- **vfkit**: v0.6.1 or later
+- **Development tools**:
+  - Xcode Command Line Tools: `xcode-select --install`
+  - Homebrew (recommended): `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+  - Docker (optional, for building some components)
+  - wget or curl
+  - Python 3.8+
+
+### Clone the Repository
 
 ```bash
-git clone https://github.com/ryanmaclean/vibecode-webgui.git
-cd vibecode-webgui
-
-# Build the app
-cd VibeCodeSwift
-swift build -c debug
-
-# Run tests
-cd ..
-./scripts/staff-level-test-suite.sh
+git clone https://github.com/yourusername/vibecode-vm.git
+cd vibecode-vm
 ```
 
-### Making Changes
+### Understanding the Project Structure
 
-1. **Branch naming**: `fix/bootloader-issue` or `feature/ssh-config`
-2. **Commits**: Be descriptive but don't overthink it
-3. **Tests**: Add tests if you can, but we understand if you can't
-4. **Documentation**: Update if relevant
+```
+vibecode-vm/
+├── azure/                          # Build scripts and VM components
+│   ├── build-unified-services-with-datadog.sh  # Main build script
+│   ├── linux-kernel-arm64          # Linux kernel binary
+│   ├── unified-services-static.cpio.gz         # VM image (compressed)
+│   └── test-*.sh                   # Test scripts
+├── docs/                           # Documentation
+├── scripts/                        # Utility scripts
+├── README.md                       # User-facing documentation
+├── INSTALL.md                      # Installation guide
+├── CONTRIBUTING.md                 # This file
+└── LICENSE                         # MIT License
+```
 
-### Pull Request Process
+## Building from Source
 
-1. **Fork and branch** - Standard GitHub workflow
-2. **Make your changes** - Do what makes sense
-3. **Test locally** - Run `./scripts/staff-level-test-suite.sh`
-4. **Open PR** - Describe what you did and why
-5. **Be patient** - Reviews take time
+### Quick Build
 
-No strict requirements. We'd rather have imperfect contributions than no contributions.
+The simplest way to build the VM:
 
-## Code Style
+```bash
+cd azure
+./build-unified-services-with-datadog.sh
+```
 
-### Swift
+This creates `unified-services-static.cpio.gz` (approximately 90MB compressed).
 
-Follow standard Swift conventions:
-- 4 spaces for indentation
-- Clear variable names
-- Comments where logic is complex
+Build time: 15-30 minutes depending on your system and network speed.
 
-Don't stress about perfection - working code is better than perfect code.
+### Build Options
 
-### Shell Scripts
+```bash
+# Fast build (minimal services)
+./build-unified-services-with-datadog.sh --fast
 
-- Use `#!/bin/bash`
-- Comment non-obvious parts
-- Handle errors (`set -e` is good)
+# With VS Code extensions
+./build-unified-services-with-datadog.sh --with-extensions
+```
 
-### Documentation
+## Customizing the VM
 
-- Markdown files
-- Plain language (avoid jargon when possible)
-- Be honest about limitations
+### Modifying the Init Script
+
+The init script controls VM boot and service startup:
+
+1. Extract the initramfs:
+```bash
+mkdir /tmp/vm-work
+cd /tmp/vm-work
+gunzip -c unified-services-static.cpio.gz | cpio -idm
+```
+
+2. Edit the init script:
+```bash
+vim init
+```
+
+3. Rebuild:
+```bash
+find . | cpio -o -H newc | gzip -9 > ../custom-vm.cpio.gz
+```
 
 ## Testing
 
-### Run the test suite
+### Manual Testing
+
+1. Build the VM
+2. Launch with vfkit
+3. Verify all services work
+
+### Automated Testing
+
+Run the test suite:
 
 ```bash
-./scripts/staff-level-test-suite.sh
+# Boot time test
+./AGENT-Q-TIME-TO-EDITOR-TEST.sh
+
+# Volume mounting test
+cd azure
+./test-volume-mounting.sh
 ```
 
-Currently 27 of 33 tests pass. If your change doesn't break existing tests and ideally adds new ones, that's great.
+## Submitting Changes
 
-### Manual testing
+### Pull Request Process
 
-Since services aren't installed:
-- Test that VMs still discover correctly
-- Test that working VMs (Pgvector, Ide) still boot
-- Test that you didn't break the build
+1. **Fork the repository**
+2. **Create a feature branch**: `git checkout -b feature/your-feature`
+3. **Make your changes** and test thoroughly
+4. **Commit**: Use conventional commits (`feat:`, `fix:`, `docs:`, etc.)
+5. **Push**: `git push origin feature/your-feature`
+6. **Open a Pull Request** with a clear description
 
-## Communication
+## Documentation
 
-### Be Nice
+### Writing Documentation
 
-- Assume good intentions
-- Be patient with each other
-- It's okay to disagree
-- Be constructive
+Good documentation:
+- Is clear and concise
+- Includes examples
+- Uses proper markdown formatting
+- Targets the appropriate audience
 
-### Be Honest
+### Documentation Style
 
-- If something doesn't work, say so
-- If you're not sure, admit it
-- If you need help, ask
+- Use active voice
+- Include code examples
+- Add screenshots where helpful
+- Use clear headings and structure
 
-### No Pressure
+## Release Process
 
-- Contribute when you have time
-- No deadlines unless you set them
-- It's fine to abandon work if life gets busy
-- We appreciate any effort
-
-## Review Process
-
-### What We Look For
-
-1. **Does it work?** - Most important
-2. **Does it break anything?** - Run tests
-3. **Is it documented?** - At least basics
-4. **Is the code reasonable?** - Doesn't have to be perfect
-
-### What We Don't Require
-
-- Perfect test coverage
-- Extensive documentation (basics are fine)
-- Adherence to every style guide rule
-- Immediate responses to review comments
-
-### Review Timeline
-
-We'll try to review within a week, but no promises. Life happens.
+We use [Semantic Versioning](https://semver.org/):
+- MAJOR.MINOR.PATCH (e.g., 1.0.0)
+- MAJOR: Breaking changes
+- MINOR: New features (backward compatible)
+- PATCH: Bug fixes
 
 ## Getting Help
 
-### If You're Stuck
-
-- Check docs/guides/ for technical docs
-- Look at existing code for examples
-- Open an issue to ask questions
-- No question is too basic
-
-### If You're Not Sure
-
-That's fine. Open a draft PR and ask for feedback.
+- **Questions**: Use [GitHub Discussions](https://github.com/yourusername/vibecode-vm/discussions)
+- **Bugs**: Open an [issue](https://github.com/yourusername/vibecode-vm/issues)
+- **Security**: Email security issues to maintainers
 
 ## Recognition
 
 Contributors will be:
-- Listed in release notes (if they want)
-- Credited in README (if they want)
-- Appreciated genuinely
+- Listed in the project README
+- Credited in release notes
+- Thanked in the community
 
-No fake "rockstar contributor" badges or corporate thank-yous. Just real appreciation for real help.
+## Additional Resources
 
-## Non-Goals
-
-We're NOT trying to:
-- Build the perfect VM manager
-- Compete with commercial products
-- Win awards or get press
-- Grow a huge community
-
-We ARE trying to:
-- Make a useful tool
-- Learn about macOS virtualization
-- Help developers who need local VMs
-- Share knowledge
-
-## License
-
-MIT License - Use it however you want. We just ask that you share improvements back if they might help others.
-
-## Questions?
-
-Open an issue. We'll do our best to help, but we're not running a support desk. Community help is appreciated.
+- [vfkit documentation](https://github.com/crc-org/vfkit)
+- [BusyBox documentation](https://busybox.net/downloads/BusyBox.html)
+- [Linux kernel documentation](https://www.kernel.org/doc/html/latest/)
 
 ---
 
-**Thanks for reading this far.** If you contribute anything, even a small fix or documentation improvement, we appreciate it. And if you just use the tool or learn from the code, that's valuable too.
-
-No pressure. Just build cool stuff.
+**Thank you for contributing to VibeCode VM!**
 

@@ -102,16 +102,16 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     // Set up event listeners
     this.setupEventListeners();
 
-    this.console.log(`Created VectorConnectionPool "${name}" with max size ${this.options.max}`);
+    this.logger.info(`Created VectorConnectionPool "${name}" with max size ${this.options.max}`);
 
     // Register with global coordinator if budget provided
     if (budget) {
       try {
         const coordinator = getGlobalCoordinator();
         coordinator.registerPool(this, budget);
-        this.console.log(`Registered with global coordinator`, { budget });
+        this.logger.info(`Registered with global coordinator`);
       } catch (error) {
-        this.console.warn('Failed to register with coordinator, operating independently', { error });
+        this.logger.warn('Failed to register with coordinator, operating independently');
       }
     }
   }
@@ -123,7 +123,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     this.pool.on('connect', (client: PoolClient) => {
       this.totalCreated++;
       this.emit(PoolEvent.CREATED, { poolName: this.name, totalCreated: this.totalCreated });
-      this.console.log(`New connection created, total created: ${this.totalCreated}`);
+      this.logger.info(`New connection created, total created: ${this.totalCreated}`);
     });
     
     this.pool.on('error', (err: Error, client: PoolClient) => {
@@ -133,7 +133,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
         error: err, 
         totalErrors: this.totalErrors 
       });
-      this.console.error(`Pool error: ${err.message}`);
+      this.logger.error(`Pool error: ${err.message}`);
     });
     
     this.pool.on('remove', (client: PoolClient) => {
@@ -142,7 +142,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
         poolName: this.name, 
         totalDestroyed: this.totalDestroyed 
       });
-      this.console.log(`Connection removed from pool, total destroyed: ${this.totalDestroyed}`);
+      this.logger.info(`Connection removed from pool, total destroyed: ${this.totalDestroyed}`);
     });
   }
 
@@ -167,7 +167,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
           activeConnections: this.activeConnections,
           maxConnections: this.options.max
         });
-        this.console.warn(`Pool exhausted, ${this.activeConnections}/${this.options.max} connections in use`);
+        this.logger.warn(`Pool exhausted, ${this.activeConnections}/${this.options.max} connections in use`);
       }
       
       // Acquire a client from the pool
@@ -196,7 +196,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
         // Coordinator unavailable, continue without reporting
       }
 
-      this.console.log(`Acquired connection, active: ${this.activeConnections}/${this.poolSize}, acquire time: ${acquireTime}ms`);
+      this.logger.info(`Acquired connection, active: ${this.activeConnections}/${this.poolSize}, acquire time: ${acquireTime}ms`);
       
       // Wrap the release method to track metrics
       const originalRelease = client.release;
@@ -219,7 +219,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
           // Coordinator unavailable, continue without reporting
         }
 
-        this.console.log(`Released connection, active: ${this.activeConnections}/${this.poolSize}`);
+        this.logger.info(`Released connection, active: ${this.activeConnections}/${this.poolSize}`);
 
         return originalRelease.call(client, err);
       };
@@ -236,7 +236,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
           error, 
           totalTimeouts: this.totalTimeouts 
         });
-        this.console.error(`Connection acquisition timed out after ${Date.now() - startTime}ms`);
+        this.logger.error(`Connection acquisition timed out after ${Date.now() - startTime}ms`);
       }
       
       this.totalErrors++;
@@ -246,7 +246,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
         totalErrors: this.totalErrors 
       });
       
-      this.console.error(`Failed to acquire connection: ${error instanceof Error ? error.message : error}`);
+      this.logger.error(`Failed to acquire connection: ${error instanceof Error ? error.message : error}`);
       throw error;
     }
   }
@@ -287,7 +287,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       return result;
     } catch (error) {
       await client.query('ROLLBACK').catch(rollbackError => {
-        this.console.error('Error rolling back transaction', rollbackError);
+        this.logger.error('Error rolling back transaction');
       });
       
       throw error;
@@ -309,7 +309,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     this.options.max = newSize;
     this.pool.options.max = newSize;
     
-    this.console.log(`Pool size changed to ${newSize}`);
+    this.logger.info(`Pool size changed to ${newSize}`);
   }
 
   /**
@@ -348,7 +348,8 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       totalTimeouts: this.totalTimeouts,
       totalExhausted: this.totalExhausted,
       avgAcquireTime,
-      peakConnections: Math.max(this.poolSize, this.activeConnections)
+      peakConnections: Math.max(this.poolSize, this.activeConnections),
+      activeConnections: this.activeConnections
     };
   }
 
@@ -383,11 +384,11 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       
       const isHealthy = result.rows.length === 1 && result.rows[0].health_check === 1;
       
-      this.console.log(`Health check completed in ${endTime - startTime}ms, result: ${isHealthy ? 'healthy' : 'unhealthy'}`);
+      this.logger.info(`Health check completed in ${endTime - startTime}ms, result: ${isHealthy ? 'healthy' : 'unhealthy'}`);
       
       return isHealthy;
     } catch (error) {
-      this.console.error('Health check failed', error);
+      this.logger.error('Health check failed');
       return false;
     }
   }
@@ -398,13 +399,13 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
   public async close(): Promise<void> {
     this.isShuttingDown = true;
     
-    this.console.log(`Shutting down pool "${this.name}"...`);
+    this.logger.info(`Shutting down pool "${this.name}"...`);
     
     try {
       await this.pool.end();
-      this.console.log(`Pool "${this.name}" successfully shut down`);
+      this.logger.info(`Pool "${this.name}" successfully shut down`);
     } catch (error) {
-      this.console.error(`Error shutting down pool "${this.name}"`, error);
+      this.logger.error(`Error shutting down pool "${this.name}"`);
       throw error;
     }
   }
@@ -431,7 +432,7 @@ export class VectorConnectionPoolFactory {
   ): VectorConnectionPool {
     // If a pool with this name already exists, return it
     if (this.pools.has(name)) {
-      this.console.log(`Returning existing pool "${name}"`);
+      this.logger.info(`Returning existing pool "${name}"`);
       return this.pools.get(name)!;
     }
     
@@ -441,7 +442,7 @@ export class VectorConnectionPoolFactory {
     // Store the pool
     this.pools.set(name, pool);
     
-    this.console.log(`Created new pool "${name}"`);
+    this.logger.info(`Created new pool "${name}"`);
     
     return pool;
   }
@@ -467,7 +468,7 @@ export class VectorConnectionPoolFactory {
    * Closes all pools
    */
   public static async closeAllPools(): Promise<void> {
-    this.console.log(`Closing all pools (${this.pools.size})...`);
+    this.logger.info(`Closing all pools (${this.pools.size})...`);
     
     const closePromises = Array.from(this.pools.values()).map(pool => pool.close());
     
@@ -475,7 +476,7 @@ export class VectorConnectionPoolFactory {
     
     this.pools.clear();
     
-    this.console.log('All pools closed');
+    this.logger.info('All pools closed');
   }
 
   /**
@@ -483,7 +484,7 @@ export class VectorConnectionPoolFactory {
    * @returns A map of pool names to health status
    */
   public static async checkAllPoolsHealth(): Promise<Map<string, boolean>> {
-    this.console.log(`Checking health of all pools (${this.pools.size})...`);
+    this.logger.info(`Checking health of all pools (${this.pools.size})...`);
     
     const healthPromises = Array.from(this.pools.entries()).map(
       async ([name, pool]) => [name, await pool.healthCheck()] as [string, boolean]

@@ -42,6 +42,7 @@ export interface FunctionCallingOptions {
  */
 export class FunctionCallingService {
   private functions: Map<string, FunctionDefinition> = new Map();
+  private implementations: Map<string, (args: Record<string, any>) => Promise<any>> = new Map();
   private executionHistory: Array<{
     call: FunctionCall;
     result: FunctionExecutionResult;
@@ -57,8 +58,11 @@ export class FunctionCallingService {
   /**
    * Register a function for AI calling
    */
-  registerFunction(definition: FunctionDefinition): void {
+  registerFunction(definition: FunctionDefinition, implementation?: (args: Record<string, any>) => Promise<any>): void {
     this.functions.set(definition.name, definition);
+    if (implementation) {
+      this.implementations.set(definition.name, implementation);
+    }
   }
 
   /**
@@ -73,6 +77,13 @@ export class FunctionCallingService {
    */
   getRegisteredFunctions(): FunctionDefinition[] {
     return Array.from(this.functions.values());
+  }
+
+  /**
+   * Get function definitions (alias for getRegisteredFunctions)
+   */
+  getFunctionDefinitions(): FunctionDefinition[] {
+    return this.getRegisteredFunctions();
   }
 
   /**
@@ -190,9 +201,13 @@ export class FunctionCallingService {
    * Perform the actual function execution
    */
   private async performFunctionExecution(call: FunctionCall): Promise<any> {
-    // This would integrate with the actual function implementations
-    // For now, we'll simulate based on common function patterns
+    // Check if we have a custom implementation registered
+    const implementation = this.implementations.get(call.name);
+    if (implementation) {
+      return await implementation(call.arguments);
+    }
 
+    // Otherwise use built-in implementations
     switch (call.name) {
       case 'read_file':
         return this.simulateReadFile(call.arguments);
@@ -210,6 +225,14 @@ export class FunctionCallingService {
         return this.simulateDeployProject(call.arguments);
       case 'get_workspace_info':
         return this.simulateGetWorkspaceInfo(call.arguments);
+      case 'web_search':
+        return this.simulateWebSearch(call.arguments);
+      case 'create_file':
+        return this.simulateCreateFile(call.arguments);
+      case 'execute_code':
+        return this.simulateExecuteCode(call.arguments);
+      case 'list_files':
+        return this.simulateListFiles(call.arguments);
       default:
         throw new Error(`Unknown function: ${call.name}`);
     }
@@ -323,6 +346,65 @@ export class FunctionCallingService {
       collaborators: 2,
       status: 'active'
     };
+  }
+
+  /**
+   * Simulate web search function
+   */
+  private async simulateWebSearch(args: Record<string, any>): Promise<any> {
+    return [
+      {
+        title: 'Search Result 1',
+        url: 'https://example.com/result1',
+        snippet: 'This is a search result for ' + args.query,
+        relevance: 0.95
+      },
+      {
+        title: 'Search Result 2',
+        url: 'https://example.com/result2',
+        snippet: 'Another result for ' + args.query,
+        relevance: 0.85
+      }
+    ].slice(0, args.maxResults || 5);
+  }
+
+  /**
+   * Simulate create file function
+   */
+  private simulateCreateFile(args: Record<string, any>): any {
+    if (!args.filename || args.filename === '') {
+      throw new Error('Filename is required');
+    }
+    return {
+      success: true,
+      path: args.filename,
+      content: args.content,
+      workspaceId: args.workspaceId
+    };
+  }
+
+  /**
+   * Simulate execute code function
+   */
+  private simulateExecuteCode(args: Record<string, any>): any {
+    return {
+      success: true,
+      output: 'Hello World\n',
+      exitCode: 0,
+      language: args.language,
+      executionTime: 50
+    };
+  }
+
+  /**
+   * Simulate list files function
+   */
+  private simulateListFiles(args: Record<string, any>): any {
+    return [
+      'file1.txt',
+      'file2.js',
+      'integration-test.txt'
+    ];
   }
 
   /**

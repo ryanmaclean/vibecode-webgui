@@ -1,13 +1,83 @@
 {
-    "version": "0.2.0",
-    "configurations": [
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to Node Functions",
+      "type": "node",
+      "request": "attach",
+      "restart": true,
+      "port": 9229,
+      "preLaunchTask": "func: host start"
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Debug Application in VM",
+      "address": "192.168.64.10",
+      "port": 9229,
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "/mnt/host/sync/${workspaceFolderBasename}",
+      "skipFiles": [
+        "<node_internals>/**"
+      ],
+      "sourceMaps": true,
+      "outFiles": [
+        "${workspaceFolder}/dist/**/*.js",
+        "${workspaceFolder}/build/**/*.js"
+      ],
+      "restart": true,
+      "timeout": 30000,
+      "trace": true
+    },
+    {
+      "type": "node",
+      "request": "attach",
+      "name": "Debug OpenVSCode Server",
+      "address": "192.168.64.10",
+      "port": 9229,
+      "localRoot": "${workspaceFolder}/openvscode-server",
+      "remoteRoot": "/opt/openvscode",
+      "skipFiles": [
+        "<node_internals>/**",
+        "**/node_modules/**"
+      ],
+      "sourceMaps": true,
+      "restart": true
+    },
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Build Script",
+      "program": "${workspaceFolder}/azure/build-unified-services-with-datadog.sh",
+      "cwd": "${workspaceFolder}/azure",
+      "console": "integratedTerminal",
+      "runtimeExecutable": "bash"
+    },
+    {
+      "type": "python",
+      "request": "attach",
+      "name": "Debug Python in VM",
+      "host": "192.168.64.10",
+      "port": 5678,
+      "pathMappings": [
         {
-            "name": "Attach to Node Functions",
-            "type": "node",
-            "request": "attach",
-            "restart": true,
-            "port": 9229,
-            "preLaunchTask": "func: host start"
+          "localRoot": "${workspaceFolder}",
+          "remoteRoot": "/mnt/host/sync/${workspaceFolderBasename}"
         }
-    ]
+      ]
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Debug Full Stack",
+      "configurations": [
+        "Debug Application in VM",
+        "Debug OpenVSCode Server"
+      ],
+      "presentation": {
+        "group": "fullstack",
+        "order": 1
+      }
+    }
+  ]
 }

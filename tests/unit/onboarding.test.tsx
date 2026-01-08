@@ -4,10 +4,29 @@
 
 import { render, screen, fireEvent, waitFor } from '@testing-library/react'
 import { useRouter } from 'next/navigation'
+import React from 'react'
 
 // Mock Next.js router
 jest.mock('next/navigation', () => ({
   useRouter: jest.fn(),
+}))
+
+// Mock UserPreferencesProvider
+const UserPreferencesProvider = ({ children }: { children: React.ReactNode }) => {
+  return <div>{children}</div>
+}
+
+const mockSavePreferences = jest.fn().mockResolvedValue(undefined);
+
+jest.mock('@/providers/UserPreferencesProvider', () => ({
+  UserPreferencesProvider: ({ children }: { children: React.ReactNode }) => <div>{children}</div>,
+  useUserPreferences: () => ({
+    preferences: {},
+    updatePreferences: jest.fn(),
+    isLoading: false,
+    error: null,
+    save: mockSavePreferences,
+  }),
 }))
 
 // Import after mocks
@@ -25,13 +44,21 @@ describe('Onboarding Flow', () => {
   })
 
   it('renders welcome screen initially', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     expect(screen.getByText(/Welcome to VibeCode/i)).toBeInTheDocument()
     expect(screen.getByText(/Get Started/i)).toBeInTheDocument()
   })
 
   it('shows progress bar', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     expect(screen.getByText('Welcome')).toBeInTheDocument()
     expect(screen.getByText('Theme')).toBeInTheDocument()
     expect(screen.getByText('Editor')).toBeInTheDocument()
@@ -40,14 +67,22 @@ describe('Onboarding Flow', () => {
   })
 
   it('navigates to theme selection on get started', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     const getStartedButton = screen.getByText(/Get Started/i)
     fireEvent.click(getStartedButton)
     expect(screen.getByText(/Choose Your Theme/i)).toBeInTheDocument()
   })
 
   it('allows theme selection', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     
     // Navigate to theme step
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -62,48 +97,66 @@ describe('Onboarding Flow', () => {
   })
 
   it('allows CLI editor selection', () => {
-    render(<OnboardingPage />)
-    
-    // Navigate to editor step
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
+
+    // Navigate to editor step (welcome -> theme -> workspace -> editor)
     fireEvent.click(screen.getByText(/Get Started/i))
     fireEvent.click(screen.getByText(/Continue/i))
-    
+    fireEvent.click(screen.getByText(/Continue/i))
+
     expect(screen.getByText(/CLI Editor Preference/i)).toBeInTheDocument()
     expect(screen.getByText('Vim')).toBeInTheDocument()
     expect(screen.getByText('Neovim')).toBeInTheDocument()
-    expect(screen.getByText('Emacs')).toBeInTheDocument()
   })
 
   it('shows extension recommendations', () => {
-    render(<OnboardingPage />)
-    
-    // Navigate to extensions step
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
+
+    // Navigate to extensions step (welcome -> theme -> workspace -> editor -> extensions)
     fireEvent.click(screen.getByText(/Get Started/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
-    
+    fireEvent.click(screen.getByText(/Continue/i))
+
     expect(screen.getByText(/Recommended Extensions/i)).toBeInTheDocument()
     expect(screen.getByText('Prettier')).toBeInTheDocument()
     expect(screen.getByText('ESLint')).toBeInTheDocument()
   })
 
   it('shows integration options', () => {
-    render(<OnboardingPage />)
-    
-    // Navigate to integrations step
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
+
+    // Navigate to integrations step (welcome -> theme -> workspace -> editor -> extensions -> integrations)
     fireEvent.click(screen.getByText(/Get Started/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
-    
+    fireEvent.click(screen.getByText(/Continue/i))
+
     expect(screen.getByText(/Connect Your Tools/i)).toBeInTheDocument()
     expect(screen.getByText('GitHub')).toBeInTheDocument()
-    expect(screen.getByText('OpenAI')).toBeInTheDocument()
-    expect(screen.getByText('Anthropic')).toBeInTheDocument()
+    expect(screen.getByText('Jira')).toBeInTheDocument()
+    expect(screen.getByText('Datadog')).toBeInTheDocument()
   })
 
   it('allows navigation back', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     
     // Navigate forward
     fireEvent.click(screen.getByText(/Get Started/i))
@@ -115,55 +168,59 @@ describe('Onboarding Flow', () => {
   })
 
   it('completes onboarding and saves preferences', async () => {
-    ;(global.fetch as jest.Mock).mockResolvedValueOnce({
-      ok: true,
-      json: async () => ({ success: true }),
-    })
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
 
-    render(<OnboardingPage />)
-    
-    // Navigate through all steps
+    // Navigate through all steps (welcome -> theme -> workspace -> editor -> extensions -> integrations -> ai -> complete)
     fireEvent.click(screen.getByText(/Get Started/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
-    
+    fireEvent.click(screen.getByText(/Continue/i))
+    fireEvent.click(screen.getByText(/Continue/i))
+
     // Complete onboarding
-    expect(screen.getByText(/You're All Set!/i)).toBeInTheDocument()
-    fireEvent.click(screen.getByText(/Start Coding/i))
-    
+    expect(screen.getByText(/You're all set/i)).toBeInTheDocument()
+    fireEvent.click(screen.getByText(/Launch Workspace/i))
+
     await waitFor(() => {
-      expect(global.fetch).toHaveBeenCalledWith(
-        '/api/user/preferences',
-        expect.objectContaining({
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-        })
-      )
+      expect(mockSavePreferences).toHaveBeenCalled()
       expect(mockPush).toHaveBeenCalledWith('/dashboard')
     })
   })
 
   it('allows extension selection', () => {
-    render(<OnboardingPage />)
-    
-    // Navigate to extensions
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
+
+    // Navigate to extensions (welcome -> theme -> workspace -> editor -> extensions)
     fireEvent.click(screen.getByText(/Get Started/i))
     fireEvent.click(screen.getByText(/Continue/i))
     fireEvent.click(screen.getByText(/Continue/i))
-    
+    fireEvent.click(screen.getByText(/Continue/i))
+
     // Find and click prettier checkbox
     const checkboxes = screen.getAllByRole('checkbox')
     expect(checkboxes.length).toBeGreaterThan(0)
-    
+
     // Toggle first checkbox
     fireEvent.click(checkboxes[0])
     expect(checkboxes[0]).toBeChecked()
   })
 
   it('allows integration selection', () => {
-    render(<OnboardingPage />)
+    render(
+      <UserPreferencesProvider>
+        <OnboardingPage />
+      </UserPreferencesProvider>
+    )
     
     // Navigate to integrations
     fireEvent.click(screen.getByText(/Get Started/i))

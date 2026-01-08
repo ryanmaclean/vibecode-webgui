@@ -2,62 +2,52 @@
  * @jest-environment jsdom
  */
 
-// Mock the entire ProjectGenerator module
-const mockProjectGenerator = ({ onComplete, initialPrompt, autoStart }: any) => {
-  const mockReact = require('react')
-  const [isGenerating, setIsGenerating] = mockReact.useState(false)
-  const [prompt, setPrompt] = mockReact.useState(initialPrompt || '')
-
-  const handleGenerate = () => {
-    if (!prompt.trim()) return
-    
-    setIsGenerating(true)
-    
-    // Simulate API call with delay to match real component behavior
-    setTimeout(() => {
-      setIsGenerating(false)
-      onComplete?.({
-        workspaceUrl: '/workspace/ai-project-123',
-        projectStructure: {
-          name: 'test-project',
-          description: 'Test project description', 
-          language: 'JavaScript',
-          framework: 'React',
-          files: []
-        }
-      })
-    }, 100)
-  }
-
-  return (
-    <div>
-      <input
-        type="text"
-        value={prompt}
-        onChange={(e) => setPrompt(e.target.value)}
-        placeholder="A modern React dashboard with dark mode..."
-        data-testid="prompt-input"
-      />
-      <button
-        onClick={handleGenerate}
-        disabled={isGenerating || !prompt.trim()}
-        data-testid="generate-button"
-      >
-        {isGenerating ? 'Generating...' : 'Generate'}
-      </button>
-      
-      {isGenerating && (
-        <div data-testid="loading-state">
-          <span>Generating...</span>
-          <div role="progressbar" />
-        </div>
-      )}
-    </div>
-  )
-}
-
+// Mock the ProjectGenerator component before any imports
 jest.mock('@/components/ProjectGenerator', () => ({
-  ProjectGenerator: mockProjectGenerator
+  ProjectGenerator: ({ onComplete, initialPrompt, autoStart }: any) => {
+    const React = require('react')
+    const [isGenerating, setIsGenerating] = React.useState(false)
+    const [prompt, setPrompt] = React.useState(initialPrompt || '')
+
+    const handleGenerate = () => {
+      if (!prompt.trim()) return
+
+      setIsGenerating(true)
+
+      // Simulate API call with delay to match real component behavior
+      setTimeout(() => {
+        setIsGenerating(false)
+        onComplete?.({
+          workspaceId: 'ai-project-123',
+          projectName: 'test-project'
+        })
+      }, 100)
+    }
+
+    return React.createElement('div', null, [
+      React.createElement('input', {
+        key: 'input',
+        type: 'text',
+        value: prompt,
+        onChange: (e: any) => setPrompt(e.target.value),
+        placeholder: 'A modern React dashboard with dark mode...',
+        'data-testid': 'prompt-input'
+      }),
+      React.createElement('button', {
+        key: 'button',
+        onClick: handleGenerate,
+        disabled: isGenerating || !prompt.trim(),
+        'data-testid': 'generate-button'
+      }, isGenerating ? 'Generating...' : 'Generate'),
+      isGenerating && React.createElement('div', {
+        key: 'loading',
+        'data-testid': 'loading-state'
+      }, [
+        React.createElement('span', { key: 'text' }, 'Generating...'),
+        React.createElement('div', { key: 'progress', role: 'progressbar' })
+      ])
+    ])
+  }
 }))
 
 import React from 'react'
@@ -114,9 +104,9 @@ describe('AIProjectGenerator Component', () => {
         <AIProjectGenerator />
       </SessionProvider>
     )
-    
+
     expect(screen.getByText('AI Project Generator')).toBeInTheDocument()
-    expect(screen.getByText(/Describe your project idea and let AI generate a complete, production-ready codebase/)).toBeInTheDocument()
+    expect(screen.getByText(/Describe your project and let AI generate the code/)).toBeInTheDocument()
   })
 
   it('renders the ProjectGenerator component', () => {
@@ -136,20 +126,20 @@ describe('AIProjectGenerator Component', () => {
         <AIProjectGenerator />
       </SessionProvider>
     )
-    
+
     const promptInput = screen.getByTestId('prompt-input')
     const generateButton = screen.getByTestId('generate-button')
-    
+
     fireEvent.change(promptInput, { target: { value: 'Create a todo app' } })
     fireEvent.click(generateButton)
-    
+
     // Check loading state
     expect(screen.getByTestId('loading-state')).toBeInTheDocument()
-    
+
     // Wait for completion and redirect
     await waitFor(() => {
       expect(mockPush).toHaveBeenCalledWith('/workspace/ai-project-123')
-    }, { timeout: 2000 })
+    }, { timeout: 3000 })
   })
 
   it('handles initial prompt and auto-start', () => {

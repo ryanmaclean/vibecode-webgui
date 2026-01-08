@@ -288,11 +288,12 @@ describe('BaseVectorDatabaseAdapter', () => {
   describe('Initialization', () => {
     it('should initialize the adapter correctly', async () => {
       await adapter.initialize();
-      
+
       expect(adapter.initializeProviderCalled).toBe(true);
       expect(adapter.isInitialized).toBe(true);
-      // connectionCreated should only be true after getConnection() is called
-      expect(adapter.connectionCreated).toBe(false);
+      // connectionCreated should be true after initialization when connection pooling is enabled
+      // The pool creates minPoolSize connections (1 in this test config) during initialization
+      expect(adapter.connectionCreated).toBe(true);
     });
     
     it('should not re-initialize if already initialized', async () => {

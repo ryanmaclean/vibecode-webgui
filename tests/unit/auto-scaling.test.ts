@@ -114,14 +114,16 @@ describe('Workspace Auto-Scaling', () => {
           amount: 1
         },
         enabled: true,
-        priority: 1
+        priority: 1,
+        cooldown: 300
       }
 
+      const initialRuleCount = autoScaler.getRules().length
       autoScaler.addRule(rule)
-      
+
       const rules = autoScaler.getRules()
-      expect(rules).toHaveLength(1)
-      expect(rules[0].id).toBe('cpu-scale-up')
+      expect(rules.length).toBe(initialRuleCount + 1)
+      expect(rules.some(r => r.id === 'cpu-scale-up')).toBe(true)
     })
 
     it('should remove scaling rule', () => {
@@ -140,14 +142,16 @@ describe('Workspace Auto-Scaling', () => {
           amount: 1024
         },
         enabled: true,
-        priority: 1
+        priority: 1,
+        cooldown: 300
       }
 
+      const initialRuleCount = autoScaler.getRules().length
       autoScaler.addRule(rule)
-      expect(autoScaler.getRules()).toHaveLength(1)
+      expect(autoScaler.getRules().length).toBe(initialRuleCount + 1)
 
       autoScaler.removeRule('test-rule')
-      expect(autoScaler.getRules()).toHaveLength(0)
+      expect(autoScaler.getRules().length).toBe(initialRuleCount)
     })
   })
 

@@ -2,7 +2,8 @@ import { NextRequest } from 'next/server';
 import { middleware } from '@/middleware';
 
 function buildRequest(path: string, headers: Record<string, string> = {}) {
-  return new NextRequest(`https://example.com${path}`, {
+  const url = `https://example.com${path}`;
+  return new NextRequest(url, {
     headers: new Headers(headers),
   });
 }

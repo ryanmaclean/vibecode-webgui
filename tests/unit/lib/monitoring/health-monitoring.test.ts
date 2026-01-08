@@ -65,9 +65,9 @@ describe('Health Monitoring Module', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
-    // Mock console methods
-    consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+
+    // Mock console methods (MetricsCollector uses console.info, not console.log)
+    consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
     jest.spyOn(console, 'warn').mockImplementation(() => {})
     
     // Mock process methods

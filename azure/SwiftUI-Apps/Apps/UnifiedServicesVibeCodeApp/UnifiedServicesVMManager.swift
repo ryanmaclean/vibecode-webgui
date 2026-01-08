@@ -27,20 +27,21 @@ import Virtualization
 ///
 final class UnifiedServicesVMManager: BaseVMManager {
 
+    // MARK: - Port Forwarding
+
+    /// Port forwarder for accessing services on localhost
+    private var portForwarder: VMPortForwarder?
+
     // MARK: - Template Method Overrides
 
-    /// Create NAT networking strategy with stable MAC address and multiple port forwards.
+    /// Create NAT networking strategy - auto-generate MAC like working Valkey app.
     ///
-    /// Uses a fixed MAC address (52:54:00:12:34:99) for stable DHCP leases.
-    /// Forwards both port 3000 (OpenVSCode internal) and port 8080 (external access).
+    /// Uses auto-generated MAC for compatibility.
+    /// No vsock - use VMPortForwarder instead (like ValkeyVibeCode.app which works).
     override func createNetworkingStrategy() -> NetworkingStrategy {
         return NATNetworkStrategy(
-            macAddress: "52:54:00:12:34:99",
-            enableVsock: true,
-            portForwards: [
-                (guestPort: 3000, hostPort: 3000),  // OpenVSCode internal server
-                (guestPort: 8080, hostPort: 8080)   // Bun TCP relay for external access
-            ]
+            macAddress: nil,  // Auto-generate like working apps
+            enableVsock: false  // Disabled - use VMPortForwarder instead
         )
     }
 
@@ -60,13 +61,14 @@ final class UnifiedServicesVMManager: BaseVMManager {
 
     /// Get kernel command line parameters.
     ///
-    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1"
+    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     ///
     /// - console=hvc0: Enable serial console output
     /// - debug loglevel=8: Verbose kernel logging for debugging
     /// - ipv6.disable=1: Force IPv4-only for better DHCP reliability
+    /// - virtio_net.napi_tx=0: Disable TX NAPI (may help with carrier detection)
     override func getKernelCommandLine() -> String {
-        return "console=hvc0 debug loglevel=8 ipv6.disable=1"
+        return "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     }
 
     /// Get initramfs resource name (without .cpio.gz extension).
@@ -99,5 +101,64 @@ final class UnifiedServicesVMManager: BaseVMManager {
             return "Starting..."
         }
         return nil
+    }
+
+    /// Enable PTY for interactive terminal access.
+    ///
+    /// Allows typing into the VM console and using SSH interactively.
+    /// DISABLED for debugging - use file logging to see kernel boot messages
+    override func enablePTY() -> Bool {
+        return false
+    }
+
+    /// Configure VirtioFS file sharing for persistent storage.
+    ///
+    /// Mounts ~/Library/Application Support/VibeCode/vm-data/ to the VM with tag "hostshare".
+    /// The init script will mount this at /mnt/host and use it for:
+    /// - PostgreSQL data directory: /mnt/host/postgresql
+    /// - Valkey AOF files: /mnt/host/valkey
+    /// - OpenVSCode user data: /mnt/host/vscode-data
+    override func configureFileSharing() -> [(tag: String, url: URL)]? {
+        // Get Application Support directory
+        guard let appSupport = FileManager.default.urls(
+            for: .applicationSupportDirectory,
+            in: .userDomainMask
+        ).first else {
+            VMLogger.warning("Could not locate Application Support directory")
+            return nil
+        }
+
+        // Create vm-data directory
+        let vmDataDir = appSupport
+            .appendingPathComponent("VibeCode")
+            .appendingPathComponent("vm-data")
+
+        do {
+            try FileManager.default.createDirectory(
+                at: vmDataDir,
+                withIntermediateDirectories: true,
+                attributes: nil
+            )
+
+            // Create subdirectories expected by init script
+            let postgresDir = vmDataDir.appendingPathComponent("postgresql")
+            let valkeyDir = vmDataDir.appendingPathComponent("valkey")
+            let vscodeDir = vmDataDir.appendingPathComponent("vscode-data")
+
+            try FileManager.default.createDirectory(at: postgresDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: valkeyDir, withIntermediateDirectories: true)
+            try FileManager.default.createDirectory(at: vscodeDir, withIntermediateDirectories: true)
+
+            VMLogger.info("Configured persistent storage", metadata: [
+                "path": vmDataDir.path,
+                "tag": "hostshare",
+                "subdirs": ["postgresql", "valkey", "vscode-data"]
+            ])
+
+            return [("hostshare", vmDataDir)]
+        } catch {
+            VMLogger.logError(error, context: "Failed to create vm-data directory")
+            return nil
+        }
     }
 }

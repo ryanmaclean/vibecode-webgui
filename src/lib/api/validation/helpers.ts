@@ -18,14 +18,77 @@ export { validateRequestBody, validateQueryParams }
  */
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
+// Overload signatures
+export function checkRateLimit(
+  identifier: string,
+  maxRequests: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetTime: number }
 export function checkRateLimit(
   request: NextRequest,
-  options: {
+  options?: {
     maxRequests?: number
     windowMs?: number
     keyGenerator?: (req: NextRequest) => string
-  } = {}
+  }
+): { allowed: boolean; remaining: number; resetTime: number }
+
+// Implementation
+export function checkRateLimit(
+  requestOrIdentifier: NextRequest | string,
+  optionsOrMaxRequests?: {
+    maxRequests?: number
+    windowMs?: number
+    keyGenerator?: (req: NextRequest) => string
+  } | number,
+  windowMsParam?: number
 ): { allowed: boolean; remaining: number; resetTime: number } {
+  // Handle simple string-based rate limiting (for testing)
+  if (typeof requestOrIdentifier === 'string') {
+    const identifier = requestOrIdentifier
+    const maxRequests = optionsOrMaxRequests as number
+    const windowMs = windowMsParam as number
+    const now = Date.now()
+
+    const current = rateLimitStore.get(identifier)
+
+    if (!current || current.resetTime < now) {
+      rateLimitStore.set(identifier, {
+        count: 1,
+        resetTime: now + windowMs
+      })
+      return {
+        allowed: true,
+        remaining: maxRequests - 1,
+        resetTime: now + windowMs
+      }
+    }
+
+    if (current.count >= maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: current.resetTime
+      }
+    }
+
+    current.count++
+    rateLimitStore.set(identifier, current)
+
+    return {
+      allowed: true,
+      remaining: maxRequests - current.count,
+      resetTime: current.resetTime
+    }
+  }
+
+  // Handle NextRequest-based rate limiting
+  const request = requestOrIdentifier
+  const options = (optionsOrMaxRequests || {}) as {
+    maxRequests?: number
+    windowMs?: number
+    keyGenerator?: (req: NextRequest) => string
+  }
   const {
     maxRequests = 100,
     windowMs = 60 * 1000, // 1 minute

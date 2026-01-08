@@ -8,16 +8,19 @@ import { useProjectGenerator, GenerationStatus, ProgressData } from '@/hooks/use
 import { fetchWithRetry, streamResponse } from '@/lib/utils/fetch'
 
 // Mock dependencies
-jest.mock('next/navigation')
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn()
+}))
 jest.mock('@/lib/utils/fetch')
 
 const mockPush = jest.fn()
+const mockUseRouter = jest.mocked(useRouter)
 const mockFetchWithRetry = jest.mocked(fetchWithRetry)
 const mockStreamResponse = jest.mocked(streamResponse)
 
 beforeEach(() => {
   jest.clearAllMocks()
-  ;(useRouter as jest.Mock).mockReturnValue({ push: mockPush })
+  mockUseRouter.mockReturnValue({ push: mockPush } as any)
 })
 
 describe('useProjectGenerator', () => {

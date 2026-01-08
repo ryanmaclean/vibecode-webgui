@@ -17,6 +17,8 @@ import { prisma } from '@/lib/prisma'
 import { vectorStore } from '@/lib/vector-store'
 import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware'
 import { fileSyncQuerySchema, fileSyncBulkSchema } from '@/lib/api/validation/schemas'
+import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
+import { dogstatsd } from 'dd-trace'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -373,4 +375,59 @@ export async function OPTIONS(_request: NextRequest) {
       'Access-Control-Allow-Headers': 'Content-Type, Authorization',
     },
   })
+}
+
+/**
+ * Test exports - only used in unit tests
+ */
+function sanitizeTagValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, '_')
+}
+
+function handleSubscription(socket: any, workspaceId: string, path: string): void {
+  const outcome = subscriptionManager.subscribe(workspaceId, path, socket)
+
+  if (outcome.ok) {
+    socket.send(JSON.stringify({ type: 'subscribed', path: outcome.path }))
+    dogstatsd.increment('filesync.subscription.success', 1, {
+      workspace: sanitizeTagValue(workspaceId),
+      path: sanitizeTagValue(outcome.path),
+    })
+  } else {
+    socket.send(JSON.stringify({ type: 'error', reason: outcome.reason }))
+    dogstatsd.increment('filesync.subscription.error', 1, {
+      workspace: sanitizeTagValue(workspaceId),
+      reason: outcome.reason.toLowerCase().replace(/\s+/g, '_'),
+    })
+  }
+}
+
+function recordBroadcastMetrics(args: {
+  workspaceId: string
+  path?: string
+  targeted: number
+  totalConnections: number
+}): void {
+  const { workspaceId, path, targeted, totalConnections } = args
+
+  const tags: Record<string, string> = {
+    workspace: sanitizeTagValue(workspaceId),
+    connections: String(totalConnections),
+  }
+
+  if (path) {
+    tags.path = sanitizeTagValue(path)
+  }
+
+  dogstatsd.increment('filesync.broadcast.events', 1, tags)
+  dogstatsd.histogram('filesync.broadcast.targets', targeted, tags)
+}
+
+export const __TEST__ = {
+  handleSubscription,
+  recordBroadcastMetrics,
+  sanitizeTagValue,
 }

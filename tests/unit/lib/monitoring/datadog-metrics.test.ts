@@ -15,19 +15,25 @@ describe('DatadogMetricsService', () => {
 
   beforeEach(() => {
     jest.clearAllMocks()
-    
-    // Mock console.log for development logging
-    consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined)
+
+    // Mock console.info for development logging (datadog-metrics uses console.info, not console.log)
+    consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined)
     jest.spyOn(console, 'error').mockImplementation(() => undefined)
-    
-    // Set up environment for testing (reassign env object to avoid readonly prop errors)
-    process.env = { ...process.env, NODE_ENV: 'test', DD_API_KEY: 'test-api-key' } as any
+
+    // Set up environment for testing - use development to enable console logging
+    process.env = { ...process.env, NODE_ENV: 'development', DD_API_KEY: undefined } as any
     delete process.env.DD_API_KEY
     delete process.env.DATADOG_API_KEY
-    
+
+    // Reset modules to get fresh instance
+    jest.resetModules()
+
     // Import the singleton instance
     const { datadogMetrics: metrics } = require('@/lib/monitoring/datadog-metrics')
     datadogMetrics = metrics
+
+    // Force enabled for testing (since we're in development mode without API key)
+    datadogMetrics.isEnabled = true
   })
 
   afterEach(() => {
@@ -38,7 +44,7 @@ describe('DatadogMetricsService', () => {
     it('should initialize with default configuration', () => {
       expect(datadogMetrics).toBeDefined()
       expect(datadogMetrics.standardTags).toBeDefined()
-      expect(datadogMetrics.standardTags.env).toBe('test')
+      expect(datadogMetrics.standardTags.env).toBe('development')
       expect(datadogMetrics.standardTags.service).toBe('vibecode-webgui')
       expect(datadogMetrics.standardTags.team).toBe('platform')
       expect(datadogMetrics.standardTags.component).toBe('api')

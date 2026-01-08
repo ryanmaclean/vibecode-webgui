@@ -1,8 +1,8 @@
-import { intelligentModelSelection, ModelCapability, PromptAnalysis, ModelSelection } from '@/lib/intelligent-model-selection';
+import { intelligentModelSelection, ModelCapability, PromptAnalysis, ModelSelection } from '@/lib/services/intelligent-model-selection';
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics';
 
 // Mock external dependencies
-jest.mock('../../monitoring/datadog-metrics', () => ({
+jest.mock('@/lib/monitoring/datadog-metrics', () => ({
   datadogMetrics: {
     recordUserAction: jest.fn()
   }

@@ -20,19 +20,26 @@ class MockEventSource {
   onmessage: ((event: { data: string }) => void) | null = null
   onerror: (() => void) | null = null
   readyState = 0 // CONNECTING
+  private openTimer: NodeJS.Timeout | null = null
 
   constructor(url: string) {
     this.url = url
     MockEventSource.instances.push(this)
     // Simulate async connection
-    setTimeout(() => {
-      this.readyState = 1 // OPEN
-      this.onopen?.()
+    this.openTimer = setTimeout(() => {
+      if (this.readyState !== 2) { // Only call onopen if not closed
+        this.readyState = 1 // OPEN
+        this.onopen?.()
+      }
     }, 10)
   }
 
   close(): void {
     this.readyState = 2 // CLOSED
+    if (this.openTimer) {
+      clearTimeout(this.openTimer)
+      this.openTimer = null
+    }
   }
 
   // Test helper: simulate receiving a message
@@ -375,11 +382,14 @@ describe('SSEClient', () => {
       // First error
       MockEventSource.getLatestInstance()!.simulateError()
 
-      // Reconnect successfully
+      // Reconnect successfully and receive a message (stable connection)
       jest.advanceTimersByTime(1020)
+      const es = MockEventSource.getLatestInstance()
+      es!.simulateMessage('data: {"type":"content","content":"test"}\n\n')
+      jest.advanceTimersByTime(10) // Allow message processing
 
-      // Another error (should use initial delay again)
-      MockEventSource.getLatestInstance()!.simulateError()
+      // Another error (should use initial delay again after stable connection)
+      es!.simulateError()
 
       const lastCall = (handlers.onReconnecting as jest.Mock).mock.calls.slice(-1)[0]
       expect(lastCall[0]).toBe(1) // Attempt count reset to 1

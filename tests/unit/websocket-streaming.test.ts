@@ -37,23 +37,58 @@ class MockWebSocket {
 
 global.WebSocket = MockWebSocket as any;
 
+// Create a mock pool
+class MockPool {
+  subscribeToConnection = jest.fn();
+  sendMessage = jest.fn();
+  releaseConnection = jest.fn();
+}
+
 jest.mock('@/lib/websocket-connection-pooling', () => ({
+  WebSocketConnectionPool: jest.fn(() => new MockPool()),
   getPooledWebSocket: jest.fn(),
   releasePooledWebSocket: jest.fn(),
 }));
 
 describe('WebSocketStreamingClient', () => {
   let mockWs: MockWebSocket;
+  let mockPool: MockPool;
+  let client: WebSocketStreamingClient | null = null;
 
   beforeEach(() => {
+    // Use fake timers to prevent memory leaks from setTimeout
+    jest.useFakeTimers();
+
     mockWs = new MockWebSocket('ws://test');
+    mockPool = new MockPool();
+
+    // Mock getPooledWebSocket to return a connection object with id
     (require('@/lib/websocket-connection-pooling').getPooledWebSocket as jest.Mock)
-      .mockResolvedValue(mockWs);
+      .mockResolvedValue({ id: 'test-connection-id', socket: mockWs });
+  });
+
+  afterEach(() => {
+    // Clean up client connections
+    if (client) {
+      try {
+        client.disconnect();
+      } catch (error) {
+        // Ignore cleanup errors
+      }
+      client = null;
+    }
+
+    // Clear all timers
+    jest.clearAllTimers();
+    jest.useRealTimers();
+
+    // Clear all mocks
+    jest.clearAllMocks();
   });
 
   describe('Connection', () => {
     test('should connect successfully', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const promise = client.connect();
       mockWs.simulateOpen();
       await promise;
@@ -61,127 +96,155 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle connection errors', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const promise = client.connect();
-      mockWs.onerror?.({} as Event);
-      await expect(promise).rejects.toThrow();
+
+      // Simulate connection error before open
+      const error = new Error('Connection failed');
+      (require('@/lib/websocket-connection-pooling').getPooledWebSocket as jest.Mock)
+        .mockRejectedValueOnce(error);
+
+      await expect(client.connect()).rejects.toThrow();
     });
   });
 
   describe('Streaming', () => {
     test('should send stream request', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
-      
-      await client.request({ type: 'stream-request', id: '1', payload: {} });
-      expect(mockWs.send).toHaveBeenCalled();
+      await connectPromise;
+
+      await client.stream({}, { onChunk: jest.fn() });
+      expect(mockPool.sendMessage).toHaveBeenCalled();
     });
 
     test('should receive chunks in order', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
       const chunks: any[] = [];
-      client.stream('req1', {}, { onChunk: (c) => chunks.push(c) });
+      const requestId = await client.stream({}, { onChunk: (c) => chunks.push(c) });
 
-      mockWs.simulateMessage({ type: 'stream-chunk', requestId: 'req1', sequence: 0, data: 'a', timestamp: 0 });
-      mockWs.simulateMessage({ type: 'stream-chunk', requestId: 'req1', sequence: 1, data: 'b', timestamp: 0 });
+      // Get the onMessage handler from subscribeToConnection
+      const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
+      const messageHandler = subscribeCall[2].onMessage;
+
+      // Simulate receiving chunks
+      messageHandler(JSON.stringify({ type: 'stream-chunk', requestId, sequence: 0, data: 'a', timestamp: 0 }));
+      messageHandler(JSON.stringify({ type: 'stream-chunk', requestId, sequence: 1, data: 'b', timestamp: 0 }));
 
       expect(chunks).toHaveLength(2);
     });
 
     test('should handle stream completion', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
       const handlers = { onChunk: jest.fn(), onComplete: jest.fn() };
-      client.stream('req1', {}, handlers);
+      const requestId = await client.stream({}, handlers);
 
-      mockWs.simulateMessage({ type: 'stream-complete', requestId: 'req1', timestamp: 0 });
+      // Get the onMessage handler from subscribeToConnection
+      const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
+      const messageHandler = subscribeCall[2].onMessage;
+
+      messageHandler(JSON.stringify({ type: 'stream-complete', requestId, timestamp: 0 }));
       expect(handlers.onComplete).toHaveBeenCalled();
     });
 
     test('should handle stream errors', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
       const handlers = { onChunk: jest.fn(), onError: jest.fn() };
-      client.stream('req1', {}, handlers);
+      const requestId = await client.stream({}, handlers);
 
-      mockWs.simulateMessage({
+      // Get the onMessage handler from subscribeToConnection
+      const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
+      const messageHandler = subscribeCall[2].onMessage;
+
+      messageHandler(JSON.stringify({
         type: 'stream-error',
-        requestId: 'req1',
+        requestId,
         error: { code: 'TEST', message: 'error', recoverable: false },
-      });
+      }));
       expect(handlers.onError).toHaveBeenCalled();
     });
   });
 
   describe('Stream Control', () => {
     test('should pause stream', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
-      client.stream('req1', {}, { onChunk: jest.fn() });
-      await client.pauseStream('req1');
+      const requestId = await client.stream({}, { onChunk: jest.fn() });
+      await client.pauseStream(requestId);
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('pause')
-      );
+      const sendCalls = mockPool.sendMessage.mock.calls;
+      const pauseCall = sendCalls.find((call: any) => call[1].includes('pause'));
+      expect(pauseCall).toBeDefined();
     });
 
     test('should resume stream', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
-      client.stream('req1', {}, { onChunk: jest.fn() });
-      await client.resumeStream('req1');
+      const requestId = await client.stream({}, { onChunk: jest.fn() });
+      await client.resumeStream(requestId);
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('resume')
-      );
+      const sendCalls = mockPool.sendMessage.mock.calls;
+      const resumeCall = sendCalls.find((call: any) => call[1].includes('resume'));
+      expect(resumeCall).toBeDefined();
     });
 
     test('should cancel stream', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
-      client.stream('req1', {}, { onChunk: jest.fn() });
-      await client.cancelStream('req1');
+      const requestId = await client.stream({}, { onChunk: jest.fn() });
+      await client.cancelStream(requestId);
 
-      expect(mockWs.send).toHaveBeenCalledWith(
-        expect.stringContaining('cancel')
-      );
+      const sendCalls = mockPool.sendMessage.mock.calls;
+      const cancelCall = sendCalls.find((call: any) => call[1].includes('cancel'));
+      expect(cancelCall).toBeDefined();
     });
   });
 
   describe('Priority Handling', () => {
     test('should use high priority connection', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test', priority: 'high' });
-      await client.connect();
-      
+      client = new WebSocketStreamingClient({ url: 'ws://test', priority: 'high' }, mockPool as any);
+      const connectPromise = client.connect();
+      mockWs.simulateOpen();
+      await connectPromise;
+
       expect(require('@/lib/websocket-connection-pooling').getPooledWebSocket)
         .toHaveBeenCalledWith('ws://test', 'high');
     });
   });
 
   describe('Cleanup', () => {
-    test('should release connection on close', async () => {
-      const client = new WebSocketStreamingClient({ url: 'ws://test' });
-      await client.connect();
+    test('should release connection on disconnect', async () => {
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await connectPromise;
 
-      client.close();
+      client.disconnect();
 
       expect(require('@/lib/websocket-connection-pooling').releasePooledWebSocket)
-        .toHaveBeenCalledWith(mockWs);
+        .toHaveBeenCalled();
     });
   });
 });

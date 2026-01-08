@@ -2,8 +2,8 @@
  * Unit tests for QueryAnalyzer
  */
 
-import { QueryAnalyzer } from '@/lib/query-analyzer';
-import { QueryType } from '@/lib/types';
+import { QueryAnalyzer } from '@/lib/vector-db/query-analyzer';
+import { QueryType } from '@/lib/vector-db/types';
 
 describe('QueryAnalyzer', () => {
   let analyzer: QueryAnalyzer;

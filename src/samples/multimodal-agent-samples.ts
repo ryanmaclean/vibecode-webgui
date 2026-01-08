@@ -538,21 +538,21 @@ Expected AI Response:
       throw new Error(`Sample ${sampleId} not found`);
     }
 
-    // Debug log removed
-    // Debug log removed
-    // Debug log removed
+    console.log(`🚀 Running sample: ${sample.title}`);
+    console.log(`📝 Description: ${sample.description}`);
+    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s`);
 
     const startTime = Date.now();
-    
+
     try {
       const result = await this.agent.processMultimodalInput(sample.inputs);
-      
+
       const duration = Date.now() - startTime;
-      
-      // Debug log removed
-      // Debug log removed
-      // Debug log removed}`);
-      
+
+      console.log(`✅ Sample completed in ${duration}ms`);
+      console.log(`📊 Confidence: ${result.metadata.confidence}`);
+      console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
+
       return {
         sample,
         result,
@@ -562,8 +562,9 @@ Expected AI Response:
           efficiency: (sample.estimatedTime * 1000) / duration
         }
       };
-      
+
     } catch (error) {
+      console.log(`⚠️ Error occurred: ${error.message}`);
       console.error(`❌ Sample failed: ${error.message}`);
       throw error;
     }

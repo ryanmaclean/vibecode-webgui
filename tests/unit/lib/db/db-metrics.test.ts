@@ -14,7 +14,7 @@ jest.mock('@/lib/logger', () => ({
 }))
 
 // Mock the robust-db-connection dependency
-jest.mock('../robust-db-connection', () => ({
+jest.mock('@/lib/db/robust-db-connection', () => ({
   getConnectionPoolStatus: jest.fn().mockReturnValue({
     pools: [],
   }),
@@ -23,7 +23,7 @@ jest.mock('../robust-db-connection', () => ({
 import {
   getDatabaseMetricsCollector,
   createQueryTrackingMiddleware,
-} from '@/lib/db-metrics'
+} from '@/lib/db/db-metrics'
 
 describe('Database Metrics', () => {
   let collector: ReturnType<typeof getDatabaseMetricsCollector>

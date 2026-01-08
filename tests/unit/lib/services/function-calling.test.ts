@@ -1,4 +1,4 @@
-import { FunctionCallingService, FunctionDefinition, FunctionCall, FunctionResult } from '@/lib/function-calling';
+import { FunctionCallingService, FunctionDefinition, FunctionCall } from '@/lib/services/function-calling';
 
 // Mock external dependencies
 jest.mock('node-fetch', () => jest.fn());
@@ -277,14 +277,9 @@ describe('FunctionCallingService', () => {
         }
       };
 
-      // Mock a timeout scenario
-      jest.spyOn(global, 'setTimeout').mockImplementation((callback: any) => {
-        callback();
-        return {} as any;
-      });
+      const result = await service.executeFunction(functionCall, { timeout: 100 });
 
-      const result = await service.executeFunction(functionCall);
-
+      // With a very short timeout, web_search should succeed immediately (it's simulated)
       expect(result.success).toBe(true);
     });
   });
@@ -341,18 +336,21 @@ describe('FunctionCallingService', () => {
           arguments: { query: 'test query 1', maxResults: 2 }
         },
         {
-          name: 'web_search', 
+          name: 'web_search',
           arguments: { query: 'test query 2', maxResults: 2 }
         }
       ];
 
       const results = await Promise.all(
-        calls.map(call => service.executeFunction(call))
+        calls.map(call => service.executeFunction(call, { timeout: 5000 }))
       );
 
       results.forEach(result => {
         expect(result).toHaveProperty('success');
-        expect(result).toHaveProperty('result');
+        expect(result.success).toBe(true);
+        if (result.success) {
+          expect(result).toHaveProperty('result');
+        }
       });
     }, 15000); // 15 second timeout for concurrent calls
 

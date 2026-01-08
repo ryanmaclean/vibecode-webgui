@@ -58,7 +58,7 @@ describe('VectorDatabaseFactory', () => {
   });
 
   describe('Implementation Issues Documentation', () => {
-    it('should document that PostgreSQL adapter has Prisma connection issues', async () => {
+    it('should create PostgreSQL adapter successfully', async () => {
       const config = {
         provider: VectorDatabaseProvider.POSTGRES,
         host: 'localhost',
@@ -68,9 +68,11 @@ describe('VectorDatabaseFactory', () => {
         password: 'testpass'
       };
 
-      // This test documents the real issue: Prisma client needs DATABASE_URL or connectionString
-      await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Invalid value undefined for datasource "db" provided to PrismaClient constructor');
+      // PostgreSQL adapter can be created without connectionString
+      // It will fail during initialization if no DATABASE_URL is provided
+      const adapter = await VectorDatabaseFactory.create(config);
+      expect(adapter).toBeDefined();
+      expect(adapter.constructor.name).toBe('PostgresVectorDatabaseAdapter');
     });
 
     it('should document that SQL Server adapter is not implemented', async () => {

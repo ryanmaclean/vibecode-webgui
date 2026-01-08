@@ -123,7 +123,7 @@ export const logger = {
       pinoLogger.error(message);
     }
   },
-  
+
   warn: (message: unknown, metadata?: Record<string, unknown>) => {
     if (typeof message === 'string') {
       pinoLogger.warn(metadata || {}, message);
@@ -131,7 +131,7 @@ export const logger = {
       pinoLogger.warn(message);
     }
   },
-  
+
   info: (message: unknown, metadata?: Record<string, unknown>) => {
     if (typeof message === 'string') {
       pinoLogger.info(metadata || {}, message);
@@ -139,12 +139,20 @@ export const logger = {
       pinoLogger.info(message);
     }
   },
-  
+
   debug: (message: unknown, metadata?: Record<string, unknown>) => {
     if (typeof message === 'string') {
       pinoLogger.debug(metadata || {}, message);
     } else {
       pinoLogger.debug(message);
+    }
+  },
+
+  http: (message: unknown, metadata?: Record<string, unknown>) => {
+    if (typeof message === 'string') {
+      pinoLogger.info(metadata || {}, message);
+    } else {
+      pinoLogger.info(message);
     }
   },
 
@@ -155,12 +163,16 @@ export const logger = {
       pinoLogger.info(message);
     }
   },
+
+  child: (contextMetadata: Record<string, unknown>) => {
+    return createChildLogger(contextMetadata);
+  },
 };
 
 // Child logger factory
 export function createLogger(contextMetadata: Record<string, unknown>) {
   const childLogger = pinoLogger.child(contextMetadata);
-  
+
   return {
     error: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
@@ -169,7 +181,7 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
         childLogger.error(message);
       }
     },
-    
+
     warn: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
         childLogger.warn(metadata || {}, message);
@@ -177,7 +189,7 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
         childLogger.warn(message);
       }
     },
-    
+
     info: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
         childLogger.info(metadata || {}, message);
@@ -185,12 +197,20 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
         childLogger.info(message);
       }
     },
-    
+
     debug: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
         childLogger.debug(metadata || {}, message);
       } else {
         childLogger.debug(message);
+      }
+    },
+
+    http: (message: unknown, metadata?: Record<string, unknown>) => {
+      if (typeof message === 'string') {
+        childLogger.info(metadata || {}, message);
+      } else {
+        childLogger.info(message);
       }
     },
 
@@ -200,6 +220,10 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       } else {
         childLogger.info(message);
       }
+    },
+
+    child: (additionalMetadata: Record<string, unknown>) => {
+      return createLogger({ ...contextMetadata, ...additionalMetadata });
     },
   };
 }
@@ -211,6 +235,50 @@ export function createChildLogger(contextMetadata: Record<string, unknown>) {
 // Direct access to Pino instance for advanced usage
 export const pinoInstance = pinoLogger;
 
+// Helper functions for common logging patterns
+export function logPerformance(
+  operation: string,
+  duration: number,
+  metadata?: Record<string, unknown>
+): void {
+  logger.info('Performance metric', {
+    operation,
+    durationMs: duration,
+    ...metadata,
+  });
+}
+
+export function logApiRequest(
+  method: string,
+  url: string,
+  statusCode: number,
+  responseTime: number,
+  metadata?: Record<string, unknown>
+): void {
+  logger.http('API Request', {
+    method,
+    url,
+    statusCode,
+    responseTimeMs: responseTime,
+    ...metadata,
+  });
+}
+
+export function logDatabaseOperation(
+  operation: string,
+  table: string,
+  duration: number,
+  metadata?: Record<string, unknown>
+): void {
+  logger.debug('Database operation', {
+    operation,
+    table,
+    durationMs: duration,
+    ...metadata,
+  });
+}
+
 // Type exports for consumers
 export type Logger = typeof logger;
 export type ChildLogger = ReturnType<typeof createLogger>;
+export type LogLevel = 'error' | 'warn' | 'info' | 'http' | 'debug';

@@ -137,3 +137,8 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
+.claude/
+*.cpio.gz.pre-*
+*.cpio.gz.broken*
+azure/vmlinuz-arm64
+*.dmg*

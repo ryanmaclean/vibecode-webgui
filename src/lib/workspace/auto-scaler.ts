@@ -664,12 +664,206 @@ export class WorkspaceAutoScaler {
       activeWorkspaces: activeMetrics.length,
       scalingWorkspaces: workspaces.filter(w => w.scaling.isScaling).length,
       totalInstances: workspaces.reduce((sum, w) => sum + w.current.instanceCount, 0),
-      avgCpuUsage: activeMetrics.length > 0 
-        ? activeMetrics.reduce((sum, m) => sum + m.cpuUsage, 0) / activeMetrics.length 
+      avgCpuUsage: activeMetrics.length > 0
+        ? activeMetrics.reduce((sum, m) => sum + m.cpuUsage, 0) / activeMetrics.length
         : 0,
-      avgMemoryUsage: activeMetrics.length > 0 
-        ? activeMetrics.reduce((sum, m) => sum + m.memoryUsage, 0) / activeMetrics.length 
+      avgMemoryUsage: activeMetrics.length > 0
+        ? activeMetrics.reduce((sum, m) => sum + m.memoryUsage, 0) / activeMetrics.length
         : 0
+    }
+  }
+
+  /**
+   * Get workspace metrics
+   */
+  async getMetrics(workspaceId: string): Promise<WorkspaceMetrics | undefined> {
+    return this.metrics.get(workspaceId)
+  }
+
+  /**
+   * Add a scaling rule
+   */
+  addRule(rule: ScalingRule): void {
+    // Remove existing rule with same ID if present
+    this.config.rules = this.config.rules.filter(r => r.id !== rule.id)
+    this.config.rules.push(rule)
+    // Sort by priority (descending)
+    this.config.rules.sort((a, b) => b.priority - a.priority)
+  }
+
+  /**
+   * Get all scaling rules
+   */
+  getRules(): ScalingRule[] {
+    return [...this.config.rules]
+  }
+
+  /**
+   * Remove a scaling rule by ID
+   */
+  removeRule(ruleId: string): void {
+    this.config.rules = this.config.rules.filter(r => r.id !== ruleId)
+  }
+
+  /**
+   * Evaluate workspace for scaling decisions
+   */
+  async evaluateWorkspace(workspaceId: string): Promise<void> {
+    const metrics = this.metrics.get(workspaceId)
+    const resources = this.resources.get(workspaceId)
+
+    if (!metrics || !resources) {
+      throw new Error(`Workspace ${workspaceId} not found`)
+    }
+
+    // Skip if already scaling
+    if (resources.scaling.isScaling) {
+      return
+    }
+
+    // Evaluate each rule
+    for (const rule of this.config.rules) {
+      if (!rule.enabled) continue
+
+      // Check cooldown
+      const cooldownKey = `${workspaceId}-${rule.id}`
+      const lastExecution = this.ruleCooldowns.get(cooldownKey)
+      if (lastExecution && (Date.now() - lastExecution.getTime()) < (rule.cooldown * 1000)) {
+        continue
+      }
+
+      // Check if rule condition is met
+      if (await this.evaluateRuleCondition(rule, metrics, resources)) {
+        await this.executeScalingAction(workspaceId, rule, metrics, resources)
+        this.ruleCooldowns.set(cooldownKey, new Date())
+        break // Only execute one rule per evaluation
+      }
+    }
+
+    // Check for idle workspaces
+    if (this.config.costOptimization.enabled) {
+      await this.checkIdleWorkspace(workspaceId, metrics, resources)
+    }
+  }
+
+  /**
+   * Get scaling history for a workspace
+   */
+  async getScalingHistory(workspaceId: string): Promise<ScalingAction[]> {
+    const resources = this.resources.get(workspaceId)
+    if (!resources) {
+      return []
+    }
+
+    // In a real implementation, this would fetch from a database
+    // For now, return pending actions as history
+    return [...resources.scaling.pendingActions]
+  }
+
+  /**
+   * Get resource utilization for a workspace
+   */
+  async getResourceUtilization(workspaceId: string): Promise<{
+    cpu: { used: number; limit: number; percentage: number }
+    memory: { used: number; limit: number; percentage: number }
+    disk: { used: number; limit: number; percentage: number }
+    instances: { count: number; limit: number }
+  }> {
+    const resources = this.resources.get(workspaceId)
+    if (!resources) {
+      throw new Error(`Workspace ${workspaceId} not found`)
+    }
+
+    const metrics = this.metrics.get(workspaceId)
+
+    return {
+      cpu: {
+        used: resources.current.totalCpu || 0,
+        limit: resources.limits.maxCpu,
+        percentage: metrics?.cpuUsage || 0
+      },
+      memory: {
+        used: resources.current.totalMemory || 0,
+        limit: resources.limits.maxMemory,
+        percentage: metrics?.memoryUsage || 0
+      },
+      disk: {
+        used: resources.current.totalDisk || 0,
+        limit: resources.limits.maxDisk,
+        percentage: metrics?.diskUsage || 0
+      },
+      instances: {
+        count: resources.current.instanceCount || 0,
+        limit: resources.limits.maxInstances
+      }
+    }
+  }
+
+  /**
+   * Calculate cost savings from auto-scaling
+   */
+  async getCostSavings(workspaceId: string): Promise<{
+    estimatedMonthlySavings: number
+    currentMonthlyCost: number
+    optimizedMonthlyCost: number
+    optimizationRecommendations: {
+      idleTimeReduction: number
+      rightSizingOpportunities: string[]
+      potentialSavingsPercentage: number
+    }
+  }> {
+    const resources = this.resources.get(workspaceId)
+    const metrics = this.metrics.get(workspaceId)
+
+    if (!resources) {
+      throw new Error(`Workspace ${workspaceId} not found`)
+    }
+
+    // Mock cost calculation (in a real system, this would use actual cloud provider pricing)
+    const cpuCostPerCore = 0.05 // $0.05 per core per hour
+    const memoryCostPerGB = 0.01 // $0.01 per GB per hour
+    const hoursPerMonth = 730
+
+    const currentCpuCost = (resources.current.totalCpu || 0) / 1000 * cpuCostPerCore * hoursPerMonth
+    const currentMemoryCost = (resources.current.totalMemory || 0) / 1024 * memoryCostPerGB * hoursPerMonth
+    const currentMonthlyCost = currentCpuCost + currentMemoryCost
+
+    // Calculate optimized cost based on average usage
+    const avgCpuUsage = metrics?.cpuUsage || 50
+    const avgMemoryUsage = metrics?.memoryUsage || 50
+
+    const optimizedCpu = (resources.current.totalCpu || 0) * (avgCpuUsage / 100) * 1.2 // 20% buffer
+    const optimizedMemory = (resources.current.totalMemory || 0) * (avgMemoryUsage / 100) * 1.2
+
+    const optimizedCpuCost = optimizedCpu / 1000 * cpuCostPerCore * hoursPerMonth
+    const optimizedMemoryCost = optimizedMemory / 1024 * memoryCostPerGB * hoursPerMonth
+    const optimizedMonthlyCost = optimizedCpuCost + optimizedMemoryCost
+
+    const estimatedMonthlySavings = Math.max(0, currentMonthlyCost - optimizedMonthlyCost)
+    const potentialSavingsPercentage = currentMonthlyCost > 0
+      ? (estimatedMonthlySavings / currentMonthlyCost) * 100
+      : 0
+
+    const recommendations: string[] = []
+    if (avgCpuUsage < 50) {
+      recommendations.push('Reduce CPU allocation - current usage is below 50%')
+    }
+    if (avgMemoryUsage < 50) {
+      recommendations.push('Reduce memory allocation - current usage is below 50%')
+    }
+    if (metrics && metrics.activeConnections === 0 && avgCpuUsage < 10) {
+      recommendations.push('Consider implementing auto-pause for idle workspaces')
+    }
+
+    return {
+      estimatedMonthlySavings,
+      currentMonthlyCost,
+      optimizedMonthlyCost,
+      optimizationRecommendations: {
+        idleTimeReduction: this.config.costOptimization.idleTimeoutMinutes,
+        rightSizingOpportunities: recommendations,
+        potentialSavingsPercentage
+      }
     }
   }
 }

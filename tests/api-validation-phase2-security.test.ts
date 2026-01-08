@@ -135,8 +135,8 @@ describe('Phase 2 Security Validation - Command Injection Prevention', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should enforce max files per bulk operation (100)', () => {
-      const files = Array.from({ length: 101 }, (_, i) => ({
+    it('should enforce max files per bulk operation (1000)', () => {
+      const files = Array.from({ length: 1001 }, (_, i) => ({
         path: `file${i}.txt`,
         content: 'test',
         type: 'file' as const,
