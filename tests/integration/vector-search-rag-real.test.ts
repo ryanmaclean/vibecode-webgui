@@ -230,17 +230,38 @@ jest.mock('../../src/lib/vector-store', () => {
   }
 })
 
-const { vectorStore } = require('../../src/lib/vector-store') as typeof import('../../src/lib/vector-store')
-const { prisma } = require('../../src/lib/prisma') as typeof import('../../src/lib/prisma')
+// Import after mocks are set up
+// These need to be re-established in beforeEach due to resetModules: true
+const getModules = () => {
+  const vectorStoreModule = require('../../src/lib/vector-store') as typeof import('../../src/lib/vector-store')
+  const prismaModule = require('../../src/lib/prisma') as typeof import('../../src/lib/prisma')
+  return {
+    vectorStore: vectorStoreModule.vectorStore,
+    prisma: prismaModule.prisma
+  }
+}
 
 describe('Vector Search and RAG Integration (Mocked)', () => {
   let testWorkspace: any
   let testFile: any
   let testUser: any
   let testUserId: number
+  let vectorStore: any
+  let prisma: any
+
+  beforeEach(() => {
+    // Re-require mocked modules after resetModules clears the cache
+    const modules = getModules()
+    vectorStore = modules.vectorStore
+    prisma = modules.prisma
+  })
 
   beforeAll(async () => {
     // Create test workspace and file for RAG testing (using mocked prisma)
+    // Get modules for initial setup
+    const modules = getModules()
+    prisma = modules.prisma
+
     try {
       testUser = await prisma.user.create({
         data: {
@@ -643,6 +664,16 @@ export function LoginComponent() {
 
 // Test to validate that mocks are working correctly
 describe('Vector Search Test Quality Validation', () => {
+  let vectorStore: any
+  let prisma: any
+
+  beforeEach(() => {
+    // Re-require mocked modules after resetModules clears the cache
+    const modules = getModules()
+    vectorStore = modules.vectorStore
+    prisma = modules.prisma
+  })
+
   test('should verify mocks are properly configured', () => {
     expect(jest.isMockFunction(vectorStore.search)).toBe(true)
     expect(jest.isMockFunction(vectorStore.getContext)).toBe(true)
