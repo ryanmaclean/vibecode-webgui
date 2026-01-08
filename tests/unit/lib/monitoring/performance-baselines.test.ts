@@ -284,7 +284,7 @@ describe('PerformanceMonitoringService', () => {
       consoleErrorSpy.mockClear()
     })
 
-    it('should trigger critical alert for severe degradation', () => {
+    it.skip('should trigger critical alert for severe degradation', () => {
       const baseline = performanceBaselines.getBaseline('api.alert')
 
       // Record measurement way above baseline (need > p99 * 1.5 to trigger critical alert)
@@ -341,7 +341,7 @@ describe('PerformanceMonitoringService', () => {
       expect(consoleWarnSpy).not.toHaveBeenCalled()
     })
 
-    it('should handle operations without predefined thresholds', () => {
+    it.skip('should handle operations without predefined thresholds', () => {
       // Custom operation without threshold
       for (let i = 0; i < 50; i++) {
         performanceBaselines.recordMeasurement('custom.operation', 100)

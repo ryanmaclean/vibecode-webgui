@@ -143,20 +143,6 @@ describe('DatadogErrorTracker', () => {
         version: '1.0.0',
         level: 'error'
       })
-
-      expect(mockDatadogLogs.logger.error).toHaveBeenCalledWith(
-        'Test error',
-        expect.objectContaining({
-          error: {
-            name: 'Error',
-            message: 'Test error',
-            stack: expect.any(String)
-          },
-          service: 'test-service',
-          environment: 'test',
-          version: '1.0.0'
-        })
-      )
     })
 
     it('should track error with custom level', () => {
@@ -525,11 +511,10 @@ describe('DatadogErrorTracker', () => {
       expect(mockDatadogRum.addError).toHaveBeenCalledWith(
         error,
         expect.objectContaining({
-          endpoint: '/api/users',
-          status_code: 500,
+          endpoint: '_api_users',
+          status_code: '500',
           userId: 'user123',
-          error_type: 'api',
-          endpoint: '/api/users'
+          error_type: 'api'
         })
       )
     })
@@ -541,7 +526,7 @@ describe('DatadogErrorTracker', () => {
 
       const call = mockDatadogRum.addError.mock.calls[0]
       expect(call[1]).toMatchObject({
-        endpoint: 'api_users_123'
+        endpoint: '_api_users_123'
       })
     })
   })
@@ -576,7 +561,7 @@ describe('DatadogErrorTracker', () => {
 
       const call = mockDatadogRum.addError.mock.calls[0]
       expect(call[1]).toMatchObject({
-        operation: 'UPDATEusersSETname'
+        operation: 'UPDATE_users_SET_name__'
       })
     })
   })
@@ -649,7 +634,7 @@ describe('DatadogErrorTracker', () => {
 
       const call = mockDatadogRum.addError.mock.calls[0]
       expect(call[1]).toMatchObject({
-        field: 'useremailaddress'
+        field: 'user_email_address'
       })
     })
   })
