@@ -19,13 +19,12 @@ let mockIdCounter = 1;
 
 // Create standard CRUD operations for a model
 const createModelMock = () => ({
-  findUnique: jest.fn(),
-  findUniqueOrThrow: jest.fn(),
-  findFirst: jest.fn(),
-  findFirstOrThrow: jest.fn(),
-  findMany: jest.fn(() => Promise.resolve([])),
-  create: jest.fn((args) => {
-    // Return the data with an auto-generated ID
+  findUnique: jest.fn().mockResolvedValue(null),
+  findUniqueOrThrow: jest.fn().mockRejectedValue(new Error('Record not found')),
+  findFirst: jest.fn().mockResolvedValue(null),
+  findFirstOrThrow: jest.fn().mockRejectedValue(new Error('Record not found')),
+  findMany: jest.fn().mockResolvedValue([]),
+  create: jest.fn().mockImplementation(async (args: any) => {
     const id = mockIdCounter++;
     const created = {
       id,
@@ -43,23 +42,36 @@ const createModelMock = () => ({
       });
     }
 
-    return Promise.resolve(created);
+    return created;
   }),
-  createMany: jest.fn(),
-  update: jest.fn((args) => {
-    // Return the updated data
-    return Promise.resolve({
+  createMany: jest.fn().mockResolvedValue({ count: 0 }),
+  update: jest.fn().mockImplementation(async (args: any) => {
+    return {
+      id: 1,
       ...args.data,
       updated_at: new Date(),
-    });
+    };
   }),
-  updateMany: jest.fn(),
-  upsert: jest.fn(),
-  delete: jest.fn(),
-  deleteMany: jest.fn(() => Promise.resolve({ count: 0 })),
-  count: jest.fn(() => Promise.resolve(0)),
-  aggregate: jest.fn(),
-  groupBy: jest.fn(),
+  updateMany: jest.fn().mockResolvedValue({ count: 0 }),
+  upsert: jest.fn().mockImplementation(async (args: any) => {
+    const id = mockIdCounter++;
+    return {
+      id,
+      ...args.create,
+      created_at: new Date(),
+      updated_at: new Date(),
+    };
+  }),
+  delete: jest.fn().mockImplementation(async (args: any) => {
+    return {
+      id: args.where.id || 1,
+      deleted_at: new Date(),
+    };
+  }),
+  deleteMany: jest.fn().mockResolvedValue({ count: 0 }),
+  count: jest.fn().mockResolvedValue(0),
+  aggregate: jest.fn().mockResolvedValue({ _count: 0, _sum: {}, _avg: {}, _min: {}, _max: {} }),
+  groupBy: jest.fn().mockResolvedValue([]),
 })
 
 // In-memory storage for raw SQL operations
@@ -82,6 +94,16 @@ const usersStore: Array<{
   name: string | null
 }> = []
 
+const workspacesStore: Array<{
+  id: number
+  name: string
+  user_id: number
+  workspace_id: string
+  status: string
+  created_at: Date
+  updated_at: Date
+}> = []
+
 // In-memory storage for experiments
 const experimentsStore: Array<any> = []
 const experimentAssignmentsStore: Array<any> = []
@@ -90,9 +112,9 @@ const experimentMetricsStore: Array<any> = []
 // Create a mock PrismaClient instance
 const createPrismaClientMock = () => ({
   // Core Prisma methods
-  $connect: jest.fn(() => Promise.resolve()),
-  $disconnect: jest.fn(() => Promise.resolve()),
-  $executeRaw: jest.fn((query, ...params) => {
+  $connect: jest.fn().mockResolvedValue(undefined),
+  $disconnect: jest.fn().mockResolvedValue(undefined),
+  $executeRaw: jest.fn().mockImplementation(async (query, ...params) => {
     // Handle tagged template literal - query is an array of string parts
     // Filter out empty strings and join to form the full query
     const queryStr = Array.isArray(query)
@@ -182,10 +204,10 @@ const createPrismaClientMock = () => ({
       return Promise.resolve(initialLength - workspaceMembersStore.length)
     }
 
-    return Promise.resolve(0)
+    return 0;
   }),
-  $executeRawUnsafe: jest.fn(() => Promise.resolve(0)),
-  $queryRaw: jest.fn((query, ...params) => {
+  $executeRawUnsafe: jest.fn().mockResolvedValue(0),
+  $queryRaw: jest.fn().mockImplementation(async (query, ...params) => {
     // Handle tagged template literal - query is an array of string parts
     // Filter out empty strings and join to form the full query
     const queryStr = Array.isArray(query)
@@ -233,23 +255,23 @@ const createPrismaClientMock = () => ({
       )
 
       if (member) {
-        return Promise.resolve([{
+        return [{
           role: member.role,
           permissions: member.permissions,
           revoked_at: member.revoked_at
-        }])
+        }];
       }
-      return Promise.resolve([])
+      return [];
     }
 
-    return Promise.resolve([])
+    return [];
   }),
-  $queryRawUnsafe: jest.fn(() => Promise.resolve([])),
-  $transaction: jest.fn((callback) => {
+  $queryRawUnsafe: jest.fn().mockResolvedValue([]),
+  $transaction: jest.fn().mockImplementation(async (callback: any) => {
     if (typeof callback === 'function') {
-      return Promise.resolve(callback(createPrismaClientMock()))
+      return callback(createPrismaClientMock());
     }
-    return Promise.resolve([])
+    return [];
   }),
   $use: jest.fn(),
   $on: jest.fn(),
@@ -264,7 +286,22 @@ const createPrismaClientMock = () => ({
   // Workspace model (with special handling for workspace_members)
   workspace: {
     ...createModelMock(),
-    create: jest.fn((args) => {
+    findUnique: jest.fn().mockImplementation(async (args: any) => {
+      const workspace = workspacesStore.find(w =>
+        (args.where.id && w.id === args.where.id) ||
+        (args.where.workspace_id && w.workspace_id === args.where.workspace_id)
+      );
+      return workspace || null;
+    }),
+    delete: jest.fn().mockImplementation(async (args: any) => {
+      const index = workspacesStore.findIndex(w => w.id === args.where.id);
+      if (index >= 0) {
+        const deleted = workspacesStore.splice(index, 1)[0];
+        return deleted;
+      }
+      throw new Error('Workspace not found');
+    }),
+    create: jest.fn().mockImplementation(async (args: any) => {
       const id = mockIdCounter++;
       const created = {
         id,
@@ -272,6 +309,9 @@ const createPrismaClientMock = () => ({
         created_at: new Date(),
         updated_at: new Date(),
       };
+
+      // Store workspace in memory
+      workspacesStore.push(created);
 
       // Automatically add workspace owner to workspace_members
       if (args.data.user_id) {
@@ -289,7 +329,7 @@ const createPrismaClientMock = () => ({
         });
       }
 
-      return Promise.resolve(created);
+      return created;
     })
   },
 
@@ -759,6 +799,7 @@ export const resetPrismaMock = () => {
   // Clear in-memory stores
   workspaceMembersStore.splice(0, workspaceMembersStore.length);
   usersStore.splice(0, usersStore.length);
+  workspacesStore.splice(0, workspacesStore.length);
   experimentsStore.splice(0, experimentsStore.length);
   experimentAssignmentsStore.splice(0, experimentAssignmentsStore.length);
   experimentMetricsStore.splice(0, experimentMetricsStore.length);
