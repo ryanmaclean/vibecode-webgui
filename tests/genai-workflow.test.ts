@@ -1,20 +1,71 @@
-import { PrismaClient } from '@prisma/client';
-import { EmbeddingServiceFactory } from '../src/lib/ai/embeddingServiceFactory';
-import { VectorService } from '../src/lib/db/vector';
 import * as dotenv from 'dotenv';
-
-// Mock Prisma Client
-jest.mock('@prisma/client');
 
 dotenv.config();
 
-// Mock embedding service factory
-jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
-  const mockEmbeddingService = {
-    storeDocument: jest.fn().mockImplementation(async (id, content, metadata) => {
+// Mock Prisma Client
+const mockPrismaClient = {
+  $connect: jest.fn().mockResolvedValue(undefined),
+  $disconnect: jest.fn().mockResolvedValue(undefined)
+};
+
+jest.mock('@prisma/client', () => ({
+  PrismaClient: jest.fn().mockImplementation(() => mockPrismaClient)
+}));
+
+// Create the mock object that will be returned
+const mockStoreDocument = jest.fn();
+const mockFindSimilarDocuments = jest.fn();
+const mockRagQuery = jest.fn();
+
+const mockEmbeddingService = {
+  storeDocument: mockStoreDocument,
+  findSimilarDocuments: mockFindSimilarDocuments,
+  ragQuery: mockRagQuery
+};
+
+jest.mock('../src/lib/ai/embeddingServiceFactory', () => ({
+  EmbeddingServiceFactory: jest.fn().mockImplementation(() => ({
+    createEmbeddingServiceFromEnv: jest.fn(() => mockEmbeddingService)
+  }))
+}));
+
+// Mock VectorService for database operations with proper async returns
+const mockVectorServiceMethods = {
+  getEmbeddingStats: jest.fn().mockImplementation(async () => {
+    return Promise.resolve([
+      {
+        hour_bucket: new Date(),
+        total_embeddings: 10
+      }
+    ]);
+  }),
+  cleanupOldEmbeddings: jest.fn().mockImplementation(async (days) => {
+    return Promise.resolve({ deletedCount: 5 });
+  })
+};
+
+jest.mock('../src/lib/db/vector', () => ({
+  VectorService: jest.fn().mockImplementation(() => mockVectorServiceMethods)
+}));
+
+// Import after mocks are set up
+import { PrismaClient } from '@prisma/client';
+import { EmbeddingServiceFactory } from '../src/lib/ai/embeddingServiceFactory';
+import { VectorService } from '../src/lib/db/vector';
+
+describe('GenAI Workflow with PostgreSQL', () => {
+  let prisma: PrismaClient;
+  let embeddingService: any;
+  let vectorService: VectorService;
+  let factory: EmbeddingServiceFactory;
+
+  beforeAll(async () => {
+    // Configure mock implementations
+    mockStoreDocument.mockImplementation(async (id, content, metadata) => {
       return { id, content, metadata };
-    }),
-    findSimilarDocuments: jest.fn().mockImplementation(async (query, options) => {
+    });
+
+    mockFindSimilarDocuments.mockImplementation(async (query, options) => {
       return [
         {
           document_id: 'test-doc-1',
@@ -23,8 +74,9 @@ jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
           metadata: { test: true }
         }
       ];
-    }),
-    ragQuery: jest.fn().mockImplementation(async (query, options) => {
+    });
+
+    mockRagQuery.mockImplementation(async (query, options) => {
       return {
         query,
         documents: [
@@ -36,40 +88,8 @@ jest.mock('../src/lib/ai/embeddingServiceFactory', () => {
           }
         ]
       };
-    })
-  };
+    });
 
-  return {
-    EmbeddingServiceFactory: jest.fn().mockImplementation((prisma) => ({
-      createEmbeddingServiceFromEnv: jest.fn().mockReturnValue(mockEmbeddingService)
-    }))
-  };
-});
-
-// Mock VectorService for database operations
-jest.mock('../src/lib/db/vector', () => {
-  const mockVectorService = {
-    getEmbeddingStats: jest.fn().mockResolvedValue([
-      {
-        hour_bucket: new Date(),
-        total_embeddings: 10
-      }
-    ]),
-    cleanupOldEmbeddings: jest.fn().mockResolvedValue({ deletedCount: 5 })
-  };
-
-  return {
-    VectorService: jest.fn().mockImplementation(() => mockVectorService)
-  };
-});
-
-describe('GenAI Workflow with PostgreSQL', () => {
-  let prisma: PrismaClient;
-  let embeddingService: any;
-  let vectorService: VectorService;
-  let factory: EmbeddingServiceFactory;
-
-  beforeAll(async () => {
     prisma = new PrismaClient();
     vectorService = new VectorService(prisma);
     factory = new EmbeddingServiceFactory(prisma);

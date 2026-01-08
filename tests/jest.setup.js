@@ -65,6 +65,10 @@ jest.mock('next/link', () => ({
 process.env.NODE_ENV = 'test';
 process.env.NEXTAUTH_SECRET = 'test-secret';
 process.env.NEXTAUTH_URL = 'http://localhost:3000';
+// AI Gateway environment variables
+process.env.OPENROUTER_API_KEY = 'test-api-key';
+process.env.JWT_SECRET = 'test-jwt-secret';
+process.env.REDIS_URL = 'redis://localhost:6379';
 
 // Suppress console errors in tests unless explicitly needed
 const originalError = console.error;
@@ -135,5 +139,32 @@ jest.mock('@/instrument', () => ({
         log: jest.fn(),
       })),
     })),
+  },
+}));
+
+// Mock OpenTelemetry API globally for ai-gateway tests
+jest.mock('@opentelemetry/api', () => ({
+  trace: {
+    getTracer: jest.fn(() => ({
+      startSpan: jest.fn(() => ({
+        end: jest.fn(),
+        setAttribute: jest.fn(),
+        setAttributes: jest.fn(),
+        addEvent: jest.fn(),
+        setStatus: jest.fn(),
+        updateName: jest.fn(),
+        isRecording: jest.fn(() => false),
+      })),
+    })),
+    getActiveSpan: jest.fn(),
+    setSpan: jest.fn(),
+  },
+  context: {
+    active: jest.fn(() => ({})),
+    with: jest.fn((ctx, fn) => fn()),
+  },
+  SpanStatusCode: {
+    OK: 0,
+    ERROR: 1,
   },
 }));

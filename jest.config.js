@@ -79,6 +79,7 @@ const config = {
     '/__mocks__/',
     '<rootDir>/config/alternatives/',
     '<rootDir>/examples/',
+    '<rootDir>/services/ai-gateway/', // AI Gateway has its own jest config - run with 'cd services/ai-gateway && npm test'
     ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
 

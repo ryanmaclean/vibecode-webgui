@@ -2,11 +2,7 @@
  * @jest-environment node
  */
 
-import request from 'supertest';
-import express, { Express } from 'express';
-import { metricsRoutes } from '../routes/metrics-routes';
-
-// Mock dependencies
+// Mock dependencies BEFORE any imports
 jest.mock('../utils/logger', () => ({
   logger: {
     info: jest.fn(),
@@ -41,7 +37,6 @@ jest.mock('../services/redis-service', () => {
   return {
     RedisService: jest.fn().mockImplementation(() => ({
       hGetAll: jest.fn().mockImplementation((key: string) => {
-        // Simulate different data based on date
         return Promise.resolve({
           requests: '100',
           tokens: '50000',
@@ -51,6 +46,10 @@ jest.mock('../services/redis-service', () => {
     }))
   };
 });
+
+import request from 'supertest';
+import express, { Express } from 'express';
+import { metricsRoutes } from '../routes/metrics-routes';
 
 describe('Metrics Routes Integration Tests', () => {
   let app: Express;

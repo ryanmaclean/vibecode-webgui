@@ -14,6 +14,7 @@ module.exports = {
       { tsconfig: '<rootDir>/tsconfig.json', isolatedModules: true }
     ]
   },
+  setupFilesAfterEnv: ['<rootDir>/jest.setup.js'],
   clearMocks: true,
   restoreMocks: true,
 };
