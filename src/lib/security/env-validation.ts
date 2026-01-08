@@ -14,7 +14,10 @@ const envSchema = z.object({
 
   // Database
   DATABASE_URL: z.string().url(),
-  POSTGRES_PASSWORD: z.string().min(16, 'Database password must be at least 16 characters'),
+  POSTGRES_PASSWORD: z.string()
+    .min(16, 'Database password must be at least 16 characters')
+    .refine(val => val !== 'password', 'POSTGRES_PASSWORD cannot be the default value "password"')
+    .refine(val => val !== 'postgres', 'POSTGRES_PASSWORD cannot be the default value "postgres"'),
 
   // Redis
   REDIS_URL: z.string().url().optional(),
@@ -25,10 +28,11 @@ const envSchema = z.object({
   DATADOG_API_KEY: z.string().optional(),
   DATADOG_APP_KEY: z.string().optional(),
 
-  // Security  
+  // Security
   JWT_SECRET: z.string()
     .min(32, 'JWT_SECRET must be at least 32 characters')
-    .refine(val => val !== 'dev-secret-key', 'JWT_SECRET cannot be the default value'),
+    .refine(val => val !== 'dev-secret-key', 'JWT_SECRET cannot be the default value')
+    .refine(val => val !== 'your-secret-here', 'JWT_SECRET cannot be the default value'),
 
   // Optional Production Settings
   DD_API_KEY: z.string().optional(),
@@ -67,15 +71,14 @@ export function checkInsecureDefaults(): string[] {
 
   if (process.env.NODE_ENV === 'production') {
     // Check for default secrets
-    const insecureDefaults = {
-      'JWT_SECRET': 'dev-secret-key',
-      'NEXTAUTH_SECRET': 'dev-secret',
-      'POSTGRES_PASSWORD': 'password',
-      'POSTGRES_PASSWORD': 'postgres',
+    const insecureDefaults: Record<string, string[]> = {
+      'JWT_SECRET': ['dev-secret-key', 'your-secret-here'],
+      'NEXTAUTH_SECRET': ['dev-secret'],
+      'POSTGRES_PASSWORD': ['password', 'postgres'],
     };
 
-    Object.entries(insecureDefaults).forEach(([key, defaultValue]) => {
-      if (process.env[key] === defaultValue) {
+    Object.entries(insecureDefaults).forEach(([key, defaultValues]) => {
+      if (process.env[key] && defaultValues.includes(process.env[key])) {
         warnings.push(`${key} is set to an insecure default value`);
       }
     });
