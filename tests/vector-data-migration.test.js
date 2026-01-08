@@ -105,6 +105,9 @@ describe('Vector Data Migration Utility', () => {
   let consoleSpy;
 
   beforeEach(async () => {
+    // Clear module cache to ensure fresh module state between tests
+    jest.resetModules();
+
     // NOTE: jest.config has clearMocks/restoreMocks/resetMocks/resetModules all set to true,
     // which clears mock implementations between tests. We need to re-establish the Pool mock
     // BEFORE requiring the migration module so it picks up the correct mock.
@@ -203,24 +206,36 @@ describe('Vector Data Migration Utility', () => {
     test('should add vector column if table exists but column does not', async () => {
       // Mock table check to return true (table exists) but column check to return false
       const mockQueryImpl = jest.fn().mockImplementation((query, params) => {
-        if (query.includes('EXISTS (')) {
-          // First call (table check) returns true, second call (column check) returns false
-          if (query.includes('column_name')) {
-            return Promise.resolve({ rows: [{ exists: false }] });
-          } else {
-            return Promise.resolve({ rows: [{ exists: true }] });
-          }
+        // CREATE EXTENSION query
+        if (query.includes('CREATE EXTENSION')) {
+          return Promise.resolve({ rows: [] });
         }
+
+        // Table existence check (line 147-152 in migration script)
+        if (query.includes('EXISTS (') && query.includes('information_schema.tables')) {
+          return Promise.resolve({ rows: [{ exists: true }] });
+        }
+
+        // Column existence check (line 216-221 in migration script)
+        if (query.includes('EXISTS (') && query.includes('information_schema.columns') && query.includes('column_name')) {
+          return Promise.resolve({ rows: [{ exists: false }] });
+        }
+
+        // ALTER TABLE ADD COLUMN query
+        if (query.includes('ALTER TABLE') && query.includes('ADD COLUMN')) {
+          return Promise.resolve({ rows: [] });
+        }
+
         return Promise.resolve({ rows: [] });
       });
-      
+
       // Replace the mock implementation
       const client = await mockPool.connect();
       client.query.mockImplementation(mockQueryImpl);
-      
+
       // Call the function
       const result = await migrateVectorData.createTargetTable();
-      
+
       // Verify column was added
       expect(result).toBe(true);
       expect(client.query).toHaveBeenCalledWith(
@@ -242,23 +257,34 @@ describe('Vector Data Migration Utility', () => {
     test('should process data in batches', async () => {
       // Set up totalRows
       migrateVectorData.migrationState.totalRows = 250;
-      
+
       // Mock query responses for batched data
       const mockQueryImpl = jest.fn().mockImplementation((query, params) => {
-        if (query.includes('SELECT *, embedding as source_embedding')) {
+        // BEGIN transaction
+        if (query === 'BEGIN') {
+          return Promise.resolve({ rows: [] });
+        }
+
+        // COMMIT transaction
+        if (query === 'COMMIT') {
+          return Promise.resolve({ rows: [] });
+        }
+
+        // SELECT query for batched data (line 323-329 in migration script)
+        if (query.includes('SELECT *') && query.includes('as source_embedding')) {
           // Create mock rows for each batch
           const offset = params[1];
           const batchSize = params[0];
-          
+
           // If we've processed all rows, return empty array
           if (offset >= 250) {
             return Promise.resolve({ rows: [] });
           }
-          
+
           // Create a batch of mock data
           const rows = [];
           const rowsToCreate = Math.min(batchSize, 250 - offset);
-          
+
           for (let i = 0; i < rowsToCreate; i++) {
             rows.push({
               id: offset + i + 1,
@@ -267,29 +293,34 @@ describe('Vector Data Migration Utility', () => {
               source_embedding: [0.1, 0.2, 0.3] // Simple mock embedding
             });
           }
-          
+
           return Promise.resolve({ rows });
         }
-        
+
+        // INSERT query for each row (line 356-360 in migration script)
+        if (query.includes('INSERT INTO')) {
+          return Promise.resolve({ rows: [] });
+        }
+
         return Promise.resolve({ rows: [] });
       });
-      
+
       // Replace the mock implementation
       const client = await mockPool.connect();
       client.query.mockImplementation(mockQueryImpl);
-      
+
       // Call the function
       const result = await migrateVectorData.migrateData();
-      
+
       // Verify batches were processed
       expect(result).toBe(true);
       expect(migrateVectorData.migrationState.processedRows).toBe(250);
       expect(migrateVectorData.migrationState.failedRows).toBe(0);
-      
+
       // Should have called BEGIN and COMMIT for transaction
       expect(client.query).toHaveBeenCalledWith('BEGIN');
       expect(client.query).toHaveBeenCalledWith('COMMIT');
-      
+
       // Verify INSERT was called for each row
       expect(client.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO'),
@@ -300,10 +331,23 @@ describe('Vector Data Migration Utility', () => {
     test('should handle errors during migration', async () => {
       // Set up totalRows
       migrateVectorData.migrationState.totalRows = 100;
-      
+
+      let insertCallCount = 0;
+
       // Mock query to fail on some inserts
       const mockQueryImpl = jest.fn().mockImplementation((query, params) => {
-        if (query.includes('SELECT *, embedding as source_embedding')) {
+        // BEGIN transaction
+        if (query === 'BEGIN') {
+          return Promise.resolve({ rows: [] });
+        }
+
+        // ROLLBACK transaction
+        if (query === 'ROLLBACK') {
+          return Promise.resolve({ rows: [] });
+        }
+
+        // SELECT query for batched data
+        if (query.includes('SELECT *') && query.includes('as source_embedding')) {
           return Promise.resolve({
             rows: [
               { id: 1, document_id: 'doc-1', content: 'Content 1', source_embedding: [0.1, 0.2, 0.3] },
@@ -311,26 +355,31 @@ describe('Vector Data Migration Utility', () => {
             ]
           });
         }
-        
-        if (query.includes('INSERT INTO') && params[0] === 2) {
-          return Promise.reject(new Error('Simulated insert error'));
+
+        // INSERT query - fail on second insert to trigger error handling
+        if (query.includes('INSERT INTO')) {
+          insertCallCount++;
+          if (insertCallCount === 2) {
+            return Promise.reject(new Error('Simulated insert error'));
+          }
+          return Promise.resolve({ rows: [] });
         }
-        
+
         return Promise.resolve({ rows: [] });
       });
-      
+
       // Replace the mock implementation
       const client = await mockPool.connect();
       client.query.mockImplementation(mockQueryImpl);
-      
+
       // Call the function
       const result = await migrateVectorData.migrateData();
-      
+
       // Verify error handling
       expect(result).toBe(false);
       expect(migrateVectorData.migrationState.failedRows).toBeGreaterThan(0);
       expect(migrateVectorData.migrationState.rollbackNeeded).toBe(true);
-      
+
       // Should rollback on errors
       expect(client.query).toHaveBeenCalledWith('ROLLBACK');
     });
