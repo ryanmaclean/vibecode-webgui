@@ -18,6 +18,8 @@ import { mockPrismaClient } from '../../../__mocks__/@prisma/client'
 
 console.log('[MOCK @/lib/prisma] Loading mock, mockPrismaClient.$queryRaw:', typeof mockPrismaClient.$queryRaw);
 console.log('[MOCK @/lib/prisma] Is it a jest mock?', jest.isMockFunction(mockPrismaClient.$queryRaw));
+console.log('[MOCK @/lib/prisma] mockPrismaClient.user:', mockPrismaClient.user);
+console.log('[MOCK @/lib/prisma] mockPrismaClient.user.create:', mockPrismaClient.user.create);
 
 // Export the mock prisma singleton
 export const prisma = mockPrismaClient
