@@ -623,6 +623,10 @@ describe('Health Monitoring Module', () => {
       // Reset mock call history
       mockTracer.init.mockClear()
 
+      // CRITICAL: Reset modules first to clear any previous module cache
+      // This ensures jest.isolateModules() works properly in full suite
+      jest.resetModules()
+
       // Reset modules to trigger initialization
       loadHealthMonitoring()
 
