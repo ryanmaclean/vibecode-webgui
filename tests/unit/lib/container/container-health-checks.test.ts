@@ -16,9 +16,6 @@ const mockSpawn = spawn as jest.MockedFunction<typeof spawn>
 // Mock fetch globally
 global.fetch = jest.fn()
 
-// Use fake timers
-jest.useFakeTimers()
-
 describe('Container Health Checks', () => {
   describe('Container Status Monitoring', () => {
     let runtime: AppleContainerRuntimeV2
@@ -206,7 +203,6 @@ describe('Container Health Checks', () => {
 
     beforeEach(() => {
       jest.clearAllMocks()
-      jest.clearAllTimers()
       bridge = new VMOrchestrationBridge({
         mode: 'http',
         endpoint: 'http://localhost:8765',
@@ -223,9 +219,12 @@ describe('Container Health Checks', () => {
       const healthy = await bridge.checkHealth()
 
       expect(healthy).toBe(true)
-      expect(global.fetch).toHaveBeenCalledWith('http://localhost:8765/health', {
-        signal: expect.any(AbortSignal),
-      })
+      expect(global.fetch).toHaveBeenCalledWith(
+        'http://localhost:8765/health',
+        expect.objectContaining({
+          signal: expect.any(Object),
+        })
+      )
     })
 
     it('should detect unhealthy orchestration service', async () => {
@@ -245,8 +244,17 @@ describe('Container Health Checks', () => {
     }, 10000)
 
     it('should emit health:degraded event on failed check', async () => {
+      bridge.destroy()
+      jest.useFakeTimers()
+
+      // Create bridge after fake timers are enabled
+      const testBridge = new VMOrchestrationBridge({
+        mode: 'http',
+        endpoint: 'http://localhost:8765',
+      })
+
       const eventSpy = jest.fn()
-      bridge.on('health:degraded', eventSpy)
+      testBridge.on('health:degraded', eventSpy)
 
       mockFetch({ ok: false })
 
@@ -254,17 +262,32 @@ describe('Container Health Checks', () => {
       await jest.advanceTimersByTimeAsync(30000)
 
       expect(eventSpy).toHaveBeenCalled()
+
+      testBridge.destroy()
+      jest.useRealTimers()
     })
 
     it('should not emit event on successful check', async () => {
+      bridge.destroy()
+      jest.useFakeTimers()
+
+      // Create bridge after fake timers are enabled
+      const testBridge = new VMOrchestrationBridge({
+        mode: 'http',
+        endpoint: 'http://localhost:8765',
+      })
+
       const eventSpy = jest.fn()
-      bridge.on('health:degraded', eventSpy)
+      testBridge.on('health:degraded', eventSpy)
 
       mockFetch({ ok: true })
 
       await jest.advanceTimersByTimeAsync(30000)
 
       expect(eventSpy).not.toHaveBeenCalled()
+
+      testBridge.destroy()
+      jest.useRealTimers()
     })
 
     it('should retrieve VM metrics for health analysis', async () => {
@@ -415,8 +438,6 @@ describe('Container Health Checks', () => {
     })
 
     it('should restart unhealthy container', async () => {
-      jest.useRealTimers()
-
       // Detect unhealthy container
       mockChildProcess({
         stdout: JSON.stringify({
@@ -455,13 +476,9 @@ describe('Container Health Checks', () => {
 
       const afterInfo = await runtime.inspect('unhealthy-123-new')
       expect(afterInfo?.state).toBe('running')
-
-      jest.useFakeTimers()
     }, 10000)
 
     it('should handle container that fails health check repeatedly', async () => {
-      jest.useRealTimers()
-
       let attempts = 0
       const maxAttempts = 3
 
@@ -489,8 +506,6 @@ describe('Container Health Checks', () => {
       }
 
       expect(attempts).toBe(maxAttempts) // All attempts failed
-
-      jest.useFakeTimers()
     }, 10000)
 
     it('should recover from temporary network issues', async () => {
@@ -511,19 +526,13 @@ describe('Container Health Checks', () => {
   })
 
   describe('Proactive Health Monitoring', () => {
-    let bridge: VMOrchestrationBridge
-
-    beforeEach(() => {
-      jest.clearAllMocks()
-      jest.clearAllTimers()
-      bridge = new VMOrchestrationBridge({ endpoint: 'http://localhost:8765' })
-    })
-
-    afterEach(() => {
-      bridge.destroy()
-    })
-
     it('should run periodic health checks', async () => {
+      jest.clearAllMocks()
+      jest.useFakeTimers()
+
+      // Create bridge after fake timers are enabled
+      const bridge = new VMOrchestrationBridge({ endpoint: 'http://localhost:8765' })
+
       mockFetch({ ok: true })
 
       // Fast-forward through multiple check intervals
@@ -531,9 +540,18 @@ describe('Container Health Checks', () => {
 
       // Health check should have been called (at least once)
       expect(global.fetch).toHaveBeenCalled()
+
+      bridge.destroy()
+      jest.useRealTimers()
     })
 
     it('should detect degradation over time', async () => {
+      jest.clearAllMocks()
+      jest.useFakeTimers()
+
+      // Create bridge after fake timers are enabled
+      const bridge = new VMOrchestrationBridge({ endpoint: 'http://localhost:8765' })
+
       const eventSpy = jest.fn()
       bridge.on('health:degraded', eventSpy)
 
@@ -548,6 +566,9 @@ describe('Container Health Checks', () => {
       await jest.advanceTimersByTimeAsync(30000)
 
       expect(eventSpy).toHaveBeenCalled()
+
+      bridge.destroy()
+      jest.useRealTimers()
     })
   })
 })
