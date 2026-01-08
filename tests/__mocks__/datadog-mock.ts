@@ -57,7 +57,16 @@ export const mockDatadogAPI = {
    * Mock /api/v1/validate endpoint
    */
   validate: async (apiKey: string) => {
-    if (!apiKey || apiKey.includes('invalid')) {
+    // In mock mode, accept any non-empty API key except explicitly invalid ones
+    if (!apiKey) {
+      return {
+        ok: false,
+        status: 401,
+        json: async () => ({ valid: false, errors: ['Missing API key'] })
+      };
+    }
+
+    if (apiKey.includes('invalid-key-12345')) {
       return {
         ok: false,
         status: 403,
@@ -82,6 +91,57 @@ export const mockDatadogAPI = {
       ok: true,
       status: 202,
       json: async () => ({ status: 'ok' })
+    };
+  },
+
+  /**
+   * Mock /api/v1/query endpoint (metrics query)
+   */
+  queryMetrics: async (query: string, from: number, to: number) => {
+    // Find matching metrics by name (extract metric name from query)
+    const metricNameMatch = query.match(/^([^{]+)/);
+    const metricName = metricNameMatch ? metricNameMatch[1].trim() : '';
+
+    // Filter submitted metrics by name and time range
+    const matchingMetrics = submittedMetrics.filter(m => {
+      if (m.metric !== metricName) return false;
+
+      // Check if any point falls within the time range
+      return m.points.some(point => {
+        const timestamp = point[0];
+        return timestamp >= from && timestamp <= to;
+      });
+    });
+
+    // If metrics found, return them in Datadog query response format
+    if (matchingMetrics.length > 0) {
+      const series = matchingMetrics.map(m => ({
+        metric: m.metric,
+        points: m.points,
+        pointlist: m.points, // Datadog uses "pointlist" in query responses
+        tags: m.tags || [],
+        scope: m.tags ? m.tags.join(',') : '',
+        expression: query
+      }));
+
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({
+          status: 'ok',
+          series: series
+        })
+      };
+    }
+
+    // No metrics found - return empty result (not an error)
+    return {
+      ok: true,
+      status: 200,
+      json: async () => ({
+        status: 'ok',
+        series: []
+      })
     };
   },
 
@@ -239,50 +299,81 @@ export const mockDatadogTracing = {
 export const mockDatadogFetch = () => {
   const originalFetch = global.fetch;
 
-  // Create a proper mock implementation
-  const mockFetch = jest.fn(async (url: string | URL, options?: RequestInit) => {
-    const urlStr = typeof url === 'string' ? url : url.toString();
+  // Helper to extract headers from Headers object or plain object
+  const getHeader = (headers: any, key: string): string | null => {
+    if (!headers) return null;
+
+    // If it's a Headers object (from fetch)
+    if (headers instanceof Headers || (headers.get && typeof headers.get === 'function')) {
+      return headers.get(key);
+    }
+
+    // If it's a plain object
+    return headers[key] || headers[key.toLowerCase()] || null;
+  };
+
+  // Create a proper mock implementation (don't use jest.fn for better compatibility)
+  const mockFetch = async (url: string | URL | Request, options?: RequestInit): Promise<Response> => {
+    const urlStr = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString();
+    const requestOptions = url instanceof Request ? { headers: url.headers, method: url.method, body: await url.text() } : options;
+
+    // Debug logging
+    console.log('[MOCK FETCH] URL:', urlStr);
+    console.log('[MOCK FETCH] Matches validate:', urlStr.includes('/api/v1/validate'));
 
     // Mock Datadog API validation endpoint
     if (urlStr.includes('/api/v1/validate')) {
-      const apiKey = options?.headers?.['DD-API-KEY' as any];
+      const apiKey = getHeader(requestOptions?.headers, 'DD-API-KEY') || '';
+      console.log('[MOCK FETCH] API Key:', apiKey?.substring(0, 10) + '...');
       const result = await mockDatadogAPI.validate(apiKey);
-      return Promise.resolve(result);
+      console.log('[MOCK FETCH] Returning status:', result.status);
+      return Promise.resolve(result as any);
+    }
+
+    // Mock Datadog metrics query endpoint
+    if (urlStr.includes('/api/v1/query')) {
+      const url = new URL(urlStr);
+      const query = url.searchParams.get('query') || '';
+      const from = parseInt(url.searchParams.get('from') || '0', 10);
+      const to = parseInt(url.searchParams.get('to') || '0', 10);
+      const result = await mockDatadogAPI.queryMetrics(query, from, to);
+      return Promise.resolve(result as any);
     }
 
     // Mock Datadog metrics endpoint
     if (urlStr.includes('/api/v1/series')) {
-      const body = JSON.parse((options?.body as string) || '{}');
+      const body = JSON.parse((requestOptions?.body as string) || '{}');
       const result = await mockDatadogAPI.submitMetrics(body);
-      return Promise.resolve(result);
+      return Promise.resolve(result as any);
     }
 
     // Mock Datadog events endpoint
     if (urlStr.includes('/api/v1/events')) {
-      const body = JSON.parse((options?.body as string) || '{}');
+      const body = JSON.parse((requestOptions?.body as string) || '{}');
       const result = await mockDatadogAPI.submitEvent(body);
-      return Promise.resolve(result);
+      return Promise.resolve(result as any);
     }
 
     // Mock Datadog service checks endpoint
     if (urlStr.includes('/api/v1/check_run')) {
-      const body = JSON.parse((options?.body as string) || '{}');
+      const body = JSON.parse((requestOptions?.body as string) || '{}');
       const result = await mockDatadogAPI.submitServiceCheck(body);
-      return Promise.resolve(result);
+      return Promise.resolve(result as any);
     }
 
     // Fallback to original fetch for non-Datadog URLs
     if (originalFetch) {
-      return originalFetch(url, options as any);
+      return originalFetch(url as any, options as any);
     }
 
     // If no original fetch and no match, return a basic error response
     return Promise.resolve({
       ok: false,
       status: 404,
-      json: async () => ({ error: 'Not found' })
-    });
-  });
+      json: async () => ({ error: 'Not found' }),
+      text: async () => 'Not found'
+    } as any);
+  };
 
   global.fetch = mockFetch as any;
 

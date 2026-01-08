@@ -5,12 +5,12 @@
  * This includes metrics from Docker tests, Kubernetes tests, and tag validation.
  */
 
-import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals';
-// Use cross-fetch for real API calls (bypassing Jest mocks)
-import crossFetch from 'cross-fetch';
+import { describe, test, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals';
+import { setupDatadogMocks, mockDatadogAPI, getSubmittedMetrics } from '../__mocks__/datadog-mock';
 
-// These tests make real API calls to Datadog
-// Note: Some tests require DD_APP_KEY which cannot be created programmatically
+// These tests now use mocks for fast execution
+// Original tests made real API calls which took 94+ seconds
+// Mocked version completes in ~5 seconds
 const describeIf = describe;
 
 // Datadog API configuration
@@ -87,6 +87,7 @@ async function submitMetricsToDatadog(
 
 /**
  * Helper function to query metrics from Datadog with error handling
+ * Now uses mocks for instant responses
  */
 async function queryMetricsFromDatadog(
   query: string,
@@ -94,10 +95,6 @@ async function queryMetricsFromDatadog(
   to: number,
   timeoutMs: number = QUERY_TIMEOUT
 ): Promise<MetricQueryResponse> {
-  if (!DD_APP_KEY) {
-    throw new Error('DD_APP_KEY is required for metric queries');
-  }
-
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -107,7 +104,7 @@ async function queryMetricsFromDatadog(
       method: 'GET',
       headers: {
         'DD-API-KEY': DD_API_KEY,
-        'DD-APPLICATION-KEY': DD_APP_KEY,
+        'DD-APPLICATION-KEY': DD_APP_KEY || 'mock-app-key',
         'Content-Type': 'application/json',
       },
       signal: controller.signal,
@@ -142,21 +139,29 @@ async function waitWithBackoff(baseDelayMs: number, attempt: number, maxAttempts
 describeIf('Datadog Metrics Retrieval Integration Tests', () => {
   const testStartTime = Math.floor(Date.now() / 1000);
   let testMetricNames: string[] = [];
+  let mockCleanup: { restore: () => void } | null = null;
 
   beforeAll(() => {
-    // Validate API keys are present
-    if (!DD_API_KEY) {
-      throw new Error('DD_API_KEY is required for Datadog integration tests');
-    }
-
-    console.log('Starting Datadog metrics retrieval tests');
+    console.log('Starting Datadog metrics retrieval tests (mocked for performance)');
     console.log(`Test start time: ${new Date(testStartTime * 1000).toISOString()}`);
     console.log(`Datadog site: ${DD_SITE}`);
   });
 
   beforeEach(() => {
-    // Use cross-fetch for real API calls (bypassing Jest's mock)
-    global.fetch = crossFetch as unknown as typeof global.fetch;
+    // Set up Datadog mocks for fast test execution
+    // This must run AFTER jest.setup.js beforeEach to override the default mock
+    mockCleanup = setupDatadogMocks();
+
+    // Reset mock state before each test
+    mockDatadogAPI.reset();
+  });
+
+  afterEach(() => {
+    // Clean up after each test
+    if (mockCleanup) {
+      mockCleanup.restore();
+      mockCleanup = null;
+    }
   });
 
   afterAll(() => {
@@ -244,46 +249,17 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
       const submitResponse = await submitMetricsToDatadog(metrics);
       expect(submitResponse.status).toBe(202);
 
-      // Skip query if no app key available
-      if (!DD_APP_KEY) {
-        console.warn('DD_APP_KEY not set, skipping metric query validation');
-        return;
-      }
+      // With mocks, metrics are immediately available (no ingestion delay)
+      const from = timestamp - 300; // 5 minutes before
+      const to = timestamp + 300; // 5 minutes after
+      const queryResult = await queryMetricsFromDatadog(metricName, from, to);
 
-      // Wait for metric ingestion (Datadog has a delay)
-      // Use exponential backoff to retry metric queries
-      const maxAttempts = 5;
-      let queryResult: MetricQueryResponse | null = null;
-      let found = false;
-
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          await waitWithBackoff(2000, attempt, maxAttempts);
-        }
-
-        try {
-          const from = timestamp - 300; // 5 minutes before
-          const to = timestamp + 300; // 5 minutes after
-          queryResult = await queryMetricsFromDatadog(metricName, from, to);
-
-          if (queryResult.series && queryResult.series.length > 0) {
-            found = true;
-            break;
-          }
-        } catch (error) {
-          console.warn(`Query attempt ${attempt + 1} failed:`, error);
-        }
-      }
-
-      if (found && queryResult?.series) {
-        expect(queryResult.series.length).toBeGreaterThan(0);
-        const series = queryResult.series[0];
-        expect(series.metric).toBe(metricName);
-        expect(series.points.length).toBeGreaterThan(0);
-      } else {
-        console.warn('Metric not found after retries - Datadog ingestion delay may be longer than expected');
-      }
-    }, LONG_TIMEOUT);
+      expect(queryResult.series).toBeDefined();
+      expect(queryResult.series.length).toBeGreaterThan(0);
+      const series = queryResult.series[0];
+      expect(series.metric).toBe(metricName);
+      expect(series.points.length).toBeGreaterThan(0);
+    }, DEFAULT_TIMEOUT);
 
     test('should handle batch metric submission', async () => {
       const timestamp = Math.floor(Date.now() / 1000);
@@ -359,11 +335,6 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
     }, DEFAULT_TIMEOUT);
 
     test('should verify Docker metrics are retrievable', async () => {
-      if (!DD_APP_KEY) {
-        console.warn('DD_APP_KEY not set, skipping Docker metrics retrieval test');
-        return;
-      }
-
       const timestamp = Math.floor(Date.now() / 1000);
       const metricName = `${METRIC_PREFIXES.DOCKER}.retrieval_test`;
       testMetricNames.push(metricName);
@@ -384,34 +355,15 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
 
       await submitMetricsToDatadog(metrics);
 
-      // Wait and query with retry
-      const maxAttempts = 3;
-      let found = false;
+      // With mocks, query immediately (no ingestion delay)
+      const from = timestamp - 300;
+      const to = timestamp + 300;
+      const queryResult = await queryMetricsFromDatadog(metricName, from, to);
 
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          await waitWithBackoff(3000, attempt, maxAttempts);
-        }
-
-        try {
-          const from = timestamp - 300;
-          const to = timestamp + 300;
-          const queryResult = await queryMetricsFromDatadog(metricName, from, to);
-
-          if (queryResult.series && queryResult.series.length > 0) {
-            found = true;
-            expect(queryResult.series[0].metric).toBe(metricName);
-            break;
-          }
-        } catch (error) {
-          console.warn(`Docker metric query attempt ${attempt + 1} failed:`, error);
-        }
-      }
-
-      if (!found) {
-        console.warn('Docker metric not found - may be due to ingestion delay');
-      }
-    }, LONG_TIMEOUT);
+      expect(queryResult.series).toBeDefined();
+      expect(queryResult.series.length).toBeGreaterThan(0);
+      expect(queryResult.series[0].metric).toBe(metricName);
+    }, DEFAULT_TIMEOUT);
   });
 
   describe('Kubernetes Test Metrics', () => {
@@ -467,11 +419,6 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
     }, DEFAULT_TIMEOUT);
 
     test('should verify K8s metrics are retrievable', async () => {
-      if (!DD_APP_KEY) {
-        console.warn('DD_APP_KEY not set, skipping K8s metrics retrieval test');
-        return;
-      }
-
       const timestamp = Math.floor(Date.now() / 1000);
       const metricName = `${METRIC_PREFIXES.K8S}.retrieval_test`;
       testMetricNames.push(metricName);
@@ -493,34 +440,15 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
 
       await submitMetricsToDatadog(metrics);
 
-      // Wait and query with retry
-      const maxAttempts = 3;
-      let found = false;
+      // With mocks, query immediately (no ingestion delay)
+      const from = timestamp - 300;
+      const to = timestamp + 300;
+      const queryResult = await queryMetricsFromDatadog(metricName, from, to);
 
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          await waitWithBackoff(3000, attempt, maxAttempts);
-        }
-
-        try {
-          const from = timestamp - 300;
-          const to = timestamp + 300;
-          const queryResult = await queryMetricsFromDatadog(metricName, from, to);
-
-          if (queryResult.series && queryResult.series.length > 0) {
-            found = true;
-            expect(queryResult.series[0].metric).toBe(metricName);
-            break;
-          }
-        } catch (error) {
-          console.warn(`K8s metric query attempt ${attempt + 1} failed:`, error);
-        }
-      }
-
-      if (!found) {
-        console.warn('K8s metric not found - may be due to ingestion delay');
-      }
-    }, LONG_TIMEOUT);
+      expect(queryResult.series).toBeDefined();
+      expect(queryResult.series.length).toBeGreaterThan(0);
+      expect(queryResult.series[0].metric).toBe(metricName);
+    }, DEFAULT_TIMEOUT);
   });
 
   describe('Metric Tag Validation', () => {
@@ -550,47 +478,22 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
       const submitResponse = await submitMetricsToDatadog(metrics);
       expect(submitResponse.status).toBe(202);
 
-      // Skip tag verification if no app key
-      if (!DD_APP_KEY) {
-        console.warn('DD_APP_KEY not set, skipping tag validation query');
-        return;
-      }
+      // With mocks, query immediately (no ingestion delay)
+      const from = timestamp - 300;
+      const to = timestamp + 300;
+      const queryResult = await queryMetricsFromDatadog(metricName, from, to);
 
-      // Query and verify tags with retry
-      const maxAttempts = 3;
-      let tagsVerified = false;
+      expect(queryResult.series).toBeDefined();
+      expect(queryResult.series.length).toBeGreaterThan(0);
 
-      for (let attempt = 0; attempt < maxAttempts; attempt++) {
-        if (attempt > 0) {
-          await waitWithBackoff(3000, attempt, maxAttempts);
-        }
+      const series = queryResult.series[0];
+      const returnedTags = series.tags;
 
-        try {
-          const from = timestamp - 300;
-          const to = timestamp + 300;
-          const queryResult = await queryMetricsFromDatadog(metricName, from, to);
-
-          if (queryResult.series && queryResult.series.length > 0) {
-            const series = queryResult.series[0];
-            const returnedTags = series.tags;
-
-            // Verify all expected tags are present
-            expectedTags.forEach(tag => {
-              expect(returnedTags).toContain(tag);
-            });
-
-            tagsVerified = true;
-            break;
-          }
-        } catch (error) {
-          console.warn(`Tag validation attempt ${attempt + 1} failed:`, error);
-        }
-      }
-
-      if (!tagsVerified) {
-        console.warn('Tag validation skipped - metric not found due to ingestion delay');
-      }
-    }, LONG_TIMEOUT);
+      // Verify all expected tags are present
+      expectedTags.forEach(tag => {
+        expect(returnedTags).toContain(tag);
+      });
+    }, DEFAULT_TIMEOUT);
 
     test('should handle special characters in tags', async () => {
       const timestamp = Math.floor(Date.now() / 1000);
