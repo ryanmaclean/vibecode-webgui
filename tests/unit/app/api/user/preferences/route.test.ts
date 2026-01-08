@@ -15,22 +15,17 @@ jest.mock('@/lib/auth', () => ({
   authOptions: {}
 }));
 
-const mockPrismaUser = {
-  findUnique: jest.fn()
-};
-
 jest.mock('@/lib/prisma', () => ({
   prisma: {
-    user: mockPrismaUser
+    user: {
+      findUnique: jest.fn()
+    }
   }
 }));
 
-const mockLoadUserPreferences = jest.fn();
-const mockSaveUserPreferences = jest.fn();
-
 jest.mock('@/lib/server/user-preferences', () => ({
-  loadUserPreferences: mockLoadUserPreferences,
-  saveUserPreferences: mockSaveUserPreferences
+  loadUserPreferences: jest.fn(),
+  saveUserPreferences: jest.fn()
 }));
 
 jest.mock('@/lib/user-preferences', () => ({
@@ -38,6 +33,14 @@ jest.mock('@/lib/user-preferences', () => ({
     parse: jest.fn((data) => data)
   }
 }));
+
+// Import after mocking to get the mocked versions
+import { prisma } from '@/lib/prisma';
+import { loadUserPreferences, saveUserPreferences } from '@/lib/server/user-preferences';
+
+const mockPrismaUser = prisma.user as jest.Mocked<typeof prisma.user>;
+const mockLoadUserPreferences = loadUserPreferences as jest.MockedFunction<typeof loadUserPreferences>;
+const mockSaveUserPreferences = saveUserPreferences as jest.MockedFunction<typeof saveUserPreferences>;
 
 // Helper function to create a mock NextRequest
 function createMockRequest(url: string, method: string, body?: any): NextRequest {

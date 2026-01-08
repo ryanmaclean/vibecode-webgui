@@ -13,6 +13,11 @@ describe('macOS Keychain Server-Only Integration', () => {
     jest.clearAllMocks()
     originalProcess = global.process
 
+    // Ensure process.env is defined
+    if (!global.process.env) {
+      global.process.env = {} as NodeJS.ProcessEnv
+    }
+
     // Mock execSync
     mockExecSync = jest.fn()
     jest.isolateModules(() => {
@@ -25,6 +30,14 @@ describe('macOS Keychain Server-Only Integration', () => {
   afterEach(() => {
     jest.resetModules()
     global.process = originalProcess
+    // Ensure process.env is always restored
+    if (!global.process.env) {
+      global.process.env = originalProcess.env
+    }
+    // Clean up test keys if env exists
+    if (process.env && process.env.TEST_KEY) {
+      delete process.env.TEST_KEY
+    }
   })
 
   describe('loadSecret', () => {
@@ -141,16 +154,14 @@ describe('macOS Keychain Server-Only Integration', () => {
     it('should store secret when keychain is available', async () => {
       mockExecSync.mockReturnValue('')
 
-      jest.isolateModules(async () => {
-        const { setSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await setSecret('test-key', 'test-value')
+      const { setSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await setSecret('test-key', 'test-value')
 
-        expect(result).toBe(true)
-        expect(mockExecSync).toHaveBeenCalledWith(
-          expect.stringContaining('add-generic-password'),
-          expect.any(Object)
-        )
-      })
+      expect(result).toBe(true)
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('add-generic-password'),
+        expect.any(Object)
+      )
     })
 
     it('should return false when keychain is unavailable', async () => {
@@ -158,12 +169,10 @@ describe('macOS Keychain Server-Only Integration', () => {
         throw new Error('Not available')
       })
 
-      jest.isolateModules(async () => {
-        const { setSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await setSecret('test-key', 'test-value')
+      const { setSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await setSecret('test-key', 'test-value')
 
-        expect(result).toBe(false)
-      })
+      expect(result).toBe(false)
     })
 
     it('should return false on storage errors', async () => {
@@ -174,26 +183,22 @@ describe('macOS Keychain Server-Only Integration', () => {
         return ''
       })
 
-      jest.isolateModules(async () => {
-        const { setSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await setSecret('test-key', 'test-value')
+      const { setSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await setSecret('test-key', 'test-value')
 
-        expect(result).toBe(false)
-      })
+      expect(result).toBe(false)
     })
 
     it('should use update flag to replace existing secrets', async () => {
       mockExecSync.mockReturnValue('')
 
-      jest.isolateModules(async () => {
-        const { setSecret } = require('@/lib/security/macos-keychain-server')
-        await setSecret('test-key', 'test-value')
+      const { setSecret } = require('@/lib/security/macos-keychain-server')
+      await setSecret('test-key', 'test-value')
 
-        expect(mockExecSync).toHaveBeenCalledWith(
-          expect.stringContaining('-U'),
-          expect.any(Object)
-        )
-      })
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('-U'),
+        expect.any(Object)
+      )
     })
   })
 
@@ -201,16 +206,14 @@ describe('macOS Keychain Server-Only Integration', () => {
     it('should delete secret when keychain is available', async () => {
       mockExecSync.mockReturnValue('')
 
-      jest.isolateModules(async () => {
-        const { deleteSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await deleteSecret('test-key')
+      const { deleteSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await deleteSecret('test-key')
 
-        expect(result).toBe(true)
-        expect(mockExecSync).toHaveBeenCalledWith(
-          expect.stringContaining('delete-generic-password'),
-          expect.any(Object)
-        )
-      })
+      expect(result).toBe(true)
+      expect(mockExecSync).toHaveBeenCalledWith(
+        expect.stringContaining('delete-generic-password'),
+        expect.any(Object)
+      )
     })
 
     it('should return false when keychain is unavailable', async () => {
@@ -218,12 +221,10 @@ describe('macOS Keychain Server-Only Integration', () => {
         throw new Error('Not available')
       })
 
-      jest.isolateModules(async () => {
-        const { deleteSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await deleteSecret('test-key')
+      const { deleteSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await deleteSecret('test-key')
 
-        expect(result).toBe(false)
-      })
+      expect(result).toBe(false)
     })
 
     it('should return false when secret does not exist', async () => {
@@ -234,12 +235,10 @@ describe('macOS Keychain Server-Only Integration', () => {
         return ''
       })
 
-      jest.isolateModules(async () => {
-        const { deleteSecret } = require('@/lib/security/macos-keychain-server')
-        const result = await deleteSecret('nonexistent')
+      const { deleteSecret } = require('@/lib/security/macos-keychain-server')
+      const result = await deleteSecret('nonexistent')
 
-        expect(result).toBe(false)
-      })
+      expect(result).toBe(false)
     })
   })
 
