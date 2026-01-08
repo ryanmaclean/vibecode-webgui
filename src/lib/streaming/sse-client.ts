@@ -190,8 +190,6 @@ export class SSEClient {
   private reconnectAttempts = 0
   private reconnectTimer: NodeJS.Timeout | null = null
   private heartbeatTimer: NodeJS.Timeout | null = null
-  private lastConnectionOpenTime = 0
-  private isReconnecting = false
 
   private messageBuffer: CircularMessageBuffer<StreamChunk>
   private decoder = createSSEDecoder({
@@ -344,9 +342,9 @@ export class SSEClient {
   // ==========================================================================
 
   private connectWithEventSource(): void {
-    // Use the URL directly without converting to absolute URL
-    // to preserve the original URL format for testing
-    this.eventSource = new EventSource(this.config.url)
+    const url = new URL(this.config.url, window.location.origin)
+
+    this.eventSource = new EventSource(url.toString())
 
     this.eventSource.onopen = () => {
       this.handleConnectionOpen()
@@ -410,25 +408,12 @@ export class SSEClient {
     }
   }
 
-  /**
-   * Reconnection Strategy:
-   * - Attempts counter only resets after a stable connection (not immediate failures)
-   * - "Stable" means receiving at least one message after connection opens
-   * - This allows exponential backoff to work across quick connect/disconnect cycles
-   * - Once we receive a message, the connection is considered healthy and attempts reset
-   * - Decision made in Ralph Loop Iteration 12, Agent 3 (Option C - stability-based reset)
-   */
   private handleConnectionOpen(): void {
     this.setState('connected')
     this.metrics.successfulConnections++
-    this.lastConnectionOpenTime = Date.now()
-
-    // Don't reset attempts here - wait for first message to confirm stable connection
-    // This allows backoff to continue working if connection dies immediately
-    this.isReconnecting = false
-
+    this.reconnectAttempts = 0
     this.handlers.onOpen?.()
-    this.log('Connection opened successfully')
+    this.log('Connection opened')
   }
 
   private handleConnectionError(error: Error): void {
@@ -436,15 +421,11 @@ export class SSEClient {
     this.metrics.failedConnections++
     this.handlers.onError?.(error)
 
-    // Don't reset attempts here - we handle it in handleConnectionOpen based on
-    // whether it's a reconnection and how much time passed
-
     if (this.eventSource) {
       this.eventSource.close()
       this.eventSource = null
     }
 
-<<<<<<< HEAD
     // Increment attempt counter before checking
     this.reconnectAttempts++
 
@@ -452,18 +433,8 @@ export class SSEClient {
     if (this.reconnectAttempts < this.reconnectionConfig.maxAttempts) {
       this.scheduleReconnect()
     } else {
-=======
-    // Increment attempts counter first
-    this.reconnectAttempts++
-
-    // Check if we've exceeded maxAttempts AFTER incrementing
-    if (this.reconnectAttempts >= this.reconnectionConfig.maxAttempts) {
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       this.setState('failed')
-      this.log(`Max reconnection attempts reached (${this.reconnectAttempts}/${this.reconnectionConfig.maxAttempts})`)
-    } else {
-      // Attempt reconnection
-      this.scheduleReconnect()
+      this.log('Max reconnection attempts reached')
     }
   }
 
@@ -473,11 +444,6 @@ export class SSEClient {
 
   private scheduleReconnect(): void {
     this.setState('reconnecting')
-<<<<<<< HEAD
-=======
-    this.isReconnecting = true
-    // Note: reconnectAttempts is now incremented in handleConnectionError
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     this.metrics.reconnectionCount++
 
     // Calculate delay with exponential backoff
@@ -518,12 +484,6 @@ export class SSEClient {
       this.updateAverageLatency(latency)
       this.firstMessageReceived = true
       this.log(`First message received in ${latency}ms`)
-
-      // Reset reconnect attempts on first message - connection is now stable
-      if (this.reconnectAttempts > 0) {
-        this.log(`Connection stable - resetting reconnect attempts from ${this.reconnectAttempts} to 0`)
-        this.reconnectAttempts = 0
-      }
     }
 
     this.metrics.totalMessages++

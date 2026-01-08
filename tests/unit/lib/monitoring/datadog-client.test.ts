@@ -29,15 +29,9 @@ describe('MonitoringService', () => {
     mockGetDatadogApiKey.mockReturnValue('test-api-key')
     mockGetDatadogSite.mockReturnValue('datadoghq.com')
 
-    // Mock fetch globally with a proper Response object
+    // Mock fetch globally with a real WHATWG Response (polyfilled in test env)
     mockFetch = (jest.fn() as unknown as jest.MockedFunction<typeof fetch>)
-    mockFetch.mockResolvedValue({
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-      json: async () => ({}),
-      text: async () => '{}',
-    } as Response)
+    mockFetch.mockResolvedValue(new Response('{}', { status: 200, statusText: 'OK' }) as Response)
     global.fetch = mockFetch as unknown as typeof fetch
 
     // Mock process.memoryUsage globally

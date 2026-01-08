@@ -56,7 +56,6 @@ export interface PasswordRequirements {
  * maintaining acceptable performance characteristics.
  *
  * @param password - Plaintext password to hash
- * @param saltRounds - Optional number of salt rounds (default: 12, min: 4, max: 31)
  * @returns Promise resolving to bcrypt hash string
  * @throws Error if password is invalid or hashing fails
  *
@@ -66,15 +65,10 @@ export interface PasswordRequirements {
  * // Returns: $2a$12$... (bcrypt hash)
  * ```
  */
-export async function hashPassword(password: string, saltRounds: number = PASSWORD_CONFIG.SALT_ROUNDS): Promise<string> {
+export async function hashPassword(password: string): Promise<string> {
   // Input validation
   if (!password || typeof password !== 'string') {
     throw new Error('Password must be a non-empty string');
-  }
-
-  // Validate salt rounds
-  if (saltRounds < 4 || saltRounds > 31 || !Number.isInteger(saltRounds)) {
-    throw new Error('Salt rounds must be an integer between 4 and 31');
   }
 
   // Validate password strength before hashing
@@ -85,54 +79,12 @@ export async function hashPassword(password: string, saltRounds: number = PASSWO
 
   try {
     // Generate salt and hash password
-    const salt = await bcrypt.genSalt(saltRounds);
+    const salt = await bcrypt.genSalt(PASSWORD_CONFIG.SALT_ROUNDS);
     const hash = await bcrypt.hash(password, salt);
     return hash;
   } catch (error) {
     throw new Error(`Password hashing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
   }
-}
-
-/**
- * Check if a string is a valid bcrypt hash format
- *
- * Validates that the hash matches bcrypt format requirements:
- * - Starts with $2a$, $2b$, or $2y$ (bcrypt variants)
- * - Has proper structure with cost factor
- * - Minimum cost factor of 10 (security requirement)
- *
- * @param hash - String to validate as bcrypt hash
- * @returns True if valid bcrypt hash format, false otherwise
- *
- * @example
- * ```typescript
- * const isValid = isValidBcryptHash('$2b$12$...');
- * // Returns: true
- * ```
- */
-export function isValidBcryptHash(hash: string): boolean {
-  if (!hash || typeof hash !== 'string') {
-    return false;
-  }
-
-  // Validate hash format (bcrypt hashes start with $2a$, $2b$, or $2y$)
-  const match = hash.match(/^\$2[aby]\$(\d{2})\$/);
-  if (!match) {
-    return false;
-  }
-
-  // Check minimum cost factor (security requirement)
-  const costFactor = parseInt(match[1], 10);
-  if (costFactor < 10) {
-    return false;
-  }
-
-  // Check full hash length (bcrypt produces 60-character hashes)
-  if (hash.length !== 60) {
-    return false;
-  }
-
-  return true;
 }
 
 /**
@@ -163,8 +115,8 @@ export async function verifyPassword(password: string, hash: string): Promise<bo
     return false;
   }
 
-  // Validate hash format using dedicated function
-  if (!isValidBcryptHash(hash)) {
+  // Validate hash format (bcrypt hashes start with $2a$, $2b$, or $2y$)
+  if (!hash.match(/^\$2[aby]\$\d{2}\$/)) {
     return false;
   }
 

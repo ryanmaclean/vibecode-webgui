@@ -36,7 +36,7 @@ describe('Phase 4 - Batch 3: Health Check Schemas', () => {
 
     it('should accept verbose parameter', () => {
       const result = healthCheckQuerySchema.safeParse({
-        verbose: true
+        verbose: 'true'
       })
       expect(result.success).toBe(true)
       if (result.success) {
@@ -136,11 +136,11 @@ describe('Phase 4 - Batch 3: Monitoring Schemas', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should allow startTime without endTime (uses timeframe)', () => {
+    it('should reject startTime without endTime', () => {
       const result = monitoringQuerySchema.safeParse({
         startTime: new Date().toISOString()
       })
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
     })
 
     it('should reject negative time range (end before start)', () => {
@@ -177,7 +177,7 @@ describe('Phase 4 - Batch 3: Monitoring Schemas', () => {
       expect(result.success).toBe(true)
     })
 
-    it('should accept valid error metrics without duration', () => {
+    it('should accept valid error metrics', () => {
       const result = monitoringMetricsBodySchema.safeParse({
         type: 'error',
         metrics: { error_count: 5, error_rate: 0.02 }
@@ -202,13 +202,13 @@ describe('Phase 4 - Batch 3: Monitoring Schemas', () => {
       expect(result.success).toBe(false)
     })
 
-    it('should accept zero duration', () => {
+    it('should reject negative duration', () => {
       const result = monitoringMetricsBodySchema.safeParse({
         type: 'performance',
-        duration: 0,
+        duration: -100,
         metrics: {}
       })
-      expect(result.success).toBe(true)
+      expect(result.success).toBe(false)
     })
 
     it('should reject metrics payload exceeding 100KB', () => {

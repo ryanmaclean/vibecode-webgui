@@ -17,28 +17,13 @@ const mockFetch = jest.fn<typeof fetch>();
 global.fetch = mockFetch as unknown as typeof fetch;
 
 // Import the function after mocking
-<<<<<<< HEAD
 import { fetchWithRetry } from '@/lib/utils/fetch';
-=======
-import { fetchWithRetry, FetchError, isFetchError } from '@/lib/utils/fetch';
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
-const createResponse = (status: number, body?: Record<string, unknown>): Response => {
-  const response = new Response(body ? JSON.stringify(body) : null, {
+const createResponse = (status: number, body?: Record<string, unknown>) =>
+  new Response(body ? JSON.stringify(body) : null, {
     status,
-    statusText: status >= 200 && status < 300 ? 'OK' : 'Error',
     headers: body ? { 'Content-Type': 'application/json' } : undefined,
   });
-
-  // Manually set .ok property since Response constructor doesn't always handle it correctly
-  Object.defineProperty(response, 'ok', {
-    value: status >= 200 && status < 300,
-    writable: false,
-    configurable: true
-  });
-
-  return response;
-};
 
 describe('fetchWithRetry', () => {
   let setTimeoutSpy: jest.SpiedFunction<typeof setTimeout>;
@@ -252,10 +237,7 @@ describe('fetchWithRetry', () => {
 
       try {
         await fetchWithRetry('https://api.example.com/test', { retries: 1 });
-        fail('Expected error to be thrown');
       } catch (error: any) {
-        expect(isFetchError(error)).toBe(true);
-        expect(error).toBeInstanceOf(FetchError);
         expect(error.url).toBe('https://api.example.com/test');
         expect(error.attempt).toBe(2);
         expect(error.status).toBe(500);

@@ -66,17 +66,9 @@ describe('auth.ts Configuration', () => {
       GOOGLE_CLIENT_SECRET: 'test-google-secret',
       NODE_ENV: 'test',
     }
-
+    
     // Clear the module cache to ensure fresh import
-<<<<<<< HEAD
     delete require.cache[require.resolve('@/lib/auth')]
-=======
-    try {
-      delete require.cache[require.resolve('@/lib/auth')]
-    } catch (e) {
-      // Ignore if module not in cache
-    }
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   })
 
   afterEach(() => {
@@ -161,7 +153,7 @@ describe('auth.ts Configuration', () => {
       const result = await authorizeFunction(credentials)
 
       expect(result).toEqual({
-        id: 'legacy-developer',
+        id: '2',
         name: 'Developer User',
         email: 'developer@vibecode.dev',
         role: 'developer',
@@ -420,14 +412,8 @@ describe('auth.ts Configuration', () => {
     })
 
     it('should log signIn events', async () => {
-<<<<<<< HEAD
       const mockInfo = logger.info as jest.MockedFunction<typeof logger.info>
       mockInfo.mockClear()
-=======
-      // Mock the logger module
-      const loggerMock = { info: jest.fn() };
-      jest.doMock('@/lib/logger', () => ({ logger: loggerMock }));
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
       const signInEvent = authOptions.events?.signIn
       if (signInEvent) {
@@ -438,23 +424,12 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-<<<<<<< HEAD
       expect(mockInfo).toHaveBeenCalledWith('User test@example.com signed in via github')
     })
 
     it('should log signOut events', async () => {
       const mockInfo = logger.info as jest.MockedFunction<typeof logger.info>
       mockInfo.mockClear()
-=======
-      // The event handler should exist and execute without errors
-      expect(signInEvent).toBeDefined()
-    })
-
-    it('should log signOut events', async () => {
-      // Mock the logger module
-      const loggerMock = { info: jest.fn() };
-      jest.doMock('@/lib/logger', () => ({ logger: loggerMock }));
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
       const signOutEvent = authOptions.events?.signOut
       if (signOutEvent) {
@@ -463,12 +438,7 @@ describe('auth.ts Configuration', () => {
         })
       }
 
-<<<<<<< HEAD
       expect(mockInfo).toHaveBeenCalledWith('User test@example.com signed out')
-=======
-      // The event handler should exist and execute without errors
-      expect(signOutEvent).toBeDefined()
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     })
   })
 

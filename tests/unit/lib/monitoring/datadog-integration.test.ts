@@ -4,30 +4,23 @@
  */
 
 import { jest } from '@jest/globals'
+import dgram from 'dgram'
 
-// Mock dgram module before any imports
-const mockSocket = {
-  send: jest.fn(),
-  close: jest.fn()
-}
-
-const mockCreateSocket = jest.fn(() => mockSocket)
-
+// Mock dgram module
 jest.mock('dgram', () => ({
-  default: {
-    createSocket: mockCreateSocket
-  },
-  createSocket: mockCreateSocket
+  createSocket: jest.fn(() => ({
+    send: jest.fn(),
+    close: jest.fn()
+  }))
 }))
 
 describe('DatadogIntegration', () => {
-  let DatadogIntegration: any
+  let mockSocket: any
   let datadogIntegration: any
   let DatadogIntegration: any
 
   beforeEach(async () => {
     jest.clearAllMocks()
-<<<<<<< HEAD
     jest.resetModules() // Clear module cache
 
     // Create mock socket
@@ -46,15 +39,6 @@ describe('DatadogIntegration', () => {
 
     // Import the class after mocking
     const module = await import('@/lib/monitoring/datadog-integration')
-=======
-    mockSocket.send.mockClear()
-    mockSocket.close.mockClear()
-    mockCreateSocket.mockClear()
-    mockCreateSocket.mockReturnValue(mockSocket)
-
-    // Import the class after resetting mocks
-    const module = require('@/lib/monitoring/datadog-integration')
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     DatadogIntegration = module.DatadogIntegration
     datadogIntegration = new DatadogIntegration()
   })

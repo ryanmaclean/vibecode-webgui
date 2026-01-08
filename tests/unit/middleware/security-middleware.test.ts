@@ -481,7 +481,6 @@ describe('Security Middleware Module', () => {
     })
 
     it('should require authentication for high security endpoints', async () => {
-      // Use production mode with proper origin to bypass CORS, but no token for auth test
       setNodeEnv('production')
       process.env.CI = 'false'
 
@@ -489,28 +488,15 @@ describe('Security Middleware Module', () => {
       await initializeSecurityModules(false)
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
-      mockRequest.method = 'GET'  // Use GET to avoid CSRF
       mockRequest.headers.get.mockImplementation((header: string) => {
-        // Don't provide origin header - same-origin requests don't need it
-        if (header === 'host') return 'vibecode.dev'
-        if (header === 'user-agent') return 'Mozilla/5.0 Test'
-        // Provide a public IP to pass IP security check
-        if (header === 'x-forwarded-for') return '203.0.113.45'
+        if (header === 'origin') return 'https://vibecode.dev'
         return null
       })
 
-<<<<<<< HEAD
       // Mocking JWT token
       mockGetToken.mockResolvedValueOnce(null);
-=======
-      // Mocking JWT token - return null for no authentication
-      mockGetToken.mockImplementation(() => {
-        return Promise.resolve(null);
-      });
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
       const result = await apiSecurityMiddleware(mockRequest)
-
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
       if (result) {
@@ -596,7 +582,6 @@ describe('Security Middleware Module', () => {
     })
 
     it('should check rate limits for AI endpoints', async () => {
-      // Use production mode, but mock the request body to avoid CSRF token validation issues
       setNodeEnv('production')
       process.env.CI = 'false'
 
@@ -606,42 +591,22 @@ describe('Security Middleware Module', () => {
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'
       mockRequest.headers.get.mockImplementation((header: string) => {
-        // Don't provide origin header to bypass CORS validation
-        if (header === 'host') return 'vibecode.dev'
-        if (header === 'user-agent') return 'Mozilla/5.0 Test'
-        if (header === 'content-type') return 'application/json'
-        // Provide a public IP to pass IP security check
-        if (header === 'x-forwarded-for') return '203.0.113.45'
+        if (header === 'origin') return 'https://vibecode.dev'
         return null
       })
 
-<<<<<<< HEAD
       // Mocking JWT token
       mockGetToken.mockResolvedValueOnce({
         sub: 'user123',
         id: 'user123',
         role: 'user',
         email: 'user@example.com'
-=======
-      // Add body to the request to avoid CSRF/body read issues
-      mockRequest.body = null
-
-      // Mocking JWT token with valid user
-      mockGetToken.mockImplementation(() => {
-        return Promise.resolve({
-          sub: 'user123',
-          id: 'user123',
-          role: 'user',
-          email: 'user@example.com'
-        });
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       });
 
       mockValidateAIQuery.mockReturnValue({ query: 'test query' })
       mockAiRateLimiter.checkRateLimit.mockReturnValue(false)
 
       const result = await apiSecurityMiddleware(mockRequest)
-
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
       if (result) {

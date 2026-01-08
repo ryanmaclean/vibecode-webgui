@@ -144,7 +144,6 @@ class MetricsCollector {
   /**
    * Record response time for an endpoint
    */
-<<<<<<< HEAD
   recordResponseTime(endpoint: string, duration: number): void {
     if (!this.responseTimes) this.responseTimes = {}
     if (!this.responseTimes[endpoint]) {
@@ -153,18 +152,6 @@ class MetricsCollector {
     this.responseTimes[endpoint].push(duration)
 
     // Limit to 1000 entries per endpoint
-=======
-  recordResponseTime(endpoint: string, responseTime: number): void {
-    if (!this.responseTimes) {
-      this.responseTimes = {}
-    }
-    if (!this.responseTimes[endpoint]) {
-      this.responseTimes[endpoint] = []
-    }
-    this.responseTimes[endpoint].push(responseTime)
-
-    // Limit to 1000 entries to prevent memory leaks
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     if (this.responseTimes[endpoint].length > 1000) {
       this.responseTimes[endpoint] = this.responseTimes[endpoint].slice(-1000)
     }
@@ -173,27 +160,18 @@ class MetricsCollector {
   /**
    * Record error for an endpoint
    */
-<<<<<<< HEAD
   recordError(endpoint: string, errorType: string): void {
     if (!this.errors) this.errors = {}
     if (!this.errors[endpoint]) {
       this.errors[endpoint] = []
     }
     this.errors[endpoint].push(errorType)
-=======
-  recordError(endpoint: string, error: string): void {
-    if (!this.errors[endpoint]) {
-      this.errors[endpoint] = []
-    }
-    this.errors[endpoint].push(error)
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   }
 
   /**
    * Increment request count for an endpoint
    */
   incrementRequestCount(endpoint: string): void {
-<<<<<<< HEAD
     if (!this.requestCounts) this.requestCounts = {}
     this.requestCounts[endpoint] = (this.requestCounts[endpoint] || 0) + 1
   }
@@ -222,42 +200,6 @@ class MetricsCollector {
   getErrorRate(endpoint: string): number {
     const errorCount = this.errors?.[endpoint]?.length || 0
     const requestCount = this.requestCounts?.[endpoint] || 0
-=======
-    if (!this.requestCounts[endpoint]) {
-      this.requestCounts[endpoint] = 0
-    }
-    this.requestCounts[endpoint]++
-  }
-
-  /**
-   * Record custom metric (gauge-like behavior)
-   */
-  recordCustomMetric(metricName: string, value: number): void {
-    const existing = this.metrics.get(metricName) || { count: 0 }
-    existing.lastValue = value
-    existing.count++
-    this.metrics.set(metricName, existing)
-  }
-
-  /**
-   * Calculate average response time for an endpoint
-   */
-  getAverageResponseTime(endpoint: string): number {
-    if (!this.responseTimes[endpoint] || this.responseTimes[endpoint].length === 0) {
-      return 0
-    }
-    const sum = this.responseTimes[endpoint].reduce((a, b) => a + b, 0)
-    return sum / this.responseTimes[endpoint].length
-  }
-
-  /**
-   * Calculate error rate for an endpoint
-   */
-  getErrorRate(endpoint: string): number {
-    const requestCount = this.requestCounts[endpoint] || 0
-    const errorCount = (this.errors[endpoint] || []).length
-
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     if (requestCount === 0) return 0
     return (errorCount / requestCount) * 100
   }
@@ -266,10 +208,7 @@ class MetricsCollector {
    * Reset all metrics
    */
   resetMetrics(): void {
-<<<<<<< HEAD
     this.metrics.clear()
-=======
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     this.responseTimes = {}
     this.errors = {}
     this.requestCounts = {}
@@ -280,15 +219,9 @@ class MetricsCollector {
    */
   getMetrics(): Record<string, any> {
     const result: Record<string, any> = {
-<<<<<<< HEAD
       responseTimes: this.responseTimes || {},
       errors: this.errors || {},
       requestCounts: this.requestCounts || {}
-=======
-      responseTimes: this.responseTimes,
-      errors: this.errors,
-      requestCounts: this.requestCounts
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     }
     this.metrics.forEach((value, key) => {
       result[key] = value
@@ -510,43 +443,6 @@ class ApplicationLogger {
   }
 
   /**
-   * Log API request
-   */
-  logAPIRequest(method: string, endpoint: string, statusCode: number, responseTime: number, userId?: string): void {
-    logger.info('API Request', {
-      category: 'api',
-      method,
-      endpoint,
-      statusCode,
-      responseTime,
-      userId
-    })
-
-    metrics.histogram('api.response_time', responseTime, {
-      method,
-      endpoint,
-      status: statusCode.toString()
-    })
-  }
-
-  /**
-   * Log error
-   */
-  logError(message: string, error: Error, context?: Record<string, any>): void {
-    logger.error(message, {
-      category: 'error',
-      error: error.message,
-      stack: error.stack,
-      ...context
-    })
-
-    metrics.increment('errors', {
-      message,
-      ...(context || {})
-    })
-  }
-
-  /**
    * Log business metrics
    */
   logBusiness(event: string, context: {
@@ -611,7 +507,7 @@ function performanceMiddleware() {
 }
 
 // Health check endpoint data
-async function getHealthCheck(): Promise<{
+function getHealthCheck(): {
   status: 'healthy' | 'unhealthy'
   timestamp: string
   uptime: number
@@ -623,45 +519,24 @@ async function getHealthCheck(): Promise<{
   cpu: {
     usage: number
   }
-<<<<<<< HEAD
   metrics?: Record<string, any>
 } {
   const memUsage = process.memoryUsage()
   const totalMemory = require('os').totalmem()
   const usedMemory = memUsage.heapUsed
   const cpuUsageRaw = process.cpuUsage()
-=======
-  metrics: Record<string, any>
-}> {
-  const memUsage = process.memoryUsage()
-  const totalMem = memUsage.heapTotal
-  const usedMem = memUsage.heapUsed
-
-  // Get CPU usage (simple calculation based on process.cpuUsage())
-  const cpuUsageData = process.cpuUsage()
-  const cpuUsagePercent = ((cpuUsageData.user + cpuUsageData.system) / 1000000) / process.uptime() * 100
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
   return {
     status: 'healthy',
     timestamp: new Date().toISOString(),
     uptime: process.uptime(),
     memory: {
-<<<<<<< HEAD
       used: usedMemory,
       total: totalMemory,
       percentage: (usedMemory / totalMemory) * 100
     },
     cpu: {
       usage: ((cpuUsageRaw.user + cpuUsageRaw.system) / 1000000) // Convert to percentage-like value
-=======
-      used: usedMem,
-      total: totalMem,
-      percentage: (usedMem / totalMem) * 100
-    },
-    cpu: {
-      usage: Math.min(100, cpuUsagePercent) // Cap at 100%
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     },
     metrics: metrics.getMetrics()
   }

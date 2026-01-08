@@ -538,15 +538,9 @@ Expected AI Response:
       throw new Error(`Sample ${sampleId} not found`);
     }
 
-<<<<<<< HEAD
     console.log(`\n🚀 Running sample: ${sample.title}`);
     console.log(`📋 Category: ${sample.category} | Complexity: ${sample.complexity}`);
     console.log(`⏱️ Estimated time: ${sample.estimatedTime}s\n`);
-=======
-    console.log(`🚀 Running sample: ${sample.title}`);
-    console.log(`📝 Description: ${sample.description}`);
-    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s`);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
     const startTime = Date.now();
 
@@ -555,11 +549,7 @@ Expected AI Response:
 
       const duration = Date.now() - startTime;
 
-<<<<<<< HEAD
       console.log(`\n✅ Sample completed in ${(duration / 1000).toFixed(2)}s`);
-=======
-      console.log(`✅ Sample completed in ${duration}ms`);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       console.log(`📊 Confidence: ${result.metadata.confidence}`);
       console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
 
@@ -572,9 +562,8 @@ Expected AI Response:
           efficiency: (sample.estimatedTime * 1000) / duration
         }
       };
-
+      
     } catch (error) {
-      console.log(`⚠️ Error occurred: ${error.message}`);
       console.error(`❌ Sample failed: ${error.message}`);
       throw error;
     }

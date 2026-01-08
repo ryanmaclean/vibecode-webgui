@@ -137,7 +137,7 @@ class UserService {
     // Wait for review to complete
     await waitFor(() => {
       expect(screen.getByText('Review Results')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
   });
 
   it('displays review results after successful completion', async () => {
@@ -165,32 +165,14 @@ class UserService {
 
     await waitFor(() => {
       expect(screen.getByText('Review Results')).toBeInTheDocument();
-    }, { timeout: 3000 });
+    });
 
-<<<<<<< HEAD
     // Click on security tab (should be active by default, but click to ensure)
     const securityTab = screen.getByRole('tab', { name: /Security/ });
     fireEvent.click(securityTab);
 
     // Check security review content (using the mock data from the component)
     expect(screen.getByText(/Mock security review/)).toBeInTheDocument();
-=======
-    // Click on security tab (default tab is security, but click anyway for explicitness)
-    const securityTab = screen.getByRole('tab', { name: /Security/ });
-    fireEvent.click(securityTab);
-
-    // The mock implementation returns a single result with stepId 'security', not 'security-review'
-    // So we need to check for the actual mock content
-    await waitFor(() => {
-      const content = screen.queryByText(/Critical security issue/);
-      if (!content) {
-        // If the expected content is not there, the component is showing the mock
-        expect(screen.getByText(/Security review not available/)).toBeInTheDocument();
-      } else {
-        expect(content).toBeInTheDocument();
-      }
-    });
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   });
 
   it('shows performance review content', async () => {
@@ -361,40 +343,32 @@ class UserService {
   });
 
   it('calls onReviewComplete callback with results', async () => {
-    // Since the actual component is using a mock implementation that doesn't call onReviewComplete,
-    // we need to test with the mocked AI manager instead
     const mockOnReviewComplete = jest.fn();
-
-    // Re-setup the mock to actually call the callback
-    mockExecuteWorkflow.mockResolvedValueOnce({
-      success: true,
-      results: [
-        {
-          stepId: 'security-review',
-          agentRole: 'code-reviewer',
-          input: 'Review TypeScript code for security issues',
-          output: 'Security review complete',
-          metadata: {
-            model: 'gpt-4',
-            duration: 1500,
-            timestamp: new Date().toISOString()
-          }
-        }
-      ]
-    });
-
     render(<AICodeReview {...defaultProps} onReviewComplete={mockOnReviewComplete} />);
-
+    
     const startButton = screen.getByRole('button', { name: /Start Code Review/ });
     fireEvent.click(startButton);
 
-    // Wait for results to be displayed (even if callback not called due to mock implementation)
     await waitFor(() => {
-      expect(screen.getByText('Review Results')).toBeInTheDocument();
-    }, { timeout: 3000 });
-
-    // Note: The current component implementation uses a mock that doesn't call onReviewComplete
-    // This test documents the current behavior - in production, it should call the callback
+      expect(mockOnReviewComplete).toHaveBeenCalledWith(expect.arrayContaining([
+        expect.objectContaining({
+          stepId: 'security-review',
+          agentRole: 'code-reviewer'
+        }),
+        expect.objectContaining({
+          stepId: 'performance-review',
+          agentRole: 'code-reviewer'
+        }),
+        expect.objectContaining({
+          stepId: 'quality-review',
+          agentRole: 'code-reviewer'
+        }),
+        expect.objectContaining({
+          stepId: 'comprehensive-review',
+          agentRole: 'code-reviewer'
+        })
+      ]));
+    });
   });
 
   it('displays review metadata correctly', async () => {
@@ -404,16 +378,9 @@ class UserService {
     fireEvent.click(startButton);
 
     await waitFor(() => {
-<<<<<<< HEAD
       // Check for the mock metadata (duration: 100ms, model: 'mock')
       expect(screen.getByText(/AI analysis completed in 100ms using mock/)).toBeInTheDocument();
     });
-=======
-      // Check for any metadata text pattern (the actual component shows different metadata)
-      const metadataText = screen.queryByText(/AI analysis completed in/);
-      expect(metadataText).toBeInTheDocument();
-    }, { timeout: 3000 });
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   });
 
   it('handles different programming languages', () => {

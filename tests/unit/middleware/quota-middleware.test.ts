@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { resourceManager } from '@/lib/resource-management'
 
@@ -20,66 +20,10 @@ jest.mock('@/lib/resource-management', () => ({
   }
 }))
 
-<<<<<<< HEAD
 // Use the actual implementation instead of the mock
 jest.mock('@/middleware/quota-middleware', () => jest.requireActual('@/middleware/quota-middleware'))
 
 import { withQuotaCheck, createQuotaResponse } from '@/middleware/quota-middleware'
-=======
-// Mock NextResponse.json
-jest.mock('next/server', () => {
-  const actual = jest.requireActual('next/server')
-
-  class MockNextResponse {
-    status: number
-    headers: Map<string, string>
-    body: unknown
-
-    constructor(body: unknown, init?: ResponseInit) {
-      this.status = init?.status || 200
-      // Convert headers to Map for easier testing
-      this.headers = new Map()
-      if (init?.headers) {
-        if (init.headers instanceof Headers) {
-          init.headers.forEach((value, key) => {
-            this.headers.set(key, value)
-          })
-        } else if (typeof init.headers === 'object') {
-          Object.entries(init.headers).forEach(([key, value]) => {
-            this.headers.set(key, String(value))
-          })
-        }
-      }
-      this.body = body
-    }
-
-    get(name: string) {
-      return this.headers.get(name) || null
-    }
-
-    async json() {
-      return this.body
-    }
-  }
-
-  return {
-    ...actual,
-    NextResponse: {
-      ...actual.NextResponse,
-      json: (body: unknown, init?: ResponseInit) => {
-        const response = new MockNextResponse(body, init)
-        // Add a headers object with get method for testing
-        return {
-          ...response,
-          headers: {
-            get: (name: string) => response.headers.get(name)
-          }
-        } as unknown as NextResponse
-      }
-    }
-  }
-})
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 describe('Quota Middleware', () => {
   const mockedGetServerSession = jest.mocked(getServerSession)
@@ -90,21 +34,15 @@ describe('Quota Middleware', () => {
 
   const buildSession = (user: SessionUser | null): SessionLike => ({ user } as SessionLike)
 
-  // Helper to create a mock request without instantiating NextRequest
-  const createMockRequest = (url: string = 'https://example.com/api/test') => {
-    return {
-      url,
-      method: 'POST',
-      headers: new Headers({
-        'content-type': 'application/json'
-      }),
-      nextUrl: new URL(url)
-    } as unknown as NextRequest
-  }
-
   beforeEach(() => {
     jest.clearAllMocks()
-    mockRequest = createMockRequest()
+
+    mockRequest = new NextRequest('https://example.com/api/test', {
+      method: 'POST',
+      headers: {
+        'content-type': 'application/json'
+      }
+    })
   })
 
   describe('withQuotaCheck', () => {

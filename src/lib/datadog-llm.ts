@@ -36,17 +36,9 @@ class LLMObservability {
 
   private constructor() {
     const { service, env } = getServiceEnvVersion()
-
-    // Parse boolean flags correctly - support both 'true' and '1'
-    const parseFlag = (value: string | undefined, defaultValue = false) => {
-      if (!value) return defaultValue;
-      const normalized = value.toLowerCase().trim();
-      return normalized === 'true' || normalized === '1' || normalized === 'yes';
-    };
-
     this.config = {
-      enabled: parseFlag(process.env.DD_LLMOBS_ENABLED, true), // Default to true if API key exists
-      agentlessEnabled: parseFlag(process.env.DD_LLMOBS_AGENTLESS_ENABLED, true),
+      enabled: process.env.DD_LLMOBS_ENABLED === '1' || false,
+      agentlessEnabled: process.env.DD_LLMOBS_AGENTLESS_ENABLED === '1' || true,
       mlApp: process.env.DD_LLMOBS_ML_APP || 'vibecode-ai',
       site: getDatadogSite(),
       apiKey: getDatadogApiKey(),

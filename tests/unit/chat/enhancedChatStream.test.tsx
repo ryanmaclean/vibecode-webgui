@@ -143,7 +143,7 @@ describe('EnhancedChatInterface streaming', () => {
     }, { timeout: 3000 })
   })
 
-  it.skip('shows jump control and announces updates when reduced motion is preferred', async () => {
+  it('shows jump control and announces updates when reduced motion is preferred', async () => {
     window.matchMedia = createMatchMedia(true)
 
     const reader = createReader([

@@ -39,19 +39,20 @@ jest.mock('dd-trace', () => ({
 }));
 
 // Mock winston with factory pattern
-// Create a shared object to hold mock logger (survives hoisting)
-const mockLoggerHolder = {
-  instance: {
+// Use var to avoid TDZ when jest hoists the mock factory
+// eslint-disable-next-line no-var
+var mockLogger: any;
+
+jest.mock('winston', () => {
+  mockLogger = {
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn(),
     debug: jest.fn(),
-  }
-};
-
-jest.mock('winston', () => {
+  };
+  
   return {
-    createLogger: jest.fn(() => mockLoggerHolder.instance),
+    createLogger: jest.fn(() => mockLogger),
     format: {
       combine: jest.fn(() => jest.fn()),
       timestamp: jest.fn(() => jest.fn()),
@@ -68,19 +69,12 @@ jest.mock('winston', () => {
   };
 });
 
-// eslint-disable-next-line no-var
-var mockLogger: any = mockLoggerHolder.instance;
-
 import tracer from '../../src/instrument'
 import { ApplicationLogger, MetricsCollector, getHealthCheck } from '../../src/lib/server-monitoring'
 
 describe('Server Monitoring', () => {
   beforeEach(() => {
-    // Clear mock call history
-    mockLogger.info.mockClear()
-    mockLogger.warn.mockClear()
-    mockLogger.error.mockClear()
-    mockLogger.debug.mockClear()
+    jest.clearAllMocks()
   })
 
   describe('ApplicationLogger', () => {
@@ -91,41 +85,67 @@ describe('Server Monitoring', () => {
     });
 
     test('should log auth events', () => {
-      expect(() => {
-        logger.logAuth('user_login', { userId: 'user123', ip: '127.0.0.1' });
-      }).not.toThrow();
+      logger.logAuth('user_login', { userId: 'user123', ip: '127.0.0.1' });
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Authentication: user_login', expect.objectContaining({
+        category: 'auth',
+        userId: 'user123',
+        ip: '127.0.0.1',
+      }));
     });
 
     test('should log workspace events', () => {
-      expect(() => {
-        logger.logWorkspace('file_created', { workspaceId: 'workspace123', userId: 'user123', action: 'create', duration: 10 });
-      }).not.toThrow();
+      logger.logWorkspace('file_created', { workspaceId: 'workspace123', userId: 'user123', action: 'create', duration: 10 });
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Workspace: file_created', expect.objectContaining({
+        category: 'workspace',
+        workspaceId: 'workspace123',
+        userId: 'user123',
+      }));
     });
 
     test('should log AI events', () => {
-      expect(() => {
-        logger.logAI('code_completion', { userId: 'user123', model: 'claude-3', tokensUsed: 150 });
-      }).not.toThrow();
+      logger.logAI('code_completion', { userId: 'user123', model: 'claude-3', tokensUsed: 150 });
+
+      expect(mockLogger.info).toHaveBeenCalledWith('AI: code_completion', expect.objectContaining({
+        category: 'ai',
+        userId: 'user123',
+        model: 'claude-3',
+      }));
     });
 
     test('should log security events', () => {
-      expect(() => {
-        logger.logSecurity('unauthorized_access', { userId: 'user123', resource: '/admin', action: 'blocked', severity: 'high' } as any)
-      }).not.toThrow();
-    });
+      logger.logSecurity('unauthorized_access', { userId: 'user123', resource: '/admin', action: 'blocked', severity: 'high' } as any)
+
+      expect(mockLogger.warn).toHaveBeenCalledWith('Security: unauthorized_access', expect.objectContaining({
+        category: 'security',
+        userId: 'user123',
+        resource: '/admin',
+        action: 'blocked',
+        severity: 'high',
+      }))})
 
     test('should log API requests', () => {
-      expect(() => {
-        logger.logAPIRequest('GET', '/api/workspaces', 200, 150, 'user123')
-      }).not.toThrow();
-    });
+      logger.logAPIRequest('GET', '/api/workspaces', 200, 150, 'user123')
+
+      expect(mockLogger.info).toHaveBeenCalledWith('API Request', expect.objectContaining({
+        category: 'api',
+        method: 'GET',
+        endpoint: '/api/workspaces',
+        statusCode: 200,
+        responseTime: 150,
+        userId: 'user123',
+      }))})
 
     test('should log errors', () => {
       const error = new Error('Test error')
-      expect(() => {
-        logger.logError('Database connection failed', error, { component: 'database' })
-      }).not.toThrow();
-    });
+      logger.logError('Database connection failed', error, { component: 'database' })
+
+      expect(mockLogger.error).toHaveBeenCalledWith('Database connection failed', expect.objectContaining({
+        category: 'error',
+        error: error.message,
+        component: 'database',
+      }))})
 
     test('should handle sensitive data logging', () => {
       const sensitiveData = {
@@ -135,11 +155,12 @@ describe('Server Monitoring', () => {
         normalField: 'safe-value',
         userId: 'user123',
       }
-      expect(() => {
-        logger.logAuth('login_attempt', sensitiveData as any)
-      }).not.toThrow();
-    });
-  })
+      logger.logAuth('login_attempt', sensitiveData as any)
+
+      expect(mockLogger.info).toHaveBeenCalledWith('Authentication: login_attempt', expect.objectContaining({
+        category: 'auth',
+        userId: 'user123',
+      }))})})
 
   describe('MetricsCollector', () => {
     let metricsCollector: MetricsCollector;
@@ -251,10 +272,13 @@ describe('Server Monitoring', () => {
     })})
 
   describe('Error Handling', () => {
-    test('should handle logger operations gracefully', () => {
-      // Test that logger doesn't throw on normal operations
+    test('should surface logger errors', () => {
+      // Mock winston logger to throw
+      mockLogger.info.mockImplementation(() => {
+        throw new Error('Logger failed')});
+
       const logger = new ApplicationLogger()
-      expect(() => logger.logAuth('test', { userId: 'user123' } as any)).not.toThrow()
+      expect(() => logger.logAuth('test', { userId: 'user123' } as any)).toThrow()
     })
 
     test('should not throw when metrics state resets', () => {

@@ -6,27 +6,9 @@
 import { renderHook } from '@testing-library/react'
 import type { UseProjectGeneratorOptions } from '@/hooks/useProjectGenerator'
 
-<<<<<<< HEAD
 // Note: This hook requires Next.js router and fetch utilities
 // Testing it fully without mocks would require integration testing
 // For unit tests, we verify it can be imported and basic structure
-=======
-// Mock dependencies
-jest.mock('next/navigation', () => ({
-  useRouter: jest.fn()
-}))
-jest.mock('@/lib/utils/fetch')
-
-const mockPush = jest.fn()
-const mockUseRouter = jest.mocked(useRouter)
-const mockFetchWithRetry = jest.mocked(fetchWithRetry)
-const mockStreamResponse = jest.mocked(streamResponse)
-
-beforeEach(() => {
-  jest.clearAllMocks()
-  mockUseRouter.mockReturnValue({ push: mockPush } as any)
-})
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 describe('useProjectGenerator', () => {
   it('should export the hook', () => {

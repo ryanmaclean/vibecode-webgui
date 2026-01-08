@@ -18,13 +18,8 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-<<<<<<< HEAD
   // Tags should be added via tracer.init() tags option, not addTags()
   // tracer.addTags({ 'service.component': 'health-monitoring' })
-=======
-  tracer.addTags({ 'service.component': 'health-monitoring' })
-  console.info('🔍 Datadog APM tracer initialized')
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 } else {
   globalThis.console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
@@ -73,10 +68,7 @@ const logger = createLogger({
   ]
 })
 
-<<<<<<< HEAD
 // Initialize logger
-=======
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 logger.info('Winston logger initialized')
 
 /**
@@ -198,7 +190,7 @@ class ApplicationLogger {
   }
 }
 
-const appLogger = new ApplicationLogger()
+const console = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -209,7 +201,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      appLogger.logPerformance({
+      console.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -254,7 +246,7 @@ export {
   logger,
   tracer,
   metrics,
-  appLogger,
+  console,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,

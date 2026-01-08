@@ -33,6 +33,7 @@ describe('ProjectGenerator', () => {
   const mockUpdateProgress = jest.fn();
 
   const defaultProps = {
+    initialPrompt: 'test prompt',
     onComplete: jest.fn(),
     autoStart: false,
   };
@@ -41,11 +42,7 @@ describe('ProjectGenerator', () => {
     // Reset all mocks before each test
     jest.clearAllMocks();
 
-<<<<<<< HEAD
     // Mock generateProject to return a resolved promise
-=======
-    // Mock generateProject to return a resolved promise by default
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     mockGenerateProject.mockResolvedValue(undefined);
 
     // Default mock implementation
@@ -62,7 +59,6 @@ describe('ProjectGenerator', () => {
   it('renders with initial state', () => {
     render(<ProjectGenerator {...defaultProps} />);
 
-<<<<<<< HEAD
     // Component doesn't show input when initialPrompt is provided
     // but we're setting autoStart to false, so the component should be waiting
     // Check that nothing is visible when autoStart is false and initialPrompt is provided
@@ -82,31 +78,6 @@ describe('ProjectGenerator', () => {
 
   it('updates prompt when input changes', () => {
     render(<ProjectGenerator initialPrompt="" onComplete={jest.fn()} autoStart={false} />);
-=======
-    // Check that the input field is rendered
-    const input = screen.getByTestId('prompt-input') as HTMLInputElement;
-    expect(input.value).toBe('');
-
-    // Check that the generate button is rendered
-    expect(screen.getByTestId('generate-button')).toBeInTheDocument();
-    expect(screen.getByText('Generate a New Project')).toBeInTheDocument();
-  });
-
-  it('calls generateProject when form is submitted', () => {
-    render(<ProjectGenerator {...defaultProps} />);
-
-    const input = screen.getByTestId('prompt-input');
-    const button = screen.getByTestId('generate-button');
-
-    fireEvent.change(input, { target: { value: 'test prompt' } });
-    fireEvent.click(button);
-
-    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt', expect.any(Object));
-  });
-
-  it('updates prompt when input changes', () => {
-    render(<ProjectGenerator {...defaultProps} />);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
     const input = screen.getByTestId('prompt-input');
     fireEvent.change(input, { target: { value: 'new prompt' } });
@@ -152,14 +123,9 @@ describe('ProjectGenerator', () => {
 
     render(<ProjectGenerator {...defaultProps} />);
 
-<<<<<<< HEAD
     // Check that error is displayed - use getAllByText and verify one exists
     const errorTexts = screen.getAllByText('Error');
     expect(errorTexts.length).toBeGreaterThan(0);
-=======
-    // Check that error is displayed (there are multiple matches due to title and icon)
-    expect(screen.getAllByText(/error/i).length).toBeGreaterThan(0);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     expect(screen.getByText(/failed to generate project/i)).toBeInTheDocument();
   });
 
@@ -200,7 +166,6 @@ describe('ProjectGenerator', () => {
     });
   });
 
-<<<<<<< HEAD
   it('auto-starts generation when autoStart is true', async () => {
     mockGenerateProject.mockResolvedValue(undefined);
 
@@ -209,25 +174,15 @@ describe('ProjectGenerator', () => {
     await waitFor(() => {
       expect(mockGenerateProject).toHaveBeenCalledWith('test prompt', {});
     });
-=======
-  it('auto-starts generation when autoStart is true', () => {
-    // Mock generateProject to return a resolved promise
-    mockGenerateProject.mockResolvedValue(undefined);
-
-    render(<ProjectGenerator {...defaultProps} initialPrompt="test prompt" autoStart={true} />);
-
-    // Wait for useEffect to trigger
-    expect(mockGenerateProject).toHaveBeenCalledWith('test prompt', expect.any(Object));
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   });
 
   it('shows cancel button when generating', () => {
     mockUseProjectGenerator.mockReturnValue({
       isGenerating: true,
-      progress: {
-        status: 'generating',
-        progress: 42,
-        message: 'Generating...'
+      progress: { 
+        status: 'generating', 
+        progress: 42, 
+        message: 'Generating...' 
       },
       generateProject: mockGenerateProject,
       cancelGeneration: mockCancelGeneration,
@@ -236,10 +191,10 @@ describe('ProjectGenerator', () => {
     });
 
     render(<ProjectGenerator {...defaultProps} />);
-
-    const cancelButton = screen.getByText(/cancel/i);
+    
+    const cancelButton = screen.getByRole('button', { name: /cancel/i });
     fireEvent.click(cancelButton);
-
+    
     expect(mockCancelGeneration).toHaveBeenCalled();
   });
 });

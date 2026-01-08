@@ -213,8 +213,7 @@ export default function OnboardingPage() {
     if (merged.onboardingCompleted) {
       setStep('complete')
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [storedPreferences])
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">

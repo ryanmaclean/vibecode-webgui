@@ -23,11 +23,9 @@ const SECURITY_CONFIG = {
     /burp/i, /havij/i, /acunetix/i, /nessus/i, /openvas/i
   ],
   blockedIPs: new Set<string>(), // Can be populated from external threat feed
-  get allowedOrigins() {
-    return process.env.NODE_ENV === 'development'
-      ? ['http://localhost:3000', 'http://localhost:8080']
-      : ['https://vibecode.dev', 'https://www.vibecode.dev'];
-  },
+  allowedOrigins: process.env.NODE_ENV === 'development' 
+    ? ['http://localhost:3000', 'http://localhost:8080']
+    : ['https://vibecode.dev', 'https://www.vibecode.dev'],
 };
 
 // API endpoint security levels
@@ -67,7 +65,7 @@ function checkRequestSize(request: NextRequest): boolean {
 function validateHeaders(request: NextRequest): { valid: boolean; reason?: string } {
   // Check for suspicious headers
   const suspiciousHeaders = ['x-forwarded-host', 'x-originating-ip', 'x-cluster-client-ip'];
-
+  
   for (const header of suspiciousHeaders) {
     const value = request.headers.get(header);
     if (value && value.includes('..')) {
@@ -75,13 +73,11 @@ function validateHeaders(request: NextRequest): { valid: boolean; reason?: strin
     }
   }
 
-  // Validate User-Agent (allow missing user-agent in test/development)
-  const userAgent = request.headers.get('user-agent');
-  if (userAgent) {
-    for (const pattern of SECURITY_CONFIG.suspiciousUserAgents) {
-      if (pattern.test(userAgent)) {
-        return { valid: false, reason: `Suspicious User-Agent: ${userAgent}` };
-      }
+  // Validate User-Agent
+  const userAgent = request.headers.get('user-agent') || '';
+  for (const pattern of SECURITY_CONFIG.suspiciousUserAgents) {
+    if (pattern.test(userAgent)) {
+      return { valid: false, reason: `Suspicious User-Agent: ${userAgent}` };
     }
   }
 
@@ -352,25 +348,11 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
 let bypassSecurityForTests = false
 
 /**
- * Test bypass flag for unit testing
- */
-let __TEST__bypassEnabled = false;
-
-/**
- * Enable/disable security checks bypass for testing
- * @internal - Only for use in unit tests
- */
-export function __TEST__bypassSecurityChecks(bypass: boolean): void {
-  __TEST__bypassEnabled = bypass;
-}
-
-/**
  * Main API security middleware
  */
 export async function apiSecurityMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const pathname = request.nextUrl.pathname;
 
-<<<<<<< HEAD
   // Skip security checks in test environment or when explicitly bypassed
   if (bypassSecurityForTests) {
     return null;
@@ -401,10 +383,6 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
   if (isValidationTest) {
     // For validation tests, skip all middleware checks and let the route handler
     // perform its own validation. This allows testing validation logic independently.
-=======
-  // Skip security checks in test environment with CI flag
-  if (process.env.NODE_ENV === 'test' && process.env.CI === 'true') {
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     return null;
   }
 
@@ -420,26 +398,15 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
 
   const securityLevel = getSecurityLevel(pathname);
 
-  // Validate CORS (unless bypassed for testing or in development with localhost)
-  const origin = request.headers.get('origin');
-  const isDevelopmentLocalhost = process.env.NODE_ENV === 'development' &&
-    origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
-
-  let corsValidation = { valid: true, headers: {} as Record<string, string> };
-
-  if (!__TEST__bypassEnabled && !isDevelopmentLocalhost) {
-    corsValidation = validateCORS(request);
-    if (!corsValidation.valid) {
-      AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
-        pathname,
-        origin: request.headers.get('origin'),
-        ip: getClientIP(request)
-      });
-      return new NextResponse('CORS policy violation', { status: 403 });
-    }
-  } else {
-    // For test/development, create a valid CORS response
-    corsValidation = { valid: true, headers: { 'Access-Control-Allow-Origin': origin || '*' } };
+  // Validate CORS
+  const corsValidation = validateCORS(request);
+  if (!corsValidation.valid) {
+    AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
+      pathname,
+      origin: request.headers.get('origin'),
+      ip: getClientIP(request)
+    });
+    return new NextResponse('CORS policy violation', { status: 403 });
   }
 
   // Handle preflight requests
@@ -458,12 +425,10 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
     });
   }
 
-  // Validate request security (unless bypassed for testing)
-  if (!__TEST__bypassEnabled) {
-    const securityValidation = await validateRequestSecurity(request, securityLevel);
-    if (!securityValidation.valid) {
-      return securityValidation.response!;
-    }
+  // Validate request security
+  const securityValidation = await validateRequestSecurity(request, securityLevel);
+  if (!securityValidation.valid) {
+    return securityValidation.response!;
   }
 
   // Add security headers to response

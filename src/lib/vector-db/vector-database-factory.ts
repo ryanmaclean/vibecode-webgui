@@ -27,25 +27,6 @@ export class VectorDatabaseFactory {
     switch (config.provider) {
       case VectorDatabaseProvider.POSTGRES:
         return new PostgresVectorDatabaseAdapter(config as PostgresVectorDatabaseConfig);
-
-      case VectorDatabaseProvider.SQLSERVER:
-        console.warn('SQL Server adapter not yet implemented', {
-          provider: config.provider,
-        });
-        throw new Error('SQL Server adapter not yet implemented');
-
-      case VectorDatabaseProvider.COSMOSDB:
-        console.warn('Cosmos DB adapter not yet implemented', {
-          provider: config.provider,
-        });
-        throw new Error('Cosmos DB adapter not yet implemented');
-
-      case VectorDatabaseProvider.REDIS:
-        console.warn('Redis adapter not yet implemented', {
-          provider: config.provider,
-        });
-        throw new Error('Redis adapter not yet implemented');
-
       default:
         console.warn('Unsupported vector database provider requested', {
           provider: config.provider,

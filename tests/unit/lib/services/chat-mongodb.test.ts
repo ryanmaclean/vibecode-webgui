@@ -5,7 +5,6 @@ jest.mock('uuid', () => ({
 
 // Mock MongoDB ObjectId
 jest.mock('mongodb', () => ({
-<<<<<<< HEAD
   ObjectId: class MockObjectId {
     private _id: string;
 
@@ -21,14 +20,10 @@ jest.mock('mongodb', () => ({
       return this._id;
     }
   }
-=======
-  ObjectId: jest.fn((id?: string) => id || 'mock-object-id')
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 }));
 
 import { ChatMongoDBService } from '@/lib/services/chat-mongodb';
 import { v4 as uuidv4 } from 'uuid';
-<<<<<<< HEAD
 import { getDatabase } from '@/lib/mongodb';
 
 // Mock external dependencies
@@ -42,8 +37,6 @@ jest.mock('@/lib/monitoring', () => ({
     error: jest.fn()
   }
 }));
-=======
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 describe('ChatMongoDBService', () => {
   let service: ChatMongoDBService;
@@ -84,15 +77,10 @@ describe('ChatMongoDBService', () => {
       deleteOne: jest.fn(),
       deleteMany: jest.fn(),
       countDocuments: jest.fn(),
-<<<<<<< HEAD
       distinct: jest.fn(),
       aggregate: jest.fn().mockReturnValue({
         toArray: jest.fn().mockResolvedValue([])
       }),
-=======
-      aggregate: jest.fn(),
-      distinct: jest.fn(),
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       toArray: jest.fn()
     };
 
@@ -113,7 +101,6 @@ describe('ChatMongoDBService', () => {
       toArray: jest.fn()
     };
 
-<<<<<<< HEAD
     // Setup mock database
     mockDb = {
       collection: jest.fn((name: string) => {
@@ -125,24 +112,11 @@ describe('ChatMongoDBService', () => {
           default: return mockConversationsCollection;
         }
       })
-=======
-    const mockMessagesCollection = {
-      createIndex: jest.fn(),
-      insertOne: jest.fn(),
-      findOne: jest.fn(),
-      find: jest.fn(),
-      updateOne: jest.fn(),
-      deleteOne: jest.fn(),
-      deleteMany: jest.fn(),
-      countDocuments: jest.fn(),
-      aggregate: jest.fn(),
-      toArray: jest.fn()
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     };
 
-    service = new ChatMongoDBService();
+    // Mock getDatabase
+    (getDatabase as jest.Mock).mockResolvedValue(mockDb);
 
-<<<<<<< HEAD
     service = new ChatMongoDBService();
     // Initialize the service with mock collections
     service.initialize(
@@ -150,14 +124,6 @@ describe('ChatMongoDBService', () => {
       mockConversationsCollection,
       mockSessionsCollection,
       mockAssistantsCollection
-=======
-    // Initialize the service with mock collections
-    service.initialize(
-      mockMessagesCollection as any,
-      mockConversationsCollection as any,
-      mockSessionsCollection as any,
-      mockAssistantsCollection as any
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     );
   });
 
@@ -407,22 +373,6 @@ describe('ChatMongoDBService', () => {
           insertedId: mockMsgId
         });
 
-        // Mock findOne to return a conversation
-        mockConversationsCollection.findOne.mockResolvedValue({
-          id: 'conversation-123',
-          workspaceId: 'workspace-123',
-          userId: 'user123',
-          messages: []
-        });
-
-        // Mock insertOne for messages
-        const mockMessagesCollection = service.getCollections().messages;
-        if (mockMessagesCollection) {
-          (mockMessagesCollection.insertOne as jest.Mock).mockResolvedValue({
-            insertedId: 'message-id-123'
-          });
-        }
-
         mockConversationsCollection.updateOne.mockResolvedValue({
           matchedCount: 1
         });
@@ -438,10 +388,6 @@ describe('ChatMongoDBService', () => {
         expect(result.from).toBe('user');
         expect(result.content).toBe('Hello, world!');
         expect(result.timestamp).toBeInstanceOf(Date);
-<<<<<<< HEAD
-=======
-        expect(mockConversationsCollection.updateOne).toHaveBeenCalled();
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       });
 
       it('should handle adding message to non-existent conversation', async () => {
@@ -455,46 +401,9 @@ describe('ChatMongoDBService', () => {
           content: 'Hello, world!'
         };
 
-<<<<<<< HEAD
         await expect(service.addMessage(mockConvId.toString(), messageData))
           .rejects.toThrow('Conversation not found');
       });
-=======
-        mockConversationsCollection.findOne.mockResolvedValue(null);
-
-        await expect(service.addMessage('non-existent-conversation', messageData))
-          .rejects.toThrow('Conversation not found');
-      });
-
-      it('should handle message addition errors', async () => {
-        const messageData = {
-          from: 'user' as 'user' | 'assistant',
-          content: 'Hello, world!'
-        };
-
-        // Mock findOne to return a conversation
-        mockConversationsCollection.findOne.mockResolvedValue({
-          id: 'conversation-123',
-          workspaceId: 'workspace-123',
-          userId: 'user123',
-          messages: []
-        });
-
-        // Mock messages collection insertOne to succeed
-        const mockMessagesCollection = service.getCollections().messages;
-        if (mockMessagesCollection) {
-          (mockMessagesCollection.insertOne as jest.Mock).mockResolvedValue({
-            insertedId: 'message-id-123'
-          });
-        }
-
-        // Mock updateOne to throw error
-        mockConversationsCollection.updateOne.mockRejectedValue(new Error('Database error'));
-
-        await expect(service.addMessage('conversation-123', messageData))
-          .rejects.toThrow('Database error');
-      });
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     });
 
   });
@@ -502,17 +411,11 @@ describe('ChatMongoDBService', () => {
   describe('Conversation Deletion', () => {
     describe('deleteConversation', () => {
       it('should delete an existing conversation', async () => {
-<<<<<<< HEAD
         const { ObjectId } = require('mongodb');
         const mockId = new ObjectId();
 
         mockConversationsCollection.findOne.mockResolvedValue({
           _id: mockId,
-=======
-        // Mock findOne to return a conversation
-        mockConversationsCollection.findOne.mockResolvedValue({
-          id: 'conversation-123',
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
           messages: []
         });
 
@@ -522,7 +425,6 @@ describe('ChatMongoDBService', () => {
 
         const result = await service.deleteConversation(mockId);
 
-<<<<<<< HEAD
         expect(result).toBe(true);
         expect(mockConversationsCollection.deleteOne).toHaveBeenCalledWith({ _id: mockId });
       });
@@ -530,15 +432,6 @@ describe('ChatMongoDBService', () => {
       it('should handle deleting non-existent conversation', async () => {
         const { ObjectId } = require('mongodb');
         const mockId = new ObjectId();
-=======
-        expect(mockConversationsCollection.findOne).toHaveBeenCalledWith({ id: 'conversation-123' });
-        expect(mockConversationsCollection.deleteOne).toHaveBeenCalledWith({ id: 'conversation-123' });
-      });
-
-      it('should handle deleting non-existent conversation', async () => {
-        // Mock findOne to return null
-        mockConversationsCollection.findOne.mockResolvedValue(null);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
         mockConversationsCollection.findOne.mockResolvedValue(null);
 
@@ -548,17 +441,11 @@ describe('ChatMongoDBService', () => {
       });
 
       it('should handle conversation deletion errors', async () => {
-<<<<<<< HEAD
         const { ObjectId } = require('mongodb');
         const mockId = new ObjectId();
 
         mockConversationsCollection.findOne.mockResolvedValue({
           _id: mockId,
-=======
-        // Mock findOne to return a conversation
-        mockConversationsCollection.findOne.mockResolvedValue({
-          id: 'conversation-123',
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
           messages: []
         });
 
@@ -734,7 +621,6 @@ describe('ChatMongoDBService', () => {
     });
   });
 
-<<<<<<< HEAD
   describe('Health Status', () => {
     it('should get health status', async () => {
       const mockMessagesCollection = service.getCollections().messages;
@@ -762,14 +648,4 @@ describe('ChatMongoDBService', () => {
       expect(result.isHealthy).toBe(false);
     });
   });
-=======
-  describe('Error Handling', () => {
-    it('should handle database operation errors gracefully', async () => {
-      mockSessionsCollection.insertOne.mockRejectedValue(new Error('Database operation failed'));
-
-      await expect(service.createSession('user123')).rejects.toThrow('Database operation failed');
-    });
-  });
-
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 });

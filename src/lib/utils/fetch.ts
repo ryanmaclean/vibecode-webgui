@@ -1,65 +1,10 @@
 import { logEvent, trackTiming, trackError } from '@/lib/analytics';
 
-/**
- * Custom error class for fetch-related errors
- */
-export class FetchError extends Error {
-  constructor(
-    message: string,
-    public status?: number,
-    public url?: string,
-    public attempt?: number,
-    public isRetryError: boolean = false,
-    public originalError?: Error
-  ) {
-    super(message);
-    this.name = 'FetchError';
-    // Maintains proper stack trace for where our error was thrown (only available on V8)
-    if (Error.captureStackTrace) {
-      Error.captureStackTrace(this, FetchError);
-    }
+// Extend the Error type to include status property
+declare global {
+  interface Error {
+    status?: number;
   }
-}
-
-/**
- * Error thrown when a request times out
- */
-export class TimeoutError extends FetchError {
-  constructor(url: string, timeout: number) {
-    super(`Request timeout after ${timeout}ms`, 408, url, undefined, false);
-    this.name = 'TimeoutError';
-  }
-}
-
-/**
- * Error thrown for network-level failures
- */
-export class NetworkError extends FetchError {
-  constructor(message: string, url: string, originalError?: Error) {
-    super(message, undefined, url, undefined, false, originalError);
-    this.name = 'NetworkError';
-  }
-}
-
-/**
- * Type guard to check if an error is a FetchError
- */
-export function isFetchError(error: unknown): error is FetchError {
-  return error instanceof FetchError;
-}
-
-/**
- * Type guard to check if an error is a TimeoutError
- */
-export function isTimeoutError(error: unknown): error is TimeoutError {
-  return error instanceof TimeoutError;
-}
-
-/**
- * Type guard to check if an error is a NetworkError
- */
-export function isNetworkError(error: unknown): error is NetworkError {
-  return error instanceof NetworkError;
 }
 
 // Status codes that should trigger a retry
@@ -139,12 +84,9 @@ export async function fetchWithRetry(
       lastResponse = response;
 
       if (!response.ok) {
-        throw new FetchError(
-          `HTTP error! status: ${response.status}`,
-          response.status,
-          url,
-          attempt
-        );
+        const error = new Error(`HTTP error! status: ${response.status}`);
+        Object.defineProperty(error, 'status', { value: response.status });
+        throw error;
       }
 
       clearTimeout(timeoutId);
@@ -174,24 +116,16 @@ export async function fetchWithRetry(
   // Clean up timeout to prevent memory leaks
   clearTimeout(timeoutId);
 
-  // Throw enhanced error with full context
-  if (lastError instanceof FetchError) {
-    // Update existing FetchError with retry information
-    lastError.isRetryError = true;
-    lastError.attempt = attempt;
-    if (!lastError.url) lastError.url = url;
-    throw lastError;
-  }
+  // Enhance the error with more context
+  const finalError = lastError || new Error('Unknown error occurred');
+  Object.defineProperties(finalError, {
+    url: { value: url },
+    attempt: { value: attempt },
+    status: { value: lastResponse?.status },
+    isRetryError: { value: true }
+  });
 
-  // Create new FetchError for other error types
-  throw new FetchError(
-    lastError?.message || 'Unknown error occurred',
-    lastResponse?.status,
-    url,
-    attempt,
-    true,
-    lastError || undefined
-  );
+  throw finalError;
 }
 
 // Helper for streaming responses with progress
@@ -247,7 +181,7 @@ export async function trackedFetch(
           attempt,
           delay,
           error: error?.message || 'Unknown error',
-          status: isFetchError(error) ? error.status : 0,
+          status: error?.status || 0,
         });
       },
     });
@@ -277,7 +211,7 @@ export async function trackedFetch(
   } catch (error) {
     const duration = Math.round(performance.now() - startTime);
     const errorMessage = error instanceof Error ? error.message : 'Unknown error';
-    const status = isFetchError(error) ? error.status : undefined;
+    const status = (error as Error & { status?: number })?.status;
     
     // Log error
     trackError(error instanceof Error ? error : new Error(errorMessage), {

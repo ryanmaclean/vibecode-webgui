@@ -17,11 +17,7 @@
     "setup": "node scripts/setup-development.js",
     "dev": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
     "dev:simple": "cross-env NEXT_TELEMETRY_DISABLED=1 next dev",
-<<<<<<< HEAD
     "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build --webpack",
-=======
-    "build": "cross-env NEXT_TELEMETRY_DISABLED=1 next build",
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     "start:dd": "cross-env NEXT_TELEMETRY_DISABLED=1 node --require ./src/instrument.ts node_modules/.bin/next start",
     "lint": "eslint --ext .ts,.tsx src/app/api/agents src/app/api/ai/chat src/app/api/ai/chat/enhanced src/app/api/ai/chat/unified src/app/api/ai/chat/stream --ignore-pattern '**/*.js' --ignore-pattern '**/*.cjs'",
     "type-check": "tsc --project tsconfig.lite.json --noEmit",

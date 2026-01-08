@@ -119,7 +119,6 @@ function areDependenciesSatisfied(
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-<<<<<<< HEAD
     if (depExec?.status === 'completed') {
       return true;
     }
@@ -129,10 +128,6 @@ function areDependenciesSatisfied(
       return node?.continueOnError === true;
     }
     return false;
-=======
-    // A dependency is satisfied if it's completed OR failed (to allow continueOnError to work)
-    return depExec?.status === 'completed' || depExec?.status === 'failed';
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   });
 }
 
@@ -175,17 +170,7 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-<<<<<<< HEAD
     const contextVars = { input: context.input, ...context.globals, nodes: context.nodes };
-=======
-    // Pass input, nodes, and globals as separate objects
-    const contextVars = {
-      input: context.input,
-      nodes: context.nodes,
-      globals: context.globals,
-      loops: context.loops
-    };
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -419,11 +404,7 @@ export class WorkflowEngine extends EventEmitter {
           break;
 
         case 'merge':
-<<<<<<< HEAD
           output = await this.executeMerge(node, execution, edges || []);
-=======
-          output = await this.executeMerge(node, execution);
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
           break;
 
         case 'loop':
@@ -528,7 +509,6 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeMerge(
     node: WorkflowNode,
-<<<<<<< HEAD
     execution: WorkflowExecution,
     edges: WorkflowEdge[]
   ): Promise<unknown> {
@@ -561,37 +541,6 @@ export class WorkflowEngine extends EventEmitter {
 
       default:
         return { inputs, merged: true };
-=======
-    execution: WorkflowExecution
-  ): Promise<unknown> {
-    const config = node.config as import('./types').MergeConfig;
-
-    // Collect outputs from all completed predecessor nodes
-    const inputs: unknown[] = [];
-    for (const [nodeId, nodeExec] of execution.nodes.entries()) {
-      if (nodeExec.status === 'completed' && nodeExec.output !== undefined && nodeId !== node.id) {
-        // Check if this node is a predecessor (has edge pointing to merge node)
-        // For simplicity, we'll include all completed nodes' outputs
-        inputs.push(nodeExec.output);
-      }
-    }
-
-    // Apply merge strategy
-    switch (config.strategy) {
-      case 'all':
-        return { merged: inputs };
-      case 'any':
-        return inputs.length > 0 ? inputs[0] : null;
-      case 'first':
-        return inputs[0] || null;
-      case 'custom':
-        if (config.mergeFunction) {
-          return evaluateExpression(config.mergeFunction, execution.context);
-        }
-        return { merged: inputs };
-      default:
-        return { merged: inputs };
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     }
   }
 

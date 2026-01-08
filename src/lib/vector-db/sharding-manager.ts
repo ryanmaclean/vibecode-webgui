@@ -114,11 +114,7 @@ export class VectorShardingManager {
   private async initializeShard(shard: ShardInfo, poolFactory: DatabasePoolFactory): Promise<void> {
     try {
       this.logger.info(`Initializing shard ${shard.id}`);
-<<<<<<< HEAD
       
-=======
-
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       // Create a connection pool for this shard using the factory
       const pool = poolFactory.createPool({
         host: shard.host,
@@ -136,11 +132,7 @@ export class VectorShardingManager {
       try {
         await client.query('SELECT 1');
         this.logger.info(`Successfully connected to shard ${shard.id}`);
-<<<<<<< HEAD
         
-=======
-
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
         // Update shard status to ACTIVE
         shard.status = ShardStatus.ACTIVE;
       } finally {
@@ -835,11 +827,7 @@ export class VectorShardingManager {
     );
     
     await Promise.all(closePromises);
-<<<<<<< HEAD
     
-=======
-
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     this.logger.info('VectorShardingManager shutdown complete');
   }
 }
