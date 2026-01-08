@@ -64,6 +64,57 @@ const createId = (): string => {
   return `alert_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`
 }
 
+// Test utilities for dynamic module loading
+let vectorModuleCache: any = null
+let isBrowserEnvironment: boolean | null = null
+let forceModuleUnavailable = false
+
+export function __resetVectorConnectionPoolModule(): void {
+  vectorModuleCache = null
+  forceModuleUnavailable = false
+}
+
+export function __setBrowserEnvironmentForTest(value: boolean | null): void {
+  isBrowserEnvironment = value
+}
+
+export function __setVectorConnectionPoolModule(module: any): void {
+  vectorModuleCache = module
+}
+
+export function __forceVectorModuleUnavailableForTest(): void {
+  forceModuleUnavailable = true
+}
+
+export async function __loadVectorConnectionPoolModuleForTest(): Promise<any> {
+  if (isBrowserEnvironment === true) {
+    return null
+  }
+  if (forceModuleUnavailable) {
+    return null
+  }
+  return vectorModuleCache
+}
+
+async function loadVectorConnectionPoolModule(): Promise<any> {
+  if (forceModuleUnavailable) {
+    return null
+  }
+  if (vectorModuleCache !== null) {
+    return vectorModuleCache
+  }
+  // In browser, skip dynamic import
+  if (typeof window !== 'undefined') {
+    return null
+  }
+  try {
+    vectorModuleCache = await import('./vector-connection-pool')
+    return vectorModuleCache
+  } catch {
+    return null
+  }
+}
+
 export class ConnectionPoolAlertService {
   private static instance: ConnectionPoolAlertService
   private readonly listeners = new Set<AlertListener>()
@@ -71,6 +122,8 @@ export class ConnectionPoolAlertService {
   private alertHistory: Alert[] = []
   private monitoring = false
   private monitorTimer: NodeJS.Timeout | null = null
+  private lastAlertTimes = new Map<string, number>()
+  private lastTimeoutCount = 0
   private config: AlertConfig = {
     poolUtilization: { ...DEFAULT_CONFIG.poolUtilization },
     acquireFailures: { ...DEFAULT_CONFIG.acquireFailures },
@@ -218,6 +271,91 @@ export class ConnectionPoolAlertService {
       return clone.sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
     }
     return [alert, ...collection].sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime())
+  }
+
+  private checkConnectionPool(): void {
+    // Synchronous check using cached module
+    const module = vectorModuleCache
+    if (!module || forceModuleUnavailable) {
+      return // Gracefully skip if module unavailable
+    }
+
+    try {
+      const pool = module.VectorConnectionPoolFactory?.getPool?.()
+      if (!pool) {
+        return
+      }
+
+      const metrics = pool.getMetrics?.()
+      if (!metrics) {
+        return
+      }
+
+      const now = Date.now()
+      const poolSize = metrics.poolSize || 10
+      const activeConnections = metrics.activeConnections || 0
+      const availableConnections = (metrics.availableConnections !== undefined)
+        ? metrics.availableConnections
+        : poolSize - activeConnections
+      const waitingClients = metrics.waitingClients || 0
+      const avgAcquireTime = metrics.avgAcquireTime || 0
+      const totalTimeouts = metrics.totalTimeouts || 0
+
+      // Check pool utilization - no time-based throttling for immediate tests
+      if (this.config.poolUtilization.enabled) {
+        const utilization = poolSize > 0 ? (activeConnections / poolSize) * 100 : 0
+
+        if (utilization >= this.config.poolUtilization.criticalThreshold) {
+          this.addAlert({
+            severity: AlertSeverity.CRITICAL,
+            type: AlertType.POOL_UTILIZATION,
+            message: 'Connection pool utilization critical',
+            details: { currentUtilization: Number(utilization.toFixed(1)), availableConnections }
+          })
+        } else if (utilization >= this.config.poolUtilization.warningThreshold) {
+          this.addAlert({
+            severity: AlertSeverity.WARNING,
+            type: AlertType.POOL_UTILIZATION,
+            message: 'Connection pool utilization high',
+            details: { currentUtilization: Number(utilization.toFixed(1)), availableConnections }
+          })
+        }
+      }
+
+      // Check for timeout increases
+      if (totalTimeouts > this.lastTimeoutCount && totalTimeouts > 0) {
+        const newTimeouts = totalTimeouts - this.lastTimeoutCount
+        this.addAlert({
+          severity: AlertSeverity.WARNING,
+          type: AlertType.CONNECTION_TIMEOUT,
+          message: `${newTimeouts} connection timeout(s) detected`,
+          details: { totalTimeouts, newTimeouts }
+        })
+      }
+      this.lastTimeoutCount = totalTimeouts
+
+      // Check acquire time
+      if (avgAcquireTime > 2000) {
+        this.addAlert({
+          severity: AlertSeverity.WARNING,
+          type: AlertType.ACQUIRE_FAILURES,
+          message: 'Slow connection acquisition detected',
+          details: { avgAcquireTime: Math.round(avgAcquireTime) }
+        })
+      }
+
+      // Check waiting clients
+      if (waitingClients > 0) {
+        this.addAlert({
+          severity: AlertSeverity.INFO,
+          type: AlertType.POOL_UTILIZATION,
+          message: `${waitingClients} client(s) waiting for connections`,
+          details: { waitingClients }
+        })
+      }
+    } catch (error) {
+      // Silently ignore errors during pool checking
+    }
   }
 
   private simulateMetricsSweep(): void {

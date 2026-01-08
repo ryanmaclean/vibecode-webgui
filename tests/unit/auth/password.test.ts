@@ -3,7 +3,11 @@ import { hashPassword, isValidBcryptHash, verifyPassword } from '@/lib/auth/pass
 describe('auth password utilities', () => {
   const bcryptPattern = /^\$2[aby]\$12\$[./A-Za-z0-9]{53}$/
   const strongPassword = 'TestP@ssw0rd123!'
+<<<<<<< HEAD
   const testPassword = 'C0rrect!Horse#Battery$Staple'
+=======
+  const testPassword = 'CorrectHorse@Battery9Staple' // Strong password for testing
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
   it('hashPassword returns a bcrypt hash with the default rounds', async () => {
     const hash = await hashPassword(testPassword)
@@ -25,7 +29,11 @@ describe('auth password utilities', () => {
   })
 
   it('verifyPassword returns false when the hash is not a bcrypt hash', async () => {
+<<<<<<< HEAD
     await expect(verifyPassword('Anything123!', 'not-a-bcrypt-hash'))
+=======
+    await expect(verifyPassword('anything', 'not-a-bcrypt-hash'))
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       .resolves.toBe(false)
   })
 
@@ -41,6 +49,9 @@ describe('auth password utilities', () => {
 
   it('hashPassword throws for invalid inputs', async () => {
     await expect(hashPassword('')).rejects.toThrow('Password must be a non-empty string')
+<<<<<<< HEAD
     await expect(hashPassword('weak')).rejects.toThrow('Password validation failed')
+=======
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   })
 })

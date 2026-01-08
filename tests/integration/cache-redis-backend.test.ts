@@ -134,10 +134,50 @@ class RedisIntegratedCacheInvalidator {
   constructor(redisClient: MockRedisClient | any, config?: any) {
     this.redis = redisClient;
     this.invalidator = new ProductionVectorCacheInvalidator(config);
-    
-    // Replace the private method using a hacky approach for testing purposes
+
+    // Replace the private methods using a hacky approach for testing purposes
     // Note: This is not type-safe but necessary for the test
     (this.invalidator as any).executeActualInvalidation = this.executeRedisInvalidation.bind(this);
+    (this.invalidator as any).expandPattern = this.expandRedisPattern.bind(this);
+    (this.invalidator as any).generateContentTypePatterns = this.generateRedisContentTypePatterns.bind(this);
+  }
+
+  // Method to expand patterns using Redis KEYS command
+  private async expandRedisPattern(pattern: string): Promise<string[]> {
+    if (!this.redis) {
+      return [];
+    }
+
+    // Use Redis KEYS command to find all matching keys
+    const keys = await this.redis.keys(pattern);
+
+    if ((this.invalidator as any).config?.enableLogging) {
+      console.log(`Pattern expansion: ${pattern} -> ${keys.length} keys found`);
+    }
+
+    return keys;
+  }
+
+  // Method to generate content type patterns for Redis
+  private generateRedisContentTypePatterns(contentType: string, workspaceId?: string): string[] {
+    const patterns = [];
+
+    if (workspaceId) {
+      // For workspace content type, use simple pattern
+      if (contentType === 'workspace') {
+        patterns.push(`workspace:${workspaceId}:*`);
+      } else {
+        patterns.push(`workspace:${workspaceId}:${contentType}:*`);
+        patterns.push(`embedding:${workspaceId}:${contentType}:*`);
+        patterns.push(`search:${workspaceId}:${contentType}:*`);
+      }
+    } else {
+      patterns.push(`${contentType}:*`);
+      patterns.push(`embedding:*:${contentType}:*`);
+      patterns.push(`search:*:${contentType}:*`);
+    }
+
+    return patterns;
   }
 
   // Method to handle Redis invalidation
@@ -225,7 +265,29 @@ class RedisIntegratedCacheInvalidator {
   });
 
   afterEach(async () => {
+<<<<<<< HEAD
     if (mockRedisClient) {
+=======
+    if (realRedisAvailable && redisClient) {
+      try {
+        // Check if client is still connected before flushing
+        if (redisClient.status === 'ready' || redisClient.status === 'connect') {
+          await redisClient.flushdb();
+        }
+      } catch (error) {
+        // Ignore flush errors if connection is closed
+      }
+
+      try {
+        // Always try to disconnect, but ignore errors if already disconnected
+        if (redisClient.status !== 'end') {
+          await redisClient.disconnect();
+        }
+      } catch (error) {
+        // Ignore disconnect errors
+      }
+    } else if (mockRedisClient) {
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       // Clear mock cache between tests
       await mockRedisClient.flushdb();
     }

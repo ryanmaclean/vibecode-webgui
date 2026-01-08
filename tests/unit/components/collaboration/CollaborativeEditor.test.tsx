@@ -1,6 +1,7 @@
 import React from 'react';
 import { render, act, screen, cleanup } from '../../../test-utils';
 import '@testing-library/jest-dom';
+<<<<<<< HEAD
 
 // Mock the collaboration manager
 jest.mock('@/lib/collaboration', () => ({
@@ -18,6 +19,35 @@ jest.mock('@/lib/collaboration', () => ({
   CollaborationSession: {},
   CollaborationUser: {}
 }));
+=======
+import { CollaborativeEditor } from '@/components/collaboration/CollaborativeEditor';
+
+// Mock the collaboration manager
+jest.mock('@/lib/collaboration', () => {
+  const mockJoinSession = jest.fn();
+  const mockLeaveSession = jest.fn();
+  const mockGetText = jest.fn();
+  const mockUpdateCursor = jest.fn();
+  const mockSetCurrentUser = jest.fn();
+  const mockGetActiveUsers = jest.fn();
+
+  return {
+    collaborationManager: {
+      setCurrentUser: mockSetCurrentUser,
+      joinSession: mockJoinSession,
+      leaveSession: mockLeaveSession,
+      getText: mockGetText,
+      updateCursor: mockUpdateCursor,
+      getActiveUsers: mockGetActiveUsers,
+      getStats: jest.fn().mockReturnValue({ userCount: 1, conflicts: 0, documentSize: 12, lastActivity: Date.now() }),
+      getMap: jest.fn().mockReturnValue(new Map())
+    },
+    // Export the real types for TypeScript compatibility
+    CollaborationSession: {},
+    CollaborationUser: {}
+  };
+});
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 // Mocked functions will be accessed after importing collaborationManager below
 
@@ -130,12 +160,40 @@ jest.mock('@codemirror/lang-css', () => ({
   css: jest.fn().mockReturnValue({})
 }), { virtual: true });
 
+<<<<<<< HEAD
 // Mock y-codemirror integration
+=======
+// Mock basic-setup
+jest.mock('@codemirror/basic-setup', () => ({
+  basicSetup: jest.fn().mockReturnValue({})
+}), { virtual: true });
+
+// Mock Yjs
+jest.mock('yjs', () => ({
+  Doc: jest.fn().mockImplementation(() => ({
+    transact: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+    getText: jest.fn().mockReturnValue({
+      toString: () => 'test content',
+      length: 12,
+      insert: jest.fn(),
+      delete: jest.fn()
+    })
+  }))
+}));
+
+// Mock y-codemirror
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 jest.mock('y-codemirror.next', () => ({
   yCollab: jest.fn().mockReturnValue({})
 }), { virtual: true });
 
+<<<<<<< HEAD
 // Mock y-protocols
+=======
+// Mock y-protocols/awareness
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 jest.mock('y-protocols/awareness', () => ({
   Awareness: jest.fn()
 }), { virtual: true });
@@ -160,6 +218,24 @@ const mockSetCurrentUser = collaborationManager.setCurrentUser as jest.Mock;
 const mockGetActiveUsers = collaborationManager.getActiveUsers as jest.Mock;
 
 describe('CollaborativeEditor', () => {
+  // Get mocked collaboration manager functions
+  let mockJoinSession: jest.Mock;
+  let mockLeaveSession: jest.Mock;
+  let mockGetText: jest.Mock;
+  let mockUpdateCursor: jest.Mock;
+  let mockSetCurrentUser: jest.Mock;
+  let mockGetActiveUsers: jest.Mock;
+
+  beforeAll(() => {
+    const { collaborationManager } = require('@/lib/collaboration');
+    mockJoinSession = collaborationManager.joinSession as jest.Mock;
+    mockLeaveSession = collaborationManager.leaveSession as jest.Mock;
+    mockGetText = collaborationManager.getText as jest.Mock;
+    mockUpdateCursor = collaborationManager.updateCursor as jest.Mock;
+    mockSetCurrentUser = collaborationManager.setCurrentUser as jest.Mock;
+    mockGetActiveUsers = collaborationManager.getActiveUsers as jest.Mock;
+  });
+
   const mockCurrentUser = {
     id: 'test-user-1',
     name: 'Test User',
@@ -183,7 +259,7 @@ describe('CollaborativeEditor', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Setup default session mock
     mockJoinSession.mockResolvedValue({
       documentId: 'test-doc-1',
@@ -229,14 +305,14 @@ describe('CollaborativeEditor', () => {
 
   it('renders without crashing', async () => {
     await act(async () => {
-      render(<CollaborativeEditor 
+      render(<CollaborativeEditor
         documentId={defaultProps.documentId}
         projectId={defaultProps.projectId}
         filePath={defaultProps.filePath}
         currentUser={defaultProps.currentUser}
       />);
     });
-    
+
     // Verify component renders without crashing and shows connected state
     expect(screen.getByText('Connected')).toBeInTheDocument();
   });

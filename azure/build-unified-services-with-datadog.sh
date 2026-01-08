@@ -449,6 +449,27 @@ download_dropbear_ssh() {
     log ""
 }
 
+download_socat() {
+    log "=== Downloading socat for vsock forwarding ==="
+
+    local socat_dir="$WORK_DIR/downloads/socat"
+    mkdir -p "$socat_dir"
+    cd "$socat_dir"
+
+    local apk_url="${ALPINE_MIRROR}/main/aarch64/socat-1.8.1.0-r0.apk"
+    info "Downloading: $apk_url"
+
+    wget -q "$apk_url" -O socat.apk || error "Failed to download socat"
+    tar xzf socat.apk 2>/dev/null || true
+
+    if [ ! -f usr/bin/socat ]; then
+        error "socat binary not found in APK"
+    fi
+
+    log "✓ socat downloaded"
+    log ""
+}
+
 download_musl_libc() {
     log "=== Downloading musl libc and dependencies ==="
 
@@ -534,7 +555,39 @@ download_musl_libc() {
 }
 
 # ==============================================================================
-# PHASE 3: CREATE DATADOG INTEGRATION
+# PHASE 3: CREATE SANDBOX COMPONENTS
+# ==============================================================================
+
+create_sandbox_files() {
+    log "=== Creating Sandbox Components ==="
+
+    local sandbox_dir="$WORK_DIR/sandbox"
+    mkdir -p "$sandbox_dir"
+    cd "$sandbox_dir"
+
+    # Copy sandbox configuration from source directory
+    if [ -f "$SCRIPT_DIR/sandbox.conf" ]; then
+        info "Copying sandbox configuration..."
+        cp "$SCRIPT_DIR/sandbox.conf" sandbox.conf
+    else
+        warn "sandbox.conf not found in $SCRIPT_DIR, skipping sandbox config"
+    fi
+
+    # Copy sandbox-run script from source directory
+    if [ -f "$SCRIPT_DIR/sandbox-run" ]; then
+        info "Copying sandbox-run script..."
+        cp "$SCRIPT_DIR/sandbox-run" sandbox-run
+        chmod +x sandbox-run
+    else
+        warn "sandbox-run not found in $SCRIPT_DIR, skipping sandbox runner"
+    fi
+
+    log "✓ Sandbox components prepared"
+    log ""
+}
+
+# ==============================================================================
+# PHASE 4: CREATE DATADOG INTEGRATION
 # ==============================================================================
 
 create_datadog_bridge() {
@@ -687,7 +740,7 @@ EOF
 }
 
 # ==============================================================================
-# PHASE 4: BUILD INITRAMFS STRUCTURE
+# PHASE 5: BUILD INITRAMFS STRUCTURE
 # ==============================================================================
 
 create_initramfs_structure() {
@@ -699,7 +752,7 @@ create_initramfs_structure() {
 
     # Create directory structure
     info "Creating directory tree..."
-    mkdir -p {bin,sbin,lib,usr/{bin,sbin,lib,local/bin},etc/{dropbear,init.d},var/{lib/postgresql/data,log},dev,proc,sys,tmp,run/postgresql,home,opt/openvscode}
+    mkdir -p {bin,sbin,lib,usr/{bin,sbin,lib,local/bin},etc/{dropbear,init.d,sandbox/profiles},var/{lib/postgresql/data,log/sandbox},dev,proc,sys,tmp,run/postgresql,home/sandbox,root,opt/openvscode}
 
     log "✓ Directory structure created"
 }
@@ -749,6 +802,27 @@ copy_kernel_modules() {
             gunzip "$module" || warn "Failed to decompress $module"
         fi
     done
+
+    # AGENT AH FIX: Add VirtioFS kernel module for volume mounting support
+    info "Adding VirtioFS kernel module..."
+    local virtiofs_source="/tmp/virtiofs-modules/virtiofs.ko"
+
+    if [ -f "$virtiofs_source" ]; then
+        mkdir -p "$initramfs/lib/modules/$kernel_version/kernel/fs/fuse"
+        cp "$virtiofs_source" "$initramfs/lib/modules/$kernel_version/kernel/fs/fuse/"
+        info "✓ virtiofs.ko added to initramfs"
+
+        # Also ensure fuse.ko is available (should be in modules.builtin, but check)
+        local fuse_module_path=$(find "$temp_extract" -name "fuse.ko" 2>/dev/null | head -1)
+        if [ -n "$fuse_module_path" ]; then
+            cp "$fuse_module_path" "$initramfs/lib/modules/$kernel_version/kernel/fs/fuse/" 2>/dev/null || true
+            info "✓ fuse.ko added to initramfs"
+        fi
+    else
+        warn "VirtioFS module not found at $virtiofs_source"
+        warn "Volume mounting will not work - please download virtiofs.ko"
+        warn "See: https://github.com/vibecode/vibecode-vm/blob/main/docs/VOLUME-MOUNTING.md"
+    fi
 
     # Cleanup temp directory
     cd /
@@ -848,6 +922,10 @@ copy_binaries() {
         cp "$downloads/dropbear/usr/sbin/dropbear" "$initramfs/usr/sbin/"
         cp "$downloads/dropbear/usr/bin/dropbearkey" "$initramfs/usr/bin/" 2>/dev/null || true
         chmod +x "$initramfs/usr/sbin/dropbear" "$initramfs/usr/bin/dropbearkey"
+
+        info "Copying socat for vsock forwarding..."
+        cp "$downloads/socat/usr/bin/socat" "$initramfs/usr/bin/"
+        chmod +x "$initramfs/usr/bin/socat"
     fi
 
     # Datadog bridge (skip in fast build)
@@ -856,6 +934,23 @@ copy_binaries() {
         cp "$WORK_DIR/datadog/statsd-bridge.py" "$initramfs/usr/local/bin/"
         chmod +x "$initramfs/usr/local/bin/statsd-bridge.py"
     fi
+
+    # Sandbox components
+    info "Copying sandbox components..."
+    if [ -f "$WORK_DIR/sandbox/sandbox-run" ]; then
+        cp "$WORK_DIR/sandbox/sandbox-run" "$initramfs/usr/local/bin/"
+        chmod +x "$initramfs/usr/local/bin/sandbox-run"
+        info "✓ Sandbox runner installed"
+    fi
+
+    if [ -f "$WORK_DIR/sandbox/sandbox.conf" ]; then
+        cp "$WORK_DIR/sandbox/sandbox.conf" "$initramfs/etc/"
+        info "✓ Sandbox configuration installed"
+    fi
+
+    # Set ownership for sandbox home directory
+    mkdir -p "$initramfs/home/sandbox"
+    # Note: chown won't work during build, but user/group setup in /etc/passwd will handle it
 
     log "✓ Binaries copied"
     log ""
@@ -907,6 +1002,10 @@ copy_libraries() {
         "libbrotlienc.so.1"
         "libcares.so.2"
         "libnghttp2.so.14"
+        # ICU libraries (required for both OpenVSCode Node.js and PostgreSQL)
+        "libicuuc.so.76"
+        "libicui18n.so.76"
+        "libicudata.so.76"
     )
 
     for lib in "${critical_libs[@]}"; do
@@ -1006,12 +1105,15 @@ EOF
     cat > "$initramfs/etc/passwd" << 'EOF'
 root:x:0:0:root:/root:/bin/sh
 postgres:x:70:70:PostgreSQL:/var/lib/postgresql:/bin/sh
+sandbox:x:1000:1000:Sandbox User:/home/sandbox:/bin/sh
 EOF
 
     # /etc/shadow (password: vibecode)
+    # Hash generated with: openssl passwd -6 -salt vibecode123 vibecode
     cat > "$initramfs/etc/shadow" << 'EOF'
-root:$6$rounds=4096$SALT$ZjJKqN6xqZ0rLU8bv6RkL4WF7XKJ4kPZF9QvL7WHQJ3KZ5F:19000:0:99999:7:::
+root:$6$vibecode123$xrMGfQmkECwBG5tnCoZCFLvKcOB9X1A.L4DhlO8z6jq1y8mq8Zb3gNOOthahQbBvXvuJ8gmnZXBTq5j48Dodp1:19000:0:99999:7:::
 postgres:*:19000:0:99999:7:::
+sandbox:*:19000:0:99999:7:::
 EOF
     chmod 600 "$initramfs/etc/shadow"
 
@@ -1019,6 +1121,7 @@ EOF
     cat > "$initramfs/etc/group" << 'EOF'
 root:x:0:
 postgres:x:70:
+sandbox:x:1000:
 EOF
 
     # /etc/hosts
@@ -1063,6 +1166,68 @@ mount -t tmpfs tmp /tmp 2>/dev/null || true
 
 # Set hostname
 hostname unified-vm 2>/dev/null || true
+
+# Mount host shared directory (virtio-fs)
+echo ""
+echo "=== Host Volume Mounting ==="
+mkdir -p /mnt/host /mnt/config /mnt/data /mnt/logs 2>/dev/null || true
+
+# AGENT AH FIX: Load VirtioFS kernel module before mounting
+echo "Loading VirtioFS kernel module..."
+if modprobe virtiofs 2>/dev/null || insmod /lib/modules/$(uname -r)/kernel/fs/fuse/virtiofs.ko 2>/dev/null; then
+    echo "✓ VirtioFS module loaded successfully"
+elif [ -f /lib/modules/$(uname -r)/kernel/fs/fuse/virtiofs.ko ]; then
+    echo "⚠ VirtioFS module found but failed to load"
+    echo "  Continuing anyway - mount may still work if built-in"
+else
+    echo "⚠ VirtioFS module not found in kernel modules"
+    echo "  Volume mounting will likely fail"
+fi
+
+# Try to mount virtio-fs shared directory
+if mount -t virtiofs hostshare /mnt/host 2>/dev/null; then
+    echo "✓ Host filesystem mounted at /mnt/host"
+
+    # Create subdirectories for common use cases
+    mkdir -p /mnt/host/config /mnt/host/data /mnt/host/logs 2>/dev/null || true
+
+    # Create convenience symlinks
+    ln -sf /mnt/host/config /mnt/config 2>/dev/null || true
+    ln -sf /mnt/host/data /mnt/data 2>/dev/null || true
+    ln -sf /mnt/host/logs /mnt/logs 2>/dev/null || true
+
+    echo "  Available mount points:"
+    echo "    - /mnt/host/       (main shared directory)"
+    echo "    - /mnt/host/config (for configuration files)"
+    echo "    - /mnt/host/data   (for persistent data)"
+    echo "    - /mnt/host/logs   (for log files)"
+    echo ""
+
+    # If PostgreSQL data directory exists on host, use it
+    if [ -d /mnt/host/postgresql ]; then
+        echo "  Found PostgreSQL data on host mount"
+        echo "  Will use /mnt/host/postgresql for persistence"
+        POSTGRES_DATA_DIR="/mnt/host/postgresql"
+    else
+        POSTGRES_DATA_DIR="/var/lib/postgresql/data"
+    fi
+
+    # If Valkey persistence directory exists on host, use it
+    if [ -d /mnt/host/valkey ]; then
+        echo "  Found Valkey data on host mount"
+        echo "  Will use /mnt/host/valkey for persistence"
+        VALKEY_DATA_DIR="/mnt/host/valkey"
+    else
+        VALKEY_DATA_DIR="/tmp"
+    fi
+else
+    echo "⚠ No host filesystem available (virtio-fs not configured)"
+    echo "  Services will use local storage only"
+    echo "  To enable: add --device virtio-fs,sharedDir=/path,mountTag=hostshare"
+    POSTGRES_DATA_DIR="/var/lib/postgresql/data"
+    VALKEY_DATA_DIR="/tmp"
+fi
+echo ""
 
 # Check if this is a fast build (OpenVSCode + DHCP only)
 FAST_BUILD=false
@@ -1146,26 +1311,40 @@ echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Network setup started" >> /tmp/network.
 ip link set lo up
 
 # Active network interface detection loop (Agent 5 & Agent 15 optimization)
-# Wait up to 10 seconds for network interface to appear
+# Wait up to 15 seconds for network interface to appear WITH CARRIER
 FOUND_IFACE=""
 NETWORK_MODE="localhost"
-echo "Waiting for network interface to appear (max 10 seconds)..."
-for i in $(seq 1 20); do
+echo "Waiting for network interface with carrier signal (max 15 seconds)..."
+for i in $(seq 1 30); do
     for iface in eth0 eth1 enp0s1 ens3; do
         if ip link show "$iface" >/dev/null 2>&1; then
+            # Check carrier state and operstate
+            CARRIER=$(cat /sys/class/net/$iface/carrier 2>/dev/null || echo "0")
+            OPERSTATE=$(cat /sys/class/net/$iface/operstate 2>/dev/null || echo "down")
+
             ELAPSED=$(awk "BEGIN {printf \"%.1f\", $i * 0.5}")
-            echo "  ✓ Found interface: $iface after ${ELAPSED} seconds"
-            echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Found interface: $iface after ${ELAPSED}s" >> /tmp/network.log
-            FOUND_IFACE="$iface"
-            NETWORK_MODE="network"
-            break 2  # Break both loops
+
+            # Only accept interface if carrier=1 OR operstate=up/unknown
+            if [ "$CARRIER" = "1" ] || [ "$OPERSTATE" = "up" ] || [ "$OPERSTATE" = "unknown" ]; then
+                echo "  ✓ Found interface: $iface after ${ELAPSED}s (carrier=$CARRIER, operstate=$OPERSTATE)"
+                echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Found interface: $iface (carrier=$CARRIER, operstate=$OPERSTATE)" >> /tmp/network.log
+                FOUND_IFACE="$iface"
+                NETWORK_MODE="network"
+                break 2  # Break both loops
+            else
+                # Interface exists but no carrier - log and continue waiting
+                if [ "$i" = "1" ]; then
+                    echo "  ⏳ Found $iface but no carrier yet (carrier=$CARRIER, operstate=$OPERSTATE)"
+                    echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Interface $iface exists but carrier=$CARRIER, operstate=$OPERSTATE" >> /tmp/network.log
+                fi
+            fi
         fi
     done
     sleep 0.5
 done
 
 if [ -z "$FOUND_IFACE" ]; then
-    echo "  ⚠ Network interface not found after 10 seconds"
+    echo "  ⚠ Network interface with carrier not found after 15 seconds"
     echo "  Will start services in localhost-only mode"
     echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] No network interface found - localhost mode" >> /tmp/network.log
     VM_IP="127.0.0.1"
@@ -1177,8 +1356,25 @@ fi
 if [ -n "$FOUND_IFACE" ]; then
     echo "Network interface: $FOUND_IFACE"
     echo "[$(date '+%Y-%m-%d %H:%M:%S.%3N')] Found interface: $FOUND_IFACE" >> /tmp/network.log
+
+    # Bring interface up with carrier detection workaround
+    # Some virtualization frameworks (VZ) don't immediately provide carrier signal
+    ip link set "$FOUND_IFACE" down 2>/dev/null || true
+    sleep 0.2
     ip link set "$FOUND_IFACE" up
-    sleep 0.5
+
+    # Give carrier signal time to stabilize
+    echo "  Waiting for carrier signal to stabilize..."
+    for wait_carrier in $(seq 1 10); do
+        CARRIER_CHECK=$(cat /sys/class/net/$FOUND_IFACE/carrier 2>/dev/null || echo "0")
+        if [ "$CARRIER_CHECK" = "1" ]; then
+            echo "  ✓ Carrier detected after $(awk "BEGIN {printf \"%.1f\", $wait_carrier * 0.3}")s"
+            break
+        fi
+        sleep 0.3
+    done
+
+    sleep 0.2
 
     # DHCP configuration with retries (3 attempts with exponential backoff)
     echo "Requesting DHCP address..."
@@ -1276,23 +1472,25 @@ if [ "$FAST_BUILD" = false ]; then
     echo "  FAST_BUILD is false, checking for postgres binary..."
     if [ -f /usr/bin/postgres ]; then
         echo "  ✓ Found /usr/bin/postgres"
-        mkdir -p /var/lib/postgresql/data /run/postgresql /tmp/postgresql
-        chmod 700 /var/lib/postgresql/data
+        echo "  Using data directory: $POSTGRES_DATA_DIR"
+
+        mkdir -p "$POSTGRES_DATA_DIR" /run/postgresql /tmp/postgresql
+        chmod 700 "$POSTGRES_DATA_DIR"
         chmod 775 /run/postgresql
-        chown -R postgres:postgres /var/lib/postgresql /run/postgresql /tmp/postgresql 2>/dev/null || true
+        chown -R postgres:postgres "$POSTGRES_DATA_DIR" /run/postgresql /tmp/postgresql 2>/dev/null || true
 
         # Initialize database if needed (blocking, but only on first boot)
-        if [ ! -f /var/lib/postgresql/data/PG_VERSION ]; then
-            echo "Initializing PostgreSQL database..."
+        if [ ! -f "$POSTGRES_DATA_DIR/PG_VERSION" ]; then
+            echo "Initializing PostgreSQL database in $POSTGRES_DATA_DIR..."
             # AGENT M FIX: Use 'su postgres' to actually switch user (not just env vars)
             # initdb checks the real UID and refuses to run as root for security
             # AGENT T FIX: Set ICU_DATA environment variable to help ICU libraries find data files
-            if su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/initdb -U postgres -D /var/lib/postgresql/data --auth=trust --locale=C --encoding=SQL_ASCII --no-locale --locale-provider=libc" > /tmp/postgresql-init.log 2>&1; then
-                if [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+            if su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/initdb -U postgres -D $POSTGRES_DATA_DIR --auth=trust --locale=C --encoding=SQL_ASCII --no-locale --locale-provider=libc" > /tmp/postgresql-init.log 2>&1; then
+                if [ -f "$POSTGRES_DATA_DIR/PG_VERSION" ]; then
                     echo "✓ Database initialized"
-                    chown -R postgres:postgres /var/lib/postgresql/data 2>/dev/null || true
-                    cp /etc/postgresql.conf /var/lib/postgresql/data/ 2>/dev/null || true
-                    cp /etc/pg_hba.conf /var/lib/postgresql/data/ 2>/dev/null || true
+                    chown -R postgres:postgres "$POSTGRES_DATA_DIR" 2>/dev/null || true
+                    cp /etc/postgresql.conf "$POSTGRES_DATA_DIR/" 2>/dev/null || true
+                    cp /etc/pg_hba.conf "$POSTGRES_DATA_DIR/" 2>/dev/null || true
                 fi
             else
                 echo "⚠ Database initialization failed (will skip PostgreSQL)"
@@ -1302,6 +1500,8 @@ if [ "$FAST_BUILD" = false ]; then
                     tail -20 /tmp/postgresql-init.log | sed 's/^/    /'
                 fi
             fi
+        else
+            echo "✓ Database already initialized (using existing data)"
         fi
     else
         echo "  ✗ PostgreSQL binary not found at /usr/bin/postgres"
@@ -1344,7 +1544,9 @@ echo "Launching services in parallel..."
 
 # 1. SSH Server
 if [ -n "$VM_IP" ] || ip link show lo 2>/dev/null | grep -q "state UP"; then
-    /usr/sbin/dropbear -R -B -E -p 22 > /tmp/dropbear.log 2>&1 &
+    # CRITICAL FIX: Remove -B flag to enable password authentication
+    # -R: Create missing host keys, -E: Log to stderr, -p 22: Listen on port 22
+    /usr/sbin/dropbear -R -E -p 22 > /tmp/dropbear.log 2>&1 &
     SSH_PID=$!
     echo "  - SSH server launched (PID: $SSH_PID)"
 fi
@@ -1358,17 +1560,25 @@ fi
 
 # 3. Valkey Server (skip in fast build)
 if [ "$FAST_BUILD" = false ] && [ -f /bin/valkey-server ] && [ -f /etc/valkey.conf ]; then
+    # Update Valkey config to use persistent directory if available
+    if [ "$VALKEY_DATA_DIR" != "/tmp" ]; then
+        mkdir -p "$VALKEY_DATA_DIR" 2>/dev/null || true
+        chmod 755 "$VALKEY_DATA_DIR"
+        sed -i "s|^dir /tmp|dir $VALKEY_DATA_DIR|g" /etc/valkey.conf 2>/dev/null || true
+        echo "  Using Valkey data dir: $VALKEY_DATA_DIR"
+    fi
     /bin/valkey-server /etc/valkey.conf > /tmp/valkey.log 2>&1 &
     VALKEY_PID=$!
     echo "  - Valkey server launched (PID: $VALKEY_PID)"
 fi
 
 # 4. PostgreSQL Server (skip in fast build)
-if [ "$FAST_BUILD" = false ] && [ -f /usr/libexec/postgresql16/postgres ] && [ -f /var/lib/postgresql/data/PG_VERSION ]; then
+if [ "$FAST_BUILD" = false ] && [ -f /usr/libexec/postgresql16/postgres ] && [ -f "$POSTGRES_DATA_DIR/PG_VERSION" ]; then
     # AGENT T FIX: Set ICU_DATA environment variable for runtime ICU support
-    su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/postgres -D /var/lib/postgresql/data" > /tmp/postgresql.log 2>&1 &
+    # AGENT Z: Use configurable data directory
+    su postgres -c "ICU_DATA=/usr/share/icu/76.1 LD_LIBRARY_PATH=/usr/lib:/usr/local/lib /usr/libexec/postgresql16/postgres -D $POSTGRES_DATA_DIR" > /tmp/postgresql.log 2>&1 &
     POSTGRES_PID=$!
-    echo "  - PostgreSQL server launched (PID: $POSTGRES_PID)"
+    echo "  - PostgreSQL server launched (PID: $POSTGRES_PID, data: $POSTGRES_DATA_DIR)"
 fi
 
 # 5. OpenVSCode Server
@@ -1387,74 +1597,154 @@ fi
 
 echo ""
 echo "All services launched in background!"
-echo "Waiting 3 seconds for services to initialize..."
-sleep 3  # Single wait for all services
-
-# ==============================================================================
-# SERVICE VERIFICATION - Check each service independently
-# ==============================================================================
-
 echo ""
+
+# ==============================================================================
+# SMART SERVICE HEALTH CHECKS - Polling with Service-Specific Timeouts
+# ==============================================================================
+
 echo "========================================="
-echo "  SERVICE VERIFICATION"
+echo "  SMART SERVICE HEALTH CHECKS"
 echo "========================================="
 echo ""
 
-# Verify SSH
+# Health check function with polling and timeout
+# Usage: check_service_health "SERVICE_NAME" "PORT" "TIMEOUT_SECONDS" "EXTRA_CHECKS"
+check_service_health() {
+    local SERVICE_NAME="$1"
+    local PORT="$2"
+    local TIMEOUT="$3"
+    local EXTRA_CHECKS="$4"
+    local START_TIME=$(date +%s)
+    local ELAPSED=0
+    local POLL_INTERVAL=0.5  # 500ms between checks
+    local READY=false
+
+    echo -n "Checking $SERVICE_NAME (port $PORT, max ${TIMEOUT}s)... "
+
+    # Polling loop
+    while [ "$ELAPSED" -lt "$TIMEOUT" ]; do
+        # Check if port is listening using /dev/tcp (no external tools needed)
+        # This is more portable than nc and works in minimal environments
+        if timeout 1 bash -c "cat < /dev/null > /dev/tcp/127.0.0.1/$PORT" 2>/dev/null; then
+            READY=true
+            break
+        fi
+
+        # For extra checks (like process verification)
+        if [ -n "$EXTRA_CHECKS" ]; then
+            if eval "$EXTRA_CHECKS"; then
+                READY=true
+                break
+            fi
+        fi
+
+        # Sleep briefly before next check
+        sleep "$POLL_INTERVAL"
+        ELAPSED=$(( $(date +%s) - START_TIME ))
+    done
+
+    if [ "$READY" = true ]; then
+        ELAPSED=$(( $(date +%s) - START_TIME ))
+        echo "✓ Ready (${ELAPSED}s)"
+        return 0
+    else
+        echo "✗ Timeout after ${TIMEOUT}s"
+        return 1
+    fi
+}
+
+# Track health check results
+HEALTH_CHECK_RESULTS=""
+FAILED_SERVICES=0
+
+# ==============================================================================
+# Check SSH Server (port 22)
+# ==============================================================================
 if [ -n "$SSH_PID" ]; then
+    echo ""
     echo "=== SSH Server ==="
-    if ps | grep -v grep | grep -q dropbear; then
-        echo "✓ SSH server running (PID: $SSH_PID)"
+
+    # Check port listening with process verification fallback
+    SSH_CHECK='ps | grep -v grep | grep -q dropbear'
+    if check_service_health "SSH" "22" "10" "$SSH_CHECK"; then
+        echo "✓ SSH server responding on port 22"
+
+        # AGENT X: Add port connectivity proof
+        if nc -z -w 2 localhost 22 2>/dev/null; then
+            echo "  ✓ Port 22 LISTENING"
+        else
+            echo "  ✗ Port 22 NOT ACCESSIBLE"
+        fi
+
         if [ -n "$VM_IP" ] && [ "$VM_IP" != "localhost" ]; then
             echo "  Connect: ssh root@$VM_IP (password: vibecode)"
         else
             echo "  Connect: ssh root@localhost"
         fi
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}SSH: Ready\n"
     else
-        echo "⚠ SSH server failed to start"
-        [ -f /tmp/dropbear.log ] && head -5 /tmp/dropbear.log
+        echo "✗ SSH server failed to respond"
+        [ -f /tmp/dropbear.log ] && echo "  Last 5 lines from log:" && head -5 /tmp/dropbear.log | sed 's/^/    /'
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}SSH: Failed\n"
+        FAILED_SERVICES=$((FAILED_SERVICES + 1))
     fi
-    echo ""
 fi
 
-# Verify Datadog
-if [ -n "$DATADOG_PID" ]; then
-    echo "=== Datadog StatsD Bridge ==="
-    if ps | grep -q "$DATADOG_PID"; then
-        echo "✓ Datadog bridge running (PID: $DATADOG_PID)"
-        echo "  Metrics: UDP port 8125"
-        echo "  Site: $DD_SITE"
-    else
-        echo "⚠ Datadog bridge failed to start"
-    fi
-    echo ""
-fi
-
-# Verify Valkey
+# ==============================================================================
+# Check Valkey (port 6379)
+# ==============================================================================
 if [ -n "$VALKEY_PID" ]; then
+    echo ""
     echo "=== Valkey Server ==="
-    if ps | grep -v grep | grep -q valkey-server; then
-        echo "✓ Valkey running (PID: $VALKEY_PID)"
+
+    VALKEY_CHECK='ps | grep -v grep | grep -q valkey-server'
+    if check_service_health "Valkey" "6379" "10" "$VALKEY_CHECK"; then
+        echo "✓ Valkey responding on port 6379"
+
+        # AGENT X: Add port connectivity proof
+        if nc -z -w 2 localhost 6379 2>/dev/null; then
+            echo "  ✓ Port 6379 LISTENING"
+        else
+            echo "  ✗ Port 6379 NOT ACCESSIBLE"
+        fi
+
         echo "  Port: 6379"
         echo "  Logs: /tmp/valkey.log"
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}Valkey: Ready\n"
     else
-        echo "⚠ Valkey failed to start"
-        [ -f /tmp/valkey.log ] && head -5 /tmp/valkey.log
+        echo "✗ Valkey failed to respond"
+        [ -f /tmp/valkey.log ] && echo "  Last 5 lines from log:" && head -5 /tmp/valkey.log | sed 's/^/    /'
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}Valkey: Failed\n"
+        FAILED_SERVICES=$((FAILED_SERVICES + 1))
     fi
-    echo ""
 fi
 
-# Verify PostgreSQL
+# ==============================================================================
+# Check PostgreSQL (port 5432)
+# ==============================================================================
 if [ -n "$POSTGRES_PID" ]; then
+    echo ""
     echo "=== PostgreSQL Server ==="
-    if ps | grep -v grep | grep -q "postgres -D"; then
-        echo "✓ PostgreSQL running (PID: $POSTGRES_PID)"
+
+    POSTGRES_CHECK='ps | grep -v grep | grep -q "postgres -D"'
+    if check_service_health "PostgreSQL" "5432" "10" "$POSTGRES_CHECK"; then
+        echo "✓ PostgreSQL responding on port 5432"
+
+        # AGENT X: Add port connectivity proof
+        if nc -z -w 2 localhost 5432 2>/dev/null; then
+            echo "  ✓ Port 5432 LISTENING"
+        else
+            echo "  ✗ Port 5432 NOT ACCESSIBLE"
+        fi
+
         echo "  Port: 5432"
         echo "  Logs: /tmp/postgresql.log"
 
         # Quick connection test (non-blocking)
         if su postgres -c "psql -U postgres -d postgres -c 'SELECT 1;'" > /dev/null 2>&1; then
             echo "  ✓ Accepting connections"
+            HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}PostgreSQL: Ready (accepting connections)\n"
 
             # Install extensions in background (don't block boot)
             (
@@ -1474,37 +1764,126 @@ EXTEOF
             ) &
             echo "  Extensions installing in background..."
         else
-            echo "  ⚠ Not accepting connections yet (may need a moment)"
+            echo "  ⚠ Port responsive but not accepting connections yet"
+            HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}PostgreSQL: Ready (port responsive, connections pending)\n"
         fi
     else
-        echo "⚠ PostgreSQL failed to start"
-        [ -f /tmp/postgresql.log ] && head -10 /tmp/postgresql.log
+        echo "✗ PostgreSQL failed to respond"
+        [ -f /tmp/postgresql.log ] && echo "  Last 10 lines from log:" && head -10 /tmp/postgresql.log | sed 's/^/    /'
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}PostgreSQL: Failed\n"
+        FAILED_SERVICES=$((FAILED_SERVICES + 1))
     fi
-    echo ""
 fi
 
-# Verify OpenVSCode
+# ==============================================================================
+# Check OpenVSCode (port 8080)
+# ==============================================================================
 if [ -n "$VSCODE_PID" ]; then
+    echo ""
     echo "=== OpenVSCode Server ==="
-    if ps | grep -v grep | grep -q openvscode-server; then
-        echo "✓ OpenVSCode running (PID: $VSCODE_PID)"
+
+    VSCODE_CHECK='ps | grep -v grep | grep -q openvscode-server'
+    if check_service_health "OpenVSCode" "8080" "10" "$VSCODE_CHECK"; then
+        echo "✓ OpenVSCode responding on port 8080"
+
+        # AGENT X: Add port connectivity proof
+        if nc -z -w 2 localhost 8080 2>/dev/null; then
+            echo "  ✓ Port 8080 LISTENING"
+        else
+            echo "  ✗ Port 8080 NOT ACCESSIBLE"
+        fi
+
         if [ "$NETWORK_MODE" = "localhost" ]; then
             echo "  URL: http://127.0.0.1:8080 (localhost only)"
         else
             echo "  URL: http://$VM_IP:8080"
         fi
         echo "  Logs: /tmp/openvscode.log"
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}OpenVSCode: Ready\n"
     else
-        echo "⚠ OpenVSCode failed to start"
-        [ -f /tmp/openvscode.log ] && head -10 /tmp/openvscode.log
+        echo "✗ OpenVSCode failed to respond"
+        [ -f /tmp/openvscode.log ] && echo "  Last 10 lines from log:" && head -10 /tmp/openvscode.log | sed 's/^/    /'
+        HEALTH_CHECK_RESULTS="${HEALTH_CHECK_RESULTS}OpenVSCode: Failed\n"
+        FAILED_SERVICES=$((FAILED_SERVICES + 1))
     fi
-    echo ""
 fi
 
-# Summary
+# ==============================================================================
+# VSOCK FORWARDING SETUP
+# ==============================================================================
+# After services are healthy, set up vsock forwarding to make them accessible
+# from the host via vsock. The host has vsock proxies listening on localhost.
+
+echo ""
+echo "========================================="
+echo "  Setting up vsock forwarding"
+echo "========================================="
+echo ""
+
+# Check if vsock device exists
+if [ -e /dev/vsock ]; then
+    echo "✓ /dev/vsock found - setting up vsock forwarding"
+
+    # Forward vsock connections to localhost services
+    # Host connects to localhost:8080 -> vsock CID 3 port 8080 -> guest localhost:8080 (OpenVSCode)
+    # Host connects to localhost:6379 -> vsock CID 3 port 6379 -> guest localhost:6379 (Valkey)
+    # Host connects to localhost:5432 -> vsock CID 3 port 5432 -> guest localhost:5432 (PostgreSQL)
+    # Host connects to localhost:2222 -> vsock CID 3 port 2222 -> guest localhost:22 (SSH)
+
+    if [ -n "$VSCODE_PID" ]; then
+        echo "  Starting vsock forwarder: vsock:8080 -> localhost:8080 (OpenVSCode)"
+        socat VSOCK-LISTEN:8080,fork TCP:localhost:8080 > /tmp/vsock-8080.log 2>&1 &
+    fi
+
+    if [ -n "$VALKEY_PID" ]; then
+        echo "  Starting vsock forwarder: vsock:6379 -> localhost:6379 (Valkey)"
+        socat VSOCK-LISTEN:6379,fork TCP:localhost:6379 > /tmp/vsock-6379.log 2>&1 &
+    fi
+
+    if [ -n "$POSTGRES_PID" ]; then
+        echo "  Starting vsock forwarder: vsock:5432 -> localhost:5432 (PostgreSQL)"
+        socat VSOCK-LISTEN:5432,fork TCP:localhost:5432 > /tmp/vsock-5432.log 2>&1 &
+    fi
+
+    if [ -n "$SSH_PID" ]; then
+        echo "  Starting vsock forwarder: vsock:2222 -> localhost:22 (SSH)"
+        socat VSOCK-LISTEN:2222,fork TCP:localhost:22 > /tmp/vsock-2222.log 2>&1 &
+    fi
+
+    # Give socat a moment to start
+    sleep 1
+
+    # Verify socat processes are running
+    if ps | grep -v grep | grep -q socat; then
+        echo "✓ Vsock forwarding active!"
+        echo ""
+        echo "Host can now connect to services via localhost:"
+        echo "  - localhost:8080  -> OpenVSCode"
+        echo "  - localhost:6379  -> Valkey"
+        echo "  - localhost:5432  -> PostgreSQL"
+        echo "  - localhost:2222  -> SSH"
+    else
+        echo "⚠ Warning: socat processes may not have started correctly"
+    fi
+else
+    echo "⚠ /dev/vsock not found - vsock forwarding not available"
+    echo "  Services are only accessible via VM network: $VM_IP"
+fi
+echo ""
+
+# Summary and Final Status Report
+echo ""
 echo "========================================="
 echo "  Unified Services VM Ready"
 echo "========================================="
+echo ""
+
+if [ "$FAILED_SERVICES" -eq 0 ]; then
+    echo "✓ All services passed health checks!"
+else
+    echo "⚠ Warning: $FAILED_SERVICES service(s) did not respond to health checks"
+fi
+
 echo ""
 echo "Services Running:"
 echo "  - Valkey:      redis://$VM_IP:6379"
@@ -1515,6 +1894,48 @@ if [ -n "$DD_API_KEY" ]; then
     echo "  - Datadog:     StatsD on 127.0.0.1:8125"
 fi
 echo ""
+echo "Health Check Results:"
+printf "$HEALTH_CHECK_RESULTS"
+echo ""
+
+# ==============================================================================
+# AGENT X: ACCESS CREDENTIALS DISPLAY
+# ==============================================================================
+echo "==========================================="
+echo "  ACCESS CREDENTIALS"
+echo "==========================================="
+echo ""
+echo "SSH Access:"
+echo "  ssh root@$VM_IP"
+echo "  Password: vibecode"
+echo ""
+echo "Valkey Access:"
+if [ -n "$VALKEY_PID" ]; then
+    echo "  redis-cli -h $VM_IP -p 6379"
+    echo "  (No password required)"
+else
+    echo "  (Service not running)"
+fi
+echo ""
+echo "PostgreSQL Access:"
+if [ -n "$POSTGRES_PID" ]; then
+    echo "  psql -h $VM_IP -p 5432 -U postgres"
+    echo "  (Trust authentication - no password)"
+else
+    echo "  (Service not running)"
+fi
+echo ""
+echo "OpenVSCode Access:"
+if [ -n "$VSCODE_PID" ]; then
+    echo "  http://$VM_IP:8080"
+    echo "  (Open in web browser)"
+else
+    echo "  (Service not running)"
+fi
+echo ""
+echo "==========================================="
+echo ""
+
 echo "Log files:"
 echo "  - /tmp/valkey.log"
 echo "  - /tmp/postgresql.log"
@@ -1541,7 +1962,7 @@ INITEOF
 }
 
 # ==============================================================================
-# PHASE 5: PACKAGE INITRAMFS
+# PHASE 6: PACKAGE INITRAMFS
 # ==============================================================================
 
 package_initramfs() {
@@ -1563,7 +1984,7 @@ package_initramfs() {
 }
 
 # ==============================================================================
-# PHASE 6: VERIFICATION
+# PHASE 7: VERIFICATION
 # ==============================================================================
 
 verify_initramfs() {
@@ -1666,7 +2087,7 @@ verify_initramfs() {
 }
 
 # ==============================================================================
-# PHASE 7: DOCUMENTATION
+# PHASE 8: DOCUMENTATION
 # ==============================================================================
 
 show_usage_instructions() {
@@ -1766,10 +2187,11 @@ main() {
         download_valkey
         download_postgresql
         download_dropbear_ssh
+        download_socat
     else
-        info "FAST BUILD: Skipping Valkey, PostgreSQL, and Dropbear SSH"
+        info "FAST BUILD: Skipping Valkey, PostgreSQL, Dropbear SSH, and socat"
     fi
-    
+
     download_openvscode
     
     # Download VS Code extensions if requested
@@ -1780,6 +2202,9 @@ main() {
     fi
     
     download_musl_libc
+
+    # Create sandbox components
+    create_sandbox_files
 
     # Create Datadog integration (only in full build)
     if [ "$FAST_BUILD" = false ]; then

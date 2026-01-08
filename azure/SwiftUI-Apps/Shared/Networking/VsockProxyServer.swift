@@ -182,8 +182,11 @@ public class VsockProxyServer {
         NSLog("[VsockProxyServer] New TCP connection from client")
 
         // Connect to guest via vsock (async on macOS 13+)
-        device.connect(toPort: guestPort) { [weak self] result in
-            guard let self = self else { return }
+        // Must be called on the vsock queue to avoid threading issues
+        queue.async { [weak self] in
+            guard let strongSelf = self else { return }
+
+            strongSelf.device.connect(toPort: strongSelf.guestPort) { result in
 
             switch result {
             case .success(let vsockConnection):
@@ -193,22 +196,23 @@ public class VsockProxyServer {
                 let proxy = ProxyConnection(
                     tcpConnection: tcpConnection,
                     vsockConnection: vsockConnection,
-                    queue: self.queue
+                    queue: strongSelf.queue
                 )
 
                 // Track connection
-                self.connectionLock.lock()
-                self.activeConnections.append(proxy)
-                self.connectionLock.unlock()
+                strongSelf.connectionLock.lock()
+                strongSelf.activeConnections.append(proxy)
+                strongSelf.connectionLock.unlock()
 
                 // Start forwarding
                 proxy.start()
 
-                NSLog("[VsockProxyServer] Proxy connection established (total: \(self.activeConnections.count))")
+                NSLog("[VsockProxyServer] Proxy connection established (total: \(strongSelf.activeConnections.count))")
 
-            case .failure(let error):
-                NSLog("[VsockProxyServer] Failed to connect to guest: \(error)")
-                tcpConnection.cancel()
+                case .failure(let error):
+                    NSLog("[VsockProxyServer] Failed to connect to guest: \(error)")
+                    tcpConnection.cancel()
+                }
             }
         }
     }

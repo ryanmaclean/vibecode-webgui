@@ -72,12 +72,17 @@ describe('Health Monitoring Module', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+<<<<<<< HEAD
     // Reset tracer mock specifically
     mockTracer.init.mockClear()
     mockTracer.addTags.mockClear()
 
     // Mock console methods
     consoleSpy = jest.spyOn(console, 'log').mockImplementation(() => {})
+=======
+    // Mock console methods (MetricsCollector uses console.info, not console.log)
+    consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => {})
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     jest.spyOn(console, 'warn').mockImplementation(() => {})
     jest.spyOn(console, 'info').mockImplementation(() => {})
     

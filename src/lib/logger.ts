@@ -140,6 +140,7 @@ export const logger = {
     }
   },
 
+<<<<<<< HEAD
   http: (message: unknown, metadata?: Record<string, unknown>) => {
     // Pino doesn't have http level, map to info
     if (typeof message === 'string') {
@@ -149,11 +150,21 @@ export const logger = {
     }
   },
 
+=======
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   debug: (message: unknown, metadata?: Record<string, unknown>) => {
     if (typeof message === 'string') {
       pinoLogger.debug(metadata || {}, message);
     } else {
       pinoLogger.debug(message);
+    }
+  },
+
+  http: (message: unknown, metadata?: Record<string, unknown>) => {
+    if (typeof message === 'string') {
+      pinoLogger.info(metadata || {}, message);
+    } else {
+      pinoLogger.info(message);
     }
   },
 
@@ -165,8 +176,13 @@ export const logger = {
     }
   },
 
+<<<<<<< HEAD
   child: (metadata: Record<string, unknown>) => {
     return createChildLogger(metadata);
+=======
+  child: (contextMetadata: Record<string, unknown>) => {
+    return createChildLogger(contextMetadata);
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   },
 };
 
@@ -199,6 +215,7 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       }
     },
 
+<<<<<<< HEAD
     http: (message: unknown, metadata?: Record<string, unknown>) => {
       // Pino doesn't have http level, map to info
       if (typeof message === 'string') {
@@ -208,11 +225,21 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       }
     },
 
+=======
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     debug: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
         childLogger.debug(metadata || {}, message);
       } else {
         childLogger.debug(message);
+      }
+    },
+
+    http: (message: unknown, metadata?: Record<string, unknown>) => {
+      if (typeof message === 'string') {
+        childLogger.info(metadata || {}, message);
+      } else {
+        childLogger.info(message);
       }
     },
 
@@ -224,8 +251,13 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       }
     },
 
+<<<<<<< HEAD
     child: (metadata: Record<string, unknown>) => {
       return createLogger({ ...contextMetadata, ...metadata });
+=======
+    child: (additionalMetadata: Record<string, unknown>) => {
+      return createLogger({ ...contextMetadata, ...additionalMetadata });
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     },
   };
 }
@@ -237,6 +269,7 @@ export function createChildLogger(contextMetadata: Record<string, unknown>) {
 // Direct access to Pino instance for advanced usage
 export const pinoInstance = pinoLogger;
 
+<<<<<<< HEAD
 // ============================================================================
 // Helper Functions (for compatibility with existing codebase)
 // ============================================================================
@@ -247,22 +280,36 @@ export const pinoInstance = pinoLogger;
 export function logPerformance(
   operation: string,
   durationMs: number,
+=======
+// Helper functions for common logging patterns
+export function logPerformance(
+  operation: string,
+  duration: number,
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   metadata?: Record<string, unknown>
 ): void {
   logger.info('Performance metric', {
     operation,
+<<<<<<< HEAD
     durationMs,
+=======
+    durationMs: duration,
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     ...metadata,
   });
 }
 
+<<<<<<< HEAD
 /**
  * Log API requests with method, URL, status, and timing
  */
+=======
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 export function logApiRequest(
   method: string,
   url: string,
   statusCode: number,
+<<<<<<< HEAD
   responseTimeMs: number,
   metadata?: Record<string, unknown>
 ): void {
@@ -289,12 +336,34 @@ export function logDatabaseOperation(
   operation: string,
   table: string,
   durationMs: number,
+=======
+  responseTime: number,
+  metadata?: Record<string, unknown>
+): void {
+  logger.http('API Request', {
+    method,
+    url,
+    statusCode,
+    responseTimeMs: responseTime,
+    ...metadata,
+  });
+}
+
+export function logDatabaseOperation(
+  operation: string,
+  table: string,
+  duration: number,
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
   metadata?: Record<string, unknown>
 ): void {
   logger.debug('Database operation', {
     operation,
     table,
+<<<<<<< HEAD
     durationMs,
+=======
+    durationMs: duration,
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     ...metadata,
   });
 }

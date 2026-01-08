@@ -117,17 +117,24 @@ describe('Workspace Auto-Scaling', () => {
         },
         cooldown: 300,
         enabled: true,
-        priority: 1
+        priority: 1,
+        cooldown: 300
       }
 
+      const initialRuleCount = autoScaler.getRules().length
       autoScaler.addRule(rule)
 
       const rules = autoScaler.getRules()
+<<<<<<< HEAD
       expect(rules.length).toBeGreaterThan(initialRulesCount)
 
       const addedRule = rules.find(r => r.id === 'custom-cpu-scale-up')
       expect(addedRule).toBeDefined()
       expect(addedRule?.name).toBe('Custom CPU Scale Up')
+=======
+      expect(rules.length).toBe(initialRuleCount + 1)
+      expect(rules.some(r => r.id === 'cpu-scale-up')).toBe(true)
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     })
 
     it('should remove scaling rule', () => {
@@ -149,10 +156,13 @@ describe('Workspace Auto-Scaling', () => {
         },
         cooldown: 300,
         enabled: true,
-        priority: 1
+        priority: 1,
+        cooldown: 300
       }
 
+      const initialRuleCount = autoScaler.getRules().length
       autoScaler.addRule(rule)
+<<<<<<< HEAD
       expect(autoScaler.getRules().length).toBe(initialRulesCount + 1)
 
       autoScaler.removeRule('test-rule-to-remove')
@@ -160,6 +170,12 @@ describe('Workspace Auto-Scaling', () => {
 
       const removedRule = autoScaler.getRules().find(r => r.id === 'test-rule-to-remove')
       expect(removedRule).toBeUndefined()
+=======
+      expect(autoScaler.getRules().length).toBe(initialRuleCount + 1)
+
+      autoScaler.removeRule('test-rule')
+      expect(autoScaler.getRules().length).toBe(initialRuleCount)
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     })
   })
 

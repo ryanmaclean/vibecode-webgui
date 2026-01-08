@@ -16,6 +16,7 @@ describe('DatadogMetricsService', () => {
   beforeEach(() => {
     jest.clearAllMocks()
 
+<<<<<<< HEAD
     // Mock console.info for development logging (implementation uses console.info, not console.log)
     consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined)
     jest.spyOn(console, 'error').mockImplementation(() => undefined)
@@ -27,6 +28,25 @@ describe('DatadogMetricsService', () => {
     delete process.env.DATADOG_API_KEY
 
     // Enable metrics for testing - implementation checks isEnabled before sending metrics
+=======
+    // Mock console.info for development logging (datadog-metrics uses console.info, not console.log)
+    consoleSpy = jest.spyOn(console, 'info').mockImplementation(() => undefined)
+    jest.spyOn(console, 'error').mockImplementation(() => undefined)
+
+    // Set up environment for testing - use development to enable console logging
+    process.env = { ...process.env, NODE_ENV: 'development', DD_API_KEY: undefined } as any
+    delete process.env.DD_API_KEY
+    delete process.env.DATADOG_API_KEY
+
+    // Reset modules to get fresh instance
+    jest.resetModules()
+
+    // Import the singleton instance
+    const { datadogMetrics: metrics } = require('@/lib/monitoring/datadog-metrics')
+    datadogMetrics = metrics
+
+    // Force enabled for testing (since we're in development mode without API key)
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     datadogMetrics.isEnabled = true
   })
 
@@ -37,12 +57,20 @@ describe('DatadogMetricsService', () => {
   describe('Constructor', () => {
     it('should initialize with default configuration', () => {
       expect(datadogMetrics).toBeDefined()
+<<<<<<< HEAD
       expect(datadogMetrics['standardTags']).toBeDefined()
       // The singleton is initialized before tests run, so it captures the original NODE_ENV
       expect(datadogMetrics['standardTags'].env).toBeDefined()
       expect(datadogMetrics['standardTags'].service).toBe('vibecode-webgui')
       expect(datadogMetrics['standardTags'].team).toBe('platform')
       expect(datadogMetrics['standardTags'].component).toBe('api')
+=======
+      expect(datadogMetrics.standardTags).toBeDefined()
+      expect(datadogMetrics.standardTags.env).toBe('development')
+      expect(datadogMetrics.standardTags.service).toBe('vibecode-webgui')
+      expect(datadogMetrics.standardTags.team).toBe('platform')
+      expect(datadogMetrics.standardTags.component).toBe('api')
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     })
 
     it('should be enabled in production with API key', () => {

@@ -1,5 +1,0 @@
-1. Run `kubectl get pods -n {{ .Release.Namespace }}` to ensure all pods are up.
-2. Forward the service locally:
-   `kubectl port-forward svc/{{ include "litellm-pgvector.fullname" . }} 8080:{{ .Values.service.port }} -n {{ .Release.Namespace }}`
-3. Test the embeddings endpoint:
-   `curl http://127.0.0.1:8080/health`

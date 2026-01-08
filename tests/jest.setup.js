@@ -2,6 +2,7 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 
+<<<<<<< HEAD
 // Setup default fetch mock before each test
 beforeEach(() => {
   // Mock fetch to return 401 for UserPreferencesProvider (uses default preferences)
@@ -28,6 +29,10 @@ afterEach(() => {
 
 // Don't mock global fetch/Headers/Request/Response here
 // They are provided by jest.polyfills.js which loads first
+=======
+// Mock global objects
+global.fetch = jest.fn();
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({
@@ -61,11 +66,18 @@ jest.mock('next/link', () => ({
   },
 }));
 
+// Mock next/server with our custom implementation
+jest.mock('next/server', () => {
+  const mockModule = jest.requireActual('./__mocks__/next/server.ts');
+  return mockModule;
+});
+
 // Mock environment variables
 process.env.NODE_ENV = 'test';
 process.env.NEXTAUTH_SECRET = 'test-secret';
 process.env.NEXTAUTH_URL = 'http://localhost:3000';
 
+<<<<<<< HEAD
 // Suppress console errors in tests unless explicitly needed
 const originalError = console.error;
 const originalWarn = console.warn;
@@ -127,3 +139,42 @@ jest.mock('@/instrument', () => ({
     })),
   },
 }));
+=======
+// Mock DOM methods not available in JSDOM
+if (typeof Element !== 'undefined') {
+  Element.prototype.scrollIntoView = jest.fn();
+}
+
+// Mock ResizeObserver
+global.ResizeObserver = class ResizeObserver {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
+// Mock IntersectionObserver
+global.IntersectionObserver = class IntersectionObserver {
+  constructor() {}
+  disconnect() {}
+  observe() {}
+  takeRecords() {
+    return [];
+  }
+  unobserve() {}
+};
+
+// Mock matchMedia
+Object.defineProperty(window, 'matchMedia', {
+  writable: true,
+  value: jest.fn().mockImplementation(query => ({
+    matches: false,
+    media: query,
+    onchange: null,
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
+    addEventListener: jest.fn(),
+    removeEventListener: jest.fn(),
+    dispatchEvent: jest.fn(),
+  })),
+});
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)

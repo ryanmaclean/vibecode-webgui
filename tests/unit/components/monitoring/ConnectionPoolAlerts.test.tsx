@@ -1,5 +1,9 @@
 import React from 'react'
+<<<<<<< HEAD
 import { render, screen, fireEvent, waitFor } from '../../../test-utils'
+=======
+import { render, screen, fireEvent, waitFor } from '@testing-library/react'
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 import ConnectionPoolAlerts from '@/components/monitoring/ConnectionPoolAlerts'
 import ConnectionPoolAlertService, { AlertSeverity, AlertType } from '@/lib/db/connection-pool-alerts'
 

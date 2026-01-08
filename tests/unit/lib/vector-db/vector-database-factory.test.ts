@@ -58,7 +58,11 @@ describe('VectorDatabaseFactory', () => {
   });
 
   describe('Implementation Issues Documentation', () => {
+<<<<<<< HEAD
     it('should successfully create PostgreSQL adapter with proper config', async () => {
+=======
+    it('should create PostgreSQL adapter successfully', async () => {
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       const config = {
         provider: VectorDatabaseProvider.POSTGRES,
         host: 'localhost',
@@ -68,10 +72,18 @@ describe('VectorDatabaseFactory', () => {
         password: 'testpass'
       };
 
+<<<<<<< HEAD
       // PostgreSQL adapter should be created without errors
       const adapter = await VectorDatabaseFactory.create(config);
       expect(adapter).toBeDefined();
       expect(adapter).toBeInstanceOf(Object);
+=======
+      // PostgreSQL adapter can be created without connectionString
+      // It will fail during initialization if no DATABASE_URL is provided
+      const adapter = await VectorDatabaseFactory.create(config);
+      expect(adapter).toBeDefined();
+      expect(adapter.constructor.name).toBe('PostgresVectorDatabaseAdapter');
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     });
 
     it('should document that SQL Server adapter is not implemented', async () => {

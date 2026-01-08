@@ -13,7 +13,7 @@ import { AuthState, LoginCredentials, OAuthProvider } from '@/types/auth'
 const OAUTH_PROVIDERS: OAuthProvider[] = [
   {
     id: 'github',
-    name: 'FolderHub',
+    name: 'GitHub',
     icon: 'github',
     color: 'bg-gray-900 hover:bg-gray-800',
   },

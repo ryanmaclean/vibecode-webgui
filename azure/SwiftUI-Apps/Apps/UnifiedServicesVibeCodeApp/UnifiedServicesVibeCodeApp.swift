@@ -25,6 +25,12 @@ struct ContentView: View {
             Text("Unified Services VM")
                 .font(.largeTitle)
                 .padding()
+                .onAppear {
+                    // Auto-start VM when app launches
+                    if !vmManager.isRunning {
+                        vmManager.startVM()
+                    }
+                }
 
             Text(vmManager.status)
                 .font(.body)
@@ -35,11 +41,7 @@ struct ContentView: View {
                     Text("VM IP: \(ipAddress)")
                         .font(.headline)
 
-                    Text("OpenVSCode (internal): http://localhost:3000")
-                        .font(.system(.body, design: .monospaced))
-                        .textSelection(.enabled)
-
-                    Text("OpenVSCode (external): http://localhost:8080")
+                    Text("OpenVSCode: http://\(ipAddress):8080")
                         .font(.system(.body, design: .monospaced))
                         .textSelection(.enabled)
 

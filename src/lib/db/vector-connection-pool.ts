@@ -109,9 +109,15 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       try {
         const coordinator = getGlobalCoordinator();
         coordinator.registerPool(this, budget);
+<<<<<<< HEAD
         this.logger.info(`Registered with global coordinator`, { budget });
       } catch (error) {
         this.logger.warn('Failed to register with coordinator, operating independently', { error });
+=======
+        this.logger.info(`Registered with global coordinator`);
+      } catch (error) {
+        this.logger.warn('Failed to register with coordinator, operating independently');
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       }
     }
   }
@@ -287,7 +293,11 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       return result;
     } catch (error) {
       await client.query('ROLLBACK').catch(rollbackError => {
+<<<<<<< HEAD
         this.logger.error('Error rolling back transaction', rollbackError);
+=======
+        this.logger.error('Error rolling back transaction');
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       });
       
       throw error;
@@ -383,12 +393,21 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       this.lastHealthCheck = new Date();
       
       const isHealthy = result.rows.length === 1 && result.rows[0].health_check === 1;
+<<<<<<< HEAD
 
       this.logger.info(`Health check completed in ${endTime - startTime}ms, result: ${isHealthy ? 'healthy' : 'unhealthy'}`);
 
       return isHealthy;
     } catch (error) {
       this.logger.error('Health check failed', error);
+=======
+      
+      this.logger.info(`Health check completed in ${endTime - startTime}ms, result: ${isHealthy ? 'healthy' : 'unhealthy'}`);
+      
+      return isHealthy;
+    } catch (error) {
+      this.logger.error('Health check failed');
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       return false;
     }
   }
@@ -400,12 +419,20 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     this.isShuttingDown = true;
     
     this.logger.info(`Shutting down pool "${this.name}"...`);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     try {
       await this.pool.end();
       this.logger.info(`Pool "${this.name}" successfully shut down`);
     } catch (error) {
+<<<<<<< HEAD
       this.logger.error(`Error shutting down pool "${this.name}"`, error);
+=======
+      this.logger.error(`Error shutting down pool "${this.name}"`);
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
       throw error;
     }
   }
@@ -441,9 +468,15 @@ export class VectorConnectionPoolFactory {
 
     // Store the pool
     this.pools.set(name, pool);
+<<<<<<< HEAD
 
     this.logger.info(`Created new pool "${name}"`);
 
+=======
+    
+    this.logger.info(`Created new pool "${name}"`);
+    
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     return pool;
   }
 
@@ -469,13 +502,21 @@ export class VectorConnectionPoolFactory {
    */
   public static async closeAllPools(): Promise<void> {
     this.logger.info(`Closing all pools (${this.pools.size})...`);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     const closePromises = Array.from(this.pools.values()).map(pool => pool.close());
 
     await Promise.all(closePromises);
 
     this.pools.clear();
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     this.logger.info('All pools closed');
   }
 
@@ -485,7 +526,11 @@ export class VectorConnectionPoolFactory {
    */
   public static async checkAllPoolsHealth(): Promise<Map<string, boolean>> {
     this.logger.info(`Checking health of all pools (${this.pools.size})...`);
+<<<<<<< HEAD
 
+=======
+    
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     const healthPromises = Array.from(this.pools.entries()).map(
       async ([name, pool]) => [name, await pool.healthCheck()] as [string, boolean]
     );

@@ -137,4 +137,12 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
+<<<<<<< HEAD
 .pre-commit-cache/
+=======
+.claude/
+*.cpio.gz.pre-*
+*.cpio.gz.broken*
+azure/vmlinuz-arm64
+*.dmg*
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)

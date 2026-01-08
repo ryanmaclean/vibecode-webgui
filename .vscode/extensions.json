@@ -1,6 +1,7 @@
 {
   "recommendations": [
-    "vibecode.vibecode-ai-assistant"
+    "vibecode.vibecode-ai-assistant",
+    "datadog.datadog-vscode"
   ],
   "unwantedRecommendations": []
 }

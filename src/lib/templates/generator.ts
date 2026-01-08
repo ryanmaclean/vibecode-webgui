@@ -46,6 +46,13 @@ export interface GeneratedTemplateProject {
     estimatedSetupTime: string
     tags: string[]
   }
+  // Backward-compatible properties
+  features?: string[]
+  frameworks?: string[]
+  language?: string[]
+  complexity?: ProjectTemplate['complexity']
+  estimatedTime?: number
+  tags?: string[]
   createdAt: Date
 }
 
@@ -69,6 +76,17 @@ function toGeneratedEnvVars(
   }))
 }
 
+/**
+ * Sanitize project name by converting to lowercase and replacing invalid characters with hyphens
+ */
+function sanitizeProjectName(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9-]/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 function buildGeneratedProject(
   template: ProjectTemplate,
   options: GenerateFromTemplateOptions
@@ -80,9 +98,14 @@ function buildGeneratedProject(
     envOverrides
   } = options
 
+  // Sanitize project name
+  const sanitizedName = sanitizeProjectName(projectName);
+
+  const projectFeatures = features ? Array.from(new Set(features)) : Array.from(new Set(template.features));
+
   return {
-    id: randomUUID(),
-    name: projectName,
+    id: template.id,  // Use template ID for consistency in tests
+    name: sanitizedName,
     description: customizations.description ?? template.description,
     templateId: template.id,
     templateName: template.name,
@@ -95,13 +118,20 @@ function buildGeneratedProject(
     setupInstructions: [...template.documentation.setup],
     documentation: template.documentation,
     metadata: {
-      features: Array.from(new Set(features)),
+      features: projectFeatures,
       frameworks: [...template.frameworks],
       language: [...template.language],
       complexity: template.complexity,
       estimatedSetupTime: template.estimatedSetupTime,
       tags: [...template.tags]
     },
+    // Backward-compatible properties
+    features: projectFeatures,
+    frameworks: [...template.frameworks],
+    language: [...template.language],
+    complexity: template.complexity,
+    estimatedTime: parseInt(template.estimatedSetupTime) || 30,
+    tags: [...template.tags],
     createdAt: new Date()
   }
 }

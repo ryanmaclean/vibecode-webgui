@@ -152,10 +152,12 @@ export class MonacoAgentAPI {
   private contextHistory: EditorContext[] = []
   private diagnosticsTimeout: NodeJS.Timeout | null = null
   private disposables: monaco.IDisposable[] = []
+  private disposed = false
 
   constructor(
     editor: monaco.editor.IStandaloneCodeEditor,
-    config: MonacoAgentAPIConfig = {}
+    config: MonacoAgentAPIConfig = {},
+    wsClient?: WebSocketStreamingClient
   ) {
     this.editor = editor
     this.config = {
@@ -167,6 +169,11 @@ export class MonacoAgentAPI {
       enableInlineSuggestions: config.enableInlineSuggestions ?? true,
       enableDiagnostics: config.enableDiagnostics ?? true,
       diagnosticsDebounce: config.diagnosticsDebounce || 1000,
+    }
+
+    // Use provided client for dependency injection (testing)
+    if (wsClient) {
+      this.wsClient = wsClient
     }
   }
 
@@ -180,16 +187,25 @@ export class MonacoAgentAPI {
   async initialize(): Promise<void> {
     this.log('Initializing Monaco Agent API integration')
 
-    // Initialize WebSocket client
-    if (this.config.wsUrl) {
-      this.wsClient = createWebSocketStreamingClient({
-        url: this.config.wsUrl,
-        priority: 'high',
-        autoReconnect: true,
-        debug: this.config.debug,
-        timeout: this.config.completionTimeout * 2,
-      })
+    // Initialize WebSocket client if not already provided (dependency injection)
+    if (!this.wsClient && this.config.wsUrl) {
+      try {
+        this.wsClient = createWebSocketStreamingClient({
+          url: this.config.wsUrl,
+          priority: 'high',
+          autoReconnect: true,
+          debug: this.config.debug,
+          timeout: this.config.completionTimeout * 2,
+        })
 
+        await this.wsClient.connect()
+      } catch (error) {
+        this.log('WebSocket connection failed:', error)
+        // Re-throw error to match expected test behavior
+        throw error
+      }
+    } else if (this.wsClient) {
+      // Client was injected, connect it
       await this.wsClient.connect()
     }
 
@@ -208,6 +224,12 @@ export class MonacoAgentAPI {
    * Dispose of all resources
    */
   dispose(): void {
+    // Make disposal idempotent - only dispose once
+    if (this.disposed) {
+      return
+    }
+
+    this.disposed = true
     this.log('Disposing Monaco Agent API integration')
 
     // Dispose all Monaco disposables
@@ -349,12 +371,39 @@ export class MonacoAgentAPI {
       imports.push(match[1])
     }
 
+<<<<<<< HEAD
     // Python imports - match both "import X" and "from X import Y" patterns
     const pyImportRegex = /(?:^|\n)\s*(?:from\s+([\w.]+)\s+import|import\s+([\w.]+))/gm
     while ((match = pyImportRegex.exec(content)) !== null) {
       // match[1] is for "from X import", match[2] is for "import X"
       const moduleName = match[1] || match[2]
       if (moduleName) imports.push(moduleName)
+=======
+    // Python imports - process line by line to avoid multiline matching issues
+    const lines = content.split('\n')
+    for (const line of lines) {
+      // Check for "from X import Y" pattern first
+      const fromMatch = line.match(/from\s+([\w.]+)\s+import\s+([\w.,\s*]+)/)
+      if (fromMatch) {
+        imports.push(fromMatch[1])
+        continue
+      }
+
+      // Check for "import X" pattern
+      const importMatch = line.match(/import\s+([\w.,\s*]+)/)
+      if (importMatch) {
+        const importedModules = importMatch[1]
+          .split(',')
+          .map(m => {
+            // Split on 'as' to get the actual module name
+            const parts = m.trim().split(/\s+as\s+/)
+            // Get the first part (module name) and split on dots to get root module
+            return parts[0].split('.')[0].trim()
+          })
+          .filter(m => m && m !== '*')
+        imports.push(...importedModules)
+      }
+>>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
     }
 
     return imports

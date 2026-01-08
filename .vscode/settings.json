@@ -18,5 +18,6 @@
     "workbench.preferredLightColorTheme": "Light+ (default light)",
     "workbench.preferredDarkColorTheme": "Dark+ (default dark)",
     "workbench.preferredHighContrastColorTheme": "Default High Contrast",
-    "workbench.preferredHighContrastLightColorTheme": "Default High Contrast Light"
+    "workbench.preferredHighContrastLightColorTheme": "Default High Contrast Light",
+    "datadog.ust.environment.setup.focusedName": "dev"
 }
