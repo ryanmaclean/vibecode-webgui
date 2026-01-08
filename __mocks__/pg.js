@@ -89,9 +89,29 @@ const mockQuery = jest.fn().mockImplementation(async (query, params) => {
 
   // Default for INSERT queries
   if (normalizedQuery.startsWith('INSERT') || normalizedQuery.startsWith('insert')) {
+    // Detect batch size for batch INSERT operations
+    let batchSize = 1;
+
+    // Method 1: Count VALUES clauses in the SQL
+    const valuesMatch = normalizedQuery.match(/VALUES\s*\([^)]*\)/gi);
+    if (valuesMatch && valuesMatch.length > 1) {
+      batchSize = valuesMatch.length;
+    }
+
+    // Method 2: For parameterized queries, detect from params array length
+    // PGVector store() uses 5 params per row (id, content, embedding, metadata, created_at)
+    if (Array.isArray(params) && params.length > 0) {
+      // Check if it's a multi-row insert with 5 params per row
+      if (params.length >= 5 && params.length % 5 === 0) {
+        const calculatedBatchSize = Math.floor(params.length / 5);
+        // Use the larger of the two detection methods
+        batchSize = Math.max(batchSize, calculatedBatchSize);
+      }
+    }
+
     return {
       rows: [{ id: 1 }],
-      rowCount: 1,
+      rowCount: batchSize,
       command: 'INSERT',
       oid: 0,
       fields: []
