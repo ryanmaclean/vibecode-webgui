@@ -108,7 +108,7 @@ describe('macOS Keychain Integration', () => {
       await keychain.setSecret('test-key', "test'value")
 
       expect(mockExecSync).toHaveBeenCalledWith(
-        expect.stringContaining("test'\\\\''value"),
+        expect.stringContaining("test'\\''value"),
         expect.any(Object)
       )
     })

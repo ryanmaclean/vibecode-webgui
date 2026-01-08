@@ -179,7 +179,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('JWT_SECRET'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('JWT_SECRET')]))
     })
 
     it('should warn about default NEXTAUTH_SECRET in production', () => {
@@ -188,7 +188,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('NEXTAUTH_SECRET'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('NEXTAUTH_SECRET')]))
     })
 
     it('should warn about default POSTGRES_PASSWORD in production', () => {
@@ -197,7 +197,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('POSTGRES_PASSWORD'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('POSTGRES_PASSWORD')]))
     })
 
     it('should warn about short NEXTAUTH_SECRET in production', () => {
@@ -206,7 +206,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('at least 32 characters'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('at least 32 characters')]))
     })
 
     it('should warn about short JWT_SECRET in production', () => {
@@ -215,7 +215,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('JWT_SECRET'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('JWT_SECRET')]))
     })
 
     it('should warn about HTTP NEXTAUTH_URL in production', () => {
@@ -224,7 +224,7 @@ describe('Environment Validation', () => {
 
       const warnings = checkInsecureDefaults()
 
-      expect(warnings).toContain(expect.stringContaining('HTTPS'))
+      expect(warnings).toEqual(expect.arrayContaining([expect.stringContaining('HTTPS')]))
     })
 
     it('should not warn with secure configuration in production', () => {

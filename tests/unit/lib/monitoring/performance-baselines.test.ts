@@ -274,14 +274,21 @@ describe('PerformanceMonitoringService', () => {
       for (let i = 0; i < 50; i++) {
         performanceBaselines.recordMeasurement('api.alert', 100)
       }
-      jest.clearAllMocks()
+      // Clear only the mocked functions, not the console spies
+      mockLogger.performance.mockClear()
+      mockLogger.counter.mockClear()
+      mockDatadogMetrics.recordResponseTime.mockClear()
+      mockDatadogMetrics.sendBatchMetrics.mockClear()
+      consoleSpy.mockClear()
+      consoleWarnSpy.mockClear()
+      consoleErrorSpy.mockClear()
     })
 
     it('should trigger critical alert for severe degradation', () => {
       const baseline = performanceBaselines.getBaseline('api.alert')
 
-      // Record measurement way above baseline
-      performanceBaselines.recordMeasurement('api.alert', baseline!.p99 * 2)
+      // Record measurement way above baseline (need > p99 * 1.5 to trigger critical alert)
+      performanceBaselines.recordMeasurement('api.alert', baseline!.p99 * 1.6)
 
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         expect.stringContaining('Performance Alert'),
@@ -339,15 +346,28 @@ describe('PerformanceMonitoringService', () => {
       for (let i = 0; i < 50; i++) {
         performanceBaselines.recordMeasurement('custom.operation', 100)
       }
-      jest.clearAllMocks()
+      // Clear only the mocked functions, not the console spies
+      mockLogger.performance.mockClear()
+      mockLogger.counter.mockClear()
+      mockDatadogMetrics.recordResponseTime.mockClear()
+      mockDatadogMetrics.sendBatchMetrics.mockClear()
+      consoleSpy.mockClear()
+      consoleWarnSpy.mockClear()
+      consoleErrorSpy.mockClear()
 
       const baseline = performanceBaselines.getBaseline('custom.operation')
 
-      // Very slow measurement (>1.5x P99)
+      // Very slow measurement (need > p99 * 1.5 to trigger critical alert)
       performanceBaselines.recordMeasurement('custom.operation', baseline!.p99 * 1.6)
 
       // Should alert based on baseline degradation
-      expect(consoleErrorSpy).toHaveBeenCalled()
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Performance'),
+        expect.objectContaining({
+          operation: 'custom.operation',
+          severity: 'critical'
+        })
+      )
     })
   })
 
@@ -383,9 +403,10 @@ describe('PerformanceMonitoringService', () => {
     })
 
     it('should detect warning conditions', () => {
-      // Establish baselines slightly above thresholds
+      // Establish baselines above thresholds (api.auth threshold p99 is 1000)
+      // Need baseline.p99 > threshold to trigger warning
       for (let i = 0; i < 50; i++) {
-        performanceBaselines.recordMeasurement('api.auth', 600)  // Warning threshold
+        performanceBaselines.recordMeasurement('api.auth', 1100)  // Above p99 threshold
       }
 
       const report = performanceBaselines.generateHealthReport()
