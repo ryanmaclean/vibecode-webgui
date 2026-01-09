@@ -338,7 +338,7 @@ describe('AI Chat Stream API - Simple Integration Tests', () => {
 
       expect(response.status).toBe(500);
       if (data) {
-        expect(data).toHaveProperty('error');
+        expect(data).toHaveProperty('detail');
       }
     });
 

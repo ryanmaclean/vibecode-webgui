@@ -205,6 +205,10 @@ export class NextRequest {
       throw new TypeError('Body has already been consumed');
     }
     this.bodyUsed = true;
+    // If body is already a FormData instance, return it
+    if (this.body instanceof FormData) {
+      return this.body;
+    }
     return new FormData();
   }
 
@@ -247,13 +251,44 @@ export class NextRequest {
 // Mock ResponseCookies for NextResponse
 class MockResponseCookies {
   private cookies: Map<string, { name: string; value: string; options?: any }>;
+  private headers: MockHeaders;
 
-  constructor() {
+  constructor(headers: MockHeaders) {
     this.cookies = new Map();
+    this.headers = headers;
+  }
+
+  private serializeCookie(name: string, value: string, options?: any): string {
+    let cookie = `${name}=${value}`;
+
+    if (options) {
+      if (options.httpOnly) cookie += '; HttpOnly';
+      if (options.secure) cookie += '; Secure';
+      if (options.sameSite) cookie += `; SameSite=${options.sameSite.charAt(0).toUpperCase() + options.sameSite.slice(1)}`;
+      if (options.path) cookie += `; Path=${options.path}`;
+      if (options.maxAge) cookie += `; Max-Age=${options.maxAge}`;
+      if (options.domain) cookie += `; Domain=${options.domain}`;
+      if (options.expires) cookie += `; Expires=${new Date(options.expires).toUTCString()}`;
+    }
+
+    return cookie;
+  }
+
+  private updateSetCookieHeader(): void {
+    const cookieStrings = Array.from(this.cookies.values()).map(cookie =>
+      this.serializeCookie(cookie.name, cookie.value, cookie.options)
+    );
+
+    if (cookieStrings.length > 0) {
+      // For simplicity in tests, join multiple cookies with comma
+      // In real HTTP, these would be separate Set-Cookie headers
+      this.headers.set('set-cookie', cookieStrings.join(', '));
+    }
   }
 
   set(name: string, value: string, options?: any): void {
     this.cookies.set(name, { name, value, options });
+    this.updateSetCookieHeader();
   }
 
   get(name: string): { name: string; value: string; options?: any } | undefined {
@@ -262,6 +297,7 @@ class MockResponseCookies {
 
   delete(name: string): void {
     this.cookies.delete(name);
+    this.updateSetCookieHeader();
   }
 
   getAll(): Array<{ name: string; value: string; options?: any }> {
@@ -274,17 +310,27 @@ class MockResponseCookies {
 
   clear(): void {
     this.cookies.clear();
+    this.headers.delete('set-cookie');
   }
 }
 
 // Mock NextResponse
 export class NextResponse extends Response {
   public cookies: MockResponseCookies;
+  public headers: Headers;
 
   constructor(body?: BodyInit | null, init?: ResponseInit) {
     // Create a proper Response object
     super(body, init);
-    this.cookies = new MockResponseCookies();
+
+    // Create a MockHeaders instance that will be shared with cookies
+    const mockHeaders = new MockHeaders(init?.headers);
+
+    // Override the headers property with our mock that syncs with cookies
+    this.headers = mockHeaders as any as Headers;
+
+    // Pass MockHeaders to cookies so they can sync
+    this.cookies = new MockResponseCookies(mockHeaders);
   }
 
   static json(data: any, init?: ResponseInit): NextResponse {

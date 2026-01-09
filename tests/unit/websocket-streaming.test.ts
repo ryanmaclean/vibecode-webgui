@@ -3,14 +3,16 @@
  * Coverage target: 80%+
  */
 
+// Disable auto-mock for WebSocketStreamingClient (we want to test the real implementation)
+jest.unmock('@/lib/streaming/websocket-streaming-client');
+
 // Mock WebSocket Connection Pool
 let mockPooledConnection: any;
 let mockPool: any;
 
 jest.mock('@/lib/websocket-connection-pooling', () => ({
   getPooledWebSocket: jest.fn(),
-  releasePooledWebSocket: jest.fn(),
-  WebSocketConnectionPool: jest.fn().mockImplementation(() => mockPool)
+  releasePooledWebSocket: jest.fn()
 }));
 
 // Import after mocks are set up
@@ -44,20 +46,17 @@ describe('WebSocketStreamingClient', () => {
 
     mockPool = {
       sendMessage: jest.fn().mockResolvedValue(undefined),
-      subscribeToConnection: jest.fn(),
+      subscribeToConnection: jest.fn().mockImplementation((connectionId, subscriberId, handlers) => {
+        messageHandler = handlers.onMessage || null;
+        closeHandler = handlers.onClose || null;
+        errorHandler = handlers.onError || null;
+      }),
       releaseConnection: jest.fn(),
       getConnection: jest.fn().mockResolvedValue(mockPooledConnection)
     };
 
-    // Setup getPooledWebSocket mock
+    // Setup getPooledWebSocket mock to return the connection
     (getPooledWebSocket as jest.Mock).mockResolvedValue(mockPooledConnection);
-
-    // Capture handlers when subscribeToConnection is called
-    mockPool.subscribeToConnection.mockImplementation((connectionId, subscriberId, handlers) => {
-      messageHandler = handlers.onMessage || null;
-      closeHandler = handlers.onClose || null;
-      errorHandler = handlers.onError || null;
-    });
 
     client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
   });

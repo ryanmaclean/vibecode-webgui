@@ -107,7 +107,7 @@ describe('Agents API Integration', () => {
         json: async () => mockResponse,
       })
 
-      const request = new NextRequest('http://localhost:3000/api/agents/list', {
+      const request = new NextRequest('http://localhost:3000/api/agents/list?workspaceId=test-workspace-123', {
         method: 'GET',
       })
 

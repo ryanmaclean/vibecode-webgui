@@ -529,7 +529,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
       // Create a mock authenticated request with test mode
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         message: 'Hello\x00World', // Null byte injection
-        model: 'anthropic/claude-3.5-sonnet'
+        model: 'anthropic/claude-3.5-sonnet',
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
@@ -546,7 +547,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
 
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         message: largeMessage,
-        model: 'anthropic/claude-3.5-sonnet'
+        model: 'anthropic/claude-3.5-sonnet',
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
@@ -563,7 +565,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
 
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         messages: manyMessages,
-        model: 'anthropic/claude-3.5-sonnet'
+        model: 'anthropic/claude-3.5-sonnet',
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
@@ -579,7 +582,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         message: 'test',
         model: 'anthropic/claude-3.5-sonnet',
-        max_tokens: 50000 // Exceeds limit
+        max_tokens: 50000, // Exceeds limit
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
@@ -595,7 +599,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         message: 'test',
         model: 'anthropic/claude-3.5-sonnet',
-        temperature: 3.5 // Out of range
+        temperature: 3.5, // Out of range
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
@@ -691,7 +696,8 @@ describe('Phase 4 Batch 1: File Upload & Authentication Validation', () => {
 
       const req = createRequest('http://localhost/api/ai/chat', 'POST', {
         message: injectionAttempt,
-        model: 'anthropic/claude-3.5-sonnet'
+        model: 'anthropic/claude-3.5-sonnet',
+        workspaceId: 'test-workspace-123'
       })
       req.headers.set('x-test-mode', 'true')
       req.headers.set('x-test-user-id', 'test-user')
