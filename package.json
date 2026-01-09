@@ -158,7 +158,7 @@
     "@langchain/core": "^1.0.1",
     "@langchain/openai": "0.6.12",
     "@langchain/weaviate": "^1.0.0",
-    "@modelcontextprotocol/sdk": "1.25.1",
+    "@modelcontextprotocol/sdk": "1.25.2",
     "@monaco-editor/react": "4.7.0",
     "@mui/material": "^7.3.2",
     "@mui/x-charts": "^8.14.1",
