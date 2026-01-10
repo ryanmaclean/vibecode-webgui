@@ -16,7 +16,7 @@
     "assets": []
   },
   "dependencies": {
-    "@kubernetes/client-node": "^0.22.3",
+    "@kubernetes/client-node": "^1.4.0",
     "@ltd/j-toml": "^1.38.0",
     "axios": "^1.7.2",
     "dockerode": "^4.0.2",
