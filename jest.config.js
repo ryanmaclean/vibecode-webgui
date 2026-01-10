@@ -83,6 +83,14 @@ const config = {
     ...(includeDocs ? [] : ['<rootDir>/tests/docs/']),
   ],
 
+  // Prevent haste-map collisions from duplicate directories
+  modulePathIgnorePatterns: [
+    '<rootDir>/docs/archive/old-builds/',
+    '<rootDir>/vibecode-optimized/',
+    '<rootDir>/vibecode-v1.4a-package/',
+    '<rootDir>/src/extensions/', // Extensions have their own package.json files
+  ],
+
   moduleFileExtensions: ['js', 'jsx', 'ts', 'tsx', 'json', 'node'],
 
   // Fix haste map collision

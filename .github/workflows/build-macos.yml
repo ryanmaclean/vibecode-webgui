@@ -47,6 +47,7 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          SKIP_ENV_VALIDATION: true
 
       - name: Build Tauri app (Release)
         if: github.event.inputs.build_type != 'debug'
@@ -117,6 +118,7 @@ jobs:
         run: npm run build
         env:
           NEXT_TELEMETRY_DISABLED: 1
+          SKIP_ENV_VALIDATION: true
 
       - name: Build for ARM64
         run: npm run tauri:build -- --target aarch64-apple-darwin

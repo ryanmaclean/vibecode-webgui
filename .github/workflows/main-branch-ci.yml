@@ -40,7 +40,7 @@ jobs:
         run: npm run type-check || echo "Type issues found (non-blocking)"
 
       - name: Basic unit tests
-        run: npm test -- --testPathPattern="(auth|security|utils)" --passWithNoTests
+        run: npm test -- --testPathPatterns="(auth|security|utils)" --passWithNoTests
         timeout-minutes: 5
 
   security-scan:
