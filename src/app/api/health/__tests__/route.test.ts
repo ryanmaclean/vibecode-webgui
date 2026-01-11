@@ -103,9 +103,9 @@ describe('/api/health', () => {
             status: expect.any(String),
             details: expect.any(Object)
           }),
-          database: { status: 'healthy' },
-          valkey: { status: 'healthy' },
-          ai: { status: 'healthy' }
+          database: { status: 'healthy', details: { connected: true } },
+          valkey: { status: 'healthy', details: { connected: true } },
+          ai: { status: 'healthy', details: { provider: 'test-mode', available: true } }
         },
         responseTime: expect.stringMatching(/^\d+ms$/),
         performance: expect.objectContaining({
