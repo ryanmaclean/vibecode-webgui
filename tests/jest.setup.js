@@ -2,6 +2,24 @@
 import '@testing-library/jest-dom';
 import { cleanup } from '@testing-library/react';
 
+// Add Node.js webcrypto to global scope for tests
+// This provides crypto.randomUUID() and other Web Crypto API methods
+// Required for Edge Runtime route handlers that use crypto.randomUUID()
+if (typeof global.crypto === 'undefined') {
+  try {
+    // Node 18+ provides webcrypto compatible with browser crypto
+    const { webcrypto } = require('node:crypto');
+    global.crypto = webcrypto;
+  } catch (error) {
+    // Fallback for older Node versions
+    const crypto = require('crypto');
+    global.crypto = {
+      randomUUID: () => crypto.randomUUID(),
+      getRandomValues: (buffer) => crypto.randomFillSync(buffer),
+    };
+  }
+}
+
 // Setup default fetch mock before each test
 beforeEach(() => {
   // Mock fetch to return 401 for UserPreferencesProvider (uses default preferences)
