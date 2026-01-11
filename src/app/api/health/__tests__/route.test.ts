@@ -15,9 +15,18 @@ jest.mock('@/lib/monitoring', () => ({
   monitoring: {
     recordMetric: jest.fn(),
     recordTrace: jest.fn(),
-    checkDatabase: jest.fn().mockResolvedValue({ status: 'healthy' }),
-    checkValkey: jest.fn().mockResolvedValue({ status: 'healthy' }),
-    checkAIService: jest.fn().mockResolvedValue({ status: 'healthy' }),
+    checkDatabase: jest.fn().mockResolvedValue({
+      status: 'healthy',
+      details: { connected: true }
+    }),
+    checkValkey: jest.fn().mockResolvedValue({
+      status: 'healthy',
+      details: { connected: true }
+    }),
+    checkAIService: jest.fn().mockResolvedValue({
+      status: 'healthy',
+      details: { provider: 'test-mode', available: true }
+    }),
     trackMetrics: jest.fn().mockResolvedValue(undefined),
     submitEvent: jest.fn().mockResolvedValue(undefined)
   }
