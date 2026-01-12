@@ -11,7 +11,7 @@ azure-mgmt-storage==21.1.0
 
 # HTTP requests and utilities
 requests==2.32.4
-urllib3==2.5.0
+urllib3>=2.6.3
 
 # Testing framework
 pytest==7.4.3
