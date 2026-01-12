@@ -76,6 +76,7 @@ const config = {
     '/openvscode-server/',
     '/extensions/', // VSCode extension tests - have their own test runner
     '<rootDir>/packages/vibecode-cli/src/__tests__/', // CLI tests - run with 'cd packages/vibecode-cli && npm test'
+    '/dist/', // Exclude built test files from discovery
     '/__mocks__/',
     '<rootDir>/config/alternatives/',
     '<rootDir>/examples/',
