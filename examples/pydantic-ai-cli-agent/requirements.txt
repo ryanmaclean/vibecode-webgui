@@ -31,3 +31,6 @@ httpx>=0.25.0
 # Optional: Observability
 opentelemetry-api>=1.20.0
 opentelemetry-sdk>=1.20.0
+
+# Security: Pin urllib3 to address CVE vulnerabilities
+urllib3>=2.6.3
