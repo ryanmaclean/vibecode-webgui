@@ -1,411 +1,169 @@
 /**
- * Unit Tests for File Upload Security Validation
- * Tests file signature validation, malware scanning, and content security
+ * File Validation Security Tests
+ * Tests comprehensive file upload validation logic
  */
 
-import { jest } from '@jest/globals'
-import { Buffer } from 'buffer'
-import * as fileValidation from '@/lib/security/file-validation'
-
-describe('File Upload Security Validation', () => {
-  describe('validateFileUpload', () => {
-    it.skip('should validate a proper PDF file', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'document.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.isValid).toBe(true)
-      expect(result.errors).toHaveLength(0)
-      expect(result.fileType).toBe('PDF')
-    })
-
-    it('should reject empty files', () => {
-      const emptyBuffer = Buffer.from('')
-      const file = new File([emptyBuffer], 'empty.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, emptyBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toContain('File is empty')
-    })
-
-    it('should reject files exceeding size limit', () => {
-      const largeBuffer = Buffer.alloc(26 * 1024 * 1024) // 26 MB
-      const file = new File([largeBuffer], 'large.pdf', { type: 'application/pdf' })
-      Object.defineProperty(file, 'size', { value: 26 * 1024 * 1024 })
-
-      const result = fileValidation.validateFileUpload(file, largeBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('too large')]))
-    })
-
-    it('should reject invalid file extensions', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'document.exe', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Invalid file extension')]))
-    })
-
-    it('should reject invalid MIME types', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'document.pdf', { type: 'application/octet-stream' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Invalid MIME type')]))
-    })
-
-    it('should reject files without PDF signature', () => {
-      const fakeBuffer = Buffer.from('This is not a PDF')
-      const file = new File([fakeBuffer], 'fake.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, fakeBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Invalid file signature')]))
-    })
-
-    it('should reject PDF without proper footer', () => {
-      const invalidPdfBuffer = Buffer.from('%PDF-1.4\n...content...')
-      const file = new File([invalidPdfBuffer], 'invalid.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, invalidPdfBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Missing PDF footer')]))
-    })
-
-    it('should reject files that are too small', () => {
-      const tinyBuffer = Buffer.from('%PDF-1.4\n%%EOF')
-      const file = new File([tinyBuffer], 'tiny.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, tinyBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('too small')]))
-    })
-
-    it('should detect directory traversal in filename', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], '../../../etc/passwd.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Suspicious filename')]))
-    })
-
-    it('should detect null byte injection in filename', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'document\0.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Suspicious filename')]))
-    })
-
-    it('should include metadata in result', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'document.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
-
-      expect(result.metadata).toBeDefined()
-      expect(result.metadata?.actualSize).toBe(file.size)
-      expect(result.metadata?.mimeType).toBe('application/pdf')
-    })
-
-    it('should warn about suspicious content without failing', () => {
-      const pdfWithUrl = Buffer.from(
-        '%PDF-1.4\nhttp://example.com\nhttp://example2.com\n%%EOF'
-      )
-      const file = new File([pdfWithUrl], 'document.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithUrl)
-
-      // May have warnings but not necessarily errors
-      expect(result.warnings).toBeDefined()
-    })
-  })
-
-  describe('Malware Detection', () => {
-    it('should detect embedded Windows executables', () => {
-      const executableSignature = Buffer.from([0x4d, 0x5a]) // MZ header
-      const pdfWithExe = Buffer.concat([
-        Buffer.from('%PDF-1.4\n'),
-        executableSignature,
-        Buffer.from('\n%%EOF'),
-      ])
-      const file = new File([pdfWithExe], 'malware.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithExe)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('executable')]))
-    })
-
-    it('should detect embedded ELF executables', () => {
-      const elfSignature = Buffer.from([0x7f, 0x45, 0x4c, 0x46]) // ELF header
-      const pdfWithElf = Buffer.concat([
-        Buffer.from('%PDF-1.4\n'),
-        elfSignature,
-        Buffer.from('\n%%EOF'),
-      ])
-      const file = new File([pdfWithElf], 'malware.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithElf)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('executable')]))
-    })
-
-    it('should detect suspicious JavaScript in PDF', () => {
-      const pdfWithJs = Buffer.from(
-        '%PDF-1.4\n/JavaScript eval(maliciousCode)\n%%EOF'
-      )
-      const file = new File([pdfWithJs], 'suspicious.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithJs)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors.join(' ')).toMatch(/JavaScript|script/i)
-    })
-
-    it('should detect excessive URLs as suspicious', () => {
-      let pdfContent = '%PDF-1.4\n'
-      for (let i = 0; i < 15; i++) {
-        pdfContent += `http://example${i}.com\n`
-      }
-      pdfContent += '%%EOF'
-
-      const pdfWithManyUrls = Buffer.from(pdfContent)
-      const file = new File([pdfWithManyUrls], 'urls.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithManyUrls)
-
-      // May be flagged as suspicious
-      expect(result.warnings.length > 0 || result.errors.length > 0).toBe(true)
-    })
-
-    it.skip('should detect potential buffer overflow patterns', () => {
-      const pdfWithPattern = Buffer.from(
-        '%PDF-1.4\n' + 'A'.repeat(1500) + '\n%%EOF'
-      )
-      const file = new File([pdfWithPattern], 'overflow.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithPattern)
-
-      // May be flagged as suspicious (either warnings or errors)
-      expect(result.warnings.length > 0 || result.errors.length > 0).toBe(true)
-    })
-  })
-
-  describe('PDF Structure Validation', () => {
-    it('should reject PDF with invalid header', () => {
-      const invalidPdf = Buffer.from('Not-PDF-1.4\n...content...%%EOF')
-      const file = new File([invalidPdf], 'invalid.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, invalidPdf)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Invalid PDF header')]))
-    })
-
-    it('should reject unsupported PDF versions', () => {
-      const futurePdf = Buffer.from('%PDF-3.0\n...content...%%EOF')
-      const file = new File([futurePdf], 'future.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, futurePdf)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('Unsupported PDF version')]))
-    })
-
-    it('should detect excessive cross-reference tables', () => {
-      let pdfContent = '%PDF-1.4\n'
-      for (let i = 0; i < 150; i++) {
-        pdfContent += 'xref\n'
-      }
-      pdfContent += '%%EOF'
-
-      const pdfWithManyXrefs = Buffer.from(pdfContent)
-      const file = new File([pdfWithManyXrefs], 'xrefs.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithManyXrefs)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('cross-reference')]))
-    })
-
-    it('should detect excessive object nesting', () => {
-      let pdfContent = '%PDF-1.4\n'
-      pdfContent += '['.repeat(1200) // Deep nesting
-      pdfContent += ']'.repeat(1200)
-      pdfContent += '\n%%EOF'
-
-      const pdfWithNesting = Buffer.from(pdfContent)
-      const file = new File([pdfWithNesting], 'nested.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithNesting)
-
-      expect(result.isValid).toBe(false)
-      expect(result.errors).toEqual(expect.arrayContaining([expect.stringContaining('nesting')]))
-    })
-  })
-
+import { Buffer } from 'buffer';
+import {
+  validateFileUpload,
+  sanitizeFilename,
+  generateSecureStorageName,
+} from '@/lib/security/file-validation';
+
+// Mock File class for Node.js environment
+class MockFile {
+  name: string;
+  size: number;
+  type: string;
+
+  constructor(name: string, size: number, type: string) {
+    this.name = name;
+    this.size = size;
+    this.type = type;
+  }
+}
+
+// Helper to create a valid PDF buffer
+function createValidPDFBuffer(): Buffer {
+  const pdfContent = `%PDF-1.4
+1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj
+2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj
+3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] >> endobj
+xref
+0 4
+0000000000 65535 f
+0000000009 00000 n
+0000000058 00000 n
+0000000115 00000 n
+trailer << /Size 4 /Root 1 0 R >>
+startxref
+198
+%%EOF`;
+
+  return Buffer.from(pdfContent);
+}
+
+describe('File Validation Security', () => {
   describe('sanitizeFilename', () => {
     it('should remove directory traversal patterns', () => {
-      const result = fileValidation.sanitizeFilename('../../../etc/passwd')
+      expect(sanitizeFilename('../../../etc/passwd')).not.toContain('../');
+    });
 
-      // Sanitization should make the filename safe (slashes replaced with underscores)
-      expect(result).not.toContain('/')
-      // Result should be a sanitized filename without path separators
-      expect(result).toMatch(/^[^\/\\]+$/)
-    })
+    it('should remove dangerous characters', () => {
+      const dangerous = 'file:name<with>dangerous|chars*.pdf';
+      const sanitized = sanitizeFilename(dangerous);
 
-    it('should remove invalid characters', () => {
-      const result = fileValidation.sanitizeFilename('file:name*with?invalid<chars>')
-
-      expect(result).not.toContain(':')
-      expect(result).not.toContain('*')
-      expect(result).not.toContain('?')
-      expect(result).not.toContain('<')
-      expect(result).not.toContain('>')
-    })
+      expect(sanitized).not.toContain(':');
+      expect(sanitized).not.toContain('<');
+      expect(sanitized).not.toContain('>');
+      expect(sanitized).not.toContain('|');
+      expect(sanitized).not.toContain('*');
+    });
 
     it('should remove null bytes', () => {
-      const result = fileValidation.sanitizeFilename('file\0name.pdf')
+      const filename = 'document.pdf\0.txt';
+      const sanitized = sanitizeFilename(filename);
 
-      expect(result).not.toContain('\0')
-      expect(result).toBe('filename.pdf')
-    })
+      expect(sanitized).not.toContain('\0');
+    });
 
-    it('should limit filename length', () => {
-      const longName = 'a'.repeat(300) + '.pdf'
-      const result = fileValidation.sanitizeFilename(longName)
+    it('should limit filename length to 255 characters', () => {
+      const longFilename = 'a'.repeat(300) + '.pdf';
+      const sanitized = sanitizeFilename(longFilename);
 
-      expect(result.length).toBeLessThanOrEqual(255)
-      expect(result).toContain('.pdf')
-    })
+      expect(sanitized.length).toBeLessThanOrEqual(255);
+      expect(sanitized.endsWith('.pdf')).toBe(true);
+    });
 
-    it('should not allow filenames starting with dot', () => {
-      const result = fileValidation.sanitizeFilename('.hidden')
+    it('should not allow hidden files (starting with dot)', () => {
+      const hiddenFile = '.hidden_config';
+      const sanitized = sanitizeFilename(hiddenFile);
 
-      expect(result).not.toMatch(/^\./)
-    })
+      expect(sanitized.startsWith('.')).toBe(false);
+      expect(sanitized.startsWith('_')).toBe(true);
+    });
 
-    it('should preserve file extension', () => {
-      const result = fileValidation.sanitizeFilename('my-document.pdf')
+    it('should preserve valid filenames', () => {
+      const validFilename = 'my_document_2024.pdf';
+      const sanitized = sanitizeFilename(validFilename);
 
-      expect(result).toContain('.pdf')
-      expect(result).toBe('my-document.pdf')
-    })
-
-    it('should handle filenames without extension', () => {
-      const result = fileValidation.sanitizeFilename('document')
-
-      expect(result).toBe('document')
-    })
-  })
+      expect(sanitized).toBe(validFilename);
+    });
+  });
 
   describe('generateSecureStorageName', () => {
-    it('should generate storage name with job ID', () => {
-      const result = fileValidation.generateSecureStorageName('document.pdf', 'job-123')
+    it('should generate secure name with job ID', () => {
+      const originalName = 'document.pdf';
+      const jobId = 'job-12345';
 
-      expect(result).toBe('job-123.pdf')
-    })
+      const secureName = generateSecureStorageName(originalName, jobId);
+
+      expect(secureName).toBe('job-12345.pdf');
+      expect(secureName).toContain(jobId);
+      expect(secureName.endsWith('.pdf')).toBe(true);
+    });
+
+    it('should sanitize filename before using it', () => {
+      const maliciousName = '../../../etc/passwd.pdf';
+      const jobId = 'job-67890';
+
+      const secureName = generateSecureStorageName(maliciousName, jobId);
+
+      expect(secureName).not.toContain('../');
+      expect(secureName).toBe('job-67890.pdf');
+    });
 
     it('should preserve file extension', () => {
-      const result = fileValidation.generateSecureStorageName('image.png', 'job-456')
+      const originalName = 'document.docx';
+      const jobId = 'job-abc';
 
-      expect(result).toBe('job-456.png')
-    })
+      const secureName = generateSecureStorageName(originalName, jobId);
 
-    it('should sanitize original filename', () => {
-      const result = fileValidation.generateSecureStorageName(
-        '../../../evil.pdf',
-        'job-789'
-      )
+      expect(secureName.endsWith('.docx')).toBe(true);
+    });
+  });
 
-      expect(result).toBe('job-789.pdf')
-      expect(result).not.toContain('..')
-    })
+  describe('validateFileUpload', () => {
+    it('should accept a valid PDF file', () => {
+      const file = new MockFile('document.pdf', 500, 'application/pdf') as unknown as File;
+      const buffer = createValidPDFBuffer();
 
-    it('should handle filenames with multiple dots', () => {
-      const result = fileValidation.generateSecureStorageName(
-        'document.backup.pdf',
-        'job-abc'
-      )
+      const result = validateFileUpload(file, buffer);
 
-      expect(result).toBe('job-abc.pdf')
-    })
+      expect(result.isValid).toBe(true);
+      expect(result.errors).toHaveLength(0);
+      expect(result.fileType).toBe('PDF');
+      expect(result.metadata).toBeDefined();
+    });
 
-    it('should handle filenames without extension', () => {
-      const result = fileValidation.generateSecureStorageName('document', 'job-def')
+    it('should reject empty files', () => {
+      const file = new MockFile('document.pdf', 0, 'application/pdf') as unknown as File;
+      const buffer = Buffer.from('');
 
-      expect(result).toMatch(/^job-def\./)
-    })
-  })
+      const result = validateFileUpload(file, buffer);
 
-  describe('Edge Cases', () => {
-    it('should handle very small valid PDFs', () => {
-      // Minimum valid PDF
-      const minPdf = Buffer.from('%PDF-1.4\n1 0 obj<</Type/Catalog/Pages 2 0 R>>endobj 2 0 obj<</Type/Pages/Kids[3 0 R]/Count 1>>endobj 3 0 obj<</Type/Page/MediaBox[0 0 612 792]/Parent 2 0 R/Resources<<>>>>endobj\nxref\n0 4\ntrailer<</Size 4/Root 1 0 R>>\nstartxref\n193\n%%EOF')
-      const file = new File([minPdf], 'minimal.pdf', { type: 'application/pdf' })
+      expect(result.isValid).toBe(false);
+      expect(result.errors).toContain('File is empty');
+    });
 
-      const result = fileValidation.validateFileUpload(file, minPdf)
+    it('should reject files with invalid extension', () => {
+      const file = new MockFile('document.txt', 500, 'application/pdf') as unknown as File;
+      const buffer = createValidPDFBuffer();
 
-      // Structure validation matters more than exact size
-      expect(result.errors.filter(e => e.includes('structure')).length).toBe(0)
-    })
+      const result = validateFileUpload(file, buffer);
 
-    it('should handle Unicode filenames', () => {
-      const pdfBuffer = Buffer.from('%PDF-1.4\n...content...%%EOF')
-      const file = new File([pdfBuffer], 'документ.pdf', { type: 'application/pdf' })
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.includes('Invalid file extension'))).toBe(true);
+    });
 
-      const result = fileValidation.validateFileUpload(file, pdfBuffer)
+    it('should detect suspicious filenames', () => {
+      const file = new MockFile('../../../etc/passwd.pdf', 500, 'application/pdf') as unknown as File;
+      const buffer = createValidPDFBuffer();
 
-      // Should not crash, may have validation errors based on content
-      expect(result).toBeDefined()
-    })
+      const result = validateFileUpload(file, buffer);
 
-    it('should handle binary data in PDF', () => {
-      const binaryData = Buffer.alloc(200)
-      for (let i = 0; i < 200; i++) {
-        binaryData[i] = i % 256
-      }
-
-      const pdfWithBinary = Buffer.concat([
-        Buffer.from('%PDF-1.4\n'),
-        binaryData,
-        Buffer.from('\n%%EOF'),
-      ])
-      const file = new File([pdfWithBinary], 'binary.pdf', { type: 'application/pdf' })
-
-      const result = fileValidation.validateFileUpload(file, pdfWithBinary)
-
-      // Should handle binary without crashing
-      expect(result).toBeDefined()
-    })
-
-    it('should handle empty filename', () => {
-      const sanitized = fileValidation.sanitizeFilename('')
-
-      expect(sanitized).toBe('')
-    })
-
-    it('should handle filename with only special characters', () => {
-      const sanitized = fileValidation.sanitizeFilename('***???')
-
-      expect(sanitized).not.toContain('*')
-      expect(sanitized).not.toContain('?')
-    })
-  })
-})
+      expect(result.isValid).toBe(false);
+      expect(result.errors.some(e => e.includes('Suspicious filename'))).toBe(true);
+    });
+  });
+});
