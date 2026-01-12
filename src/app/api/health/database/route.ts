@@ -6,8 +6,8 @@ import { z } from '@/lib/zod-compat';
 
 // Zod validation schema for query parameters
 const healthCheckQuerySchema = z.object({
-  detailed: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
-  quick: z.enum(['true', 'false']).optional().transform(val => val === 'true'),
+  detailed: z.enum(['true', 'false']).optional().transform(val => val === undefined ? undefined : val === 'true'),
+  quick: z.enum(['true', 'false']).optional().transform(val => val === undefined ? undefined : val === 'true'),
   timeout: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined)
     .refine(val => !val || (val >= 1000 && val <= 30000), {
       message: 'Timeout must be between 1000ms and 30000ms'
@@ -21,12 +21,19 @@ export const revalidate = 0;
 export async function GET(request: NextRequest) {
   try {
     const searchParams = request.nextUrl.searchParams;
-    
-    // Validate query parameters with Zod
+
+    // Build object with all query parameters for strict validation
+    const paramsObj: Record<string, string | undefined> = {};
+    searchParams.forEach((value, key) => {
+      paramsObj[key] = value;
+    });
+
+    // Convert null to undefined for optional parameters (searchParams.get() returns null when param doesn't exist)
     const validation = healthCheckQuerySchema.safeParse({
-      detailed: searchParams.get('detailed'),
-      quick: searchParams.get('quick'),
-      timeout: searchParams.get('timeout')
+      ...paramsObj,
+      detailed: searchParams.get('detailed') ?? undefined,
+      quick: searchParams.get('quick') ?? undefined,
+      timeout: searchParams.get('timeout') ?? undefined
     });
     
     if (!validation.success) {
