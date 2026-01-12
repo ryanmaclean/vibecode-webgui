@@ -149,10 +149,10 @@ const config = {
   ],
   coverageThreshold: {
     global: {
-      branches: 18,   // Current: 18.30% - increased from 17% (AGENT 86)
-      functions: 20,  // Current: 21.00% - maintained at 20%
-      lines: 23,      // Current: 23.06% - increased from 22% (AGENT 86)
-      statements: 22, // Current: 22.82% - maintained at 22%
+      branches: 19,   // Current: 19.35% - increased from 18% (AGENT 101)
+      functions: 22,  // Current: 22.13% - increased from 20% (AGENT 101)
+      lines: 24,      // Current: 24.19% - increased from 23% (AGENT 101)
+      statements: 23, // Current: 23.94% - increased from 22% (AGENT 101)
     },
   },
 
