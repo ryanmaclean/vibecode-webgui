@@ -4,3 +4,6 @@ zenml[server]
 # Core ML Libraries
 scikit-learn
 numpy
+
+# Security: Pin urllib3 to address CVE vulnerabilities
+urllib3>=2.6.3

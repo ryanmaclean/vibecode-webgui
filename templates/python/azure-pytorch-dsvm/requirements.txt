@@ -21,3 +21,6 @@ accelerate
 
 # Utility
 tqdm
+
+# Security: Pin urllib3 to address CVE vulnerabilities
+urllib3>=2.6.3
