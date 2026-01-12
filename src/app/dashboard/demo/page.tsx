@@ -3,9 +3,12 @@
  * Showcases the Enhanced Monitoring Dashboard widgets
  *
  * AGENT 92: Enhanced Monitoring Dashboards Foundation
+ * AGENT 97: Dashboard Expansion - Performance & AI Usage Widgets
  */
 
 import { SystemHealthWidget } from '@/components/dashboard/SystemHealthWidget'
+import { PerformanceGraphWidget } from '@/components/dashboard/PerformanceGraphWidget'
+import { AIUsageWidget } from '@/components/dashboard/AIUsageWidget'
 
 export const metadata = {
   title: 'Monitoring Dashboard Demo',
@@ -22,7 +25,7 @@ export default function DashboardDemo() {
             Monitoring Dashboard (Demo)
           </h1>
           <p className="text-gray-600">
-            Foundation for enhanced monitoring features - showcasing real-time system health tracking
+            Enhanced monitoring features - showcasing real-time system health, performance graphs, and AI usage tracking
           </p>
         </div>
 
@@ -33,20 +36,21 @@ export default function DashboardDemo() {
           </h2>
           <div className="grid md:grid-cols-2 gap-4 text-sm text-blue-800">
             <div>
-              <h3 className="font-semibold mb-2">Implemented (v1.0):</h3>
+              <h3 className="font-semibold mb-2">Implemented (v1.1):</h3>
               <ul className="space-y-1 list-disc list-inside">
                 <li>Real-time system health monitoring</li>
                 <li>Database, cache, and AI service status</li>
-                <li>Performance metrics tracking</li>
+                <li>Performance graphs with time-series data</li>
+                <li>AI usage tracking and cost monitoring</li>
                 <li>System resource monitoring</li>
-                <li>Auto-refresh every 30 seconds</li>
+                <li>Auto-refresh with configurable intervals</li>
               </ul>
             </div>
             <div>
               <h3 className="font-semibold mb-2">Future Enhancements:</h3>
               <ul className="space-y-1 list-disc list-inside">
-                <li>Advanced performance graphs</li>
-                <li>Historical data visualization</li>
+                <li>Error log viewer with filtering</li>
+                <li>Resource usage widget (CPU, memory)</li>
                 <li>Real-time WebSocket updates</li>
                 <li>Customizable widget layout</li>
                 <li>Alert notifications</li>
@@ -83,7 +87,7 @@ export default function DashboardDemo() {
                 </p>
               </div>
             </div>
-            <div className="flex items-start">
+            <div className="flex items-start border-b pb-3">
               <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-3">
                 GET
               </span>
@@ -91,6 +95,17 @@ export default function DashboardDemo() {
                 <code className="text-sm font-mono text-gray-900">/api/dashboard/status</code>
                 <p className="text-sm text-gray-600 mt-1">
                   System status, version, and deployment information
+                </p>
+              </div>
+            </div>
+            <div className="flex items-start">
+              <span className="inline-flex items-center px-2.5 py-0.5 rounded text-xs font-medium bg-green-100 text-green-800 mr-3">
+                GET
+              </span>
+              <div className="flex-1">
+                <code className="text-sm font-mono text-gray-900">/api/dashboard/ai-usage</code>
+                <p className="text-sm text-gray-600 mt-1">
+                  AI model usage, costs, and performance metrics
                 </p>
               </div>
             </div>
@@ -112,42 +127,53 @@ export default function DashboardDemo() {
             <SystemHealthWidget />
           </div>
 
-          {/* Placeholder for future widgets */}
+          {/* Performance Graph Widget */}
           <div>
             <div className="mb-4">
               <h2 className="text-xl font-semibold text-gray-900 mb-1">
-                Future Widgets
+                Performance Graph Widget
               </h2>
               <p className="text-sm text-gray-600">
-                Additional widgets to be implemented
+                Response time trends with latency metrics
               </p>
             </div>
-            <div className="bg-white rounded-lg shadow border p-6">
-              <div className="space-y-4">
-                <div className="border-l-4 border-blue-500 pl-4">
-                  <h3 className="font-semibold text-gray-900">Performance Graph Widget</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Real-time line charts showing response times and throughput
-                  </p>
-                </div>
-                <div className="border-l-4 border-purple-500 pl-4">
-                  <h3 className="font-semibold text-gray-900">AI Usage Widget</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Track AI model usage, costs, and response times
-                  </p>
-                </div>
-                <div className="border-l-4 border-yellow-500 pl-4">
-                  <h3 className="font-semibold text-gray-900">Error Log Widget</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Recent errors and warnings with filtering
-                  </p>
-                </div>
-                <div className="border-l-4 border-green-500 pl-4">
-                  <h3 className="font-semibold text-gray-900">Resource Usage Widget</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Detailed CPU, memory, and disk usage graphs
-                  </p>
-                </div>
+            <PerformanceGraphWidget timeRange="1h" />
+          </div>
+
+          {/* AI Usage Widget */}
+          <div className="lg:col-span-2">
+            <div className="mb-4">
+              <h2 className="text-xl font-semibold text-gray-900 mb-1">
+                AI Usage Widget
+              </h2>
+              <p className="text-sm text-gray-600">
+                AI model usage, costs, and performance tracking
+              </p>
+            </div>
+            <AIUsageWidget />
+          </div>
+        </div>
+
+        {/* Future Widgets Section */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">
+            Future Widgets (Roadmap)
+          </h2>
+          <div className="grid md:grid-cols-2 gap-4">
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="border-l-4 border-yellow-500 pl-4">
+                <h3 className="font-semibold text-gray-900">Error Log Widget</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Recent errors and warnings with filtering
+                </p>
+              </div>
+            </div>
+            <div className="bg-white rounded-lg shadow border p-4">
+              <div className="border-l-4 border-green-500 pl-4">
+                <h3 className="font-semibold text-gray-900">Resource Usage Widget</h3>
+                <p className="text-sm text-gray-600 mt-1">
+                  Detailed CPU, memory, and disk usage graphs
+                </p>
               </div>
             </div>
           </div>
@@ -184,8 +210,8 @@ export default function DashboardDemo() {
 
         {/* Footer */}
         <div className="mt-8 text-center text-sm text-gray-500">
-          <p>Built with Next.js 14, React 18, and Tailwind CSS</p>
-          <p className="mt-1">AGENT 92: Enhanced Monitoring Dashboards Foundation</p>
+          <p>Built with Next.js 14, React 18, Recharts, and Tailwind CSS</p>
+          <p className="mt-1">AGENT 92: Enhanced Monitoring Dashboards Foundation | AGENT 97: Dashboard Expansion</p>
         </div>
       </div>
     </div>
