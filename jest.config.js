@@ -12,6 +12,12 @@ const config = {
   setupFiles: ['<rootDir>/tests/jest.polyfills.js'],
   modulePaths: ['<rootDir>'],
 
+  // Performance optimization: Enable parallelization
+  maxWorkers: process.env.CI ? 2 : '50%',
+
+  // Performance optimization: Run slow tests first for better parallelization
+  testSequencer: '<rootDir>/tests/jest-sequencer.js',
+
   // Increase timeout for integration tests
   testTimeout: 30000,
 

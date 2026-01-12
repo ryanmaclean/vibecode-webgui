@@ -24,6 +24,7 @@
     "isolatedModules": true,
     "jsx": "react-jsx",
     "incremental": true,
+    "tsBuildInfoFile": ".next/cache/.tsbuildinfo",
     "baseUrl": ".",
     "typeRoots": [
       "./node_modules/@types",
