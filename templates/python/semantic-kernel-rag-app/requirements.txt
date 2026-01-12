@@ -4,3 +4,7 @@ GitPython
 chromadb
 markdown
 beautifulsoup4
+
+# Security: Pin urllib3 and Werkzeug to address CVE vulnerabilities
+urllib3>=2.6.3
+Werkzeug>=3.1.5
