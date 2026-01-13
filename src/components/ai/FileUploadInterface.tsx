@@ -1,3 +1,5 @@
+'use client';
+
 /**
  * FileUploadInterface - Foundation component for file uploads to AI context
  *
