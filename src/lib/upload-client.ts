@@ -271,7 +271,7 @@ export async function uploadFiles(
       });
 
       // Send request
-      xhr.open('POST', '/api/ai/upload');
+      xhr.open('POST', '/api/upload');
       xhr.send(formData);
     });
   } catch (error) {
