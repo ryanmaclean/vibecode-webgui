@@ -7,37 +7,30 @@ import { VectorSearchService } from '@/lib/vector-search';
 import { Pool } from 'pg';
 
 // Mock pg Pool
-jest.mock('pg', () => {
-  const mockClient = {
-    query: jest.fn(),
-    release: jest.fn(),
-  };
+const mockClient = {
+  query: jest.fn(),
+  release: jest.fn(),
+};
 
-  const mockPool = {
-    connect: jest.fn().mockResolvedValue(mockClient),
-    end: jest.fn(),
-  };
+const mockPool = {
+  connect: jest.fn().mockResolvedValue(mockClient),
+  end: jest.fn(),
+};
 
-  return {
-    Pool: jest.fn(() => mockPool),
-  };
-});
+jest.mock('pg', () => ({
+  Pool: jest.fn(() => mockPool),
+}));
 
 describe('VectorSearchService', () => {
   let service: VectorSearchService;
-  let mockPool: any;
-  let mockClient: any;
 
   beforeEach(() => {
     jest.clearAllMocks();
+    mockClient.query.mockClear();
+    mockClient.release.mockClear();
+    mockPool.connect.mockClear();
+    mockPool.end.mockClear();
     service = new VectorSearchService();
-    const PoolMock = Pool as jest.MockedClass<typeof Pool>;
-    if (PoolMock.mock.results.length > 0) {
-      mockPool = PoolMock.mock.results[0].value;
-      if (mockPool.connect.mock.results.length > 0) {
-        mockClient = mockPool.connect.mock.results[0].value;
-      }
-    }
   });
 
   afterEach(async () => {

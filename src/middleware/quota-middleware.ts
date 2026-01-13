@@ -63,7 +63,16 @@ export async function withQuotaCheck(
       await resourceManager.recordAPICall(userId, endpoint)
     }
 
-    return { allowed: true }
+    // Calculate remaining quota for successful checks
+    const remainingQuota = result.quotas && result.usage ?
+      getRemainingQuota(result.quotas, result.usage, action) :
+      1000 // Default fallback
+
+    return {
+      allowed: true,
+      remainingQuota,
+      resetTime: getResetTime(action)
+    }
 
   } catch (error) {
     console.error('Quota check error:', error)

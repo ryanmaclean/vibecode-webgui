@@ -20,7 +20,9 @@ import { randomBytes, createHmac, timingSafeEqual } from 'crypto'
  * Configuration for CSRF protection
  */
 const CSRF_CONFIG = {
-  SECRET: process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET || 'development-csrf-secret-change-in-production',
+  get SECRET() {
+    return process.env.CSRF_SECRET || process.env.NEXTAUTH_SECRET || 'development-csrf-secret-change-in-production'
+  },
   COOKIE_NAME: '__Secure-csrf-token',
   HEADER_NAME: 'x-csrf-token',
   TOKEN_LENGTH: 32, // 32 bytes = 256 bits
@@ -33,7 +35,8 @@ const CSRF_CONFIG = {
  */
 export function validateCSRFConfig(): void {
   const isProduction = process.env.NODE_ENV === 'production'
-  const isDefaultSecret = CSRF_CONFIG.SECRET === 'development-csrf-secret-change-in-production'
+  const secret = CSRF_CONFIG.SECRET
+  const isDefaultSecret = secret === 'development-csrf-secret-change-in-production'
 
   if (isProduction && isDefaultSecret) {
     throw new Error(
@@ -42,7 +45,7 @@ export function validateCSRFConfig(): void {
     )
   }
 
-  if (CSRF_CONFIG.SECRET.length < 32) {
+  if (secret.length < 32) {
     console.warn('CSRF_SECRET should be at least 32 characters for security')
   }
 }

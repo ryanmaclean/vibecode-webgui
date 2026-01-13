@@ -3,6 +3,18 @@
  * Tests for resource quota checking and enforcement
  */
 
+// Mock dependencies BEFORE imports
+jest.mock('next-auth');
+jest.mock('@/lib/auth', () => ({
+  authOptions: {},
+}));
+jest.mock('@/lib/resource-management', () => ({
+  resourceManager: {
+    checkQuota: jest.fn(),
+    recordAPICall: jest.fn(),
+  },
+}));
+
 import {
   withQuotaCheck,
   createQuotaResponse,
@@ -11,22 +23,21 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { resourceManager } from '@/lib/resource-management';
 
-// Mock dependencies
-jest.mock('next-auth');
-jest.mock('@/lib/resource-management', () => ({
-  resourceManager: {
-    checkQuota: jest.fn(),
-    recordAPICall: jest.fn(),
-  },
-}));
+const mockGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>;
 
 describe('Quota Middleware', () => {
   let mockRequest: NextRequest;
   let consoleWarnSpy: jest.SpyInstance;
   let consoleErrorSpy: jest.SpyInstance;
+  const mockedResourceManager = jest.mocked(resourceManager);
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Reset all mocks to default behavior
+    mockGetServerSession.mockReset();
+    mockedResourceManager.checkQuota.mockReset();
+    mockedResourceManager.recordAPICall.mockReset();
+
     mockRequest = {
       url: 'http://localhost:3000/api/workspaces',
       method: 'POST',
@@ -44,7 +55,7 @@ describe('Quota Middleware', () => {
 
   describe('withQuotaCheck', () => {
     it('should deny access when user is not authenticated', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue(null);
+      mockGetServerSession.mockResolvedValue(null);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -53,7 +64,7 @@ describe('Quota Middleware', () => {
     });
 
     it('should deny access when session has no user', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: null });
+      mockGetServerSession.mockResolvedValue({ user: null } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -62,7 +73,7 @@ describe('Quota Middleware', () => {
     });
 
     it('should deny access when session user has no id', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: {} });
+      mockGetServerSession.mockResolvedValue({ user: {} } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -71,8 +82,8 @@ describe('Quota Middleware', () => {
     });
 
     it('should allow access when quota is not exceeded', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({ allowed: true });
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({ allowed: true } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -81,13 +92,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should deny access when quota is exceeded', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '456' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '456' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Maximum workspaces limit reached',
         quotas: { maxWorkspaces: 5, maxAPICallsPerHour: 1000, maxConcurrentSessions: 3 },
         usage: { workspaceCount: 5, apiCallsThisHour: 100, activeSessions: 2 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -98,13 +109,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should log quota violation', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '789' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '789' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Quota exceeded',
         quotas: { maxWorkspaces: 5, maxAPICallsPerHour: 1000, maxConcurrentSessions: 3 },
         usage: { workspaceCount: 6, apiCallsThisHour: 100, activeSessions: 2 },
-      });
+      } as any);
 
       await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -114,9 +125,9 @@ describe('Quota Middleware', () => {
     });
 
     it('should record API calls when action is api_call', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({ allowed: true });
-      (resourceManager.recordAPICall as jest.Mock).mockResolvedValue(undefined);
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({ allowed: true } as any);
+      mockedResourceManager.recordAPICall.mockResolvedValue(undefined);
 
       await withQuotaCheck(mockRequest, 'api_call');
 
@@ -124,8 +135,8 @@ describe('Quota Middleware', () => {
     });
 
     it('should not record API calls for non-api_call actions', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({ allowed: true });
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({ allowed: true } as any);
 
       await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -133,8 +144,8 @@ describe('Quota Middleware', () => {
     });
 
     it('should handle file size option for upload_file action', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({ allowed: true });
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({ allowed: true } as any);
 
       await withQuotaCheck(mockRequest, 'upload_file', { fileSize: 5242880 });
 
@@ -142,8 +153,8 @@ describe('Quota Middleware', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockRejectedValue(new Error('Database error'));
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockRejectedValue(new Error('Database error'));
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -153,13 +164,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should calculate remaining quota for create_workspace', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 7, apiCallsThisHour: 500, activeSessions: 3 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
@@ -167,13 +178,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should calculate remaining quota for api_call', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 5, apiCallsThisHour: 900, activeSessions: 3 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'api_call');
 
@@ -181,13 +192,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should calculate remaining quota for create_session', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 5, apiCallsThisHour: 500, activeSessions: 4 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'create_session');
 
@@ -195,13 +206,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should return 0 for unknown action types', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 5, apiCallsThisHour: 500, activeSessions: 3 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'unknown_action' as any);
 
@@ -209,13 +220,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should calculate reset time for api_call action', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 5, apiCallsThisHour: 1001, activeSessions: 3 },
-      });
+      } as any);
 
       const result = await withQuotaCheck(mockRequest, 'api_call');
 
@@ -236,13 +247,13 @@ describe('Quota Middleware', () => {
     });
 
     it('should calculate reset time for non-api_call actions', async () => {
-      (getServerSession as jest.Mock).mockResolvedValue({ user: { id: '123' } });
-      (resourceManager.checkQuota as jest.Mock).mockResolvedValue({
+      mockGetServerSession.mockResolvedValue({ user: { id: '123' } } as any);
+      mockedResourceManager.checkQuota.mockResolvedValue({
         allowed: false,
         reason: 'Limit reached',
         quotas: { maxWorkspaces: 10, maxAPICallsPerHour: 1000, maxConcurrentSessions: 5 },
         usage: { workspaceCount: 11, apiCallsThisHour: 500, activeSessions: 3 },
-      });
+      } as any);
 
       const beforeTest = Date.now();
       const result = await withQuotaCheck(mockRequest, 'create_workspace');

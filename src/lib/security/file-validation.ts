@@ -282,9 +282,16 @@ export function sanitizeFilename(filename: string): string {
   
   // Limit length
   if (sanitized.length > 255) {
-    const ext = sanitized.split('.').pop();
-    const name = sanitized.substring(0, 255 - (ext ? ext.length + 1 : 0));
-    sanitized = ext ? `${name}.${ext}` : name;
+    const parts = sanitized.split('.');
+    const hasExtension = parts.length > 1 && parts[parts.length - 1].length <= 10;
+
+    if (hasExtension) {
+      const ext = parts.pop()!;
+      const name = parts.join('.').substring(0, 255 - ext.length - 1);
+      sanitized = `${name}.${ext}`;
+    } else {
+      sanitized = sanitized.substring(0, 255);
+    }
   }
   
   // Ensure it doesn't start with a dot (hidden file)
