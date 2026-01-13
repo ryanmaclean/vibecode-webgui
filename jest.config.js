@@ -151,7 +151,7 @@ const config = {
     global: {
       branches: 19,   // Current: 19.35% - increased from 18% (AGENT 101)
       functions: 22,  // Current: 22.13% - increased from 20% (AGENT 101)
-      lines: 24,      // Current: 24.19% - increased from 23% (AGENT 101)
+      lines: 25,      // Current: 25.07% - increased from 24% (AGENT 114) - 25% MILESTONE ACHIEVED
       statements: 23, // Current: 23.94% - increased from 22% (AGENT 101)
     },
   },
