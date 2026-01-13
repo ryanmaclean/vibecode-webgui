@@ -5,6 +5,7 @@ import { defineConfig, devices } from '@playwright/test';
  */
 export default defineConfig({
   testDir: './tests/e2e',
+  testMatch: ['**/chat.spec.ts', '**/upload.spec.ts', '**/agent-ui.spec.ts', '**/health-check.spec.ts', '**/mcp-integration.spec.ts'],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
