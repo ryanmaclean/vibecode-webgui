@@ -13,6 +13,14 @@ import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { chatStreamRequest, ChatMessage as APIChatMessage } from '@/lib/ai-client';
+import {
+  saveSession,
+  loadSession,
+  generateSessionId,
+  getCurrentSessionId,
+  setCurrentSessionId,
+  clearCurrentSessionId,
+} from '@/lib/session-manager';
 
 export interface ChatMessage {
   id: string;
@@ -54,9 +62,50 @@ export function ChatInterface({
   const [selectedModel, setSelectedModel] = useState(defaultModel);
   const [error, setError] = useState<string | null>(null);
   const [isStreaming, setIsStreaming] = useState(false);
+  const [sessionId, setSessionId] = useState<string>('');
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  // Initialize session on mount - load existing or create new
+  useEffect(() => {
+    // Only run on client side
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    // If initialMessages provided, use those and don't load from storage
+    if (initialMessages.length > 0) {
+      const newSessionId = generateSessionId();
+      setSessionId(newSessionId);
+      setCurrentSessionId(newSessionId);
+      saveSession(newSessionId, initialMessages);
+      return;
+    }
+
+    // Try to load current session
+    const currentSessionId = getCurrentSessionId();
+    if (currentSessionId) {
+      const loadedSession = loadSession(currentSessionId);
+      if (loadedSession) {
+        setSessionId(currentSessionId);
+        setMessages(loadedSession.messages);
+        return;
+      }
+    }
+
+    // Create new session if none exists
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+    setCurrentSessionId(newSessionId);
+  }, []); // Empty dependency array - only run once on mount
+
+  // Save session whenever messages change
+  useEffect(() => {
+    if (sessionId && messages.length > 0) {
+      saveSession(sessionId, messages);
+    }
+  }, [messages, sessionId]);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -169,6 +218,11 @@ export function ChatInterface({
   const handleClearMessages = useCallback(() => {
     setMessages([]);
     setError(null);
+
+    // Create a new session when clearing
+    const newSessionId = generateSessionId();
+    setSessionId(newSessionId);
+    setCurrentSessionId(newSessionId);
   }, []);
 
   return (

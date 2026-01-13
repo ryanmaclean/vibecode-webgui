@@ -22,6 +22,37 @@ jest.mock('@/lib/ai-client', () => ({
   checkHealth: jest.fn(),
 }));
 
+// Mock localStorage
+const localStorageMock = (() => {
+  let store: Record<string, string> = {};
+
+  return {
+    getItem: jest.fn((key: string) => store[key] || null),
+    setItem: jest.fn((key: string, value: string) => {
+      store[key] = value;
+    }),
+    removeItem: jest.fn((key: string) => {
+      delete store[key];
+    }),
+    clear: jest.fn(() => {
+      store = {};
+    }),
+    get length() {
+      return Object.keys(store).length;
+    },
+    key: jest.fn((index: number) => {
+      const keys = Object.keys(store);
+      return keys[index] || null;
+    }),
+  };
+})();
+
+// Setup global localStorage mock
+Object.defineProperty(global, 'localStorage', {
+  value: localStorageMock,
+  writable: true,
+});
+
 describe('ChatInterface Component', () => {
   const mockOnMessageSent = jest.fn();
   const mockOnError = jest.fn();
@@ -29,6 +60,8 @@ describe('ChatInterface Component', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+    // Clear localStorage before each test
+    localStorageMock.clear();
     // Suppress console.error during tests to avoid noise from intentional errors
     console.error = jest.fn();
   });
