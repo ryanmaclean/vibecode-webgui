@@ -1,0 +1,11 @@
+NOTE: This commit contains work from both AGENT 129 (TestFixer) and AGENT 125 (FileProcessor).
+
+AGENT 125's FileProcessor work:
+- src/app/api/upload/route.ts (upload API route)
+- src/lib/upload-client.ts (client updates)
+- tests/api/upload.test.ts (28 tests)
+
+AGENT 129's TestFixer work:
+- Fixed 4 pre-existing test failures (rate-limiting, continue-adapter)
+
+These agents worked in parallel and their changes were combined in a single commit for efficiency. All work was completed successfully and verified by AGENT 130.
