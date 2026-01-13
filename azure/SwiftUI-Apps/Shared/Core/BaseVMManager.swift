@@ -126,7 +126,8 @@ open class BaseVMManager: NSObject, ObservableObject {
     /// Subclasses should call super.init() and not override unless necessary.
     public override init() {
         self.vmID = UUID().uuidString
-        self.consoleLogPath = URL(fileURLWithPath: "/tmp/vibecode-console-\(self.vmID).log")
+        self.consoleLogPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vibecode-console-\(self.vmID).log")
         super.init()
     }
 

@@ -5,6 +5,7 @@
 // Created: 2025-11-25
 // Migration Status: NEW
 // Purpose: Unified DHCP lease monitoring (consolidates V1 and V2 parsers)
+// Updated: 2025-01-13 - Added ARP-based IP detection fallback for Apple Virtualization.framework
 //
 // Part of refactoring effort: See REFACTORING-IN-PROGRESS.md
 // Replaces: DHCPLeaseParser.swift and DHCPLeaseParserV2.swift
@@ -14,12 +15,14 @@ import Foundation
 
 /// Unified DHCP lease monitor for tracking VM IP addresses.
 ///
-/// DHCPLeaseMonitor parses the macOS DHCP leases file (`/var/db/dhcpd_leases`)
-/// to find IP addresses assigned to VMs based on their MAC addresses.
+/// DHCPLeaseMonitor detects VM IP addresses using two methods:
+/// 1. DHCP leases file (`/var/db/dhcpd_leases`) - traditional method
+/// 2. ARP table scanning (`arp -a`) - fallback for Apple Virtualization.framework
 ///
 /// ## Features
 ///
 /// - Parse DHCP leases by MAC address
+/// - ARP-based IP detection (fallback for Apple Virtualization)
 /// - Find most recent lease (when MAC unknown)
 /// - Get all active leases
 /// - Automatic polling with callbacks
@@ -87,6 +90,16 @@ class DHCPLeaseMonitor {
 
     /// Lock for thread-safe access
     private let lock = NSLock()
+    
+    /// Track which detection method is being used
+    private var detectionMethod: DetectionMethod = .unknown
+    
+    /// Detection methods
+    private enum DetectionMethod {
+        case unknown
+        case dhcpLease
+        case arp
+    }
 
     // MARK: - Initialization
 
@@ -112,6 +125,7 @@ class DHCPLeaseMonitor {
     /// Find IP address for this monitor's MAC address.
     ///
     /// This is a one-time query. For continuous monitoring, use `startMonitoring()`.
+    /// Tries DHCP leases file first, then falls back to ARP scanning.
     ///
     /// - Returns: IP address string if found, nil otherwise
     ///
@@ -123,12 +137,123 @@ class DHCPLeaseMonitor {
     /// }
     /// ```
     func findIPAddress() -> String? {
-        return Self.parseLeaseFile(macAddress: macAddress)
+        // Try DHCP leases file first
+        if let ip = Self.parseLeaseFile(macAddress: macAddress) {
+            if detectionMethod != .dhcpLease {
+                NSLog("[DHCPLeaseMonitor] Using DHCP lease file for IP detection")
+                detectionMethod = .dhcpLease
+            }
+            return ip
+        }
+        
+        // Fall back to ARP scanning
+        if let ip = detectIPViaARP() {
+            if detectionMethod != .arp {
+                NSLog("[DHCPLeaseMonitor] Using ARP scanning for IP detection (DHCP leases unavailable)")
+                detectionMethod = .arp
+            }
+            return ip
+        }
+        
+        return nil
+    }
+
+    /// Detect VM IP address via ARP table scanning.
+    ///
+    /// This method scans the system ARP cache to find the IP address
+    /// associated with the VM's MAC address. This is useful when the
+    /// DHCP leases file is not available (e.g., with Apple Virtualization.framework).
+    ///
+    /// - Returns: IP address string if found in ARP table, nil otherwise
+    private func detectIPViaARP() -> String? {
+        let task = Process()
+        task.launchPath = "/usr/sbin/arp"
+        task.arguments = ["-a"]
+        
+        let pipe = Pipe()
+        task.standardOutput = pipe
+        task.standardError = Pipe() // Suppress errors
+        
+        do {
+            try task.run()
+            task.waitUntilExit()
+            
+            let data = pipe.fileHandleForReading.readDataToEndOfFile()
+            guard let output = String(data: data, encoding: .utf8) else {
+                return nil
+            }
+            
+            // Normalize the MAC address for comparison
+            let normalizedSearchMAC = Self.normalizeMACAddress(macAddress)
+            
+            // Parse ARP output
+            // Format: ? (192.168.64.10) at 52:54:0:12:34:99 on bridge100 ifscope [bridge]
+            // or:     hostname (192.168.64.10) at 52:54:00:12:34:99 on bridge100 ifscope [bridge]
+            for line in output.components(separatedBy: "\n") {
+                // Check if line contains our MAC address (case-insensitive)
+                let lowercaseLine = line.lowercased()
+                let normalizedLineMAC = extractAndNormalizeMACFromLine(line)
+                
+                if normalizedLineMAC == normalizedSearchMAC.lowercased() {
+                    // Extract IP address from line
+                    // Look for pattern: (IP_ADDRESS)
+                    if let ipMatch = extractIPFromARPLine(line) {
+                        NSLog("[DHCPLeaseMonitor] Found IP via ARP: \(ipMatch) for MAC: \(macAddress)")
+                        return ipMatch
+                    }
+                }
+            }
+            
+        } catch {
+            NSLog("[DHCPLeaseMonitor] ARP command failed: \(error)")
+        }
+        
+        return nil
+    }
+    
+    /// Extract and normalize MAC address from ARP output line.
+    ///
+    /// - Parameter line: ARP output line
+    /// - Returns: Normalized MAC address in lowercase, or empty string if not found
+    private func extractAndNormalizeMACFromLine(_ line: String) -> String {
+        // ARP format: "? (IP) at MAC on interface ..."
+        // MAC is after "at " and before " on"
+        let components = line.components(separatedBy: " at ")
+        guard components.count >= 2 else { return "" }
+        
+        let afterAt = components[1]
+        let macComponents = afterAt.components(separatedBy: " on ")
+        guard let macPart = macComponents.first else { return "" }
+        
+        let mac = macPart.trimmingCharacters(in: .whitespaces)
+        return Self.normalizeMACAddress(mac).lowercased()
+    }
+    
+    /// Extract IP address from ARP output line.
+    ///
+    /// - Parameter line: ARP output line
+    /// - Returns: IP address string if found, nil otherwise
+    private func extractIPFromARPLine(_ line: String) -> String? {
+        // Match pattern: (xxx.xxx.xxx.xxx)
+        let pattern = "\\((\\d+\\.\\d+\\.\\d+\\.\\d+)\\)"
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: []) else {
+            return nil
+        }
+        
+        let nsLine = line as NSString
+        let range = NSRange(location: 0, length: nsLine.length)
+        
+        if let match = regex.firstMatch(in: line, options: [], range: range) {
+            let ipRange = match.range(at: 1)
+            return nsLine.substring(with: ipRange)
+        }
+        
+        return nil
     }
 
     /// Start continuous monitoring for IP address changes.
     ///
-    /// Periodically polls the DHCP leases file and calls the callback when:
+    /// Periodically polls the DHCP leases file and ARP table, calling the callback when:
     /// - IP address is found for the first time
     /// - IP address changes
     /// - IP address disappears (calls onNotFound)
@@ -168,7 +293,8 @@ class DHCPLeaseMonitor {
                 if currentIP != self.lastKnownIP {
                     // IP changed or found for first time
                     self.lastKnownIP = currentIP
-                    NSLog("[DHCPLeaseMonitor] IP detected: \(currentIP)")
+                    let method = self.detectionMethod == .dhcpLease ? "DHCP" : "ARP"
+                    NSLog("[DHCPLeaseMonitor] IP detected via \(method): \(currentIP)")
                     onIPFound(currentIP)
                 }
             } else {
@@ -207,6 +333,7 @@ class DHCPLeaseMonitor {
     /// Find IP address for a specific MAC address (one-time query).
     ///
     /// Convenience method for one-off queries without creating a monitor instance.
+    /// Tries DHCP leases file first, then falls back to ARP scanning.
     ///
     /// - Parameter macAddress: MAC address to look up
     /// - Returns: IP address string if found, nil otherwise
@@ -218,7 +345,14 @@ class DHCPLeaseMonitor {
     /// }
     /// ```
     static func findIPAddress(for macAddress: String) -> String? {
-        return parseLeaseFile(macAddress: macAddress)
+        // Try DHCP first
+        if let ip = parseLeaseFile(macAddress: macAddress) {
+            return ip
+        }
+        
+        // Fall back to ARP
+        let monitor = DHCPLeaseMonitor(macAddress: macAddress)
+        return monitor.detectIPViaARP()
     }
 
     /// Find the most recent IP address in DHCP leases (regardless of MAC).

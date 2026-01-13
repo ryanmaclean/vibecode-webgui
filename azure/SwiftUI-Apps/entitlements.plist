@@ -4,16 +4,13 @@
 <dict>
     <key>com.apple.security.virtualization</key>
     <true/>
-    <key>com.apple.security.hypervisor</key>
+    <key>com.apple.security.app-sandbox</key>
+    <true/>
+    <key>com.apple.security.device.usb</key>
     <true/>
     <key>com.apple.security.network.client</key>
     <true/>
     <key>com.apple.security.network.server</key>
     <true/>
-    <key>com.apple.security.temporary-exception.files.absolute-path.read-write</key>
-    <array>
-        <string>/tmp/</string>
-    </array>
 </dict>
 </plist>
-

@@ -35,14 +35,31 @@ final class UnifiedServicesVMManager: BaseVMManager {
     // MARK: - Template Method Overrides
 
     /// Create NAT networking strategy - auto-generate MAC like working Valkey app.
+    /// Create NAT networking strategy - use fixed MAC address for reliable DHCP tracking.
     ///
-    /// Uses auto-generated MAC for compatibility.
-    /// No vsock - use VMPortForwarder instead (like ValkeyVibeCode.app which works).
+    /// Uses fixed MAC address "52:54:00:12:34:99" instead of auto-generated MAC.
+    /// This ensures DHCP monitor can track the VM's IP correctly via ARP cache.
+    /// Without this, DHCP monitor searches for wrong MAC and onIPAddressDetected() never fires.
     override func createNetworkingStrategy() -> NetworkingStrategy {
         return NATNetworkStrategy(
-            macAddress: nil,  // Auto-generate like working apps
+            macAddress: "52:54:00:12:34:99",  // Fixed MAC for stable DHCP tracking
             enableVsock: false  // Disabled - use VMPortForwarder instead
         )
+    }
+
+    /// Called when VM's IP address is detected - set up port forwarding.
+    ///
+    /// Forwards common ports (22, 6379, 5432, 8080) from localhost to VM IP.
+    override func onIPAddressDetected(ip: String) {
+        super.onIPAddressDetected(ip: ip)
+        portForwarder = VMPortForwarder.forwardCommonPorts(vmIP: ip)
+    }
+
+    /// Called when VM stops - clean up port forwarding.
+    override func onVMStopped() {
+        super.onVMStopped()
+        portForwarder?.stopAll()
+        portForwarder = nil
     }
 
     /// Configure VM CPU count (4 CPUs).
@@ -61,14 +78,15 @@ final class UnifiedServicesVMManager: BaseVMManager {
 
     /// Get kernel command line parameters.
     ///
-    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
+    /// Returns: "rdinit=/init console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     ///
+    /// - rdinit=/init: Run /init from initramfs (CRITICAL - without this kernel panics!)
     /// - console=hvc0: Enable serial console output
     /// - debug loglevel=8: Verbose kernel logging for debugging
     /// - ipv6.disable=1: Force IPv4-only for better DHCP reliability
     /// - virtio_net.napi_tx=0: Disable TX NAPI (may help with carrier detection)
     override func getKernelCommandLine() -> String {
-        return "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
+        return "rdinit=/init console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     }
 
     /// Get initramfs resource name (without .cpio.gz extension).
