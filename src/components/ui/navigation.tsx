@@ -11,7 +11,9 @@ import {
   MagnifyingGlassIcon,
   CodeBracketIcon,
   DocumentPlusIcon,
-  Cog6ToothIcon
+  Cog6ToothIcon,
+  ChatBubbleLeftRightIcon,
+  ArrowUpTrayIcon
 } from '@heroicons/react/24/outline'
 
 const navigation = [
@@ -20,6 +22,18 @@ const navigation = [
     href: '/',
     icon: HomeIcon,
     description: 'AI-powered development workspace'
+  },
+  {
+    name: 'AI Chat',
+    href: '/chat',
+    icon: ChatBubbleLeftRightIcon,
+    description: 'Chat with AI assistant'
+  },
+  {
+    name: 'File Upload',
+    href: '/upload',
+    icon: ArrowUpTrayIcon,
+    description: 'Upload and manage files'
   },
   {
     name: 'Templates',
