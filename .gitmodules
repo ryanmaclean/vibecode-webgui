@@ -13,3 +13,7 @@
 [submodule "openvscode-server"]
 	path = openvscode-server
 	url = https://github.com/gitpod-io/openvscode-server.git
+
+[submodule "vendor/vfkit"]
+	path = vendor/vfkit
+	url = https://github.com/crc-org/vfkit.git
