@@ -91,8 +91,8 @@ open class BaseVMManager: NSObject, ObservableObject {
     // MARK: - Internal Properties
 
     /// The VZVirtualMachine instance (nil when not running)
-    /// Exposed as internal for networking strategies to access socket devices
-    internal var vm: VZVirtualMachine?
+    /// Exposed as public with internal setter for networking strategies to access socket devices
+    public internal(set) var vm: VZVirtualMachine?
 
     /// File handle for writing console output
     private var consoleFileHandle: FileHandle?

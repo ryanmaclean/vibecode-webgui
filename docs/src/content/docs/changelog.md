@@ -84,6 +84,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - TypeScript errors in web-dashboard pages
 - ESLint configuration for web-dashboard
 
+## [3.3.0] - 2026-01-14
+
+### Added
+- **Datadog VSCode Extension** - v2.0.0 pre-installed in VM (41MB, 37 files)
+- **Docker Integration** - Docker CE 27.4.1 + containerd 1.7.24 fully operational on port 2375
+- **CLI Tool** - `vibecode` command with 13 commands for building and service checking
+- **Post-Build Verification Suite** - Comprehensive Playwright tests for Datadog and terminal
+- **Terminal Support** - devpts filesystem mounting with green-on-black color scheme
+- **5-Service Architecture** - SSH, Valkey, PostgreSQL, OpenVSCode Server, Docker all running
+
+### Changed
+- **Menubar Text** - Updated "OpenVSCode" to "OpenVSCode Server" for legal compliance (trademark)
+- **Terminal Colors** - Configured green-on-black terminal (#00FF00 on #000000) for classic aesthetic
+- **VM Property Access** - Made BaseVMManager.vm property public for networking strategies
+- **Type Casting** - Fixed VZVirtioSocketDevice filtering to use compactMap instead of array cast
+
+### Fixed
+- **VM Boot Failure** - Fixed code signature violation after resource modifications
+- **Swift Property Access** - Fixed vm property visibility in BaseVMManager (line 95)
+- **Type Casting Bug** - Fixed socketDevices casting in NATNetworkStrategy (lines 246-248)
+- **Terminal PTY Issue** - Added devpts mount to init script for pseudo-terminal support
+- **Breaking Commit** - Identified and fixed issues from commit 38be7f201
+
 ## [2025-09-10] - September 2025
 
 ### Added

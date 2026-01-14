@@ -1,25 +1,11 @@
 # VibeCode VM
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
-[![CI](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml)
-[![E2E Tests](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/e2e.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/e2e.yml)
-[![macOS Build](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/build-macos.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/build-macos.yml)
-[![Release](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/release.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/release.yml)
+[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
 
-**Lightweight, Fast Development VMs with Full IDE Support & Datadog Integration**
+**Lightweight, Fast Development VMs with Full IDE Support**
 
-VibeCode VM is an ultra-lightweight virtual machine platform that boots a complete development environment in under 30 seconds. Built with Firecracker-style parallel service startup, it provides SSH access, PostgreSQL database, Valkey cache, and a full VS Code editor with integrated Datadog extension in a VM that compresses to just 59MB.
-
-## What's New in v3.2.1
-
-- **Datadog VSCode Extension v2.0.0** - Full observability integration with 19+ commands
-  - Real-time log aggregation and analysis
-  - Static analysis and code quality insights
-  - Cloud platform integration
-  - Seamless authentication within the IDE
-- **Enhanced Unified Tool** - Improved VM management and service orchestration
-- **Performance Optimizations** - Further boot time reductions
+VibeCode VM is an ultra-lightweight virtual machine platform that boots a complete development environment in under 30 seconds. Built with Firecracker-style parallel service startup, it provides SSH access, PostgreSQL database, Valkey cache, and a full VS Code editor in a VM that compresses to just 59MB.
 
 ## Features
 
@@ -30,12 +16,10 @@ VibeCode VM is an ultra-lightweight virtual machine platform that boots a comple
   - PostgreSQL 16 - Production-ready relational database
   - Valkey - High-performance in-memory data store
   - SSH Server - Secure remote access with Dropbear
-  - **Datadog VSCode Extension v2.0.0** - Integrated observability and monitoring
 - **Volume Mounting**: VirtioFS support for persistent storage and file sharing
 - **Network Ready**: Automatic DHCP with static IP fallback (192.168.64.10)
 - **Parallel Startup**: All services launch simultaneously for minimal boot time
 - **macOS Native**: Optimized for Apple Silicon using vfkit
-- **Comprehensive Monitoring**: Real-time logs, metrics, and code quality insights
 
 ## Quick Start
 
@@ -65,19 +49,10 @@ vibecode-vm status
 
 # 5. Access services (use IP from status)
 vibecode-vm ssh              # SSH access
-open http://<VM_IP>:8080     # OpenVSCode with Datadog extension in browser
+open http://<VM_IP>:8080     # OpenVSCode in browser
 ```
 
 See [QUICK-START.md](QUICK-START.md) for more details.
-
-### Quick Access to Datadog Extension
-
-Once OpenVSCode is running, the Datadog extension will be available in the Extensions sidebar:
-
-1. Open the OpenVSCode interface at `http://<VM_IP>:8080`
-2. Click the Extensions icon in the left sidebar (or press `Ctrl+Shift+X`)
-3. Search for "Datadog" - the extension will appear in the installed extensions list
-4. Click to activate and explore 19+ powerful commands for logs, metrics, and analysis
 
 ### Manual Launch (Alternative)
 
@@ -108,22 +83,10 @@ Access services:
 
 | Service | Port | Description |
 |---------|------|-------------|
-| OpenVSCode Server | 8080 | Full VS Code editor with Datadog extension and terminal |
+| OpenVSCode Server | 8080 | Full VS Code editor with terminal |
 | SSH (Dropbear) | 22 | Secure shell access |
 | PostgreSQL 16 | 5432 | Relational database |
 | Valkey | 6379 | In-memory cache and data store |
-
-### Integrated Extensions
-
-The OpenVSCode environment comes pre-configured with:
-
-- **Datadog VSCode Extension v2.0.0**
-  - 19+ powerful commands for logs, metrics, and monitoring
-  - Real-time log aggregation and search
-  - Distributed tracing visualization
-  - Cloud integration (AWS, Azure, GCP)
-  - Security analysis and compliance insights
-  - Built-in authentication for Datadog platform
 
 ### Performance
 
@@ -192,8 +155,7 @@ vibecode-vm version            # Show version info
 - Log viewing and following
 - Configuration management
 - Shared directory setup
-- Integrated Datadog extension access
-- Service health monitoring
+- Optional Datadog monitoring integration
 
 See [UNIFIED-TOOL-GUIDE.md](UNIFIED-TOOL-GUIDE.md) for complete documentation.
 
@@ -201,7 +163,6 @@ See [UNIFIED-TOOL-GUIDE.md](UNIFIED-TOOL-GUIDE.md) for complete documentation.
 
 - [Quick Start Guide](QUICK-START.md) - Get up and running in 5 minutes
 - [Unified Tool Guide](UNIFIED-TOOL-GUIDE.md) - Complete launcher documentation
-- [Datadog Extension Guide](docs/datadog-extension.md) - Using the Datadog VSCode extension (19+ commands, authentication, features)
 - [Volume Mounting](docs/volume-mounting.md) - File sharing between host and VM
 - [Performance & Optimization](docs/optimization.md) - Boot time and size optimizations
 - [Architecture](docs/architecture.md) - Technical details and design decisions
@@ -242,82 +203,11 @@ Tested on Apple Silicon (M-series processors):
 - 2GB RAM (configurable, minimum 1GB)
 - ~200MB disk space for runtime
 
-## Contributing
-
-We welcome contributions from the community! Whether you're fixing bugs, improving documentation, or suggesting features, your help makes VibeCode better.
-
-### Quick Start for Contributors
-
-New to contributing? Our [Quick Start Guide for Contributors](CONTRIBUTORS_GUIDE.md) gets you started in minutes with:
-- Finding issues to work on
-- Making your first contribution
-- Understanding our development process
-- Common workflows
-
-### Full Contribution Guidelines
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for comprehensive guidelines on:
-- Code of Conduct and community standards
-- Development environment setup
-- Project structure and architecture
-- Testing requirements
-- Commit message conventions (Conventional Commits)
-- Pull request process
-- Review timelines
-- Reporting bugs and suggesting features
-
-### Development
-
-Want to build from source or set up a dev environment?
-
-See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions:
-- Prerequisites and system requirements
-- Building from source
-- Running and testing
-- Debugging techniques
-- Architecture overview
-- Coding standards
-- Performance profiling
-
-### What We're Building Next
-
-Check our [Roadmap](ROADMAP.md) to see:
-- Current version status (v3.2.1)
-- Planned features for upcoming versions
-- Long-term vision and direction
-- Technical debt items
-- Community wishlist
-
 ## Community & Support
 
-### Get Help
-
-- **Questions?** Ask in [GitHub Discussions](https://github.com/yourusername/vibecode-vm/discussions) - best for questions and getting community support
-- **Found a bug?** Open an [issue](https://github.com/yourusername/vibecode-vm/issues) with the bug report template
-- **Have an idea?** Start a [discussion](https://github.com/yourusername/vibecode-vm/discussions) or open a feature request issue
-- **Security concern?** Email security@vibecode.dev (do not use public issues)
-
-### Community Standards
-
-We are committed to providing a welcoming and inclusive community. All participants are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
-
-### How You Can Help
-
-Even if you don't code, there are many ways to contribute:
-
-- **Report bugs**: Help us identify and fix issues
-- **Improve documentation**: Fix typos, clarify guides, add examples
-- **Test features**: Try new features and provide feedback
-- **Answer questions**: Help other community members in discussions
-- **Suggest features**: Share ideas for improvements
-- **Share your experience**: Blog posts, tutorials, videos
-
-### Recognition
-
-Contributors are recognized in:
-- Release notes for each version
-- Contributors section in README
-- Community hall of fame (coming soon)
+- **Issues**: [GitHub Issues](https://github.com/ryanmaclean/vibecode-webgui/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ryanmaclean/vibecode-webgui/discussions)
+- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ## License
 
@@ -333,42 +223,12 @@ Built with:
 - [Dropbear SSH](https://matt.ucc.asn.au/dropbear/dropbear.html) - Lightweight SSH server
 - [BusyBox](https://busybox.net/) - Minimal Linux utilities
 
-## Datadog Extension Features (v3.2.1)
-
-The integrated Datadog VSCode extension provides powerful development and monitoring capabilities:
-
-### Available Commands
-
-- **19+ integrated commands** for logs, metrics, and trace data access
-- Real-time log search and filtering
-- Distributed trace visualization
-- Metrics browsing and analysis
-- Service dependency mapping
-- Security and compliance scanning
-- Code quality insights
-
-### Quick Start with Datadog Extension
-
-1. **Launch VibeCode VM**: `vibecode-vm start`
-2. **Open OpenVSCode**: Visit `http://<VM_IP>:8080`
-3. **Access Extensions**: Click Extensions icon (Ctrl+Shift+X)
-4. **Find Datadog**: Installed extensions will show "Datadog"
-5. **Authenticate**: Click to open extension and follow OAuth flow (optional but recommended)
-6. **Start Monitoring**: Use command palette (Cmd+Shift+P) and search "Datadog" for available commands
-
-### Platform Integration
-
-- Works seamlessly with Datadog SaaS platform
-- Supports multiple cloud providers (AWS, Azure, GCP)
-- Secure token-based authentication
-- Full audit trail and compliance tracking
-
 ## Project Status
 
 VibeCode VM is currently in **active development**. The core functionality is stable and ready for use, with ongoing improvements to documentation, testing, and features.
 
-Current Version: **v3.2.1**
+Current Version: **v1.0.0**
 
 ---
 
-**Made with care for developers who value speed, simplicity, and observability.**
+**Made with care for developers who value speed and simplicity.**

@@ -45,6 +45,31 @@ final class UnifiedServicesVMManager: BaseVMManager {
         )
     }
 
+    /// Called when VM's IP address is detected - set up port forwarding.
+    ///
+    /// Forwards common ports (22, 6379, 5432, 8080) from localhost to VM IP.
+    override func onIPAddressDetected(ip: String) {
+        super.onIPAddressDetected(ip: ip)
+        NSLog("[UnifiedServicesVMManager] IP address detected: \(ip)")
+        
+        // Stop existing port forwarding before starting new ones
+        // (IP may change during boot: 192.168.64.2 → 192.168.64.10)
+        portForwarder?.stopAll()
+        
+        // Wait briefly for ports to be fully released before binding new listeners
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.portForwarder = VMPortForwarder.forwardCommonPorts(vmIP: ip)
+            NSLog("[UnifiedServicesVMManager] Port forwarding setup complete")
+        }
+    }
+
+    /// Called when VM stops - clean up port forwarding.
+    override func onVMStopped() {
+        super.onVMStopped()
+        portForwarder?.stopAll()
+        portForwarder = nil
+    }
+
     /// Configure VM CPU count (4 CPUs).
     ///
     /// UnifiedServices VM needs more resources than basic VMs.
@@ -61,14 +86,15 @@ final class UnifiedServicesVMManager: BaseVMManager {
 
     /// Get kernel command line parameters.
     ///
-    /// Returns: "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
+    /// Returns: "rdinit=/init console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     ///
+    /// - rdinit=/init: Run /init from initramfs (CRITICAL - without this kernel panics!)
     /// - console=hvc0: Enable serial console output
     /// - debug loglevel=8: Verbose kernel logging for debugging
     /// - ipv6.disable=1: Force IPv4-only for better DHCP reliability
     /// - virtio_net.napi_tx=0: Disable TX NAPI (may help with carrier detection)
     override func getKernelCommandLine() -> String {
-        return "console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
+        return "rdinit=/init console=hvc0 debug loglevel=8 ipv6.disable=1 virtio_net.napi_tx=0"
     }
 
     /// Get initramfs resource name (without .cpio.gz extension).
