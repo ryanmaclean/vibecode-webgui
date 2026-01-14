@@ -35,7 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Terminal Support** - devpts filesystem mounting for OpenVSCode integrated terminal
 
 ### Changed
-- **Menubar Text** - Updated "OpenVSCode" to "OpenVSCode Server" throughout UI
+- **Menubar Text** - Updated "OpenVSCode" to "OpenVSCode Server" for legal compliance (trademark)
+- **Terminal Colors** - Configured green-on-black terminal (#00FF00 on #000000) for classic aesthetic
 - **VM Property Access** - Made BaseVMManager.vm property public for networking strategies
 - **Type Casting** - Fixed VZVirtioSocketDevice filtering to use compactMap instead of array cast
 
