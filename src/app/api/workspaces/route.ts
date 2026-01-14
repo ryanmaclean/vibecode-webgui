@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { createErrorResponse, getErrorMessage, createProblemDetailsFromError } from '@/lib/api-utils'
+import { createErrorResponse, getErrorMessage, createErrorResponseFromError } from '@/lib/api-utils'
 import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
@@ -110,11 +110,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Generic error response
-    return createProblemDetailsFromError(error, 500, {
-      instance: `/api/workspaces`,
-      traceId: requestId,
-      fallbackTitle: 'Workspace creation failed'
-    })
+    return createErrorResponseFromError(error, 500, 'Workspace creation failed')
   }
 }
 

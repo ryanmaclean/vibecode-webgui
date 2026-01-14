@@ -12,7 +12,9 @@ RUN apk add --no-cache \
 WORKDIR /app
 
 # Install dependencies based on the preferred package manager
+# Copy package files and scripts directory (needed for postinstall)
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
+COPY scripts ./scripts
 RUN \
   if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
   elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps; \

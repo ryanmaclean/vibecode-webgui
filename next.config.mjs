@@ -123,9 +123,6 @@ const nextConfig = {
     } : false,
   },
 
-  eslint: {
-    ignoreDuringBuilds: true,
-  },
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -137,7 +134,6 @@ const nextConfig = {
   // Enable compression for production builds
   compress: true,
   skipTrailingSlashRedirect: true,
-  skipMiddlewareUrlNormalize: true,
   experimental: {
     isrFlushToDisk: false,
     // Enable optimized package imports for better tree shaking

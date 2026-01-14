@@ -35,8 +35,8 @@ jest.mock('@/lib/api-utils', () => ({
     });
   }),
   getErrorMessage: jest.fn((error: any) => error.message || 'Unknown error'),
-  createProblemDetailsFromError: jest.fn((error: any, status: number, options: any) => {
-    return new Response(JSON.stringify({ error: error.message, status }), {
+  createErrorResponseFromError: jest.fn((error: any, status: number, fallbackMessage: string) => {
+    return new Response(JSON.stringify({ error: error.message || 'Unknown error', details: fallbackMessage }), {
       status,
       headers: { 'Content-Type': 'application/json' }
     });

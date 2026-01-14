@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCSRFToken, getSessionId } from '@/lib/security/csrf-protection';
 
+// Force Node.js runtime since csrf-protection uses Node.js crypto
+export const runtime = 'nodejs';
+
 export async function GET(request: NextRequest) {
   try {
     // Generate CSRF token for this session
