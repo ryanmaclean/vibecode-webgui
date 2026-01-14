@@ -1,62 +1,131 @@
 ---
 name: Feature request
-about: Suggest an idea for this project
+about: Suggest a feature to improve VibeCode
 title: '[FEATURE] '
 labels: 'enhancement'
 assignees: ''
 
 ---
 
-## 🚀 Feature Request
+## Problem Statement
 
-**Clear description of the feature you'd like to see.**
+Is your feature request related to a problem? Please describe the problem clearly:
 
-## 🎯 Problem Statement
+- What's the current limitation or pain point?
+- Why is this important to you?
+- Who would benefit from this feature?
 
-**What problem does this solve? What's the current limitation?**
+## Proposed Solution
 
-## 💡 Proposed Solution
+Describe the solution you'd like in as much detail as possible:
 
-**Describe the solution you'd like.**
+- What should the feature do?
+- How should it work?
+- What components would need to change?
 
-## 🔄 Alternative Solutions
+## Use Cases
 
-**Describe any alternative solutions or features you've considered.**
+Describe specific use cases and scenarios where this feature would be valuable:
 
-## 📊 Use Case
+1. **Use Case 1**: [describe scenario]
+2. **Use Case 2**: [describe scenario]
+3. **Use Case 3**: [describe scenario]
 
-**How would this feature be used? Who would benefit?**
+## Example
 
-## 🎮 Demo Integration
+Provide a concrete example of how you'd use this feature:
 
-**How would this feature integrate with the `./DEMO.sh` experience?**
+```bash
+# Example usage
+vibecode-vm [new-command] [options]
 
-- [ ] Would enhance the demo
-- [ ] Would be separate from demo
-- [ ] Would require demo changes
-- [ ] Not applicable to demo
+# Expected output
+[expected result]
+```
 
-## 🔧 Implementation Ideas
+## Alternative Solutions
 
-**If you have ideas about how to implement this, share them here.**
+Have you considered any alternative approaches? Describe them:
 
-## 📋 Acceptance Criteria
+- **Alternative 1**: [description and pros/cons]
+- **Alternative 2**: [description and pros/cons]
 
-**What would need to be true for this feature to be considered complete?**
+## Impact Assessment
 
-- [ ] Criterion 1
-- [ ] Criterion 2
-- [ ] Criterion 3
+How would this feature impact the project?
 
-## 🎯 Priority
+- [ ] Would improve performance
+- [ ] Would enhance user experience
+- [ ] Would add new capability
+- [ ] Would improve development workflow
+- [ ] Would improve documentation
+- [ ] Would improve reliability
+- [ ] Other: _________________
 
-**How important is this feature to you?**
+## Compatibility
 
-- [ ] Critical - blocking my use case
+How would this feature affect existing functionality?
+
+- [ ] Fully backward compatible
+- [ ] Minor breaking changes (describe below)
+- [ ] Significant breaking changes (describe below)
+- [ ] No impact on existing features
+
+If there are breaking changes, please describe:
+
+---
+
+## Service Integration
+
+Which services would this feature involve?
+
+- [ ] VM Launcher/Control
+- [ ] OpenVSCode Server
+- [ ] PostgreSQL
+- [ ] Valkey
+- [ ] SSH/Networking
+- [ ] Volume Mounting
+- [ ] Datadog Extension
+- [ ] Other: _________________
+
+## Implementation Complexity
+
+What's your assessment of implementation difficulty?
+
+- [ ] Low - straightforward to implement
+- [ ] Medium - requires some significant changes
+- [ ] High - requires substantial refactoring
+- [ ] Unsure - would need investigation
+
+## Acceptance Criteria
+
+What would make this feature complete and acceptable?
+
+- [ ] Criterion 1: [describe what needs to be true]
+- [ ] Criterion 2: [describe what needs to be true]
+- [ ] Criterion 3: [describe what needs to be true]
+- [ ] Comprehensive documentation
+- [ ] Test coverage
+- [ ] Example/demo
+
+## Priority
+
+How important is this feature to your workflow?
+
+- [ ] Critical - can't use VibeCode effectively without it
 - [ ] High - would significantly improve my experience
 - [ ] Medium - nice to have
-- [ ] Low - just an idea
+- [ ] Low - just an interesting idea
 
-## 📝 Additional Context
+## Additional Context
 
-**Any other context, screenshots, or examples about the feature request.**
+Any other context, research, links, or examples:
+
+- Links to similar features in other projects
+- Relevant discussions or issues
+- Screenshots or mockups
+- References or documentation
+
+---
+
+**Thank you for your feature suggestion! We review all feature requests to understand community needs and priorities.**
