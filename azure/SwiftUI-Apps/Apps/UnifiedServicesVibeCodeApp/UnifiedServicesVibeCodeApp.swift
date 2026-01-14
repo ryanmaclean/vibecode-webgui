@@ -98,7 +98,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         menu?.addItem(NSMenuItem.separator())
         
         // Service links (hidden until VM is running)
-        openVSCodeMenuItem = NSMenuItem(title: "Open OpenVSCode in Browser", action: #selector(openOpenVSCode), keyEquivalent: "o")
+        openVSCodeMenuItem = NSMenuItem(title: "Open OpenVSCode Server in Browser", action: #selector(openOpenVSCode), keyEquivalent: "o")
         openVSCodeMenuItem?.target = self
         openVSCodeMenuItem?.isHidden = true
         menu?.addItem(openVSCodeMenuItem!)
@@ -186,7 +186,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             copyIPMenuItem?.isHidden = false
             
             // Show service links
-            openVSCodeMenuItem?.title = "Open OpenVSCode (http://\(ip):8080)"
+            openVSCodeMenuItem?.title = "Open OpenVSCode Server (http://\(ip):8080)"
             openVSCodeMenuItem?.isHidden = false
             
             valkeyInfoMenuItem?.title = "Valkey: redis-cli -h \(ip) -p 6379"
