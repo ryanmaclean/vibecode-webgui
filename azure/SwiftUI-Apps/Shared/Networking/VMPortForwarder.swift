@@ -21,6 +21,7 @@ class VMPortForwarder {
         PortMapping(vmPort: 6379, hostPort: 6379, name: "Valkey"),
         PortMapping(vmPort: 5432, hostPort: 5432, name: "PostgreSQL"),
         PortMapping(vmPort: 8080, hostPort: 8080, name: "OpenVSCode"),
+        PortMapping(vmPort: 2375, hostPort: 2375, name: "Docker"),
         PortMapping(vmPort: 3000, hostPort: 3000, name: "HTTP"),
         PortMapping(vmPort: 22, hostPort: 2222, name: "SSH")
     ]

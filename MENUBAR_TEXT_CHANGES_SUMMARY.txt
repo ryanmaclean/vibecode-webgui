@@ -1,0 +1,35 @@
+MENUBAR TEXT FIX - QUICK CHANGES SUMMARY
+========================================
+
+MISSION: Update menubar app to display "OpenVSCode Server" instead of "OpenVSCode"
+
+FILES CHANGED: 2
+
+1. /azure/SwiftUI-Apps/Apps/UnifiedServicesVibeCodeApp/UnifiedServicesVibeCodeApp.swift
+   Line 44: "OpenVSCode:" → "OpenVSCode Server:"
+   
+   BEFORE: Text("OpenVSCode: http://\(ipAddress):8080")
+   AFTER:  Text("OpenVSCode Server: http://\(ipAddress):8080")
+
+2. /azure/SwiftUI-Apps/Shared/Networking/VMPortForwarder.swift
+   Line 23: Port mapping name update
+   
+   BEFORE: PortMapping(vmPort: 8080, hostPort: 8080, name: "OpenVSCode"),
+   AFTER:  PortMapping(vmPort: 8080, hostPort: 8080, name: "OpenVSCode Server"),
+
+BUILD STATUS: ✅ SUCCESS
+
+The app has been rebuilt with code signing applied.
+Location: /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Apps/UnifiedServicesVibeCodeApp.app
+
+IMPACT:
+- UI now shows "OpenVSCode Server: http://..." instead of "OpenVSCode: http://..."
+- Console logs now show "[OpenVSCode Server]" prefix for port forwarder messages
+- All functionality remains unchanged
+- No breaking changes to code or APIs
+
+TESTING:
+Run: open '/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/Apps/UnifiedServicesVibeCodeApp.app'
+Then look for "OpenVSCode Server" text in the UI display when VM boots.
+
+Agent K Mission Complete ✅
