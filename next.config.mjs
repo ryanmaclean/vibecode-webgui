@@ -10,10 +10,14 @@ const webpack = require('webpack')
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
-// Temporarily disable standalone to save disk space during build
-const outputMode = process.env.NEXT_OUTPUT_MODE === 'export' ? 'export' : undefined
-if (process.env.NEXT_OUTPUT_MODE === 'export') {
-  console.info('[next.config] output mode: export')
+// Set output mode: standalone for Docker containers, export for static sites, or default for standard builds
+const outputMode = process.env.NEXT_OUTPUT_MODE === 'export'
+  ? 'export'
+  : (process.env.NODE_ENV === 'production' && !process.env.NEXT_OUTPUT_MODE)
+    ? 'standalone'
+    : undefined
+if (outputMode) {
+  console.info(`[next.config] output mode: ${outputMode}`)
 }
 
 const securityHeaders = [
