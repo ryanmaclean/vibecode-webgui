@@ -1,282 +1,219 @@
-# =============================================================================
-# VibCode .gitignore - Updated 2026-01-07
-# =============================================================================
-# This file prevents bloat and secret leakage. DO NOT track:
-# - Environment files with secrets
-# - Large binary files (use GitHub Releases)
-# - Build artifacts
-# - Kernel/VM images
-# =============================================================================
-
-# =============================================================================
-# 🔐 SECRETS - NEVER COMMIT THESE
-# =============================================================================
-.env
-.env.*
-!.env.example
-!.env.*.example
-!.env.local.example
-!.env.local.template
-!.env.otel.example
-*.env
-config/env/.env.*
-!config/env/.env.example
-!config/env/.env.*.example
-
-# =============================================================================
-# 📦 DEPENDENCIES
-# =============================================================================
+# Dependencies
 node_modules/
 .pnp
 .pnp.js
-bun.lockb
 
-# Python
-venv/
-venv*/
-.venv/
-demos/venv*/
-__pycache__/
-*.pyc
-*.pyo
-*.pyd
-.Python
-pip-log.txt
-pip-delete-this-directory.txt
-*.egg-info/
-.eggs/
-*.egg
+# Testing
+coverage/
+*.log
 
-# =============================================================================
-# 🔨 BUILD ARTIFACTS
-# =============================================================================
-# General
+# Production
 build/
 dist/
-out/
-*.o
-*.a
-*.so
-*.dylib
 
-# JavaScript/TypeScript
-.next/
-.nuxt/
-.output/
-*.tsbuildinfo
+# Environment
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
 
-# Rust/Tauri
-**/target/
-*.rlib
-*.rmeta
-Cargo.lock
-!src-tauri/Cargo.lock
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
 
-# Swift
-**/.build/
-**/ModuleCache/
-*.swiftmodule
-*.pcm
-*.xcworkspace/
-xcuserdata/
-DerivedData/
+# OS
+.DS_Store
+Thumbs.db
 
-# Go
-*.exe
-*.exe~
-*.dll
-
-# =============================================================================
-# 🖥️ VM/KERNEL IMAGES - USE GITHUB RELEASES
-# =============================================================================
-# CPIO archives
-*.cpio
+# Large binary files - use GitHub Releases
 *.cpio.gz
-*.cpio.xz
-*.cpio.gz.pre-*
-*.cpio.gz.broken*
+azure/*.img
+azure/*.qcow2
+azure/*.iso
+releases/
 
-# Disk images
-*.img
-*.img.gz
-*.qcow2
-*.vmdk
-*.vhd
-*.vhdx
-*.iso
-*.ipsw
-*.sparseimage
-*.dmg
-*.dmg.*
+# Temporary files
+tmp/
+temp/
+*.tmp
+demos/venv311/
+__pycache__/
+*.pyc
+.next/
+vz-swift/.build/
+VibeCodeSwift/.build/
 
-# Kernel binaries
-vmlinuz*
-vmlinux*
-bzImage*
-*.kernel
-initramfs*
-initrd*
-
-# Azure VM artifacts
-azure/*.cpio*
-azure/*.img*
-azure/vmlinuz*
-azure/vmlinux*
-azure/linux-kernel*
-azure/nodejs-complete*
-azure/bun-openvscode*
+# Kernel build artifacts
+azure/*.cpio.gz
 azure/ValkeyVibeCodeBinary
 azure/PostgreSQLVibeCodeBinary
 azure/SwiftUI-Apps/ValkeyVibeCodeBinary
 azure/SwiftUI-Apps/PostgreSQLVibeCodeBinary
-azure/SwiftUI-Apps/*Binary
-azure/SwiftUI-Apps/*App
-azure/SwiftUI-Apps/LiquidGlassVibeCodeApp
-!azure/SwiftUI-Apps/*.swift
-!azure/SwiftUI-Apps/Package.swift
 
-# Benchmark images
-bench-images/
-
-# Build artifacts
-artifacts/
-release-artifacts/
-dist-pkg/
-pkg-build/
-
-# OpenVSCode server (large)
-openvscode-server/
-downloads/
-
-# Tauri resources
-src-tauri/resources/vfkit*
-src-tauri/resources/codeserver/
-src-tauri/binaries/
-src-tauri/release-artifacts/
-
-# Tarballs
-*.tar.gz
-*.tar.xz
-*.tar.bz2
-*.tgz
-!package-lock.json
-vibecode-vm-*.tar.gz
-git-*.tar.gz
-
-# =============================================================================
-# 📝 LOGS & TEMPORARY FILES
-# =============================================================================
+# Logs
 logs/
 *.log
+
+# Temp and caches
 tmp/
-temp/
-*.tmp
-*.bak
+.next/
+.git/
+git-*.tar.gz
+git-*/
+
+
+# Build artifacts - do not commit
+artifacts/
+*.o
+*.a
+*.so
+
+# Swift build artifacts
+**/.build/
+**/ModuleCache/
+*.swiftmodule
+*.pcm
 
 # Backup files
 *.backup
 *.backup-*
 *.conflict-backup-*
 
-# Cache files
-.cache/
-*.cache
-.pre-commit-cache/
+# Large binary files that should be in releases
+azure/linux-kernel-arm64*
+azure/vmlinux*
+azure/nodejs-complete*
+src-tauri/resources/vfkit*
+release-artifacts/
+pkg-build/
 
-# =============================================================================
-# 🧪 TESTING
-# =============================================================================
-coverage/
-.nyc_output/
-playwright-report/
-tests/playwright-reports/
-.playwright-mcp/
-tests/performance/
-performance-results/
-test-results/
+# OpenVSCode server (large)
+openvscode-server/
 
-# =============================================================================
-# 🛠️ IDE & EDITOR
-# =============================================================================
-.vscode/
-!.vscode/extensions.json
-!.vscode/settings.json.example
-.idea/
-*.swp
-*.swo
-*~
-.project
-.classpath
-.c9/
-*.launch
-.settings/
-*.sublime-workspace
-*.sublime-project
+# More large files
+dist-pkg/
+bench-images/
+tmp-codeium-example/
+.serena/
+patches/*.patch
+bin/apple-container-runtime
+scripts/vibecode-demo
+src-tauri/resources/codeserver/
+azure/SwiftUI-Apps/*Binary
+azure/SwiftUI-Apps/LiquidGlassVibeCodeApp
 
-# =============================================================================
-# 💻 OS FILES
-# =============================================================================
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-desktop.ini
-
-# =============================================================================
-# 📊 PROJECT-SPECIFIC
-# =============================================================================
 # Astro cache
 docs/.astro/
 
-# Datadog artifacts
+# Playwright reports
+playwright-report/
+tests/playwright-reports/
+.playwright-mcp/
+
+# Tauri binaries
+src-tauri/binaries/
+src-tauri/release-artifacts/
+
+# Datadog logs
 datadog/*.txt
 ops/monitoring/datadog/*.txt
 
-# Serena / Claude
-.serena/
-.claude/
+# Swift app binaries (compiled)
+azure/SwiftUI-Apps/*App
+azure/SwiftUI-Apps/*AppBinary
+!azure/SwiftUI-Apps/*.app/
 
-# Patches (auto-generated)
-patches/*.patch
-
-# Demo binaries
-bin/apple-container-runtime
-scripts/vibecode-demo
-
-# Temporary examples
-tmp-codeium-example/
-
-# Releases folder
-releases/
+# Performance test results
+tests/performance/
+performance-results/
 
 # Migration reports
 migration-report.txt
 
-# Git archives
-git-*/
+# Conflict backups
+*.conflict-backup-*
 
-.pre-commit-cache/
+.claude/
+*.cpio.gz.pre-*
+*.cpio.gz.broken*
+azure/vmlinuz-arm64
+*.dmg*
 
-# Test artifacts
-test-results/
-.test-results/
-junit.xml
-*.junit.xml
+# Agent test artifacts (auto-generated reports)
+AGENT*_*.md
+AGENT*.txt
+agent-*-test-results.json
+agent-*-results.json
+agent*-screenshots/
 
-# =============================================================================
-# ✅ EXCEPTIONS - Files that SHOULD be tracked
-# =============================================================================
-!.gitignore
-!.gitattributes
-!.github/
-!.husky/
-!.env.example
-!.env.local.example
-!.env.local.template
-!.env.otel.example
-!azure/SwiftUI-Apps/*.swift
-!azure/SwiftUI-Apps/Package.swift
-!azure/SwiftUI-Apps/*.md
+# Test screenshots and verification images
+*-proof-*.png
+*-verification-*.png
+datadog-*.png
+playwright-*.png
+icon-verification-*.png
+final-install-*.png
+
+# Test scripts and monitoring tools
+test-*.sh
+test-*.js
+test-*.spec.js
+monitor*.py
+monitor*.sh
+simulate_*.sh
+stress_test.sh
+measure-boot-*.sh
+analyze_monitoring.py
+get-extension-info*.js
+
+# Test data and results
+*-test-results.json
+boot-time-*.json
+resource-usage-data*.csv
+dmg-test-sample.txt
+
+# Build manifests and checksums (generated)
+VibeCode-Unified-*.manifest.txt
+CHECKSUMS_*.txt
+*.sha256
+
+# Temporary/backup files
+*.agent*-backup
+entitlements-tmp.plist
+
+# Auto-generated documentation (keep main docs)
+*-SUMMARY.md
+*-INDEX.md
+*-ARTIFACTS-INDEX.md
+DELIVERABLES*.md
+MISSION_COMPLETE*.md
+*-HONEST-ASSESSMENT.md
+*-STATUS.md
+*-VERDICT.md
+*-PROOF*.md
+HANDOFF.md
+
+# Community, marketing, operations directories (if empty/in-progress)
+community/
+marketing/
+operations/
+optimization/
+development/
+technical-debt/
+platforms/
+
+# Build directories
+initramfs-rebuild/
+kernel-build/
+extensions-download/
+
+# Release commands/scripts (generated)
+GITHUB_RELEASE_COMMAND.sh
+
+# README versions in root (auto-generated)
+/README-v*.md
+VibeCode-Unified-*.txt

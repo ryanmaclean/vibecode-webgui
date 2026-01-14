@@ -3,8 +3,8 @@
  * Tests the factory logic and documents real implementation issues
  */
 
-import { VectorDatabaseFactory } from '@/lib/vector-db/vector-database-factory';
-import { VectorDatabaseProvider } from '@/lib/vector-db/vector-types';
+import { VectorDatabaseFactory } from '@/lib/vector-database-factory';
+import { VectorDatabaseProvider } from '@/lib/vector-types';
 
 describe('VectorDatabaseFactory', () => {
   beforeEach(() => {
@@ -58,7 +58,7 @@ describe('VectorDatabaseFactory', () => {
   });
 
   describe('Implementation Issues Documentation', () => {
-    it('should successfully create PostgreSQL adapter with proper config', async () => {
+    it('should create PostgreSQL adapter successfully', async () => {
       const config = {
         provider: VectorDatabaseProvider.POSTGRES,
         host: 'localhost',
@@ -68,10 +68,11 @@ describe('VectorDatabaseFactory', () => {
         password: 'testpass'
       };
 
-      // PostgreSQL adapter should be created without errors
+      // PostgreSQL adapter can be created without connectionString
+      // It will fail during initialization if no DATABASE_URL is provided
       const adapter = await VectorDatabaseFactory.create(config);
       expect(adapter).toBeDefined();
-      expect(adapter).toBeInstanceOf(Object);
+      expect(adapter.constructor.name).toBe('PostgresVectorDatabaseAdapter');
     });
 
     it('should document that SQL Server adapter is not implemented', async () => {
@@ -86,7 +87,7 @@ describe('VectorDatabaseFactory', () => {
 
       // This test documents the real issue: SQL Server adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Unsupported vector database provider: sqlserver');
+        .rejects.toThrow('SQL Server adapter not yet implemented');
     });
 
     it('should document that Cosmos DB adapter is not implemented', async () => {
@@ -96,11 +97,11 @@ describe('VectorDatabaseFactory', () => {
         key: 'testkey',
         database: 'testdb',
         container: 'testcontainer'
-      } as any;
+      };
 
       // This test documents the real issue: Cosmos DB adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Unsupported vector database provider: cosmosdb');
+        .rejects.toThrow('Cosmos DB adapter not yet implemented');
     });
 
     it('should document that Redis adapter is not implemented', async () => {
@@ -110,11 +111,11 @@ describe('VectorDatabaseFactory', () => {
         port: 6379,
         password: 'testpass',
         database: '0'
-      } as any;
+      };
 
       // This test documents the real issue: Redis adapter not implemented
       await expect(VectorDatabaseFactory.create(config))
-        .rejects.toThrow('Unsupported vector database provider: redis');
+        .rejects.toThrow('Redis adapter not yet implemented');
     });
   });
 

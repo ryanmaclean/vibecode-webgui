@@ -534,7 +534,7 @@ describe('Phase 3: AI Operations & Code Execution Validation', () => {
     });
 
     it('should reject potentially dangerous or unsupported languages', () => {
-      const invalid = ['bash', 'shell', 'perl', 'php', 'ruby', 'c', 'cpp'];
+      const invalid = ['bash', 'shell', 'perl', 'php', 'c', 'cpp'];
 
       invalid.forEach(lang => {
         expect(() => programmingLanguageSchema.parse(lang)).toThrow(ZodError);

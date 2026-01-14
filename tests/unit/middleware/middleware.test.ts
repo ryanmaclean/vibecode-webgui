@@ -7,7 +7,8 @@ import { NextRequest } from 'next/server';
  */
 
 function buildRequest(path: string, headers: Record<string, string> = {}) {
-  return new NextRequest(`https://example.com${path}`, {
+  const url = `https://example.com${path}`;
+  return new NextRequest(url, {
     headers: new Headers(headers),
   });
 }

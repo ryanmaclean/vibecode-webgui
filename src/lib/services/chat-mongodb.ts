@@ -4,9 +4,11 @@
  */
 
 import { Collection, ObjectId } from 'mongodb';
+import { v4 as uuidv4 } from 'uuid';
 // import { logger } from '@/lib/logger';
 export interface ChatMessage {
   _id?: ObjectId;
+  id?: string;
   workspaceId: string;
   userId: string;
   role: 'user' | 'assistant' | 'system';
@@ -23,6 +25,7 @@ export interface ChatMessage {
 
 export interface ChatConversation {
   _id?: ObjectId;
+  id?: string;
   workspaceId: string;
   userId: string;
   title?: string;
@@ -46,6 +49,7 @@ export interface ChatSession {
 
 export interface ChatAssistant {
   _id?: ObjectId;
+  id?: string;
   name: string;
   description?: string;
   instructions?: string;
@@ -246,12 +250,14 @@ export class ChatMongoDBService {
   /**
    * Get conversation by ID
    */
-  async getConversation(conversationId: ObjectId): Promise<ChatConversation | null> {
+  async getConversation(conversationId: ObjectId | string): Promise<ChatConversation | null> {
     if (!this.conversationsCollection) {
       throw new Error('Chat service not initialized');
     }
 
-    return await this.conversationsCollection.findOne({ _id: conversationId });
+    // Support both string and ObjectId
+    const id = typeof conversationId === 'string' ? conversationId : conversationId.toString();
+    return await this.conversationsCollection.findOne({ id });
   }
 
   /**
@@ -285,9 +291,12 @@ export class ChatMongoDBService {
     // Support both old (3 args) and new (5 args) signatures
     let conversationData: Omit<ChatConversation, '_id'>;
 
+    const id = uuidv4();
+
     if (userId !== undefined && workspaceId !== undefined) {
       // New signature: (title, sessionId, model, userId, workspaceId)
       conversationData = {
+        id,
         title: titleOrWorkspaceId,
         sessionId: sessionIdOrUserId,
         model: modelOrTitle,
@@ -297,10 +306,11 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      };
+      } as any;
     } else {
       // Old signature: (workspaceId, userId, title?)
       conversationData = {
+        id,
         workspaceId: titleOrWorkspaceId,
         userId: sessionIdOrUserId,
         title: modelOrTitle,
@@ -308,7 +318,7 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      };
+      } as any;
     }
 
     const result = await this.conversationsCollection.insertOne(conversationData);
@@ -318,7 +328,7 @@ export class ChatMongoDBService {
       return {
         ...conversationData,
         _id: result.insertedId,
-        id: result.insertedId.toString()
+        id
       };
     }
 
@@ -539,27 +549,33 @@ export class ChatMongoDBService {
   /**
    * Delete conversation and all its messages
    */
-  async deleteConversation(conversationId: ObjectId): Promise<boolean> {
+  async deleteConversation(conversationId: ObjectId | string): Promise<boolean> {
     if (!this.conversationsCollection || !this.messagesCollection) {
       throw new Error('Chat service not initialized');
     }
 
+    // Support both string and ObjectId
+    const id = typeof conversationId === 'string' ? conversationId : conversationId.toString();
+
     // Get conversation to find associated messages
-    const conversation = await this.conversationsCollection.findOne({ _id: conversationId });
+    const conversation = await this.conversationsCollection.findOne({ id });
     if (!conversation) {
-      return false;
+      throw new Error('Conversation not found');
     }
 
     // Delete all messages in the conversation
     if (conversation.messages.length > 0) {
       await this.messagesCollection.deleteMany({
-        _id: { $in: conversation.messages.map(id => new ObjectId(id)) }
+        _id: { $in: conversation.messages.map(msgId => new ObjectId(msgId)) }
       });
     }
 
     // Delete the conversation
-    const result = await this.conversationsCollection.deleteOne({ _id: conversationId });
-    return result.deletedCount > 0;
+    const result = await this.conversationsCollection.deleteOne({ id });
+    if (result.deletedCount === 0) {
+      throw new Error('Conversation not found');
+    }
+    return true;
   }
 
   /**
@@ -641,6 +657,59 @@ export class ChatMongoDBService {
   }
 
   /**
+   * Get session by ID
+   */
+  async getSession(sessionId: string): Promise<ChatSession | null> {
+    if (!this.sessionsCollection) {
+      return null;
+    }
+
+    return await this.sessionsCollection.findOne({ sessionId });
+  }
+
+  /**
+   * Validate session (check if it exists and is not expired)
+   */
+  async validateSession(sessionId: string): Promise<boolean> {
+    const session = await this.getSession(sessionId);
+    if (!session) {
+      return false;
+    }
+
+    // Check if session is expired
+    return session.expiresAt > new Date();
+  }
+
+  /**
+   * Update message content
+   */
+  async updateMessage(
+    conversationId: string,
+    messageId: string,
+    content: string
+  ): Promise<void> {
+    if (!this.conversationsCollection) {
+      throw new Error('Chat service not initialized');
+    }
+
+    // Update message in conversation using positional operator
+    const result = await this.conversationsCollection.updateOne(
+      { id: conversationId, 'messages.id': messageId },
+      {
+        $set: {
+          'messages.$.content': content,
+          'messages.$.updatedAt': new Date(),
+          updatedAt: new Date()
+        }
+      }
+    );
+
+    if (result.matchedCount === 0) {
+      throw new Error('Conversation or message not found');
+    }
+  }
+
+  /**
    * Add a message to a conversation
    */
   async addMessage(
@@ -655,30 +724,30 @@ export class ChatMongoDBService {
       throw new Error('Chat service not initialized');
     }
 
-    // Convert conversationId string to ObjectId
-    const convObjectId = new ObjectId(conversationId);
-
-    // Get the conversation to extract workspaceId and userId
-    const conversation = await this.conversationsCollection.findOne({ _id: convObjectId });
+    // Get the conversation using the id field
+    const conversation = await this.conversationsCollection.findOne({ id: conversationId });
     if (!conversation) {
       throw new Error('Conversation not found');
     }
 
+    const messageId = uuidv4();
+
     // Create the message document
-    const messageDoc: Omit<ChatMessage, '_id'> = {
+    const messageDoc: Omit<ChatMessage, '_id'> & { id: string } = {
+      id: messageId,
       workspaceId: conversation.workspaceId,
       userId: conversation.userId,
       role: message.from === 'user' ? 'user' : 'assistant',
       content: message.content,
       timestamp: new Date(),
       metadata: message.files ? { files: message.files } : undefined
-    };
+    } as any;
 
-    const result = await this.messagesCollection.insertOne(messageDoc);
+    const result = await this.messagesCollection.insertOne(messageDoc as any);
 
     // Add message reference to conversation
     await this.conversationsCollection.updateOne(
-      { _id: convObjectId },
+      { id: conversationId },
       {
         $push: { messages: result.insertedId },
         $set: { updatedAt: new Date() }
@@ -686,7 +755,7 @@ export class ChatMongoDBService {
     );
 
     return {
-      id: result.insertedId.toString(),
+      id: messageId,
       content: message.content,
       from: message.from,
       timestamp: new Date()
@@ -712,7 +781,7 @@ export class ChatMongoDBService {
 
     return conversations.map(conv => ({
       ...conv,
-      id: conv._id?.toString() || ''
+      id: conv.id || conv._id?.toString() || ''
     }));
   }
 
@@ -735,7 +804,7 @@ export class ChatMongoDBService {
 
     return conversations.map(conv => ({
       ...conv,
-      id: conv._id?.toString() || ''
+      id: conv.id || conv._id?.toString() || ''
     }));
   }
 
@@ -833,32 +902,47 @@ export class ChatMongoDBService {
     description: string,
     instructions: string,
     model: string,
-    userId: string,
+    createdBy: string,
     tools?: any[],
     files?: string[]
-  ): Promise<ChatAssistant & { id: string }> {
+  ): Promise<ChatAssistant & { id: string; createdBy: string }> {
     if (!this.assistantsCollection) {
       throw new Error('Assistants collection not initialized');
     }
 
-    const assistant: Omit<ChatAssistant, '_id'> = {
+    const id = uuidv4();
+
+    const assistant: Omit<ChatAssistant, '_id'> & { createdBy: string } = {
+      id,
       name,
       description,
       instructions,
       model,
-      userId,
-      tools,
-      files,
+      userId: createdBy,
+      createdBy,
+      tools: tools || [],
+      files: files || [],
       createdAt: new Date(),
       updatedAt: new Date()
     };
 
-    const result = await this.assistantsCollection.insertOne(assistant);
+    const result = await this.assistantsCollection.insertOne(assistant as any);
     return {
       ...assistant,
       _id: result.insertedId,
-      id: result.insertedId.toString()
+      id
     };
+  }
+
+  /**
+   * Get assistant by ID
+   */
+  async getAssistant(assistantId: string): Promise<ChatAssistant | null> {
+    if (!this.assistantsCollection) {
+      throw new Error('Assistants collection not initialized');
+    }
+
+    return await this.assistantsCollection.findOne({ id: assistantId });
   }
 
   /**

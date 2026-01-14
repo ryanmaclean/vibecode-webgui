@@ -3,9 +3,7 @@
  * Tests the actual public API methods
  */
 
-import { CollaborationServer } from '@/lib/collaboration-server';
-
-// Mock external dependencies
+// Mock external dependencies BEFORE import
 jest.mock('socket.io', () => ({
   Server: jest.fn().mockImplementation(() => ({
     on: jest.fn(),
@@ -43,12 +41,8 @@ jest.mock('yjs', () => ({
   applyUpdate: jest.fn()
 }));
 
-jest.mock('y-leveldb', () => ({
-  LeveldbPersistence: jest.fn().mockImplementation(() => ({
-    whenSynced: Promise.resolve(),
-    destroy: jest.fn()
-  }))
-}));
+// y-websocket/bin/utils and y-leveldb are mocked via moduleNameMapper in jest.config.mjs
+import { CollaborationServer } from '@/lib/collaboration-server';
 
 describe('CollaborationServer', () => {
   let server: CollaborationServer;

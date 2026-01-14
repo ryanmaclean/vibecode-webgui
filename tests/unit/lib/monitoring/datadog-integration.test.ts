@@ -4,41 +4,35 @@
  */
 
 import { jest } from '@jest/globals'
-import dgram from 'dgram'
 
-// Mock dgram module
+// Mock dgram module before any imports
+const mockSocket = {
+  send: jest.fn(),
+  close: jest.fn()
+}
+
+const mockCreateSocket = jest.fn(() => mockSocket)
+
 jest.mock('dgram', () => ({
-  createSocket: jest.fn(() => ({
-    send: jest.fn(),
-    close: jest.fn()
-  }))
+  default: {
+    createSocket: mockCreateSocket
+  },
+  createSocket: mockCreateSocket
 }))
 
 describe('DatadogIntegration', () => {
-  let mockSocket: any
-  let datadogIntegration: any
   let DatadogIntegration: any
+  let datadogIntegration: any
 
-  beforeEach(async () => {
+  beforeEach(() => {
     jest.clearAllMocks()
-    jest.resetModules() // Clear module cache
+    mockSocket.send.mockClear()
+    mockSocket.close.mockClear()
+    mockCreateSocket.mockClear()
+    mockCreateSocket.mockReturnValue(mockSocket)
 
-    // Create mock socket
-    mockSocket = {
-      send: jest.fn((buffer, port, host, callback) => {
-        // Call the callback immediately to simulate successful send
-        if (callback) callback(null)
-      }),
-      close: jest.fn()
-    }
-
-    // Re-mock dgram module after resetModules
-    jest.doMock('dgram', () => ({
-      createSocket: jest.fn(() => mockSocket)
-    }))
-
-    // Import the class after mocking
-    const module = await import('@/lib/monitoring/datadog-integration')
+    // Import the class after resetting mocks
+    const module = require('@/lib/monitoring/datadog-integration')
     DatadogIntegration = module.DatadogIntegration
     datadogIntegration = new DatadogIntegration()
   })
@@ -61,9 +55,10 @@ describe('DatadogIntegration', () => {
         prefix: 'custom.',
         globalTags: ['custom:tag']
       }
-
+      
+      const { DatadogIntegration } = require('@/lib/monitoring/datadog-integration')
       const customIntegration = new DatadogIntegration(customConfig)
-
+      
       expect(customIntegration).toBeDefined()
     })
   })

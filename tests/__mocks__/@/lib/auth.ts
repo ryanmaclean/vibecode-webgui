@@ -5,38 +5,24 @@ export const authOptions = {
       id: 'credentials',
       name: 'Credentials',
       type: 'credentials',
-      credentials: {
-        email: { label: 'Email', type: 'text' },
-        password: { label: 'Password', type: 'password' },
-      },
-      async authorize(credentials: Record<string, string>) {
-        if (!credentials) return null;
+      authorize: async (credentials: Record<string, string>) => {
+        if (!credentials) return null
 
-        // Mock users for testing
+        // Mock user database for testing
         const users = [
-          { id: '1', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: '2', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: '3', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-        ];
+          { id: 'legacy-admin', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
+          { id: 'legacy-developer', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
+          { id: 'legacy-lead', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
+        ]
 
-        const user = users.find(u => u.email === credentials.email);
+        const user = users.find(u => u.email === credentials.email)
 
         if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role };
+          return { id: user.id, name: user.name, email: user.email, role: user.role }
         } else {
-          return null;
+          return null
         }
       },
-    },
-    {
-      id: 'github',
-      name: 'GitHub',
-      type: 'oauth',
-    },
-    {
-      id: 'google',
-      name: 'Google',
-      type: 'oauth',
     },
   ],
   session: { strategy: 'jwt' },

@@ -230,44 +230,50 @@ export const EnhancedChatInterface = ({
       const decoder = new TextDecoder()
 
       if (reader) {
-        while (true) {
-          const { done, value } = await reader.read()
-          if (done) break
+        try {
+          while (true) {
+            const { done, value } = await reader.read()
+            if (done) break
 
-          const chunk = decoder.decode(value)
-          const lines = chunk.split('\n').filter(line => line.trim())
+            const chunk = decoder.decode(value)
+            const lines = chunk.split('\n').filter(line => line.trim())
 
-          for (const line of lines) {
-            if (line.startsWith('data: ')) {
-              const data = line.slice(6)
-              try {
-                const parsed = JSON.parse(data)
-                
-                if (parsed.type === 'content') {
-                  setMessages(prev => prev.map((msg, index) => 
-                    index === prev.length - 1 
-                      ? { ...msg, content: msg.content + parsed.content }
-                      : msg
-                  ))
-                } else if (parsed.type === 'metadata') {
-                  setMessages(prev => prev.map((msg, index) => 
-                    index === prev.length - 1 
-                      ? { 
-                          ...msg, 
-                          metadata: { 
-                            ...msg.metadata, 
-                            ...parsed.metadata 
+            for (const line of lines) {
+              if (line.startsWith('data: ')) {
+                const data = line.slice(6)
+                try {
+                  const parsed = JSON.parse(data)
+
+                  if (parsed.type === 'content') {
+                    setMessages(prev => prev.map((msg, index) =>
+                      index === prev.length - 1
+                        ? { ...msg, content: msg.content + parsed.content }
+                        : msg
+                    ))
+                  } else if (parsed.type === 'metadata') {
+                    setMessages(prev => prev.map((msg, index) =>
+                      index === prev.length - 1
+                        ? {
+                            ...msg,
+                            metadata: {
+                              ...msg.metadata,
+                              ...parsed.metadata
+                            }
                           }
-                        }
-                      : msg
-                  ))
+                        : msg
+                    ))
+                  }
+                } catch (e) {
+                  // Skip invalid JSON
+                  continue
                 }
-              } catch (e) {
-                // Skip invalid JSON
-                continue
               }
             }
           }
+        } finally {
+          // Clean up reader resources
+          reader.cancel()
+          reader.releaseLock()
         }
       }
     } catch (error) {

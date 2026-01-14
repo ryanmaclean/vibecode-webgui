@@ -95,6 +95,8 @@ export class SAMLProvider {
    * Generate SAML authentication request (redirect to IdP)
    */
   generateAuthRequest(options: {
+    assertionConsumerServiceURL?: string
+    destination?: string
     relayState?: string
     forceAuthn?: boolean
     allowCreate?: boolean
@@ -106,12 +108,16 @@ export class SAMLProvider {
     const requestId = this.generateId()
     const timestamp = new Date().toISOString()
 
+    // Allow override of destination and ACS URL for testing
+    const destination = options.destination || this.config.singleSignOnUrl
+    const assertionConsumerServiceUrl = options.assertionConsumerServiceURL || this.serviceProviderConfig.assertionConsumerServiceUrl
+
     const samlRequest = this.buildAuthRequest({
       id: requestId,
       timestamp,
-      destination: this.config.singleSignOnUrl,
+      destination,
       issuer: this.serviceProviderConfig.entityId,
-      assertionConsumerServiceUrl: this.serviceProviderConfig.assertionConsumerServiceUrl,
+      assertionConsumerServiceUrl,
       nameIdFormat: this.getNameIdFormat(),
       forceAuthn: options.forceAuthn,
       allowCreate: options.allowCreate
@@ -136,7 +142,7 @@ export class SAMLProvider {
     }
 
     return {
-      url: `${this.config.singleSignOnUrl}?${params.toString()}`,
+      url: `${destination}?${params.toString()}`,
       samlRequest: encodedRequest,
       relayState: options.relayState
     }
@@ -147,8 +153,18 @@ export class SAMLProvider {
    */
   async processResponse(samlResponse: string, relayState?: string): Promise<SAMLUser> {
     try {
+      // Validate input
+      if (!samlResponse || samlResponse.trim() === '') {
+        throw new Error('Invalid SAML response')
+      }
+
       // Decode base64 response
       const decodedResponse = Buffer.from(samlResponse, 'base64').toString('utf-8')
+
+      // Check if decoded response is valid
+      if (!decodedResponse || decodedResponse.trim() === '') {
+        throw new Error('Invalid SAML response')
+      }
 
       // Parse XML and validate
       const assertion = await this.parseSAMLResponse(decodedResponse)
@@ -344,8 +360,8 @@ export class SAMLProvider {
     let attributeMatch
 
     while ((attributeMatch = attributeRegex.exec(xml)) !== null) {
-      const attrName = attributeMatch[1]
-      const attrValue = attributeMatch[2]
+      const attrName = attributeMatch[1].trim()
+      const attrValue = attributeMatch[2].trim()
 
       if (attributes[attrName]) {
         if (Array.isArray(attributes[attrName])) {
@@ -359,14 +375,14 @@ export class SAMLProvider {
     }
 
     return {
-      nameId: nameIdMatch[1],
-      sessionIndex: sessionIndexMatch?.[1] || '',
+      nameId: nameIdMatch[1].trim(),
+      sessionIndex: sessionIndexMatch?.[1]?.trim() || '',
       attributes,
       conditions: {
         notBefore: new Date(Date.now() - 300000), // 5 minutes ago
         notOnOrAfter: new Date(Date.now() + 3600000), // 1 hour from now
       },
-      issuer: issuerMatch[1],
+      issuer: issuerMatch[1].trim(),
       destination: this.serviceProviderConfig.assertionConsumerServiceUrl
     }
   }

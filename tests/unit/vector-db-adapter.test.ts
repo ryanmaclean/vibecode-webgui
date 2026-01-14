@@ -291,8 +291,8 @@ describe('BaseVectorDatabaseAdapter', () => {
 
       expect(adapter.initializeProviderCalled).toBe(true);
       expect(adapter.isInitialized).toBe(true);
-      // Connection pooling is enabled (maxPoolSize: 3), so connections are created during initialization
-      // to reach the minimum pool size (minPoolSize: 1)
+      // connectionCreated should be true after initialization when connection pooling is enabled
+      // The pool creates minPoolSize connections (1 in this test config) during initialization
       expect(adapter.connectionCreated).toBe(true);
     });
     

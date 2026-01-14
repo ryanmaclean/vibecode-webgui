@@ -60,14 +60,14 @@ When you launch BasicVibeCode:
 
 4. **Ready to Use**
    - Application shows OpenVSCode URL with authentication token
-   - Example: `http://192.168.64.2:3000?tkn=abc123...`
+   - Example: `http://192.168.64.10:3000?tkn=abc123...`
    - Click the URL or copy-paste into your browser
 
 ### Accessing Your IDE
 
 The application displays a clickable URL like:
 ```
-Web UI available at http://192.168.64.2:3000?tkn=3a9cf5f3-6b7e-4bdf-807c-5423eae62105
+Web UI available at http://192.168.64.10:3000?tkn=3a9cf5f3-6b7e-4bdf-807c-5423eae62105
 ```
 
 Click this URL or copy it into your browser. You'll see a full VS Code interface running in the VM.
@@ -150,9 +150,9 @@ If DHCP fails:
 ### Can't Access OpenVSCode
 
 If the URL doesn't work:
-1. Verify the VM's IP address is reachable: `ping 192.168.64.2`
-2. Check if port 3000 is accessible: `nc -zv 192.168.64.2 3000`
-3. Try accessing without the token first: `http://192.168.64.2:3000`
+1. Verify the VM's IP address is reachable: `ping 192.168.64.10`
+2. Check if port 3000 is accessible: `nc -zv 192.168.64.10 3000`
+3. Try accessing without the token first: `http://192.168.64.10:3000`
 
 ### Performance Issues
 

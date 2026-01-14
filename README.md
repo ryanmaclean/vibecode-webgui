@@ -1,43 +1,12 @@
-<<<<<<< HEAD
-# VibeCode - AI Development Platform (Demo/Experimental)
-=======
 # VibeCode VM
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.0.0-blue.svg)](https://github.com/yourusername/vibecode-vm/releases)
 
-<<<<<<< HEAD
-**This is a demo/experimental repository** showcasing:
-- **AI Development Platform** - Working Next.js app with AI integrations (OpenAI, Anthropic, Google)
-- **Desktop app builds** - Tauri + Rust experiments
-- **OpenVSCode Server integration** - Build system verification
-- **VS Code extensions** - Workspace RAG with MLX embeddings
-- **Observability** - Datadog APM, tracing, and logging integration
-=======
 **Lightweight, Fast Development VMs with Full IDE Support**
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 VibeCode VM is an ultra-lightweight virtual machine platform that boots a complete development environment in under 30 seconds. Built with Firecracker-style parallel service startup, it provides SSH access, PostgreSQL database, Valkey cache, and a full VS Code editor in a VM that compresses to just 59MB.
 
-<<<<<<< HEAD
-### Core Platform (Production-Ready)
-- ✅ **86 API Routes** - Full Next.js API with AI, authentication, monitoring
-- ✅ **AI Integrations** - Multi-provider support (OpenAI, Anthropic, Google AI, Mistral)
-- ✅ **Authentication** - SAML, MFA, JWT, password-based auth
-- ✅ **Project Generation** - AI-powered project scaffolding
-- ✅ **Workspace Management** - API for workspace creation and management
-- ✅ **Collaboration Services** - Real-time collaboration features
-- ✅ **Vector Databases** - pgvector and MongoDB Atlas integration
-- ✅ **Monitoring** - Comprehensive Datadog APM, tracing, and logging
-- ✅ **3,630 Tests** - 99.8% pass rate (7 tests have state pollution, all pass individually)
-
-### Build System Experiments
-- ✅ **OpenVSCode Server** - Builds successfully on macOS ARM64 (4m 17s)
-- ✅ **Tauri Desktop App** - Minimal working build (5.8 MB)
-- ✅ **Workspace RAG Extension** - VS Code extension with MLX embeddings
-- ✅ **Build Scripts** - Python build automation with Datadog tracing
-=======
 ## Features
 
 - **Lightning Fast Boot**: 26-second average boot time from cold start to ready IDE
@@ -51,7 +20,6 @@ VibeCode VM is an ultra-lightweight virtual machine platform that boots a comple
 - **Network Ready**: Automatic DHCP with static IP fallback (192.168.64.10)
 - **Parallel Startup**: All services launch simultaneously for minimal boot time
 - **macOS Native**: Optimized for Apple Silicon using vfkit
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 ## Quick Start
 
@@ -202,36 +170,9 @@ See [UNIFIED-TOOL-GUIDE.md](UNIFIED-TOOL-GUIDE.md) for complete documentation.
 
 ## Building from Source
 
-<<<<<<< HEAD
-- **Jan 2025**: Complete test suite (3,630 tests), security hardening (0 vulnerabilities), Datadog APM/logging integration
-- **Nov 2024**: GUI testing infrastructure, workspace-rag v1.0.0 packaging
-- **Oct 2024**: Build system verification, OpenVSCode Server integration
-- **Earlier**: Various build automation experiments and documentation
-
-## Test Coverage & Quality
-
-- ✅ **3,630 tests** across 225 test suites (99.8% pass rate)
-  - 7 tests fail in full suite due to state pollution (all pass individually)
-  - Fixed with Jest isolation improvements (resetModules, restoreMocks, resetMocks)
-- ✅ **0 security vulnerabilities** in main application (npm audit clean)
-  - GitHub Dependabot reports 68 vulns in untracked packages/submodules
-- ✅ **159 Datadog integration tests** with real API calls
-- ✅ **GitHub Actions CI/CD** with automated testing
-- ✅ **Pre-commit hooks** with API key scanning
-
-## Datadog Integration
-
-- **Python (47 files)**: ddtrace APM instrumentation
-- **JavaScript**: dd-trace in src/instrument.ts
-- **Bash (5 scripts)**: Custom Datadog logging library
-- **Metrics & Logs**: Real-time monitoring with Datadog API integration
-
-## Project Structure
-=======
 Want to customize the VM or build it yourself? See [CONTRIBUTING.md](CONTRIBUTING.md) for build instructions.
 
 ## Performance Benchmarks
->>>>>>> a07226e8a (feat: Complete Ralph Loop with 100% test coverage and working unified VM app)
 
 Tested on Apple Silicon (M-series processors):
 

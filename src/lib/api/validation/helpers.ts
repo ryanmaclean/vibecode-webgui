@@ -18,40 +18,86 @@ export { validateRequestBody, validateQueryParams }
  */
 const rateLimitStore = new Map<string, { count: number; resetTime: number }>()
 
+// Overload signatures
 export function checkRateLimit(
-  identifierOrRequest: string | NextRequest,
-  maxRequestsOrOptions?: number | {
+  identifier: string,
+  maxRequests: number,
+  windowMs: number
+): { allowed: boolean; remaining: number; resetTime: number }
+export function checkRateLimit(
+  request: NextRequest,
+  options?: {
     maxRequests?: number
     windowMs?: number
     keyGenerator?: (req: NextRequest) => string
-  },
-  windowMs?: number
+  }
+): { allowed: boolean; remaining: number; resetTime: number }
+
+// Implementation
+export function checkRateLimit(
+  requestOrIdentifier: NextRequest | string,
+  optionsOrMaxRequests?: {
+    maxRequests?: number
+    windowMs?: number
+    keyGenerator?: (req: NextRequest) => string
+  } | number,
+  windowMsParam?: number
 ): { allowed: boolean; remaining: number; resetTime: number } {
-  // Handle overloaded function signatures
-  let key: string
-  let maxRequests: number
-  let window: number
+  // Handle simple string-based rate limiting (for testing)
+  if (typeof requestOrIdentifier === 'string') {
+    const identifier = requestOrIdentifier
+    const maxRequests = optionsOrMaxRequests as number
+    const windowMs = windowMsParam as number
+    const now = Date.now()
 
-  if (typeof identifierOrRequest === 'string') {
-    // Simple signature: checkRateLimit(identifier, maxRequests, windowMs)
-    key = identifierOrRequest
-    maxRequests = typeof maxRequestsOrOptions === 'number' ? maxRequestsOrOptions : 100
-    window = windowMs || 60 * 1000
-  } else {
-    // Request-based signature: checkRateLimit(request, options)
-    const options = typeof maxRequestsOrOptions === 'object' ? maxRequestsOrOptions : {}
-    const {
-      maxRequests: max = 100,
-      windowMs: win = 60 * 1000,
-      keyGenerator = (req) => req.ip || 'unknown'
-    } = options
+    const current = rateLimitStore.get(identifier)
 
-    key = keyGenerator(identifierOrRequest)
-    maxRequests = max
-    window = win
+    if (!current || current.resetTime < now) {
+      rateLimitStore.set(identifier, {
+        count: 1,
+        resetTime: now + windowMs
+      })
+      return {
+        allowed: true,
+        remaining: maxRequests - 1,
+        resetTime: now + windowMs
+      }
+    }
+
+    if (current.count >= maxRequests) {
+      return {
+        allowed: false,
+        remaining: 0,
+        resetTime: current.resetTime
+      }
+    }
+
+    current.count++
+    rateLimitStore.set(identifier, current)
+
+    return {
+      allowed: true,
+      remaining: maxRequests - current.count,
+      resetTime: current.resetTime
+    }
   }
 
+  // Handle NextRequest-based rate limiting
+  const request = requestOrIdentifier
+  const options = (optionsOrMaxRequests || {}) as {
+    maxRequests?: number
+    windowMs?: number
+    keyGenerator?: (req: NextRequest) => string
+  }
+  const {
+    maxRequests = 100,
+    windowMs = 60 * 1000, // 1 minute
+    keyGenerator = (req) => req.ip || 'unknown'
+  } = options
+
+  const key = keyGenerator(request)
   const now = Date.now()
+  const windowStart = now - windowMs
 
   // Clean up expired entries
   for (const [k, v] of rateLimitStore.entries()) {
@@ -61,18 +107,18 @@ export function checkRateLimit(
   }
 
   const current = rateLimitStore.get(key)
-
+  
   if (!current || current.resetTime < now) {
     // New window or expired
     rateLimitStore.set(key, {
       count: 1,
-      resetTime: now + window
+      resetTime: now + windowMs
     })
-
+    
     return {
       allowed: true,
       remaining: maxRequests - 1,
-      resetTime: now + window
+      resetTime: now + windowMs
     }
   }
 

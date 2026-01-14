@@ -1,231 +1,167 @@
 # Changelog
 
-All notable changes to the VibeCode WebGUI project will be documented in this file.
+All notable changes to VibeCode VM will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased] - 2026-01-12
+## [1.0.0] - 2026-01-06
 
-### Added - Wave 12
+Initial release of VibeCode VM - a lightweight, fast-booting development VM for macOS.
 
-- **ChatInterface Component** with comprehensive tests (PR #774)
-  - Real-time AI chat with Server-Sent Events streaming
-  - Message history with virtualized scrolling
-  - Markdown rendering for AI responses
-  - Full accessibility (ARIA labels, keyboard navigation)
-  - Mobile-responsive design
-  - 311 lines component code + 935 lines tests (45 tests)
+### Added
 
-- **FileUploadInterface Component** with comprehensive tests (PR #775)
-  - Drag-and-drop file upload with visual feedback
-  - Multi-file concurrent upload support (max 3 simultaneous)
-  - Chunked uploads for large files (>10MB)
-  - File type and size validation
-  - Upload progress tracking with cancellation
-  - Preview generation for images and PDFs
-  - 431 lines component code + 915 lines tests (39 tests)
+**Core Features**
+- Ultra-compact VM image: 59MB compressed (175MB uncompressed)
+- Lightning-fast boot time: 26 seconds average from cold start to ready IDE
+- Complete development stack in a single VM
+- Parallel service startup (Firecracker-style init)
+- VirtioFS support for volume mounting and file sharing
 
-- **AI Client Library** (`src/lib/ai-client.ts`, 176 lines)
-  - Chat API integration with streaming support
-  - Error handling and retry logic
-  - TypeScript-first with full type safety
+**Services**
+- OpenVSCode Server on port 8080 - Full VS Code editor in your browser
+- PostgreSQL 16 on port 5432 - Production-ready relational database
+- Valkey on port 6379 - High-performance in-memory data store
+- Dropbear SSH on port 22 - Secure remote access
 
-- **Upload Client Library** (`src/lib/upload-client.ts`, 321 lines)
-  - File upload API integration
-  - Chunked upload management
-  - Progress tracking and cancellation support
-  - TypeScript-first with full type safety
+**Networking**
+- Automatic DHCP configuration with graceful fallback
+- Static IP fallback: 192.168.64.10
+- NAT networking for internet access
+- Virtio network driver for performance
 
-- **Security Test Suite** (144 tests across 4 files)
-  - CSRF protection tests (24 tests, 430 lines)
-  - Rate limiting tests with Redis (29 tests, 334 lines)
-  - File validation and security scanning (27 tests, 319 lines)
-  - Vector search operations (22 tests, 471 lines)
+**Volume Mounting**
+- VirtioFS kernel module support
+- Host filesystem mounting at /mnt/host
+- Persistent storage for PostgreSQL and Valkey
+- Bidirectional file synchronization
+- Automatic detection of database directories
 
-- **Middleware Test Suite** (42 tests across 2 files)
-  - Error tracking middleware (17 tests, 398 lines)
-  - Quota management middleware (25 tests, 332 lines)
+**macOS Integration**
+- Native support for Apple Silicon (ARM64)
+- vfkit virtualization toolkit integration
+- GUI console window
+- Console log capture
 
-- **Monitoring Test Suite** (48 tests across 2 files)
-  - OpenTelemetry integration tests (~24 tests, ~350 lines)
-  - User journey tracking tests (~24 tests, ~300 lines)
+**Build System**
+- Automated build script with dependency management
+- BusyBox-based minimal Linux environment
+- Static binary compilation for minimal dependencies
+- Aggressive size optimization (89MB → 59MB)
+- Fast build mode for development
 
-- **Utility Test Suite** (68 tests across 3 files)
-  - Date utilities (24 tests, 245 lines)
-  - String utilities (28 tests, 289 lines)
-  - API helpers (16 tests, 208 lines)
+**Testing & Quality**
+- Automated boot time testing
+- Volume mounting test suite
+- Service health checks
+- Performance benchmarking
+- Comprehensive test scripts
 
-- **Mock Infrastructure**
-  - Pinecone SDK mock utilities (`tests/utils/pinecone-mock.ts`)
-  - Redis client mock utilities (`tests/utils/redis-mock.ts`)
+**Documentation**
+- User-friendly README with quick start
+- Detailed INSTALL.md guide
+- CONTRIBUTING.md for developers
+- Technical documentation in docs/
+- Troubleshooting guide
+- Volume mounting guide
+- Architecture documentation
+- Performance optimization guide
 
-- **Phase 2 Planning Documentation**
-  - Integration architecture for Chat and Upload components
-  - Database schema design for conversation persistence
-  - File storage architecture (S3 recommendations)
-  - RAG pipeline specifications
-  - Timeline and resource estimates
+### Performance Metrics
 
-### Changed
+- **Boot Time**: 26 seconds average (25-29s range, 95% confidence)
+- **Memory Usage**: ~400MB baseline, ~800MB under load
+- **Disk Size**: 59MB compressed, 175MB uncompressed
+- **File Count**: 1,383 files (reduced from 2,705)
+- **Services**: All start in parallel for maximum efficiency
 
-- **Test Coverage** increased from 23.06% to 25.12% (+2.06%, +895 lines covered)
-  - Statements: 24.04% → 25.38% (+1.34%)
-  - Branches: 19.49% → 20.67% (+1.18%)
-  - Functions: 22.26% → 23.89% (+1.63%)
-  - Lines: 24.30% → 25.12% (+0.82%)
+### Optimizations
 
-- **Test Suite** expanded from 5,041 to 5,311 passing tests (+270 tests, +5.4%)
-  - Total tests: 5,197 → 5,447 (+250 tests)
-  - Pass rate: 97.0% → 97.5% (+0.5%)
-  - Test code: +5,618 lines across 9 new test files
+**Phase 1: High-Impact Removals (12MB savings)**
+- ICU data reduction (28MB → 1KB stub)
+- Source maps removal (3.9MB)
+- TypeScript definition files (2.6MB)
+- Documentation files (~2MB)
 
-- **Component Development**
-  - Added 2 production-ready React components (742 lines)
-  - Added 2 supporting client libraries (497 lines)
-  - Established component testing patterns (3:1 test-to-code ratio)
+**Phase 2: Medium-Impact Removals (7MB savings)**
+- Python pip wheel (1.8MB)
+- OpenVSCode extension cleanup (~15MB)
+- Duplicate library symlinks (~8MB)
 
-### Fixed
+**Phase 3: Advanced Optimizations (11MB savings)**
+- Python standard library cleanup (~5MB)
+- Python encodings cleanup (~1.7MB)
+- Python native module cleanup (~500KB)
+- PostgreSQL cleanup (~1MB)
+- Node.js dependencies (~4MB)
 
-- **Test Stability** improvements
-  - Reduced failing tests from 56 to 12 (-78.6% improvement)
-  - Fixed CSRF tests (100% passing)
-  - Fixed file validation tests (100% passing)
-  - Fixed 44 of 56 mock configuration issues
+**Phase 4: Aggressive Optimizations (9MB savings)**
+- TypeScript full package removal (8.6MB)
 
-- **Mock Configuration Issues**
-  - Implemented Pinecone SDK mocks for vector search tests
-  - Implemented Redis client mocks for rate limiting tests
-  - Created reusable mock patterns for future tests
+### System Requirements
 
-### Documentation
+**Host System**
+- macOS 12.0 (Monterey) or later
+- Apple Silicon (M1, M2, M3, or later)
+- 4GB RAM (2GB for VM, 2GB for host)
+- 1GB free disk space
 
-- **Wave 12 Complete Session Report** (`docs/sessions/wave-12-complete.md`, 13KB)
-  - Full narrative of 10-agent journey
-  - Agent-by-agent chronicle with grades
-  - Metrics summary and key achievements
-  - Lessons learned and Phase 2 readiness assessment
+**VM Resources**
+- 2 CPU cores (configurable)
+- 2GB RAM (configurable, minimum 1GB)
+- ~200MB disk space for runtime
 
-- **Wave 12 Finalization Report** (`WAVE12_FINALIZATION_REPORT.md`, 20KB)
-  - Independent verification of agent deliverables
-  - Coverage certification and gap analysis
-  - Phase 2 readiness scorecard
-  - Outstanding items and recommendations
+### Technical Highlights
 
-- **Wave 12 Verification Evidence** (`WAVE12_VERIFICATION_EVIDENCE.md`, 11KB)
-  - CLI tool outputs and verification commands
-  - PR status and CI check analysis
-  - Test execution results
-  - Coverage progression data
+- BusyBox 1.37.0 base system (~5MB)
+- Linux kernel 5.15.0-161-generic (ARM64)
+- OpenVSCode Server 1.95.3
+- PostgreSQL 16
+- Valkey 8.0.1
+- Dropbear SSH server
+- Custom init script with parallel service startup
+- Graceful service degradation
+- Health checking for all services
+- Automatic network configuration
 
-- **Wave 12 Executive Summary** (`WAVE12_EXECUTIVE_SUMMARY.md`, 7.8KB)
-  - Strategic overview and at-a-glance metrics
-  - Agent performance summary
-  - Phase 2 readiness and next steps
+### Known Limitations
 
-- **Wave 12 Quick Reference** (`WAVE12_QUICK_REFERENCE.txt`, 3.9KB)
-  - Quick reference card with key metrics
-  - Blockers and gaps summary
-  - Next actions priority order
+- VirtioFS requires kernel module (documented workaround)
+- TypeScript IntelliSense not available (TypeScript removed for size)
+- Limited VS Code language extensions (JavaScript only)
+- Python standard library pruned (advanced features may not work)
+- macOS only (Apple Silicon focus)
+- No persistent storage by default (use volume mounting)
 
-### Metrics
+### Credits
 
-- **Wave Duration:** ~12 hours
-- **Agents Deployed:** 10 (AGENTS 101-110)
-- **Overall Grade:** A- (92.7/100)
-- **Phase 2 Readiness:** FULLY READY (88/100)
-- **Production Code Added:** ~1,239 lines
-- **Test Code Added:** ~5,618 lines
-- **Documentation Added:** ~55.8KB
-- **PRs Created:** 2 (ChatInterface #774, FileUploadInterface #775)
-- **Security Vulnerabilities:** 0 (maintained)
+Built by the VibeCode team with contributions from multiple optimization agents.
 
----
+Special thanks to:
+- Agent Y for size optimization (89MB → 59MB)
+- Agent Q for boot time verification (26s confirmed)
+- Agent AB for volume mounting testing
+- Agent Z for VirtioFS implementation
 
-## [0.1.0] - 2026-01-11
+Based on:
+- vfkit (macOS virtualization toolkit)
+- OpenVSCode Server (VS Code in the browser)
+- PostgreSQL (relational database)
+- Valkey (in-memory data store)
+- Dropbear SSH (lightweight SSH server)
+- BusyBox (minimal Linux utilities)
 
-### Added - Wave 10: Validation & Foundation
+## [Unreleased]
 
-- **AI Endpoint Test Suite** (74 tests across 4 files)
-  - `/api/ai/chat` endpoint tests (15 tests)
-  - `/api/ai/chat/stream` SSE streaming tests (29 tests)
-  - `/api/ai/provider-health` endpoint tests (17 tests)
-  - `/api/ai/model-selection` endpoint tests (13 tests)
+### Planned Features
 
-- **Database Health Test Suite** (102 tests)
-  - 23 database health route tests
-  - 79 additional coverage tests
-  - Zod validation schema tests
-
-- **Monitoring Dashboard Foundation** (48 tests)
-  - `/api/dashboard/overview` endpoint (16 tests)
-  - `/api/dashboard/performance` endpoint (18 tests)
-  - `/api/dashboard/status` endpoint (14 tests)
-  - SystemHealthWidget React component
-  - Demo page at `/dashboard/demo`
-
-### Changed
-
-- Test coverage: 23.06% → 23.5% (+0.44%)
-- Total tests: 4,341 → 4,565 (+224 tests, +5.2%)
-- Pass rate: 97.4% (4,453 passing, 12 failing in database health tests)
-
-### Documentation
-
-- Wave 10 Validation & Foundation Report (`docs/sessions/wave-10-validation-foundation.md`)
-- AI Endpoints API Documentation (`docs/api/ai-endpoints.md`)
-- Monitoring Dashboard Documentation (`docs/features/monitoring-dashboard.md`)
-
-### Known Issues
-
-- 12 database health tests failing (Zod validation mismatches)
-- Coverage target 25% not reached (23.5% achieved)
+- VirtioFS kernel module inclusion (Priority 1)
+- SSH password authentication fixes
+- Additional VS Code language extensions
+- Expanded documentation
+- Video tutorials
+- Community contributions
 
 ---
 
-## [0.0.9] - 2026-01-10
-
-### Added - Wave 9: Comprehensive System Hardening
-
-- **Test Suite Enhancements** (87 new tests)
-  - Performance-oriented test organization
-  - Custom test sequencer (fast tests first)
-  - Test parallelization configuration
-
-### Changed
-
-- **Security Hardening**
-  - Updated 7 Python template files to `urllib3>=2.6.3`
-  - Updated 1 template file to `Werkzeug>=3.1.5`
-  - Resolved 8 security alerts (7 HIGH, 1 MEDIUM)
-  - Risk score: 8.5/10 → 0.5/10
-
-- **Performance Optimization**
-  - Test execution time: 2m 30s → 2m 20s (-6.3%)
-  - Enabled Jest parallelization (`maxWorkers: 4`)
-  - Implemented custom test sequencer
-  - Optimized module loading
-
-- **Coverage**
-  - 22.66% → 23.06% (+0.40%)
-  - Added 87 new tests
-
-### Documentation
-
-- Wave 9 Comprehensive Hardening Report (`docs/sessions/wave-09-comprehensive-hardening.md`)
-- Feature Roadmap (`docs/features/feature-roadmap.md`, 15 features across 3 phases)
-- Security Hardening Guide (`docs/guides/security-hardening.md`)
-- Performance Optimization Guide (`docs/guides/performance-optimization.md`)
-- Testing Strategy Guide (`docs/guides/testing-strategy.md`)
-
----
-
-## Earlier Versions
-
-See `docs/sessions/archive-worklogs/` for historical session reports from earlier development phases.
-
----
-
-**Maintained by:** VibeCode Development Team
-**Documentation Format:** Based on [Keep a Changelog](https://keepachangelog.com/)
-**Version Scheme:** [Semantic Versioning](https://semver.org/)
+For more details on any release, see the [GitHub releases page](https://github.com/yourusername/vibecode-vm/releases).

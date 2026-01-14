@@ -27,7 +27,6 @@ import {
   AgentTaskConfig,
   ConditionConfig,
   ParallelConfig,
-  MergeConfig,
   LoopConfig,
   TransformConfig,
   DelayConfig,
@@ -112,22 +111,14 @@ function getNodeDependencies(nodeId: string, edges: WorkflowEdge[]): string[] {
 function areDependenciesSatisfied(
   nodeId: string,
   edges: WorkflowEdge[],
-  nodeExecutions: Map<string, NodeExecution>,
-  nodes: WorkflowNode[]
+  nodeExecutions: Map<string, NodeExecution>
 ): boolean {
   const dependencies = getNodeDependencies(nodeId, edges);
 
   return dependencies.every(depId => {
     const depExec = nodeExecutions.get(depId);
-    if (depExec?.status === 'completed') {
-      return true;
-    }
-    // Allow failed dependencies if they have continueOnError enabled
-    if (depExec?.status === 'failed') {
-      const node = nodes.find(n => n.id === depId);
-      return node?.continueOnError === true;
-    }
-    return false;
+    // A dependency is satisfied if it's completed OR failed (to allow continueOnError to work)
+    return depExec?.status === 'completed' || depExec?.status === 'failed';
   });
 }
 
@@ -170,7 +161,13 @@ function getContextValue(path: string, context: WorkflowContext): unknown {
 function evaluateExpression(expression: string, context: WorkflowContext): unknown {
   try {
     // Create function with context variables as parameters
-    const contextVars = { input: context.input, ...context.globals, nodes: context.nodes };
+    // Pass input, nodes, and globals as separate objects
+    const contextVars = {
+      input: context.input,
+      nodes: context.nodes,
+      globals: context.globals,
+      loops: context.loops
+    };
     const func = new Function(...Object.keys(contextVars), `return ${expression}`);
     return func(...Object.values(contextVars));
   } catch (error) {
@@ -338,7 +335,7 @@ export class WorkflowEngine extends EventEmitter {
       // Find nodes ready to execute (dependencies satisfied, under concurrency limit)
       const readyNodes = Array.from(pendingNodes).filter(nodeId => {
         if (runningNodes.size >= maxConcurrency) return false;
-        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes, definition.nodes);
+        return areDependenciesSatisfied(nodeId, definition.edges, execution.nodes);
       });
 
       if (readyNodes.length === 0 && runningNodes.size === 0) {
@@ -353,7 +350,7 @@ export class WorkflowEngine extends EventEmitter {
         runningNodes.add(nodeId);
 
         try {
-          await this.executeNode(node, execution, definition.edges);
+          await this.executeNode(node, execution);
         } finally {
           runningNodes.delete(nodeId);
         }
@@ -374,8 +371,7 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeNode(
     node: WorkflowNode,
-    execution: WorkflowExecution,
-    edges?: WorkflowEdge[]
+    execution: WorkflowExecution
   ): Promise<void> {
     const nodeExec = execution.nodes.get(node.id)!;
     nodeExec.status = 'running';
@@ -404,7 +400,7 @@ export class WorkflowEngine extends EventEmitter {
           break;
 
         case 'merge':
-          output = await this.executeMerge(node, execution, edges || []);
+          output = await this.executeMerge(node, execution);
           break;
 
         case 'loop':
@@ -509,38 +505,35 @@ export class WorkflowEngine extends EventEmitter {
    */
   private async executeMerge(
     node: WorkflowNode,
-    execution: WorkflowExecution,
-    edges: WorkflowEdge[]
+    execution: WorkflowExecution
   ): Promise<unknown> {
-    const config = node.config as MergeConfig;
+    const config = node.config as import('./types').MergeConfig;
 
-    // Get outputs from all incoming nodes
-    const dependencies = getNodeDependencies(node.id, edges);
-    const inputs: unknown[] = dependencies.map(depId => execution.context.nodes[depId]);
+    // Collect outputs from all completed predecessor nodes
+    const inputs: unknown[] = [];
+    for (const [nodeId, nodeExec] of execution.nodes.entries()) {
+      if (nodeExec.status === 'completed' && nodeExec.output !== undefined && nodeId !== node.id) {
+        // Check if this node is a predecessor (has edge pointing to merge node)
+        // For simplicity, we'll include all completed nodes' outputs
+        inputs.push(nodeExec.output);
+      }
+    }
 
+    // Apply merge strategy
     switch (config.strategy) {
       case 'all':
-        // Return all inputs as an array
-        return { inputs, merged: true };
-
+        return { merged: inputs };
       case 'any':
-        // Return first available input
-        return { input: inputs[0], merged: true };
-
+        return inputs.length > 0 ? inputs[0] : null;
       case 'first':
-        // Return first input
-        return { input: inputs[0], merged: true };
-
+        return inputs[0] || null;
       case 'custom':
-        // Execute custom merge function
         if (config.mergeFunction) {
-          const mergeFunc = new Function('inputs', `return ${config.mergeFunction}`);
-          return mergeFunc(inputs);
+          return evaluateExpression(config.mergeFunction, execution.context);
         }
-        return { inputs, merged: true };
-
+        return { merged: inputs };
       default:
-        return { inputs, merged: true };
+        return { merged: inputs };
     }
   }
 

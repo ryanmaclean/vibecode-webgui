@@ -5,9 +5,6 @@
 
 import { ProductionVectorCacheInvalidator } from '../../src/lib/cache/production-vector-cache-invalidator';
 
-// Enhanced mocks - no longer skipping tests (removed conditional skipping)
-const SKIP_REDIS = false;
-
 // Mock the metrics module
 jest.mock('../../src/lib/server-monitoring', () => ({
   metrics: {
@@ -16,9 +13,9 @@ jest.mock('../../src/lib/server-monitoring', () => ({
   }
 }));
 
-// Always use mock Redis client for integration tests - enhanced implementation
+// Mock Redis client conditionally - only if Redis is not available
 let mockRedisClient: MockRedisClient | null = null;
-const realRedisAvailable = false; // Force mock usage - never skip tests
+let realRedisAvailable = false;
 
 // Mock Redis client interface to satisfy TypeScript
 interface MockRedisPipeline {
@@ -117,11 +114,49 @@ function createMockRedisClient(): MockRedisClient {
   };
 }
 
-// Always use mock Redis client
-beforeAll(() => {
+// Try to import real Redis client
+try {
+  const { Redis } = require('ioredis');
+  
+  // Test Redis connection
+  const testClient = new Redis({
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_DB || '1'), // Use DB 1 for testing
+    retryDelayOnFailover: 100,
+    enableReadyCheck: false,
+    maxRetriesPerRequest: 1,
+    lazyConnect: true,
+    connectTimeout: 2000,
+    commandTimeout: 1000
+  });
+
+  // Check if Redis is actually available
+  beforeAll(async () => {
+    try {
+      await testClient.ping();
+      realRedisAvailable = true;
+      console.log('✅ Real Redis/Valkey backend detected - running integration tests');
+    } catch (error) {
+      console.warn('⚠️ Redis/Valkey not available - using mock for cache backend tests');
+      realRedisAvailable = false;
+      mockRedisClient = createMockRedisClient();
+    }
+  });
+
+  afterAll(async () => {
+    if (realRedisAvailable) {
+      await testClient.flushdb(); // Clean up test data
+      await testClient.disconnect();
+    }
+  });
+
+} catch (importError) {
+  console.warn('Redis client not available - using comprehensive mocks');
+  realRedisAvailable = false;
   mockRedisClient = createMockRedisClient();
-  console.log('✅ Using enhanced mock Redis client for integration tests');
-});
+}
 
 /**
  * Redis-integrated cache invalidation system
@@ -134,10 +169,50 @@ class RedisIntegratedCacheInvalidator {
   constructor(redisClient: MockRedisClient | any, config?: any) {
     this.redis = redisClient;
     this.invalidator = new ProductionVectorCacheInvalidator(config);
-    
-    // Replace the private method using a hacky approach for testing purposes
+
+    // Replace the private methods using a hacky approach for testing purposes
     // Note: This is not type-safe but necessary for the test
     (this.invalidator as any).executeActualInvalidation = this.executeRedisInvalidation.bind(this);
+    (this.invalidator as any).expandPattern = this.expandRedisPattern.bind(this);
+    (this.invalidator as any).generateContentTypePatterns = this.generateRedisContentTypePatterns.bind(this);
+  }
+
+  // Method to expand patterns using Redis KEYS command
+  private async expandRedisPattern(pattern: string): Promise<string[]> {
+    if (!this.redis) {
+      return [];
+    }
+
+    // Use Redis KEYS command to find all matching keys
+    const keys = await this.redis.keys(pattern);
+
+    if ((this.invalidator as any).config?.enableLogging) {
+      console.log(`Pattern expansion: ${pattern} -> ${keys.length} keys found`);
+    }
+
+    return keys;
+  }
+
+  // Method to generate content type patterns for Redis
+  private generateRedisContentTypePatterns(contentType: string, workspaceId?: string): string[] {
+    const patterns = [];
+
+    if (workspaceId) {
+      // For workspace content type, use simple pattern
+      if (contentType === 'workspace') {
+        patterns.push(`workspace:${workspaceId}:*`);
+      } else {
+        patterns.push(`workspace:${workspaceId}:${contentType}:*`);
+        patterns.push(`embedding:${workspaceId}:${contentType}:*`);
+        patterns.push(`search:${workspaceId}:${contentType}:*`);
+      }
+    } else {
+      patterns.push(`${contentType}:*`);
+      patterns.push(`embedding:*:${contentType}:*`);
+      patterns.push(`search:*:${contentType}:*`);
+    }
+
+    return patterns;
   }
 
   // Method to handle Redis invalidation
@@ -208,13 +283,31 @@ class RedisIntegratedCacheInvalidator {
   }
 }
 
-(SKIP_REDIS ? describe.skip : describe)('Cache Invalidation with Redis/Valkey Backend', () => {
+describe('Cache Invalidation with Redis/Valkey Backend', () => {
   let invalidator: RedisIntegratedCacheInvalidator;
   let redisClient: MockRedisClient | any;
 
   beforeEach(async () => {
-    // Always use mock client
-    redisClient = mockRedisClient;
+    if (realRedisAvailable) {
+      const { Redis } = require('ioredis');
+      redisClient = new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        db: parseInt(process.env.REDIS_DB || '1'),
+        retryDelayOnFailover: 100,
+        enableReadyCheck: false,
+        maxRetriesPerRequest: 3,
+        lazyConnect: true,
+        connectTimeout: 5000
+      });
+      
+      // Clean up any existing test data
+      await redisClient.flushdb();
+    } else {
+      redisClient = mockRedisClient;
+
+    }
 
     invalidator = new RedisIntegratedCacheInvalidator(redisClient, {
       batchSize: 5,
@@ -225,7 +318,25 @@ class RedisIntegratedCacheInvalidator {
   });
 
   afterEach(async () => {
-    if (mockRedisClient) {
+    if (realRedisAvailable && redisClient) {
+      try {
+        // Check if client is still connected before flushing
+        if (redisClient.status === 'ready' || redisClient.status === 'connect') {
+          await redisClient.flushdb();
+        }
+      } catch (error) {
+        // Ignore flush errors if connection is closed
+      }
+
+      try {
+        // Always try to disconnect, but ignore errors if already disconnected
+        if (redisClient.status !== 'end') {
+          await redisClient.disconnect();
+        }
+      } catch (error) {
+        // Ignore disconnect errors
+      }
+    } else if (mockRedisClient) {
       // Clear mock cache between tests
       await mockRedisClient.flushdb();
     }

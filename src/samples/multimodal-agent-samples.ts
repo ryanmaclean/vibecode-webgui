@@ -538,9 +538,9 @@ Expected AI Response:
       throw new Error(`Sample ${sampleId} not found`);
     }
 
-    console.log(`\n🚀 Running sample: ${sample.title}`);
-    console.log(`📋 Category: ${sample.category} | Complexity: ${sample.complexity}`);
-    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s\n`);
+    console.log(`🚀 Running sample: ${sample.title}`);
+    console.log(`📝 Description: ${sample.description}`);
+    console.log(`⏱️ Estimated time: ${sample.estimatedTime}s`);
 
     const startTime = Date.now();
 
@@ -549,7 +549,7 @@ Expected AI Response:
 
       const duration = Date.now() - startTime;
 
-      console.log(`\n✅ Sample completed in ${(duration / 1000).toFixed(2)}s`);
+      console.log(`✅ Sample completed in ${duration}ms`);
       console.log(`📊 Confidence: ${result.metadata.confidence}`);
       console.log(`💰 Cost: $${result.metadata.cost.toFixed(4)}`);
 
@@ -562,8 +562,9 @@ Expected AI Response:
           efficiency: (sample.estimatedTime * 1000) / duration
         }
       };
-      
+
     } catch (error) {
+      console.log(`⚠️ Error occurred: ${error.message}`);
       console.error(`❌ Sample failed: ${error.message}`);
       throw error;
     }

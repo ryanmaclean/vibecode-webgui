@@ -18,19 +18,10 @@ import { vectorStore } from '@/lib/vector-store'
 import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware'
 import { fileSyncQuerySchema, fileSyncBulkSchema } from '@/lib/api/validation/schemas'
 import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
-import type { SubscribeOutcome } from '@/lib/file-sync/subscription-manager'
+import { dogstatsd } from 'dd-trace'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-// Import Datadog statsd for metrics
-let statsd: any = null
-try {
-  statsd = require('dd-trace').dogstatsd
-} catch (e) {
-  // Datadog not available in development/test
-  console.warn('dd-trace not available, metrics will be no-ops')
-}
 
 interface WebSocketMessage {
   type: string;
@@ -375,79 +366,6 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
   return true // Temporary - allow all access for development
 }
 
-/**
- * Sanitize tag values for Datadog metrics
- * Converts to lowercase, replaces non-alphanumeric (except hyphens and dots) with underscores
- */
-function sanitizeTagValue(value: string): string {
-  return value
-    .trim()
-    .toLowerCase()
-    .replace(/[^a-z0-9_.-]/g, '_')
-}
-
-/**
- * Record broadcast metrics to Datadog
- */
-function recordBroadcastMetrics(args: {
-  workspaceId: string
-  path?: string
-  targeted: number
-  totalConnections: number
-}): void {
-  if (!statsd) return
-
-  const tags = {
-    workspace: sanitizeTagValue(args.workspaceId),
-    ...(args.path && { path: sanitizeTagValue(args.path.replace(/\//g, '_')) }),
-    connections: String(args.totalConnections),
-  }
-
-  statsd.increment('filesync.broadcast.events', 1, tags)
-  statsd.histogram('filesync.broadcast.targets', args.targeted, tags)
-}
-
-/**
- * Handle file subscription requests
- */
-function handleSubscription(socket: any, workspaceId: string, path: string): void {
-  const outcome: SubscribeOutcome = subscriptionManager.subscribe(workspaceId, path, socket)
-
-  if (outcome.ok) {
-    // Send acknowledgment
-    if (socket.readyState === 1) {
-      socket.send(JSON.stringify({ type: 'subscribed', path: outcome.path }))
-    }
-
-    // Record success metric
-    if (statsd) {
-      statsd.increment('filesync.subscription.success', 1, {
-        workspace: sanitizeTagValue(workspaceId),
-        path: sanitizeTagValue(outcome.path.replace(/\//g, '_')),
-      })
-    }
-  } else {
-    // Send error response
-    if (socket.readyState === 1) {
-      socket.send(JSON.stringify({ type: 'error', reason: outcome.reason }))
-    }
-
-    // Record error metric
-    if (statsd) {
-      const reason = outcome.reason
-        .toLowerCase()
-        .replace(/[^a-z0-9_]/g, '_')
-        .replace(/_+/g, '_')
-        .replace(/^_|_$/g, '')
-
-      statsd.increment('filesync.subscription.error', 1, {
-        workspace: sanitizeTagValue(workspaceId),
-        reason,
-      })
-    }
-  }
-}
-
 export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
     status: 200,
@@ -459,12 +377,57 @@ export async function OPTIONS(_request: NextRequest) {
   })
 }
 
-// Export internal functions for testing
-export const __TEST__ =
-  process.env.NODE_ENV === 'test'
-    ? {
-        handleSubscription,
-        recordBroadcastMetrics,
-        sanitizeTagValue,
-      }
-    : undefined
+/**
+ * Test exports - only used in unit tests
+ */
+function sanitizeTagValue(value: string): string {
+  return value
+    .trim()
+    .toLowerCase()
+    .replace(/[^a-z0-9_.-]/g, '_')
+}
+
+function handleSubscription(socket: any, workspaceId: string, path: string): void {
+  const outcome = subscriptionManager.subscribe(workspaceId, path, socket)
+
+  if (outcome.ok) {
+    socket.send(JSON.stringify({ type: 'subscribed', path: outcome.path }))
+    dogstatsd.increment('filesync.subscription.success', 1, {
+      workspace: sanitizeTagValue(workspaceId),
+      path: sanitizeTagValue(outcome.path),
+    })
+  } else {
+    socket.send(JSON.stringify({ type: 'error', reason: outcome.reason }))
+    dogstatsd.increment('filesync.subscription.error', 1, {
+      workspace: sanitizeTagValue(workspaceId),
+      reason: outcome.reason.toLowerCase().replace(/\s+/g, '_'),
+    })
+  }
+}
+
+function recordBroadcastMetrics(args: {
+  workspaceId: string
+  path?: string
+  targeted: number
+  totalConnections: number
+}): void {
+  const { workspaceId, path, targeted, totalConnections } = args
+
+  const tags: Record<string, string> = {
+    workspace: sanitizeTagValue(workspaceId),
+    connections: String(totalConnections),
+  }
+
+  if (path) {
+    tags.path = sanitizeTagValue(path)
+  }
+
+  dogstatsd.increment('filesync.broadcast.events', 1, tags)
+  dogstatsd.histogram('filesync.broadcast.targets', targeted, tags)
+}
+
+export const __TEST__ = {
+  handleSubscription,
+  recordBroadcastMetrics,
+  sanitizeTagValue,
+}

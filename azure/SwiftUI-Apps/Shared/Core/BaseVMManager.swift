@@ -103,8 +103,8 @@ open class BaseVMManager: NSObject, ObservableObject {
     /// Timer for polling console output
     private var consoleTimer: Timer?
 
-    /// Timer for monitoring DHCP leases
-    private var dhcpMonitorTimer: Timer?
+    // DHCP monitor instance for IP detection
+    private var dhcpMonitor: DHCPLeaseMonitor?
 
     /// Networking strategy for this VM (created via template method)
     private var networkingStrategy: NetworkingStrategy?
@@ -126,14 +126,15 @@ open class BaseVMManager: NSObject, ObservableObject {
     /// Subclasses should call super.init() and not override unless necessary.
     public override init() {
         self.vmID = UUID().uuidString
-        self.consoleLogPath = URL(fileURLWithPath: "/tmp/vibecode-console-\(self.vmID).log")
+        self.consoleLogPath = FileManager.default.temporaryDirectory
+            .appendingPathComponent("vibecode-console-\(self.vmID).log")
         super.init()
     }
 
     deinit {
         // Cleanup timers and resources
         consoleTimer?.invalidate()
-        dhcpMonitorTimer?.invalidate()
+        dhcpMonitor?.stopMonitoring()
         _ = try? consoleFileHandle?.close()
         ptyManager?.closePTY()
     }
@@ -852,22 +853,20 @@ open class BaseVMManager: NSObject, ObservableObject {
         guard let strategy = networkingStrategy else { return }
 
         let macAddress = strategy.getMACAddress()
+        
+        // Create monitor instance with reference to self for console parsing
+        dhcpMonitor = DHCPLeaseMonitor(macAddress: macAddress, vmManager: self)
 
-        dhcpMonitorTimer = DHCPLeaseMonitor.startMonitoring(
-            macAddress: macAddress,
-            interval: 1.0,
-            onIPFound: { [weak self] ip in
-                DispatchQueue.main.async {
-                    self?.vmIPAddress = ip
-                    self?.onIPAddressDetected(ip: ip)
-                }
-            },
-            onNotFound: { [weak self] in
-                DispatchQueue.main.async {
-                    self?.vmIPAddress = nil
-                }
+        dhcpMonitor?.startMonitoring(interval: 1.0) { [weak self] ip in
+            DispatchQueue.main.async {
+                self?.vmIPAddress = ip
+                self?.onIPAddressDetected(ip: ip)
             }
-        )
+        } onNotFound: { [weak self] in
+            DispatchQueue.main.async {
+                self?.vmIPAddress = nil
+            }
+        }
     }
 
     /// Stop all monitoring.
@@ -875,8 +874,8 @@ open class BaseVMManager: NSObject, ObservableObject {
         consoleTimer?.invalidate()
         consoleTimer = nil
 
-        dhcpMonitorTimer?.invalidate()
-        dhcpMonitorTimer = nil
+        dhcpMonitor?.stopMonitoring()
+        dhcpMonitor = nil
     }
 
     /// Update console output from log file.

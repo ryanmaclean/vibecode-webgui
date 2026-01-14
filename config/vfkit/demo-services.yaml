@@ -66,11 +66,11 @@ EOF
   # Configure nginx as reverse proxy
   cat > /etc/nginx/http.d/vibecode.conf <<EOF
 upstream code_server {
-    server 192.168.64.2:8080;
+    server 192.168.64.10:8080;
 }
 
 upstream vibecode_api {
-    server 192.168.64.2:3000;
+    server 192.168.64.10:3000;
 }
 
 server {

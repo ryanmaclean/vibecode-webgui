@@ -32,43 +32,11 @@ function setNodeEnv(value: string) {
   })
 }
 
-// Mock Next.js modules BEFORE requiring actual middleware
-jest.mock('next/server', () => {
-  // Create a proper NextResponse mock that can be instantiated
-  class MockNextResponse {
-    status: number
-    headers: Map<string, string>
-    body: unknown
-
-    constructor(body?: unknown, init?: { status?: number; headers?: Record<string, string> }) {
-      this.body = body
-      this.status = init?.status ?? 200
-      this.headers = new Map()
-
-      if (init?.headers) {
-        Object.entries(init.headers).forEach(([key, value]) => {
-          this.headers.set(key, value)
-        })
-      }
-
-      // Add set method to headers
-      const headersSet = this.headers.set.bind(this.headers)
-      this.headers.set = jest.fn(headersSet)
-    }
-
-    static json(data: unknown, init?: { status?: number; headers?: Record<string, string> }): MockNextResponse {
-      return new MockNextResponse(JSON.stringify(data), init)
-    }
-  }
-
-  return {
-    NextRequest: jest.fn(),
-    NextResponse: MockNextResponse
-  }
-})
-
-// Use actual security middleware instead of mock
-jest.mock('@/middleware/security-middleware', () => jest.requireActual('@/middleware/security-middleware'))
+// Mock Next.js modules
+jest.mock('next/server', () => ({
+  NextRequest: jest.fn(),
+  NextResponse: jest.fn()
+}))
 
 // Interface for mocked NextRequest
 interface MockNextRequest {
@@ -100,23 +68,13 @@ const mockAiRateLimiter = {
   getRemainingQueries: jest.fn()
 }
 const mockAISecurityLogger = {
-  logSuspiciousActivity: jest.fn(),
-  logValidationFailure: jest.fn()
+  logSuspiciousActivity: jest.fn()
 }
 
 jest.mock('@/lib/security/input-validator', () => ({
   validateAIQuery: mockValidateAIQuery,
   aiRateLimiter: mockAiRateLimiter,
   AISecurityLogger: mockAISecurityLogger
-}))
-
-// Mock CSRF protection
-jest.mock('@/lib/security/csrf-protection', () => ({
-  needsCSRFProtection: jest.fn(() => false),
-  validateCSRFToken: jest.fn(() => true),
-  extractCSRFToken: jest.fn(() => 'mock-token'),
-  getSessionId: jest.fn(() => 'mock-session-id'),
-  validateOrigin: jest.fn(() => true)
 }))
 
 const loadSecurityMiddleware = () => import('@/middleware/security-middleware')
@@ -128,7 +86,12 @@ async function initializeSecurityModules(bypass = true) {
     securityMiddlewareModule.__TEST__bypassSecurityChecks(bypass)
   }
   nextServerModule = (await import('next/server')) as MockedNextServerModule
-  // NextResponse is now a class, not a mock function, so we don't need mockImplementation
+  nextServerModule.NextResponse.mockImplementation((_, init?: { status?: number }): MockNextResponse => ({
+    status: init?.status ?? 200,
+    headers: {
+      set: jest.fn<void, [string, string]>()
+    }
+  }))
   apiSecurityMiddleware = securityMiddlewareModule.apiSecurityMiddleware
   addSecurityHeaders = securityMiddlewareModule.addSecurityHeaders
 }
@@ -206,10 +169,11 @@ describe('Security Middleware Module', () => {
 
     it('should handle OPTIONS requests', async () => {
       setNodeEnv('production')
-      process.env.CI = 'false'
 
-      // Re-initialize with bypass disabled
-      await initializeSecurityModules(false)
+      // Ensure security checks are enabled
+      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
+        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
+      }
 
       mockRequest.method = 'OPTIONS'
       mockRequest.nextUrl.pathname = '/api/test'
@@ -228,10 +192,15 @@ describe('Security Middleware Module', () => {
 
     it('should validate CORS for production requests', async () => {
       setNodeEnv('production')
-      process.env.CI = 'false'
 
-      // Re-initialize with bypass disabled
-      await initializeSecurityModules(false)
+      // Ensure security checks are enabled
+      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
+        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
+      }
+
+      // Temporarily disable MOCK_ORIGINS for this test
+      const oldMockOrigins = process.env.MOCK_ORIGINS
+      process.env.MOCK_ORIGINS = 'false'
 
       mockRequest.nextUrl.pathname = '/api/test'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -240,6 +209,9 @@ describe('Security Middleware Module', () => {
       })
 
       const result = await apiSecurityMiddleware(mockRequest)
+
+      // Restore MOCK_ORIGINS
+      process.env.MOCK_ORIGINS = oldMockOrigins
 
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
@@ -481,22 +453,32 @@ describe('Security Middleware Module', () => {
     })
 
     it('should require authentication for high security endpoints', async () => {
+      // Use production mode with proper origin to bypass CORS, but no token for auth test
       setNodeEnv('production')
-      process.env.CI = 'false'
 
-      // Re-initialize with bypass disabled
-      await initializeSecurityModules(false)
+      // Ensure security checks are enabled
+      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
+        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
+      }
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
+      mockRequest.method = 'GET'  // Use GET to avoid CSRF
       mockRequest.headers.get.mockImplementation((header: string) => {
-        if (header === 'origin') return 'https://vibecode.dev'
+        // Don't provide origin header - same-origin requests don't need it
+        if (header === 'host') return 'vibecode.dev'
+        if (header === 'user-agent') return 'Mozilla/5.0 Test'
+        // Provide a public IP to pass IP security check
+        if (header === 'x-forwarded-for') return '203.0.113.45'
         return null
       })
 
-      // Mocking JWT token
-      mockGetToken.mockResolvedValueOnce(null);
+      // Mocking JWT token - return null for no authentication
+      mockGetToken.mockImplementation(() => {
+        return Promise.resolve(null);
+      });
 
       const result = await apiSecurityMiddleware(mockRequest)
+
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
       if (result) {
@@ -506,10 +488,11 @@ describe('Security Middleware Module', () => {
 
     it('should require admin role for critical endpoints', async () => {
       setNodeEnv('production')
-      process.env.CI = 'false'
 
-      // Re-initialize with bypass disabled
-      await initializeSecurityModules(false)
+      // Ensure security checks are enabled
+      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
+        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
+      }
 
       mockRequest.nextUrl.pathname = '/api/admin/users'
       mockRequest.headers.get.mockImplementation((header: string) => {
@@ -518,11 +501,13 @@ describe('Security Middleware Module', () => {
       })
 
       // Mocking JWT token
-      mockGetToken.mockResolvedValueOnce({
-        sub: 'user123',
-        id: 'user123',
-        role: 'user',
-        email: 'user@example.com'
+      mockGetToken.mockImplementation(() => {
+        return Promise.resolve({
+          sub: 'user123',
+          id: 'user123',
+          role: 'user',
+          email: 'user@example.com'
+        });
       });
 
       const result = await apiSecurityMiddleware(mockRequest)
@@ -582,31 +567,44 @@ describe('Security Middleware Module', () => {
     })
 
     it('should check rate limits for AI endpoints', async () => {
+      // Use production mode, but mock the request body to avoid CSRF token validation issues
       setNodeEnv('production')
-      process.env.CI = 'false'
 
-      // Re-initialize with bypass disabled
-      await initializeSecurityModules(false)
+      // Ensure security checks are enabled
+      if (securityMiddlewareModule.__TEST__bypassSecurityChecks) {
+        securityMiddlewareModule.__TEST__bypassSecurityChecks(false)
+      }
 
       mockRequest.nextUrl.pathname = '/api/ai/chat'
       mockRequest.method = 'POST'
       mockRequest.headers.get.mockImplementation((header: string) => {
-        if (header === 'origin') return 'https://vibecode.dev'
+        // Don't provide origin header to bypass CORS validation
+        if (header === 'host') return 'vibecode.dev'
+        if (header === 'user-agent') return 'Mozilla/5.0 Test'
+        if (header === 'content-type') return 'application/json'
+        // Provide a public IP to pass IP security check
+        if (header === 'x-forwarded-for') return '203.0.113.45'
         return null
       })
 
-      // Mocking JWT token
-      mockGetToken.mockResolvedValueOnce({
-        sub: 'user123',
-        id: 'user123',
-        role: 'user',
-        email: 'user@example.com'
+      // Add body to the request to avoid CSRF/body read issues
+      mockRequest.body = null
+
+      // Mocking JWT token with valid user
+      mockGetToken.mockImplementation(() => {
+        return Promise.resolve({
+          sub: 'user123',
+          id: 'user123',
+          role: 'user',
+          email: 'user@example.com'
+        });
       });
 
       mockValidateAIQuery.mockReturnValue({ query: 'test query' })
       mockAiRateLimiter.checkRateLimit.mockReturnValue(false)
 
       const result = await apiSecurityMiddleware(mockRequest)
+
       expect(result).toBeDefined()
       expect(result).not.toBeNull()
       if (result) {

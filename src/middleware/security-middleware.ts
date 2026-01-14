@@ -23,9 +23,11 @@ const SECURITY_CONFIG = {
     /burp/i, /havij/i, /acunetix/i, /nessus/i, /openvas/i
   ],
   blockedIPs: new Set<string>(), // Can be populated from external threat feed
-  allowedOrigins: process.env.NODE_ENV === 'development' 
-    ? ['http://localhost:3000', 'http://localhost:8080']
-    : ['https://vibecode.dev', 'https://www.vibecode.dev'],
+  get allowedOrigins() {
+    return process.env.NODE_ENV === 'development'
+      ? ['http://localhost:3000', 'http://localhost:8080']
+      : ['https://vibecode.dev', 'https://www.vibecode.dev'];
+  },
 };
 
 // API endpoint security levels
@@ -65,7 +67,7 @@ function checkRequestSize(request: NextRequest): boolean {
 function validateHeaders(request: NextRequest): { valid: boolean; reason?: string } {
   // Check for suspicious headers
   const suspiciousHeaders = ['x-forwarded-host', 'x-originating-ip', 'x-cluster-client-ip'];
-  
+
   for (const header of suspiciousHeaders) {
     const value = request.headers.get(header);
     if (value && value.includes('..')) {
@@ -73,11 +75,13 @@ function validateHeaders(request: NextRequest): { valid: boolean; reason?: strin
     }
   }
 
-  // Validate User-Agent
-  const userAgent = request.headers.get('user-agent') || '';
-  for (const pattern of SECURITY_CONFIG.suspiciousUserAgents) {
-    if (pattern.test(userAgent)) {
-      return { valid: false, reason: `Suspicious User-Agent: ${userAgent}` };
+  // Validate User-Agent (allow missing user-agent in test/development)
+  const userAgent = request.headers.get('user-agent');
+  if (userAgent) {
+    for (const pattern of SECURITY_CONFIG.suspiciousUserAgents) {
+      if (pattern.test(userAgent)) {
+        return { valid: false, reason: `Suspicious User-Agent: ${userAgent}` };
+      }
     }
   }
 
@@ -89,14 +93,15 @@ function validateHeaders(request: NextRequest): { valid: boolean; reason?: strin
  */
 function checkIPSecurity(request: NextRequest): { allowed: boolean; reason?: string } {
   const ip = getClientIP(request);
-
+  
   if (SECURITY_CONFIG.blockedIPs.has(ip)) {
     return { allowed: false, reason: `Blocked IP: ${ip}` };
   }
 
-  // Private IP check is mainly for development/testing
-  // In production, private IPs are normal (load balancers, proxies, etc.)
-  // CORS and authentication provide the actual security
+  // Check for private IP ranges trying to access from external
+  if (isPrivateIP(ip) && !isLocalRequest(request)) {
+    return { allowed: false, reason: `Invalid private IP access: ${ip}` };
+  }
 
   return { allowed: true };
 }
@@ -321,17 +326,12 @@ async function validateRequestSecurity(
  */
 function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<string, string> } {
   const origin = request.headers.get('origin');
-
+  
   if (!origin) {
     return { valid: true }; // Same-origin requests don't have origin header
   }
 
-  // Get allowed origins dynamically based on current NODE_ENV
-  const allowedOrigins = process.env.NODE_ENV === 'development'
-    ? ['http://localhost:3000', 'http://localhost:8080']
-    : ['https://vibecode.dev', 'https://www.vibecode.dev'];
-
-  if (allowedOrigins.includes(origin)) {
+  if (SECURITY_CONFIG.allowedOrigins.includes(origin)) {
     return {
       valid: true,
       headers: {
@@ -344,8 +344,18 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
   return { valid: false };
 }
 
-// Test bypass flag for controlled testing
-let bypassSecurityForTests = false
+/**
+ * Test bypass flag for unit testing
+ */
+let __TEST__bypassEnabled = false;
+
+/**
+ * Enable/disable security checks bypass for testing
+ * @internal - Only for use in unit tests
+ */
+export function __TEST__bypassSecurityChecks(bypass: boolean): void {
+  __TEST__bypassEnabled = bypass;
+}
 
 /**
  * Main API security middleware
@@ -353,36 +363,8 @@ let bypassSecurityForTests = false
 export async function apiSecurityMiddleware(request: NextRequest): Promise<NextResponse | null> {
   const pathname = request.nextUrl.pathname;
 
-  // Skip security checks in test environment or when explicitly bypassed
-  if (bypassSecurityForTests) {
-    return null;
-  }
-
-  // Allow validation testing in test environment without full auth
-  // This allows API validation tests to run and verify input validation works correctly
-  // Check for test mode via environment variable OR test-mode header
-  const isTestEnvironment = process.env.NODE_ENV === 'test' ||
-                           request.headers.get('x-test-mode') === 'true';
-
-  const isValidationTest = isTestEnvironment &&
-    (pathname.startsWith('/api/ai/upload') ||
-     pathname.startsWith('/api/uploads/pdf') ||
-     pathname.startsWith('/api/auth/mfa') ||
-     pathname.startsWith('/api/auth/saml') ||
-     pathname.startsWith('/api/security/csp-report') ||
-     pathname.startsWith('/api/ai/chat') ||
-     pathname.startsWith('/api/containers') ||
-     pathname.startsWith('/api/workspaces') ||
-     pathname.startsWith('/api/workspace/auto-scaling') ||
-     pathname.startsWith('/api/code-server/session') ||
-     pathname.startsWith('/api/docker/status') ||
-     pathname.startsWith('/api/ai/management') ||
-     pathname.startsWith('/api/ai/model-selection') ||
-     pathname.startsWith('/api/ai/provider-health'));
-
-  if (isValidationTest) {
-    // For validation tests, skip all middleware checks and let the route handler
-    // perform its own validation. This allows testing validation logic independently.
+  // Skip security checks in test environment with CI flag
+  if (process.env.NODE_ENV === 'test' && process.env.CI === 'true') {
     return null;
   }
 
@@ -398,15 +380,26 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
 
   const securityLevel = getSecurityLevel(pathname);
 
-  // Validate CORS
-  const corsValidation = validateCORS(request);
-  if (!corsValidation.valid) {
-    AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
-      pathname,
-      origin: request.headers.get('origin'),
-      ip: getClientIP(request)
-    });
-    return new NextResponse('CORS policy violation', { status: 403 });
+  // Validate CORS (unless bypassed for testing or in development with localhost)
+  const origin = request.headers.get('origin');
+  const isDevelopmentLocalhost = process.env.NODE_ENV === 'development' &&
+    origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+
+  let corsValidation = { valid: true, headers: {} as Record<string, string> };
+
+  if (!__TEST__bypassEnabled && !isDevelopmentLocalhost) {
+    corsValidation = validateCORS(request);
+    if (!corsValidation.valid) {
+      AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
+        pathname,
+        origin: request.headers.get('origin'),
+        ip: getClientIP(request)
+      });
+      return new NextResponse('CORS policy violation', { status: 403 });
+    }
+  } else {
+    // For test/development, create a valid CORS response
+    corsValidation = { valid: true, headers: { 'Access-Control-Allow-Origin': origin || '*' } };
   }
 
   // Handle preflight requests
@@ -425,10 +418,12 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
     });
   }
 
-  // Validate request security
-  const securityValidation = await validateRequestSecurity(request, securityLevel);
-  if (!securityValidation.valid) {
-    return securityValidation.response!;
+  // Validate request security (unless bypassed for testing)
+  if (!__TEST__bypassEnabled) {
+    const securityValidation = await validateRequestSecurity(request, securityLevel);
+    if (!securityValidation.valid) {
+      return securityValidation.response!;
+    }
   }
 
   // Add security headers to response
@@ -485,14 +480,3 @@ export function getSecurityStats(): {
     endpointCount: Object.keys(ENDPOINT_SECURITY).length
   };
 }
-
-/**
- * Test utility to bypass security checks
- * @param bypass - Whether to bypass security checks
- */
-export function bypassSecurityChecks(bypass: boolean): void {
-  bypassSecurityForTests = bypass
-}
-
-// Export internal functions for testing (always available for testing, not just in test env)
-export const __TEST__bypassSecurityChecks = bypassSecurityChecks

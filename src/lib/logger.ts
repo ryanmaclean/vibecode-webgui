@@ -140,20 +140,19 @@ export const logger = {
     }
   },
 
-  http: (message: unknown, metadata?: Record<string, unknown>) => {
-    // Pino doesn't have http level, map to info
-    if (typeof message === 'string') {
-      pinoLogger.info(metadata || {}, message);
-    } else {
-      pinoLogger.info(message);
-    }
-  },
-
   debug: (message: unknown, metadata?: Record<string, unknown>) => {
     if (typeof message === 'string') {
       pinoLogger.debug(metadata || {}, message);
     } else {
       pinoLogger.debug(message);
+    }
+  },
+
+  http: (message: unknown, metadata?: Record<string, unknown>) => {
+    if (typeof message === 'string') {
+      pinoLogger.info(metadata || {}, message);
+    } else {
+      pinoLogger.info(message);
     }
   },
 
@@ -165,8 +164,8 @@ export const logger = {
     }
   },
 
-  child: (metadata: Record<string, unknown>) => {
-    return createChildLogger(metadata);
+  child: (contextMetadata: Record<string, unknown>) => {
+    return createChildLogger(contextMetadata);
   },
 };
 
@@ -199,20 +198,19 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       }
     },
 
-    http: (message: unknown, metadata?: Record<string, unknown>) => {
-      // Pino doesn't have http level, map to info
-      if (typeof message === 'string') {
-        childLogger.info(metadata || {}, message);
-      } else {
-        childLogger.info(message);
-      }
-    },
-
     debug: (message: unknown, metadata?: Record<string, unknown>) => {
       if (typeof message === 'string') {
         childLogger.debug(metadata || {}, message);
       } else {
         childLogger.debug(message);
+      }
+    },
+
+    http: (message: unknown, metadata?: Record<string, unknown>) => {
+      if (typeof message === 'string') {
+        childLogger.info(metadata || {}, message);
+      } else {
+        childLogger.info(message);
       }
     },
 
@@ -224,8 +222,8 @@ export function createLogger(contextMetadata: Record<string, unknown>) {
       }
     },
 
-    child: (metadata: Record<string, unknown>) => {
-      return createLogger({ ...contextMetadata, ...metadata });
+    child: (additionalMetadata: Record<string, unknown>) => {
+      return createLogger({ ...contextMetadata, ...additionalMetadata });
     },
   };
 }
@@ -237,64 +235,45 @@ export function createChildLogger(contextMetadata: Record<string, unknown>) {
 // Direct access to Pino instance for advanced usage
 export const pinoInstance = pinoLogger;
 
-// ============================================================================
-// Helper Functions (for compatibility with existing codebase)
-// ============================================================================
-
-/**
- * Log performance metrics with duration
- */
+// Helper functions for common logging patterns
 export function logPerformance(
   operation: string,
-  durationMs: number,
+  duration: number,
   metadata?: Record<string, unknown>
 ): void {
   logger.info('Performance metric', {
     operation,
-    durationMs,
+    durationMs: duration,
     ...metadata,
   });
 }
 
-/**
- * Log API requests with method, URL, status, and timing
- */
 export function logApiRequest(
   method: string,
   url: string,
   statusCode: number,
-  responseTimeMs: number,
+  responseTime: number,
   metadata?: Record<string, unknown>
 ): void {
-  // Use http level if available, otherwise info
-  const logData = {
+  logger.http('API Request', {
     method,
     url,
     statusCode,
-    responseTimeMs,
+    responseTimeMs: responseTime,
     ...metadata,
-  };
-
-  if ('http' in logger) {
-    (logger as any).http('API Request', logData);
-  } else {
-    logger.info('API Request', logData);
-  }
+  });
 }
 
-/**
- * Log database operations with duration
- */
 export function logDatabaseOperation(
   operation: string,
   table: string,
-  durationMs: number,
+  duration: number,
   metadata?: Record<string, unknown>
 ): void {
   logger.debug('Database operation', {
     operation,
     table,
-    durationMs,
+    durationMs: duration,
     ...metadata,
   });
 }

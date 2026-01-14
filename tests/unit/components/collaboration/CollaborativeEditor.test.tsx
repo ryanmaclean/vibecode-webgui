@@ -1,25 +1,33 @@
 import React from 'react';
-import { render, act, screen, cleanup } from '../../../test-utils';
+import { render, act, screen, cleanup } from '@testing-library/react';
 import '@testing-library/jest-dom';
+import { CollaborativeEditor } from '@/components/collaboration/CollaborativeEditor';
 
 // Mock the collaboration manager
-jest.mock('@/lib/collaboration', () => ({
-  collaborationManager: {
-    setCurrentUser: jest.fn(),
-    joinSession: jest.fn(),
-    leaveSession: jest.fn(),
-    getText: jest.fn(),
-    updateCursor: jest.fn(),
-    getActiveUsers: jest.fn(),
-    getStats: jest.fn().mockReturnValue({ userCount: 1, conflicts: 0, documentSize: 12, lastActivity: Date.now() }),
-    getMap: jest.fn().mockReturnValue(new Map())
-  },
-  // Export the real types for TypeScript compatibility
-  CollaborationSession: {},
-  CollaborationUser: {}
-}));
+jest.mock('@/lib/collaboration', () => {
+  const mockJoinSession = jest.fn();
+  const mockLeaveSession = jest.fn();
+  const mockGetText = jest.fn();
+  const mockUpdateCursor = jest.fn();
+  const mockSetCurrentUser = jest.fn();
+  const mockGetActiveUsers = jest.fn();
 
-// Mocked functions will be accessed after importing collaborationManager below
+  return {
+    collaborationManager: {
+      setCurrentUser: mockSetCurrentUser,
+      joinSession: mockJoinSession,
+      leaveSession: mockLeaveSession,
+      getText: mockGetText,
+      updateCursor: mockUpdateCursor,
+      getActiveUsers: mockGetActiveUsers,
+      getStats: jest.fn().mockReturnValue({ userCount: 1, conflicts: 0, documentSize: 12, lastActivity: Date.now() }),
+      getMap: jest.fn().mockReturnValue(new Map())
+    },
+    // Export the real types for TypeScript compatibility
+    CollaborationSession: {},
+    CollaborationUser: {}
+  };
+});
 
 // Mock CodeMirror
 jest.mock('@codemirror/view', () => {
@@ -112,15 +120,10 @@ jest.mock('@codemirror/state', () => ({
   },
 }));
 
-// Mock basic setup
-jest.mock('@codemirror/basic-setup', () => ({
-  basicSetup: jest.fn().mockReturnValue({})
-}), { virtual: true });
-
 // Mock language packages
 jest.mock('@codemirror/lang-javascript', () => ({
   javascript: jest.fn().mockReturnValue({})
-}), { virtual: true });
+}));
 
 jest.mock('@codemirror/lang-html', () => ({
   html: jest.fn().mockReturnValue({})
@@ -130,12 +133,32 @@ jest.mock('@codemirror/lang-css', () => ({
   css: jest.fn().mockReturnValue({})
 }), { virtual: true });
 
-// Mock y-codemirror integration
+// Mock basic-setup
+jest.mock('@codemirror/basic-setup', () => ({
+  basicSetup: jest.fn().mockReturnValue({})
+}), { virtual: true });
+
+// Mock Yjs
+jest.mock('yjs', () => ({
+  Doc: jest.fn().mockImplementation(() => ({
+    transact: jest.fn(),
+    on: jest.fn(),
+    off: jest.fn(),
+    getText: jest.fn().mockReturnValue({
+      toString: () => 'test content',
+      length: 12,
+      insert: jest.fn(),
+      delete: jest.fn()
+    })
+  }))
+}));
+
+// Mock y-codemirror
 jest.mock('y-codemirror.next', () => ({
   yCollab: jest.fn().mockReturnValue({})
 }), { virtual: true });
 
-// Mock y-protocols
+// Mock y-protocols/awareness
 jest.mock('y-protocols/awareness', () => ({
   Awareness: jest.fn()
 }), { virtual: true });
@@ -145,21 +168,27 @@ jest.mock('dompurify', () => ({
   default: {
     sanitize: jest.fn().mockImplementation((html) => html)
   }
-}), { virtual: true });
-
-// Import the component after all mocks are defined
-import CollaborativeEditor from '@/components/collaboration/CollaborativeEditor';
-import { collaborationManager } from '@/lib/collaboration';
-
-// Get the mocked functions
-const mockJoinSession = collaborationManager.joinSession as jest.Mock;
-const mockLeaveSession = collaborationManager.leaveSession as jest.Mock;
-const mockGetText = collaborationManager.getText as jest.Mock;
-const mockUpdateCursor = collaborationManager.updateCursor as jest.Mock;
-const mockSetCurrentUser = collaborationManager.setCurrentUser as jest.Mock;
-const mockGetActiveUsers = collaborationManager.getActiveUsers as jest.Mock;
+}));
 
 describe('CollaborativeEditor', () => {
+  // Get mocked collaboration manager functions
+  let mockJoinSession: jest.Mock;
+  let mockLeaveSession: jest.Mock;
+  let mockGetText: jest.Mock;
+  let mockUpdateCursor: jest.Mock;
+  let mockSetCurrentUser: jest.Mock;
+  let mockGetActiveUsers: jest.Mock;
+
+  beforeAll(() => {
+    const { collaborationManager } = require('@/lib/collaboration');
+    mockJoinSession = collaborationManager.joinSession as jest.Mock;
+    mockLeaveSession = collaborationManager.leaveSession as jest.Mock;
+    mockGetText = collaborationManager.getText as jest.Mock;
+    mockUpdateCursor = collaborationManager.updateCursor as jest.Mock;
+    mockSetCurrentUser = collaborationManager.setCurrentUser as jest.Mock;
+    mockGetActiveUsers = collaborationManager.getActiveUsers as jest.Mock;
+  });
+
   const mockCurrentUser = {
     id: 'test-user-1',
     name: 'Test User',
@@ -183,7 +212,7 @@ describe('CollaborativeEditor', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     // Setup default session mock
     mockJoinSession.mockResolvedValue({
       documentId: 'test-doc-1',
@@ -229,14 +258,14 @@ describe('CollaborativeEditor', () => {
 
   it('renders without crashing', async () => {
     await act(async () => {
-      render(<CollaborativeEditor 
+      render(<CollaborativeEditor
         documentId={defaultProps.documentId}
         projectId={defaultProps.projectId}
         filePath={defaultProps.filePath}
         currentUser={defaultProps.currentUser}
       />);
     });
-    
+
     // Verify component renders without crashing and shows connected state
     expect(screen.getByText('Connected')).toBeInTheDocument();
   });

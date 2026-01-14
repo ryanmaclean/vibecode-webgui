@@ -7,7 +7,6 @@ import { createLogger, format, transports } from 'winston';
 import tracer from '@/instrument';
 // import { logger } from '@/lib/logger';
 // Initialize Datadog tracer (should be done before importing other modules)
-// Note: Console logging removed from module level to avoid Jest isolateModules issues
 if (process.env.DD_API_KEY) {
   tracer.init({
     service: 'vibecode-webgui',
@@ -18,10 +17,10 @@ if (process.env.DD_API_KEY) {
     profiling: true,
     appsec: true, // Application Security Management
   })
-  // Tags should be added via tracer.init() tags option, not addTags()
-  // tracer.addTags({ 'service.component': 'health-monitoring' })
+  tracer.addTags({ 'service.component': 'health-monitoring' })
+  console.info('🔍 Datadog APM tracer initialized')
 } else {
-  globalThis.console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
 }
 
 // Custom Winston formatter for structured logging
@@ -68,7 +67,6 @@ const logger = createLogger({
   ]
 })
 
-// Initialize logger
 logger.info('Winston logger initialized')
 
 /**
@@ -78,23 +76,20 @@ class MetricsCollector {
   private metrics: Record<string, any> = {}
 
   increment(name: string, tags: Record<string, string | number> = {}): void {
-    // Use global console for metrics logging
-    globalThis.console.log(`📊 Metric increment: ${name}`, tags)
+    console.info(`📊 Metric increment: ${name}`, tags)
     // In a real scenario, this would send to Datadog agent
     // Example: client.increment(name, tags)
     this.metrics[name] = (this.metrics[name] || 0) + 1
   }
 
   gauge(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    // Use global console for metrics logging
-    globalThis.console.log(`📊 Metric gauge: ${name} = ${value}`, tags)
+    console.info(`📊 Metric gauge: ${name} = ${value}`, tags)
     // Example: client.gauge(name, value, tags)
     this.metrics[name] = value
   }
 
   histogram(name: string, value: number, tags: Record<string, string | number> = {}): void {
-    // Use global console for metrics logging
-    globalThis.console.log(`📊 Metric histogram: ${name} = ${value}`, tags)
+    console.info(`📊 Metric histogram: ${name} = ${value}`, tags)
     // Example: client.histogram(name, value, tags)
     if (!this.metrics[name]) {
       this.metrics[name] = []
@@ -190,7 +185,7 @@ class ApplicationLogger {
   }
 }
 
-const console = new ApplicationLogger()
+const appLogger = new ApplicationLogger()
 
 // Performance monitoring middleware for Express
 function performanceMiddleware() {
@@ -201,7 +196,7 @@ function performanceMiddleware() {
       const responseTime = Date.now() - startTime
       const memoryUsage = process.memoryUsage().heapUsed / 1024 / 1024 // MB
 
-      console.logPerformance({
+      appLogger.logPerformance({
         endpoint: req.path,
         method: req.method,
         statusCode: res.statusCode,
@@ -246,7 +241,7 @@ export {
   logger,
   tracer,
   metrics,
-  console,
+  appLogger,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,

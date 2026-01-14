@@ -14,39 +14,32 @@ import { StreamContentChunk, StreamMetadataChunk } from '@/lib/ai/utils/sse-deco
 // Mock EventSource
 class MockEventSource {
   static instances: MockEventSource[] = []
-  static autoConnect = true // Control whether connections auto-open
 
   url: string
   onopen: (() => void) | null = null
   onmessage: ((event: { data: string }) => void) | null = null
   onerror: (() => void) | null = null
   readyState = 0 // CONNECTING
-  private openTimeout: NodeJS.Timeout | null = null
+  private openTimer: NodeJS.Timeout | null = null
 
   constructor(url: string) {
     this.url = url
     MockEventSource.instances.push(this)
-    // Simulate async connection (only if autoConnect is true)
-    if (MockEventSource.autoConnect) {
-      this.openTimeout = setTimeout(() => {
+    // Simulate async connection
+    this.openTimer = setTimeout(() => {
+      if (this.readyState !== 2) { // Only call onopen if not closed
         this.readyState = 1 // OPEN
         this.onopen?.()
-      }, 10)
-    }
+      }
+    }, 10)
   }
 
   close(): void {
-    if (this.openTimeout) {
-      clearTimeout(this.openTimeout)
-      this.openTimeout = null
-    }
     this.readyState = 2 // CLOSED
-  }
-
-  // Test helper: manually trigger open
-  simulateOpen(): void {
-    this.readyState = 1 // OPEN
-    this.onopen?.()
+    if (this.openTimer) {
+      clearTimeout(this.openTimer)
+      this.openTimer = null
+    }
   }
 
   // Test helper: simulate receiving a message
@@ -61,7 +54,6 @@ class MockEventSource {
 
   static reset(): void {
     MockEventSource.instances = []
-    MockEventSource.autoConnect = true
   }
 
   static getLatestInstance(): MockEventSource | undefined {
@@ -282,9 +274,6 @@ describe('SSEClient', () => {
     })
 
     it('should apply exponential backoff multiplier', () => {
-      // Disable auto-connect so we can control when connections open
-      MockEventSource.autoConnect = false
-
       const config: SSEClientConfig = {
         url: '/api/test',
         method: 'GET',
@@ -299,17 +288,19 @@ describe('SSEClient', () => {
       client = createSSEClient(config, handlers)
       client.connect()
 
-      // First connection attempt fails
+      jest.advanceTimersByTime(20)
+
+      // First error
       MockEventSource.getLatestInstance()!.simulateError()
       expect(handlers.onReconnecting).toHaveBeenCalledWith(1, 1000)
 
-      // Trigger reconnect and fail again
-      jest.advanceTimersByTime(1010)
+      // Second error (should double delay)
+      jest.advanceTimersByTime(1020)
       MockEventSource.getLatestInstance()!.simulateError()
       expect(handlers.onReconnecting).toHaveBeenCalledWith(2, 2000)
 
-      // Third reconnect with doubled delay again
-      jest.advanceTimersByTime(2010)
+      // Third error (should double again)
+      jest.advanceTimersByTime(2020)
       MockEventSource.getLatestInstance()!.simulateError()
       expect(handlers.onReconnecting).toHaveBeenCalledWith(3, 4000)
     })
@@ -343,37 +334,31 @@ describe('SSEClient', () => {
     })
 
     it('should stop reconnecting after maxAttempts', () => {
-      // Disable auto-connect so we can control when connections open
-      MockEventSource.autoConnect = false
-
       const config: SSEClientConfig = {
         url: '/api/test',
         method: 'GET',
         reconnection: {
           initialDelay: 100,
-          maxAttempts: 2, // Set to 2 for easier testing
+          maxAttempts: 3,
           jitter: false
-        },
-        debug: false
+        }
       }
 
       client = createSSEClient(config, handlers)
       client.connect()
 
-      // First connection attempt (instance 1) fails
-      expect(MockEventSource.instances.length).toBe(1)
-      MockEventSource.getLatestInstance()!.simulateError()
-      expect(client.getState()).toBe('reconnecting')
+      jest.advanceTimersByTime(20)
 
-      // Reconnect scheduled, advance time to create instance 2
-      jest.advanceTimersByTime(110)
-      expect(MockEventSource.instances.length).toBe(2)
-      MockEventSource.getLatestInstance()!.simulateError()
+      // Simulate 3 failures
+      for (let i = 0; i < 3; i++) {
+        MockEventSource.getLatestInstance()!.simulateError()
+        jest.advanceTimersByTime(5000)
+      }
 
-      // After second failure with maxAttempts=2, should be in failed state
+      // Should stop reconnecting
       expect(client.getState()).toBe('failed')
 
-      // Should not schedule another reconnect
+      // Should not have created more instances
       const instanceCount = MockEventSource.instances.length
       jest.advanceTimersByTime(10000)
       expect(MockEventSource.instances.length).toBe(instanceCount)
@@ -397,11 +382,14 @@ describe('SSEClient', () => {
       // First error
       MockEventSource.getLatestInstance()!.simulateError()
 
-      // Reconnect successfully
+      // Reconnect successfully and receive a message (stable connection)
       jest.advanceTimersByTime(1020)
+      const es = MockEventSource.getLatestInstance()
+      es!.simulateMessage('data: {"type":"content","content":"test"}\n\n')
+      jest.advanceTimersByTime(10) // Allow message processing
 
-      // Another error (should use initial delay again)
-      MockEventSource.getLatestInstance()!.simulateError()
+      // Another error (should use initial delay again after stable connection)
+      es!.simulateError()
 
       const lastCall = (handlers.onReconnecting as jest.Mock).mock.calls.slice(-1)[0]
       expect(lastCall[0]).toBe(1) // Attempt count reset to 1
@@ -742,8 +730,7 @@ describe('SSEClient', () => {
 
       jest.advanceTimersByTime(20)
 
-      // EventSource constructor will convert relative URL to absolute URL
-      expect(MockEventSource.instances[0].url).toContain('/api/test')
+      expect(MockEventSource.instances[0].url).toBe('/api/test')
     })
   })
 })

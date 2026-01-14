@@ -1,6 +1,7 @@
-import { NextRequest } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { resourceManager } from '@/lib/resource-management'
+import { withQuotaCheck, createQuotaResponse } from '@/middleware/quota-middleware'
 
 type SessionLike = Awaited<ReturnType<typeof getServerSession>>
 
@@ -20,10 +21,59 @@ jest.mock('@/lib/resource-management', () => ({
   }
 }))
 
-// Use the actual implementation instead of the mock
-jest.mock('@/middleware/quota-middleware', () => jest.requireActual('@/middleware/quota-middleware'))
+// Mock NextResponse.json
+jest.mock('next/server', () => {
+  const actual = jest.requireActual('next/server')
 
-import { withQuotaCheck, createQuotaResponse } from '@/middleware/quota-middleware'
+  class MockNextResponse {
+    status: number
+    headers: Map<string, string>
+    body: unknown
+
+    constructor(body: unknown, init?: ResponseInit) {
+      this.status = init?.status || 200
+      // Convert headers to Map for easier testing
+      this.headers = new Map()
+      if (init?.headers) {
+        if (init.headers instanceof Headers) {
+          init.headers.forEach((value, key) => {
+            this.headers.set(key, value)
+          })
+        } else if (typeof init.headers === 'object') {
+          Object.entries(init.headers).forEach(([key, value]) => {
+            this.headers.set(key, String(value))
+          })
+        }
+      }
+      this.body = body
+    }
+
+    get(name: string) {
+      return this.headers.get(name) || null
+    }
+
+    async json() {
+      return this.body
+    }
+  }
+
+  return {
+    ...actual,
+    NextResponse: {
+      ...actual.NextResponse,
+      json: (body: unknown, init?: ResponseInit) => {
+        const response = new MockNextResponse(body, init)
+        // Add a headers object with get method for testing
+        return {
+          ...response,
+          headers: {
+            get: (name: string) => response.headers.get(name)
+          }
+        } as unknown as NextResponse
+      }
+    }
+  }
+})
 
 describe('Quota Middleware', () => {
   const mockedGetServerSession = jest.mocked(getServerSession)
@@ -34,24 +84,25 @@ describe('Quota Middleware', () => {
 
   const buildSession = (user: SessionUser | null): SessionLike => ({ user } as SessionLike)
 
+  // Helper to create a mock request without instantiating NextRequest
+  const createMockRequest = (url: string = 'https://example.com/api/test') => {
+    return {
+      url,
+      method: 'POST',
+      headers: new Headers({
+        'content-type': 'application/json'
+      }),
+      nextUrl: new URL(url)
+    } as unknown as NextRequest
+  }
+
   beforeEach(() => {
     jest.clearAllMocks()
-
-    mockRequest = new NextRequest('https://example.com/api/test', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json'
-      }
-    })
+    mockRequest = createMockRequest()
   })
 
   describe('withQuotaCheck', () => {
     describe('Authentication', () => {
-      beforeEach(() => {
-        // Reset the mock before each test in this group
-        mockedGetServerSession.mockReset();
-      });
-
       it('should return authentication required when no session', async () => {
         mockedGetServerSession.mockResolvedValue(null)
 
@@ -103,9 +154,7 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
-        expect(result.allowed).toBe(true);
-        expect(result.remainingQuota).toBeDefined();
-        expect(result.resetTime).toBeDefined();
+        expect(result).toEqual({ allowed: true });
         expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined)
       });
 
@@ -137,9 +186,7 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'upload_file', { fileSize: 500000 });
 
-        expect(result.allowed).toBe(true);
-        expect(result.remainingQuota).toBeDefined();
-        expect(result.resetTime).toBeDefined();
+        expect(result).toEqual({ allowed: true });
         expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'upload_file', 500000)
       });
     });
@@ -157,9 +204,7 @@ describe('Quota Middleware', () => {
       it('should record API call for api_call action', async () => {
         const result = await withQuotaCheck(mockRequest, 'api_call');
 
-        expect(result.allowed).toBe(true);
-        expect(result.remainingQuota).toBeDefined();
-        expect(result.resetTime).toBeDefined();
+        expect(result).toEqual({ allowed: true });
         expect(mockedResourceManager.recordAPICall).toHaveBeenCalledWith(123, '/api/test')
       });
 
@@ -282,11 +327,8 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'api_call');
 
-        // Reset time should be at the top of the next hour
         const expectedResetTime = new Date('2023-01-01T15:00:00Z').getTime();
-        expect(result.resetTime).toBeDefined();
-        // Allow for small timing differences
-        expect(Math.abs(result.resetTime! - expectedResetTime)).toBeLessThan(1000);
+        expect(result.resetTime).toBe(expectedResetTime);
 
         jest.useRealTimers();
       });
@@ -305,11 +347,8 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
-        // Reset time should be 24 hours from now
         const expectedResetTime = now.getTime() + 24 * 60 * 60 * 1000;
-        expect(result.resetTime).toBeDefined();
-        // Allow for small timing differences
-        expect(Math.abs(result.resetTime! - expectedResetTime)).toBeLessThan(1000);
+        expect(result.resetTime).toBe(expectedResetTime);
 
         jest.useRealTimers();
       });
