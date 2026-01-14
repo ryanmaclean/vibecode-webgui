@@ -33,9 +33,10 @@ COPY . .
 # Disable telemetry during the build
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Build with standalone output
+# Build with standalone output using webpack (not Turbopack)
+# Next.js 16 uses Turbopack by default, but the project has custom webpack config
 ENV NODE_ENV=production
-RUN npm run build
+RUN npm run build -- --webpack
 
 # Production image, copy all the files and run next
 FROM base AS runner
