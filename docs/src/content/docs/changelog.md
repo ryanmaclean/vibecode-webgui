@@ -28,11 +28,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [3.3.0] - 2026-01-14
 
 ### Added
-- **Datadog VSCode Extension** - v2.0.0 pre-installed in VM (27 files, 41MB)
-- **Docker Integration** - Docker CE 27.4.1 with client-server support on port 2375
+- **Datadog VSCode Extension** - v2.0.0 pre-installed in VM (41MB, 37 files)
+- **Docker Integration** - Docker CE 27.4.1 + containerd 1.7.24 fully operational on port 2375
 - **CLI Tool** - `vibecode` command with 13 commands for building and service checking
 - **Post-Build Verification Suite** - Comprehensive Playwright tests for Datadog and terminal
-- **Terminal Support** - devpts filesystem mounting for OpenVSCode integrated terminal
+- **Terminal Support** - devpts filesystem mounting with green-on-black color scheme
+- **5-Service Architecture** - SSH, Valkey, PostgreSQL, OpenVSCode Server, Docker all running
 
 ### Changed
 - **Menubar Text** - Updated "OpenVSCode" to "OpenVSCode Server" for legal compliance (trademark)
