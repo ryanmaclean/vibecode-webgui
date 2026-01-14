@@ -243,9 +243,8 @@ public class NATNetworkStrategy: NetworkingStrategy {
             guard let self = self, let vm = vm else { return }
 
             NSLog("[NATNetworkStrategy] Checking socket devices after delay...")
-            // Cast the entire socketDevices array to [VZVirtioSocketDevice]
-            guard let socketDevices = vm.socketDevices as? [VZVirtioSocketDevice],
-                  let device = socketDevices.first else {
+            // Filter only VZVirtioSocketDevice from socketDevices array
+            guard let device = vm.socketDevices.compactMap({ $0 as? VZVirtioSocketDevice }).first else {
                 NSLog("[NATNetworkStrategy] ERROR: Cannot start proxy - no VZVirtioSocketDevice found")
                 NSLog("[NATNetworkStrategy] VM socketDevices count: \(vm.socketDevices.count)")
                 if let first = vm.socketDevices.first {
