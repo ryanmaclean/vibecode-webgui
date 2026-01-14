@@ -26,6 +26,13 @@ RUN \
 FROM base AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
+
+# Copy prisma schema and generate client before full source copy
+# This allows Prisma client to be available during build
+COPY prisma ./prisma
+RUN npx prisma generate
+
+# Copy the rest of the source code
 COPY . .
 
 # Next.js collects completely anonymous telemetry data about general usage.
