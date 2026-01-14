@@ -1,7 +1,11 @@
 # VibeCode VM
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/yourusername/vibecode-vm/releases)
+[![Version](https://img.shields.io/badge/version-3.2.1-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
+[![CI](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml)
+[![E2E Tests](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/e2e.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/e2e.yml)
+[![macOS Build](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/build-macos.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/build-macos.yml)
+[![Release](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/release.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/release.yml)
 
 **Lightweight, Fast Development VMs with Full IDE Support & Datadog Integration**
 
@@ -238,11 +242,82 @@ Tested on Apple Silicon (M-series processors):
 - 2GB RAM (configurable, minimum 1GB)
 - ~200MB disk space for runtime
 
+## Contributing
+
+We welcome contributions from the community! Whether you're fixing bugs, improving documentation, or suggesting features, your help makes VibeCode better.
+
+### Quick Start for Contributors
+
+New to contributing? Our [Quick Start Guide for Contributors](CONTRIBUTORS_GUIDE.md) gets you started in minutes with:
+- Finding issues to work on
+- Making your first contribution
+- Understanding our development process
+- Common workflows
+
+### Full Contribution Guidelines
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) for comprehensive guidelines on:
+- Code of Conduct and community standards
+- Development environment setup
+- Project structure and architecture
+- Testing requirements
+- Commit message conventions (Conventional Commits)
+- Pull request process
+- Review timelines
+- Reporting bugs and suggesting features
+
+### Development
+
+Want to build from source or set up a dev environment?
+
+See [DEVELOPMENT.md](DEVELOPMENT.md) for detailed instructions:
+- Prerequisites and system requirements
+- Building from source
+- Running and testing
+- Debugging techniques
+- Architecture overview
+- Coding standards
+- Performance profiling
+
+### What We're Building Next
+
+Check our [Roadmap](ROADMAP.md) to see:
+- Current version status (v3.2.1)
+- Planned features for upcoming versions
+- Long-term vision and direction
+- Technical debt items
+- Community wishlist
+
 ## Community & Support
 
-- **Issues**: [GitHub Issues](https://github.com/yourusername/vibecode-vm/issues)
-- **Discussions**: [GitHub Discussions](https://github.com/yourusername/vibecode-vm/discussions)
-- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
+### Get Help
+
+- **Questions?** Ask in [GitHub Discussions](https://github.com/yourusername/vibecode-vm/discussions) - best for questions and getting community support
+- **Found a bug?** Open an [issue](https://github.com/yourusername/vibecode-vm/issues) with the bug report template
+- **Have an idea?** Start a [discussion](https://github.com/yourusername/vibecode-vm/discussions) or open a feature request issue
+- **Security concern?** Email security@vibecode.dev (do not use public issues)
+
+### Community Standards
+
+We are committed to providing a welcoming and inclusive community. All participants are expected to follow our [Code of Conduct](CODE_OF_CONDUCT.md).
+
+### How You Can Help
+
+Even if you don't code, there are many ways to contribute:
+
+- **Report bugs**: Help us identify and fix issues
+- **Improve documentation**: Fix typos, clarify guides, add examples
+- **Test features**: Try new features and provide feedback
+- **Answer questions**: Help other community members in discussions
+- **Suggest features**: Share ideas for improvements
+- **Share your experience**: Blog posts, tutorials, videos
+
+### Recognition
+
+Contributors are recognized in:
+- Release notes for each version
+- Contributors section in README
+- Community hall of fame (coming soon)
 
 ## License
 
