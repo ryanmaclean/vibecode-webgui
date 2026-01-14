@@ -1,0 +1,247 @@
+{
+  "title": "VibeCode VM Performance Dashboard",
+  "description": "Monitor VibeCode VM boot time, memory usage, and CPU utilization",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "tags": ["vibecode", "vm", "performance"],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Boot Time",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.boot_time{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Boot Time Trend (Last 7 Days)",
+        "yaxis": {
+          "label": "Milliseconds",
+          "scale": "linear"
+        },
+        "show_legend": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Memory Usage",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.memory{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Memory Usage Trend",
+        "yaxis": {
+          "label": "MB",
+          "scale": "linear"
+        },
+        "show_legend": true
+      },
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "CPU Usage",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.cpu{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "CPU Usage Trend",
+        "yaxis": {
+          "label": "Percent",
+          "scale": "linear"
+        },
+        "show_legend": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "gauge",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Current Boot Time",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.boot_time{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Current Boot Time",
+        "gauge": {
+          "min": 0,
+          "max": 60000,
+          "thresholds": {
+            "critical": 40000,
+            "warning": 35000
+          }
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 4,
+        "width": 3,
+        "height": 4
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "gauge",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Current Memory",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.memory{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Current Memory Usage",
+        "gauge": {
+          "min": 0,
+          "max": 2048,
+          "thresholds": {
+            "critical": 1800,
+            "warning": 1500
+          }
+        }
+      },
+      "layout": {
+        "x": 9,
+        "y": 4,
+        "width": 3,
+        "height": 4
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "logs",
+        "requests": [
+          {
+            "response_format": "event_list",
+            "query": "service:vibecode ERROR"
+          }
+        ],
+        "title": "Recent Errors"
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 12,
+        "height": 4
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Disk Usage",
+                "data_source": "metrics",
+                "query": "avg:vibecode.vm.disk_usage{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Disk Usage Trend",
+        "yaxis": {
+          "label": "Percent",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Service Startup Times",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.startup_time{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Service Startup Times",
+        "yaxis": {
+          "label": "Milliseconds",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    }
+  ]
+}

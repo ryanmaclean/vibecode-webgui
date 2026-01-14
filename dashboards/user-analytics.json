@@ -1,0 +1,272 @@
+{
+  "title": "VibeCode User Analytics Dashboard",
+  "description": "Understand user behavior and feature adoption (privacy-first)",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "tags": ["vibecode", "analytics", "users"],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "App Launches",
+                "data_source": "metrics",
+                "query": "sum:vibecode.app.launches{*}"
+              }
+            ],
+            "display": "bars"
+          }
+        ],
+        "title": "Daily App Launches",
+        "yaxis": {
+          "label": "Launches",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Service Usage",
+                "data_source": "metrics",
+                "query": "sum:vibecode.service.usage{*} by {service}"
+              }
+            ],
+            "display": "stacked"
+          }
+        ],
+        "title": "Service Usage Distribution",
+        "yaxis": {
+          "label": "Accesses",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Most Used Services",
+                "data_source": "metrics",
+                "query": "top(sum:vibecode.service.usage{*} by {service}, 5, 'last', 'desc')"
+              }
+            ]
+          }
+        ],
+        "title": "Most Used Services"
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "gauge",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Avg Lifetime",
+                "data_source": "metrics",
+                "query": "avg:vibecode.app.session_duration{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Avg Session Duration (mins)",
+        "gauge": {
+          "min": 0,
+          "max": 480
+        }
+      },
+      "layout": {
+        "x": 4,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "gauge",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Unique Users",
+                "data_source": "metrics",
+                "query": "avg:vibecode.users.active{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Active Users (Last 24h)",
+        "gauge": {
+          "min": 0,
+          "max": 1000
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Extension Commands Used",
+                "data_source": "metrics",
+                "query": "sum:vibecode.extension.commands{*} by {command}"
+              }
+            ],
+            "display": "area"
+          }
+        ],
+        "title": "Datadog Extension Commands",
+        "yaxis": {
+          "label": "Executions",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Boot Time Distribution",
+                "data_source": "metrics",
+                "query": "p50:vibecode.vm.boot_time{*}, p95:vibecode.vm.boot_time{*}, p99:vibecode.vm.boot_time{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Boot Time Distribution (P50/P95/P99)",
+        "yaxis": {
+          "label": "Milliseconds",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 8,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Feature Adoption",
+                "data_source": "metrics",
+                "query": "sum:vibecode.feature.adoption{*} by {feature}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Feature Adoption Over Time",
+        "yaxis": {
+          "label": "Percent",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Error Rate",
+                "data_source": "metrics",
+                "query": "avg:vibecode.error.rate{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Error Rate Trend",
+        "yaxis": {
+          "label": "Percent",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    }
+  ]
+}

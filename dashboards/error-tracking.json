@@ -1,0 +1,236 @@
+{
+  "title": "VibeCode Error Tracking Dashboard",
+  "description": "Monitor and analyze errors across VibeCode services",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "tags": ["vibecode", "errors", "troubleshooting"],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Total Errors",
+                "data_source": "metrics",
+                "query": "sum:vibecode.errors{*}"
+              }
+            ],
+            "display": "bars"
+          }
+        ],
+        "title": "Error Count by Time",
+        "yaxis": {
+          "label": "Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Errors by Service",
+                "data_source": "metrics",
+                "query": "sum:vibecode.service.errors{*} by {service}"
+              }
+            ],
+            "display": "stacked"
+          }
+        ],
+        "title": "Errors by Service",
+        "yaxis": {
+          "label": "Error Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 0,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Top Error Types",
+                "data_source": "metrics",
+                "query": "top(sum:vibecode.errors{*} by {error_type}, 10, 'last', 'desc')"
+              }
+            ]
+          }
+        ],
+        "title": "Top 10 Error Types"
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "toplist",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Error Sources",
+                "data_source": "metrics",
+                "query": "top(sum:vibecode.errors{*} by {source}, 10, 'last', 'desc')"
+              }
+            ]
+          }
+        ],
+        "title": "Top Error Sources"
+      },
+      "layout": {
+        "x": 4,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "gauge",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Error Rate",
+                "data_source": "metrics",
+                "query": "avg:vibecode.error.rate{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Error Rate (%)",
+        "gauge": {
+          "min": 0,
+          "max": 10,
+          "thresholds": {
+            "critical": 5,
+            "warning": 1
+          }
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 4,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "logs",
+        "requests": [
+          {
+            "response_format": "event_list",
+            "query": "service:vibecode level:ERROR",
+            "columns": ["timestamp", "service", "message", "error_type"]
+          }
+        ],
+        "title": "Recent Errors",
+        "sort": {
+          "column": "timestamp",
+          "order": "desc"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 12,
+        "height": 4
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Swift App Crashes",
+                "data_source": "metrics",
+                "query": "sum:vibecode.app.crashes{*}"
+              }
+            ],
+            "display": "bars"
+          }
+        ],
+        "title": "Swift App Crashes",
+        "yaxis": {
+          "label": "Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "OpenVSCode Errors",
+                "data_source": "metrics",
+                "query": "sum:vibecode.service.openvscode.errors{*}"
+              }
+            ],
+            "display": "bars"
+          }
+        ],
+        "title": "OpenVSCode Errors",
+        "yaxis": {
+          "label": "Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 12,
+        "width": 6,
+        "height": 4
+      }
+    }
+  ]
+}

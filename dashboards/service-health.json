@@ -1,0 +1,264 @@
+{
+  "title": "VibeCode Service Health Dashboard",
+  "description": "Monitor health and performance of all VibeCode services",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "tags": ["vibecode", "services", "health"],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "type": "status_list",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "SSH Service Status",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.ssh.healthy{*}"
+              }
+            ]
+          },
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "PostgreSQL Service Status",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.postgresql.healthy{*}"
+              }
+            ]
+          },
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "Valkey Service Status",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.valkey.healthy{*}"
+              }
+            ]
+          },
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "name": "OpenVSCode Service Status",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.openvscode.healthy{*}"
+              }
+            ]
+          }
+        ],
+        "title": "Service Status",
+        "color_preference": "background"
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "SSH Connections",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.ssh.connections{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "SSH Active Connections",
+        "yaxis": {
+          "label": "Connections",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 4,
+        "y": 0,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "PostgreSQL Connections",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.postgresql.connections{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "PostgreSQL Active Connections",
+        "yaxis": {
+          "label": "Connections",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 0,
+        "width": 4,
+        "height": 4
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Valkey Memory",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.valkey.memory{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "Valkey Memory Usage",
+        "yaxis": {
+          "label": "MB",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "PostgreSQL Database Size",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.postgresql.size{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "PostgreSQL Database Size",
+        "yaxis": {
+          "label": "MB",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 4,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "Service Errors",
+                "data_source": "metrics",
+                "query": "sum:vibecode.services.errors{*} by {service}"
+              }
+            ],
+            "display": "bars"
+          }
+        ],
+        "title": "Service Errors by Type",
+        "yaxis": {
+          "label": "Error Count",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 8,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "response_format": "timeseries",
+            "queries": [
+              {
+                "name": "OpenVSCode Response Time",
+                "data_source": "metrics",
+                "query": "avg:vibecode.service.openvscode.response_time{*}"
+              }
+            ],
+            "display": "line"
+          }
+        ],
+        "title": "OpenVSCode Response Time",
+        "yaxis": {
+          "label": "Milliseconds",
+          "scale": "linear"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 8,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "type": "logs",
+        "requests": [
+          {
+            "response_format": "event_list",
+            "query": "service:vibecode (level:ERROR OR level:WARNING)"
+          }
+        ],
+        "title": "Error and Warning Logs"
+      },
+      "layout": {
+        "x": 0,
+        "y": 12,
+        "width": 12,
+        "height": 4
+      }
+    }
+  ]
+}
