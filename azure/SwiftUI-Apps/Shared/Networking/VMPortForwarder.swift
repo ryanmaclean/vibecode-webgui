@@ -27,6 +27,7 @@ class VMPortForwarder {
 
     /// Start forwarding specific ports from VM IP to localhost
     func startForwarding(vmIP: String, mappings: [PortMapping]) {
+        try? "START FORWARDING called with vmIP=\(vmIP), mappings=\(mappings.count)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
         for mapping in mappings {
             startPortForward(vmIP: vmIP, mapping: mapping)
         }
@@ -34,6 +35,7 @@ class VMPortForwarder {
 
     /// Forward a single port from VM to localhost
     private func startPortForward(vmIP: String, mapping: PortMapping) {
+        try? "startPortForward: \(mapping.name) host:\(mapping.hostPort) → vm:\(mapping.vmPort)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
         do {
             // Create TCP listener on localhost
             let params = NWParameters.tcp
@@ -54,18 +56,23 @@ class VMPortForwarder {
                 switch state {
                 case .ready:
                     print("[\(mapping.name)] Port forwarder ready: localhost:\(mapping.hostPort) → \(vmIP):\(mapping.vmPort)")
+                    try? "LISTENER READY: \(mapping.name) on port \(mapping.hostPort)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
                 case .failed(let error):
                     print("[\(mapping.name)] Port forwarder failed: \(error)")
+                    try? "LISTENER FAILED: \(mapping.name) error=\(error)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
                 default:
                     break
                 }
             }
 
+            try? "Starting listener for \(mapping.name)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
             listener.start(queue: queue)
+            try? "Listener started for \(mapping.name), appended to list\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
             listeners.append(listener)
 
         } catch {
             print("[\(mapping.name)] Failed to create listener: \(error)")
+            try? "ERROR creating listener: \(error)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
         }
     }
 
@@ -177,6 +184,7 @@ class VMPortForwarder {
 
     /// Stop all port forwarding
     func stopAll() {
+        try? "STOPALL CALLED: listeners=\(listeners.count)\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
         print("[Port Forwarder] Stopping all forwarding")
 
         // Cancel all listeners
@@ -184,6 +192,7 @@ class VMPortForwarder {
             listener.cancel()
         }
         listeners.removeAll()
+        try? "STOPALL: All listeners cancelled\n".appendingToFile(at: "/tmp/portforwarder-debug.log")
 
         // Cancel all connections
         for connection in connections {
@@ -218,5 +227,23 @@ extension VMPortForwarder {
         let forwarder = VMPortForwarder()
         forwarder.startForwarding(vmIP: vmIP, mappings: [mapping])
         return forwarder
+    }
+}
+
+
+// MARK: - Debug Helper
+private extension String {
+    func appendingToFile(at path: String) throws {
+        let url = URL(fileURLWithPath: path)
+        if FileManager.default.fileExists(atPath: path) {
+            let handle = try FileHandle(forWritingTo: url)
+            handle.seekToEndOfFile()
+            if let data = self.data(using: .utf8) {
+                handle.write(data)
+            }
+            handle.closeFile()
+        } else {
+            try self.write(to: url, atomically: true, encoding: .utf8)
+        }
     }
 }

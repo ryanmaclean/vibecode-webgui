@@ -6,6 +6,7 @@
 // Migration Status: NEW
 // Purpose: Unified DHCP lease monitoring (consolidates V1 and V2 parsers)
 // Updated: 2025-01-13 - Added ARP-based IP detection fallback for Apple Virtualization.framework
+// Updated: 2025-01-13 - Added console output parsing for reliable IP detection (Agent 34)
 //
 // Part of refactoring effort: See REFACTORING-IN-PROGRESS.md
 // Replaces: DHCPLeaseParser.swift and DHCPLeaseParserV2.swift
@@ -15,12 +16,14 @@ import Foundation
 
 /// Unified DHCP lease monitor for tracking VM IP addresses.
 ///
-/// DHCPLeaseMonitor detects VM IP addresses using two methods:
-/// 1. DHCP leases file (`/var/db/dhcpd_leases`) - traditional method
-/// 2. ARP table scanning (`arp -a`) - fallback for Apple Virtualization.framework
+/// DHCPLeaseMonitor detects VM IP addresses using three methods (in priority order):
+/// 1. Console output parsing - most reliable, uses actual VM configured IP
+/// 2. DHCP leases file (`/var/db/dhcpd_leases`) - traditional method
+/// 3. ARP table scanning (`arp -a`) - fallback, but can have stale entries
 ///
 /// ## Features
 ///
+/// - Parse VM console output for IP announcements (NEW - most reliable)
 /// - Parse DHCP leases by MAC address
 /// - ARP-based IP detection (fallback for Apple Virtualization)
 /// - Find most recent lease (when MAC unknown)
@@ -31,10 +34,10 @@ import Foundation
 ///
 /// ## Usage
 ///
-/// ### Find IP by MAC Address
+/// ### Find IP by MAC Address with Console Parsing
 ///
 /// ```swift
-/// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+/// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
 /// if let ip = monitor.findIPAddress() {
 ///     print("VM IP: \(ip)")
 /// }
@@ -43,7 +46,7 @@ import Foundation
 /// ### Continuous Monitoring with Callbacks
 ///
 /// ```swift
-/// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+/// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
 ///
 /// monitor.startMonitoring(interval: 1.0) { ip in
 ///     print("VM IP detected: \(ip)")
@@ -81,6 +84,9 @@ class DHCPLeaseMonitor {
 
     /// MAC address to monitor (e.g., "52:54:00:12:34:90")
     private let macAddress: String
+    
+    /// Weak reference to VM manager for console log access
+    private weak var vmManager: AnyObject?
 
     /// Timer for periodic monitoring
     private var monitorTimer: Timer?
@@ -97,22 +103,26 @@ class DHCPLeaseMonitor {
     /// Detection methods
     private enum DetectionMethod {
         case unknown
+        case console
         case dhcpLease
         case arp
     }
 
     // MARK: - Initialization
 
-    /// Create a DHCP lease monitor for a specific MAC address.
+    /// Create a DHCP lease monitor for a specific MAC address with optional VM manager reference.
     ///
-    /// - Parameter macAddress: MAC address to monitor (e.g., "52:54:00:12:34:90")
+    /// - Parameters:
+    ///   - macAddress: MAC address to monitor (e.g., "52:54:00:12:34:90")
+    ///   - vmManager: Optional reference to BaseVMManager for console log access
     ///
     /// Example:
     /// ```swift
-    /// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+    /// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
     /// ```
-    init(macAddress: String) {
+    init(macAddress: String, vmManager: AnyObject? = nil) {
         self.macAddress = macAddress
+        self.vmManager = vmManager
         NSLog("[DHCPLeaseMonitor] Initialized for MAC: \(macAddress)")
     }
 
@@ -121,23 +131,164 @@ class DHCPLeaseMonitor {
     }
 
     // MARK: - Instance Methods
+    
+    /// Detect VM IP address from console output.
+    ///
+    /// This method parses the VM's console output looking for IP address announcements.
+    /// This is the most reliable method as it uses the IP the VM actually configured,
+    /// avoiding stale ARP cache issues.
+    ///
+    /// Looks for patterns like:
+    /// - "Static IP configured: 192.168.64.10"
+    /// - "VM IP: 192.168.64.10"
+    /// - "IP address: 192.168.64.10"
+    ///
+    /// - Returns: IP address string if found in console, nil otherwise
+    /// Detect VM IP address from console output.
+    ///
+    /// This method parses the VM's console log file looking for IP address announcements.
+    /// This is the most reliable method as it uses the IP the VM actually configured,
+    /// avoiding stale ARP cache issues.
+    ///
+    /// **FIXED by Agent 38**: Now reads FULL console log file instead of truncated property.
+    /// - Previous bug: BaseVMManager truncates consoleOutput to last 2000 chars
+    /// - IP announcement appears at byte 5,599 but truncation keeps only bytes 7,206-9,206
+    /// - Fix: Read console log file directly to get full output
+    ///
+    /// Looks for patterns like:
+    /// - "Static IP configured: 192.168.64.10"
+    /// - "VM IP: 192.168.64.10"
+    /// - "IP address: 192.168.64.10"
+    ///
+    /// - Returns: IP address string if found in console, nil otherwise
+    private func detectIPFromConsole() -> String? {
+        // Get console log file path from VM manager
+        guard let logPath = getConsoleLogPath() else {
+            NSLog("[DHCPLeaseMonitor] Could not find console log path")
+            return nil
+        }
+        
+        // Read FULL console log file (not truncated property)
+        guard let fullConsoleOutput = try? String(contentsOfFile: logPath, encoding: .utf8) else {
+            NSLog("[DHCPLeaseMonitor] Could not read console log file: \(logPath)")
+            return nil
+        }
+        
+        NSLog("[DHCPLeaseMonitor] Reading full console log (\(fullConsoleOutput.count) bytes) from: \(logPath)")
+        
+        // Parse for static IP line - search from end (most recent)
+        let lines = fullConsoleOutput.components(separatedBy: "\n")
+        for line in lines.reversed() {
+            // Look for various IP announcement patterns
+            if line.contains("Static IP configured:") || 
+               line.contains("VM IP:") ||
+               line.contains("IP address:") {
+                
+                // Extract IP using regex pattern
+                let pattern = #"(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})"#
+                if let regex = try? NSRegularExpression(pattern: pattern, options: []) {
+                    let nsLine = line as NSString
+                    let range = NSRange(location: 0, length: nsLine.length)
+                    
+                    if let match = regex.firstMatch(in: line, options: [], range: range) {
+                        let ip = nsLine.substring(with: match.range(at: 1))
+                        NSLog("[DHCPLeaseMonitor] ✓ Detected VM IP from console file: \(ip) (FIXED - reading full log)")
+                        return ip
+                    }
+                }
+            }
+        }
+        
+        NSLog("[DHCPLeaseMonitor] No IP announcement found in console log")
+        return nil
+    }
+    
+    /// Get console log file path.
+    ///
+    /// Checks for console log file in temporary directory.
+    /// File naming pattern: vibecode-console-{vmID}.log
+    ///
+    /// - Returns: Full path to console log file if found, nil otherwise
+    private func getConsoleLogPath() -> String? {
+        guard let vmManager = vmManager else {
+            NSLog("[DHCPLeaseMonitor] No VM manager reference")
+            return nil
+        }
+        
+        // Try to get consoleLogPath via reflection first
+        let mirror = Mirror(reflecting: vmManager)
+        for child in mirror.children {
+            if child.label == "consoleLogPath", let url = child.value as? URL {
+                let path = url.path
+                NSLog("[DHCPLeaseMonitor] Found console log path via reflection: \(path)")
+                return path
+            }
+        }
+        
+        // Fallback: Search temp directory for latest console log
+        let fileManager = FileManager.default
+        let tempDir = fileManager.temporaryDirectory.path
+        
+        do {
+            let files = try fileManager.contentsOfDirectory(atPath: tempDir)
+            let consoleLogs = files.filter { $0.hasPrefix("vibecode-console-") && $0.hasSuffix(".log") }
+            
+            if consoleLogs.isEmpty {
+                NSLog("[DHCPLeaseMonitor] No console log files found in temp directory")
+                return nil
+            }
+            
+            // Get most recent console log file
+            let logFiles = consoleLogs.map { tempDir + "/" + $0 }
+            let sortedFiles = logFiles.sorted(by: { path1, path2 in
+                let attrs1 = try? fileManager.attributesOfItem(atPath: path1)
+                let attrs2 = try? fileManager.attributesOfItem(atPath: path2)
+                let date1 = attrs1?[.modificationDate] as? Date ?? Date.distantPast
+                let date2 = attrs2?[.modificationDate] as? Date ?? Date.distantPast
+                return date1 > date2
+            })
+            
+            if let mostRecent = sortedFiles.first {
+                NSLog("[DHCPLeaseMonitor] Found most recent console log: \(mostRecent)")
+                return mostRecent
+            }
+        } catch {
+            NSLog("[DHCPLeaseMonitor] Failed to find console log: \(error)")
+        }
+        
+        return nil
+    }
+
 
     /// Find IP address for this monitor's MAC address.
     ///
     /// This is a one-time query. For continuous monitoring, use `startMonitoring()`.
-    /// Tries DHCP leases file first, then falls back to ARP scanning.
+    /// 
+    /// Detection priority:
+    /// 1. Console output parsing (most reliable - uses actual VM configured IP)
+    /// 2. DHCP leases file 
+    /// 3. ARP scanning (fallback, can have stale entries)
     ///
     /// - Returns: IP address string if found, nil otherwise
     ///
     /// Example:
     /// ```swift
-    /// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+    /// let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
     /// if let ip = monitor.findIPAddress() {
     ///     print("VM IP: \(ip)")
     /// }
     /// ```
     func findIPAddress() -> String? {
-        // Try DHCP leases file first
+        // PRIORITY 1: Try console output first (most reliable)
+        if let ip = detectIPFromConsole() {
+            if detectionMethod != .console {
+                NSLog("[DHCPLeaseMonitor] Using console output for IP detection (most reliable)")
+                detectionMethod = .console
+            }
+            return ip
+        }
+        
+        // PRIORITY 2: Try DHCP leases file
         if let ip = Self.parseLeaseFile(macAddress: macAddress) {
             if detectionMethod != .dhcpLease {
                 NSLog("[DHCPLeaseMonitor] Using DHCP lease file for IP detection")
@@ -146,10 +297,10 @@ class DHCPLeaseMonitor {
             return ip
         }
         
-        // Fall back to ARP scanning
+        // PRIORITY 3: Fall back to ARP scanning (can have stale entries)
         if let ip = detectIPViaARP() {
             if detectionMethod != .arp {
-                NSLog("[DHCPLeaseMonitor] Using ARP scanning for IP detection (DHCP leases unavailable)")
+                NSLog("[DHCPLeaseMonitor] ⚠️  WARNING: Using ARP scanning (may have stale entries)")
                 detectionMethod = .arp
             }
             return ip
@@ -163,6 +314,9 @@ class DHCPLeaseMonitor {
     /// This method scans the system ARP cache to find the IP address
     /// associated with the VM's MAC address. This is useful when the
     /// DHCP leases file is not available (e.g., with Apple Virtualization.framework).
+    ///
+    /// WARNING: ARP cache can contain stale entries from previous VM sessions.
+    /// Console output parsing is more reliable when available.
     ///
     /// - Returns: IP address string if found in ARP table, nil otherwise
     private func detectIPViaARP() -> String? {
@@ -191,7 +345,6 @@ class DHCPLeaseMonitor {
             // or:     hostname (192.168.64.10) at 52:54:00:12:34:99 on bridge100 ifscope [bridge]
             for line in output.components(separatedBy: "\n") {
                 // Check if line contains our MAC address (case-insensitive)
-                let lowercaseLine = line.lowercased()
                 let normalizedLineMAC = extractAndNormalizeMACFromLine(line)
                 
                 if normalizedLineMAC == normalizedSearchMAC.lowercased() {
@@ -253,7 +406,7 @@ class DHCPLeaseMonitor {
 
     /// Start continuous monitoring for IP address changes.
     ///
-    /// Periodically polls the DHCP leases file and ARP table, calling the callback when:
+    /// Periodically polls the console output, DHCP leases file, and ARP table, calling the callback when:
     /// - IP address is found for the first time
     /// - IP address changes
     /// - IP address disappears (calls onNotFound)
@@ -293,7 +446,8 @@ class DHCPLeaseMonitor {
                 if currentIP != self.lastKnownIP {
                     // IP changed or found for first time
                     self.lastKnownIP = currentIP
-                    let method = self.detectionMethod == .dhcpLease ? "DHCP" : "ARP"
+                    let method = self.detectionMethod == .console ? "Console" : 
+                                 self.detectionMethod == .dhcpLease ? "DHCP" : "ARP"
                     NSLog("[DHCPLeaseMonitor] IP detected via \(method): \(currentIP)")
                     onIPFound(currentIP)
                 }
@@ -334,6 +488,8 @@ class DHCPLeaseMonitor {
     ///
     /// Convenience method for one-off queries without creating a monitor instance.
     /// Tries DHCP leases file first, then falls back to ARP scanning.
+    ///
+    /// Note: Cannot use console parsing without VM manager reference.
     ///
     /// - Parameter macAddress: MAC address to look up
     /// - Returns: IP address string if found, nil otherwise
@@ -600,9 +756,9 @@ extension DHCPLeaseMonitor {
  USAGE EXAMPLES
  ==============
 
- 1. One-time IP lookup:
- -----------------------
- let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+ 1. One-time IP lookup with console parsing (RECOMMENDED):
+ ----------------------------------------------------------
+ let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
  if let ip = monitor.findIPAddress() {
      print("VM IP: \(ip)")
  }
@@ -610,7 +766,7 @@ extension DHCPLeaseMonitor {
 
  2. Continuous monitoring:
  --------------------------
- let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90")
+ let monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:90", vmManager: self)
 
  monitor.startMonitoring(interval: 1.0) { ip in
      print("VM IP detected: \(ip)")
@@ -637,8 +793,8 @@ extension DHCPLeaseMonitor {
  }
 
 
- 5. Integration with BaseVMManager:
- -----------------------------------
+ 5. Integration with BaseVMManager (UPDATED):
+ ---------------------------------------------
  class MyVMManager: BaseVMManager {
      private var dhcpMonitor: DHCPLeaseMonitor?
 
@@ -646,7 +802,8 @@ extension DHCPLeaseMonitor {
          super.onVMStarted()
 
          let macAddress = networkingStrategy?.getMACAddress() ?? "52:54:00:12:34:90"
-         dhcpMonitor = DHCPLeaseMonitor(macAddress: macAddress)
+         // Pass self as vmManager for console parsing
+         dhcpMonitor = DHCPLeaseMonitor(macAddress: macAddress, vmManager: self)
 
          dhcpMonitor?.startMonitoring(interval: 1.0) { [weak self] ip in
              DispatchQueue.main.async {
@@ -683,8 +840,8 @@ extension DHCPLeaseMonitor {
 
  7. Multiple VMs with different MACs:
  -------------------------------------
- let vm1Monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:01")
- let vm2Monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:02")
+ let vm1Monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:01", vmManager: vm1Manager)
+ let vm2Monitor = DHCPLeaseMonitor(macAddress: "52:54:00:12:34:02", vmManager: vm2Manager)
 
  vm1Monitor.startMonitoring { ip in
      print("VM1 IP: \(ip)")

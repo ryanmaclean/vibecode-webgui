@@ -69,22 +69,22 @@ Host vibecode-*
 
 # Specific VM hosts (update IPs after boot)
 Host vibecode-postgresql
-    HostName 192.168.64.2
+    HostName 192.168.64.10
 
 Host vibecode-valkey
-    HostName 192.168.64.3
+    HostName 192.168.64.10
 
 Host vibecode-nodejs
-    HostName 192.168.64.4
+    HostName 192.168.64.10
 
 Host vibecode-codeserver
-    HostName 192.168.64.5
+    HostName 192.168.64.10
 
 Host vibecode-ide
-    HostName 192.168.64.6
+    HostName 192.168.64.10
 
 Host vibecode-pgvector
-    HostName 192.168.64.7
+    HostName 192.168.64.10
 SSHEOF
 
 echo "  ✅ SSH config created"

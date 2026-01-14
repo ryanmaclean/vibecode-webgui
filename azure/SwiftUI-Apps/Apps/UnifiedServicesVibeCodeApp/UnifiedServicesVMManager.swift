@@ -35,14 +35,12 @@ final class UnifiedServicesVMManager: BaseVMManager {
     // MARK: - Template Method Overrides
 
     /// Create NAT networking strategy - auto-generate MAC like working Valkey app.
-    /// Create NAT networking strategy - use fixed MAC address for reliable DHCP tracking.
     ///
-    /// Uses fixed MAC address "52:54:00:12:34:99" instead of auto-generated MAC.
-    /// This ensures DHCP monitor can track the VM's IP correctly via ARP cache.
-    /// Without this, DHCP monitor searches for wrong MAC and onIPAddressDetected() never fires.
+    /// Uses auto-generated MAC for compatibility.
+    /// No vsock - use VMPortForwarder instead (like ValkeyVibeCode.app which works).
     override func createNetworkingStrategy() -> NetworkingStrategy {
         return NATNetworkStrategy(
-            macAddress: "52:54:00:12:34:99",  // Fixed MAC for stable DHCP tracking
+            macAddress: nil,  // Auto-generate like working apps
             enableVsock: false  // Disabled - use VMPortForwarder instead
         )
     }
@@ -52,7 +50,17 @@ final class UnifiedServicesVMManager: BaseVMManager {
     /// Forwards common ports (22, 6379, 5432, 8080) from localhost to VM IP.
     override func onIPAddressDetected(ip: String) {
         super.onIPAddressDetected(ip: ip)
-        portForwarder = VMPortForwarder.forwardCommonPorts(vmIP: ip)
+        NSLog("[UnifiedServicesVMManager] IP address detected: \(ip)")
+        
+        // Stop existing port forwarding before starting new ones
+        // (IP may change during boot: 192.168.64.2 → 192.168.64.10)
+        portForwarder?.stopAll()
+        
+        // Wait briefly for ports to be fully released before binding new listeners
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
+            self?.portForwarder = VMPortForwarder.forwardCommonPorts(vmIP: ip)
+            NSLog("[UnifiedServicesVMManager] Port forwarding setup complete")
+        }
     }
 
     /// Called when VM stops - clean up port forwarding.
