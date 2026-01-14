@@ -240,7 +240,7 @@
     "react-dom": "19.1.1",
     "react-hook-form": "^7.60.0",
     "react-resizable-panels": "^3.0.3",
-    "recharts": "3.3.0",
+    "recharts": "3.6.0",
     "redis": "5.8.3",
     "socket.io": "4.8.1",
     "sonner": "^2.0.6",
