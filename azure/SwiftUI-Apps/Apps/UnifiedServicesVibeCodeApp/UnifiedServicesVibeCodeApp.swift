@@ -303,15 +303,19 @@ struct ConsoleView: View {
             Divider()
             
             // Console output
+            // ⚠️ CRITICAL: Colors MUST be green text on black background
+            // DO NOT CHANGE: User requirement - tested in ConsoleColorTests.swift
+            // Green: RGB(0, 1, 0) / #00FF00
+            // Black: RGB(0, 0, 0) / #000000
             ScrollView {
                 Text(vmManager.consoleOutput)
                     .font(.system(.body, design: .monospaced))
-                    .foregroundColor(Color(red: 0, green: 1, blue: 0))  // Green text
+                    .foregroundColor(Color(red: 0, green: 1, blue: 0))  // Green text - DO NOT CHANGE
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
                     .padding()
             }
-            .background(Color.black)  // Black background
+            .background(Color.black)  // Black background - DO NOT CHANGE
             
             Divider()
             
