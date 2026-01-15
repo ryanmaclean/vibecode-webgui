@@ -1,0 +1,77 @@
+OPENVSCODE SERVER VERSION INFORMATION
+======================================
+
+CURRENT STATE: Update Deployed, Runtime Issue Under Investigation
+
+OLD VERSION (Working)
+---------------------
+Version:      1.95.3
+Commit:       ac08a4f024c12cc12b9e8e186240052500ec6c83
+Date:         2024-12-14
+Architecture: ARM64 (aarch64)
+C Library:    musl
+Status:       ✅ Fully Functional
+
+NEW VERSION (Deployed)
+----------------------
+Version:      1.106.3
+Commit:       bf9252a2fb45be6893dd8870c0bf37e2e1766d61
+Release Date: 2025-12-02
+Architecture: ARM64 (aarch64)
+C Library:    glibc
+Status:       ❌ Service Fails to Start
+
+DATADOG EXTENSION
+-----------------
+Version:      2.0.0
+Location:     /opt/openvscode/extensions/datadog.datadog-vscode-2.0.0/
+Runtime Copy: /.openvscode-server/extensions/datadog.datadog-vscode-2.0.0/
+Size:         41MB
+Status:       ✅ Preserved and Configured
+
+CRITICAL ISSUE
+--------------
+The new v1.106.3 Node.js binary requires glibc, but the Alpine Linux-based
+initramfs only provides musl. This causes the OpenVSCode service to fail
+silently at startup.
+
+Resolution: Add glibc compatibility layer to initramfs or use musl-built binary.
+
+ROLLBACK AVAILABLE
+------------------
+Backup Location: /tmp/unified-vm-initramfs-v1.95.3-backup.cpio.gz
+Backup Size:     112MB
+Backup MD5:      2e654e33e4c443fadb0edb0c1e399bdf
+
+CURRENT BUILD
+-------------
+Location:        ~/vibecode-webgui/azure/SwiftUI-Apps/Apps/UnifiedServicesVibeCodeApp.app/Contents/Resources/unified-vm-initramfs.cpio.gz
+Size:            143MB (was 112MB, +31MB)
+MD5:             5892e1669072e90ef543724879d86385
+Version Inside:  1.106.3 ARM64
+Architecture:    ARM64 (aarch64)
+C Library:       glibc (requires compatibility layer)
+
+DOWNLOADS
+---------
+ARM64 Binary:    /tmp/openvscode-server-v1.106.3-linux-arm64.tar.gz (68MB)
+Download URL:    https://github.com/gitpod-io/openvscode-server/releases/download/openvscode-server-v1.106.3/openvscode-server-v1.106.3-linux-arm64.tar.gz
+Source:          https://github.com/gitpod-io/openvscode-server
+
+NEXT STEPS
+----------
+1. Investigate glibc dependency issue
+2. Check VM boot logs for errors
+3. Test Node.js binary compatibility
+4. Either fix glibc or rollback to v1.95.3
+5. Consider building musl-compatible version
+
+QUICK TEST
+----------
+# Check running version
+curl -s http://192.168.64.10:8080/ | grep -o 'stable-[a-f0-9]\{40\}'
+
+# Expected (new): stable-bf9252a2fb45be6893dd8870c0bf37e2e1766d61
+# Current (old): stable-ac08a4f024c12cc12b9e8e186240052500ec6c83
+
+# If old commit shows, service failed to start with new version

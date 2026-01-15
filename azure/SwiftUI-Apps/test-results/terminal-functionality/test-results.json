@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-01-14T23:16:41.396Z",
+  "tests": [
+    {
+      "name": "Navigate to OpenVSCode Server",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T23:16:44.756Z"
+    },
+    {
+      "name": "OpenVSCode workbench loaded",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T23:16:47.822Z"
+    },
+    {
+      "name": "Open terminal",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T23:16:49.971Z"
+    },
+    {
+      "name": "Execute test commands",
+      "status": "failed",
+      "error": "Error: Some commands failed",
+      "screenshot": null,
+      "timestamp": "2026-01-14T23:18:50.035Z"
+    }
+  ],
+  "passed": 3,
+  "failed": 1,
+  "skipped": 0
+}

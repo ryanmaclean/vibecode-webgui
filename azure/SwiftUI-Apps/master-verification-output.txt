@@ -1,0 +1,2 @@
+./post-build-verification.sh: line 71: declare: -A: invalid option
+declare: usage: declare [-afFirtx] [-p] [name[=value] ...]

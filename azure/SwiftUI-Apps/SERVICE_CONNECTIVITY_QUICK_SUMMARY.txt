@@ -1,0 +1,42 @@
+================================================================================
+SERVICE CONNECTIVITY TEST RESULTS - QUICK SUMMARY
+================================================================================
+
+TEST DATE: 2026-01-14 at 15:43:49 UTC
+TEST RESULT: ✅ ALL PASSED (4/4 services)
+
+SERVICES TESTED:
+  ✓ SSH (localhost:2222) - Remote command execution confirmed
+  ✓ Valkey (localhost:6379) - Redis operations confirmed
+  ✓ PostgreSQL (localhost:5432) - Database queries confirmed  
+  ✓ OpenVSCode (localhost:8080) - Web interface confirmed
+
+SUCCESS RATE: 100%
+
+TEST SCRIPT: 
+  /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/integration/service-connectivity.test.sh
+
+FULL REPORT:
+  /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/SERVICE_CONNECTIVITY_TEST_RESULTS.md
+
+EVIDENCE DIRECTORY:
+  /tmp/service-connectivity-test-evidence-1768405429/
+
+RUN TESTS:
+  bash /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/integration/service-connectivity.test.sh
+
+KEY FINDINGS:
+  • All services respond to real TCP connections
+  • SSH: Commands execute successfully in VM (Linux unified-vm 6.8.0-31-generic)
+  • Valkey: PING/SET/GET operations work perfectly
+  • PostgreSQL: v16.11 queries execute successfully
+  • OpenVSCode: Full web interface loads with valid HTML
+
+AUTOMATED TEST FEATURES:
+  • Real connections (not mocked)
+  • Proper assertions on responses
+  • Automatic evidence capture
+  • JSON and text output
+  • Exit code 0 on success, 1 on failure
+
+================================================================================

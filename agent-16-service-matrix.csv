@@ -1,0 +1,5 @@
+Service,Port,Protocol,Status,Accessible,Test_Result,Timestamp
+SSH,22,TCP,PASS,YES,Connection successful,2026-01-13T11:01:05Z
+Valkey,6379,TCP,PASS,YES,PING/PONG + SET/GET successful,2026-01-13T11:01:15Z
+PostgreSQL,5432,TCP,PASS,YES,Process running and listening,2026-01-13T11:01:25Z
+OpenVSCode,8080,HTTP,PASS,YES,HTTP response received,2026-01-13T11:01:35Z
