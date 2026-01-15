@@ -75,7 +75,7 @@ echo "  Task 1: Building Valkey for ARM64 Alpine"
 echo "======================================================================"
 echo ""
 
-VALKEY_VERSION="7.2.7"
+VALKEY_VERSION="7.2.8"
 VALKEY_DOCKERFILE="${SCRIPT_DIR}/Dockerfile.valkey"
 
 log "Creating Valkey Dockerfile for ARM64 Alpine..."
@@ -96,7 +96,7 @@ RUN apk add --no-cache \
 WORKDIR /build
 
 # Download and extract Valkey
-ARG VALKEY_VERSION=7.2.7
+ARG VALKEY_VERSION=7.2.8
 RUN wget -q "https://github.com/valkey-io/valkey/archive/refs/tags/${VALKEY_VERSION}.tar.gz" \
     && tar xzf "${VALKEY_VERSION}.tar.gz" \
     && cd "valkey-${VALKEY_VERSION}" \

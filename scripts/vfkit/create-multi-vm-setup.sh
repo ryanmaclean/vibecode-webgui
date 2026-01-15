@@ -66,9 +66,9 @@ fi
 
 # Build Valkey
 cd /tmp
-wget -q https://github.com/valkey-io/valkey/archive/refs/tags/7.2.7.tar.gz
-tar xzf 7.2.7.tar.gz
-cd valkey-7.2.7
+wget -q https://github.com/valkey-io/valkey/archive/refs/tags/7.2.8.tar.gz
+tar xzf 7.2.8.tar.gz
+cd valkey-7.2.8
 
 make -j2 MALLOC=libc USE_SYSTEMD=no BUILD_TLS=yes \
     OPTIMIZATION=-O3 \
