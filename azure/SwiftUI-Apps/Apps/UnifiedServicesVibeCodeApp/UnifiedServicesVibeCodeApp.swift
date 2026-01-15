@@ -306,11 +306,12 @@ struct ConsoleView: View {
             ScrollView {
                 Text(vmManager.consoleOutput)
                     .font(.system(.body, design: .monospaced))
+                    .foregroundColor(Color(red: 0, green: 1, blue: 0))  // Green text
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .textSelection(.enabled)
                     .padding()
             }
-            .background(Color(NSColor.textBackgroundColor))
+            .background(Color.black)  // Black background
             
             Divider()
             
