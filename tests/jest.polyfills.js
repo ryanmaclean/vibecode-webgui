@@ -1,6 +1,16 @@
 // Jest Polyfills for Browser APIs
 // ==============================
 
+// Set environment variables BEFORE any modules load (especially auth.ts)
+// This ensures OAuth providers can initialize correctly
+process.env.NODE_ENV = process.env.NODE_ENV || 'test';
+process.env.NEXTAUTH_SECRET = process.env.NEXTAUTH_SECRET || 'test-secret';
+process.env.NEXTAUTH_URL = process.env.NEXTAUTH_URL || 'http://localhost:3000';
+process.env.GITHUB_ID = process.env.GITHUB_ID || 'test-github-id';
+process.env.GITHUB_SECRET = process.env.GITHUB_SECRET || 'test-github-secret';
+process.env.GOOGLE_CLIENT_ID = process.env.GOOGLE_CLIENT_ID || 'test-google-id';
+process.env.GOOGLE_CLIENT_SECRET = process.env.GOOGLE_CLIENT_SECRET || 'test-google-secret';
+
 // Mock openai package BEFORE any modules load to prevent OOM
 jest.mock('openai', () => {
   const mockOpenAI = jest.fn().mockImplementation(() => ({

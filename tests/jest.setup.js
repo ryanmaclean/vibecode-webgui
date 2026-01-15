@@ -42,10 +42,26 @@ jest.mock('next/server', () => {
   return mockModule;
 });
 
+// Mock logger to prevent auth module loading issues (Issue #792)
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  },
+}));
+
 // Mock environment variables
 process.env.NODE_ENV = 'test';
 process.env.NEXTAUTH_SECRET = 'test-secret';
 process.env.NEXTAUTH_URL = 'http://localhost:3000';
+// OAuth provider credentials (required for auth.ts to load correctly)
+process.env.GITHUB_ID = 'test-github-id';
+process.env.GITHUB_SECRET = 'test-github-secret';
+process.env.GOOGLE_CLIENT_ID = 'test-google-id';
+process.env.GOOGLE_CLIENT_SECRET = 'test-google-secret';
 
 // Mock DOM methods not available in JSDOM
 if (typeof Element !== 'undefined') {
