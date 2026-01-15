@@ -34,13 +34,13 @@ final class UnifiedServicesVMManager: BaseVMManager {
 
     // MARK: - Template Method Overrides
 
-    /// Create NAT networking strategy - auto-generate MAC like working Valkey app.
+    /// Create NAT networking strategy with fixed MAC address.
     ///
-    /// Uses auto-generated MAC for compatibility.
+    /// Uses fixed MAC 52:54:00:12:34:99 for stable DHCP IP detection.
     /// No vsock - use VMPortForwarder instead (like ValkeyVibeCode.app which works).
     override func createNetworkingStrategy() -> NetworkingStrategy {
         return NATNetworkStrategy(
-            macAddress: nil,  // Auto-generate like working apps
+            macAddress: "52:54:00:12:34:99",  // Fixed MAC for stable DHCP tracking
             enableVsock: false  // Disabled - use VMPortForwarder instead
         )
     }

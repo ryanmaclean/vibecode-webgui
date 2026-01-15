@@ -1,0 +1,662 @@
+{
+  "config": {
+    "configFile": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/playwright.config.ts",
+    "rootDir": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e",
+    "forbidOnly": false,
+    "fullyParallel": false,
+    "globalSetup": null,
+    "globalTeardown": null,
+    "globalTimeout": 0,
+    "grep": {},
+    "grepInvert": null,
+    "maxFailures": 0,
+    "metadata": {
+      "actualWorkers": 1
+    },
+    "preserveOutput": "always",
+    "reporter": [
+      [
+        "html",
+        {
+          "outputFolder": "playwright-report",
+          "open": "never"
+        }
+      ],
+      [
+        "json",
+        {
+          "outputFile": "playwright-results.json"
+        }
+      ],
+      [
+        "list",
+        null
+      ]
+    ],
+    "reportSlowTests": {
+      "max": 5,
+      "threshold": 300000
+    },
+    "quiet": false,
+    "projects": [
+      {
+        "outputDir": "/Users/ryan.maclean/vibecode-webgui/test-results",
+        "repeatEach": 1,
+        "retries": 0,
+        "metadata": {
+          "actualWorkers": 1
+        },
+        "id": "chromium",
+        "name": "chromium",
+        "testDir": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e",
+        "testIgnore": [],
+        "testMatch": [
+          "**/*.@(spec|test).?(c|m)[jt]s?(x)"
+        ],
+        "timeout": 120000
+      }
+    ],
+    "shard": null,
+    "updateSnapshots": "missing",
+    "updateSourceMethod": "patch",
+    "version": "1.56.1",
+    "workers": 1,
+    "webServer": null
+  },
+  "suites": [
+    {
+      "title": "unified-services.spec.ts",
+      "file": "unified-services.spec.ts",
+      "column": 0,
+      "line": 0,
+      "specs": [],
+      "suites": [
+        {
+          "title": "UnifiedServicesVibeCodeApp E2E Tests",
+          "file": "unified-services.spec.ts",
+          "line": 28,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Step 1: OpenVSCode loads at http://localhost:8080",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 0,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 65008,
+                      "error": {
+                        "message": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/\", waiting until \"networkidle\"\u001b[22m\n",
+                        "stack": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/\", waiting until \"networkidle\"\u001b[22m\n\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:44:33",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 33,
+                          "line": 44
+                        },
+                        "snippet": "  42 |     console.log(`[TEST] Navigating to ${OPENVSCODE_URL}...`);\n  43 |\n> 44 |     const response = await page.goto(OPENVSCODE_URL, {\n     |                                 ^\n  45 |       waitUntil: 'networkidle',\n  46 |       timeout: 60000\n  47 |     });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 33,
+                            "line": 44
+                          },
+                          "message": "TimeoutError: page.goto: Timeout 60000ms exceeded.\nCall log:\n\u001b[2m  - navigating to \"http://localhost:8080/\", waiting until \"networkidle\"\u001b[22m\n\n\n  42 |     console.log(`[TEST] Navigating to ${OPENVSCODE_URL}...`);\n  43 |\n> 44 |     const response = await page.goto(OPENVSCODE_URL, {\n     |                                 ^\n  45 |       waitUntil: 'networkidle',\n  46 |       timeout: 60000\n  47 |     });\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:44:33"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Navigating to http://localhost:8080...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:57:05.623Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 33,
+                        "line": 44
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-7fb1f033dc2b4f7db439",
+              "file": "unified-services.spec.ts",
+              "line": 41,
+              "column": 7
+            },
+            {
+              "title": "Step 2: Page title contains \"Visual Studio Code\"",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 1,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15029,
+                      "error": {
+                        "message": "TimeoutError: page.waitForFunction: Timeout 15000ms exceeded.",
+                        "stack": "TimeoutError: page.waitForFunction: Timeout 15000ms exceeded.\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:65:16",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 16,
+                          "line": 65
+                        },
+                        "snippet": "  63 |\n  64 |     // Wait for title to be set\n> 65 |     await page.waitForFunction(() => document.title.length > 0, { timeout: 10000 });\n     |                ^\n  66 |\n  67 |     const title = await page.title();\n  68 |     console.log(`[TEST] Page title: \"${title}\"`);"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 16,
+                            "line": 65
+                          },
+                          "message": "TimeoutError: page.waitForFunction: Timeout 15000ms exceeded.\n\n  63 |\n  64 |     // Wait for title to be set\n> 65 |     await page.waitForFunction(() => document.title.length > 0, { timeout: 10000 });\n     |                ^\n  66 |\n  67 |     const title = await page.title();\n  68 |     console.log(`[TEST] Page title: \"${title}\"`);\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:65:16"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Checking page title...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:58:21.125Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ryan.maclean/vibecode-webgui/test-results/unified-services-UnifiedSe-6d21b-ontains-Visual-Studio-Code--chromium/test-failed-1.png"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 16,
+                        "line": 65
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-1d5be5d515a37471cfd2",
+              "file": "unified-services.spec.ts",
+              "line": 61,
+              "column": 7
+            },
+            {
+              "title": "Step 3: Editor interface is visible and interactive",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 2,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 30019,
+                      "error": {
+                        "message": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.monaco-workbench').first() to be visible\u001b[22m\n",
+                        "stack": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.monaco-workbench').first() to be visible\u001b[22m\n\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:81:21",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 21,
+                          "line": 81
+                        },
+                        "snippet": "  79 |     // Wait for the main workbench to load (using .first() to avoid strict mode violation)\n  80 |     const workbench = page.locator('.monaco-workbench').first();\n> 81 |     await workbench.waitFor({ state: 'visible', timeout: 30000 });\n     |                     ^\n  82 |\n  83 |     // Check for the activity bar (left sidebar with icons)\n  84 |     const activityBar = page.locator('[id=\"workbench.parts.activitybar\"]');"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 21,
+                            "line": 81
+                          },
+                          "message": "TimeoutError: locator.waitFor: Timeout 30000ms exceeded.\nCall log:\n\u001b[2m  - waiting for locator('.monaco-workbench').first() to be visible\u001b[22m\n\n\n  79 |     // Wait for the main workbench to load (using .first() to avoid strict mode violation)\n  80 |     const workbench = page.locator('.monaco-workbench').first();\n> 81 |     await workbench.waitFor({ state: 'visible', timeout: 30000 });\n     |                     ^\n  82 |\n  83 |     // Check for the activity bar (left sidebar with icons)\n  84 |     const activityBar = page.locator('[id=\"workbench.parts.activitybar\"]');\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:81:21"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Verifying editor interface...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:58:36.605Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ryan.maclean/vibecode-webgui/test-results/unified-services-UnifiedSe-d5cfc--is-visible-and-interactive-chromium/test-failed-1.png"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 21,
+                        "line": 81
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-b3d5207854085e450c03",
+              "file": "unified-services.spec.ts",
+              "line": 76,
+              "column": 7
+            },
+            {
+              "title": "Step 4: Can interact with the interface",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 43,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Testing interface interaction...\n"
+                        },
+                        {
+                          "text": "[TEST] ✓ Successfully interacted with interface\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:07.056Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-81c8c6a5fa40513b15c2",
+              "file": "unified-services.spec.ts",
+              "line": 100,
+              "column": 7
+            },
+            {
+              "title": "Step 5: Can use search functionality",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Testing search functionality...\n"
+                        },
+                        {
+                          "text": "[TEST] ✓ Search functionality accessible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:07.233Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-411b21e75b55bbf77aac",
+              "file": "unified-services.spec.ts",
+              "line": 126,
+              "column": 7
+            },
+            {
+              "title": "Step 6: Can access settings and extensions",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 30,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Testing settings and extensions access...\n"
+                        },
+                        {
+                          "text": "[TEST] ✓ Settings and extensions accessible\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:07.267Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-d05479bbf6a5307df5da",
+              "file": "unified-services.spec.ts",
+              "line": 145,
+              "column": 7
+            },
+            {
+              "title": "Step 7: Terminal opens with black background and green text",
+              "ok": true,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "passed",
+                      "duration": 2533,
+                      "errors": [],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Testing terminal functionality and colors...\n"
+                        },
+                        {
+                          "text": "[TEST] Trying keyboard shortcut Ctrl+`...\n"
+                        },
+                        {
+                          "text": "[TEST] ⚠️  Could not open terminal via UI\n"
+                        },
+                        {
+                          "text": "[TEST] Note: Terminal may require manual interaction\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:07.300Z",
+                      "annotations": [],
+                      "attachments": []
+                    }
+                  ],
+                  "status": "expected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-36ff1cc7811b9cd20baf",
+              "file": "unified-services.spec.ts",
+              "line": 177,
+              "column": 7
+            },
+            {
+              "title": "Step 8: Final verification - All components working",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 3,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 10526,
+                      "error": {
+                        "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.monaco-workbench').first()\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.monaco-workbench').first()\u001b[22m\n",
+                        "stack": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.monaco-workbench').first()\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.monaco-workbench').first()\u001b[22m\n\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:289:29",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 29,
+                          "line": 289
+                        },
+                        "snippet": "  287 |     // Verify key elements are still present\n  288 |     const workbench = page.locator('.monaco-workbench').first();\n> 289 |     await expect(workbench).toBeVisible({ timeout: 10000 });\n      |                             ^\n  290 |\n  291 |     const activityBar = page.locator('[id=\"workbench.parts.activitybar\"]');\n  292 |     await expect(activityBar).toBeVisible({ timeout: 10000 });"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 29,
+                            "line": 289
+                          },
+                          "message": "Error: \u001b[2mexpect(\u001b[22m\u001b[31mlocator\u001b[39m\u001b[2m).\u001b[22mtoBeVisible\u001b[2m(\u001b[22m\u001b[2m)\u001b[22m failed\n\nLocator: locator('.monaco-workbench').first()\nExpected: visible\nTimeout: 10000ms\nError: element(s) not found\n\nCall log:\n\u001b[2m  - Expect \"toBeVisible\" with timeout 10000ms\u001b[22m\n\u001b[2m  - waiting for locator('.monaco-workbench').first()\u001b[22m\n\n\n  287 |     // Verify key elements are still present\n  288 |     const workbench = page.locator('.monaco-workbench').first();\n> 289 |     await expect(workbench).toBeVisible({ timeout: 10000 });\n      |                             ^\n  290 |\n  291 |     const activityBar = page.locator('[id=\"workbench.parts.activitybar\"]');\n  292 |     await expect(activityBar).toBeVisible({ timeout: 10000 });\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:289:29"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[TEST] Running final verification...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:09.838Z",
+                      "annotations": [],
+                      "attachments": [
+                        {
+                          "name": "screenshot",
+                          "contentType": "image/png",
+                          "path": "/Users/ryan.maclean/vibecode-webgui/test-results/unified-services-UnifiedSe-5dff3-on---All-components-working-chromium/test-failed-1.png"
+                        }
+                      ],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 29,
+                        "line": 289
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-0d3c884f6fca08e05146",
+              "file": "unified-services.spec.ts",
+              "line": 280,
+              "column": 7
+            }
+          ]
+        },
+        {
+          "title": "Service Health Checks",
+          "file": "unified-services.spec.ts",
+          "line": 310,
+          "column": 6,
+          "specs": [
+            {
+              "title": "Verify OpenVSCode service is responding",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 4,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 10013,
+                      "error": {
+                        "message": "TimeoutError: apiRequestContext.get: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                        "stack": "TimeoutError: apiRequestContext.get: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:314:36",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 36,
+                          "line": 314
+                        },
+                        "snippet": "  312 |     console.log('[HEALTH] Checking OpenVSCode service health...');\n  313 |\n> 314 |     const response = await request.get(OPENVSCODE_URL, {\n      |                                    ^\n  315 |       timeout: 10000\n  316 |     });\n  317 |"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 36,
+                            "line": 314
+                          },
+                          "message": "TimeoutError: apiRequestContext.get: Timeout 10000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  312 |     console.log('[HEALTH] Checking OpenVSCode service health...');\n  313 |\n> 314 |     const response = await request.get(OPENVSCODE_URL, {\n      |                                    ^\n  315 |       timeout: 10000\n  316 |     });\n  317 |\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:314:36"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[HEALTH] Checking OpenVSCode service health...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:20.660Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 36,
+                        "line": 314
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-9b51b083071aeff09d87",
+              "file": "unified-services.spec.ts",
+              "line": 311,
+              "column": 7
+            },
+            {
+              "title": "Verify service returns valid HTML",
+              "ok": false,
+              "tags": [],
+              "tests": [
+                {
+                  "timeout": 120000,
+                  "annotations": [],
+                  "expectedStatus": "passed",
+                  "projectId": "chromium",
+                  "projectName": "chromium",
+                  "results": [
+                    {
+                      "workerIndex": 5,
+                      "parallelIndex": 0,
+                      "status": "failed",
+                      "duration": 15013,
+                      "error": {
+                        "message": "TimeoutError: apiRequestContext.get: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n",
+                        "stack": "TimeoutError: apiRequestContext.get: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:329:36",
+                        "location": {
+                          "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                          "column": 36,
+                          "line": 329
+                        },
+                        "snippet": "  327 |     console.log('[HEALTH] Checking HTML response...');\n  328 |\n> 329 |     const response = await request.get(OPENVSCODE_URL);\n      |                                    ^\n  330 |     const body = await response.text();\n  331 |\n  332 |     // Verify HTML structure"
+                      },
+                      "errors": [
+                        {
+                          "location": {
+                            "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                            "column": 36,
+                            "line": 329
+                          },
+                          "message": "TimeoutError: apiRequestContext.get: Timeout 15000ms exceeded.\nCall log:\n\u001b[2m  - → GET http://localhost:8080/\u001b[22m\n\u001b[2m    - user-agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/141.0.7390.37 Safari/537.36\u001b[22m\n\u001b[2m    - accept: */*\u001b[22m\n\u001b[2m    - accept-encoding: gzip,deflate,br\u001b[22m\n\n\n  327 |     console.log('[HEALTH] Checking HTML response...');\n  328 |\n> 329 |     const response = await request.get(OPENVSCODE_URL);\n      |                                    ^\n  330 |     const body = await response.text();\n  331 |\n  332 |     // Verify HTML structure\n    at /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts:329:36"
+                        }
+                      ],
+                      "stdout": [
+                        {
+                          "text": "[HEALTH] Checking HTML response...\n"
+                        }
+                      ],
+                      "stderr": [],
+                      "retry": 0,
+                      "startTime": "2026-01-15T05:59:30.961Z",
+                      "annotations": [],
+                      "attachments": [],
+                      "errorLocation": {
+                        "file": "/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/tests/e2e/unified-services.spec.ts",
+                        "column": 36,
+                        "line": 329
+                      }
+                    }
+                  ],
+                  "status": "unexpected"
+                }
+              ],
+              "id": "7a36fa526a84f3b15a33-bf55aefda194a09aa34f",
+              "file": "unified-services.spec.ts",
+              "line": 326,
+              "column": 7
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "errors": [],
+  "stats": {
+    "startTime": "2026-01-15T05:57:05.350Z",
+    "duration": 160648.497,
+    "expected": 4,
+    "skipped": 0,
+    "unexpected": 6,
+    "flaky": 0
+  }
+}

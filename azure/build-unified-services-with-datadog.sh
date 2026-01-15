@@ -119,13 +119,13 @@ download_busybox() {
     mkdir -p "$busybox_dir/bin"
     cd "$busybox_dir"
 
-    # Use saved working r29 binary if available, otherwise download r30
+    # Use saved working r29 binary if available, otherwise download r31
     if [ -f "/tmp/busybox-r29/busybox" ]; then
         info "Using saved working BusyBox r29..."
         cp /tmp/busybox-r29/busybox bin/busybox
         chmod +x bin/busybox
     else
-        local apk_url="${ALPINE_MIRROR}/main/aarch64/busybox-${BUSYBOX_VERSION}-r30.apk"
+        local apk_url="${ALPINE_MIRROR}/main/aarch64/busybox-${BUSYBOX_VERSION}-r31.apk"
         info "Downloading: $apk_url"
         
         wget -q --show-progress "$apk_url" -O busybox.apk || error "Failed to download BusyBox"
@@ -1164,6 +1164,22 @@ mount -t sysfs sys /sys 2>/dev/null || true
 mount -t devtmpfs dev /dev 2>/dev/null || true
 mount -t tmpfs tmp /tmp 2>/dev/null || true
 
+# Mount devpts for pseudo-terminal support (CRITICAL for OpenVSCode terminal)
+echo "Mounting devpts for terminal support..."
+mkdir -p /dev/pts 2>/dev/null || true
+mount -t devpts devpts /dev/pts -o gid=5,mode=620 2>/dev/null && echo "  ✓ devpts mounted"
+
+# Create shell wrapper for OpenVSCode terminal (fixes PATH issue)
+# OpenVSCode sets PATH=/opt/openvscode/bin/remote-cli which breaks commands
+cat > /tmp/sh-with-env << 'WRAPPER_EOF'
+#!/bin/sh
+export PATH=/usr/sbin:/usr/bin:/sbin:/bin
+export TERM=xterm-256color
+[ -x /bin/busybox ] && /bin/busybox --install -s /bin 2>/dev/null || true
+exec /bin/sh "$@"
+WRAPPER_EOF
+chmod +x /tmp/sh-with-env 2>/dev/null && echo "  ✓ Shell wrapper created"
+
 # Set hostname
 hostname unified-vm 2>/dev/null || true
 
@@ -1583,6 +1599,54 @@ fi
 
 # 5. OpenVSCode Server
 if [ -f /opt/openvscode/bin/openvscode-server ]; then
+    # Configure terminal with shell wrapper (v4.1.0 fix for PATH issue)
+    echo "  Configuring terminal with shell wrapper..."
+    mkdir -p /tmp/vscode-data/Machine /tmp/vscode-data/User
+    cat > /tmp/vscode-data/Machine/settings.json << 'SETTINGS_EOF'
+{
+  "workbench.colorTheme": "Default Dark+",
+  "terminal.integrated.cursorStyle": "block",
+  "terminal.integrated.cursorBlinking": true,
+  "terminal.integrated.fontFamily": "monospace",
+  "terminal.integrated.fontSize": 14,
+  "terminal.integrated.defaultProfile.linux": "sh",
+  "terminal.integrated.profiles.linux": {
+    "sh": {
+      "path": "/tmp/sh-with-env",
+      "args": [],
+      "env": {
+        "PATH": "/usr/sbin:/usr/bin:/sbin:/bin",
+        "TERM": "xterm-256color"
+      }
+    }
+  },
+  "workbench.colorCustomizations": {
+    "terminal.background": "#000000",
+    "terminal.foreground": "#00FF00",
+    "terminalCursor.background": "#00FF00",
+    "terminalCursor.foreground": "#00FF00",
+    "terminal.ansiBlack": "#000000",
+    "terminal.ansiRed": "#FF0000",
+    "terminal.ansiGreen": "#00FF00",
+    "terminal.ansiYellow": "#FFFF00",
+    "terminal.ansiBlue": "#0000FF",
+    "terminal.ansiMagenta": "#FF00FF",
+    "terminal.ansiCyan": "#00FFFF",
+    "terminal.ansiWhite": "#FFFFFF",
+    "terminal.ansiBrightBlack": "#808080",
+    "terminal.ansiBrightRed": "#FF8080",
+    "terminal.ansiBrightGreen": "#80FF80",
+    "terminal.ansiBrightYellow": "#FFFF80",
+    "terminal.ansiBrightBlue": "#8080FF",
+    "terminal.ansiBrightMagenta": "#FF80FF",
+    "terminal.ansiBrightCyan": "#80FFFF",
+    "terminal.ansiBrightWhite": "#FFFFFF"
+  }
+}
+SETTINGS_EOF
+    cp /tmp/vscode-data/Machine/settings.json /tmp/vscode-data/User/settings.json
+    echo "  ✓ Terminal configured with wrapper and black console"
+
     (cd /opt/openvscode && ./bin/openvscode-server \
         --host $VSCODE_HOST \
         --port 8080 \
