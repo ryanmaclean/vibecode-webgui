@@ -175,14 +175,6 @@
         }
       ]
     },
-    "GitHub.copilot": {
-      "onFileOpen": [
-        {
-          "pathGlob": "{**/*.ts,**/*.tsx,**/*.js,**/*.py,**/*.go,**/*.rb}"
-        }
-      ],
-      "onSettingsEditorOpen": {}
-    },
     "rust-lang.rust-analyzer": {
       "onFileOpen": [
         {
@@ -195,7 +187,6 @@
     "files.autoSave",
     "editor.fontSize",
     "editor.fontFamily",
-    "GitHub.copilot.manageExtension",
     "editor.tabSize",
     "editor.renderWhitespace",
     "editor.cursorStyle",

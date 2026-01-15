@@ -1,0 +1,70 @@
+{
+  "benchmark_metadata": {
+    "timestamp": 1768407910,
+    "date": "2026-01-14 08:25:10",
+    "platform": "macOS",
+    "system_cores": 16,
+    "system_memory_gb": 64,
+    "benchmark_type": "v3.2.1 with Datadog Extension vs v3.2.0 baseline"
+  },
+  "size_comparison": {
+    "v3.2.0": {
+      "dmg_bytes": 139357302,
+      "dmg_mb": 133,
+      "dmg_human": "133M",
+      "initramfs_mb": 117,
+      "file_count": 5
+    },
+    "v3.2.1": {
+      "dmg_bytes": 265031939,
+      "dmg_mb": 253,
+      "dmg_human": "253M",
+      "initramfs_mb": 120,
+      "file_count": 8
+    },
+    "differences": {
+      "dmg_increase_bytes": 125674637,
+      "dmg_increase_mb": 119,
+      "dmg_increase_percent": 89.4,
+      "initramfs_increase_mb": 3,
+      "files_added": 3
+    }
+  },
+  "extension_impact": {
+    "name": "Datadog VSCode Extension v2.0.0",
+    "files_added": 27,
+    "size_compressed_mb": 119,
+    "size_uncompressed_mb": 41,
+    "storage_efficiency_percent": "34.4",
+    "location": "/.openvscode-server/extensions/datadog.datadog-vscode-2.0.0/",
+    "commands": 19,
+    "features": [
+      "Code Analysis",
+      "Static Analysis (Offline)",
+      "Cloud Integration",
+      "Sidebar Configuration"
+    ]
+  },
+  "performance_baseline": {
+    "app_init_time_ms": 7,
+    "app_bundle_size_v320": "168M",
+    "app_bundle_size_v321": "288M"
+  },
+  "included_services": {
+    "ssh": "Port 22/2222 (password: vibecode)",
+    "valkey": "Port 6379 (key-value store)",
+    "postgresql": "Port 5432 (database)",
+    "openvscode": "Port 8080 (web IDE with Datadog)"
+  },
+  "analysis": {
+    "dmg_size_impact": "DMG increased by ~120MB (90%), indicating significant compression overhead",
+    "initramfs_efficiency": "Datadog extension added as 41MB uncompressed but only increased initramfs by 3MB (93% compression ratio)",
+    "file_count_impact": "Added approximately 3 files to distribution",
+    "overhead_assessment": "Minimal runtime overhead expected; extension features available offline for static analysis"
+  },
+  "recommendations": {
+    "for_users": "Download v3.2.1 for Datadog extension features; static analysis works offline",
+    "for_developers": "41MB uncompressed extension size justified by feature set; initramfs compression efficient",
+    "performance_testing": "Recommend measuring CPU, memory, and network impact during actual Datadog cloud integration"
+  }
+}

@@ -2,7 +2,7 @@
 # Based on research of available ARM64 Docker images
 
 # Stage 1: Base Alpine with Node.js
-FROM node:22.21.0-alpine AS base
+FROM node:22.22.0-alpine AS base
 
 # Install BusyBox utilities and essential tools
 RUN apk add --no-cache \

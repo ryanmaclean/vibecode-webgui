@@ -1,0 +1,48 @@
+DATADOG RESTORE STATUS - Agent N
+================================
+
+STATUS: BLOCKED ⚠️
+
+ISSUE: VM won't boot with ANY configuration
+- Tested: 6.1 + 6.8 kernels
+- Tested: v1.95.3 + v1.106.3 OpenVSCode
+- Tested: With/without Datadog
+- Result: NONE boot (no SSH, no console logs, no services)
+
+DATADOG EXTENSION: READY ✅
+- Location: /tmp/unified-vm-initramfs-with-datadog.cpio.gz
+- Version: v2.0.0
+- Size: 41 MB (27 files)
+- Status: Verified intact, ready to deploy
+
+HYBRID INITRAMFS CREATED: ✅
+- Location: /tmp/unified-vm-initramfs-v1.106.3-with-datadog.cpio.gz
+- Contains: OpenVSCode v1.106.3 + Datadog v2.0.0
+- Size: 144 MB
+- Status: Built but untested (VM won't boot)
+
+CURRENT VM STATE: BROKEN ❌
+- App launches but VM doesn't start
+- No console output
+- No services running
+- No error logs
+- Reference app also broken
+
+ROOT CAUSE: Unknown - needs debugging
+- Suspect recent code changes (2026-01-14 08:45)
+- Modified: BaseVMManager.swift, UnifiedServicesVMManager.swift
+- Modified: DHCPLeaseMonitor.swift, VMPortForwarder.swift
+- Need to add debug logging to Swift code
+
+NEXT AGENT INSTRUCTIONS:
+1. Debug VM boot failure (see DATADOG_RESTORE_REPORT.md)
+2. Once VM boots, deploy Datadog initramfs from /tmp
+3. Datadog restoration is 2 minutes once VM works
+
+ARTIFACTS READY:
+- /tmp/unified-vm-initramfs-with-datadog.cpio.gz (v1.95.3 + Datadog)
+- /tmp/unified-vm-initramfs-v1.106.3-with-datadog.cpio.gz (v1.106.3 + Datadog)
+- /tmp/initramfs-datadog-verify/ (extracted for reference)
+- /tmp/vmlinux-6.8-backup (kernel backup)
+
+Agent N signing off - blocked on VM boot issue

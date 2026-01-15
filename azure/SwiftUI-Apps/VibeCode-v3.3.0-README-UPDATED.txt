@@ -1,0 +1,369 @@
+# VibeCode v3.3.0 - Unified Services Platform
+# macOS Application for Developers
+
+================================================================================
+                           SYSTEM REQUIREMENTS
+================================================================================
+
+CRITICAL: This application requires macOS Tahoe (10.15 Catalina) or later
+
+MINIMUM REQUIREMENTS:
+- macOS Tahoe (10.15 Catalina) or later - REQUIRED for Apple Containers
+- macOS Big Sur (11.0) or later - RECOMMENDED for best performance
+- Apple Silicon (M1/M2/M3) - ARM64 architecture required
+- 4GB RAM minimum (8GB recommended)
+- 5GB free disk space (includes VM, services, and Docker images)
+
+WHY TAHOE?
+VibeCode uses TWO core Apple technologies:
+1. Apple Virtualization.framework (VZ) - Modern VM infrastructure (macOS 11+)
+2. Apple Containers - Native container runtime (macOS 10.15+)
+
+To ensure full compatibility with both current and future container features,
+we require macOS Tahoe (10.15) as the baseline operating system.
+
+================================================================================
+                              WHAT'S INCLUDED
+================================================================================
+
+VibeCode v3.3.0 is a complete development environment with 5 integrated services:
+
+1. SSH SERVER (Port 2222)
+   - Dropbear SSH for secure remote access
+   - Key-based authentication
+   - Full terminal access to VM
+
+2. VALKEY (Port 6379)
+   - High-performance in-memory data store
+   - Redis-compatible protocol
+   - Perfect for caching and session management
+
+3. POSTGRESQL 16 (Port 5432)
+   - Production-ready relational database
+   - Full SQL support
+   - Optimized for development workflows
+
+4. OPENVSCODE SERVER (Port 8080)
+   - Full VS Code experience in your browser
+   - Includes Datadog Extension v2.0.0 (41MB)
+   - Real-time code quality insights
+   - Integrated debugging and terminal
+
+5. DOCKER CE (Port 2375)
+   - Docker Engine v27.4.1
+   - containerd v1.7.24
+   - Full container runtime support
+   - Build, run, and manage containers
+
+================================================================================
+                              INSTALLATION
+================================================================================
+
+QUICK START:
+1. Download VibeCode-v3.3.0.dmg from GitHub releases
+2. Open the DMG file
+3. Drag VibeCode.app to your Applications folder
+4. Launch VibeCode from Applications
+5. VM will start automatically on first launch
+
+VERIFICATION:
+After installation, verify your system:
+
+1. Check VM status:
+   vibecode-vm status
+
+2. Get VM IP address:
+   vibecode-vm ip
+
+3. Access OpenVSCode:
+   open http://$(vibecode-vm ip):8080
+
+4. Test SSH connection:
+   ssh root@$(vibecode-vm ip) -p 2222
+
+5. Verify Docker:
+   docker -H tcp://$(vibecode-vm ip):2375 ps
+
+================================================================================
+                            SYSTEM ARCHITECTURE
+================================================================================
+
+┌─────────────────────────────────────┐
+│     macOS Host (Apple Silicon)      │
+│                                     │
+│  ┌───────────────────────────────┐  │
+│  │   VibeCode.app (SwiftUI)      │  │
+│  │                               │  │
+│  │  ┌─────────────────────────┐  │  │
+│  │  │  Linux VM (Kernel 6.1)  │  │  │
+│  │  │                         │  │  │
+│  │  │  5 Services Running:    │  │  │
+│  │  │  • SSH (2222)           │  │  │
+│  │  │  • Valkey (6379)        │  │  │
+│  │  │  • PostgreSQL (5432)    │  │  │
+│  │  │  • OpenVSCode (8080)    │  │  │
+│  │  │  • Docker (2375)        │  │  │
+│  │  │                         │  │  │
+│  │  └─────────────────────────┘  │  │
+│  └───────────────────────────────┘  │
+└─────────────────────────────────────┘
+
+RESOURCE USAGE:
+- VM Memory: ~123 MB
+- Total Memory: ~200 MB (all services)
+- Disk Space: ~5 GB (includes Docker images)
+- Boot Time: < 30 seconds
+
+NETWORKING:
+- All services accessible via VM IP
+- NAT networking for internet access
+- Port forwarding handled automatically
+- DHCP with static IP fallback (192.168.64.10)
+
+================================================================================
+                           COMMAND LINE TOOLS
+================================================================================
+
+VibeCode includes a comprehensive CLI toolkit:
+
+CORE COMMANDS:
+  vibecode-vm start          # Start the VM
+  vibecode-vm stop           # Stop the VM gracefully
+  vibecode-vm status         # Check VM and service status
+  vibecode-vm restart        # Restart the VM
+  
+INFORMATION:
+  vibecode-vm ip             # Get VM IP address
+  vibecode-vm logs           # View VM logs
+  vibecode-vm ps             # List running services
+  
+ACCESS:
+  vibecode-vm ssh            # SSH into the VM
+  vibecode-vm exec <cmd>     # Execute command in VM
+  
+MANAGEMENT:
+  vibecode-vm reset          # Reset VM to defaults
+  vibecode-vm backup         # Backup VM state
+  vibecode-vm restore        # Restore from backup
+
+================================================================================
+                              USAGE EXAMPLES
+================================================================================
+
+1. BASIC WORKFLOW:
+   # Start VM
+   vibecode-vm start
+   
+   # Get IP address
+   VM_IP=$(vibecode-vm ip)
+   
+   # Open VS Code in browser
+   open http://$VM_IP:8080
+   
+   # SSH into VM
+   ssh root@$VM_IP -p 2222
+
+2. DOCKER DEVELOPMENT:
+   # Set Docker host
+   export DOCKER_HOST=tcp://$(vibecode-vm ip):2375
+   
+   # Run container
+   docker run -d -p 80:80 nginx
+   
+   # List containers
+   docker ps
+
+3. DATABASE ACCESS:
+   # Connect to PostgreSQL
+   psql -h $(vibecode-vm ip) -p 5432 -U postgres
+   
+   # Connect to Valkey
+   redis-cli -h $(vibecode-vm ip) -p 6379
+
+4. MONITORING WITH DATADOG:
+   # Open OpenVSCode
+   open http://$(vibecode-vm ip):8080
+   
+   # Datadog extension automatically loaded
+   # Check status in VS Code extensions panel
+
+================================================================================
+                            TROUBLESHOOTING
+================================================================================
+
+ISSUE: VM won't start
+SOLUTION:
+  1. Check system requirements (macOS Tahoe 10.15+)
+  2. Verify Apple Silicon architecture
+  3. Check available RAM (4GB minimum)
+  4. Review logs: vibecode-vm logs
+
+ISSUE: Cannot connect to services
+SOLUTION:
+  1. Verify VM is running: vibecode-vm status
+  2. Get correct IP: vibecode-vm ip
+  3. Check firewall settings
+  4. Wait 30 seconds for services to start
+
+ISSUE: Network carrier detection slow
+SOLUTION:
+  - This is expected behavior in some environments
+  - Static IP fallback (192.168.64.10) activates automatically
+  - Usually resolves within 5-10 seconds
+
+ISSUE: Docker commands fail
+SOLUTION:
+  1. Set DOCKER_HOST: export DOCKER_HOST=tcp://$(vibecode-vm ip):2375
+  2. Or use -H flag: docker -H tcp://$(vibecode-vm ip):2375 ps
+  3. Verify Docker service: vibecode-vm exec "ps aux | grep docker"
+
+ISSUE: Datadog extension not loading
+SOLUTION:
+  - Extension may take 10-15 seconds to initialize
+  - Check OpenVSCode extensions panel
+  - Reload window if needed
+
+================================================================================
+                           PERFORMANCE TUNING
+================================================================================
+
+OPTIMIZE FOR YOUR WORKLOAD:
+
+1. MEMORY ALLOCATION:
+   - Default: 2GB (sufficient for most workloads)
+   - Heavy Docker: Increase to 4GB
+   - Multiple databases: Consider 4-6GB
+
+2. CPU ALLOCATION:
+   - Default: 2 cores (balanced)
+   - Heavy compilation: Increase to 4 cores
+   - Light development: 1-2 cores sufficient
+
+3. DISK SPACE:
+   - Base installation: ~2GB
+   - With Docker images: ~5GB
+   - Large projects: Consider 10GB+
+
+4. NETWORK OPTIMIZATION:
+   - Use static IP for consistency
+   - Configure DNS if needed
+   - Adjust MTU for specific networks
+
+================================================================================
+                              KNOWN ISSUES
+================================================================================
+
+1. Network Carrier Detection (Minor)
+   - May take 5-10 seconds in some environments
+   - Static IP fallback activates automatically
+   - Does not affect functionality
+
+2. Docker Socket Permissions (Configuration)
+   - First-time users may need to set DOCKER_HOST
+   - Workaround: export DOCKER_HOST=tcp://<VM_IP>:2375
+   - Or configure Docker client config
+
+3. Extension Load Time (Expected)
+   - Datadog extension takes 10-15 seconds to initialize
+   - This is normal behavior for large extensions
+   - Extension fully functional after load
+
+================================================================================
+                            UPGRADE NOTES
+================================================================================
+
+FROM v3.2.x:
+- No special steps required
+- Simply replace application
+- Configuration preserved
+
+FROM v3.1.x OR EARLIER:
+- Clean install recommended
+- Backup important VM data first
+- Restore data after installation
+
+BACKUP PROCEDURE:
+  1. vibecode-vm backup
+  2. Remove old version
+  3. Install v3.3.0
+  4. vibecode-vm restore (if needed)
+
+================================================================================
+                              SUPPORT
+================================================================================
+
+DOCUMENTATION:
+- Installation Guide: INSTALLATION_GUIDE_v3.3.0.md
+- Release Notes: RELEASE_NOTES_v3.3.0.md
+- GitHub: https://github.com/ryanmaclean/vibecode-webgui
+
+COMMUNITY:
+- Issues: https://github.com/ryanmaclean/vibecode-webgui/issues
+- Discussions: GitHub Discussions
+- Wiki: Project documentation
+
+TESTING:
+This release includes comprehensive testing:
+- Unit tests for core functionality
+- Integration tests for service connectivity
+- E2E tests for full workflows
+- Performance benchmarks
+- DMG installation verification
+
+================================================================================
+                            TECHNICAL DETAILS
+================================================================================
+
+TECHNOLOGIES:
+- Apple Virtualization.framework (VZ) - Native VM support
+- Apple Containers - Container runtime integration
+- SwiftUI - Modern macOS interface
+- Linux Kernel 6.1 - Optimized for ARM64
+- Docker CE 27.4.1 - Latest stable release
+- OpenVSCode Server - Browser-based IDE
+
+SECURITY:
+- Code-signed application
+- Notarized by Apple
+- Secure boot process
+- Isolated VM environment
+- Key-based SSH authentication
+
+LICENSE:
+- VibeCode: MIT License
+- OpenVSCode Server: MIT License
+- Docker CE: Apache 2.0
+- PostgreSQL: PostgreSQL License
+- Valkey: BSD 3-Clause
+
+================================================================================
+                              VERSION INFO
+================================================================================
+
+Version: 3.3.0
+Build Date: 2026-01-14
+Architecture: ARM64 (Apple Silicon)
+Minimum macOS: Tahoe (10.15 Catalina)
+Recommended macOS: Big Sur (11.0) or later
+
+Services:
+- SSH: Dropbear latest
+- Valkey: 7.2+
+- PostgreSQL: 16
+- OpenVSCode: Latest stable
+- Docker: 27.4.1
+- containerd: 1.7.24
+
+Extensions:
+- Datadog VSCode Extension: v2.0.0 (41MB)
+
+================================================================================
+
+Thank you for using VibeCode v3.3.0!
+
+For the latest updates and documentation, visit:
+https://github.com/ryanmaclean/vibecode-webgui
+
+Built with Claude Sonnet 4.5 via MCP sequential agent deployment.
+
+================================================================================

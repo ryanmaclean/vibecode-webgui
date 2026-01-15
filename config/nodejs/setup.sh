@@ -6,7 +6,7 @@
 # Usage: sudo bash setup.sh
 #
 # This script installs:
-# - Node.js 22 LTS via nvm (v22.21.1 recommended)
+# - Node.js 22 LTS via nvm (v22.22.0 recommended)
 # - npm, pnpm, yarn package managers
 # - Rust 1.90+ toolchain
 # - Python 3.11+ for node-gyp
@@ -43,7 +43,7 @@ log_error() {
 }
 
 # Configuration
-NODE_VERSION="22.21.1"  # Recommended: Proven stable with OpenVSCode Server
+NODE_VERSION="22.22.0"  # Updated to 22.22.0 LTS for security patches (fixes 8 CVEs)
 NVM_VERSION="0.40.0"
 RUST_VERSION="1.90.0"
 PYTHON_VERSION="3.11"

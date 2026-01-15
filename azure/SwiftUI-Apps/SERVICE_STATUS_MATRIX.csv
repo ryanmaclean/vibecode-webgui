@@ -1,0 +1,6 @@
+Service,Port,Status,Connectivity,Functionality,Process_ID,Notes
+SSH,2222,✅ Working,✅ Connected,✅ Tested,N/A (Host PID 1484),Dropbear SSH - command execution verified
+Valkey/Redis,6379,✅ Working,✅ Connected,✅ Tested,169,SET/GET/PING all working - Valkey 9.0.0
+PostgreSQL,5432,✅ Working,✅ Connected,⚠️ Partial,170,Server operational - client tools have libncursesw issue
+OpenVSCode Server,8080,✅ Working,✅ Connected,✅ Tested,180,HTTP 200 - web interface accessible
+Docker,2375,❌ Not Included,❌ Not Available,❌ Not Included,N/A,Not part of v3.1.2 release - expected behavior

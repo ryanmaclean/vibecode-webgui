@@ -1,0 +1,36 @@
+{
+  "timestamp": "2026-01-14T18:43:53.176Z",
+  "tests": [
+    {
+      "name": "Navigate to OpenVSCode Server",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T18:43:55.844Z"
+    },
+    {
+      "name": "OpenVSCode workbench loaded",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T18:43:58.897Z"
+    },
+    {
+      "name": "Open Extensions panel",
+      "status": "passed",
+      "error": null,
+      "screenshot": null,
+      "timestamp": "2026-01-14T18:44:01.025Z"
+    },
+    {
+      "name": "Datadog extension installed and enabled",
+      "status": "failed",
+      "error": "Error: Datadog extension not found or not enabled",
+      "screenshot": null,
+      "timestamp": "2026-01-14T18:44:01.137Z"
+    }
+  ],
+  "passed": 3,
+  "failed": 1,
+  "skipped": 0
+}

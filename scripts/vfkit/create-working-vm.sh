@@ -36,9 +36,9 @@ cat > root/build-valkey.sh <<'BUILD'
 echo "=== Building Valkey ==="
 apk add build-base wget
 cd /tmp
-wget https://github.com/valkey-io/valkey/archive/refs/tags/7.2.5.tar.gz
-tar xzf 7.2.5.tar.gz
-cd valkey-7.2.5
+wget https://github.com/valkey-io/valkey/archive/refs/tags/7.2.8.tar.gz
+tar xzf 7.2.8.tar.gz
+cd valkey-7.2.8
 make -j$(nproc) MALLOC=libc USE_SYSTEMD=no BUILD_TLS=no
 strip src/valkey-server
 echo "✅ Valkey built: $(du -h src/valkey-server)"

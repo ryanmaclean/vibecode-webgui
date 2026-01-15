@@ -1,0 +1,17 @@
+[0;34m╔═══════════════════════════════════════════════════════════════╗[0m
+[0;34m║  VibeCode Post-Build Verification: Datadog Extension (SSH)   ║[0m
+[0;34m╚═══════════════════════════════════════════════════════════════╝[0m
+
+[0;36mTimestamp:       2026-01-14T18:43:48Z[0m
+[0;36mSSH target:      root@localhost:2222[0m
+[0;36mExtension dir:   /root/.openvscode-server/extensions[0m
+[0;36mExpected ext:    datadog.datadog-vscode-2.0.0[0m
+
+[1;33m
+📋 TEST 1: Check SSH connectivity[0m
+[0;32m✓ [PASS] SSH connectivity[0m
+         Connected to localhost:2222
+[1;33m
+📋 TEST 2: Check extension directory exists[0m
+[0;31m✗ [FAIL] Extension directory exists[0m
+         /root/.openvscode-server/extensions not found

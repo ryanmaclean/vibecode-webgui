@@ -1,0 +1,53 @@
+[34m╔═══════════════════════════════════════════════════════════════╗[0m
+[34m║  VibeCode Post-Build Verification: Datadog Extension Test    ║[0m
+[34m╚═══════════════════════════════════════════════════════════════╝[0m
+[0m[0m
+[36mTimestamp: 2026-01-14T18:43:53.176Z[0m
+[36mOpenVSCode URL: http://localhost:8080[0m
+[36mHeadless mode: false[0m
+[36mScreenshot directory: /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/test-results/datadog-extension[0m
+[0m[0m
+[34m🚀 Launching Chrome browser...[0m
+[33m
+📋 TEST 1: Navigate to OpenVSCode Server[0m
+[32m✓ [PASS] Navigate to OpenVSCode Server[0m
+         URL: http://localhost:8080/
+[36m📸 Screenshot saved: 1768416235844-test1-openvscode-loaded.png[0m
+[33m
+📋 TEST 2: Wait for OpenVSCode workbench to load[0m
+[34m
+📡 Waiting for OpenVSCode Server to load...[0m
+[32m✓ OpenVSCode workbench loaded[0m
+[32m✓ [PASS] OpenVSCode workbench loaded[0m
+[36m📸 Screenshot saved: 1768416238897-test2-workbench-ready.png[0m
+[33m
+📋 TEST 3: Open Extensions panel[0m
+[34m
+🔍 Opening Extensions panel...[0m
+[32m✓ Extensions panel opened[0m
+[32m✓ [PASS] Open Extensions panel[0m
+[36m📸 Screenshot saved: 1768416241025-test3-extensions-panel.png[0m
+[33m
+📋 TEST 4: Verify Datadog extension is installed[0m
+[34m
+🔎 Checking for Datadog extension...[0m
+[36m  Found 0 extensions installed[0m
+[31m✗ Datadog extension NOT found[0m
+[31m✗ [FAIL] Datadog extension installed and enabled[0m
+         Datadog extension not found or not enabled
+[36m📸 Screenshot saved: 1768416241137-test4-datadog-not-found.png[0m
+[31m
+💥 Fatal error: Datadog extension not found or not enabled[0m
+[34m
+╔═══════════════════════════════════════════════════════════════╗[0m
+[34m║                      TEST SUMMARY                             ║[0m
+[34m╚═══════════════════════════════════════════════════════════════╝[0m
+[0m[0m
+[36mTotal tests:  4[0m
+[32mPassed:       3[0m
+[31mFailed:       1[0m
+[33mSkipped:      0[0m
+[0m[0m
+[36m📄 Results saved to: /Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/test-results/datadog-extension/test-results.json[0m
+[31m
+❌ TESTS FAILED[0m
