@@ -1,8 +1,26 @@
 // Jest setup file
 import '@testing-library/jest-dom';
 
-// Mock global objects
-global.fetch = jest.fn();
+// Mock global objects - Enhanced fetch mock with proper Response object (Issue #791)
+global.fetch = jest.fn((url, options) =>
+  Promise.resolve({
+    ok: true,
+    status: 200,
+    statusText: 'OK',
+    headers: new Headers({ 'content-type': 'application/json' }),
+    url: typeof url === 'string' ? url : url.url,
+    redirected: false,
+    type: 'basic',
+    body: null,
+    bodyUsed: false,
+    json: () => Promise.resolve({}),
+    text: () => Promise.resolve(''),
+    blob: () => Promise.resolve(new Blob()),
+    arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
+    formData: () => Promise.resolve(new FormData()),
+    clone: function() { return { ...this }; },
+  })
+);
 
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({
