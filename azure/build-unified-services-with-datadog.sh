@@ -334,8 +334,9 @@ EOF
     # Replace the GNU libc Node.js binary with a musl-compatible one from Alpine
     # Issue: The bundled Node.js binary is built for GNU libc and won't work with musl
     # Fix: Download and use Alpine's musl-compatible Node.js binary
+    # Issue #790: Terminal ls command fails - Root cause is glibc Node.js in musl environment
     info "Replacing GNU libc Node.js with musl-compatible version..."
-    local node_apk="nodejs-current-24.9.0-r1.apk"
+    local node_apk="nodejs-current-25.3.0-r0.apk"
     local node_url="https://dl-cdn.alpinelinux.org/alpine/edge/community/aarch64/${node_apk}"
 
     if wget -q --show-progress "$node_url" -O node.apk 2>/dev/null; then
@@ -345,14 +346,21 @@ EOF
             # Replace the GNU libc node binary with musl node
             cp "usr/bin/node" "openvscode/node"
             chmod +x "openvscode/node"
-            info "✓ Replaced with Alpine Node.js (musl-compatible)"
+            info "✓ Replaced with Alpine Node.js v25.3.0 (musl-compatible)"
+
+            # Verify the replacement worked
+            if strings "openvscode/node" | grep -q "ld-musl"; then
+                info "✓ Verified: Node.js is now musl-compatible"
+            else
+                warn "⚠ Warning: Node.js replacement may have failed"
+            fi
+
             rm -rf node.apk usr/ 2>/dev/null || true
         else
-            warn "Failed to extract Node.js from Alpine package, using original"
-            rm -rf node.apk usr/ 2>/dev/null || true
+            error "Failed to extract Node.js from Alpine package - cannot proceed"
         fi
     else
-        warn "Failed to download Alpine Node.js, using original (may not work)"
+        error "Failed to download Alpine Node.js - cannot proceed without musl-compatible Node.js"
     fi
 
     local size=$(du -sh openvscode | cut -f1)
