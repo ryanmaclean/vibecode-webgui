@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for CSP Report API Route
  * Tests Content Security Policy violation reporting
  */

@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for CSRF Token API Route
  * Tests CSRF token generation and validation
  */

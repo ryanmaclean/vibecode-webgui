@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for Vector Store API Route
  * Tests vector search, storage, and deletion operations
  */

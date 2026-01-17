@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for Workspaces API Route
  * Tests workspace creation, listing, and retrieval
  */

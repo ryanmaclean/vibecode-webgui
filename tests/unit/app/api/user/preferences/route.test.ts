@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for User Preferences API Route
  * Tests preference loading and saving
  */

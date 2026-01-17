@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for Readyz API Route (Kubernetes Readiness Probe)
  */
 

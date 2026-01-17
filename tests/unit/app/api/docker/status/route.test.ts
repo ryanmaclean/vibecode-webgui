@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for Docker Status API Route
  * Tests Docker runtime detection and status reporting
  */

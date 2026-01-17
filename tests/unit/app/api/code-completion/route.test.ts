@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Unit tests for Code Completion API Route
  * Tests AI-powered code completion with multiple providers
  */

@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for /api/health route
  * Comprehensive coverage of health check endpoint
  */

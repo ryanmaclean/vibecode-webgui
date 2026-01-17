@@ -1,4 +1,8 @@
 /**
+ * @jest-environment node
+ */
+
+/**
  * Tests for /api/healthz route (Kubernetes liveness probe)
  */
 
