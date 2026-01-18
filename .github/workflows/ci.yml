@@ -83,6 +83,17 @@ jobs:
           REDIS_URL: redis://localhost:6379
           CI: true
 
+      - name: Upload test results to Datadog
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.com
+          DD_ENV: ci
+          DD_SERVICE: vibecode-webgui
+        run: |
+          npm install -g @datadog/datadog-ci
+          datadog-ci junit upload --service vibecode-webgui test-results/*.xml || echo "No test results to upload"
+
       - name: Generate test summary
         if: always()
         run: |
