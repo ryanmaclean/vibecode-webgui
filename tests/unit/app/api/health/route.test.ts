@@ -93,7 +93,12 @@ describe('/api/health', () => {
           valkey: { status: 'healthy' },
           ai: { status: 'healthy' }
         },
-        responseTime: expect.stringMatching(/^\d+ms$/)
+        responseTime: expect.stringMatching(/^\d+ms$/),
+        performance: expect.objectContaining({
+          responseTime: expect.any(Number),
+          memoryUsage: expect.any(Object),
+          cpuUsage: expect.any(Number)
+        })
       });
       } catch (error) {
         console.log('Test error:', error);

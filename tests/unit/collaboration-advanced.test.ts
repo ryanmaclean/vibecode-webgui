@@ -8,21 +8,19 @@ import { jest } from '@jest/globals';
 // Use real Y.js for proper CRDT behavior
 // No mocking - test against actual implementation
 
-// Create a mock constructor function
-const mockWebsocketProviderConstructor = jest.fn(() => ({
-  on: jest.fn(),
-  connect: jest.fn(),
-  disconnect: jest.fn(),
-  awareness: {
-    on: jest.fn(),
-    setLocalStateField: jest.fn(),
-    getStates: jest.fn(() => new Map())
-  },
-  destroy: jest.fn()
-}));
-
+// Mock y-websocket before importing
 jest.mock('y-websocket', () => ({
-  WebsocketProvider: mockWebsocketProviderConstructor
+  WebsocketProvider: jest.fn(() => ({
+    on: jest.fn(),
+    connect: jest.fn(),
+    disconnect: jest.fn(),
+    awareness: {
+      on: jest.fn(),
+      setLocalStateField: jest.fn(),
+      getStates: jest.fn(() => new Map())
+    },
+    destroy: jest.fn()
+  }))
 }));
 
 // Now import after mocking
@@ -51,7 +49,8 @@ describe('Advanced Collaboration Features', () => {
     ydoc = new Y.Doc();
     ytext = ydoc.getText('content');
 
-    mockWebsocketProviderConstructor.mockImplementation(() => ({
+    // Reset WebsocketProvider mock implementation
+    (WebsocketProvider as jest.Mock).mockImplementation(() => ({
       on: jest.fn(),
       connect: jest.fn(),
       disconnect: jest.fn(),
@@ -61,7 +60,7 @@ describe('Advanced Collaboration Features', () => {
         getStates: jest.fn().mockReturnValue(new Map())
       },
       destroy: jest.fn()
-    }) as any);
+    }));
   });
 
   afterEach(() => {

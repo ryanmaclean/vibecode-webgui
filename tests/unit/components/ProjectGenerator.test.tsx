@@ -3,6 +3,13 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { ProjectGenerator } from '@/components/ProjectGenerator';
 import { useProjectGenerator } from '@/hooks/useProjectGenerator';
 
+// Mock UI components
+jest.mock('@/components/ui/alert', () => ({
+  Alert: ({ children, ...props }: any) => <div data-testid="alert" {...props}>{children}</div>,
+  AlertTitle: ({ children, ...props }: any) => <div data-testid="alert-title" {...props}>{children}</div>,
+  AlertDescription: ({ children, ...props }: any) => <div data-testid="alert-description" {...props}>{children}</div>,
+}));
+
 // Mock the useProjectGenerator hook
 jest.mock('@/hooks/useProjectGenerator');
 

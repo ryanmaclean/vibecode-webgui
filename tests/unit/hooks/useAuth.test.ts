@@ -153,7 +153,7 @@ describe('useAuth', () => {
       expect(result.current.providers).toEqual([
         {
           id: 'github',
-          name: 'FolderHub',
+          name: 'GitHub',
           icon: 'github',
           color: 'bg-gray-900 hover:bg-gray-800',
         },

@@ -379,31 +379,31 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
   }
 
   const securityLevel = getSecurityLevel(pathname);
-
-  // Validate CORS (unless bypassed for testing or in development with localhost)
   const origin = request.headers.get('origin');
-  const isDevelopmentLocalhost = process.env.NODE_ENV === 'development' &&
-    origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
 
-  let corsValidation = { valid: true, headers: {} as Record<string, string> };
-
-  if (!__TEST__bypassEnabled && !isDevelopmentLocalhost) {
-    corsValidation = validateCORS(request);
-    if (!corsValidation.valid) {
-      AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
-        pathname,
-        origin: request.headers.get('origin'),
-        ip: getClientIP(request)
-      });
-      return new NextResponse('CORS policy violation', { status: 403 });
-    }
-  } else {
-    // For test/development, create a valid CORS response
-    corsValidation = { valid: true, headers: { 'Access-Control-Allow-Origin': origin || '*' } };
-  }
-
-  // Handle preflight requests
+  // Handle preflight requests BEFORE CORS validation
   if (request.method === 'OPTIONS') {
+    // Validate CORS for OPTIONS requests
+    const isDevelopmentLocalhost = process.env.NODE_ENV === 'development' &&
+      origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+
+    let corsValidation = { valid: true, headers: {} as Record<string, string> };
+
+    if (!__TEST__bypassEnabled && !isDevelopmentLocalhost) {
+      corsValidation = validateCORS(request);
+      if (!corsValidation.valid) {
+        AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
+          pathname,
+          origin: request.headers.get('origin'),
+          ip: getClientIP(request)
+        });
+        return new NextResponse('CORS policy violation', { status: 403 });
+      }
+    } else {
+      // For test/development, create a valid CORS response
+      corsValidation = { valid: true, headers: { 'Access-Control-Allow-Origin': origin || '*' } };
+    }
+
     return new NextResponse(null, {
       status: 200,
       headers: {
@@ -416,6 +416,22 @@ export async function apiSecurityMiddleware(request: NextRequest): Promise<NextR
         })
       }
     });
+  }
+
+  // Validate CORS for non-OPTIONS requests (unless bypassed for testing or in development with localhost)
+  const isDevelopmentLocalhost = process.env.NODE_ENV === 'development' &&
+    origin && (origin.includes('localhost') || origin.includes('127.0.0.1'));
+
+  if (!__TEST__bypassEnabled && !isDevelopmentLocalhost) {
+    const corsValidation = validateCORS(request);
+    if (!corsValidation.valid) {
+      AISecurityLogger.logSuspiciousActivity('unknown', 'cors_violation', {
+        pathname,
+        origin: request.headers.get('origin'),
+        ip: getClientIP(request)
+      });
+      return new NextResponse('CORS policy violation', { status: 403 });
+    }
   }
 
   // Validate request security (unless bypassed for testing)

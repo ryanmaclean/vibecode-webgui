@@ -94,48 +94,6 @@ export async function hashPassword(password: string, saltRounds: number = PASSWO
 }
 
 /**
- * Check if a string is a valid bcrypt hash format
- *
- * Validates that the hash matches bcrypt format requirements:
- * - Starts with $2a$, $2b$, or $2y$ (bcrypt variants)
- * - Has proper structure with cost factor
- * - Minimum cost factor of 10 (security requirement)
- *
- * @param hash - String to validate as bcrypt hash
- * @returns True if valid bcrypt hash format, false otherwise
- *
- * @example
- * ```typescript
- * const isValid = isValidBcryptHash('$2b$12$...');
- * // Returns: true
- * ```
- */
-export function isValidBcryptHash(hash: string): boolean {
-  if (!hash || typeof hash !== 'string') {
-    return false;
-  }
-
-  // Validate hash format (bcrypt hashes start with $2a$, $2b$, or $2y$)
-  const match = hash.match(/^\$2[aby]\$(\d{2})\$/);
-  if (!match) {
-    return false;
-  }
-
-  // Check minimum cost factor (security requirement)
-  const costFactor = parseInt(match[1], 10);
-  if (costFactor < 10) {
-    return false;
-  }
-
-  // Check full hash length (bcrypt produces 60-character hashes)
-  if (hash.length !== 60) {
-    return false;
-  }
-
-  return true;
-}
-
-/**
  * Verify a plaintext password against a bcrypt hash
  *
  * Uses timing-safe comparison to prevent timing attacks.

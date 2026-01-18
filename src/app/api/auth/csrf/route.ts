@@ -18,28 +18,29 @@ export async function GET(request: NextRequest) {
     const csrfToken = generateCSRFToken(sessionId);
     const expires = Date.now() + (60 * 60 * 1000); // 1 hour
 
+    // Build cookie string for Set-Cookie header
+    const isProduction = process.env.NODE_ENV === 'production';
+    const cookieParts = [
+      `csrf-token=${csrfToken}`,
+      'HttpOnly',
+      'SameSite=Strict',
+      'Path=/',
+      `Max-Age=${60 * 60}`
+    ];
+
+    if (isProduction) {
+      cookieParts.push('Secure');
+    }
+
+    const cookieString = cookieParts.join('; ');
+
     const response = NextResponse.json({
       csrfToken,
       expires
     });
 
-    // Set secure HTTP-only cookie
-    // NextResponse should have cookies available, but add defensive check
-    try {
-      response.cookies.set('csrf-token', csrfToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'strict',
-        maxAge: 60 * 60, // 1 hour in seconds
-        path: '/'
-      });
-    } catch (cookieError) {
-      // Fallback to Set-Cookie header for test environments
-      console.warn('Failed to set cookie via cookies API, using header fallback', cookieError);
-      response.headers.set('Set-Cookie',
-        `csrf-token=${csrfToken}; HttpOnly; Secure; SameSite=Strict; Path=/; Max-Age=${60 * 60}`
-      );
-    }
+    // Set cookie via header for better test compatibility
+    response.headers.set('Set-Cookie', cookieString);
 
     return response;
 

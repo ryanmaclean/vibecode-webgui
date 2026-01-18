@@ -154,7 +154,9 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'create_workspace');
 
-        expect(result).toEqual({ allowed: true });
+        expect(result.allowed).toBe(true);
+        expect(result.remainingQuota).toBe(5);
+        expect(result.resetTime).toBeDefined();
         expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'create_workspace', undefined)
       });
 
@@ -186,7 +188,9 @@ describe('Quota Middleware', () => {
 
         const result = await withQuotaCheck(mockRequest, 'upload_file', { fileSize: 500000 });
 
-        expect(result).toEqual({ allowed: true });
+        expect(result.allowed).toBe(true);
+        expect(result.remainingQuota).toBe(0); // upload_file returns 0 remaining
+        expect(result.resetTime).toBeDefined();
         expect(mockedResourceManager.checkQuota).toHaveBeenCalledWith(123, 'upload_file', 500000)
       });
     });
@@ -204,7 +208,9 @@ describe('Quota Middleware', () => {
       it('should record API call for api_call action', async () => {
         const result = await withQuotaCheck(mockRequest, 'api_call');
 
-        expect(result).toEqual({ allowed: true });
+        expect(result.allowed).toBe(true);
+        expect(result.remainingQuota).toBe(500); // 1000 - 500
+        expect(result.resetTime).toBeDefined();
         expect(mockedResourceManager.recordAPICall).toHaveBeenCalledWith(123, '/api/test')
       });
 
