@@ -5,7 +5,7 @@ All notable changes to VibeCode Services will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [4.0.1] - 2026-01-17
+## [1.5.0] - 2026-01-17
 
 ### Fixed
 - **Issue #790**: Fixed terminal commands failing in OpenVSCode Server with "not found" errors
@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validation script validate-issue-790-fix.sh for automated testing of the fix
 - Documentation of GAS (Generate-Assess-Synthesize) methodology used to solve Issue #790
 
-## [4.0.0] - 2026-01-XX
+## [1.4.0] - 2026-01-XX
 
 ### Added
 - Initial release of unified services VM

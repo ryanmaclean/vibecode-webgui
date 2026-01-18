@@ -4,7 +4,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ## Current Status
 
-**Version**: 3.2.1 (January 2025)
+**Version**: 1.5.0 (January 2025)
 
 **Stability**: Production-ready with active development
 
@@ -18,7 +18,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v3.3.0 (Q1 2025)
+## v1.6.0 (Q1 2025)
 
 ### Features
 
@@ -61,7 +61,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v3.4.0 (Q2 2025)
+## v2.0.0 (Q2 2025)
 
 ### Multi-Architecture Support
 
@@ -100,7 +100,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v3.5.0 (Q3 2025)
+## v2.1.0 (Q3 2025)
 
 ### Clustering & Multi-VM
 
@@ -139,7 +139,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v4.0.0 (Q4 2025)
+## v3.0.0 (Q4 2025)
 
 ### Major Architecture Upgrade
 
@@ -248,20 +248,20 @@ This document outlines the current state, planned features, and long-term vision
 
 1. **Single VM Per Host**
    - Currently runs one VM instance at a time
-   - Multi-VM support planned for v3.4.0
+   - Multi-VM support planned for v2.0.0
 
 2. **Architecture Specific**
    - Currently Apple Silicon optimized
-   - Intel support coming in v3.4.0
+   - Intel support coming in v2.0.0
 
 3. **Limited Service Customization**
    - Service stack is fixed
    - Customization possible but requires rebuild
-   - Plugin system planned for v3.4.0
+   - Plugin system planned for v2.0.0
 
 4. **macOS Only (Currently)**
    - vfkit is macOS-specific
-   - Linux support planned for v3.4.0
+   - Linux support planned for v2.0.0
    - Windows WSL2 experimental support planned
 
 5. **Boot Volume Limitations**
@@ -271,15 +271,15 @@ This document outlines the current state, planned features, and long-term vision
 
 ### Planned Solutions
 
-- **Custom Service Configuration** (v3.3.0)
+- **Custom Service Configuration** (v1.6.0)
   - Configuration files for service selection
   - Optional services that can be disabled
 
-- **Plugin System** (v3.4.0)
+- **Plugin System** (v2.0.0)
   - Add custom services without rebuilding
   - Extensible architecture for third-party developers
 
-- **Multi-Platform Support** (v3.4.0)
+- **Multi-Platform Support** (v2.0.0)
   - Linux hypervisor backends
   - Windows WSL2 integration
 
@@ -352,11 +352,11 @@ Features requested by the community (sorted by frequency):
 
 | Version | Expected | Status |
 |---------|----------|--------|
-| 3.2.1   | Jan 2025 | Current |
-| 3.3.0   | Mar 2025 | Planned |
-| 3.4.0   | Jun 2025 | Planned |
-| 3.5.0   | Sep 2025 | Planned |
-| 4.0.0   | Dec 2025 | Planned |
+| 1.5.0   | Jan 2025 | Current |
+| 1.6.0   | Mar 2025 | Planned |
+| 2.0.0   | Jun 2025 | Planned |
+| 2.1.0   | Sep 2025 | Planned |
+| 3.0.0   | Dec 2025 | Planned |
 
 *Note: Timeline may shift based on community feedback, dependencies, and discovered technical challenges.*
 

@@ -4,7 +4,7 @@ TEST PROJECT!!!
 # VibeCode VM
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Version](https://img.shields.io/badge/version-3.3.0-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
+[![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
 
 **Lightweight, Fast Development VMs with Full IDE Support**
 
@@ -230,7 +230,7 @@ Built with:
 
 VibeCode VM is currently in **active development**. The core functionality is stable and ready for use, with ongoing improvements to documentation, testing, and features.
 
-Current Version: **v1.0.0**
+Current Version: **v1.5.0**
 
 ---
 
