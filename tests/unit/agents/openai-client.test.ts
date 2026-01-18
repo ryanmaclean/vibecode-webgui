@@ -11,6 +11,37 @@ import {
 } from '@/lib/agents/openai-client'
 import type { Agent, Thread, ThreadMessage, Run } from '@/types/openai-agents'
 
+// Mock logger to prevent "createChildLogger is not a function" error
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    http: jest.fn(),
+    log: jest.fn(),
+    child: jest.fn(),
+  },
+  createChildLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    http: jest.fn(),
+    log: jest.fn(),
+    child: jest.fn(),
+  })),
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn(),
+    http: jest.fn(),
+    log: jest.fn(),
+    child: jest.fn(),
+  })),
+}))
+
 // Mock fetch
 const mockFetch = jest.fn()
 global.fetch = mockFetch as any

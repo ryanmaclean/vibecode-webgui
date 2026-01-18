@@ -265,6 +265,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",
+    "@azure/identity": "4.13.0",
     "@babel/preset-env": "7.28.0",
     "@babel/preset-react": "7.27.1",
     "@babel/preset-typescript": "7.27.1",
