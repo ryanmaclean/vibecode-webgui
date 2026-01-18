@@ -1,0 +1,48 @@
+# Grafana Dashboards Configuration for VibeCode Platform
+
+apiVersion: 1
+
+providers:
+  # Application dashboards
+  - name: 'vibecode-application'
+    orgId: 1
+    folder: 'VibeCode Application'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/application
+
+  # Infrastructure dashboards
+  - name: 'vibecode-infrastructure'
+    orgId: 1
+    folder: 'Infrastructure'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/infrastructure
+
+  # Business metrics dashboards
+  - name: 'vibecode-business'
+    orgId: 1
+    folder: 'Business Metrics'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/business
+
+  # Security dashboards
+  - name: 'vibecode-security'
+    orgId: 1
+    folder: 'Security'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/security

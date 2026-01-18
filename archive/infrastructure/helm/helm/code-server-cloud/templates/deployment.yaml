@@ -1,0 +1,85 @@
+{{- if .Values.image.repository }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "code-server-cloud.fullname" . }}
+  labels:
+    {{- include "code-server-cloud.labels" . | nindent 4 }}
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      {{- include "code-server-cloud.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "code-server-cloud.labels" . | nindent 8 }}
+    spec:
+      containers:
+        - name: codeserver
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          env:
+            - name: PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: {{ include "code-server-cloud.fullname" . }}-secret
+                  key: password
+          ports:
+            - containerPort: 8765
+              name: http
+          volumeMounts:
+            - name: workspace
+              mountPath: /home/coder/project
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+        {{- if .Values.sidecar.datadog.enabled }}
+        - name: datadog-agent
+          image: {{ .Values.sidecar.datadog.image }}
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: DD_SITE
+              value: {{ .Values.sidecar.datadog.site | default "datadoghq.com" }}
+            - name: DD_ENV
+              value: {{ .Values.sidecar.datadog.env | default "development" }}
+            - name: DD_SERVICE
+              value: {{ include "code-server-cloud.fullname" . }}
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: {{ .Values.sidecar.datadog.apiKeySecretName | default "datadog-secret" }}
+                  key: api-key
+                  optional: true
+          volumeMounts:
+            - name: datadog-config
+              mountPath: /etc/datadog-agent/datadog.yaml
+              subPath: datadog.yaml
+          resources:
+            {{- toYaml .Values.sidecar.datadog.resources | nindent 12 }}
+        {{- end }}
+      {{- with .Values.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.affinity }}
+      affinity:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      volumes:
+        - name: workspace
+          {{- if .Values.workspace.persistentVolume.enabled }}
+          persistentVolumeClaim:
+            claimName: {{ include "code-server-cloud.fullname" . }}-workspace
+          {{- else }}
+          emptyDir: {}
+          {{- end }}
+        {{- if .Values.sidecar.datadog.enabled }}
+        - name: datadog-config
+          configMap:
+            name: {{ include "code-server-cloud.fullname" . }}-datadog
+        {{- end }}
+{{- end }}

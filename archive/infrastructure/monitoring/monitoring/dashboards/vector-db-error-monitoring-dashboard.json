@@ -1,0 +1,149 @@
+{
+  "title": "Vector Database Error Monitoring Dashboard",
+  "description": "Track error rates, types, and patterns across vector database adapters",
+  "widgets": [
+    {
+      "id": "error_rate_time_series",
+      "title": "Error Rate by Adapter",
+      "type": "timeseries",
+      "query": "avg:vector_db.errors{*} by {adapter}.as_rate()",
+      "viz": "timeseries",
+      "width": 12,
+      "height": 3,
+      "time": {
+        "live_span": "1h"
+      }
+    },
+    {
+      "id": "error_type_distribution",
+      "title": "Error Type Distribution",
+      "type": "toplist",
+      "query": "sum:vector_db.errors{*} by {error_type}",
+      "viz": "toplist",
+      "width": 6,
+      "height": 4
+    },
+    {
+      "id": "retry_success_rate",
+      "title": "Retry Success Rate",
+      "type": "query_value",
+      "query": "100 * (sum:vector_db.retry.success{*}.as_count() / (sum:vector_db.retry.attempts{*}.as_count() + 0.001))",
+      "viz": "query_value",
+      "width": 6,
+      "height": 2,
+      "precision": 2,
+      "text_align": "center",
+      "autoscale": true,
+      "custom_unit": "%"
+    },
+    {
+      "id": "error_count_by_adapter",
+      "title": "Error Count by Adapter",
+      "type": "toplist",
+      "query": "sum:vector_db.errors{*} by {adapter}",
+      "viz": "toplist",
+      "width": 6,
+      "height": 4
+    },
+    {
+      "id": "error_severity_distribution",
+      "title": "Error Severity Distribution",
+      "type": "pie",
+      "query": "sum:vector_db.errors{*} by {severity}",
+      "viz": "pie",
+      "width": 6,
+      "height": 4
+    },
+    {
+      "id": "operation_error_heatmap",
+      "title": "Operation Error Heatmap",
+      "type": "heatmap",
+      "query": "sum:vector_db.errors{*} by {operation,adapter}",
+      "viz": "heatmap",
+      "width": 12,
+      "height": 4
+    },
+    {
+      "id": "error_rate_change",
+      "title": "Error Rate % Change (vs 1 day ago)",
+      "type": "change",
+      "query": "sum:vector_db.errors{*}.as_rate()",
+      "viz": "change",
+      "width": 6,
+      "height": 2,
+      "change_type": "absolute",
+      "compare_to": "day_before",
+      "increase_is_good": false,
+      "order_by": "change",
+      "order_dir": "desc"
+    },
+    {
+      "id": "connection_errors_by_provider",
+      "title": "Connection Errors by Provider",
+      "type": "timeseries",
+      "query": "sum:vector_db.errors{error_type:connection} by {adapter}.as_rate()",
+      "viz": "timeseries",
+      "width": 12,
+      "height": 3
+    },
+    {
+      "id": "retryable_vs_nonretryable",
+      "title": "Retryable vs Non-Retryable Errors",
+      "type": "query_table",
+      "query": "sum:vector_db.errors{*} by {retryable,adapter}",
+      "viz": "query_table",
+      "width": 12,
+      "height": 3
+    },
+    {
+      "id": "avg_resolution_time",
+      "title": "Average Error Resolution Time (seconds)",
+      "type": "query_value",
+      "query": "avg:vector_db.error.resolution_time{*} by {adapter}",
+      "viz": "query_value",
+      "width": 6,
+      "height": 3,
+      "precision": 1
+    },
+    {
+      "id": "recent_errors_list",
+      "title": "Recent Errors (Last 15 Minutes)",
+      "type": "log_stream",
+      "query": "source:vector_db error @type:vector_db",
+      "columns": [
+        "timestamp",
+        "adapter",
+        "error_type",
+        "operation",
+        "message"
+      ],
+      "width": 12,
+      "height": 4,
+      "indexes": [
+        "main"
+      ],
+      "sort": {
+        "column": "timestamp",
+        "order": "desc"
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "adapter",
+      "prefix": "adapter",
+      "default": "*"
+    },
+    {
+      "name": "error_type",
+      "prefix": "error_type",
+      "default": "*"
+    }
+  ],
+  "layout_type": "ordered",
+  "notify": {
+    "on_change": false,
+    "include_screenboard": false
+  },
+  "is_read_only": false
+}

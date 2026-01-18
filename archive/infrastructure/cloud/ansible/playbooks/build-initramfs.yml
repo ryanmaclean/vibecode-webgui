@@ -1,0 +1,302 @@
+---
+# Ansible playbook to build the VibeCode Services initramfs
+# Usage: ansible-playbook -i inventory/localhost.yml playbooks/build-initramfs.yml
+
+- name: Build VibeCode Services Initramfs
+  hosts: localhost
+  gather_facts: true
+  
+  vars:
+    # Build directories
+    build_dir: "/tmp/vibecode-initramfs-build"
+    rootfs_dir: "{{ build_dir }}/rootfs"
+    packages_dir: "{{ build_dir }}/packages"
+    
+    # Output
+    output_dir: "{{ playbook_dir }}/../../azure"
+    output_file: "unified-services-glibc-fixed.cpio.gz"
+    
+    # Ubuntu version for packages
+    ubuntu_codename: "jammy"  # 22.04 LTS
+    ubuntu_arch: "arm64"
+    ubuntu_mirror: "http://ports.ubuntu.com"
+    
+    # Package versions (Ubuntu 22.04)
+    packages:
+      # Core glibc
+      - name: libc6
+        url: "{{ ubuntu_mirror }}/pool/main/g/glibc/libc6_2.35-0ubuntu3.12_{{ ubuntu_arch }}.deb"
+      
+      # PostgreSQL 14
+      - name: postgresql-14
+        url: "{{ ubuntu_mirror }}/pool/main/p/postgresql-14/postgresql-14_14.20-0ubuntu0.22.04.1_{{ ubuntu_arch }}.deb"
+      
+      # ICU libraries (for PostgreSQL)
+      - name: libicu70
+        url: "{{ ubuntu_mirror }}/pool/main/i/icu/libicu70_70.1-2_{{ ubuntu_arch }}.deb"
+      
+      # LDAP (for PostgreSQL)
+      - name: libldap
+        url: "{{ ubuntu_mirror }}/pool/main/o/openldap/libldap-2.5-0_2.5.16+dfsg-0ubuntu0.22.04.2_{{ ubuntu_arch }}.deb"
+      
+      # Avahi (mDNS)
+      - name: avahi-daemon
+        url: "{{ ubuntu_mirror }}/pool/main/a/avahi/avahi-daemon_0.8-5ubuntu5.2_{{ ubuntu_arch }}.deb"
+      - name: libavahi-common
+        url: "{{ ubuntu_mirror }}/pool/main/a/avahi/libavahi-common3_0.8-5ubuntu5.2_{{ ubuntu_arch }}.deb"
+      - name: libavahi-core
+        url: "{{ ubuntu_mirror }}/pool/main/a/avahi/libavahi-core7_0.8-5ubuntu5.2_{{ ubuntu_arch }}.deb"
+      
+      # Dropbear SSH
+      - name: dropbear
+        url: "{{ ubuntu_mirror }}/pool/universe/d/dropbear/dropbear-bin_2020.81-5ubuntu0.1_{{ ubuntu_arch }}.deb"
+      
+      # Supporting libraries
+      - name: libdaemon
+        url: "{{ ubuntu_mirror }}/pool/main/libd/libdaemon/libdaemon0_0.14-7.1ubuntu5_{{ ubuntu_arch }}.deb"
+      - name: libdbus
+        url: "{{ ubuntu_mirror }}/pool/main/d/dbus/libdbus-1-3_1.12.20-2ubuntu4.1_{{ ubuntu_arch }}.deb"
+      - name: libexpat
+        url: "{{ ubuntu_mirror }}/pool/main/e/expat/libexpat1_2.4.7-1ubuntu0.6_{{ ubuntu_arch }}.deb"
+      - name: libcap
+        url: "{{ ubuntu_mirror }}/pool/main/libc/libcap2/libcap2_2.44-1build3_{{ ubuntu_arch }}.deb"
+      - name: libtomcrypt
+        url: "{{ ubuntu_mirror }}/pool/universe/libt/libtomcrypt/libtomcrypt1_1.18.2-5_{{ ubuntu_arch }}.deb"
+      - name: libtommath
+        url: "{{ ubuntu_mirror }}/pool/main/libt/libtommath/libtommath1_1.2.0-6ubuntu0.22.04.1_{{ ubuntu_arch }}.deb"
+      - name: libsasl2
+        url: "{{ ubuntu_mirror }}/pool/main/c/cyrus-sasl2/libsasl2-2_2.1.27+dfsg2-3ubuntu1.2_{{ ubuntu_arch }}.deb"
+      - name: libsystemd
+        url: "{{ ubuntu_mirror }}/pool/main/s/systemd/libsystemd0_249.11-0ubuntu3.17_{{ ubuntu_arch }}.deb"
+    
+    # VM hostname
+    vm_hostname: "vibecode-vm"
+    
+    # Services to run
+    services:
+      valkey:
+        enabled: true
+        port: 6379
+      postgresql:
+        enabled: true
+        port: 5432
+        version: "14"
+      openvscode:
+        enabled: true
+        port: 8080
+      ssh:
+        enabled: true
+        port: 22
+      avahi:
+        enabled: true
+
+  tasks:
+    - name: Create build directories
+      file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - "{{ build_dir }}"
+        - "{{ rootfs_dir }}"
+        - "{{ packages_dir }}"
+
+    - name: Check if base initramfs exists
+      stat:
+        path: "{{ output_dir }}/unified-services-with-datadog.cpio.gz"
+      register: base_initramfs
+
+    - name: Extract base initramfs
+      shell: |
+        cd {{ rootfs_dir }}
+        gunzip -c {{ output_dir }}/unified-services-with-datadog.cpio.gz | cpio -idmv
+      when: base_initramfs.stat.exists
+      args:
+        creates: "{{ rootfs_dir }}/init"
+
+    - name: Download packages
+      get_url:
+        url: "{{ item.url }}"
+        dest: "{{ packages_dir }}/{{ item.name }}.deb"
+        mode: '0644'
+      loop: "{{ packages }}"
+      register: download_result
+      ignore_errors: true
+
+    - name: Extract packages
+      shell: |
+        cd {{ packages_dir }}
+        mkdir -p {{ item.name }}
+        cd {{ item.name }}
+        ar x ../{{ item.name }}.deb 2>/dev/null || true
+        if [ -f data.tar.zst ]; then
+          zstd -d -f data.tar.zst && tar -xf data.tar
+        elif [ -f data.tar.xz ]; then
+          xz -d -f data.tar.xz && tar -xf data.tar
+        elif [ -f data.tar.gz ]; then
+          tar -xzf data.tar.gz
+        fi
+        rm -f control.tar.* data.tar* debian-binary
+      loop: "{{ packages }}"
+      args:
+        creates: "{{ packages_dir }}/{{ item.name }}/usr"
+      ignore_errors: true
+
+    - name: Copy glibc libraries
+      shell: |
+        cp -a {{ packages_dir }}/libc6/lib/aarch64-linux-gnu/* {{ rootfs_dir }}/lib/aarch64-linux-gnu/ 2>/dev/null || true
+      when: base_initramfs.stat.exists
+
+    - name: Copy PostgreSQL binaries
+      shell: |
+        cp {{ packages_dir }}/postgresql-14/usr/lib/postgresql/14/bin/postgres {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        cp {{ packages_dir }}/postgresql-14/usr/lib/postgresql/14/bin/initdb {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        mkdir -p {{ rootfs_dir }}/usr/lib/postgresql/14/lib
+        cp -a {{ packages_dir }}/postgresql-14/usr/lib/postgresql/14/lib/* {{ rootfs_dir }}/usr/lib/postgresql/14/lib/ 2>/dev/null || true
+        mkdir -p {{ rootfs_dir }}/usr/share/postgresql/14
+        cp -a {{ packages_dir }}/postgresql-14/usr/share/postgresql/14/* {{ rootfs_dir }}/usr/share/postgresql/14/ 2>/dev/null || true
+        chmod +x {{ rootfs_dir }}/usr/bin/postgres {{ rootfs_dir }}/usr/bin/initdb 2>/dev/null || true
+      when: services.postgresql.enabled
+
+    - name: Copy ICU libraries
+      shell: |
+        cp -a {{ packages_dir }}/libicu70/usr/lib/aarch64-linux-gnu/libicu*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+      when: services.postgresql.enabled
+
+    - name: Copy LDAP libraries
+      shell: |
+        cp -a {{ packages_dir }}/libldap/usr/lib/aarch64-linux-gnu/libldap*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+      when: services.postgresql.enabled
+
+    - name: Copy Avahi daemon and libraries
+      shell: |
+        cp {{ packages_dir }}/avahi-daemon/usr/sbin/avahi-daemon {{ rootfs_dir }}/usr/sbin/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libavahi-common/usr/lib/aarch64-linux-gnu/libavahi*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libavahi-core/usr/lib/aarch64-linux-gnu/libavahi*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libdaemon/usr/lib/aarch64-linux-gnu/libdaemon*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libdbus/lib/aarch64-linux-gnu/libdbus*.so* {{ rootfs_dir }}/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libexpat/lib/aarch64-linux-gnu/libexpat*.so* {{ rootfs_dir }}/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libcap/lib/aarch64-linux-gnu/libcap*.so* {{ rootfs_dir }}/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        chmod +x {{ rootfs_dir }}/usr/sbin/avahi-daemon 2>/dev/null || true
+      when: services.avahi.enabled
+
+    - name: Copy Dropbear SSH
+      shell: |
+        cp {{ packages_dir }}/dropbear/usr/sbin/dropbear {{ rootfs_dir }}/usr/sbin/ 2>/dev/null || true
+        cp {{ packages_dir }}/dropbear/usr/bin/dropbearkey {{ rootfs_dir }}/usr/bin/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libtomcrypt/usr/lib/aarch64-linux-gnu/libtom*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libtommath/usr/lib/aarch64-linux-gnu/libtom*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        chmod +x {{ rootfs_dir }}/usr/sbin/dropbear {{ rootfs_dir }}/usr/bin/dropbearkey 2>/dev/null || true
+      when: services.ssh.enabled
+
+    - name: Copy other supporting libraries
+      shell: |
+        cp -a {{ packages_dir }}/libsasl2/usr/lib/aarch64-linux-gnu/libsasl*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libsystemd/lib/aarch64-linux-gnu/libsystemd*.so* {{ rootfs_dir }}/lib/aarch64-linux-gnu/ 2>/dev/null || true
+        cp -a {{ packages_dir }}/libsystemd/usr/lib/aarch64-linux-gnu/libsystemd*.so* {{ rootfs_dir }}/usr/lib/aarch64-linux-gnu/ 2>/dev/null || true
+
+    - name: Create Avahi configuration directory
+      file:
+        path: "{{ rootfs_dir }}/etc/avahi/services"
+        state: directory
+        mode: '0755'
+      when: services.avahi.enabled
+
+    - name: Create Avahi daemon configuration
+      copy:
+        dest: "{{ rootfs_dir }}/etc/avahi/avahi-daemon.conf"
+        content: |
+          [server]
+          host-name={{ vm_hostname }}
+          domain-name=local
+          use-ipv4=yes
+          use-ipv6=no
+          allow-interfaces=enp0s1,eth0
+          deny-interfaces=lo
+          ratelimit-interval-usec=1000000
+          ratelimit-burst=1000
+
+          [wide-area]
+          enable-wide-area=no
+
+          [publish]
+          publish-hinfo=no
+          publish-workstation=no
+          publish-addresses=yes
+
+          [rlimits]
+          rlimit-core=0
+          rlimit-data=4194304
+          rlimit-fsize=0
+          rlimit-nofile=768
+          rlimit-stack=4194304
+          rlimit-nproc=3
+        mode: '0644'
+      when: services.avahi.enabled
+
+    - name: Create Avahi service files
+      copy:
+        dest: "{{ rootfs_dir }}/etc/avahi/services/{{ item.name }}.service"
+        content: |
+          <?xml version="1.0" standalone='no'?>
+          <!DOCTYPE service-group SYSTEM "avahi-service.dtd">
+          <service-group>
+            <name>VibeCode {{ item.display_name }}</name>
+            <service>
+              <type>{{ item.type }}</type>
+              <port>{{ item.port }}</port>
+            </service>
+          </service-group>
+        mode: '0644'
+      loop:
+        - { name: "ssh", display_name: "SSH", type: "_ssh._tcp", port: "{{ services.ssh.port }}" }
+        - { name: "valkey", display_name: "Valkey", type: "_redis._tcp", port: "{{ services.valkey.port }}" }
+        - { name: "postgresql", display_name: "PostgreSQL", type: "_postgresql._tcp", port: "{{ services.postgresql.port }}" }
+        - { name: "http", display_name: "OpenVSCode", type: "_http._tcp", port: "{{ services.openvscode.port }}" }
+      when: services.avahi.enabled
+
+    - name: Add avahi user to passwd
+      lineinfile:
+        path: "{{ rootfs_dir }}/etc/passwd"
+        line: "avahi:x:101:101:Avahi daemon:/:/bin/false"
+        create: yes
+      when: services.avahi.enabled
+
+    - name: Add avahi group
+      lineinfile:
+        path: "{{ rootfs_dir }}/etc/group"
+        line: "avahi:x:101:"
+        create: yes
+      when: services.avahi.enabled
+
+    - name: Create init script
+      template:
+        src: "../templates/init.j2"
+        dest: "{{ rootfs_dir }}/init"
+        mode: '0755'
+
+    - name: Build initramfs
+      shell: |
+        cd {{ rootfs_dir }}
+        find . -print0 | cpio --null -ov --format=newc 2>/dev/null | gzip -9 > {{ output_dir }}/{{ output_file }}
+      register: build_result
+
+    - name: Show build result
+      debug:
+        msg: "Initramfs built: {{ output_dir }}/{{ output_file }}"
+
+    - name: Get initramfs size
+      stat:
+        path: "{{ output_dir }}/{{ output_file }}"
+      register: initramfs_stat
+
+    - name: Show initramfs size
+      debug:
+        msg: "Size: {{ (initramfs_stat.stat.size / 1024 / 1024) | round(1) }} MB"
+
+    - name: Cleanup build directory
+      file:
+        path: "{{ build_dir }}"
+        state: absent
+      when: cleanup | default(false) | bool
+

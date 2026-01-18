@@ -1,0 +1,106 @@
+name: VibeCode Tests
+
+on:
+  push:
+    branches: [ main, develop ]
+    paths:
+      - 'VibeCodeSwift/**'
+      - 'scripts/**'
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  swift-tests:
+    name: Swift Unit Tests
+    runs-on: macos-13
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Check Swift version
+      run: swift --version
+    
+    - name: Build VibeCode
+      working-directory: VibeCodeSwift
+      run: swift build -c release
+    
+    - name: Run Swift tests
+      working-directory: VibeCodeSwift
+      run: swift test --enable-code-coverage
+    
+    - name: Generate code coverage
+      working-directory: VibeCodeSwift
+      run: |
+        xcrun llvm-cov export -format="lcov" \
+          .build/debug/VibeCodePackageTests.xctest/Contents/MacOS/VibeCodePackageTests \
+          -instr-profile .build/debug/codecov/default.profdata > coverage.lcov
+    
+    - name: Upload coverage
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./VibeCodeSwift/coverage.lcov
+        flags: swift-tests
+
+  integration-tests:
+    name: Integration Tests
+    runs-on: macos-13
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Run regression tests
+      run: ./scripts/regression-tests.sh
+      env:
+        CI: true
+    
+    - name: Run integration test suite
+      run: ./scripts/test-vibecode-vms.sh
+      env:
+        CI: true
+    
+    - name: Run functional tests
+      run: ./scripts/functional-tests.sh
+      env:
+        CI: true
+    
+    - name: Run GUI tests
+      run: ./scripts/test-gui.sh
+      env:
+        CI: true
+    
+    - name: Run E2E with Datadog
+      run: ./scripts/test-e2e-with-datadog.sh
+      env:
+        CI: true
+    
+    - name: Check for test artifacts
+      if: always()
+      run: |
+        ls -la logs/ || echo "No logs directory"
+        ls -la VibeCodeSwift/.build/ || echo "No build artifacts"
+
+  lint:
+    name: Code Quality
+    runs-on: macos-13
+    
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: SwiftLint
+      run: |
+        if command -v swiftlint &> /dev/null; then
+          swiftlint --strict
+        else
+          echo "SwiftLint not installed, skipping"
+        fi
+      working-directory: VibeCodeSwift
+      continue-on-error: true
+    
+    - name: Check for TODO/FIXME
+      run: |
+        if grep -r "TODO\|FIXME" VibeCodeSwift/Sources/ --exclude-dir=.build; then
+          echo "Found TODO/FIXME comments"
+          exit 1
+        fi
+      continue-on-error: true
+

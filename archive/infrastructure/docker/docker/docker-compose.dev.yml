@@ -1,0 +1,67 @@
+# Development Environment
+version: '3.8'
+
+services:
+  webgui:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile
+      target: development
+      args:
+        NODE_VERSION: 24
+        BASE_OS: alpine
+        INCLUDE_DEV_DEPS: true
+        ENABLE_LIGHTNINGCSS: true
+        ENABLE_PRISMA: true
+    ports:
+      - "3000:3000"
+      - "9229:9229"  # Debug port
+    volumes:
+      - ../src:/app/src
+      - ../public:/app/public
+      - ../package.json:/app/package.json
+      - ../next.config.mjs:/app/next.config.mjs
+      - ../tailwind.config.js:/app/tailwind.config.js
+      - ../tsconfig.json:/app/tsconfig.json
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - NEXT_TELEMETRY_DISABLED=1
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/vibecode_dev
+      - REDIS_URL=redis://redis:6379
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - vibecode-dev
+
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: vibecode_dev
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - vibecode-dev
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - vibecode-dev
+
+volumes:
+  postgres_data:
+  redis_data:
+
+networks:
+  vibecode-dev:
+    driver: bridge

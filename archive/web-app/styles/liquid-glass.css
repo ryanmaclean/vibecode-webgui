@@ -1,0 +1,292 @@
+/**
+ * Liquid Glass Design System for VibeCode IDE
+ * Based on: https://developer.apple.com/documentation/TechnologyOverviews/adopting-liquid-glass
+ * 
+ * Apple's Liquid Glass brings depth, materials, and fluid motion to macOS interfaces
+ */
+
+/* ============================================================================
+   Core Liquid Glass Variables
+   ============================================================================ */
+
+:root {
+  /* Liquid Glass Materials */
+  --glass-clear: rgba(255, 255, 255, 0.08);
+  --glass-light: rgba(255, 255, 255, 0.12);
+  --glass-medium: rgba(255, 255, 255, 0.18);
+  --glass-heavy: rgba(255, 255, 255, 0.25);
+  
+  /* Dark mode glass */
+  --glass-clear-dark: rgba(0, 0, 0, 0.08);
+  --glass-light-dark: rgba(0, 0, 0, 0.12);
+  --glass-medium-dark: rgba(0, 0, 0, 0.18);
+  --glass-heavy-dark: rgba(0, 0, 0, 0.25);
+  
+  /* Blur effects */
+  --blur-light: blur(20px);
+  --blur-medium: blur(40px);
+  --blur-heavy: blur(60px);
+  
+  /* Depth and elevation */
+  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.12);
+  --elevation-2: 0 4px 16px rgba(0, 0, 0, 0.16);
+  --elevation-3: 0 8px 32px rgba(0, 0, 0, 0.20);
+  --elevation-4: 0 16px 64px rgba(0, 0, 0, 0.24);
+  
+  /* Vibrancy colors (Apple system colors) */
+  --vibrancy-accent: rgba(10, 132, 255, 1); /* System blue */
+  --vibrancy-success: rgba(52, 199, 89, 1); /* System green */
+  --vibrancy-warning: rgba(255, 204, 0, 1); /* System yellow */
+  --vibrancy-error: rgba(255, 59, 48, 1); /* System red */
+  
+  /* Adaptive spacing */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  
+  /* Fluid motion curves */
+  --ease-in-out-fluid: cubic-bezier(0.4, 0.0, 0.2, 1);
+  --ease-out-fluid: cubic-bezier(0.0, 0.0, 0.2, 1);
+  --ease-in-fluid: cubic-bezier(0.4, 0.0, 1, 1);
+  
+  /* Border radius for continuity */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+}
+
+/* ============================================================================
+   Liquid Glass Components
+   ============================================================================ */
+
+.glass-panel {
+  background: var(--glass-medium);
+  backdrop-filter: var(--blur-medium);
+  -webkit-backdrop-filter: var(--blur-medium);
+  border-radius: var(--radius-lg);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  box-shadow: var(--elevation-2);
+  transition: all 0.3s var(--ease-in-out-fluid);
+}
+
+.glass-panel:hover {
+  background: var(--glass-heavy);
+  box-shadow: var(--elevation-3);
+  transform: translateY(-2px);
+}
+
+.glass-sidebar {
+  background: var(--glass-light);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-toolbar {
+  background: var(--glass-clear);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-sm) var(--spacing-md);
+}
+
+.glass-button {
+  background: var(--glass-light);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-md);
+  padding: var(--spacing-sm) var(--spacing-md);
+  font-weight: 500;
+  transition: all 0.2s var(--ease-in-out-fluid);
+  cursor: pointer;
+}
+
+.glass-button:hover {
+  background: var(--glass-medium);
+  transform: scale(1.02);
+}
+
+.glass-button:active {
+  transform: scale(0.98);
+}
+
+.glass-button-primary {
+  background: var(--vibrancy-accent);
+  color: white;
+  border: none;
+}
+
+.glass-input {
+  background: var(--glass-clear);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-sm) var(--spacing-md);
+  transition: all 0.2s var(--ease-in-out-fluid);
+}
+
+.glass-input:focus {
+  outline: none;
+  border-color: var(--vibrancy-accent);
+  box-shadow: 0 0 0 3px rgba(10, 132, 255, 0.2);
+}
+
+/* ============================================================================
+   IDE Specific Components
+   ============================================================================ */
+
+.ide-editor-panel {
+  background: rgba(30, 30, 30, 0.95);
+  backdrop-filter: var(--blur-medium);
+  -webkit-backdrop-filter: var(--blur-medium);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+}
+
+.ide-terminal {
+  background: rgba(20, 20, 20, 0.98);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.ide-file-tree {
+  background: var(--glass-light);
+  backdrop-filter: var(--blur-light);
+  -webkit-backdrop-filter: var(--blur-light);
+}
+
+.ide-file-tree-item {
+  padding: var(--spacing-xs) var(--spacing-sm);
+  border-radius: var(--radius-sm);
+  transition: all 0.15s var(--ease-in-out-fluid);
+}
+
+.ide-file-tree-item:hover {
+  background: var(--glass-medium);
+}
+
+.ide-status-bar {
+  background: var(--glass-clear);
+  backdrop-filter: var(--blur-heavy);
+  -webkit-backdrop-filter: var(--blur-heavy);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding: var(--spacing-xs) var(--spacing-md);
+  display: flex;
+  align-items: center;
+  gap: var(--spacing-md);
+}
+
+.ide-vm-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-xs) var(--spacing-sm);
+  background: var(--glass-light);
+  border-radius: var(--radius-sm);
+  font-size: 12px;
+  font-weight: 500;
+}
+
+.ide-vm-indicator.running {
+  border-left: 3px solid var(--vibrancy-success);
+}
+
+.ide-vm-indicator.stopped {
+  border-left: 3px solid var(--vibrancy-error);
+}
+
+/* ============================================================================
+   Animations
+   ============================================================================ */
+
+@keyframes glass-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.glass-fade-in {
+  animation: glass-fade-in 0.4s var(--ease-out-fluid);
+}
+
+@keyframes glass-shimmer {
+  0% {
+    background-position: -1000px 0;
+  }
+  100% {
+    background-position: 1000px 0;
+  }
+}
+
+.glass-loading {
+  background: linear-gradient(
+    90deg,
+    var(--glass-clear) 0%,
+    var(--glass-light) 50%,
+    var(--glass-clear) 100%
+  );
+  background-size: 1000px 100%;
+  animation: glass-shimmer 2s infinite;
+}
+
+/* ============================================================================
+   Dark Mode Adjustments
+   ============================================================================ */
+
+@media (prefers-color-scheme: dark) {
+  .glass-panel {
+    background: var(--glass-medium-dark);
+    border-color: rgba(255, 255, 255, 0.15);
+  }
+  
+  .glass-sidebar {
+    background: var(--glass-light-dark);
+  }
+  
+  .glass-toolbar {
+    background: var(--glass-clear-dark);
+  }
+}
+
+/* ============================================================================
+   Responsive Utilities
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  :root {
+    --blur-light: blur(10px);
+    --blur-medium: blur(20px);
+    --blur-heavy: blur(30px);
+  }
+}
+
+/* ============================================================================
+   Accessibility
+   ============================================================================ */
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+.glass-button:focus-visible,
+.glass-input:focus-visible {
+  outline: 2px solid var(--vibrancy-accent);
+  outline-offset: 2px;
+}
+

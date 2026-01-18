@@ -1,0 +1,245 @@
+# VibeCode Error Rate Alerts
+# Monitors error counts and rates across services
+
+---
+# Overall Error Rate Alert
+name: "VibeCode High Error Rate"
+type: "log-based"
+query: "service:vibecode level:ERROR"
+
+thresholds:
+  warning: 10    # 10 errors in 5 minutes
+  critical: 25   # 25 errors in 5 minutes
+
+trigger_type: "count"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts @vibecode"
+  - email: "devops@vibecode.dev"
+
+message: |
+  **VibeCode Error Rate Alert**
+
+  Error count: {{count}} in last 5 minutes
+  Threshold: {{threshold}}
+
+  **Recent errors**:
+  - {{error_types}}
+
+  **View in Datadog**: [Logs Explorer](https://app.datadoghq.com/logs)
+
+  **Investigation**:
+  1. Check error types: `vibecode-vm logs | grep ERROR | tail -20`
+  2. Check service: `vibecode-vm logs | grep -i "service=" | grep ERROR`
+  3. Check stack traces: `vibecode-vm logs | grep -A 5 "ERROR"`
+
+---
+# Swift App Crash Alert
+name: "VibeCode Swift App Crashes"
+type: "metric"
+query: "sum:vibecode.app.crashes{*}"
+
+thresholds:
+  warning: 1     # Any crash
+  critical: 5    # Multiple crashes
+
+trigger_type: "threshold"
+condition: "above"
+evaluation_window: "1h"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+  - email: "engineering@vibecode.dev"
+
+message: |
+  **VibeCode Swift App Crash Detected**
+
+  Number of crashes: {{value}} in last hour
+
+  **Check crash logs**:
+  ```
+  log stream --predicate 'processImagePath contains "VibeCode"'
+  ```
+
+  **View in Console app**: /Applications/Utilities/Console.app
+
+  **Report on GitHub**: [New Issue](https://github.com/yourusername/vibecode-vm/issues)
+
+---
+# OpenVSCode Error Alert
+name: "VibeCode OpenVSCode Errors"
+type: "metric"
+query: "sum:vibecode.service.openvscode.errors{*}"
+
+thresholds:
+  warning: 5     # 5+ errors
+  critical: 20   # 20+ errors
+
+trigger_type: "threshold"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+
+message: |
+  **OpenVSCode Errors Detected**
+
+  Error count: {{value}} in last 5 minutes
+
+  **Check browser console**:
+  1. Open http://192.168.64.10:8080
+  2. Press F12 to open DevTools
+  3. Check Console tab for errors
+
+  **View OpenVSCode logs**:
+  ```
+  vibecode-vm ssh "tail -50 ~/.openvscode-server/logs/window1.log"
+  ```
+
+---
+# Service-Specific Error Alerts
+
+# PostgreSQL Error Alert
+name: "VibeCode PostgreSQL Errors"
+type: "log-based"
+query: "service:postgresql level:ERROR"
+
+thresholds:
+  warning: 5
+  critical: 20
+
+trigger_type: "count"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+
+message: |
+  **PostgreSQL Errors**
+
+  Error count: {{count}}
+
+  **Check PostgreSQL logs**:
+  ```
+  vibecode-vm ssh "tail -50 /var/log/postgres.log"
+  ```
+
+---
+# Valkey Error Alert
+name: "VibeCode Valkey Errors"
+type: "log-based"
+query: "service:valkey level:ERROR"
+
+thresholds:
+  warning: 3
+  critical: 10
+
+trigger_type: "count"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+
+message: |
+  **Valkey Errors**
+
+  Error count: {{count}}
+
+  **Check Valkey logs**:
+  ```
+  vibecode-vm ssh "tail -50 /var/log/valkey.log"
+  ```
+
+  **Check server status**:
+  ```
+  vibecode-vm ssh "redis-cli INFO server"
+  ```
+
+---
+# SSH Error Alert
+name: "VibeCode SSH Errors"
+type: "log-based"
+query: "service:ssh level:ERROR OR service:ssh level:WARNING"
+
+thresholds:
+  warning: 10
+  critical: 50
+
+trigger_type: "count"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+
+message: |
+  **SSH Connection Errors**
+
+  Error count: {{count}}
+
+  **Common causes**:
+  - Authentication failures
+  - Connection timeouts
+  - Resource exhaustion
+
+  **Check SSH logs**:
+  ```
+  vibecode-vm ssh "tail -50 /var/log/ssh.log"
+  ```
+
+  **Check active connections**:
+  ```
+  vibecode-vm ssh "ss -t"
+  ```
+
+---
+# Performance Error Alert
+name: "VibeCode Performance Degradation"
+type: "metric"
+query: "avg:vibecode.service.response_time{*}"
+
+thresholds:
+  warning: 2000   # 2 seconds
+  critical: 5000  # 5 seconds
+
+trigger_type: "threshold"
+condition: "above"
+evaluation_window: "5m"
+
+severity: "warning"
+
+notify:
+  - slack: "#vibecode-alerts"
+
+message: |
+  **Slow Response Times Detected**
+
+  Average response time: {{value}}ms
+  Threshold: {{threshold}}ms
+
+  **Check which service is slow**:
+  ```
+  vibecode-vm logs | grep "response_time" | tail -20
+  ```
+
+  **Investigate**:
+  1. High CPU: `vibecode-vm ssh "top -bn1"`
+  2. High memory: `vibecode-vm ssh "free -h"`
+  3. Disk I/O: `vibecode-vm ssh "iostat -x 1 5"`

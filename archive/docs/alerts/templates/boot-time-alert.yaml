@@ -1,0 +1,58 @@
+# VibeCode Boot Time Alert
+# Monitors VM boot time and alerts if exceeds threshold
+
+name: "VibeCode VM Boot Time Alert"
+type: "metric"
+query: "avg:vibecode.vm.boot_time{*}"
+
+# Thresholds
+thresholds:
+  critical: 40000  # 40 seconds
+  warning: 35000   # 35 seconds
+
+# Trigger condition
+trigger_type: "threshold"
+condition: "above"
+evaluation_window: "5m"
+aggregation: "average"
+
+# Notification settings
+notify:
+  - slack: "#vibecode-alerts @vibecode"
+  - email: "devops@vibecode.dev"
+
+# Alert message with context
+message: |
+  **VibeCode VM Boot Time Alert**
+
+  Current boot time: {{value}}ms
+  Threshold: {{threshold}}ms
+  Difference: {{diff}}ms ({{pct_diff}}%)
+
+  **What this means**: The VM is taking longer than expected to boot.
+
+  **Common causes**:
+  - Host system under heavy load
+  - Service initialization delay
+  - Disk I/O bottleneck
+  - Datadog agent overhead
+
+  **Troubleshooting steps**:
+  1. Check recent changes: `git log --oneline -5`
+  2. View console logs: `vibecode-vm logs | tail -50`
+  3. Check service startup times: `vibecode-vm logs | grep -i "started"`
+  4. Check system resources: `vibecode-vm ssh "top -bn1"`
+  5. Try clean restart: `vibecode-vm stop && vibecode-vm start`
+
+  **Datadog Dashboard**: [VibeCode Performance](https://app.datadoghq.com/dashboard)
+
+  **Escalation**: If boot time continues >45s, escalate to infrastructure team.
+
+# Tags
+tags:
+  - "service:vibecode"
+  - "component:vm"
+  - "metric:performance"
+
+# Enable/disable
+enabled: true

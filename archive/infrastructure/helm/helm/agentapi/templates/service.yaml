@@ -1,0 +1,29 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ include "agentapi.fullname" . }}
+  labels:
+    {{- include "agentapi.labels" . | nindent 4 }}
+  {{- with .Values.service.annotations }}
+  annotations:
+    {{- toYaml . | nindent 4 }}
+  {{- end }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    {{- include "agentapi.selectorLabels" . | nindent 4 }}
+  ports:
+    - name: ide
+      port: {{ .Values.codeserver.service.port }}
+      targetPort: {{ .Values.codeserver.service.targetPort }}
+      protocol: TCP
+    - name: agentapi
+      port: {{ .Values.agentapi.service.port }}
+      targetPort: {{ .Values.agentapi.service.targetPort }}
+      protocol: TCP
+    {{- if .Values.monitoring.prometheus.enabled }}
+    - name: metrics
+      port: {{ .Values.monitoring.prometheus.port }}
+      targetPort: {{ .Values.monitoring.prometheus.port }}
+      protocol: TCP
+    {{- end }}

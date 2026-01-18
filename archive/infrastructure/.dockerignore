@@ -1,0 +1,67 @@
+# Ignore everything by default to minimize build context
+**
+
+# Allow only what the ingestion image needs
+!package.json
+!package-lock.json
+!next.config.js
+!next.config.mjs
+!next.config.ts
+!tailwind.config.js
+!tailwind.config.mjs
+!postcss.config.js
+!postcss.config.mjs
+!babel.config.js
+!tsconfig.json
+!next-env.d.ts
+!public/**
+!prisma/**
+!scripts/**
+!src/**
+!docs/**
+!docker/**
+!extensions/**
+!instrument.cjs
+!Dockerfile.production
+!Dockerfile.ingest
+!.npmrc
+
+# Explicitly ignore large/unneeded directories even if whitelisted higher up
+node_modules
+.next
+out
+coverage
+playwright-report
+playwright/.cache
+__cache__
+.cache
+.tmp
+.temp
+.venv
+venv
+.DS_Store
+.git
+.gitignore
+README.md
+
+# Testing
+coverage/
+.nyc_output/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+
+# Kind cluster configuration
+kind-config.yaml
+
+# Kubernetes manifests (not needed in container)
+k8s/
+scripts/
+tests/
+
+# Documentation
+docs/
+*.md
+!README.md

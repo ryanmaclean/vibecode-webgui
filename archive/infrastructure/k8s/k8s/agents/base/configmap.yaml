@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: openai-agents-config
+  namespace: openai-agents
+  labels:
+    app: openai-agents
+    component: config
+data:
+  # Agent runtime configuration
+  agent.yaml: |
+    runtime:
+      host: "0.0.0.0"
+      port: 8080
+      workers: 4
+      timeout: 300
+      max_concurrent_sessions: 10
+
+    openai:
+      api_version: "2024-10-01-preview"
+      max_tokens: 4096
+      temperature: 0.7
+      retry_attempts: 3
+      retry_delay: 1
+
+    session:
+      idle_timeout: 1800
+      max_session_duration: 7200
+      cleanup_interval: 300
+
+    storage:
+      type: persistent
+      path: /data/sessions
+      retention_days: 7
+
+    monitoring:
+      enabled: true
+      metrics_port: 9090
+      health_port: 8081
+      log_level: info
+
+    security:
+      enable_auth: true
+      token_validation: true
+      rate_limit_requests: 100
+      rate_limit_window: 60
+
+  # Logging configuration
+  logging.yaml: |
+    version: 1
+    formatters:
+      json:
+        class: pythonjsonlogger.jsonlogger.JsonFormatter
+        format: '%(asctime)s %(name)s %(levelname)s %(message)s'
+      standard:
+        format: '%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+
+    handlers:
+      console:
+        class: logging.StreamHandler
+        formatter: json
+        stream: ext://sys.stdout
+      file:
+        class: logging.handlers.RotatingFileHandler
+        formatter: json
+        filename: /var/log/agents/agent.log
+        maxBytes: 104857600
+        backupCount: 5
+
+    loggers:
+      openai_agent:
+        level: INFO
+        handlers: [console, file]
+        propagate: false
+
+    root:
+      level: INFO
+      handlers: [console]
+
+  # Prometheus scrape config
+  prometheus.yaml: |
+    global:
+      scrape_interval: 15s
+      evaluation_interval: 15s
+
+    scrape_configs:
+    - job_name: 'openai-agents'
+      kubernetes_sd_configs:
+      - role: pod
+        namespaces:
+          names:
+          - openai-agents
+      relabel_configs:
+      - source_labels: [__meta_kubernetes_pod_label_app]
+        action: keep
+        regex: openai-agents
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_scrape]
+        action: keep
+        regex: true
+      - source_labels: [__meta_kubernetes_pod_annotation_prometheus_io_port]
+        action: replace
+        target_label: __address__
+        regex: ([^:]+)(?::\d+)?;(\d+)
+        replacement: $1:$2
+
+  # Grafana dashboard configuration
+  grafana-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "OpenAI Agents Monitoring",
+        "tags": ["openai", "agents", "ai"],
+        "timezone": "browser",
+        "panels": [
+          {
+            "title": "Active Sessions",
+            "type": "graph",
+            "targets": [{"expr": "agent_active_sessions"}]
+          },
+          {
+            "title": "Request Rate",
+            "type": "graph",
+            "targets": [{"expr": "rate(agent_requests_total[5m])"}]
+          },
+          {
+            "title": "Response Time P95",
+            "type": "graph",
+            "targets": [{"expr": "histogram_quantile(0.95, agent_response_time_seconds)"}]
+          },
+          {
+            "title": "Error Rate",
+            "type": "graph",
+            "targets": [{"expr": "rate(agent_errors_total[5m])"}]
+          }
+        ]
+      }
+    }

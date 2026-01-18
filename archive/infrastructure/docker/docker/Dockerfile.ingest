@@ -1,0 +1,39 @@
+# VibeCode RAG Ingestion Worker Image
+# Builds a container that runs the documentation -> pgvector ingester inside AKS
+
+FROM node:20-alpine
+ENV NEXT_TELEMETRY_DISABLED=1
+
+WORKDIR /app
+
+# System deps (openssl for crypto, bash, curl for debug)
+RUN apk add --no-cache python3 make g++ openssl bash curl
+
+# Copy package manifests and install ALL deps (including dev for tsx)
+COPY package*.json ./
+RUN npm install --include=dev
+
+# Copy only the files needed for the ingestion worker
+COPY prisma ./prisma
+COPY scripts ./scripts
+COPY src ./src
+COPY docs ./docs
+COPY tsconfig.json ./tsconfig.json
+
+# Generate Prisma client (required by VectorService/Prisma)
+RUN npx prisma generate
+
+# Default environment (can be overridden by K8s env)
+ENV NODE_ENV=production \
+    RAG_DOCS_PATH=/app/docs/src/content/docs \
+    RAG_INTER_CHUNK_DELAY_MS=250 \
+    RAG_CHUNK_MAX_ATTEMPTS=5 \
+    RAG_RETRY_BACKOFF_MS=2000 \
+    RAG_SKIP_TEST_SEARCH=true \
+    USE_LOCAL_EMBEDDINGS=true
+
+# Health/diagnostics entrypoint (prints versions)
+RUN node -v && npm -v
+
+# Run the ingestion
+CMD ["npx","tsx","scripts/ingest-docs-to-rag.ts"]

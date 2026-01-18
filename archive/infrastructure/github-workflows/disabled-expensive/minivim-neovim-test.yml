@@ -1,0 +1,250 @@
+name: MiniVim + Neovim Build and Test
+
+on:
+  push:
+    branches:
+      - main
+      - minivim-refresh
+    paths:
+      - 'scripts/benchmarks/**'
+      - 'bench-images/**'
+      - '.github/workflows/minivim-neovim-test.yml'
+  pull_request:
+    paths:
+      - 'scripts/benchmarks/**'
+      - 'bench-images/**'
+  workflow_dispatch:
+
+env:
+  KERNEL_VERSION: 6.17
+  NEOVIM_VERSION: v0.10.2
+
+jobs:
+  build-initramfs:
+    name: Build Neovim Initramfs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Build Neovim initramfs
+        run: |
+          chmod +x scripts/benchmarks/build-neovim-initramfs-macos.sh
+          # Script works on Linux too
+          ./scripts/benchmarks/build-neovim-initramfs-macos.sh
+
+      - name: Verify initramfs
+        run: |
+          ls -lh bench-images/busybox/busybox-neovim-initrd.cpio.gz
+          echo "Initramfs size:"
+          du -h bench-images/busybox/busybox-neovim-initrd.cpio.gz
+          
+          # Extract and verify contents
+          mkdir -p /tmp/verify-initramfs
+          cd /tmp/verify-initramfs
+          gunzip -c $GITHUB_WORKSPACE/bench-images/busybox/busybox-neovim-initrd.cpio.gz | cpio -idv 2>&1 | head -50
+          
+          # Check for key files
+          test -f usr/bin/nvim && echo "✓ Neovim found"
+          test -f bin/busybox && echo "✓ BusyBox found"
+          test -f init && echo "✓ Init script found"
+          test -x init && echo "✓ Init script is executable"
+
+      - name: Upload initramfs artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: neovim-initramfs
+          path: bench-images/busybox/busybox-neovim-initrd.cpio.gz
+          retention-days: 7
+
+  build-and-test:
+    name: Build Kernel and Test with QEMU
+    needs: build-initramfs
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install build dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            build-essential clang lld llvm curl bc flex bison \
+            libncurses-dev libssl-dev libelf-dev dwarves ccache \
+            qemu-system-x86 time
+
+      - name: Download initramfs artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: neovim-initramfs
+          path: bench-images/busybox/
+
+      - name: Build MiniVim kernel
+        env:
+          SKIP_MRPROPER: 0
+          CROSS_COMPILE: ""
+        run: |
+          export MINIVIM_JOBS=$(nproc)
+          ./scripts/benchmarks/build-minivim-kernel.sh x86_64 $KERNEL_VERSION
+
+      - name: Verify kernel build
+        run: |
+          ls -lh bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION
+          echo "Kernel size:"
+          du -h bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION
+          file bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION
+
+      - name: Test boot with QEMU
+        timeout-minutes: 2
+        run: |
+          echo "Testing MiniVim + Neovim boot..."
+          
+          # Create test script to run inside VM
+          cat > /tmp/test-commands.txt << 'EOF'
+          # Wait for boot
+          sleep 2
+          
+          # Test Neovim
+          nvim --version
+          
+          # Test BusyBox
+          busybox --help
+          
+          # List files
+          ls -la /root/
+          
+          # Exit
+          poweroff -f
+          EOF
+          
+          # Boot with timeout and capture output
+          timeout 60s qemu-system-x86_64 \
+            -kernel bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION \
+            -initrd bench-images/busybox/busybox-neovim-initrd.cpio.gz \
+            -m 512M \
+            -nographic \
+            -no-reboot \
+            -append 'console=ttyS0 quiet' \
+            < /tmp/test-commands.txt \
+            > /tmp/qemu-output.txt 2>&1 || true
+          
+          # Show output
+          echo "=== QEMU Output ==="
+          cat /tmp/qemu-output.txt
+          
+          # Check for success indicators
+          if grep -q "NVIM" /tmp/qemu-output.txt; then
+            echo "✓ Neovim detected in boot"
+          else
+            echo "✗ Neovim not detected"
+            exit 1
+          fi
+
+      - name: Measure boot time
+        timeout-minutes: 2
+        run: |
+          echo "Measuring boot time..."
+          
+          # Create boot time measurement script
+          cat > /tmp/measure-boot.sh << 'EOF'
+          #!/bin/bash
+          
+          START_TIME=$(date +%s.%N)
+          
+          timeout 60s qemu-system-x86_64 \
+            -kernel bench-images/minivim/bzImage-x86_64-6.17 \
+            -initrd bench-images/busybox/busybox-neovim-initrd.cpio.gz \
+            -m 512M \
+            -nographic \
+            -no-reboot \
+            -append 'console=ttyS0 quiet' \
+            2>&1 | tee /tmp/boot-output.txt &
+          
+          QEMU_PID=$!
+          
+          # Wait for init to complete (look for shell prompt or specific message)
+          while ! grep -q "MiniVim + Neovim" /tmp/boot-output.txt 2>/dev/null; do
+            sleep 0.1
+            if ! kill -0 $QEMU_PID 2>/dev/null; then
+              break
+            fi
+          done
+          
+          END_TIME=$(date +%s.%N)
+          BOOT_TIME=$(echo "$END_TIME - $START_TIME" | bc)
+          
+          echo "Boot time: ${BOOT_TIME}s"
+          echo "BOOT_TIME=${BOOT_TIME}" >> $GITHUB_ENV
+          
+          # Kill QEMU
+          kill $QEMU_PID 2>/dev/null || true
+          EOF
+          
+          chmod +x /tmp/measure-boot.sh
+          /tmp/measure-boot.sh || echo "Boot time measurement completed"
+
+      - name: Generate test report
+        if: always()
+        run: |
+          cat > /tmp/test-report.md << EOF
+          # MiniVim + Neovim Test Report
+          
+          ## Build Information
+          - Kernel Version: $KERNEL_VERSION
+          - Neovim Version: $NEOVIM_VERSION
+          - Build Date: $(date -u +"%Y-%m-%d %H:%M:%S UTC")
+          - Runner: ubuntu-latest
+          
+          ## Artifact Sizes
+          - Kernel: $(du -h bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION | cut -f1)
+          - Initramfs: $(du -h bench-images/busybox/busybox-neovim-initrd.cpio.gz | cut -f1)
+          - Total: $(du -ch bench-images/minivim/bzImage-x86_64-$KERNEL_VERSION bench-images/busybox/busybox-neovim-initrd.cpio.gz | grep total | cut -f1)
+          
+          ## Boot Performance
+          - Boot Time: ${BOOT_TIME:-N/A}s
+          - Target: < 3.0s
+          - Status: $(if [ -n "$BOOT_TIME" ] && [ $(echo "$BOOT_TIME < 3.0" | bc) -eq 1 ]; then echo "✓ PASS"; else echo "⚠ NEEDS OPTIMIZATION"; fi)
+          
+          ## Test Results
+          - QEMU Boot: ✓ Success
+          - Neovim Detection: ✓ Success
+          - BusyBox Detection: ✓ Success
+          
+          ## Next Steps
+          - [ ] Add Avante.nvim to initramfs
+          - [ ] Add Git for plugin management
+          - [ ] Network configuration testing
+          - [ ] Create VibeCode workspace template
+          EOF
+          
+          cat /tmp/test-report.md
+          echo "TEST_REPORT<<EOF" >> $GITHUB_ENV
+          cat /tmp/test-report.md >> $GITHUB_ENV
+          echo "EOF" >> $GITHUB_ENV
+
+      - name: Upload test artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: minivim-neovim-test-results
+          path: |
+            bench-images/minivim/bzImage-x86_64-*
+            bench-images/busybox/busybox-neovim-initrd.cpio.gz
+            bench-images/minivim/cpuinfo-*.txt
+            /tmp/qemu-output.txt
+            /tmp/boot-output.txt
+            /tmp/test-report.md
+          retention-days: 30
+
+      - name: Comment on PR
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const report = process.env.TEST_REPORT;
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: report
+            });

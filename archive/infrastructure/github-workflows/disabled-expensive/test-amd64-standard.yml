@@ -1,0 +1,59 @@
+name: Test AMD64 Standard Profile
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: vibecode-codeserver
+
+jobs:
+  test-build:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push AMD64 standard image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: docker/code-server/Dockerfile.optimized
+          platforms: linux/amd64
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-standard
+            ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-${{ github.sha }}
+          build-args: |
+            PROFILE=standard
+            VERSION=test-amd64-standard
+            BUILD_DATE=${{ github.event.repository.updated_at }}
+            GIT_COMMIT=${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test image pull and basic validation
+        run: |
+          echo "✅ AMD64 standard image built successfully!"
+          echo ""
+          echo "Pull with Docker:"
+          echo "  docker pull ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-standard"
+          echo ""
+          echo "Run on port 9000:"
+          echo "  docker run -d --name vibecode-amd64 -p 9000:8080 -e PASSWORD=vibecode2025 ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-standard"
+          echo ""
+          echo "Test basic functionality:"
+          docker run --rm ghcr.io/${{ github.repository_owner }}/vibecode-codeserver:test-amd64-standard code-server --version

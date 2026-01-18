@@ -1,0 +1,101 @@
+# Development environment values
+# Optimized for local testing with minimal resources
+
+global:
+  environment: development
+  cloudProvider: aws
+
+# Single replica for dev
+replicaCount: 1
+
+# Code-server configuration (minimal resources)
+codeserver:
+  image:
+    tag: latest
+    pullPolicy: Always  # Always pull latest for dev
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 2Gi
+
+  workspace:
+    size: 10Gi  # Smaller volume for dev
+
+# AgentAPI configuration
+agentapi:
+  image:
+    tag: latest
+    pullPolicy: Always
+
+  config:
+    logLevel: debug
+    maxConcurrentAgents: 2  # Limited agents for dev
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+# Embedded PostgreSQL for dev
+postgresql:
+  enabled: true
+  auth:
+    username: vibecode
+    password: dev-password
+    database: vibecode_dev
+  primary:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  persistence:
+    size: 5Gi
+
+# Embedded Redis for dev
+redis:
+  enabled: true
+  auth:
+    password: dev-password
+  master:
+    resources:
+      requests:
+        cpu: 100m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 512Mi
+  persistence:
+    size: 1Gi
+
+# Simple ingress for dev
+ingress:
+  enabled: false  # Use port-forward in dev
+
+# No autoscaling in dev
+autoscaling:
+  enabled: false
+
+# No PDB in dev
+podDisruptionBudget:
+  enabled: false
+
+# Monitoring disabled by default
+monitoring:
+  prometheus:
+    enabled: true
+  datadog:
+    enabled: false
+
+# No network policies in dev
+networkPolicy:
+  enabled: false

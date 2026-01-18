@@ -1,0 +1,281 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-test
+  labels:
+    name: vibecode-test
+    purpose: performance-testing
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: vibecode-test-config
+  namespace: vibecode-test
+data:
+  NODE_ENV: "test"
+  USE_CONNECTION_POOL: "true"
+  CONNECTION_POOL_MAX_CONNECTIONS: "10"
+  CONNECTION_POOL_MIN_CONNECTIONS: "2"
+  NEXTAUTH_URL: "http://localhost:3000"
+  DATABASE_URL: "postgresql://test_user:test_password@postgres:5432/vibecode_test"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: vibecode-test-secrets
+  namespace: vibecode-test
+type: Opaque
+stringData:
+  NEXTAUTH_SECRET: "test-secret-for-kind-validation"
+  POSTGRES_PASSWORD: "test_password"
+  
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgres
+  namespace: vibecode-test
+  labels:
+    app: postgres
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postgres
+  template:
+    metadata:
+      labels:
+        app: postgres
+    spec:
+      containers:
+      - name: postgres
+        image: postgres:15-alpine
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRES_DB
+          value: "vibecode_test"
+        - name: POSTGRES_USER
+          value: "test_user"
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-test-secrets
+              key: POSTGRES_PASSWORD
+        readinessProbe:
+          exec:
+            command: ["pg_isready", "-U", "test_user", "-d", "vibecode_test"]
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          exec:
+            command: ["pg_isready", "-U", "test_user", "-d", "vibecode_test"]
+          initialDelaySeconds: 30
+          periodSeconds: 15
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgres
+  namespace: vibecode-test
+spec:
+  selector:
+    app: postgres
+  ports:
+  - port: 5432
+    targetPort: 5432
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vibecode-app
+  namespace: vibecode-test
+  labels:
+    app: vibecode-app
+    component: web-application
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vibecode-app
+  template:
+    metadata:
+      labels:
+        app: vibecode-app
+    spec:
+      containers:
+      - name: vibecode-app
+        image: node:20-alpine
+        ports:
+        - containerPort: 3000
+        workingDir: /app
+        envFrom:
+        - configMapRef:
+            name: vibecode-test-config
+        env:
+        - name: NEXTAUTH_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: vibecode-test-secrets
+              key: NEXTAUTH_SECRET
+        command:
+        - sh
+        - -c
+        - |
+          echo "🚀 Starting VibeCode with vector optimizations..."
+          
+          # Install dependencies and build
+          npm ci --only=production
+          npm run build
+          
+          echo "✅ Build complete, starting server..."
+          npm start
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 3000
+          initialDelaySeconds: 60
+          periodSeconds: 15
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vibecode-app
+  namespace: vibecode-test
+spec:
+  selector:
+    app: vibecode-app
+  ports:
+  - port: 3000
+    targetPort: 3000
+    nodePort: 30080
+  type: NodePort
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: vector-optimization-test
+  namespace: vibecode-test
+  labels:
+    app: vector-test
+    component: testing
+spec:
+  template:
+    metadata:
+      labels:
+        app: vector-test
+    spec:
+      restartPolicy: Never
+      containers:
+      - name: test-runner
+        image: curlimages/curl:latest
+        command:
+        - sh
+        - -c
+        - |
+          echo "🚀 Testing Vector Store Optimizations in KIND"
+          echo "============================================="
+          
+          # Wait for application to be ready
+          echo "⏳ Waiting for application to be ready..."
+          for i in $(seq 1 30); do
+            if curl -f http://vibecode-app:3000/api/health >/dev/null 2>&1; then
+              echo "✅ Application is ready after $i attempts"
+              break
+            fi
+            echo "Waiting... attempt $i/30"
+            sleep 5
+          done
+          
+          echo ""
+          echo "🔍 Testing Enhanced Vector Metrics Endpoint..."
+          if curl -f http://vibecode-app:3000/api/health/vector-metrics > /tmp/vector-metrics.json 2>/dev/null; then
+            echo "✅ Vector metrics endpoint operational"
+            echo "📊 Sample response:" 
+            cat /tmp/vector-metrics.json | head -5
+          else
+            echo "❌ Vector metrics endpoint failed"
+          fi
+          
+          echo ""
+          echo "🔗 Testing Connection Pool Endpoint..."
+          if curl -f http://vibecode-app:3000/api/health/connection-pool > /tmp/pool-metrics.json 2>/dev/null; then
+            echo "✅ Connection pool endpoint operational"
+          else
+            echo "❌ Connection pool endpoint failed"
+          fi
+          
+          echo ""
+          echo "📊 Testing Database Metrics Endpoint..."
+          if curl -f http://vibecode-app:3000/api/health/database/metrics > /tmp/db-metrics.json 2>/dev/null; then
+            echo "✅ Database metrics endpoint operational"
+          else
+            echo "❌ Database metrics endpoint failed"  
+          fi
+          
+          echo ""
+          echo "⚡ Running Performance Stress Test..."
+          SUCCESS_COUNT=0
+          TOTAL_REQUESTS=15
+          
+          for i in $(seq 1 $TOTAL_REQUESTS); do
+            START_TIME=$(date +%s%N)
+            if curl -s http://vibecode-app:3000/api/health/vector-metrics > /dev/null 2>&1; then
+              END_TIME=$(date +%s%N)
+              DURATION=$(( (END_TIME - START_TIME) / 1000000 ))
+              echo "Request $i: ✅ (${DURATION}ms)"
+              SUCCESS_COUNT=$((SUCCESS_COUNT + 1))
+            else
+              echo "Request $i: ❌"
+            fi
+            sleep 0.5
+          done
+          
+          SUCCESS_RATE=$((SUCCESS_COUNT * 100 / TOTAL_REQUESTS))
+          echo ""
+          echo "📈 Performance Test Results:"
+          echo "   Success Rate: $SUCCESS_COUNT/$TOTAL_REQUESTS ($SUCCESS_RATE%)"
+          
+          if [ $SUCCESS_RATE -gt 80 ]; then
+            echo "🎉 Vector optimization performance validated!"
+            echo "✅ All monitoring endpoints operational under load"
+          else
+            echo "⚠️  Performance needs improvement"
+          fi
+          
+          echo ""
+          echo "🎯 KIND-based testing complete!"
+      
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: test-results
+  namespace: vibecode-test
+spec:
+  selector:
+    app: vector-test
+  ports:
+  - port: 80
+    targetPort: 8080

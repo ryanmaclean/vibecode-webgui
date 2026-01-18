@@ -1,0 +1,547 @@
+import { datadogRum } from '@datadog/browser-rum';
+import { getRUMPublicConfig } from './datadog-env'
+// import { logger } from '@/lib/logger';
+// Define allowed site values according to Datadog RUM documentation
+type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
+interface RUMConfig {
+  applicationId: string;
+  clientToken: string;
+  site?: DatadogSite;
+  service?: string;
+  env?: string;
+  version?: string;
+  sessionSampleRate?: number;
+  sessionReplaySampleRate?: number;
+  trackUserInteractions?: boolean;
+  trackResources?: boolean;
+  trackLongTasks?: boolean;
+  defaultPrivacyLevel?: 'allow' | 'mask' | 'mask-user-input';
+}
+
+class RUMMonitoring {
+  private static initialized = false;
+
+  /**
+   * Initialize Datadog RUM with comprehensive monitoring
+   */
+  static init(config?: Partial<RUMConfig>) {
+    // Only initialize once and only in browser
+    if (this.initialized || typeof window === 'undefined') {
+      return;
+    }
+
+    const pub = getRUMPublicConfig()
+    const rumConfig: RUMConfig = {
+      applicationId: pub.applicationId || 'vibecode-docs-rum',
+      clientToken: pub.clientToken || '',
+      site: (pub.site as DatadogSite) || 'datadoghq.com',
+      service: 'vibecode-webgui',
+      env: pub.env || 'development',
+      version: pub.version || '1.0.0',
+      sessionSampleRate: 100,
+      sessionReplaySampleRate: 20,
+      trackUserInteractions: true,
+      trackResources: true,
+      trackLongTasks: true,
+      defaultPrivacyLevel: 'mask-user-input',
+      ...config
+    };
+
+    // Skip initialization if no client token
+    if (!rumConfig.clientToken || rumConfig.clientToken.includes('placeholder')) {
+      console.warn('[RUM] Skipping Datadog RUM initialization - no valid client token provided');
+      return;
+    }
+
+    try {
+      datadogRum.init({
+        applicationId: rumConfig.applicationId,
+        clientToken: rumConfig.clientToken,
+        site: rumConfig.site,
+        service: rumConfig.service,
+        env: rumConfig.env,
+        version: rumConfig.version,
+        sessionSampleRate: rumConfig.sessionSampleRate,
+        sessionReplaySampleRate: rumConfig.sessionReplaySampleRate,
+        trackUserInteractions: rumConfig.trackUserInteractions,
+        trackResources: rumConfig.trackResources,
+        trackLongTasks: rumConfig.trackLongTasks,
+        defaultPrivacyLevel: rumConfig.defaultPrivacyLevel,
+        
+        // Enhanced configuration
+        trackViewsManually: false,
+        enableExperimentalFeatures: ['clickmap'],
+        
+        // Custom global context
+        beforeSend: (event) => {
+          // Add custom attributes to all RUM events
+          event.context = {
+            ...event.context,
+            deployment: {
+              environment: rumConfig.env,
+              version: rumConfig.version,
+              commit: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'unknown'
+            }
+          };
+          return true;
+        }
+      });
+
+      datadogRum.startSessionReplayRecording();
+      
+      // Set user context if available
+      if (typeof window !== 'undefined' && window.localStorage) {
+        try {
+          const userInfo = localStorage.getItem('user-info');
+          if (userInfo) {
+            const user = JSON.parse(userInfo);
+            this.setUser(user);
+          }
+        } catch (error) {
+          console.warn('[RUM] Failed to set user context:', error);
+        }
+      }
+
+      this.initialized = true;
+      console.info('[RUM] Datadog RUM initialized successfully', {
+        service: rumConfig.service,
+        env: rumConfig.env,
+        version: rumConfig.version
+      });
+
+    } catch (error) {
+      console.error('[RUM] Failed to initialize Datadog RUM:', error);
+    }
+  }
+
+  /**
+   * Set user information for RUM tracking
+   */
+  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: any }) {
+    if (!this.initialized) return;
+
+    try {
+      datadogRum.setUser({
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        ...user
+      });
+    } catch (error) {
+      console.error('[RUM] Failed to set user:', error);
+    }
+  }
+
+  /**
+   * Add custom attribute to RUM
+   */
+  static addAttribute(key: string, value: any) {
+    if (!this.initialized) return;
+
+    try {
+      datadogRum.setGlobalContextProperty(key, value);
+    } catch (error) {
+      console.error('[RUM] Failed to add attribute:', error);
+    }
+  }
+
+  /**
+   * Track custom action
+   */
+  static addAction(name: string, context?: Record<string, any>) {
+    if (!this.initialized) return;
+
+    try {
+      datadogRum.addAction(name, context);
+    } catch (error) {
+      console.error('[RUM] Failed to add action:', error);
+    }
+  }
+
+  /**
+   * Track custom error
+   */
+  static addError(error: Error | string, context?: Record<string, any>) {
+    if (!this.initialized) return;
+
+    try {
+      datadogRum.addError(error, context);
+    } catch (error: any) {
+      console.error('[RUM] Failed to add error:', error);
+    }
+  }
+
+  /**
+   * Track feature flag usage
+   */
+  static addFeatureFlag(key: string, value: any) {
+    if (!this.initialized) return;
+
+    try {
+      datadogRum.addFeatureFlagEvaluation(key, value);
+    } catch (error) {
+      console.error('[RUM] Failed to add feature flag:', error);
+    }
+  }
+
+  /**
+   * Track AI interactions specifically
+   */
+  static trackAIInteraction(action: string, context: {
+    model?: string;
+    provider?: string;
+    promptLength?: number;
+    responseLength?: number;
+    latency?: number;
+    cost?: number;
+    userId?: string;
+    sessionId?: string;
+  }) {
+    this.addAction(`ai.${action}`, {
+      ...context,
+      timestamp: Date.now(),
+      category: 'ai-interaction'
+    });
+  }
+
+  /**
+   * Track page performance
+   */
+  static trackPerformance(timing: {
+    pageLoad?: number;
+    domContentLoaded?: number;
+    firstContentfulPaint?: number;
+    largestContentfulPaint?: number;
+    cumulativeLayoutShift?: number;
+  }) {
+    Object.entries(timing).forEach(([metric, value]) => {
+      if (value !== undefined) {
+        this.addAttribute(`performance.${metric}`, value);
+      }
+    });
+  }
+
+  /**
+   * Track business metrics and conversions
+   */
+  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, any>) {
+    this.addAction(`business.${metric}`, {
+      value,
+      ...attributes,
+      timestamp: Date.now(),
+      category: 'business-metric'
+    });
+  }
+
+  /**
+   * Track workspace interactions
+   */
+  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, any>) {
+    this.addAction(`workspace.${action}`, {
+      workspaceId,
+      ...metadata,
+      timestamp: Date.now(),
+      category: 'workspace'
+    });
+  }
+
+  /**
+   * Track authentication events
+   */
+  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) {
+    this.addAction(`auth.${event}`, {
+      ...context,
+      timestamp: Date.now(),
+      category: 'authentication'
+    });
+  }
+
+  /**
+   * Track code editor interactions
+   */
+  static trackCodeEditor(action: string, context: {
+    language?: string;
+    fileType?: string;
+    linesOfCode?: number;
+    charactersTyped?: number;
+    timeSpent?: number;
+    userId?: string;
+  }) {
+    this.addAction(`editor.${action}`, {
+      ...context,
+      timestamp: Date.now(),
+      category: 'code-editor'
+    });
+  }
+
+  /**
+   * Track terminal usage
+   */
+  static trackTerminal(action: string, context: {
+    command?: string;
+    exitCode?: number;
+    duration?: number;
+    workspaceId?: string;
+    userId?: string;
+  }) {
+    // Sanitize potentially sensitive command data
+    const sanitizedContext = {
+      ...context,
+      command: context.command ? this.sanitizeCommand(context.command) : undefined,
+      timestamp: Date.now(),
+      category: 'terminal'
+    };
+
+    this.addAction(`terminal.${action}`, sanitizedContext);
+  }
+
+  /**
+   * Track user journey and flows
+   */
+  static trackUserJourney(step: string, flow: string, metadata?: Record<string, any>) {
+    this.addAction(`journey.${flow}.${step}`, {
+      flow,
+      step,
+      ...metadata,
+      timestamp: Date.now(),
+      category: 'user-journey'
+    });
+  }
+
+  /**
+   * Track API usage patterns
+   */
+  static trackAPIUsage(endpoint: string, method: string, context: {
+    responseTime?: number;
+    statusCode?: number;
+    payloadSize?: number;
+    rateLimitRemaining?: number;
+    userId?: string;
+  }) {
+    this.addAction('api.request', {
+      endpoint,
+      method,
+      ...context,
+      timestamp: Date.now(),
+      category: 'api-usage'
+    });
+  }
+
+  /**
+   * Track errors with enhanced context
+   */
+  static trackError(error: Error | string, context: {
+    component?: string;
+    action?: string;
+    userId?: string;
+    workspaceId?: string;
+    severity?: 'low' | 'medium' | 'high' | 'critical';
+    metadata?: Record<string, any>;
+  }) {
+    const errorContext = {
+      ...context,
+      timestamp: Date.now(),
+      category: 'error',
+      url: typeof window !== 'undefined' ? window.location.href : 'unknown',
+      userAgent: typeof window !== 'undefined' ? navigator.userAgent : 'unknown'
+    };
+
+    this.addError(error, errorContext);
+  }
+
+  /**
+   * Set up enhanced Web Vitals tracking with Datadog addTiming
+   */
+  static setupWebVitalsTracking() {
+    if (typeof window === 'undefined' || !this.initialized) return;
+
+    console.info('[RUM] Setting up Core Web Vitals tracking...');
+
+    // Track LCP (Largest Contentful Paint)
+    try {
+      const lcpObserver = new PerformanceObserver((list) => {
+        const entries = list.getEntries();
+        const lastEntry = entries[entries.length - 1] as PerformanceEntry;
+
+        if (lastEntry) {
+          const lcpValue = lastEntry.startTime;
+          console.info('[RUM] LCP measured:', lcpValue.toFixed(2), 'ms');
+
+          // Send to Datadog using addTiming for proper metric aggregation
+          datadogRum.addTiming('lcp', lcpValue);
+
+          // Also track as performance metric for compatibility
+          this.trackPerformance({ largestContentfulPaint: lcpValue });
+
+          // Add context
+          this.addAttribute('performance.lcp.element', (lastEntry as any).element?.tagName || 'unknown');
+        }
+      });
+
+      lcpObserver.observe({ type: 'largest-contentful-paint', buffered: true });
+      console.info('[RUM] LCP observer initialized');
+    } catch (error) {
+      console.warn('[RUM] LCP tracking not supported:', error);
+    }
+
+    // Track FID (First Input Delay)
+    try {
+      const fidObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          const fidValue = (entry as any).processingStart - entry.startTime;
+          console.info('[RUM] FID measured:', fidValue.toFixed(2), 'ms');
+
+          // Send to Datadog using addTiming
+          datadogRum.addTiming('fid', fidValue);
+
+          // Also track as attribute for compatibility
+          this.addAttribute('performance.firstInputDelay', fidValue);
+        });
+      });
+
+      fidObserver.observe({ type: 'first-input', buffered: true });
+      console.info('[RUM] FID observer initialized');
+    } catch (error) {
+      console.warn('[RUM] FID tracking not supported:', error);
+    }
+
+    // Track CLS (Cumulative Layout Shift)
+    let clsValue = 0;
+    try {
+      const clsObserver = new PerformanceObserver((list) => {
+        list.getEntries().forEach((entry) => {
+          // Only count layout shifts without recent user input
+          if (!(entry as any).hadRecentInput) {
+            clsValue += (entry as any).value;
+          }
+        });
+      });
+
+      clsObserver.observe({ type: 'layout-shift', buffered: true });
+
+      // Report CLS on page hide/unload
+      const reportCLS = () => {
+        if (clsValue > 0) {
+          console.info('[RUM] CLS measured:', clsValue.toFixed(4));
+
+          // Send to Datadog using addTiming
+          datadogRum.addTiming('cls', clsValue);
+
+          // Also track as performance metric
+          this.trackPerformance({ cumulativeLayoutShift: clsValue });
+        }
+      };
+
+      // Report on visibility change and page unload
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          reportCLS();
+        }
+      });
+
+      window.addEventListener('beforeunload', reportCLS);
+
+      console.info('[RUM] CLS observer initialized');
+    } catch (error) {
+      console.warn('[RUM] CLS tracking not supported:', error);
+    }
+
+    // Track additional performance metrics
+    try {
+      // Track navigation timing
+      if (window.performance && window.performance.timing) {
+        window.addEventListener('load', () => {
+          setTimeout(() => {
+            const timing = window.performance.timing;
+            const pageLoad = timing.loadEventEnd - timing.navigationStart;
+            const domContentLoaded = timing.domContentLoadedEventEnd - timing.navigationStart;
+            const firstContentfulPaint = performance.getEntriesByName('first-contentful-paint')[0]?.startTime || 0;
+
+            console.info('[RUM] Performance metrics:', {
+              pageLoad: pageLoad.toFixed(2),
+              domContentLoaded: domContentLoaded.toFixed(2),
+              firstContentfulPaint: firstContentfulPaint.toFixed(2)
+            });
+
+            this.trackPerformance({
+              pageLoad,
+              domContentLoaded,
+              firstContentfulPaint
+            });
+          }, 0);
+        });
+      }
+    } catch (error) {
+      console.warn('[RUM] Navigation timing not supported:', error);
+    }
+
+    console.info('[RUM] Core Web Vitals tracking setup complete');
+  }
+
+  /**
+   * Initialize RUM with automatic tracking setup
+   */
+  static initializeWithTracking(config?: Partial<RUMConfig>) {
+    this.init(config);
+    
+    if (this.initialized) {
+      this.setupWebVitalsTracking();
+      this.setupAutomaticTracking();
+    }
+  }
+
+  /**
+   * Set up automatic tracking for common user interactions
+   */
+  static setupAutomaticTracking() {
+    if (typeof window === 'undefined') return;
+
+    // Track page visibility changes
+    document.addEventListener('visibilitychange', () => {
+      this.addAction('page.visibility_change', {
+        hidden: document.hidden,
+        timestamp: Date.now(),
+        category: 'page-lifecycle'
+      });
+    });
+
+    // Track page unload
+    window.addEventListener('beforeunload', () => {
+      this.addAction('page.unload', {
+        timestamp: Date.now(),
+        category: 'page-lifecycle'
+      });
+    });
+  }
+
+  /**
+   * Sanitize sensitive command data
+   */
+  private static sanitizeCommand(command: string): string {
+    // Remove potential API keys, passwords, and sensitive data
+    return command
+      .replace(/--?(?:api-?key|password|token|secret)\s*[=:]?\s*\S+/gi, '--[REDACTED]')
+      .replace(/(?:api_key|password|token|secret)\s*[=:]\s*\S+/gi, '[REDACTED]')
+      .substring(0, 100); // Truncate long commands
+  }
+
+  /**
+   * Get RUM session information
+   */
+  static getSessionInfo() {
+    if (!this.initialized) return null;
+
+    try {
+      return {
+        sessionId: datadogRum.getInternalContext()?.session_id,
+        viewId: datadogRum.getInternalContext()?.view?.id,
+        initialized: this.initialized
+      };
+    } catch (error) {
+      console.error('[RUM] Failed to get session info:', error);
+      return null;
+    }
+  }
+}
+
+export default RUMMonitoring;

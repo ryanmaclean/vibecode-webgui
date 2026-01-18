@@ -1,0 +1,106 @@
+---
+# Apply the DatadogMetric CRD for custom metrics autoscaling
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: datadogmetrics.datadoghq.com
+spec:
+  group: datadoghq.com
+  versions:
+  - name: v1alpha1
+    served: true
+    storage: true
+    schema:
+      openAPIV3Schema:
+        type: object
+        properties:
+          spec:
+            type: object
+            properties:
+              query:
+                type: string
+              maxAge:
+                type: string
+          status:
+            type: object
+  scope: Namespaced
+  names:
+    plural: datadogmetrics
+    singular: datadogmetric
+    kind: DatadogMetric
+---
+# DatadogPodAutoscaler with AI-powered resource optimization
+apiVersion: datadoghq.com/v1alpha2
+kind: DatadogPodAutoscaler
+metadata:
+  name: vibecode-ai-autoscaler
+  namespace: vibecode
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vibecode-webgui
+  constraints:
+    maxReplicas: 12
+    minReplicas: 2
+  owner: Local
+  applyPolicy:
+    mode: Apply  # Options: Apply, Preview, Disabled
+  objectives:
+  - type: PodResource
+    podResource:
+      name: cpu
+      value:
+        type: Utilization
+        utilization: 70  # Target 70% CPU utilization
+  - type: PodResource
+    podResource:
+      name: memory
+      value:
+        type: Utilization
+        utilization: 75  # Target 75% memory utilization
+---
+# DatadogPodAutoscaler with custom Datadog metrics
+apiVersion: datadoghq.com/v1alpha2
+kind: DatadogPodAutoscaler
+metadata:
+  name: vibecode-custom-metrics-autoscaler
+  namespace: vibecode
+spec:
+  targetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: vibecode-webgui
+  constraints:
+    maxReplicas: 8
+    minReplicas: 1
+  owner: Local
+  applyPolicy:
+    mode: Preview  # Start in preview mode to observe recommendations
+  objectives:
+  - type: External
+    external:
+      metricName: vibecode.api.response_time
+      target:
+        type: AverageValue
+        value: "200m"  # 200ms target response time
+---
+# DatadogMetric for response time monitoring
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: vibecode-response-time
+  namespace: vibecode
+spec:
+  query: "avg:vibecode.api.response_time{service:vibecode-webgui}"
+  maxAge: "90s"
+---
+# DatadogMetric for error rate monitoring
+apiVersion: datadoghq.com/v1alpha1
+kind: DatadogMetric
+metadata:
+  name: vibecode-error-rate
+  namespace: vibecode
+spec:
+  query: "avg:vibecode.api.error_rate{service:vibecode-webgui}"
+  maxAge: "90s"

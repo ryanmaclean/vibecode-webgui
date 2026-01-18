@@ -1,0 +1,223 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Release version (e.g., v1.5.0)'
+        required: true
+        type: string
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: write
+  packages: write
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    outputs:
+      upload_url: ${{ steps.create_release.outputs.upload_url }}
+      release_id: ${{ steps.create_release.outputs.id }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get version from tag
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+
+      - name: Generate release notes
+        id: release_notes
+        run: |
+          echo "## VibeCode ${{ env.VERSION }}" > release_notes.md
+          echo "" >> release_notes.md
+          echo "### What's New" >> release_notes.md
+          echo "" >> release_notes.md
+
+          # Get commits since last tag
+          PREV_TAG=$(git describe --abbrev=0 --tags $(git rev-list --tags --skip=1 --max-count=1) 2>/dev/null || echo "")
+          if [ -n "$PREV_TAG" ]; then
+            echo "Commits since $PREV_TAG:" >> release_notes.md
+            git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" >> release_notes.md
+          else
+            echo "Initial release" >> release_notes.md
+          fi
+
+          echo "" >> release_notes.md
+          echo "### Downloads" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "- **macOS**: Download the \`.dmg\` file for your architecture" >> release_notes.md
+          echo "- **Linux**: Coming soon" >> release_notes.md
+          echo "- **Windows**: Coming soon" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "### Checksums" >> release_notes.md
+          echo "" >> release_notes.md
+          echo "SHA256 checksums are provided for all binaries." >> release_notes.md
+
+          cat release_notes.md
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          name: VibeCode ${{ env.VERSION }}
+          body_path: release_notes.md
+          draft: true
+          prerelease: ${{ github.event.inputs.prerelease || false }}
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-macos:
+    name: Build & Upload macOS
+    needs: create-release
+    runs-on: macos-14
+    strategy:
+      matrix:
+        arch: [aarch64-apple-darwin]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'npm'
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.arch }}
+
+      - name: Install dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Build Next.js
+        run: npm run build
+        env:
+          NEXT_TELEMETRY_DISABLED: 1
+
+      - name: Build Tauri app
+        run: npm run tauri:build -- --target ${{ matrix.arch }}
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+
+      - name: Prepare artifacts
+        run: |
+          cd src-tauri/target/${{ matrix.arch }}/release/bundle/dmg
+
+          # Rename DMG with version and arch
+          for dmg in *.dmg; do
+            if [ -f "$dmg" ]; then
+              ARCH_NAME="arm64"
+              if [[ "${{ matrix.arch }}" == "x86_64-apple-darwin" ]]; then
+                ARCH_NAME="x64"
+              fi
+              NEW_NAME="VibeCode-${{ env.VERSION }}-macOS-${ARCH_NAME}.dmg"
+              mv "$dmg" "$NEW_NAME"
+              echo "Renamed $dmg to $NEW_NAME"
+            fi
+          done
+
+          # Generate checksums
+          shasum -a 256 *.dmg > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Upload DMG to Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.VERSION }}
+          files: |
+            src-tauri/target/${{ matrix.arch }}/release/bundle/dmg/*.dmg
+            src-tauri/target/${{ matrix.arch }}/release/bundle/dmg/SHA256SUMS.txt
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  # Placeholder for future Linux builds
+  build-linux:
+    name: Build Linux (Placeholder)
+    needs: create-release
+    runs-on: ubuntu-latest
+    if: false  # Disabled until Linux support is ready
+    steps:
+      - name: Placeholder
+        run: echo "Linux builds coming soon"
+
+  # Placeholder for future Windows builds
+  build-windows:
+    name: Build Windows (Placeholder)
+    needs: create-release
+    runs-on: windows-latest
+    if: false  # Disabled until Windows support is ready
+    steps:
+      - name: Placeholder
+        run: echo "Windows builds coming soon"
+
+  publish-release:
+    name: Publish Release
+    needs: [create-release, build-macos]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Get version
+        id: get_version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            echo "VERSION=${{ github.event.inputs.version }}" >> $GITHUB_ENV
+          else
+            echo "VERSION=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
+          fi
+
+      - name: Publish release (remove draft status)
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { data: releases } = await github.rest.repos.listReleases({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const release = releases.find(r => r.tag_name === process.env.VERSION);
+
+            if (release && release.draft) {
+              await github.rest.repos.updateRelease({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                release_id: release.id,
+                draft: false,
+              });
+              console.log('Release published successfully!');
+            }
+
+      - name: Notify
+        run: |
+          echo "✅ Release ${{ env.VERSION }} has been published!"
+          echo "🔗 View at: https://github.com/${{ github.repository }}/releases/tag/${{ env.VERSION }}"

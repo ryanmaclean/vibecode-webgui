@@ -1,0 +1,31 @@
+# syntax=docker/dockerfile:1.7
+
+# Runtime image for the Next.js-based documentation site
+FROM node:20-slim AS runner
+
+ENV NODE_ENV=production
+ENV PORT=3000
+ENV HOST=0.0.0.0
+
+WORKDIR /app
+
+# Install tini for proper signal handling
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends tini \
+    && rm -rf /var/lib/apt/lists/*
+
+# Copy pre-built standalone bundle (produced by `next build` + rsync)
+COPY next-standalone/ ./
+
+# Ensure runtime directories exist for temporary files and caches
+RUN mkdir -p /app/.next/cache && \
+    addgroup --system --gid 1001 nextjs && \
+    adduser --system --uid 1001 --ingroup nextjs --home /app nextjs && \
+    chown -R nextjs:nextjs /app
+
+USER nextjs
+
+EXPOSE 3000
+
+ENTRYPOINT ["/usr/bin/tini", "--"]
+CMD ["node", "server.js"]
