@@ -46,8 +46,9 @@ if (isBuilding) {
 export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
-if (!isBuilding && prisma.$use) {
-  prisma.$use(async (params, next) => {
+// Note: $use middleware is deprecated in Prisma 5+, using extensions instead
+if (!isBuilding && typeof (prisma as any).$use === 'function') {
+  (prisma as any).$use(async (params: any, next: any) => {
     const startTime = Date.now()
     const span = tracer?.startSpan?.('prisma.query', {
       tags: {

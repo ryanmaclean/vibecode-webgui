@@ -4,7 +4,6 @@
  */
 
 
-import winston from 'winston';
 import { createLogger, format, transports } from 'winston';
 import tracer from 'dd-trace';
 // // // import { logger } from '@/lib/logger';

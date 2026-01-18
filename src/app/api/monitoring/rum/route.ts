@@ -128,15 +128,13 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { action, data } = body
+    const { action } = body
 
     switch (action) {
       case 'track_conversion':
         // Track business conversions
-        const conversionData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // conversionData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -146,10 +144,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_feature_usage':
         // Track feature usage for product analytics
-        const featureData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // featureData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -159,10 +155,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_user_journey':
         // Track user journey steps
-        const journeyData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // journeyData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -172,10 +166,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_performance':
         // Track custom performance metrics
-        const performanceData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // performanceData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,

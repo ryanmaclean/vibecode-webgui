@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { checkDatabaseHealth, quickDatabaseHealthCheck } from '../../../../lib/db/health-check';
-import { getMetricsCollector } from '../../../../lib/db/database-metrics';
 // import { logger } from '../../../../lib/logger';
 import { z } from '@/lib/zod-compat';
 
@@ -41,7 +40,7 @@ export async function GET(request: NextRequest) {
         {
           status: 'error',
           message: 'Invalid query parameters',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
