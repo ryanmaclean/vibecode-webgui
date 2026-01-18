@@ -255,3 +255,21 @@ ISSUE_767_SUBISSUE_TEMPLATES.md
 ISSUE_767_DELIVERABLES_INDEX.md
 FILES_DELIVERED.txt
 INTEGRATION_SUMMARY.txt
+
+# Report and analysis files (aggressive consolidation)
+*-REPORT.md
+*-PLAN.md
+*-INDEX.md
+*-DELIVERY.md
+*-QUICKSTART.txt
+error-messages.txt
+failures-summary.txt
+BUILD.md
+CLEANUP_*.md
+FINAL_STRUCTURE.md
+MENUBAR_APP_*.md
+PORT_FORWARDING_*.md
+README_CONSOLIDATION_*.md
+SIMPLIFICATION_*.md
+VERIFICATION_*.md
+VFKIT_*.md
