@@ -217,3 +217,41 @@ GITHUB_RELEASE_COMMAND.sh
 # README versions in root (auto-generated)
 /README-v*.md
 VibeCode-Unified-*.txt
+
+# Build artifacts from menubar/swift builds
+/Apps/
+/menubar/
+/menubar-source/
+/release/
+/macos-native-build/
+/swift/
+
+# Build caches
+tsconfig.tsbuildinfo
+.*.bun-build
+
+# Test outputs
+test-results-agent-*.json
+*-verification.log
+test-output-*.log
+
+# Backup/temp files (aggressive consolidation)
+backup-manifest.txt
+ROLLBACK.sh
+build-all.sh
+CHECKSUMS.txt
+SHA256SUMS
+
+# Session/temp documentation (keep only consolidated reports)
+GAS_METHODOLOGY_*.md
+SESSION_COMPLETE_*.md
+CONVERSATION_SUMMARY_*.md
+COMPLETE_INTEGRATION_REPORT.md
+MENUBAR_ENHANCEMENT_*.md
+INTEGRATION_*.md
+VIBECODE_MENUBAR_SUCCESS_REPORT.md
+ISSUE_767_EXECUTION_CHECKLIST.md
+ISSUE_767_SUBISSUE_TEMPLATES.md
+ISSUE_767_DELIVERABLES_INDEX.md
+FILES_DELIVERED.txt
+INTEGRATION_SUMMARY.txt
