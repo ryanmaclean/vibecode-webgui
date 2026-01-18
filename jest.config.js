@@ -93,6 +93,7 @@ const config = {
 
   // Prevent haste-map collisions from duplicate directories
   modulePathIgnorePatterns: [
+    '<rootDir>/archive/', // Archived code - excluded from Jest module resolution
     '<rootDir>/docs/archive/old-builds/',
     '<rootDir>/vibecode-optimized/',
     '<rootDir>/vibecode-v1.4a-package/',

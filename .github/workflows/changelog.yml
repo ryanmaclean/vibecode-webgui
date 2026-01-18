@@ -103,11 +103,11 @@ jobs:
           fi
 
           git add CHANGELOG.md
-          git commit -m "docs: update CHANGELOG.md for ${{ steps.version-range.outputs.to }}
-
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>"
+          git commit -m "docs: update CHANGELOG.md for ${{ steps.version-range.outputs.to }}" \
+                     -m "" \
+                     -m "🤖 Generated with [Claude Code](https://claude.com/claude-code)" \
+                     -m "" \
+                     -m "Co-Authored-By: Claude <noreply@anthropic.com>"
 
           git push origin HEAD:main || {
             echo "Failed to push to main, creating PR instead"
