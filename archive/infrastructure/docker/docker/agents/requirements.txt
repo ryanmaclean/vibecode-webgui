@@ -14,7 +14,7 @@ python-multipart==0.0.20
 
 # HTTP client
 httpx==0.28.1
-aiohttp==3.12.14
+aiohttp==3.13.3
 
 # Async support
 asyncio==3.4.3
