@@ -137,8 +137,8 @@
     "lint:markdown": "markdownlint-cli2"
   },
   "dependencies": {
-    "@ai-sdk/openai": "2.0.59",
-    "@ai-sdk/react": "1.2.12",
+    "@ai-sdk/openai": "3.0.12",
+    "@ai-sdk/react": "3.0.41",
     "@azure/cosmos": "4.5.1",
     "@azure/storage-blob": "^12.18.0",
     "@azure/storage-queue": "^12.13.0",
@@ -194,7 +194,7 @@
     "@xterm/addon-fit": "^0.10.0",
     "@xterm/addon-web-links": "^0.11.0",
     "@xterm/xterm": "^5.5.0",
-    "ai": "5.0.75",
+    "ai": "6.0.39",
     "async-mutex": "0.5.0",
     "axios": "^1.10.0",
     "bcryptjs": "^3.0.3",
