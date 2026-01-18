@@ -234,6 +234,15 @@ tsconfig.tsbuildinfo
 test-results-agent-*.json
 *-verification.log
 test-output-*.log
+test-results/
+
+# Test upload directories
+data/uploads/test-workspace/
+data/uploads/test-workspace-*/
+data/uploads/WORKSPACE_ABC/
+data/uploads/project-name-v1/
+data/uploads/workspace-123/
+data/uploads/ws_test_001/
 
 # Backup/temp files (aggressive consolidation)
 backup-manifest.txt
