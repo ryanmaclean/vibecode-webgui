@@ -258,6 +258,7 @@
     "tmp": "^0.2.4",
     "@octokit/openapi-types": "24.0.0",
     "axios": "^1.10.0",
+    "diff": "8.0.3",
     "@tremor/react": {
       "react": "^19.0.0",
       "react-dom": "^19.0.0"
