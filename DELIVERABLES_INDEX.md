@@ -39,11 +39,7 @@
   - `/src/instrument.ts` - dd-trace initialization
   - `/src/app/layout.tsx` - RUM script injection
   - `/src/lib/monitoring/rum-client.ts` - RUM client library
-- **API Keys**: Configured in `.env.local`
-  - DD_API_KEY: 38eaf238957f23223b8b2bdb8844224a
-  - DD_APP_KEY: f2c520951a5a61427f5104fd0bffe718aff65fa9
-  - NEXT_PUBLIC_DATADOG_APPLICATION_ID: 52590244-d98c-4d53-a756-cfe50a8e868b
-  - NEXT_PUBLIC_DATADOG_CLIENT_TOKEN: pub91c2b093bc1483a4bfb5881c3511cde6
+- **API Keys**: Configured in `.env.local` (REDACTED - never committed to git)
 
 ### Test Coverage
 - **Promise**: 25.12% coverage, 5,311 passing tests
