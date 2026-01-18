@@ -1,0 +1,1540 @@
+{
+  "title": "VibeCode - Enhanced LLM Observability",
+  "description": "Comprehensive LLM monitoring dashboard with cost tracking, performance analysis, provider health, and business intelligence metrics for the VibeCode AI Gateway and OpenRouter integration.",
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "template_variables": [
+    {
+      "name": "env",
+      "prefix": "env",
+      "default": "*",
+      "available_values": ["production", "staging", "development"]
+    },
+    {
+      "name": "service",
+      "prefix": "service",
+      "default": "vibecode-ai-gateway",
+      "available_values": ["vibecode-ai-gateway", "vibecode-webgui"]
+    },
+    {
+      "name": "model_provider",
+      "prefix": "model_provider",
+      "default": "*",
+      "available_values": ["anthropic", "openai", "google", "meta"]
+    },
+    {
+      "name": "model_family",
+      "prefix": "model_family",
+      "default": "*",
+      "available_values": ["claude", "gpt", "gemini", "llama"]
+    },
+    {
+      "name": "model",
+      "prefix": "model",
+      "default": "*"
+    },
+    {
+      "name": "user",
+      "prefix": "user",
+      "default": "*"
+    }
+  ],
+  "widgets": [
+    {
+      "id": 0,
+      "definition": {
+        "type": "note",
+        "content": "# Core LLM Metrics\nOverview of token usage, request rates, costs, and latency percentiles across all models and providers.",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 0,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 1,
+      "definition": {
+        "title": "Token Usage Trends (Input vs Output)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_prompt{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,60)",
+            "display_type": "area",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.tokens_prompt{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,60)",
+                "alias_name": "Input Tokens"
+              }
+            ]
+          },
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_completion{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,60)",
+            "display_type": "area",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.tokens_completion{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,60)",
+                "alias_name": "Output Tokens"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Tokens",
+          "min": "auto",
+          "max": "auto"
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 0,
+        "y": 1,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "Total Token Usage by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "sum", "value"],
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,60)",
+            "display_type": "bars",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Total Tokens",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 1,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Cost Tracking per Model (USD)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "sum", "max", "value"],
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family,model:$model} by {model}.rollup(sum,300)",
+            "display_type": "line",
+            "style": {
+              "palette": "grey",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Cost (USD)",
+          "min": "auto",
+          "max": "auto"
+        },
+        "markers": []
+      },
+      "layout": {
+        "x": 0,
+        "y": 4,
+        "width": 8,
+        "height": 3
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "Total Cost by Provider (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env,model_provider:$model_provider}.rollup(sum,86400)",
+            "aggregator": "sum",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 100,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 50,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 50,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 8,
+        "y": 4,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "Avg Cost per Request",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600) / sum:vibecode.ai_gateway.requests{service:$service,env:$env}.as_count().rollup(sum,3600)",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 0.5,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 0.1,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 0.1,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 4,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 10,
+        "y": 4,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Request Latency Percentiles (p50, p95, p99)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "legend_columns": ["avg", "min", "max", "value"],
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "p50:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "p50:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+                "alias_name": "p50 Latency"
+              }
+            ]
+          },
+          {
+            "q": "p95:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "p95:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+                "alias_name": "p95 Latency"
+              }
+            ]
+          },
+          {
+            "q": "p99:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+            "display_type": "line",
+            "style": {
+              "palette": "red",
+              "line_type": "dashed",
+              "line_width": "thick"
+            },
+            "metadata": [
+              {
+                "expression": "p99:vibecode.ai_gateway.latency_ms{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}",
+                "alias_name": "p99 Latency"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": false,
+          "label": "Latency (ms)",
+          "min": "auto",
+          "max": "auto"
+        },
+        "markers": [
+          {
+            "value": "y = 5000",
+            "display_type": "error dashed",
+            "label": "SLA Threshold"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Error Rates by Model and Type",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.error{service:$service,env:$env,model_provider:$model_provider,model:$model} by {error_type,model}.rollup(sum,60)",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Error Count",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 7,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Requests per Minute",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.requests{service:$service,env:$env,model_provider:$model_provider,model_family:$model_family}.as_count().rollup(sum,60)",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Requests/min",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 10,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "title": "Error Rate %",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:vibecode.ai_gateway.error{service:$service,env:$env}.as_count() / sum:vibecode.ai_gateway.requests{service:$service,env:$env}.as_count()) * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 1,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 1,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2,
+        "custom_unit": "%"
+      },
+      "layout": {
+        "x": 4,
+        "y": 10,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "Avg Response Time (ms)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 10000,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 5000,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 5000,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 0,
+        "custom_unit": "ms"
+      },
+      "layout": {
+        "x": 6,
+        "y": 10,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "title": "Total Requests (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.requests{service:$service,env:$env}.as_count().rollup(sum,86400)",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 8,
+        "y": 10,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "title": "Total Tokens (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env}.rollup(sum,86400)",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 0,
+        "custom_unit": "tokens"
+      },
+      "layout": {
+        "x": 10,
+        "y": 10,
+        "width": 2,
+        "height": 3
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "type": "note",
+        "content": "# Model Performance Comparison\nSide-by-side analysis of different models including response time vs cost analysis and quality metrics.",
+        "background_color": "green",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 13,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "title": "Response Time vs Cost by Model",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "scatterplot",
+        "requests": {
+          "x": {
+            "q": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env} by {model}",
+            "aggregator": "avg"
+          },
+          "y": {
+            "q": "avg:vibecode.ai_gateway.cost_usd{service:$service,env:$env} by {model}",
+            "aggregator": "avg"
+          }
+        },
+        "xaxis": {
+          "scale": "linear",
+          "include_zero": false,
+          "label": "Avg Latency (ms)",
+          "min": "auto",
+          "max": "auto"
+        },
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": false,
+          "label": "Avg Cost (USD)",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 14,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "title": "Model Selection Distribution",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.selection{service:$service,env:$env} by {model_provider,model_family,model}.rollup(sum,3600)",
+            "style": {
+              "palette": "datadog16"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 14,
+        "width": 6,
+        "height": 4
+      }
+    },
+    {
+      "id": 16,
+      "definition": {
+        "title": "Top 10 Models by Request Count",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai_gateway.requests{service:$service,env:$env} by {model}.as_count().rollup(sum,3600), 10, 'sum', 'desc')",
+            "style": {
+              "palette": "dog_classic"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 18,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 17,
+      "definition": {
+        "title": "Top 10 Models by Cost",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env} by {model}.rollup(sum,3600), 10, 'sum', 'desc')",
+            "style": {
+              "palette": "warm"
+            },
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 10,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 4,
+        "y": 18,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 18,
+      "definition": {
+        "title": "Fastest Models (p50 Latency)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(p50:vibecode.ai_gateway.latency_ms{service:$service,env:$env} by {model}, 10, 'mean', 'asc')",
+            "style": {
+              "palette": "green"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 8,
+        "y": 18,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 19,
+      "definition": {
+        "type": "note",
+        "content": "# Provider Health & Reliability\nOpenRouter API health, rate limits, error patterns, and failover/retry metrics.",
+        "background_color": "orange",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 21,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 20,
+      "definition": {
+        "title": "Provider Availability %",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "(1 - (sum:vibecode.ai_gateway.error{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count() / sum:vibecode.ai_gateway.requests{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count())) * 100",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": false,
+          "label": "Availability %",
+          "min": "95",
+          "max": "100"
+        },
+        "markers": [
+          {
+            "value": "y = 99.9",
+            "display_type": "ok dashed",
+            "label": "SLA Target"
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 22,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 21,
+      "definition": {
+        "title": "Provider Error Distribution",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.error{service:$service,env:$env} by {model_provider,error_type}.as_count().rollup(sum,3600)",
+            "style": {
+              "palette": "warm"
+            }
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 22,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 22,
+      "definition": {
+        "title": "Rate Limit Events",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.rate_limit{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count().rollup(sum,300)",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Rate Limit Hits",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 25,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 23,
+      "definition": {
+        "title": "Retry and Fallback Attempts",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.retry{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count().rollup(sum,60)",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.retry{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count().rollup(sum,60)",
+                "alias_name": "Retries"
+              }
+            ]
+          },
+          {
+            "q": "sum:vibecode.ai_gateway.fallback{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count().rollup(sum,60)",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "dashed",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.fallback{service:$service,env:$env,model_provider:$model_provider} by {model_provider}.as_count().rollup(sum,60)",
+                "alias_name": "Fallbacks"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Count",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 4,
+        "y": 25,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 24,
+      "definition": {
+        "title": "Provider Health Status",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "check_status",
+        "check": "vibecode.ai_gateway.provider.health",
+        "grouping": "cluster",
+        "group_by": ["model_provider"],
+        "tags": ["service:$service", "env:$env"]
+      },
+      "layout": {
+        "x": 8,
+        "y": 25,
+        "width": 4,
+        "height": 3
+      }
+    },
+    {
+      "id": 25,
+      "definition": {
+        "type": "note",
+        "content": "# Business Intelligence\nCost per user/session, peak usage analysis, budget tracking, and ROI metrics.",
+        "background_color": "purple",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 28,
+        "width": 12,
+        "height": 1
+      }
+    },
+    {
+      "id": 26,
+      "definition": {
+        "title": "Cost per User (Last 24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400) / count_not_null:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 2,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 2,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 3,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 0,
+        "y": 29,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": 27,
+      "definition": {
+        "title": "Active Users (24h)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "count_not_null:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.rollup(count,86400)",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 0
+      },
+      "layout": {
+        "x": 2,
+        "y": 29,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": 28,
+      "definition": {
+        "title": "Budget Burn Rate (USD/hour)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600)",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 10,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 5,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 5,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 2,
+        "custom_unit": "$/hr"
+      },
+      "layout": {
+        "x": 4,
+        "y": 29,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": 29,
+      "definition": {
+        "title": "Projected Monthly Cost",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400) * 30",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 3000,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 1500,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 1500,
+                "palette": "white_on_green"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 0,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 6,
+        "y": 29,
+        "width": 2,
+        "height": 2
+      }
+    },
+    {
+      "id": 30,
+      "definition": {
+        "title": "Peak Usage Hours Heatmap",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "heatmap",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.requests{service:$service,env:$env}.as_count().rollup(sum,3600)",
+            "style": {
+              "palette": "hostmap_blues"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 8,
+        "y": 29,
+        "width": 4,
+        "height": 2
+      }
+    },
+    {
+      "id": 31,
+      "definition": {
+        "title": "Top 10 Most Expensive Operations (by task/operation)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env,operation:$operation} by {operation}.rollup(sum,3600), 10, 'sum', 'desc')",
+            "style": {
+              "palette": "warm"
+            },
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 20,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 10,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ]
+      },
+      "layout": {
+        "x": 0,
+        "y": 31,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 32,
+      "definition": {
+        "title": "Cost Trend (7-day rolling average)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": false,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400).rollup(avg,7)",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "thick"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Daily Cost (USD)",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 31,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 33,
+      "definition": {
+        "type": "note",
+        "content": "# Advanced Features\nAnomaly detection, forecasting, A/B testing insights, and prompt engineering impact analysis.\n\n**TODO**: Custom metrics needed:\n- `vibecode.ai_gateway.prompt_tokens_ratio` - for prompt engineering analysis\n- `vibecode.ai_gateway.cache_hit_rate` - for caching effectiveness\n- `vibecode.ai_gateway.experiment_variant` - for A/B testing",
+        "background_color": "gray",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": false,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 34,
+        "width": 12,
+        "height": 2
+      }
+    },
+    {
+      "id": 34,
+      "definition": {
+        "title": "Token Usage Anomaly Detection",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env}.rollup(sum,300)",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          },
+          {
+            "q": "anomalies(sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env}.rollup(sum,300), 'agile', 2)",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "dashed",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Tokens",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 36,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 35,
+      "definition": {
+        "title": "Cost Anomaly Detection & Forecast",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600)",
+            "display_type": "line",
+            "style": {
+              "palette": "purple",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600)",
+                "alias_name": "Actual Cost"
+              }
+            ]
+          },
+          {
+            "q": "forecast(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600), 'linear', 1)",
+            "display_type": "line",
+            "style": {
+              "palette": "grey",
+              "line_type": "dashed",
+              "line_width": "thin"
+            },
+            "metadata": [
+              {
+                "expression": "forecast(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600), 'linear', 1)",
+                "alias_name": "Forecast"
+              }
+            ]
+          },
+          {
+            "q": "anomalies(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600), 'agile', 3)",
+            "display_type": "line",
+            "style": {
+              "palette": "warm",
+              "line_type": "dotted",
+              "line_width": "thin"
+            },
+            "metadata": [
+              {
+                "expression": "anomalies(sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,3600), 'agile', 3)",
+                "alias_name": "Anomaly Bounds"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Cost (USD)",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 36,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 36,
+      "definition": {
+        "title": "A/B Testing: Model Performance Comparison (TODO)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env,experiment_variant:a}",
+            "display_type": "line",
+            "style": {
+              "palette": "green",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env,experiment_variant:a}",
+                "alias_name": "Variant A Latency"
+              }
+            ]
+          },
+          {
+            "q": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env,experiment_variant:b}",
+            "display_type": "line",
+            "style": {
+              "palette": "orange",
+              "line_type": "dashed",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "avg:vibecode.ai_gateway.latency_ms{service:$service,env:$env,experiment_variant:b}",
+                "alias_name": "Variant B Latency"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": false,
+          "label": "Latency (ms)",
+          "min": "auto",
+          "max": "auto"
+        }
+      },
+      "layout": {
+        "x": 0,
+        "y": 39,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 37,
+      "definition": {
+        "title": "Prompt Engineering Impact: Tokens Efficiency Trend (TODO)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.tokens_prompt{service:$service,env:$env}.rollup(sum,3600) / sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env}.rollup(sum,3600) * 100",
+            "display_type": "line",
+            "style": {
+              "palette": "cool",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:vibecode.ai_gateway.tokens_prompt{service:$service,env:$env}.rollup(sum,3600) / sum:vibecode.ai_gateway.tokens_total{service:$service,env:$env}.rollup(sum,3600) * 100",
+                "alias_name": "Prompt Token %"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Prompt Tokens %",
+          "min": "0",
+          "max": "100"
+        },
+        "markers": [
+          {
+            "value": "y = 30",
+            "display_type": "ok dashed",
+            "label": "Target Efficiency"
+          }
+        ]
+      },
+      "layout": {
+        "x": 6,
+        "y": 39,
+        "width": 6,
+        "height": 3
+      }
+    },
+    {
+      "id": 38,
+      "definition": {
+        "title": "Cache Hit Rate (TODO)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:vibecode.ai_gateway.cache_hit{service:$service,env:$env}.as_count() / (sum:vibecode.ai_gateway.cache_hit{service:$service,env:$env}.as_count() + sum:vibecode.ai_gateway.cache_miss{service:$service,env:$env}.as_count())) * 100",
+            "aggregator": "avg",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 70,
+                "palette": "white_on_green"
+              },
+              {
+                "comparator": ">",
+                "value": 40,
+                "palette": "white_on_yellow"
+              },
+              {
+                "comparator": "<=",
+                "value": 40,
+                "palette": "white_on_red"
+              }
+            ]
+          }
+        ],
+        "autoscale": true,
+        "precision": 1,
+        "custom_unit": "%"
+      },
+      "layout": {
+        "x": 0,
+        "y": 42,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 39,
+      "definition": {
+        "title": "Cost Saved by Caching (TODO)",
+        "title_size": "16",
+        "title_align": "left",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "sum:vibecode.ai_gateway.cache_cost_saved{service:$service,env:$env}.rollup(sum,86400)",
+            "aggregator": "sum"
+          }
+        ],
+        "autoscale": true,
+        "precision": 2,
+        "custom_unit": "$"
+      },
+      "layout": {
+        "x": 3,
+        "y": 42,
+        "width": 3,
+        "height": 2
+      }
+    },
+    {
+      "id": 40,
+      "definition": {
+        "title": "Quality Score Trend (TODO)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_legend": true,
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:vibecode.ai_gateway.quality_score{service:$service,env:$env,model:$model} by {model}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic",
+              "line_type": "solid",
+              "line_width": "normal"
+            }
+          }
+        ],
+        "yaxis": {
+          "scale": "linear",
+          "include_zero": true,
+          "label": "Quality Score (0-10)",
+          "min": "0",
+          "max": "10"
+        }
+      },
+      "layout": {
+        "x": 6,
+        "y": 42,
+        "width": 6,
+        "height": 2
+      }
+    },
+    {
+      "id": 41,
+      "definition": {
+        "type": "note",
+        "content": "## Dashboard Notes\n\n**Metrics Status:**\n- ✅ Core metrics are implemented (tokens, cost, latency, errors)\n- ✅ Provider and model tags are available\n- ⚠️ Custom metrics needed for advanced features (see TODO items above)\n\n**Recommended Alerts:**\n1. Cost spike: Budget burn rate > $10/hour\n2. Quality degradation: Quality score < 7 for 5 minutes\n3. High error rate: Error rate > 5% for 10 minutes\n4. Latency SLA breach: p95 > 10s for 5 minutes\n5. Rate limit warnings: Rate limit hits > 10/hour\n\n**Data Retention:**\n- Live metrics: 15 months\n- Logs: Configurable per plan\n- Traces: 15 days default\n\nFor more information, see: `content/wiki/monitoring/DATADOG_MONITORING.md`",
+        "background_color": "white",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top",
+        "show_tick": true,
+        "tick_pos": "50%",
+        "tick_edge": "left",
+        "has_padding": true
+      },
+      "layout": {
+        "x": 0,
+        "y": 44,
+        "width": 12,
+        "height": 3
+      }
+    }
+  ]
+}
