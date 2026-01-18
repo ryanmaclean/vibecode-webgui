@@ -1,711 +1,656 @@
-# Developer Guide
+# Development Guide for VibeCode VM
 
-Welcome to VibeCode! This guide will help you get started with development and provide practical guidance for common tasks.
+This guide provides comprehensive instructions for setting up your development environment, building VibeCode from source, and contributing to the project.
 
 ## Table of Contents
 
-- [Quick Start](#quick-start)
-- [Project Architecture](#project-architecture)
-- [Development Workflow](#development-workflow)
+- [Prerequisites](#prerequisites)
+- [Development Environment Setup](#development-environment-setup)
+- [Project Structure](#project-structure)
+- [Building from Source](#building-from-source)
+- [Running and Testing](#running-and-testing)
+- [Debugging](#debugging)
+- [Architecture Overview](#architecture-overview)
+- [Coding Standards](#coding-standards)
 - [Common Tasks](#common-tasks)
-- [Testing](#testing)
-- [Code Review Process](#code-review-process)
 - [Troubleshooting](#troubleshooting)
-- [Getting Help](#getting-help)
+- [Performance Profiling](#performance-profiling)
 
-## Quick Start
+## Prerequisites
 
-### Prerequisites
+### Required Software
 
-- **Node.js**: 18.18.0 to 24.x (check with `node --version`)
-- **npm**: 9.0.0 or higher
-- **PostgreSQL**: 16+ with pgvector extension
-- **Docker**: Optional, for containerized development
+- **macOS**: 12.0 (Monterey) or later
+- **Xcode Command Line Tools**: `xcode-select --install`
+- **Homebrew**: `/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"`
+- **vfkit**: `brew install vfkit` (v0.6.1+)
+- **Docker**: Optional but recommended for reproducible builds
+- **Git**: `brew install git`
 
-### First-Time Setup
-
-```bash
-# 1. Clone the repository
-git clone https://github.com/ryanmaclean/vibecode-webgui.git
-cd vibecode-webgui
-
-# 2. Install dependencies
-npm install
-
-# 3. Set up environment variables
-cp .env.example .env
-# Edit .env with your configuration
-
-# 4. Run setup script (installs native binaries and checks environment)
-npm run setup
-
-# 5. Start development server
-npm run dev
-```
-
-Visit `http://localhost:3000` to see your local instance.
-
-### Quick Validation
-
-After setup, verify everything works:
+### Development Tools
 
 ```bash
-# Check TypeScript compilation
-npm run type-check
+# Install essential development tools
+brew install \
+  coreutils \
+  gnu-sed \
+  grep \
+  findutils \
+  build-essential \
+  wget \
+  curl \
+  python3
 
-# Run linting
-npm run lint
-
-# Run unit tests
-npm run test:unit
-
-# Verify Monaco editor integration
-npm run test:unit:monaco
+# For building kernel/initramfs
+brew install \
+  binutils \
+  gcc
 ```
 
-## Project Architecture
-
-### Tech Stack Overview
-
-- **Frontend**: Next.js 15 (App Router), React 19, TypeScript
-- **Editor**: Monaco 0.53.0 with Monacopilot AI completion
-- **Database**: PostgreSQL 16 + pgvector for semantic search
-- **AI Providers**: OpenAI, Anthropic, Gemini, Groq, DeepSeek
-- **Monitoring**: Datadog (APM, DBM, RUM)
-- **Infrastructure**: Kubernetes (AKS), Docker, Helm
-
-### Directory Structure
-
-```
-vibecode-webgui/
-├── src/                    # Application source code
-│   ├── app/               # Next.js App Router pages and API routes
-│   ├── components/        # React components
-│   ├── lib/              # Shared libraries and utilities
-│   ├── mcp/              # Model Context Protocol server
-│   └── instrument.ts     # Datadog instrumentation
-├── tests/                 # Test suites
-│   ├── unit/             # Unit tests
-│   ├── integration/      # Integration tests
-│   ├── e2e/              # Playwright E2E tests
-│   ├── scripts/          # Bats script tests
-│   └── k8s/              # Kubernetes tests
-├── scripts/              # Build and deployment scripts
-├── docker/               # Docker configurations
-│   └── code-server/      # code-server multi-profile images
-├── k8s/                  # Kubernetes manifests
-├── charts/               # Helm charts
-├── docs/                 # Documentation
-└── .github/workflows/    # CI/CD workflows
-```
-
-### Key Components
-
-**Monaco Editor Integration** (`src/app/api/code-completion/route.ts`)
-- AI-powered code completion
-- Multi-provider support (OpenAI, Anthropic, etc.)
-- Real-time code suggestions
-
-**Vector Search** (`src/lib/services/vector-search.ts`)
-- Semantic code search using pgvector
-- HNSW indexes for fast similarity queries
-- Codebase chat functionality
-
-**MCP Server** (`src/mcp/server.ts`)
-- Model Context Protocol integration
-- Compatible with Windsurf and Claude Desktop
-- Provides context-aware code assistance
-
-## Development Workflow
-
-### Branch Strategy
+### Recommended Tools
 
 ```bash
-# Always work on feature branches, never on main
-git checkout main
-git pull origin main
-git checkout -b feature/your-feature-name
-
-# Make your changes...
-
-# Before committing, run checks
-npm run check  # Runs lint + type-check
-npm run test:unit
-
-# Commit with conventional commits
-git commit -m "feat: add new feature"
-git commit -m "fix: resolve bug in component"
-git commit -m "docs: update development guide"
+# For development efficiency
+brew install \
+  git-flow \
+  gh \
+  fzf \
+  ripgrep
 ```
 
-### Commit Message Convention
+### Minimum System Requirements
 
-Follow [Conventional Commits](https://www.conventionalcommits.org/):
+- **RAM**: 8GB available (4GB for VM, 4GB for host development)
+- **Disk Space**: 30GB free (for build artifacts and VM images)
+- **CPU**: Multi-core processor recommended for faster builds
 
-- `feat:` - New feature
-- `fix:` - Bug fix
-- `docs:` - Documentation changes
-- `test:` - Test additions or modifications
-- `refactor:` - Code refactoring
-- `chore:` - Build process or tooling changes
-- `perf:` - Performance improvements
+## Development Environment Setup
 
-### Pre-Commit Checklist
+### Clone the Repository
 
-Before committing code:
+```bash
+git clone https://github.com/yourusername/vibecode-vm.git
+cd vibecode-vm
 
-- [ ] Code compiles without TypeScript errors: `npm run type-check`
-- [ ] Linting passes: `npm run lint`
-- [ ] Unit tests pass: `npm run test:unit`
-- [ ] New features have tests
-- [ ] Documentation updated if needed
-
-### Coordination Protocol
-
-**Important**: Check `TODO.md` before starting work to:
-- See what work areas are already claimed
-- Avoid conflicts with ongoing work
-- Follow the live coordination protocol
-- Document your intent for large changes
-
-## Common Tasks
-
-### Adding a New Feature
-
-1. **Create a feature branch**
-   ```bash
-   git checkout -b feature/my-new-feature
-   ```
-
-2. **Implement your feature**
-   - Add components in `src/components/`
-   - Add API routes in `src/app/api/`
-   - Follow existing code patterns
-
-3. **Add tests**
-   ```bash
-   # Unit tests in tests/unit/
-   npm run test:unit -- --watch
-
-   # Integration tests in tests/integration/
-   npm run test:integration
-   ```
-
-4. **Update documentation**
-   - Add inline code comments
-   - Update relevant docs in `docs/`
-   - Don't create unnecessary documentation files
-
-5. **Test locally**
-   ```bash
-   npm run dev
-   npm run test
-   ```
-
-### Working with the Monaco Editor
-
-```typescript
-// Example: Adding a custom Monaco language feature
-import * as monaco from 'monaco-editor';
-
-// Register custom completion provider
-monaco.languages.registerCompletionItemProvider('typescript', {
-  provideCompletionItems: (model, position) => {
-    // Your custom completion logic
-    return {
-      suggestions: [
-        {
-          label: 'myCustomFunction',
-          kind: monaco.languages.CompletionItemKind.Function,
-          insertText: 'myCustomFunction()',
-        }
-      ]
-    };
-  }
-});
+# Set up git hooks (optional)
+git config core.hooksPath .git/hooks
+chmod +x .git/hooks/*
 ```
 
-### Working with Vector Search
+### Configure Your Development Environment
 
-```typescript
-// Example: Querying the vector database
-import { VectorSearchService } from '@/lib/services/vector-search';
+```bash
+# Set up environment variables
+export VIBECODE_DEV=1
+export VIBECODE_BUILD_TYPE=debug  # or 'release'
 
-const searchService = new VectorSearchService();
-
-// Search for similar code
-const results = await searchService.search({
-  query: "authentication middleware",
-  limit: 5,
-  threshold: 0.7
-});
-
-// Results contain semantically similar code snippets
-console.log(results);
+# Optional: Add to your shell profile (~/.zshrc or ~/.bash_profile)
+echo 'export VIBECODE_DEV=1' >> ~/.zshrc
 ```
 
-### Adding AI Provider Support
+### Verify Setup
 
-To add a new AI provider:
+```bash
+# Check vfkit installation
+vfkit --version
 
-1. **Add provider configuration** in `src/lib/ai-providers/`
-2. **Implement the provider interface**
-3. **Add environment variables** to `.env.example`
-4. **Update the provider selector** in the UI
-5. **Add tests** for the provider
+# Check required tools
+which git gcc make python3 docker
 
-Example provider implementation:
-```typescript
-// src/lib/ai-providers/my-provider.ts
-export class MyAIProvider implements AIProvider {
-  async complete(prompt: string, options: CompletionOptions) {
-    // Implementation
-  }
+# Test Docker (if using)
+docker run hello-world
+```
+
+## Project Structure
+
+### Directory Layout
+
+```
+vibecode-vm/
+├── azure/                                  # Build scripts and VM components
+│   ├── build-unified-services-with-datadog.sh    # Main build script
+│   ├── linux-kernel-arm64                # Compiled kernel (binary)
+│   ├── linux-kernel-arm64-build/         # Kernel source/build (optional)
+│   ├── unified-services-static.cpio.gz   # Compressed VM image
+│   ├── test-volume-mounting.sh           # Volume mount tests
+│   ├── test-unified-services.sh          # Service integration tests
+│   └── SwiftUI-Apps/                     # macOS app & VM manager
+│       ├── Apps/UnifiedServicesVibeCodeApp/
+│       ├── Shared/
+│       └── Tests/
+│
+├── scripts/                               # Utility scripts
+│   ├── prepare-ssh-infrastructure.sh      # SSH setup
+│   ├── install.sh                        # Installation script
+│   └── ...
+│
+├── docs/                                  # Documentation
+│   ├── architecture.md                   # System design
+│   ├── datadog-extension.md              # Datadog integration
+│   ├── volume-mounting.md                # VirtioFS guide
+│   ├── optimization.md                   # Performance tuning
+│   └── troubleshooting.md                # Common issues
+│
+├── config/                                # Configuration files
+│   └── vfkit/demo-services.yaml          # Service configuration
+│
+├── .github/                              # GitHub configuration
+│   ├── ISSUE_TEMPLATE/                  # Issue templates
+│   └── workflows/                        # CI/CD workflows
+│
+├── README.md                             # User documentation
+├── CONTRIBUTING.md                       # Contribution guidelines
+├── DEVELOPMENT.md                        # This file
+├── ROADMAP.md                            # Project roadmap
+├── CHANGELOG.md                          # Version history
+├── CODE_OF_CONDUCT.md                    # Community standards
+├── SECURITY.md                           # Security policy
+└── LICENSE                               # MIT License
+```
+
+### Key Files
+
+- **build-unified-services-with-datadog.sh**: Main build automation script
+- **linux-kernel-arm64**: Pre-compiled Linux kernel for ARM64
+- **unified-services-static.cpio.gz**: Compressed VM image (boot environment)
+- **SwiftUI-Apps**: macOS app source code
+
+## Building from Source
+
+### Quick Build
+
+For most development, a quick build is sufficient:
+
+```bash
+cd azure
+./build-unified-services-with-datadog.sh
+
+# Build output
+# - Creates/updates: unified-services-static.cpio.gz (~90MB compressed)
+# - Time: 15-30 minutes depending on system
+```
+
+### Build Options
+
+```bash
+# Fast build (minimal services, for quick iteration)
+./build-unified-services-with-datadog.sh --fast
+
+# Clean rebuild from scratch
+./build-unified-services-with-datadog.sh --clean
+
+# Build with additional services
+./build-unified-services-with-datadog.sh --with-extensions
+
+# Verbose output for debugging
+./build-unified-services-with-datadog.sh --verbose
+
+# Dry run (show what would be done)
+./build-unified-services-with-datadog.sh --dry-run
+```
+
+### Understanding the Build Process
+
+The build script performs these steps:
+
+1. **Preparation**: Creates temporary build directories, downloads dependencies
+2. **Base Image**: Extracts or creates BusyBox base filesystem
+3. **Service Compilation**: Builds PostgreSQL, Valkey, OpenVSCode, SSH server
+4. **Init System**: Creates initialization scripts for service startup
+5. **Packaging**: Creates compressed cpio image
+6. **Optimization**: Compresses and deduplicates where possible
+
+### Customizing the Build
+
+#### Adding a New Service
+
+1. Edit `build-unified-services-with-datadog.sh`
+2. Add service compilation section
+3. Update init script
+4. Test thoroughly
+
+Example:
+
+```bash
+# Add to build script
+build_myservice() {
+    echo "Building MyService..."
+    # Download/compile steps
+    # Copy to rootfs
 }
+
+# Add to init script
+/path/to/myservice &
 ```
 
-### Working with Docker
+#### Modifying the Initramfs
+
+1. Extract the existing image:
+```bash
+mkdir /tmp/vm-work
+cd /tmp/vm-work
+gunzip -c ../unified-services-static.cpio.gz | cpio -idm
+```
+
+2. Make changes to the filesystem (edit `init`, add files, etc.)
+
+3. Rebuild:
+```bash
+find . | cpio -o -H newc | gzip -9 > ../custom-vm.cpio.gz
+```
+
+### Build Troubleshooting
+
+#### Build Fails on Network Download
 
 ```bash
-# Build local Docker image
-docker build -t vibecode-webgui:dev .
+# Check network connectivity
+curl -I https://github.com
 
-# Run with Docker Compose
-docker compose up -d
-
-# View logs
-docker compose logs -f
-
-# Stop services
-docker compose down
+# Use a different mirror or retry
+./build-unified-services-with-datadog.sh --retry-count 5
 ```
 
-### Kubernetes Development
+#### Out of Disk Space
 
 ```bash
-# Create local KinD cluster
-kind create cluster --name vibecode
+# Check available space
+df -h
 
-# Deploy to local cluster
-kubectl apply -f k8s/vibecode-kind.yaml
-
-# Port forward to access locally
-kubectl port-forward svc/vibecode 3000:80
-
-# View logs
-kubectl logs -f deployment/vibecode
-
-# Clean up
-kind delete cluster --name vibecode
+# Clean up old builds
+rm -rf /tmp/vibecode-build-*
 ```
 
-## Testing
+#### Memory Issues During Build
 
-### Test Structure
-
+```bash
+# Reduce parallel jobs
+export MAKE_JOBS=2
+./build-unified-services-with-datadog.sh
 ```
-tests/
-├── unit/           # Fast, isolated unit tests
-├── integration/    # Component interaction tests
-├── e2e/           # Full user journey tests (Playwright)
-├── scripts/       # Shell script tests (Bats)
-└── k8s/           # Kubernetes deployment tests
+
+## Running and Testing
+
+### Starting the VM for Development
+
+```bash
+# Method 1: Using the unified launcher
+vibecode-vm start
+
+# Method 2: Direct vfkit command (for more control)
+vfkit \
+  --cpus 2 \
+  --memory 2048 \
+  --kernel azure/linux-kernel-arm64 \
+  --initrd azure/unified-services-static.cpio.gz \
+  --device virtio-net,nat,mac=52:54:00:12:34:70 \
+  --device virtio-serial,logFilePath=console.log \
+  --device virtio-rng \
+  --gui
+```
+
+### Checking Service Status
+
+```bash
+# Check all services
+vibecode-vm status
+
+# SSH into VM and check services manually
+vibecode-vm ssh
+
+# Inside VM
+ps aux                           # See all processes
+netstat -tlnp                    # See listening ports
+dmesg | tail -50                 # See boot messages
 ```
 
 ### Running Tests
 
 ```bash
-# All tests
-npm test
+# Boot time test
+./AGENT-Q-TIME-TO-EDITOR-TEST.sh
 
-# Unit tests only (fast feedback)
-npm run test:unit
+# Service connectivity test
+cd azure
+./test-unified-services.sh
 
-# With coverage
-npm run test:coverage
+# Volume mounting test
+./test-volume-mounting.sh
 
-# Integration tests
-npm run test:integration
-
-# E2E tests (requires running server)
-npm run test:e2e
-
-# E2E tests with UI (for debugging)
-npm run test:e2e:headed
-
-# Script tests (Bats framework)
-npm run test:scripts
-
-# Kubernetes tests
-npm run test:k8s
-
-# Quick test (unit tests only, limited workers)
-npm run quick-test
+# Full test suite
+cd azure
+for test in test-*.sh; do
+    echo "Running $test..."
+    ./$test || echo "FAILED: $test"
+done
 ```
 
-### Writing Tests
+### Manual Testing Checklist
 
-**Unit Test Example:**
-```typescript
-// tests/unit/utils/string-helpers.test.ts
-import { capitalize } from '@/lib/utils/string-helpers';
+- [ ] VM boots successfully
+- [ ] DHCP assigns IP address
+- [ ] SSH access works: `vibecode-vm ssh`
+- [ ] OpenVSCode loads: `open http://192.168.64.10:8080`
+- [ ] PostgreSQL responds: `pg_isready -h 192.168.64.10`
+- [ ] Valkey responds: `redis-cli -h 192.168.64.10 ping`
+- [ ] Datadog extension appears in OpenVSCode
+- [ ] Volume mounting works (if using)
 
-describe('capitalize', () => {
-  it('should capitalize first letter', () => {
-    expect(capitalize('hello')).toBe('Hello');
-  });
+## Debugging
 
-  it('should handle empty strings', () => {
-    expect(capitalize('')).toBe('');
-  });
-});
-```
-
-**Integration Test Example:**
-```typescript
-// tests/integration/api-completion.test.ts
-import { POST } from '@/app/api/code-completion/route';
-
-describe('Code Completion API', () => {
-  it('should return completions', async () => {
-    const request = new Request('http://localhost:3000/api/code-completion', {
-      method: 'POST',
-      body: JSON.stringify({
-        prompt: 'function sum',
-        provider: 'openai'
-      })
-    });
-
-    const response = await POST(request);
-    const data = await response.json();
-
-    expect(response.status).toBe(200);
-    expect(data.completion).toBeDefined();
-  });
-});
-```
-
-**E2E Test Example:**
-```typescript
-// tests/e2e/editor.test.ts
-import { test, expect } from '@playwright/test';
-
-test('user can type in Monaco editor', async ({ page }) => {
-  await page.goto('/');
-
-  // Wait for Monaco to load
-  await page.waitForSelector('.monaco-editor');
-
-  // Type in editor
-  await page.keyboard.type('console.log("Hello");');
-
-  // Verify content
-  const editorContent = await page.textContent('.monaco-editor');
-  expect(editorContent).toContain('Hello');
-});
-```
-
-### Test Best Practices
-
-1. **Test Isolation**: Each test should be independent
-2. **Arrange-Act-Assert**: Clear test structure
-3. **Meaningful Names**: Describe what is being tested
-4. **Mock External Dependencies**: Use mocks for APIs, databases
-5. **Test Behavior, Not Implementation**: Focus on outcomes
-6. **Keep Tests Fast**: Unit tests should run in milliseconds
-
-### Debugging Tests
+### Viewing Logs
 
 ```bash
-# Run specific test file
-npm run test:unit -- tests/unit/specific-file.test.ts
+# View VM console output
+vibecode-vm logs
 
-# Run tests matching pattern
-npm run test:unit -- --testNamePattern="my test"
+# Follow logs in real-time
+vibecode-vm logs -f
 
-# Debug with Node inspector
-node --inspect-brk node_modules/.bin/jest --runInBand
+# Save logs to file
+vibecode-vm logs > vm-output.log
 
-# Playwright debug mode
-npm run test:e2e:headed
+# Inside VM, view service logs
+vibecode-vm ssh
+dmesg
+tail -f /var/log/syslog  # If logging is configured
 ```
 
-## Code Review Process
+### SSH Debugging
 
-### Before Submitting a PR
+```bash
+# SSH with verbose output
+ssh -vv root@192.168.64.10
 
-1. **Self-review your changes**
-   ```bash
-   git diff main...your-branch
-   ```
-
-2. **Run the full test suite**
-   ```bash
-   npm run check
-   npm test
-   ```
-
-3. **Update documentation** if needed
-
-4. **Check for sensitive data**
-   - No API keys, passwords, or secrets
-   - Use environment variables
-
-### PR Checklist
-
-- [ ] Branch is up to date with main
-- [ ] All tests pass locally
-- [ ] Code follows project style (linting passes)
-- [ ] New features have tests
-- [ ] Breaking changes are documented
-- [ ] Commit messages follow convention
-- [ ] PR description explains the changes
-- [ ] Related issues are linked
-
-### PR Template
-
-When creating a PR, include:
-
-```markdown
-## Summary
-Brief description of changes
-
-## Motivation
-Why is this change needed?
-
-## Changes
-- Bullet list of key changes
-
-## Testing
-How was this tested?
-
-## Screenshots (if applicable)
-Visual changes
-
-## Checklist
-- [ ] Tests added/updated
-- [ ] Documentation updated
-- [ ] No breaking changes
+# Check SSH server status in VM
+vibecode-vm ssh
+ps aux | grep sshd
+netstat -tlnp | grep 22
 ```
 
-### Review Process
+### Network Debugging
 
-1. **Automated checks** run on PR creation
-2. **Reviewer assigned** (usually within 1 business day)
-3. **Feedback addressed** through discussions
-4. **Approval** from at least one maintainer
-5. **Merge** to main branch
+```bash
+# Check IP assignment
+vibecode-vm ssh
+ip addr show
+
+# Test network connectivity from VM
+vibecode-vm ssh
+ping 8.8.8.8
+ping google.com
+
+# Check network from host
+nmap -p 22,8080,5432,6379 192.168.64.10
+```
+
+### Performance Debugging
+
+```bash
+# Monitor VM resources during boot
+watch -n 1 'vibecode-vm status'
+
+# Inside VM, check resource usage
+vibecode-vm ssh
+top
+free -m
+df -h
+```
+
+### Using Console Output
+
+Console output is saved to `console.log` when using vfkit. Check it for:
+
+- Boot messages
+- Service startup logs
+- Error messages
+- Network initialization
+
+```bash
+# Follow console output
+tail -f console.log
+
+# Search for errors
+grep -i error console.log
+grep -i fail console.log
+```
+
+## Architecture Overview
+
+### System Design
+
+VibeCode VM is built on these core components:
+
+1. **Linux Kernel** (ARM64 optimized)
+   - Minimal configuration for quick boot
+   - VirtioFS support for volume mounting
+   - DHCP client for network configuration
+
+2. **BusyBox Base System**
+   - Lightweight init system
+   - Essential utilities
+   - ~5MB footprint
+
+3. **Service Stack**
+   - **OpenVSCode Server**: Full VS Code IDE in browser
+   - **PostgreSQL 16**: Relational database
+   - **Valkey**: In-memory cache/data store
+   - **Dropbear SSH**: Secure shell access
+
+4. **Datadog Integration**
+   - OpenVSCode extension v2.0.0
+   - Log aggregation
+   - Performance monitoring
+   - Code quality analysis
+
+### Startup Sequence
+
+1. **Firmware** (vfkit): Boots kernel
+2. **Kernel**: Initializes hardware, mounts root filesystem
+3. **Init Script**: Runs as PID 1
+   - Mounts filesystems (proc, sys, dev)
+   - Initializes network (DHCP)
+   - Starts services in parallel
+4. **Services**: All services launch simultaneously (~3-5 seconds)
+5. **Ready**: VM is ready to accept connections
+
+### Service Dependencies
+
+```
+┌─────────────────────────────────────┐
+│     OpenVSCode Server (8080)        │
+├─────────────────────────────────────┤
+│  Datadog Extension                  │
+│  VS Code Built-in Extensions        │
+├─────────────────────────────────────┤
+│  PostgreSQL │ Valkey │ SSH Server   │
+├─────────────────────────────────────┤
+│      Linux Kernel + VirtioFS        │
+└─────────────────────────────────────┘
+```
+
+## Coding Standards
+
+### Shell Scripts
+
+```bash
+#!/bin/bash
+set -euo pipefail  # Exit on error, undefined vars, pipe failures
+
+# Use meaningful variable names
+SERVICE_NAME="postgres"
+SERVICE_PORT="5432"
+
+# Quote variables
+echo "Starting $SERVICE_NAME"
+
+# Use functions for organization
+start_service() {
+    local service="$1"
+    echo "Starting $service"
+    # Implementation
+}
+
+# Error handling
+if ! command -v "$SERVICE_NAME" &> /dev/null; then
+    echo "ERROR: $SERVICE_NAME not found" >&2
+    exit 1
+fi
+```
+
+### Swift Code (for macOS app)
+
+Follow standard Swift conventions:
+
+- Use meaningful variable names (camelCase)
+- Add documentation comments for public APIs
+- Keep functions small and focused
+- Use type safety and optionals correctly
+- Follow Apple's Swift Style Guide
+
+```swift
+/// Starts the VibeCode VM with the specified configuration
+/// - Parameter config: VM configuration to use
+/// - Returns: Process handle or nil if failed
+func startVM(config: VMConfiguration) -> Process? {
+    // Implementation
+}
+```
+
+### Documentation
+
+- Use Markdown for all documentation
+- Include code examples where helpful
+- Keep README at root level concise
+- Put detailed guides in `/docs`
+- Update docs with code changes
+
+## Common Tasks
+
+### Adding a New Configuration Option
+
+1. Update config schema in `config/vfkit/demo-services.yaml`
+2. Update build script to read the option
+3. Add documentation in `docs/`
+4. Add validation in launcher app
+
+### Adding a New Test
+
+1. Create script in `azure/test-*.sh`
+2. Add test discovery to test suite
+3. Document test purpose and usage
+4. Include in CI/CD pipeline
+
+### Building a Release
+
+```bash
+# Update version
+# Update CHANGELOG.md
+# Create tag
+git tag -a v3.3.0 -m "Version 3.3.0"
+git push origin v3.3.0
+
+# GitHub Actions will build and release automatically
+```
+
+### Profiling Boot Time
+
+```bash
+# Automated boot time measurement
+./AGENT-Q-TIME-TO-EDITOR-TEST.sh
+
+# Manual timing
+time vibecode-vm start
+
+# Detailed boot timeline
+vibecode-vm ssh
+dmesg | grep -E '^\[.*\]' | head -20
+```
 
 ## Troubleshooting
 
-### Common Issues
+### VM Won't Boot
 
-#### "Module not found" errors
-
+Check kernel and initramfs exist:
 ```bash
-# Clear node_modules and reinstall
-rm -rf node_modules package-lock.json
-npm install
+ls -lh azure/linux-kernel-arm64
+ls -lh azure/unified-services-static.cpio.gz
 ```
 
-#### TypeScript errors after pulling latest code
+### Services Not Starting
+
+1. Check logs: `vibecode-vm logs`
+2. SSH and check manually: `vibecode-vm ssh && ps aux`
+3. Verify service binaries exist in image
+4. Check init script syntax
+
+### Network Issues
 
 ```bash
-# Rebuild TypeScript declarations
-npm run type-check
-```
+# Check DHCP
+vibecode-vm ssh
+ps aux | grep dhcp
+ip addr show
+ip route show
 
-#### Dev server not starting
-
-```bash
-# Check if port 3000 is in use
-lsof -i :3000
-# Kill the process using port 3000
-kill -9 <PID>
-
-# Try simple dev mode
-npm run dev:simple
-```
-
-#### Tests failing with "Cannot find module"
-
-```bash
-# Ensure test dependencies are installed
-npm install --include=dev
-
-# Clear Jest cache
-npx jest --clearCache
-```
-
-#### Monaco editor not loading
-
-```bash
-# Verify Monaco package installation
-npm list monaco-editor
-
-# Check for Monaco-specific tests
-npm run test:unit:monaco
-```
-
-#### Docker build failures
-
-```bash
-# Check Docker daemon is running
-docker info
-
-# Clean Docker cache
-docker system prune -a
-
-# Rebuild without cache
-docker build --no-cache -t vibecode-webgui:dev .
-```
-
-#### Kubernetes deployment issues
-
-```bash
-# Check cluster status
-kubectl get nodes
-kubectl get pods
-
-# View pod logs
-kubectl logs -f <pod-name>
-
-# Describe pod for events
-kubectl describe pod <pod-name>
-
-# Check service endpoints
-kubectl get endpoints
-```
-
-### Getting Detailed Logs
-
-```bash
-# Next.js debug mode
-DEBUG=* npm run dev
-
-# Verbose test output
-npm test -- --verbose
-
-# Playwright trace
-npm run test:e2e -- --trace on
+# Test connectivity
+ping 8.8.8.8
 ```
 
 ### Performance Issues
 
-```bash
-# Profile Next.js build
-npm run build -- --profile
+1. Increase VM resources: `--memory 4096 --cpus 4`
+2. Check host system resources: `top`, `df -h`
+3. Profile services: `vibecode-vm ssh && top`
+4. Check for disk I/O bottlenecks
 
-# Analyze bundle size
-npm run build
-npx @next/bundle-analyzer
+## Performance Profiling
+
+### Boot Time Analysis
+
+```bash
+# Measure total boot time
+time vibecode-vm start
+
+# Expected: 26 seconds average
+
+# Break down boot stages
+vibecode-vm logs | grep -E '^\[.*\]'
+```
+
+### Memory Usage
+
+```bash
+# Before starting services
+vibecode-vm ssh
+free -m
+ps aux --sort=-%mem | head -10
+
+# During active use
+watch -n 1 'vibecode-vm ssh && free -m'
+```
+
+### Service Startup Timing
+
+Edit init script to add timestamps:
+
+```bash
+# In init script
+echo "Service startup at $(date +%s)" >> /tmp/boot-times.log
+# Start service
+/path/to/service &
+echo "Service started at $(date +%s)" >> /tmp/boot-times.log
 ```
 
 ## Getting Help
 
-### Resources
-
-- **Documentation**: Browse `docs/` directory
-- **README**: [README.md](../README.md) for quick reference
-- **Testing Guide**: [TESTING_STRATEGY.md](TESTING_STRATEGY.md)
-- **Contributing**: [CONTRIBUTING.md](../CONTRIBUTING.md)
-- **TODO**: [TODO.md](../TODO.md) for current work tracking
-
-### Where to Ask Questions
-
-1. **GitHub Issues**: For bugs and feature requests
-   - Use issue templates in `.github/ISSUE_TEMPLATE/`
-   - Search existing issues first
-
-2. **GitHub Discussions**: For questions and ideas
-   - Best for open-ended discussions
-   - Community support
-
-3. **Code Comments**: For clarification on specific code
-   - Tag maintainers in PR comments
-   - Ask in code review discussions
-
-### Debug Checklist
-
-When stuck, work through this checklist:
-
-1. [ ] Read error message carefully
-2. [ ] Check logs (`npm run dev` output, browser console)
-3. [ ] Search existing issues on GitHub
-4. [ ] Review relevant documentation
-5. [ ] Try the troubleshooting steps above
-6. [ ] Create minimal reproduction case
-7. [ ] Ask for help with detailed context
-
-### Reporting Issues
-
-When reporting issues, include:
-
-- **Environment**: OS, Node version, npm version
-- **Steps to reproduce**: Exact commands run
-- **Expected behavior**: What should happen
-- **Actual behavior**: What actually happened
-- **Error messages**: Full error output
-- **Screenshots**: If applicable
-
-Example:
-```
-**Environment**
-- OS: macOS 14.0
-- Node: 20.10.0
-- npm: 10.2.3
-
-**Steps to Reproduce**
-1. npm install
-2. npm run dev
-3. Navigate to /editor
-
-**Expected**: Editor loads successfully
-**Actual**: White screen, console error: "Cannot read property 'monaco' of undefined"
-
-**Error**:
-```
-[full error stack trace]
-```
-```
-
-## Best Practices Summary
-
-### Code Quality
-- Write TypeScript, not JavaScript
-- Use ESLint and Prettier configurations
-- Follow existing code patterns
-- Keep functions small and focused
-- Add JSDoc comments for complex functions
-
-### Git Workflow
-- Always work on feature branches
-- Commit frequently with meaningful messages
-- Keep commits focused and atomic
-- Rebase on main before creating PR
-- Don't commit sensitive data
-
-### Testing
-- Write tests for new features
-- Maintain test coverage above 70%
-- Test edge cases and error conditions
-- Mock external dependencies
-- Keep tests maintainable
-
-### Documentation
-- Update docs with code changes
-- Write clear code comments
-- Document complex logic
-- Keep README and guides current
-- Don't create unnecessary files
-
-### Performance
-- Optimize bundle size
-- Use Next.js Image component
-- Implement proper caching
-- Monitor Core Web Vitals
-- Profile before optimizing
+- **Documentation**: Check `/docs` directory
+- **Issues**: Search [GitHub Issues](https://github.com/yourusername/vibecode-vm/issues)
+- **Discussions**: Ask in [GitHub Discussions](https://github.com/yourusername/vibecode-vm/discussions)
+- **Contributing**: See [CONTRIBUTING.md](CONTRIBUTING.md)
 
 ---
 
-**Welcome to the team!** If you have questions or suggestions for improving this guide, please open an issue or PR.
+**Last Updated**: 2025-01-14
+
+**For questions or issues with development setup, please open an issue or start a discussion on GitHub.**
