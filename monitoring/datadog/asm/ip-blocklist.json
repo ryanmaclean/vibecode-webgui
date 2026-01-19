@@ -135,15 +135,12 @@
     {
       "name": "Block Known Bad Bot Networks",
       "description": "Block IPs from known bad bot networks",
-      "enabled": true,
+      "enabled": false,
       "conditions": {
-        "asn_list": [
-          "AS12345",
-          "AS67890"
-        ]
+        "asn_list": []
       },
       "action": "block",
-      "comment": "Add ASNs of known malicious hosting providers"
+      "comment": "Add ASNs of known malicious hosting providers, then enable this rule"
     }
   ],
   "logging": {
