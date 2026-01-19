@@ -120,11 +120,11 @@ export function sanitizeUserInput(input: string): string {
  */
 export function validateAIQuery(input: unknown): { query: string; context?: string; metadata?: Record<string, any> } {
   const result = aiQuerySchema.safeParse(input);
-  
+
   if (!result.success) {
-    throw new Error(`Invalid AI query: ${result.error.errors.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid AI query: ${result.error.issues.map(e => e.message).join(', ')}`);
   }
-  
+
   return {
     query: sanitizeUserInput(result.data.query),
     context: result.data.context ? sanitizeUserInput(result.data.context) : undefined,
@@ -137,12 +137,12 @@ export function validateAIQuery(input: unknown): { query: string; context?: stri
  */
 export function validatePrompt(input: unknown): { content: string; variables?: Record<string, string>; systemPrompt?: string } {
   const result = promptSchema.safeParse(input);
-  
+
   if (!result.success) {
-    throw new Error(`Invalid prompt: ${result.error.errors.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid prompt: ${result.error.issues.map(e => e.message).join(', ')}`);
   }
-  
-  const sanitizedVariables = result.data.variables 
+
+  const sanitizedVariables = result.data.variables
     ? Object.fromEntries(
         Object.entries(result.data.variables).map(([key, value]) => [
           key,
@@ -150,7 +150,7 @@ export function validatePrompt(input: unknown): { content: string; variables?: R
         ])
       )
     : undefined;
-  
+
   return {
     content: sanitizeUserInput(result.data.content),
     variables: sanitizedVariables,
@@ -163,11 +163,11 @@ export function validatePrompt(input: unknown): { content: string; variables?: R
  */
 export function validateFileUpload(input: unknown): { filename: string; contentType: string; size: number } {
   const result = fileUploadSchema.safeParse(input);
-  
+
   if (!result.success) {
-    throw new Error(`Invalid file upload: ${result.error.errors.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid file upload: ${result.error.issues.map(e => e.message).join(', ')}`);
   }
-  
+
   return result.data;
 }
 
