@@ -1,0 +1,484 @@
+# Datadog Application Security Monitoring (ASM) Monitors
+# High-severity attack detection and alerting configuration
+#
+# These monitors detect critical security events and trigger immediate alerts
+# to the security team via Slack, PagerDuty, email, and other channels.
+#
+# Monitor Types:
+# - High severity attacks (SQL injection, RCE, etc.)
+# - Critical vulnerabilities
+# - Mass attack campaigns
+# - Suspicious user activity
+# - IP blocking events
+# - Compliance violations
+
+---
+# Monitor 1: High Severity Attack Detected
+name: "ASM: High Severity Attack Detected"
+type: security_signal
+query: |
+  status:high severity:(high OR critical) source:appsec service:vibecode-webgui env:production
+message: |
+  ## 🚨 High Severity Attack Detected
+
+  **Attack Type:** {{attack_type.name}}
+  **Severity:** {{severity}}
+  **Target Endpoint:** {{http.url}}
+  **Source IP:** {{network.client.ip}}
+  **User:** {{usr.id}}
+  **Timestamp:** {{timestamp}}
+
+  ### Details
+  {{rule.description}}
+
+  ### Attack Pattern
+  ```
+  {{attack_pattern}}
+  ```
+
+  ### Recommended Actions
+  1. Review the attack details in the [ASM Dashboard](https://app.datadoghq.com/security/appsec)
+  2. Check if the source IP is known/trusted
+  3. Verify if the attack was blocked or just monitored
+  4. Consider blocking the source IP if malicious
+  5. Review recent activity from the same IP
+
+  ### Quick Links
+  - [View Trace]({{trace_link}})
+  - [Source IP Details]({{ip_details_link}})
+  - [Attack Timeline]({{timeline_link}})
+
+  **Notify:** @slack-security-alerts @pagerduty-security
+
+tags:
+  - security
+  - asm
+  - high-severity
+  - vibecode
+options:
+  thresholds:
+    critical: 1
+  notify_audit: true
+  notify_no_data: false
+  renotify_interval: 60
+  timeout_h: 1
+  require_full_window: false
+  new_group_delay: 60
+  include_tags: true
+  escalation_message: |
+    ## ⚠️ ESCALATION: High Severity Attack Still Active
+
+    This attack has been ongoing for {{escalation_time}}. Immediate action required.
+
+    @pagerduty-security-oncall
+
+priority: 1
+
+---
+# Monitor 2: Critical Vulnerability Exploitation Attempt
+name: "ASM: Critical Vulnerability Exploitation Attempt"
+type: security_signal
+query: |
+  status:critical source:appsec service:vibecode-webgui env:production vulnerability.severity:critical
+message: |
+  ## 🔴 CRITICAL: Vulnerability Exploitation Attempt
+
+  **CVE:** {{vulnerability.cve}}
+  **Severity:** {{vulnerability.severity}}
+  **Component:** {{vulnerability.component}}
+  **Target:** {{http.url}}
+  **Attacker IP:** {{network.client.ip}}
+
+  ### Vulnerability Details
+  {{vulnerability.description}}
+
+  ### Exploitation Attempt
+  This attack attempted to exploit a known critical vulnerability in production.
+
+  **CVSS Score:** {{vulnerability.cvss_score}}
+  **Exploitability:** {{vulnerability.exploitability}}
+
+  ### Immediate Actions Required
+  1. 🚫 Block source IP immediately
+  2. 🔍 Audit all requests from this IP in last 24h
+  3. 🔧 Apply security patch if available
+  4. 📊 Review vulnerability remediation priority
+
+  **Notify:** @slack-security-alerts @pagerduty-security-critical @security-team
+
+tags:
+  - security
+  - asm
+  - critical
+  - vulnerability
+  - cve
+options:
+  thresholds:
+    critical: 1
+  notify_audit: true
+  notify_no_data: false
+  renotify_interval: 30
+  require_full_window: false
+  include_tags: true
+
+priority: 1
+
+---
+# Monitor 3: Mass Attack Campaign Detected
+name: "ASM: Mass Attack Campaign Detected"
+type: metric alert
+query: |
+  sum(last_5m):sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack}.as_count() > 50
+message: |
+  ## 🚨 Mass Attack Campaign Detected
+
+  **Attack Count (5 min):** {{value}}
+  **Threshold:** {{threshold}}
+  **Service:** vibecode-webgui
+
+  ### Analysis
+  Multiple attacks detected in a short time window, indicating a coordinated attack campaign.
+
+  ### Attack Distribution
+  - SQL Injection: {{attack_count.sqli}}
+  - XSS: {{attack_count.xss}}
+  - RCE: {{attack_count.rce}}
+  - Other: {{attack_count.other}}
+
+  ### Top Attack Sources
+  {{top_ips}}
+
+  ### Recommended Actions
+  1. Enable aggressive rate limiting
+  2. Review and update WAF rules
+  3. Consider temporary IP geo-blocking
+  4. Initiate incident response procedure
+
+  **Notify:** @slack-security-alerts @security-team @devops-oncall
+
+tags:
+  - security
+  - asm
+  - mass-attack
+  - campaign
+options:
+  thresholds:
+    critical: 50
+    warning: 25
+  notify_audit: true
+  notify_no_data: false
+  renotify_interval: 30
+  require_full_window: false
+  evaluation_delay: 60
+
+priority: 2
+
+---
+# Monitor 4: Suspicious User Activity
+name: "ASM: Suspicious User Activity - Multiple Attacks"
+type: metric alert
+query: |
+  sum(last_15m):sum:trace.appsec.events{env:production,service:vibecode-webgui,usr.id:*} by {usr.id}.as_count() > 5
+message: |
+  ## ⚠️ Suspicious User Activity Detected
+
+  **User ID:** {{usr.id.name}}
+  **Attack Count (15 min):** {{value}}
+  **Email:** {{usr.email}}
+
+  ### Alert Details
+  A user account has generated multiple security events in a short time window.
+
+  **Attack Types:**
+  {{attack_types}}
+
+  ### Possible Scenarios
+  1. Account compromise
+  2. Malicious insider
+  3. Automated scanning from user account
+  4. False positive (legitimate testing)
+
+  ### Immediate Actions
+  1. Review user's recent activity
+  2. Check for unauthorized access
+  3. Consider temporary account suspension
+  4. Contact user to verify activity
+
+  **Notify:** @slack-security-alerts @security-team
+
+tags:
+  - security
+  - asm
+  - user-activity
+  - insider-threat
+options:
+  thresholds:
+    critical: 5
+    warning: 3
+  notify_audit: true
+  notify_no_data: false
+  renotify_interval: 60
+
+priority: 3
+
+---
+# Monitor 5: Automatic IP Blocking Event
+name: "ASM: Automatic IP Blocking Triggered"
+type: event alert
+query: |
+  events("source:datadog.appsec.ip.blocked env:production service:vibecode-webgui")
+message: |
+  ## 🚫 Automatic IP Blocking Event
+
+  **Blocked IP:** {{ip}}
+  **Block Duration:** {{duration_seconds}}s
+  **Reason:** {{block_reason}}
+  **Attack Count:** {{attack_count}}
+  **Threshold:** {{threshold}}
+
+  ### Block Details
+  This IP was automatically blocked due to exceeding the attack threshold.
+
+  **Time Window:** {{window_seconds}}s
+  **Attack Types:** {{attack_types}}
+
+  ### Investigation
+  - [View IP Details]({{ip_details_link}})
+  - [View Attack Timeline]({{timeline_link}})
+  - [Review Blocked Requests]({{blocked_requests_link}})
+
+  ### Next Steps
+  1. Review if this is a legitimate user/service
+  2. Check for false positives
+  3. Add to permanent blocklist if confirmed malicious
+  4. Document incident in security log
+
+  **Notify:** @slack-security-alerts
+
+tags:
+  - security
+  - asm
+  - ip-blocking
+options:
+  notify_audit: true
+  notify_no_data: false
+  renotify_interval: 120
+
+priority: 3
+
+---
+# Monitor 6: Rate Limit Exceeded - Potential DDoS
+name: "ASM: Rate Limit Exceeded - Potential DDoS"
+type: metric alert
+query: |
+  sum(last_5m):sum:datadog.appsec.rate_limit.exceeded{env:production,service:vibecode-webgui}.as_count() > 100
+message: |
+  ## 🚨 Rate Limit Exceeded - Potential DDoS Attack
+
+  **Rate Limit Violations (5 min):** {{value}}
+  **Threshold:** {{threshold}}
+
+  ### Analysis
+  High volume of rate limit violations detected, potentially indicating a DDoS attack.
+
+  ### Source Analysis
+  **Unique IPs:** {{unique_ips}}
+  **Top Sources:** {{top_sources}}
+
+  ### Recommended Actions
+  1. Review traffic patterns
+  2. Enable DDoS protection
+  3. Consider CDN/WAF escalation
+  4. Monitor infrastructure load
+
+  **Notify:** @slack-security-alerts @devops-oncall @infrastructure-team
+
+tags:
+  - security
+  - asm
+  - rate-limiting
+  - ddos
+options:
+  thresholds:
+    critical: 100
+    warning: 50
+  notify_audit: true
+  notify_no_data: false
+  require_full_window: false
+
+priority: 2
+
+---
+# Monitor 7: API Key Leakage Detected
+name: "ASM: API Key Leakage Detected in Response"
+type: security_signal
+query: |
+  status:critical source:appsec service:vibecode-webgui attack_type:sensitive_data_leak
+message: |
+  ## 🔴 CRITICAL: API Key Leakage Detected
+
+  **Leak Type:** API Key / Secret
+  **Endpoint:** {{http.url}}
+  **Response Status:** {{http.status_code}}
+
+  ### URGENT ACTION REQUIRED
+  An API key or secret was detected in an HTTP response. This is a critical security incident.
+
+  ### Immediate Steps
+  1. 🔄 **ROTATE** the leaked credentials immediately
+  2. 🚫 **REVOKE** access for the leaked key
+  3. 🔍 **AUDIT** all usage of the leaked key
+  4. 📊 **REVIEW** code that generated the response
+  5. 🔧 **FIX** the code to prevent future leaks
+
+  ### Investigation Required
+  - When was this key created?
+  - What services use this key?
+  - Has the key been compromised?
+  - What data was accessed?
+
+  **Notify:** @slack-security-alerts @pagerduty-security-critical @security-lead @cto
+
+tags:
+  - security
+  - asm
+  - data-leak
+  - api-key
+  - critical
+options:
+  thresholds:
+    critical: 1
+  notify_audit: true
+  notify_no_data: false
+  require_full_window: false
+  include_tags: true
+
+priority: 1
+
+---
+# Monitor 8: ASM No Data Warning
+name: "ASM: No Security Data Received"
+type: metric alert
+query: |
+  sum(last_10m):sum:trace.appsec.events{env:production,service:vibecode-webgui}.as_count() < 1
+message: |
+  ## ⚠️ Warning: No ASM Data Received
+
+  **Duration:** {{no_data_duration}}
+  **Service:** vibecode-webgui
+
+  ### Possible Issues
+  1. ASM is disabled or not configured
+  2. Agent is not running
+  3. Application is not sending traces
+  4. Network connectivity issues
+
+  ### Troubleshooting Steps
+  1. Check Datadog Agent status
+  2. Verify DD_APPSEC_ENABLED=true
+  3. Check application logs for errors
+  4. Verify network connectivity to Datadog
+
+  **Notify:** @slack-monitoring @devops-team
+
+tags:
+  - security
+  - asm
+  - no-data
+  - health-check
+options:
+  thresholds:
+    critical: 1
+  notify_no_data: true
+  no_data_timeframe: 10
+  notify_audit: false
+  renotify_interval: 60
+
+priority: 4
+
+---
+# Monitor 9: Compliance Violation Detected
+name: "ASM: Compliance Violation Detected"
+type: security_signal
+query: |
+  status:high source:appsec service:vibecode-webgui tags:(compliance:pci-dss OR compliance:hipaa OR compliance:soc2)
+message: |
+  ## ⚠️ Compliance Violation Detected
+
+  **Compliance Framework:** {{compliance.framework}}
+  **Violation Type:** {{compliance.violation_type}}
+  **Rule ID:** {{rule.id}}
+  **Severity:** {{severity}}
+
+  ### Violation Details
+  {{compliance.description}}
+
+  ### Impact
+  This violation may affect compliance status for:
+  - PCI-DSS: {{compliance.pci_dss_impact}}
+  - HIPAA: {{compliance.hipaa_impact}}
+  - SOC 2: {{compliance.soc2_impact}}
+
+  ### Remediation
+  {{compliance.remediation_steps}}
+
+  **Notify:** @slack-security-alerts @compliance-team @security-lead
+
+tags:
+  - security
+  - asm
+  - compliance
+  - audit
+options:
+  thresholds:
+    critical: 1
+  notify_audit: true
+  notify_no_data: false
+  include_tags: true
+
+priority: 2
+
+---
+# Monitor 10: Scanner/Bot Activity Detected
+name: "ASM: Vulnerability Scanner Detected"
+type: metric alert
+query: |
+  sum(last_5m):sum:trace.appsec.events{env:production,service:vibecode-webgui,attack_type:scanner}.as_count() > 20
+message: |
+  ## 🤖 Vulnerability Scanner Activity Detected
+
+  **Scanner Type:** {{scanner.type}}
+  **Source IP:** {{network.client.ip}}
+  **Scan Count (5 min):** {{value}}
+
+  ### Scanner Details
+  **User Agent:** {{http.user_agent}}
+  **Scanned Endpoints:** {{scanned_endpoints}}
+
+  ### Analysis
+  Automated vulnerability scanning detected. This may be:
+  1. Legitimate security testing (authorized)
+  2. Unauthorized penetration testing
+  3. Malicious reconnaissance
+
+  ### Actions
+  1. Verify if this is authorized security testing
+  2. Block IP if unauthorized
+  3. Review scanned endpoints for vulnerabilities
+  4. Document incident
+
+  **Notify:** @slack-security-alerts @security-team
+
+tags:
+  - security
+  - asm
+  - scanner
+  - reconnaissance
+options:
+  thresholds:
+    critical: 20
+    warning: 10
+  notify_audit: true
+  notify_no_data: false
+
+priority: 3
