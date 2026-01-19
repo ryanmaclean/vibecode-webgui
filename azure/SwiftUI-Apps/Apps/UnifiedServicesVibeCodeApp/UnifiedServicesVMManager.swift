@@ -47,19 +47,28 @@ final class UnifiedServicesVMManager: BaseVMManager {
 
     /// Called when VM's IP address is detected - set up port forwarding.
     ///
-    /// Forwards common ports (22, 6379, 5432, 8080) from localhost to VM IP.
+    /// Forwards common ports (22→2222, 8080→8080, 6379→6379, 5432→5432) from localhost to VM IP.
     override func onIPAddressDetected(ip: String) {
         super.onIPAddressDetected(ip: ip)
         NSLog("[UnifiedServicesVMManager] IP address detected: \(ip)")
-        
+
         // Stop existing port forwarding before starting new ones
         // (IP may change during boot: 192.168.64.2 → 192.168.64.10)
         portForwarder?.stopAll()
-        
+
         // Wait briefly for ports to be fully released before binding new listeners
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) { [weak self] in
-            self?.portForwarder = VMPortForwarder.forwardCommonPorts(vmIP: ip)
-            NSLog("[UnifiedServicesVMManager] Port forwarding setup complete")
+            // Start port forwarding with explicit mappings
+            let mappings: [VMPortForwarder.PortMapping] = [
+                VMPortForwarder.PortMapping(vmPort: 22, hostPort: 2222, name: "SSH"),
+                VMPortForwarder.PortMapping(vmPort: 8080, hostPort: 8080, name: "OpenVSCode"),
+                VMPortForwarder.PortMapping(vmPort: 5432, hostPort: 5432, name: "PostgreSQL"),
+                VMPortForwarder.PortMapping(vmPort: 6379, hostPort: 6379, name: "Valkey")
+            ]
+            let forwarder = VMPortForwarder()
+            forwarder.startForwarding(vmIP: ip, mappings: mappings)
+            self?.portForwarder = forwarder
+            NSLog("[UnifiedServicesVMManager] Port forwarding setup complete for \(mappings.count) services")
         }
     }
 
