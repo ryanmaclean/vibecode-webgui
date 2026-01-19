@@ -50,7 +50,7 @@ export async function GET(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -102,7 +102,7 @@ export async function POST(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: workspaceValidation.error.errors.map(err => ({
+          details: workspaceValidation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -117,7 +117,7 @@ export async function POST(
       return NextResponse.json(
         { 
           error: 'Invalid request format',
-          details: messageValidation.error.errors.map(err => ({
+          details: messageValidation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -208,7 +208,7 @@ export async function DELETE(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))

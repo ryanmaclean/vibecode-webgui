@@ -232,7 +232,7 @@ export async function PUT(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Invalid request format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))

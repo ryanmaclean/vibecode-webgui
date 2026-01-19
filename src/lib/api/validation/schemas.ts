@@ -343,7 +343,7 @@ export const monitoringQuerySchema = z.object({
 export const monitoringMetricsBodySchema = z.object({
   type: z.enum(['performance', 'error']),
   duration: z.number().max(300000).optional(), // Max 5 minutes
-  metrics: z.record(z.unknown()).refine(
+  metrics: z.record(z.string(), z.unknown()).refine(
     (obj) => JSON.stringify(obj).length <= 100_000,
     'Metrics object must not exceed 100KB'
   )
@@ -585,7 +585,7 @@ export const functionNameSchema = z.string().regex(/^[a-z_][a-z0-9_]*$/, 'Functi
 export const aiFunctionCallSchema = z.object({
   function_call: z.object({
     name: functionNameSchema,
-    arguments: z.record(z.unknown()).refine(
+    arguments: z.record(z.string(), z.unknown()).refine(
       (obj) => JSON.stringify(obj).length <= 100_000,
       'Arguments must not exceed 100KB'
     )

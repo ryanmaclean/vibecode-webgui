@@ -206,13 +206,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!updateValidation.success) {
       console.warn('Invalid workspace update payload', {
         workspaceId,
-        errors: updateValidation.error.errors,
+        errors: updateValidation.error.issues,
         ip: request.headers.get('x-forwarded-for') || 'unknown'
       })
       return NextResponse.json(
         {
           error: 'Invalid update payload',
-          details: updateValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+          details: updateValidation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
         },
         { status: 400 }
       )

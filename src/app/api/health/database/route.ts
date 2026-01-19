@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
         {
           status: 'error',
           message: 'Invalid query parameters',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))

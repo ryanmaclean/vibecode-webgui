@@ -66,14 +66,14 @@ async function handlePOST(request: NextRequest) {
     if (!validation.success) {
       logSequentialThinking(request, 'thinking_error', {
         error: 'Request validation failed',
-        validationErrors: validation.error.errors,
+        validationErrors: validation.error.issues,
         userId: request.user?.id,
       });
 
       return NextResponse.json(
         { 
           error: 'Invalid request format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
