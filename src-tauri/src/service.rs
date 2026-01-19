@@ -69,11 +69,11 @@ async fn ml_generate_embedding(
 // AI endpoints - use existing AI commands
 async fn ai_chat(Json(req): Json<crate::ai::commands::AIChatRequest>) -> impl IntoResponse {
     match crate::ai::commands::ai_chat(req).await {
-        Ok(response) => (StatusCode::OK, Json(response)),
+        Ok(response) => (StatusCode::OK, Json(serde_json::json!(response))).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e })),
-        ),
+        ).into_response(),
     }
 }
 
@@ -91,11 +91,11 @@ async fn docker_status() -> impl IntoResponse {
 // Tailscale endpoints
 async fn tailscale_status() -> impl IntoResponse {
     match crate::tailscale::TailscaleManager::status() {
-        Ok(status) => (StatusCode::OK, Json(status)),
+        Ok(status) => (StatusCode::OK, Json(serde_json::json!(status))).into_response(),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e })),
-        ),
+        ).into_response(),
     }
 }
 
