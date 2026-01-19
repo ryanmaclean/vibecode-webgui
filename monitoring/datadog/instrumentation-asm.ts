@@ -352,11 +352,6 @@ export function asmMiddleware(req: any, res?: any, next?: () => void): void {
   if (next) next();
 }
 
-// Initialize ASM if enabled
-if (asmConfig.enabled) {
-  initializeASM();
-}
-
 // Export ASM utilities
 export default {
   initializeASM,
