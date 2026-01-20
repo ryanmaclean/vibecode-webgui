@@ -1,0 +1,49 @@
+name: Notify Gas Town of CI Failures
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+      - Build
+      - main-branch-ci
+      - pr-checks
+      - vibecode-tests
+    types:
+      - completed
+
+jobs:
+  notify:
+    if: ${{ github.event.workflow_run.conclusion == 'failure' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    env:
+      GASTOWN_WEBHOOK: ${{ secrets.GASTOWN_WEBHOOK }}
+      GITHUB_WEBHOOK_SECRET: ${{ secrets.GITHUB_WEBHOOK_SECRET }}
+    steps:
+      - name: Post failure details to Gas Town
+        env:
+          WORKFLOW_EVENT_JSON: ${{ toJson(github.event) }}
+        run: |
+          set -euo pipefail
+
+          if [[ -z "${GASTOWN_WEBHOOK:-}" ]]; then
+            echo "GASTOWN_WEBHOOK secret is not configured; skipping notification."
+            exit 0
+          fi
+
+          if [[ -z "${GITHUB_WEBHOOK_SECRET:-}" ]]; then
+            echo "GITHUB_WEBHOOK_SECRET secret is not configured; skipping notification."
+            exit 0
+          fi
+
+          printf '%s' "${WORKFLOW_EVENT_JSON}" > payload.json
+
+          signature=$(openssl dgst -sha256 -hmac "${GITHUB_WEBHOOK_SECRET}" payload.json | awk '{print $2}')
+
+          curl --fail --silent --show-error \
+            -X POST "${GASTOWN_WEBHOOK}" \
+            -H "Content-Type: application/json" \
+            -H "X-Hub-Signature-256: sha256=${signature}" \
+            -H "X-GitHub-Event: workflow_run" \
+            -H "X-GitHub-Delivery: ${{ github.run_id }}-${{ github.run_attempt }}" \
+            --data @payload.json
