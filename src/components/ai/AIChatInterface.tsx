@@ -37,6 +37,8 @@ export const AIChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [historyError, setHistoryError] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
@@ -72,14 +74,22 @@ export const AIChatInterface = ({
   // Load conversation history on mount/workspace change
   useEffect(() => {
     const load = async () => {
+      setIsLoadingHistory(true)
+      setHistoryError(null)
       try {
         const response = await fetch(`/api/ai/conversations/${workspaceId}`)
         if (response.ok) {
           const history = await response.json()
           setMessages(history.messages || [])
+        } else if (response.status !== 404) {
+          // 404 is expected for new conversations
+          throw new Error('Failed to load conversation history')
         }
       } catch (error) {
         console.error('Failed to load conversation history:', error)
+        setHistoryError('Failed to load conversation history. Please refresh to try again.')
+      } finally {
+        setIsLoadingHistory(false)
       }
     }
     load()
@@ -312,6 +322,27 @@ export const AIChatInterface = ({
       {/* Messages area */}
       <ScrollArea className="flex-1 p-4" data-testid="chat-messages">
         <div className="space-y-4">
+          {/* Loading state */}
+          {isLoadingHistory && (
+            <div className="flex justify-center py-8" role="status" aria-label="Loading conversation history">
+              <div className="flex items-center space-x-2 text-muted-foreground">
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" aria-hidden="true"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.1s' }} aria-hidden="true"></div>
+                <div className="w-2 h-2 bg-blue-600 rounded-full animate-bounce" style={{ animationDelay: '0.2s' }} aria-hidden="true"></div>
+                <span className="text-sm">Loading conversation...</span>
+              </div>
+            </div>
+          )}
+
+          {/* Error state */}
+          {historyError && (
+            <div className="flex justify-center py-4" role="alert">
+              <div className="p-3 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 rounded-lg text-sm">
+                {historyError}
+              </div>
+            </div>
+          )}
+
           {messages.map((message) => (
             <div key={message.id} className={`flex items-start gap-3 ${message.type === 'user' ? 'justify-end' : ''}`}>
               {message.type === 'assistant' && (
