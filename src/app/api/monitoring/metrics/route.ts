@@ -22,17 +22,17 @@ const metricsStore = {
   networkIO: { bytesIn: 0, bytesOut: 0 }
 };
 
-// Zod validation schemas (unused but kept for future use)
-// const performanceMetricsSchema = z.object({
-//   type: z.literal('performance'),
-//   duration: z.number().min(0).max(300000), // Max 5 minutes
-//   metrics: z.record(z.any()).optional()
-// }).strict()
+// Zod validation schemas
+const performanceMetricsSchema = z.object({
+  type: z.literal('performance'),
+  duration: z.number().min(0).max(300000), // Max 5 minutes
+  metrics: z.record(z.string(), z.any()).optional()
+}).strict()
 
-// const errorMetricsSchema = z.object({
-//   type: z.literal('error'),
-//   metrics: z.record(z.any())
-// }).strict()
+const errorMetricsSchema = z.object({
+  type: z.literal('error'),
+  metrics: z.record(z.string(), z.any())
+}).strict()
 
 const historicalMetricsSchema = z.object({
   startTime: z.string().datetime(),

@@ -1,0 +1,101 @@
+{
+  "config": {
+    "assertions": [
+      {
+        "operator": "is",
+        "type": "statusCode",
+        "target": 200
+      },
+      {
+        "operator": "lessThan",
+        "type": "responseTime",
+        "target": 15000
+      },
+      {
+        "operator": "is",
+        "property": "content-type",
+        "type": "header",
+        "target": "application/json; charset=utf-8"
+      },
+      {
+        "operator": "validates",
+        "type": "body",
+        "target": {
+          "jsonPath": "$.response",
+          "operator": "isPresent"
+        }
+      },
+      {
+        "operator": "validates",
+        "type": "body",
+        "target": {
+          "jsonPath": "$.tokenUsage.total",
+          "operator": "lessThan",
+          "value": 50000
+        }
+      },
+      {
+        "operator": "validates",
+        "type": "body",
+        "target": {
+          "jsonPath": "$.cost.usd",
+          "operator": "lessThan",
+          "value": 0.25
+        }
+      },
+      {
+        "operator": "validates",
+        "type": "body",
+        "target": {
+          "jsonPath": "$.latency",
+          "operator": "lessThan",
+          "value": 12000
+        }
+      }
+    ],
+    "configVariables": [
+      {
+        "example": "your-session-token",
+        "name": "VIBECODE_SESSION_TOKEN",
+        "pattern": ".*",
+        "type": "secret"
+      }
+    ],
+    "request": {
+      "method": "POST",
+      "url": "https://app.vibecode.com/api/ai/chat",
+      "headers": {
+        "Content-Type": "application/json",
+        "Cookie": "next-auth.session-token={{ VIBECODE_SESSION_TOKEN }}"
+      },
+      "body": "{\"message\":\"What is React?\",\"context\":\"general\"}",
+      "bodyType": "raw"
+    }
+  },
+  "locations": [
+    "aws:us-east-1",
+    "aws:us-west-2",
+    "aws:eu-west-1",
+    "aws:ap-southeast-1"
+  ],
+  "message": "Monitor AI chat endpoint performance with latency and cost tracking. Alerts @slack-vibecode-alerts if response times exceed SLA or costs spike unexpectedly.",
+  "name": "AI Chat Endpoint - Performance & Cost Monitor",
+  "options": {
+    "min_failure_duration": 120,
+    "min_location_failed": 1,
+    "monitor_options": {
+      "renotify_interval": 0
+    },
+    "tick_every": 300
+  },
+  "public_id": "vib-ecd-ai-chat",
+  "subtype": "http",
+  "tags": [
+    "env:production",
+    "team:platform",
+    "service:ai-gateway",
+    "critical:false",
+    "cost-tracking:true"
+  ],
+  "type": "api"
+}

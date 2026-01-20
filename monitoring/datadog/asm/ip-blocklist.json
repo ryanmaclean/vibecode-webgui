@@ -1,0 +1,175 @@
+{
+  "version": "1.0",
+  "metadata": {
+    "name": "VibeCode IP Blocklist Configuration",
+    "description": "IP blocking and rate limiting configuration for ASM",
+    "created": "2026-01-18",
+    "author": "AGENT-08: datadog-asm-implementer"
+  },
+  "blocklist": {
+    "enabled": true,
+    "description": "Static IP addresses to block",
+    "ips": [],
+    "comment": "Add known malicious IPs here. Example: '192.0.2.1', '198.51.100.0/24'"
+  },
+  "automatic_blocking": {
+    "enabled": true,
+    "description": "Automatically block IPs after threshold violations",
+    "config": {
+      "threshold": 10,
+      "window_seconds": 300,
+      "duration_seconds": 3600,
+      "comment": "Block IP for 1 hour after 10 attacks in 5 minutes"
+    },
+    "attack_types": [
+      "sql_injection",
+      "xss",
+      "rce",
+      "path_traversal",
+      "nosql_injection",
+      "ldap_injection",
+      "ssrf",
+      "xxe"
+    ]
+  },
+  "rate_limiting": {
+    "enabled": true,
+    "description": "Rate limiting to prevent abuse",
+    "rules": [
+      {
+        "name": "API Rate Limit - Standard",
+        "paths": ["/api/*"],
+        "exclude_paths": ["/api/health", "/api/metrics"],
+        "limit": 100,
+        "window_seconds": 60,
+        "per": "ip",
+        "action": "block",
+        "status_code": 429,
+        "response": {
+          "type": "json",
+          "body": {
+            "error": "Rate limit exceeded",
+            "message": "Too many requests. Please try again later.",
+            "retry_after": 60
+          }
+        }
+      },
+      {
+        "name": "API Rate Limit - AI/LLM Endpoints",
+        "paths": ["/api/ai/*", "/api/chat/*"],
+        "limit": 20,
+        "window_seconds": 60,
+        "per": "ip",
+        "action": "block",
+        "status_code": 429
+      },
+      {
+        "name": "Authentication Rate Limit",
+        "paths": ["/api/auth/*", "/api/login", "/api/register"],
+        "limit": 5,
+        "window_seconds": 300,
+        "per": "ip",
+        "action": "block",
+        "status_code": 429,
+        "comment": "Prevent brute force attacks on auth endpoints"
+      },
+      {
+        "name": "File Upload Rate Limit",
+        "paths": ["/api/upload/*"],
+        "limit": 10,
+        "window_seconds": 3600,
+        "per": "user",
+        "action": "block",
+        "status_code": 429
+      }
+    ]
+  },
+  "user_blocking": {
+    "enabled": true,
+    "description": "Block specific users exhibiting malicious behavior",
+    "blocked_users": [],
+    "automatic_user_blocking": {
+      "enabled": true,
+      "threshold": 5,
+      "window_seconds": 300,
+      "duration_seconds": 7200,
+      "comment": "Block user for 2 hours after 5 attacks in 5 minutes"
+    }
+  },
+  "geo_blocking": {
+    "enabled": false,
+    "description": "Block requests from specific countries (if needed)",
+    "comment": "Disabled by default. Enable only if required by compliance or security policy.",
+    "blocked_countries": [],
+    "allowed_countries": [],
+    "action": "block"
+  },
+  "allowlist": {
+    "enabled": true,
+    "description": "Always allow these IPs (bypass all rules)",
+    "ips": [],
+    "comment": "Add trusted IPs here. Examples: internal monitoring, CI/CD, trusted partners"
+  },
+  "custom_rules": [
+    {
+      "name": "Block Automated Scanners",
+      "description": "Block common vulnerability scanners",
+      "enabled": true,
+      "conditions": {
+        "user_agent_regex": "(?i)(nikto|nmap|masscan|nessus|burp|acunetix|sqlmap|havij|w3af|metasploit|qualys|tenable)"
+      },
+      "action": "block",
+      "duration_seconds": 86400,
+      "comment": "Block for 24 hours"
+    },
+    {
+      "name": "Block Suspicious User Agents",
+      "description": "Block suspicious or malicious user agents",
+      "enabled": true,
+      "conditions": {
+        "user_agent_regex": "(?i)(bot|crawler|spider|scraper|curl|wget|python-requests|go-http-client)(?!.*googlebot|bingbot)"
+      },
+      "action": "monitor",
+      "comment": "Monitor mode - review before blocking legitimate bots"
+    },
+    {
+      "name": "Block Known Bad Bot Networks",
+      "description": "Block IPs from known bad bot networks",
+      "enabled": false,
+      "conditions": {
+        "asn_list": []
+      },
+      "action": "block",
+      "comment": "Add ASNs of known malicious hosting providers, then enable this rule"
+    }
+  ],
+  "logging": {
+    "enabled": true,
+    "log_blocked_requests": true,
+    "log_rate_limited_requests": true,
+    "log_level": "info",
+    "retention_days": 90
+  },
+  "alerts": {
+    "enabled": true,
+    "notify_on_automatic_block": true,
+    "notify_on_threshold": {
+      "enabled": true,
+      "threshold": 5,
+      "window_seconds": 60,
+      "comment": "Alert if 5+ IPs are blocked in 1 minute"
+    }
+  },
+  "integration": {
+    "threat_intelligence": {
+      "enabled": true,
+      "comment": "Use Datadog's built-in threat intelligence feeds",
+      "auto_block_known_threats": true
+    },
+    "custom_feeds": {
+      "enabled": false,
+      "comment": "Import IP blocklists from external sources",
+      "sources": []
+    }
+  }
+}

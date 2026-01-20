@@ -1,5 +1,0 @@
-- Release drift unresolved (#410/#418); last workflow reruns failed 2025-10-01 19:34 UTC.
-- QA telemetry/sanitisation/Ready pod gaps blocking CI (#417).
-- Security deadlines 10-05/08/10/11 for docs/SECURITY, kubectl, helm, kubectx/kubens (#416).
-- Docs deadlines 10-02 18:00 and 10-06 (#411).
-- Cross-team checkpoint 2025-10-02 12:00 must align remediation and reporting.

@@ -1040,7 +1040,7 @@ export const PROJECT_TEMPLATES: ProjectTemplate[] = [
     dependencies: {
       'tensorflow': '^2.15.0',
       'opencv-python': '^4.8.0',
-      'pillow': '^10.1.0',
+      'pillow': '^11.3.0',
       'numpy': '^1.24.0',
       'matplotlib': '^3.7.0',
       'scikit-learn': '^1.3.0',

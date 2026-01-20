@@ -43,16 +43,16 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-type OutputType = 'stdout' | 'stderr' | 'image' | 'file' | 'error'
+export type OutputType = 'stdout' | 'stderr' | 'image' | 'file' | 'error'
 
-interface CodeOutput {
+export interface CodeOutput {
   type: OutputType
   content: string
   mimeType?: string
   filename?: string
 }
 
-interface CodeExecution {
+export interface CodeExecution {
   id: string
   code: string
   language: string

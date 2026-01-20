@@ -1,9 +1,0 @@
-bind-addr: 0.0.0.0:8080
-auth: none
-cert: false
-disable-telemetry: true
-disable-update-check: true
-disable-workspace-trust: true
-disable-getting-started-override: true
-extensions-dir: ~/.config/code-server/extensions
-user-data-dir: ~/.config/code-server/user-data

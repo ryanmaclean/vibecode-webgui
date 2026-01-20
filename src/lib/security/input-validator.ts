@@ -44,14 +44,14 @@ export const aiQuerySchema = z.object({
       { message: 'Query contains potentially unsafe content' }
     ),
   context: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const promptSchema = z.object({
   content: z.string()
     .min(1, 'Prompt cannot be empty')
     .max(MAX_LENGTHS.prompt, `Prompt cannot exceed ${MAX_LENGTHS.prompt} characters`),
-  variables: z.record(z.unknown()).optional(),
+  variables: z.record(z.string(), z.string()).optional(),
   systemPrompt: z.string().optional(),
 });
 
@@ -124,7 +124,7 @@ export function validateAIQuery(input: unknown): { query: string; context?: stri
   if (!result.success) {
     throw new Error(`Invalid AI query: ${result.error.issues.map((e: { message: string }) => e.message).join(', ')}`);
   }
-  
+
   return {
     query: sanitizeUserInput(result.data.query),
     context: result.data.context ? sanitizeUserInput(result.data.context) : undefined,
@@ -150,7 +150,7 @@ export function validatePrompt(input: unknown): { content: string; variables?: R
         ])
       )
     : undefined;
-  
+
   return {
     content: sanitizeUserInput(result.data.content),
     variables: sanitizedVariables,
@@ -167,7 +167,7 @@ export function validateFileUpload(input: unknown): { filename: string; contentT
   if (!result.success) {
     throw new Error(`Invalid file upload: ${result.error.issues.map((e: { message: string }) => e.message).join(', ')}`);
   }
-  
+
   return result.data;
 }
 

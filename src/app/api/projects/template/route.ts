@@ -23,7 +23,7 @@ const generateFromTemplateSchema = z.object({
     gitRepository: z.string().optional(),
   }).optional(),
   features: z.array(z.string()).optional(),
-  envOverrides: z.record(z.string()).optional(),
+  envOverrides: z.record(z.string(), z.string()).optional(),
 })
 
 export async function POST(request: NextRequest) {
@@ -191,7 +191,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Invalid request data',
-          details: error.errors.map(err => ({
+          details: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))

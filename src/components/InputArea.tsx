@@ -116,10 +116,10 @@ const InputArea = memo(function InputArea({
         <div className="mb-3 flex flex-wrap gap-2">
           {attachments.map((attachment) => (
             <div key={attachment.id} className="flex items-center gap-2 p-2 bg-muted rounded border group">
-              {attachment.type === 'image' && <Image className="w-4 h-4" />}
-              {attachment.type === 'code' && <FileCode className="w-4 h-4" />}
-              {attachment.type === 'document' && <FileText className="w-4 h-4" />}
-              {attachment.type === 'audio' && <Headphones className="w-4 h-4" />}
+              {attachment.type === 'image' && <Image className="w-4 h-4" aria-hidden="true" />}
+              {attachment.type === 'code' && <FileCode className="w-4 h-4" aria-hidden="true" />}
+              {attachment.type === 'document' && <FileText className="w-4 h-4" aria-hidden="true" />}
+              {attachment.type === 'audio' && <Headphones className="w-4 h-4" aria-hidden="true" />}
               <span className="text-sm truncate max-w-24">{attachment.name}</span>
               {attachment.type === 'audio' && (
                 <span className="text-xs text-muted-foreground">
@@ -128,9 +128,10 @@ const InputArea = memo(function InputArea({
               )}
               <button
                 onClick={() => onRemoveAttachment(attachment.id)}
-                className="opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-foreground transition-opacity"
+                className="opacity-0 group-hover:opacity-100 focus:opacity-100 text-muted-foreground hover:text-foreground transition-opacity focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 rounded"
+                aria-label={`Remove ${attachment.name}`}
               >
-                ×
+                <span aria-hidden="true">×</span>
               </button>
             </div>
           ))}
@@ -159,8 +160,10 @@ const InputArea = memo(function InputArea({
                   isListening && "bg-green-100 text-green-600"
                 )}
                 disabled={isRecording}
+                aria-label={isListening ? "Stop voice recognition" : "Start voice recognition"}
+                aria-pressed={isListening}
               >
-                {isListening ? <MicOff className="w-4 h-4" /> : <Mic className="w-4 h-4" />}
+                {isListening ? <MicOff className="w-4 h-4" aria-hidden="true" /> : <Mic className="w-4 h-4" aria-hidden="true" />}
               </Button>
             )}
 
@@ -175,8 +178,10 @@ const InputArea = memo(function InputArea({
                   isRecording && "bg-red-100 text-red-600"
                 )}
                 disabled={isListening}
+                aria-label={isRecording ? "Stop audio recording" : "Start audio recording"}
+                aria-pressed={isRecording}
               >
-                <Radio className="w-4 h-4" />
+                <Radio className="w-4 h-4" aria-hidden="true" />
               </Button>
             )}
 
@@ -187,8 +192,9 @@ const InputArea = memo(function InputArea({
                 size="sm"
                 onClick={() => fileInputRef.current?.click()}
                 className="p-1 h-8 w-8"
+                aria-label="Attach files"
               >
-                <Paperclip className="w-4 h-4" />
+                <Paperclip className="w-4 h-4" aria-hidden="true" />
               </Button>
             )}
 
@@ -199,8 +205,9 @@ const InputArea = memo(function InputArea({
               onClick={onEnhancePrompt}
               disabled={!input.trim() || isTyping}
               className="p-1 h-8 w-8"
+              aria-label="Enhance prompt with AI"
             >
-              <Zap className="w-4 h-4" />
+              <Zap className="w-4 h-4" aria-hidden="true" />
             </Button>
           </div>
         </div>
@@ -209,8 +216,9 @@ const InputArea = memo(function InputArea({
           onClick={onSend}
           disabled={(!input.trim() && attachments.length === 0) || isTyping}
           className="bg-gradient-to-r from-purple-500 to-blue-600 hover:opacity-90"
+          aria-label="Send message"
         >
-          <Send className="w-4 h-4" />
+          <Send className="w-4 h-4" aria-hidden="true" />
         </Button>
       </div>
 
@@ -220,20 +228,20 @@ const InputArea = memo(function InputArea({
           <span>Press Enter to send, Shift+Enter for new line</span>
           {input && (
             <span className="flex items-center gap-1">
-              <Clock className="w-3 h-3" />
+              <Clock className="w-3 h-3" aria-hidden="true" />
               ~{estimateTokens(input)} tokens
             </span>
           )}
           {voiceSupported && (
             <span className="flex items-center gap-1">
-              <Mic className="w-3 h-3" />
+              <Mic className="w-3 h-3" aria-hidden="true" />
               Voice ready
             </span>
           )}
         </div>
         {currentModel && input && (
           <span className="flex items-center gap-1">
-            <DollarSign className="w-3 h-3" />
+            <DollarSign className="w-3 h-3" aria-hidden="true" />
             ~${estimateCost(estimateTokens(input), currentModel).toFixed(4)}
           </span>
         )}
