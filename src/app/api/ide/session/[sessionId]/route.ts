@@ -7,9 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { IDEFactory } from '@/lib/ide';
-
-// In-memory session store (should match the one in route.ts)
-const sessions = new Map<string, any>();
+import { getSessionStore } from '@/lib/ide/session/store';
 
 interface RouteContext {
   params: Promise<{
@@ -66,7 +64,8 @@ export async function DELETE(
   try {
     const { sessionId } = await context.params;
     
-    const session = sessions.get(sessionId);
+    const sessionStore = getSessionStore();
+    const session = sessionStore.get(sessionId);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },
@@ -78,8 +77,8 @@ export async function DELETE(
     const ide = IDEFactory.getIDE(session.type);
     await ide.stop(sessionId);
 
-    // Remove from sessions map
-    sessions.delete(sessionId);
+    // Remove from session store
+    sessionStore.delete(sessionId);
 
     return NextResponse.json({
       success: true,
@@ -103,7 +102,8 @@ export async function PATCH(
     const body = await request.json();
     const { action, extensionId } = body;
 
-    const session = sessions.get(sessionId);
+    const sessionStore = getSessionStore();
+    const session = sessionStore.get(sessionId);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },

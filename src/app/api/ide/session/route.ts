@@ -6,9 +6,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { IDEFactory, IDEConfig, IDEType } from '@/lib/ide';
-
-// In-memory session store (in production, use Redis or database)
-const sessions = new Map<string, any>();
+import { getSessionStore } from '@/lib/ide/session/store';
 
 export async function POST(request: NextRequest) {
   try {
@@ -42,7 +40,8 @@ export async function POST(request: NextRequest) {
     const session = await ide.start(config);
 
     // Store session
-    sessions.set(session.id, session);
+    const sessionStore = getSessionStore();
+    sessionStore.set(session.id, session);
 
     return NextResponse.json({
       success: true,
@@ -71,7 +70,8 @@ export async function GET(request: NextRequest) {
     const userId = searchParams.get('userId');
     const type = searchParams.get('type') as IDEType | null;
 
-    let filteredSessions = Array.from(sessions.values());
+    const sessionStore = getSessionStore();
+    let filteredSessions = sessionStore.list();
 
     // Filter by workspaceId if provided
     if (workspaceId) {

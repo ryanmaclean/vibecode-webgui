@@ -52,9 +52,9 @@ export class IDEFactory {
    */
   static getDefaultIDEType(): IDEType {
     const envType = process.env.DEFAULT_IDE_TYPE as IDEType;
-    const validTypes: IDEType[] = ['openvscode', 'code-server', 'theia'];
+    const { IDE_TYPES } = require('./types');
     
-    if (envType && validTypes.includes(envType)) {
+    if (envType && (IDE_TYPES as readonly string[]).includes(envType)) {
       return envType;
     }
     
@@ -65,8 +65,9 @@ export class IDEFactory {
   /**
    * Get all available IDE types
    */
-  static getAvailableIDEs(): IDEType[] {
-    return ['openvscode', 'code-server', 'theia'];
+  static getAvailableIDEs(): readonly IDEType[] {
+    const { IDE_TYPES } = require('./types');
+    return IDE_TYPES;
   }
 
   /**

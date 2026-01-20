@@ -3,7 +3,11 @@
  * Supports OpenVSCode Server, Code-Server, and Eclipse Theia
  */
 
-export type IDEType = 'openvscode' | 'code-server' | 'theia';
+// Available IDE types as const array for type safety and iteration
+export const IDE_TYPES = ['openvscode', 'code-server', 'theia'] as const;
+
+// IDE Type derived from the const array
+export type IDEType = typeof IDE_TYPES[number];
 
 export type IDEStatus = 'starting' | 'ready' | 'error' | 'stopped';
 
