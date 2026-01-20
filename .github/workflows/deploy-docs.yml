@@ -44,8 +44,8 @@ jobs:
       - name: Setup GitHub Pages
         id: pages
         uses: actions/configure-pages@v5
-        with:
-          enablement: true
+        # Note: Pages must be enabled manually in repository settings
+        # Settings > Pages > Build and deployment > Source = GitHub Actions
 
       # --- Astro Build Steps ---
       - name: Setup Node.js for Astro
