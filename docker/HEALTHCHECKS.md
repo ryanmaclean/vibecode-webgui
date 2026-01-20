@@ -78,7 +78,7 @@ Healthchecks ensure proper orchestration and zero-downtime deployments by:
 
 **pg_isready output**: Returns 0 if PostgreSQL is accepting connections
 
-#### redis (Redis 7 Alpine)
+#### redis (Redis 8.1 Alpine)
 - **Healthcheck**: `redis-cli ping`
 - **Interval**: 10s
 - **Timeout**: 5s
