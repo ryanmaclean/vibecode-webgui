@@ -26,12 +26,12 @@ const metricsStore = {
 const performanceMetricsSchema = z.object({
   type: z.literal('performance'),
   duration: z.number().min(0).max(300000), // Max 5 minutes
-  metrics: z.record(z.any()).optional()
+  metrics: z.record(z.string(), z.any()).optional()
 }).strict()
 
 const errorMetricsSchema = z.object({
   type: z.literal('error'),
-  metrics: z.record(z.any())
+  metrics: z.record(z.string(), z.any())
 }).strict()
 
 const historicalMetricsSchema = z.object({

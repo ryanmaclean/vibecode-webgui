@@ -12,9 +12,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react'
 import {
   Panel,
-  PanelGroup,
-  PanelResizeHandle,
-  ImperativePanelHandle
+  Group as PanelGroup,
+  Separator as PanelResizeHandle,
+  type PanelImperativeHandle
 } from 'react-resizable-panels'
 import {
   Bot,
@@ -70,7 +70,7 @@ export default function CodeServerIntegration({
   const [panelSize, setPanelSize] = useState(30) // Default 30% for AI panel
 
   const iframeRef = useRef<HTMLIFrameElement>(null)
-  const panelRef = useRef<ImperativePanelHandle>(null)
+  const panelRef = useRef<PanelImperativeHandle>(null)
 
   // Listen for messages from code-server iframe
   useEffect(() => {

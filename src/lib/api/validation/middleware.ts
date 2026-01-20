@@ -51,7 +51,7 @@ export async function validateRequestBody<T extends ZodSchema>(
       const verboseErrors = options.verboseErrors ?? process.env.NODE_ENV !== 'production'
 
       // Use the first error's message as the main message, or a generic fallback
-      const firstError = error.errors[0]
+      const firstError = error.issues[0]
       const mainMessage = firstError
         ? (options.customMessages?.[firstError.path.join('.')] || firstError.message)
         : 'Request body contains invalid or missing fields'
@@ -63,7 +63,7 @@ export async function validateRequestBody<T extends ZodSchema>(
             error: 'Validation failed',
             message: mainMessage,
             ...(verboseErrors && {
-              details: error.errors.map(err => ({
+              details: error.issues.map(err => ({
                 field: err.path.join('.'),
                 message: options.customMessages?.[err.path.join('.')] || err.message,
                 code: err.code
@@ -154,7 +154,7 @@ export function validateQueryParams<T extends ZodSchema>(
             error: 'Invalid query parameters',
             message: 'Query parameters contain invalid or missing values',
             ...(verboseErrors && {
-              details: error.errors.map(err => ({
+              details: error.issues.map(err => ({
                 field: err.path.join('.'),
                 message: options.customMessages?.[err.path.join('.')] || err.message,
                 code: err.code
@@ -214,7 +214,7 @@ export function validatePathParams<T extends ZodSchema>(
             error: 'Invalid path parameters',
             message: 'URL path contains invalid parameters',
             ...(verboseErrors && {
-              details: error.errors.map(err => ({
+              details: error.issues.map(err => ({
                 field: err.path.join('.'),
                 message: options.customMessages?.[err.path.join('.')] || err.message,
                 code: err.code

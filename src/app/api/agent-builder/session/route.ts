@@ -18,7 +18,7 @@ const stateValueSchema = z.union([z.string(), z.number(), z.boolean()]);
 const sessionRequestSchema = z.object({
   workflowId: z.string().min(1, 'workflowId is required'),
   version: z.string().min(1).optional(),
-  stateVariables: z.record(stateValueSchema).optional(),
+  stateVariables: z.record(z.string(), stateValueSchema).optional(),
   expiresInSeconds: z.number().int().positive().max(60 * 60 * 24).optional(),
   rateLimitPerMinute: z.number().int().positive().max(1000).optional(),
   chatkit: z

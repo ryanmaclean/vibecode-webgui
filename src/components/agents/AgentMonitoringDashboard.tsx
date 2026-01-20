@@ -46,7 +46,7 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-interface AgentMetrics {
+export interface AgentMetrics {
   agentId: string
   agentName: string
   status: 'healthy' | 'warning' | 'error' | 'offline'
@@ -67,7 +67,7 @@ interface AgentMetrics {
   lastActivity: Date
 }
 
-interface SystemMetrics {
+export interface SystemMetrics {
   totalAgents: number
   activeAgents: number
   totalRequests: number
@@ -77,7 +77,7 @@ interface SystemMetrics {
   totalCost: number
 }
 
-interface AgentMonitoringDashboardProps {
+export interface AgentMonitoringDashboardProps {
   /** Individual agent metrics */
   agentMetrics: AgentMetrics[]
   /** System-wide metrics */

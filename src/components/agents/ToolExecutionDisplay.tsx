@@ -41,10 +41,10 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-type ToolType = 'code_interpreter' | 'file_search' | 'function'
-type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
+export type ToolType = 'code_interpreter' | 'file_search' | 'function'
+export type ExecutionStatus = 'pending' | 'running' | 'completed' | 'failed' | 'cancelled'
 
-interface ToolExecution {
+export interface ToolExecution {
   id: string
   toolType: ToolType
   toolName: string
@@ -60,7 +60,7 @@ interface ToolExecution {
   }
 }
 
-interface ToolExecutionDisplayProps {
+export interface ToolExecutionDisplayProps {
   /** Tool executions to display */
   executions: ToolExecution[]
   /** Callback when retry is requested */

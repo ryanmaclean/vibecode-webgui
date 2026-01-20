@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-interface AgentModel {
+export interface AgentModel {
   id: string
   name: string
   description: string
@@ -53,13 +53,13 @@ interface AgentModel {
   maxOutputTokens: number
 }
 
-interface ToolConfig {
+export interface ToolConfig {
   codeInterpreter: boolean
   fileSearch: boolean
   functions: boolean
 }
 
-interface AgentConfig {
+export interface AgentConfig {
   name: string
   model: string
   instructions: string
@@ -69,7 +69,7 @@ interface AgentConfig {
   topP: number
 }
 
-interface AgentConfigPanelProps {
+export interface AgentConfigPanelProps {
   /** Initial configuration */
   initialConfig?: Partial<AgentConfig>
   /** Callback when configuration changes */

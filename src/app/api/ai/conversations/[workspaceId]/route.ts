@@ -24,7 +24,7 @@ const conversationMessageSchema = z.object({
     .min(1, 'Message is required')
     .max(5000, 'Message too long')
     .regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
   model: z.string()
     .min(1, 'Model name is required')
     .max(100, 'Model name too long')
