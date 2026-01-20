@@ -8,6 +8,7 @@
 import { useState, useRef, useEffect } from 'react'
 import { useChat } from '@ai-sdk/react'
 import { useAuth } from '@/hooks/useAuth'
+import { z } from '@/lib/zod-compat'
 
 interface CodeAssistantProps {
   workspaceId: string
@@ -23,6 +24,14 @@ interface CodeContext {
   cursorPosition?: { line: number; column: number }
 }
 
+const chatInputSchema = z.object({
+  message: z
+    .string()
+    .trim()
+    .min(1, 'Please enter a question for the assistant')
+    .max(4000, 'Message is too long'),
+})
+
 export default function CodeAssistant({
   workspaceId,
   visible,
@@ -33,8 +42,16 @@ export default function CodeAssistant({
   const [codeContext, setCodeContext] = useState<CodeContext>({})
   const [isMinimized, setIsMinimized] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
+  const {
+    messages,
+    input,
+    handleInputChange,
+    handleSubmit: submitChat,
+    isLoading,
+    error,
+  } = useChat({
     api: '/api/ai/chat',
     initialMessages: [
       {
@@ -57,6 +74,21 @@ Feel free to share your code or ask any development questions!`,
       codeContext,
     },
   })
+  const [inputError, setInputError] = useState<string | null>(null)
+
+  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const validation = chatInputSchema.safeParse({ message: input })
+    if (!validation.success) {
+      const [issue] = validation.error.issues
+      setInputError(issue?.message ?? 'Invalid input')
+      return
+    }
+
+    setInputError(null)
+    submitChat(event)
+  }
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -108,10 +140,8 @@ Feel free to share your code or ask any development questions!`,
 
     // Use a timeout to ensure the input value is updated before submission
     setTimeout(() => {
-      const form = document.querySelector('form')
-      if (form) {
-        const event = new Event('submit', { cancelable: true, bubbles: true })
-        form.dispatchEvent(event)
+      if (formRef.current) {
+        formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
       }
     }, 100)
   }
@@ -238,7 +268,7 @@ Feel free to share your code or ask any development questions!`,
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
+          <form ref={formRef} onSubmit={handleFormSubmit} className="p-4 border-t border-gray-200">
             <div className="flex space-x-2">
               <input
                 value={input}
@@ -246,6 +276,8 @@ Feel free to share your code or ask any development questions!`,
                 placeholder="Ask me anything about your code..."
                 disabled={isLoading}
                 className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                aria-invalid={inputError ? 'true' : 'false'}
+                aria-describedby={inputError ? 'code-assistant-error' : undefined}
               />
               <button
                 type="submit"
@@ -257,6 +289,11 @@ Feel free to share your code or ask any development questions!`,
                 </svg>
               </button>
             </div>
+            {inputError && (
+              <p id="code-assistant-error" className="mt-2 text-sm text-red-600">
+                {inputError}
+              </p>
+            )}
           </form>
         </>
       )}

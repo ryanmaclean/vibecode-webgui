@@ -17,18 +17,43 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, Loader } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { z } from '@/lib/zod-compat';
+
+const sequentialThinkingSchema = z.object({
+  prompt: z
+    .string()
+    .trim()
+    .min(5, 'Please provide more details for the problem statement.'),
+  numSteps: z
+    .number()
+    .int()
+    .min(3, 'Select at least 3 thinking steps.')
+    .max(10, 'Select no more than 10 thinking steps.'),
+});
 // import { logger } from '@/lib/logger';
 export function SequentialThinking() {
   const [prompt, setPrompt] = useState('');
   const [numSteps, setNumSteps] = useState(5);
   const { think, thoughts, isLoading, error, isFallback, reset } = useSequentialThinking();
+  const [validationError, setValidationError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!prompt.trim()) return;
-    
+  const handleSubmit = async (event?: React.FormEvent<HTMLFormElement>) => {
+    event?.preventDefault();
+
+    const validation = sequentialThinkingSchema.safeParse({ prompt, numSteps });
+    if (!validation.success) {
+      const [issue] = validation.error.issues;
+      setValidationError(issue?.message ?? 'Invalid input');
+      return;
+    }
+
+    const { prompt: sanitizedPrompt, numSteps: sanitizedSteps } = validation.data;
+    setPrompt(sanitizedPrompt);
+    setNumSteps(sanitizedSteps);
+    setValidationError(null);
+
     try {
-      await think({ prompt, numSteps });
+      await think({ prompt: sanitizedPrompt, numSteps: sanitizedSteps });
     } catch (err) {
       // Error is handled by the hook
       console.error('Failed to process thinking:', err);
@@ -81,7 +106,14 @@ export function SequentialThinking() {
                 onChange={(e) => setPrompt(e.target.value)}
                 disabled={isLoading}
                 className="w-full"
+                aria-invalid={validationError ? 'true' : 'false'}
+                aria-describedby={validationError ? 'sequential-thinking-error' : undefined}
               />
+              {validationError && (
+                <p id="sequential-thinking-error" className="text-sm text-red-600">
+                  {validationError}
+                </p>
+              )}
             </div>
             
             <div className="space-y-2">
@@ -116,7 +148,7 @@ export function SequentialThinking() {
           </Button>
           <Button
             type="submit"
-            onClick={handleSubmit}
+            onClick={() => handleSubmit()}
             disabled={isLoading || !prompt.trim()}
             className="ml-2"
           >

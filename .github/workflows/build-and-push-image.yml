@@ -189,8 +189,9 @@ jobs:
         kubectl get pods -n vibecode-platform -l app.kubernetes.io/name=vibecode
 
     - name: Post deployment notification
-      if: always() && steps.check-azure.outputs.skip != 'true' && secrets.SLACK_WEBHOOK_URL != ''
+      if: always() && steps.check-azure.outputs.skip != 'true'
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: ${{ job.status }}
         channel: '#deployments'
