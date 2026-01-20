@@ -39,6 +39,13 @@ setInterval(() => {
   }
 }, 5 * 60 * 1000)
 
+/**
+ * Clear the request store (for testing purposes)
+ */
+export function __clearStore(): void {
+  requestStore.clear()
+}
+
 export default function rateLimit(config: RateLimitConfig) {
   const {
     windowMs,
