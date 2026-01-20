@@ -293,7 +293,8 @@ describe('Rate Limiting Implementation', () => {
       if (result.errorResponse) {
         expect(result.errorResponse.status).toBe(429)
         const data = await result.errorResponse.json()
-        expect(data.message).toBe('Custom error')
+        expect(data.error.code).toBe('RATE_LIMIT_EXCEEDED')
+        expect(data.error.message).toBe('Custom error')
       }
     })
 

@@ -15,6 +15,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { randomBytes, createHmac, timingSafeEqual } from 'crypto'
+import { createProblemResponse } from '@/lib/utils/api-response'
 
 /**
  * Configuration for CSRF protection
@@ -204,19 +205,13 @@ export function withCSRFProtection(
 
     // Validate CSRF token for state-changing methods
     if (!verifyCSRFTokenFromRequest(req)) {
-      return NextResponse.json(
-        {
-          error: 'CSRF token validation failed',
-          message: 'Invalid or missing CSRF token. Please refresh and try again.',
-          type: 'https://vibecode.dev/errors/csrf-validation-failed',
-        },
-        {
-          status: 403,
-          headers: {
-            'Content-Type': 'application/problem+json',
-          },
-        }
-      )
+      return createProblemResponse({
+        title: 'CSRF token validation failed',
+        status: 403,
+        detail: 'Invalid or missing CSRF token. Please refresh and try again.',
+        type: 'https://vibecode.dev/errors/csrf-validation-failed',
+        code: 'CSRF_VALIDATION_FAILED',
+      })
     }
 
     // Token is valid, proceed with handler
@@ -243,12 +238,11 @@ export function validateCSRF(req: NextRequest): {
 
   return {
     valid: false,
-    errorResponse: NextResponse.json(
-      {
-        error: 'CSRF token validation failed',
-        message: 'Invalid or missing CSRF token',
-      },
-      { status: 403 }
-    ),
+    errorResponse: createProblemResponse({
+      title: 'CSRF token validation failed',
+      status: 403,
+      detail: 'Invalid or missing CSRF token',
+      code: 'CSRF_VALIDATION_FAILED',
+    }),
   }
 }
