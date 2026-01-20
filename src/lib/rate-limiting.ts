@@ -2,7 +2,7 @@
  * Rate Limiting Utility
  *
  * Production-ready rate limiting for API endpoints
- * Implements sliding window rate limiting with Redis support
+ * Implements token bucket rate limiting with Redis support
  *
  * Staff Engineer Implementation - Enterprise-grade rate limiting
  */
@@ -26,18 +26,37 @@ interface RateLimitResult {
   retryAfter?: number
 }
 
+interface TokenBucketState {
+  tokens: number
+  lastRefill: number
+  refillPerMs: number
+  capacity: number
+}
+
 // In-memory store for development (use Redis in production)
-const requestStore = new Map<string, { count: number; reset: number; requests: number[] }>()
+const requestStore = new Map<string, TokenBucketState>()
 
 // Cleanup old entries every 5 minutes
 setInterval(() => {
   const now = Date.now()
-  for (const [key, data] of requestStore.entries()) {
-    if (data.reset < now) {
+  for (const [key, bucket] of requestStore.entries()) {
+    if (bucket.refillPerMs <= 0) continue
+
+    const bucketWindowMs = bucket.capacity / bucket.refillPerMs
+    const idleDuration = now - bucket.lastRefill
+    // Drop inactive buckets once they have been full for 2 windows
+    if (bucket.tokens >= bucket.capacity && idleDuration > bucketWindowMs * 2) {
       requestStore.delete(key)
     }
   }
 }, 5 * 60 * 1000)
+
+/**
+ * Clear the request store (for testing purposes)
+ */
+export function __clearStore(): void {
+  requestStore.clear()
+}
 
 export default function rateLimit(config: RateLimitConfig) {
   const {
@@ -52,43 +71,55 @@ export default function rateLimit(config: RateLimitConfig) {
   return async (req: NextRequest): Promise<RateLimitResult> => {
     const key = keyGenerator(req)
     const now = Date.now()
-    const windowStart = now - windowMs
+    const refillPerMs = max / Math.max(windowMs, 1)
 
     // Get or create entry
     let entry = requestStore.get(key)
     if (!entry) {
       entry = {
-        count: 0,
-        reset: now + windowMs,
-        requests: []
+        tokens: max,
+        lastRefill: now,
+        refillPerMs,
+        capacity: max
       }
       requestStore.set(key, entry)
+    } else {
+      entry.capacity = max
+      entry.refillPerMs = refillPerMs
+      entry.tokens = Math.min(entry.tokens, entry.capacity)
     }
 
-    // Clean old requests (sliding window)
-    entry.requests = entry.requests.filter(timestamp => timestamp > windowStart)
-    entry.count = entry.requests.length
-
-    // Update reset time if needed
-    if (entry.reset < now) {
-      entry.reset = now + windowMs
+    // Refill tokens based on elapsed time
+    if (now > entry.lastRefill && entry.refillPerMs > 0) {
+      const elapsed = now - entry.lastRefill
+      entry.tokens = Math.min(entry.capacity, entry.tokens + elapsed * entry.refillPerMs)
+      entry.lastRefill = now
     }
+
+    const hasTokens = entry.tokens >= 1
+    let retryAfter: number | undefined
+
+    if (hasTokens) {
+      entry.tokens -= 1
+    } else if (entry.refillPerMs > 0) {
+      const msUntilNextToken = (1 - entry.tokens) / entry.refillPerMs
+      retryAfter = Math.max(1, Math.ceil(msUntilNextToken / 1000))
+    }
+
+    const remaining = Math.max(0, Math.floor(entry.tokens))
+    const msToFull = entry.refillPerMs > 0
+      ? (entry.capacity - entry.tokens) / entry.refillPerMs
+      : windowMs
 
     const result: RateLimitResult = {
-      success: entry.count < max,
+      success: hasTokens,
       limit: max,
-      remaining: Math.max(0, max - entry.count - 1),
-      reset: Math.ceil(entry.reset / 1000)
+      remaining,
+      reset: Math.max(1, Math.ceil((now + msToFull) / 1000))
     }
 
-    // Add current request if under limit
-    if (result.success) {
-      entry.requests.push(now)
-      entry.count++
-    } else {
-      // Calculate retry after
-      const oldestRequest = Math.min(...entry.requests)
-      result.retryAfter = Math.ceil((oldestRequest + windowMs - now) / 1000)
+    if (!hasTokens) {
+      result.retryAfter = retryAfter ?? Math.ceil(windowMs / 1000)
     }
 
     return result
@@ -164,6 +195,47 @@ export function createClaudeRateLimit() {
   })
 }
 
+const REDIS_TOKEN_BUCKET_SCRIPT = `
+local key = KEYS[1]
+local capacity = tonumber(ARGV[1])
+local refillRate = tonumber(ARGV[2])
+local now = tonumber(ARGV[3])
+local ttl = tonumber(ARGV[4])
+
+local bucket = redis.call('HMGET', key, 'tokens', 'timestamp')
+local tokens = bucket[1]
+local timestamp = bucket[2]
+
+if tokens == false or tokens == nil then
+  tokens = capacity
+  timestamp = now
+else
+  tokens = tonumber(tokens)
+  timestamp = tonumber(timestamp)
+  if tokens == nil then
+    tokens = capacity
+  end
+  if timestamp == nil then
+    timestamp = now
+  end
+  local delta = math.max(0, now - timestamp)
+  local refill = delta * refillRate
+  tokens = math.min(capacity, tokens + refill)
+  timestamp = now
+end
+
+local allowed = 0
+if tokens >= 1 then
+  tokens = tokens - 1
+  allowed = 1
+end
+
+redis.call('HMSET', key, 'tokens', tokens, 'timestamp', timestamp)
+redis.call('PEXPIRE', key, ttl)
+
+return { allowed, tokens, timestamp }
+`
+
 /**
  * Redis-based rate limiter for production
  */
@@ -182,27 +254,36 @@ export class RedisRateLimiter {
     windowMs: number
   ): Promise<RateLimitResult> {
     const now = Date.now()
-    const window = Math.floor(now / windowMs)
-    const redisKey = `${this.prefix}${key}:${window}`
+    const redisKey = `${this.prefix}${key}`
+    const refillPerMs = max / Math.max(windowMs, 1)
+    const ttlMs = Math.ceil(windowMs * 2)
 
     try {
-      // Use Redis pipeline for atomic operations
-      const pipeline = this.redis.pipeline()
-      pipeline.incr(redisKey)
-      pipeline.expire(redisKey, Math.ceil(windowMs / 1000))
+      const result = await this.redis.eval(
+        REDIS_TOKEN_BUCKET_SCRIPT,
+        1,
+        redisKey,
+        max,
+        refillPerMs,
+        now,
+        ttlMs
+      )
 
-      const results = await pipeline.exec()
-      const count = results[0][1]
-
-      const remaining = Math.max(0, max - count)
-      const reset = (window + 1) * windowMs
+      const allowed = Array.isArray(result) ? Number(result[0]) === 1 : true
+      const rawTokens = Array.isArray(result) ? Number(result[1]) : max - 1
+      const tokens = Math.max(0, Math.min(rawTokens, max))
+      const remaining = Math.max(0, Math.floor(tokens))
+      const safeRate = refillPerMs > 0 ? refillPerMs : 1 / Math.max(windowMs, 1)
+      const msToFull = (max - tokens) / safeRate
 
       return {
-        success: count <= max,
+        success: allowed,
         limit: max,
         remaining,
-        reset: Math.ceil(reset / 1000),
-        retryAfter: count > max ? Math.ceil(windowMs / 1000) : undefined
+        reset: Math.max(1, Math.ceil((now + msToFull) / 1000)),
+        retryAfter: allowed
+          ? undefined
+          : Math.max(1, Math.ceil(((1 - tokens) / safeRate) / 1000))
       }
 
     } catch (error) {
@@ -212,7 +293,7 @@ export class RedisRateLimiter {
       return {
         success: true,
         limit: max,
-        remaining: max - 1,
+        remaining: Math.max(0, max - 1),
         reset: Math.ceil((now + windowMs) / 1000)
       }
     }

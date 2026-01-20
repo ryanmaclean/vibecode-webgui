@@ -66,7 +66,7 @@ export const codeServerSessionUpdateSchema = z.object({
   sessionId: z.string().uuid(),
   status: z.enum(['active', 'idle', 'stopped', 'error']).optional(),
   lastActivity: z.string().datetime().optional(),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 // ============================================================================
@@ -145,12 +145,12 @@ export const createEnhancedContainerSchema = z.object({
     memory: z.string().regex(/^\d+[MGT]$/).optional(),
     ports: z.array(z.string().regex(/^\d+:\d+$/)).max(20).optional(),
     volumes: z.array(z.string()).max(20).optional(),
-    env: z.record(z.string()).optional(),
+    env: z.record(z.string(), z.string()).optional(),
     workingDir: z.string().optional(),
     command: z.array(z.string()).max(50).optional(),
     restartPolicy: z.enum(['no', 'always', 'on-failure', 'unless-stopped']).optional().default('no'),
     networkMode: z.string().min(1).max(50).optional(),
-    labels: z.record(z.string()).optional()
+    labels: z.record(z.string(), z.string()).optional()
   }).optional(),
   healthCheck: z.object({
     test: z.array(z.string()).max(10).optional(),

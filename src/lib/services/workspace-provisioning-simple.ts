@@ -10,9 +10,9 @@ const WorkspaceRequestSchema = z.object({
   projectName: z.string(),
   framework: z.string(),
   userId: z.string(),
-  files: z.record(z.string()),
+  files: z.record(z.string(), z.string()),
   dependencies: z.array(z.string()).default([]),
-  environment: z.record(z.string()).default({})
+  environment: z.record(z.string(), z.string()).default({})
 })
 
 const WorkspaceStatusSchema = z.object({

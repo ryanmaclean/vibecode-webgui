@@ -8,6 +8,12 @@
 import { useState } from 'react'
 import { useAuth } from '@/hooks/useAuth'
 import { LoginCredentials } from '@/types/auth'
+import { z } from '@/lib/zod-compat'
+
+const credentialsSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+})
 
 export default function SignInForm() {
   const { loginWithCredentials, loginWithOAuth, providers, isLoading } = useAuth()
@@ -23,8 +29,19 @@ export default function SignInForm() {
     setError(null)
     setIsSubmitting(true)
 
+     const validation = credentialsSchema.safeParse(credentials)
+     if (!validation.success) {
+       const [issue] = validation.error.issues
+       setError(issue?.message ?? 'Invalid credentials')
+       setIsSubmitting(false)
+       return
+     }
+
+     const sanitizedCredentials = validation.data
+     setCredentials(sanitizedCredentials)
+
     try {
-      const result = await loginWithCredentials(credentials)
+      const result = await loginWithCredentials(sanitizedCredentials)
       if (!result.success) {
         setError(result.error || 'Login failed')
       }

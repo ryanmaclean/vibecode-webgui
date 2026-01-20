@@ -1,4 +1,0 @@
-# AgentAPI Python dependencies
-aiohttp==3.13.3
-aiohttp-cors==0.7.0
-PyYAML==6.0.1

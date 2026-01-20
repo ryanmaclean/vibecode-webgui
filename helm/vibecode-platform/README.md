@@ -119,6 +119,18 @@ helm install vibecode-platform . \
 | `security.networkPolicies.enabled` | Enable network policies | `true` |
 | `security.rbac.enabled` | Enable RBAC | `true` |
 
+### External Secrets
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `externalSecrets.enabled` | Enable External Secrets Operator integration | `false` |
+| `externalSecrets.refreshInterval` | Secret refresh interval | `1h` |
+| `externalSecrets.secretStore.name` | SecretStore resource name | `vibecode-secret-store` |
+| `externalSecrets.secretStore.kind` | SecretStore kind (SecretStore or ClusterSecretStore) | `SecretStore` |
+| `externalSecrets.secrets.password.key` | Code-server password secret key in external store | `vibecode/code-server/password` |
+| `externalSecrets.secrets.databaseUrl.key` | Database URL secret key | `vibecode/database/url` |
+| `externalSecrets.secrets.jwtSecret.key` | JWT secret key | `vibecode/jwt/secret` |
+
 ### Storage
 
 | Parameter | Description | Default |
@@ -184,6 +196,178 @@ kubectl create secret generic openrouter-api-key \
 kubectl create secret generic artificial-analysis-api-key \
   --from-literal=api-key=YOUR_API_KEY \
   --namespace=vibecode-platform
+```
+
+## External Secrets Setup
+
+**IMPORTANT**: By default, this chart uses hardcoded secrets which are **NOT SECURE** for production use. For production deployments, you should use the External Secrets Operator to sync secrets from external secret stores.
+
+### Why Use External Secrets?
+
+- **Security**: Secrets are not stored in Git or Helm values
+- **Centralized Management**: Use existing secret stores (AWS, GCP, Azure, Vault)
+- **Automatic Rotation**: Secrets are automatically refreshed
+- **Audit Trail**: Secret access is logged in your secret store
+
+### Prerequisites
+
+1. Install External Secrets Operator:
+```bash
+helm repo add external-secrets https://charts.external-secrets.io
+helm install external-secrets \
+  external-secrets/external-secrets \
+  --namespace external-secrets-system \
+  --create-namespace
+```
+
+### Setup with AWS Secrets Manager
+
+1. Create secrets in AWS Secrets Manager:
+```bash
+# Create code-server password
+aws secretsmanager create-secret \
+  --name vibecode/code-server/password \
+  --secret-string "your-secure-password"
+
+# Create database URL
+aws secretsmanager create-secret \
+  --name vibecode/database/url \
+  --secret-string "postgresql://user:pass@host:5432/db"
+
+# Create JWT secret
+aws secretsmanager create-secret \
+  --name vibecode/jwt/secret \
+  --secret-string "your-jwt-secret-256-bits"
+
+# Create OpenRouter API key
+aws secretsmanager create-secret \
+  --name vibecode/ai/openrouter/api-key \
+  --secret-string "sk-or-v1-..."
+```
+
+2. Create IAM policy for External Secrets Operator:
+```json
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": [
+        "secretsmanager:GetSecretValue",
+        "secretsmanager:DescribeSecret"
+      ],
+      "Resource": "arn:aws:secretsmanager:*:*:secret:vibecode/*"
+    }
+  ]
+}
+```
+
+3. Create SecretStore resource:
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vibecode-secret-store
+  namespace: vibecode-platform
+spec:
+  provider:
+    aws:
+      service: SecretsManager
+      region: us-east-1
+      auth:
+        jwt:
+          serviceAccountRef:
+            name: vibecode-platform
+```
+
+4. Enable External Secrets in values.yaml:
+```yaml
+externalSecrets:
+  enabled: true
+  secretStore:
+    name: vibecode-secret-store
+    kind: SecretStore
+```
+
+### Setup with Google Secret Manager
+
+1. Create secrets in Google Secret Manager:
+```bash
+# Enable the API
+gcloud services enable secretmanager.googleapis.com
+
+# Create secrets
+echo -n "your-secure-password" | gcloud secrets create vibecode-code-server-password --data-file=-
+echo -n "postgresql://user:pass@host:5432/db" | gcloud secrets create vibecode-database-url --data-file=-
+echo -n "your-jwt-secret" | gcloud secrets create vibecode-jwt-secret --data-file=-
+```
+
+2. Create SecretStore:
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vibecode-secret-store
+  namespace: vibecode-platform
+spec:
+  provider:
+    gcpsm:
+      projectID: "your-project-id"
+      auth:
+        workloadIdentity:
+          clusterLocation: us-central1
+          clusterName: your-cluster
+          serviceAccountRef:
+            name: vibecode-platform
+```
+
+### Setup with HashiCorp Vault
+
+1. Create secrets in Vault:
+```bash
+# Enable KV v2 secrets engine
+vault secrets enable -path=vibecode kv-v2
+
+# Write secrets
+vault kv put vibecode/code-server/password value="your-secure-password"
+vault kv put vibecode/database/url value="postgresql://user:pass@host:5432/db"
+vault kv put vibecode/jwt/secret value="your-jwt-secret"
+```
+
+2. Create SecretStore:
+```yaml
+apiVersion: external-secrets.io/v1beta1
+kind: SecretStore
+metadata:
+  name: vibecode-secret-store
+  namespace: vibecode-platform
+spec:
+  provider:
+    vault:
+      server: "https://vault.example.com"
+      path: "vibecode"
+      version: "v2"
+      auth:
+        kubernetes:
+          mountPath: "kubernetes"
+          role: "vibecode-platform"
+          serviceAccountRef:
+            name: vibecode-platform
+```
+
+### Verifying External Secrets
+
+After enabling External Secrets, verify the secrets are synced:
+
+```bash
+# Check ExternalSecret resources
+kubectl get externalsecret -n vibecode-platform
+
+# Check if secrets are created
+kubectl get secrets -n vibecode-platform
+
+# Check ExternalSecret status
+kubectl describe externalsecret vibecode-platform-secret-external -n vibecode-platform
 ```
 
 ## Monitoring and Observability

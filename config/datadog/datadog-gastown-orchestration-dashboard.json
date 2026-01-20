@@ -1,0 +1,103 @@
+{
+  "title": "Gas Town Orchestration Monitor",
+  "description": "Real-time monitoring of Gas Town multi-agent orchestration - polecats, beads, PRs, GitHub Actions CI",
+  "widgets": [
+    {
+      "id": "active-polecats",
+      "definition": {
+        "type": "query_value",
+        "requests": [{"q": "sum:gastown.polecats.active{*}", "aggregator": "last"}],
+        "title": "Active Polecats",
+        "precision": 0
+      }
+    },
+    {
+      "id": "hooked-beads",
+      "definition": {
+        "type": "query_value",
+        "requests": [{"q": "sum:gastown.beads.hooked{*}", "aggregator": "last"}],
+        "title": "Work In Progress",
+        "precision": 0
+      }
+    },
+    {
+      "id": "github-actions-ci",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {"q": "sum:ci.pipeline.completed{ci.provider:github,@ci.status:success,@git.repository.name:vibecode-webgui}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+          {"q": "sum:ci.pipeline.completed{ci.provider:github,@ci.status:failed,@git.repository.name:vibecode-webgui}.as_count()", "display_type": "bars", "style": {"palette": "red"}}
+        ],
+        "title": "GitHub Actions CI",
+        "show_legend": true
+      }
+    },
+    {
+      "id": "ci-test-results",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {"q": "sum:ci.test.tests_passed{service:vibecode-webgui}.as_count()", "display_type": "line", "style": {"palette": "green"}},
+          {"q": "sum:ci.test.tests_failed{service:vibecode-webgui}.as_count()", "display_type": "line", "style": {"palette": "red"}}
+        ],
+        "title": "CI Test Results"
+      }
+    },
+    {
+      "id": "polecat-activity",
+      "definition": {
+        "type": "timeseries",
+        "requests": [{"q": "sum:gastown.polecats.active{*} by {rig}", "display_type": "area"}],
+        "title": "Polecat Activity by Rig"
+      }
+    },
+    {
+      "id": "bead-lifecycle",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {"q": "sum:gastown.beads.hooked{*}", "display_type": "line", "style": {"palette": "orange"}},
+          {"q": "sum:gastown.beads.completed{*}", "display_type": "line", "style": {"palette": "green"}}
+        ],
+        "title": "Bead Lifecycle"
+      }
+    },
+    {
+      "id": "gastown-logs",
+      "definition": {
+        "type": "log_stream",
+        "query": "service:(gastown-* OR gt-* OR bd-* OR polecat-*)",
+        "title": "Gas Town Logs"
+      }
+    },
+    {
+      "id": "polecat-prs",
+      "definition": {
+        "type": "toplist",
+        "requests": [{"q": "top(count:github.pull_request.opened{repo:vibecode-webgui,branch:polecat/*} by {branch}.as_count(), 10, 'sum', 'desc')"}],
+        "title": "PRs by Polecat"
+      }
+    },
+    {
+      "id": "github-events",
+      "definition": {
+        "type": "event_stream",
+        "query": "sources:github tags:repo:vibecode-webgui",
+        "title": "GitHub Activity"
+      }
+    },
+    {
+      "id": "ci-duration",
+      "definition": {
+        "type": "heatmap",
+        "requests": [{"q": "avg:ci.pipeline.duration{ci.provider:github,@git.repository.name:vibecode-webgui} by {ci.pipeline.name}"}],
+        "title": "CI Duration Heatmap"
+      }
+    }
+  ],
+  "template_variables": [
+    {"name": "rig", "default": "*", "prefix": "rig"},
+    {"name": "priority", "default": "*", "prefix": "priority"}
+  ],
+  "layout_type": "ordered"
+}

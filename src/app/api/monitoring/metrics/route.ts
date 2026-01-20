@@ -26,12 +26,12 @@ const metricsStore = {
 const performanceMetricsSchema = z.object({
   type: z.literal('performance'),
   duration: z.number().min(0).max(300000), // Max 5 minutes
-  metrics: z.record(z.any()).optional()
+  metrics: z.record(z.string(), z.any()).optional()
 }).strict()
 
 const errorMetricsSchema = z.object({
   type: z.literal('error'),
-  metrics: z.record(z.any())
+  metrics: z.record(z.string(), z.any())
 }).strict()
 
 const historicalMetricsSchema = z.object({
@@ -67,7 +67,6 @@ export async function GET(request: NextRequest) {
  */
 async function collectMetrics() {
   const cpuUsageRaw = process.cpuUsage();
-  const memUsage = process.memoryUsage();
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
@@ -103,7 +102,7 @@ async function collectMetrics() {
 /**
  * Health check endpoint (could be used for load balancer health checks)
  */
-export async function HEAD(request: NextRequest) {
+export async function HEAD() {
   try {
     // Perform basic health checks
     const isHealthy = await performHealthChecks();
@@ -230,9 +229,9 @@ export async function PUT(request: NextRequest) {
     
     if (!validation.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -240,10 +239,10 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { startTime, endTime, metricTypes } = validation.data;
+    const { startTime, endTime } = validation.data;
 
     // Get historical metrics from storage
-    const historicalMetrics = await getHistoricalMetrics(startTime, endTime, metricTypes);
+    const historicalMetrics = await getHistoricalMetrics(startTime, endTime);
 
     return NextResponse.json({
       metrics: historicalMetrics,
@@ -265,8 +264,7 @@ export async function PUT(request: NextRequest) {
  */
 async function getHistoricalMetrics(
   startTime: string,
-  endTime: string,
-  metricTypes?: string[]
+  endTime: string
 ): Promise<any[]> {
   // This would integrate with your metrics storage system
   // For now, return mock historical data

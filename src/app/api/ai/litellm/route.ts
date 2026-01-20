@@ -123,11 +123,11 @@ export async function POST(request: NextRequest) {
         liteLLMSchema.parse(requestData);
       } catch (error) {
         if (error instanceof z.ZodError) {
-          console.warn('LiteLLM validation failed', { errors: error.errors });
+          console.warn('LiteLLM validation failed', { errors: error.issues });
           return NextResponse.json(
             {
               error: 'Invalid request parameters',
-              details: error.errors.map(e => ({
+              details: error.issues.map(e => ({
                 field: e.path.join('.'),
                 message: e.message
               }))

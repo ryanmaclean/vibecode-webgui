@@ -1243,7 +1243,7 @@ if __name__ == "__main__":
         path: 'requirements.txt',
         content: `gradio>=4.0.0
 opencv-python>=4.8.0
-Pillow>=10.0.0
+Pillow>=11.3.0
 matplotlib>=3.7.0
 numpy>=1.24.0`,
         isTemplate: false
@@ -1252,7 +1252,7 @@ numpy>=1.24.0`,
     dependencies: {
       'gradio': '>=4.0.0',
       'opencv-python': '>=4.8.0',
-      'Pillow': '>=10.0.0',
+      'Pillow': '>=11.3.0',
       'matplotlib': '>=3.7.0',
       'numpy': '>=1.24.0'
     },

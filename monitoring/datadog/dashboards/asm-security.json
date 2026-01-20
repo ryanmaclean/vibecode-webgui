@@ -1,0 +1,516 @@
+{
+  "title": "VibeCode Application Security Monitoring (ASM)",
+  "description": "Comprehensive security dashboard for attack detection, threat analysis, and vulnerability management",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "Security Overview",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "id": 2,
+            "definition": {
+              "title": "Total Security Events (24h)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui}.as_count()",
+                  "aggregator": "sum"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0
+            }
+          },
+          {
+            "id": 3,
+            "definition": {
+              "title": "Active Attacks (Last Hour)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack}.rollup(sum, 3600).as_count()",
+                  "aggregator": "sum"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0,
+              "conditional_formats": [
+                {
+                  "comparator": ">",
+                  "value": 10,
+                  "palette": "white_on_red"
+                },
+                {
+                  "comparator": ">",
+                  "value": 5,
+                  "palette": "white_on_yellow"
+                },
+                {
+                  "comparator": "<=",
+                  "value": 5,
+                  "palette": "white_on_green"
+                }
+              ]
+            }
+          },
+          {
+            "id": 4,
+            "definition": {
+              "title": "Blocked Requests (24h)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:trace.appsec.blocked{env:production,service:vibecode-webgui}.as_count()",
+                  "aggregator": "sum"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0,
+              "conditional_formats": [
+                {
+                  "comparator": ">",
+                  "value": 100,
+                  "palette": "white_on_red"
+                }
+              ]
+            }
+          },
+          {
+            "id": 5,
+            "definition": {
+              "title": "Critical Vulnerabilities",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:trace.appsec.vulnerability{env:production,service:vibecode-webgui,severity:critical}.as_count()",
+                  "aggregator": "sum"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0,
+              "conditional_formats": [
+                {
+                  "comparator": ">",
+                  "value": 0,
+                  "palette": "white_on_red"
+                },
+                {
+                  "comparator": "<=",
+                  "value": 0,
+                  "palette": "white_on_green"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Attack Timeline",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack} by {attack_type}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm"
+            }
+          }
+        ],
+        "yaxis": {
+          "label": "Attack Count",
+          "scale": "linear",
+          "min": "auto",
+          "max": "auto"
+        },
+        "legend_size": "0",
+        "show_legend": true
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Attack Types Distribution",
+        "type": "sunburst",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack} by {attack_type}.as_count()"
+          }
+        ],
+        "legend": {
+          "type": "automatic"
+        }
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Top Attacked Endpoints",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack} by {http.url}.as_count(), 10, 'sum', 'desc')",
+            "conditional_formats": [
+              {
+                "comparator": ">",
+                "value": 100,
+                "palette": "white_on_red"
+              },
+              {
+                "comparator": ">",
+                "value": 50,
+                "palette": "white_on_yellow"
+              }
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "title": "Attack Sources (Top IPs)",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack} by {http.client_ip}.as_count(), 15, 'sum', 'desc')"
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "Blocked vs Monitored Threats",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.blocked{env:production,service:vibecode-webgui}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "red",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:trace.appsec.blocked{env:production,service:vibecode-webgui}.as_count()",
+                "alias_name": "Blocked"
+              }
+            ]
+          },
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.action:monitor}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "orange",
+              "line_type": "solid",
+              "line_width": "normal"
+            },
+            "metadata": [
+              {
+                "expression": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.action:monitor}.as_count()",
+                "alias_name": "Monitored"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Count",
+          "scale": "linear"
+        },
+        "show_legend": true
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "title": "SQL Injection Attempts",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,attack_type:sql_injection}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "red"
+            }
+          }
+        ],
+        "markers": [
+          {
+            "value": "y = 10",
+            "display_type": "warning dashed",
+            "label": "High threshold"
+          }
+        ]
+      }
+    },
+    {
+      "id": 12,
+      "definition": {
+        "title": "XSS Attempts",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,attack_type:xss}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "orange"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 13,
+      "definition": {
+        "title": "RCE Attempts",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,attack_type:rce}.as_count()",
+            "display_type": "line",
+            "style": {
+              "palette": "purple"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 14,
+      "definition": {
+        "title": "Vulnerability Severity Breakdown",
+        "type": "pie_chart",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.vulnerability{env:production,service:vibecode-webgui} by {severity}.as_count()"
+          }
+        ],
+        "legend": {
+          "type": "automatic"
+        }
+      }
+    },
+    {
+      "id": 15,
+      "definition": {
+        "title": "Blocked IPs (Last 24h)",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:datadog.appsec.ip.blocked{env:production,service:vibecode-webgui} by {ip}.as_count(), 20, 'sum', 'desc')"
+          }
+        ]
+      }
+    },
+    {
+      "id": 16,
+      "definition": {
+        "title": "Rate Limiting Events",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:datadog.appsec.rate_limit.exceeded{env:production,service:vibecode-webgui}.as_count()",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "id": 17,
+      "definition": {
+        "title": "Security Rules Triggered",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:trace.appsec.events{env:production,service:vibecode-webgui} by {rule_id}.as_count(), 15, 'sum', 'desc')"
+          }
+        ]
+      }
+    },
+    {
+      "id": 18,
+      "definition": {
+        "title": "Attack Success Rate",
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.action:monitor}.as_count() / (sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.action:monitor}.as_count() + sum:trace.appsec.blocked{env:production,service:vibecode-webgui}.as_count())) * 100",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 2,
+        "text_align": "left",
+        "unit": "%",
+        "conditional_formats": [
+          {
+            "comparator": ">",
+            "value": 10,
+            "palette": "white_on_red"
+          },
+          {
+            "comparator": ">",
+            "value": 5,
+            "palette": "white_on_yellow"
+          },
+          {
+            "comparator": "<=",
+            "value": 5,
+            "palette": "white_on_green"
+          }
+        ]
+      }
+    },
+    {
+      "id": 19,
+      "definition": {
+        "title": "Geographic Attack Distribution",
+        "type": "geomap",
+        "requests": [
+          {
+            "q": "sum:trace.appsec.events{env:production,service:vibecode-webgui,appsec.event.category:attack} by {country}.as_count()"
+          }
+        ],
+        "view": {
+          "focus": "WORLD"
+        },
+        "style": {
+          "palette": "hostmap_blues",
+          "palette_flip": false
+        }
+      }
+    },
+    {
+      "id": 20,
+      "definition": {
+        "title": "Compliance Status",
+        "type": "note",
+        "content": "## Compliance Summary\n\n### PCI-DSS\n- ✓ Attack detection enabled\n- ✓ IP blocking configured\n- ✓ Security event logging active\n\n### SOC 2\n- ✓ Continuous monitoring\n- ✓ Incident alerting configured\n- ✓ Audit trail maintained\n\n### HIPAA\n- ✓ Data protection controls\n- ✓ Access monitoring\n- ✓ Security incident response",
+        "background_color": "blue",
+        "font_size": "14",
+        "text_align": "left",
+        "show_tick": true,
+        "tick_pos": "50%",
+        "tick_edge": "left"
+      }
+    },
+    {
+      "id": 21,
+      "definition": {
+        "title": "Recent Security Events",
+        "type": "log_stream",
+        "indexes": [],
+        "query": "service:vibecode-webgui source:appsec",
+        "sort": {
+          "column": "time",
+          "order": "desc"
+        },
+        "columns": [
+          "core_host",
+          "core_service",
+          "tag_source",
+          "attack_type",
+          "http.url",
+          "http.client_ip"
+        ],
+        "show_date_column": true,
+        "show_message_column": true,
+        "message_display": "expanded-md"
+      }
+    },
+    {
+      "id": 22,
+      "definition": {
+        "title": "ASM Performance Impact",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "avg:trace.appsec.waf.duration{env:production,service:vibecode-webgui}",
+            "display_type": "line",
+            "style": {
+              "palette": "dog_classic"
+            },
+            "metadata": [
+              {
+                "expression": "avg:trace.appsec.waf.duration{env:production,service:vibecode-webgui}",
+                "alias_name": "WAF Analysis Time (ms)"
+              }
+            ]
+          }
+        ],
+        "yaxis": {
+          "label": "Duration (ms)",
+          "scale": "linear"
+        },
+        "markers": [
+          {
+            "value": "y = 20",
+            "display_type": "error dashed",
+            "label": "Timeout threshold"
+          }
+        ]
+      }
+    },
+    {
+      "id": 23,
+      "definition": {
+        "title": "Threat Intelligence Matches",
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:datadog.appsec.threat_intel.match{env:production,service:vibecode-webgui}.as_count()",
+            "display_type": "bars",
+            "style": {
+              "palette": "warm"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 24,
+      "definition": {
+        "title": "User Security Events",
+        "type": "toplist",
+        "requests": [
+          {
+            "q": "top(sum:trace.appsec.events{env:production,service:vibecode-webgui,usr.id:*} by {usr.id}.as_count(), 10, 'sum', 'desc')"
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {
+      "name": "env",
+      "default": "production",
+      "prefix": "env"
+    },
+    {
+      "name": "service",
+      "default": "vibecode-webgui",
+      "prefix": "service"
+    },
+    {
+      "name": "attack_type",
+      "default": "*",
+      "prefix": "attack_type"
+    }
+  ],
+  "layout_type": "ordered",
+  "is_read_only": false,
+  "notify_list": [],
+  "tags": [
+    "security",
+    "asm",
+    "appsec",
+    "vibecode"
+  ]
+}

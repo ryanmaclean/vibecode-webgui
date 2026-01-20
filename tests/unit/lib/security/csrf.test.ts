@@ -396,7 +396,8 @@ describe('CSRF Protection with HMAC Signing', () => {
 
       expect(handler).not.toHaveBeenCalled()
       expect(response.status).toBe(403)
-      expect(data.error).toContain('CSRF')
+      expect(data.error.code).toBe('CSRF_VALIDATION_FAILED')
+      expect(data.error.message).toContain('CSRF')
     })
 
     // Skipping: Edge Runtime crypto API incompatible with Jest mocks
@@ -491,7 +492,8 @@ describe('CSRF Protection with HMAC Signing', () => {
       if (result.errorResponse) {
         expect(result.errorResponse.status).toBe(403)
         const data = await result.errorResponse.json()
-        expect(data.error).toContain('CSRF')
+        expect(data.error.code).toBe('CSRF_VALIDATION_FAILED')
+        expect(data.error.message).toContain('CSRF')
       }
     })
 
@@ -504,8 +506,8 @@ describe('CSRF Protection with HMAC Signing', () => {
 
       if (result.errorResponse) {
         const data = await result.errorResponse.json()
-        expect(data).toHaveProperty('error')
-        expect(data).toHaveProperty('message')
+        expect(data.error.code).toBe('CSRF_VALIDATION_FAILED')
+        expect(data.error.message).toContain('CSRF')
       }
     })
   })

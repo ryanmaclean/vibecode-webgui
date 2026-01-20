@@ -67,7 +67,7 @@ const createAgentSchema = z.object({
   name: z.string(),
   instructions: z.string(),
   tools: z.array(z.any()).optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
   temperature: z.number().min(0).max(2).optional(),
   top_p: z.number().min(0).max(1).optional(),
 })
@@ -82,7 +82,7 @@ const createThreadSchema = z.object({
       })
     )
     .optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
 })
 
 const addMessageSchema = z.object({
@@ -223,7 +223,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', message: error.message, issues: error.errors },
+        { error: 'Validation error', message: error.message, issues: error.issues },
         { status: 400 }
       )
     }
@@ -327,7 +327,7 @@ async function handleThreadRoutes(
       } catch (error) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(
-            { error: 'Validation error', message: error.message, issues: error.errors },
+            { error: 'Validation error', message: error.message, issues: error.issues },
             { status: 400 }
           )
         }
@@ -405,7 +405,7 @@ async function handleThreadMessages(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation error', message: error.message, issues: error.errors },
+          { error: 'Validation error', message: error.message, issues: error.issues },
           { status: 400 }
         )
       }
@@ -485,7 +485,7 @@ async function handleThreadRuns(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation error', message: error.message, issues: error.errors },
+          { error: 'Validation error', message: error.message, issues: error.issues },
           { status: 400 }
         )
       }

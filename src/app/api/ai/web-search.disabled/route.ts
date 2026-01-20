@@ -27,7 +27,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({
         success: false,
         error: 'Invalid request format',
-        details: validation.error.errors.map(err => ({
+        details: validation.error.issues.map(err => ({
           field: err.path.join('.'),
           message: err.message
         }))

@@ -77,7 +77,7 @@ export const containerOptionsSchema = z.object({
   memory: z.string().regex(/^\d+[MGT]$/).optional(),
   ports: z.array(z.string().regex(/^\d+:\d+$/)).optional(),
   volumes: z.array(z.string()).optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   workingDir: z.string().optional(),
   command: z.array(z.string()).optional()
 })
@@ -129,9 +129,9 @@ export const createWorkspaceSchema = z.object({
   projectName: z.string().min(1).max(200),
   framework: z.string().min(1).max(50),
   userId: z.string().min(1).max(50).optional().default('anonymous'),
-  files: z.record(z.string()),
+  files: z.record(z.string(), z.string()),
   dependencies: z.array(z.string()).default([]),
-  environment: z.record(z.string()).default({})
+  environment: z.record(z.string(), z.string()).default({})
 })
 
 export const workspaceQuerySchema = z.object({
@@ -174,7 +174,7 @@ export const liteLLMSchema = z.object({
   stop: z.union([z.string(), z.array(z.string())]).optional(),
   stream: z.boolean().optional(),
   user: z.string().max(100).optional(),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 // ============================================================================
@@ -185,7 +185,7 @@ export const userPreferencesSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']).optional(),
   language: z.string().min(2).max(10).optional(),
   fontSize: z.number().int().min(8).max(32).optional(),
-  editorSettings: z.record(z.unknown()).optional(),
+  editorSettings: z.record(z.string(), z.unknown()).optional(),
   notifications: z.object({
     email: z.boolean().optional(),
     push: z.boolean().optional(),
@@ -204,7 +204,7 @@ export const metricsQuerySchema = z.object({
 
 export const recordMetricSchema = z.object({
   type: z.enum(['response_time', 'error', 'user_activity', 'network_io']),
-  data: z.record(z.unknown()).optional()
+  data: z.record(z.string(), z.unknown()).optional()
 })
 
 // ============================================================================
@@ -343,7 +343,7 @@ export const monitoringQuerySchema = z.object({
 export const monitoringMetricsBodySchema = z.object({
   type: z.enum(['performance', 'error']),
   duration: z.number().max(300000).optional(), // Max 5 minutes
-  metrics: z.record(z.unknown()).refine(
+  metrics: z.record(z.string(), z.unknown()).refine(
     (obj) => JSON.stringify(obj).length <= 100_000,
     'Metrics object must not exceed 100KB'
   )
@@ -391,7 +391,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     defaultValue: z.boolean().optional(),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   }),
   z.object({
@@ -401,7 +401,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     value: z.number(),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   }),
   z.object({
@@ -414,7 +414,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     ).min(1).max(20),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   })
 ])
@@ -585,7 +585,7 @@ export const functionNameSchema = z.string().regex(/^[a-z_][a-z0-9_]*$/, 'Functi
 export const aiFunctionCallSchema = z.object({
   function_call: z.object({
     name: functionNameSchema,
-    arguments: z.record(z.unknown()).refine(
+    arguments: z.record(z.string(), z.unknown()).refine(
       (obj) => JSON.stringify(obj).length <= 100_000,
       'Arguments must not exceed 100KB'
     )
@@ -627,7 +627,7 @@ export const generateProjectSchema = z.object({
 export const vectorStoreSchema = z.object({
   workspaceId: workspaceIdSchema,
   content: z.string().min(1).max(1_000_000), // 1MB limit
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   chunkSize: z.number().int().positive().max(10_000).optional().default(1000)
 })
 
@@ -798,7 +798,7 @@ export const createContainerSecureSchema = z.object({
           return parseInt(host) >= 1024
         }, 'Host port must be >= 1024')
     ).max(20).optional(),
-    env: z.record(z.string()).optional()
+    env: z.record(z.string(), z.string()).optional()
   }).optional()
 }).refine(
   (data) => {
