@@ -13,11 +13,12 @@ import { setupDatadogMocks, mockDatadogAPI, getSubmittedMetrics } from '../__moc
 // Mocked version completes in ~5 seconds
 const describeIf = describe;
 
-// Datadog API configuration
-const DD_API_KEY = process.env.DD_API_KEY || '';
+// Datadog API configuration - use getters to get current env values after mocks are set up
 const DD_SITE = process.env.DD_SITE || 'datadoghq.com';
 const DD_API_BASE_URL = `https://api.${DD_SITE}`;
-const DD_APP_KEY = process.env.DD_APP_KEY || process.env.DATADOG_APP_KEY || '';
+// Use getter functions to get current env values after setupDatadogMocks() sets them
+const getDD_API_KEY = () => process.env.DD_API_KEY || '';
+const getDD_APP_KEY = () => process.env.DD_APP_KEY || process.env.DATADOG_APP_KEY || '';
 
 // Test timeout configuration
 const DEFAULT_TIMEOUT = 30000; // 30 seconds
@@ -67,7 +68,7 @@ async function submitMetricsToDatadog(
     const response = await fetch(`${DD_API_BASE_URL}/api/v1/series`, {
       method: 'POST',
       headers: {
-        'DD-API-KEY': DD_API_KEY,
+        'DD-API-KEY': getDD_API_KEY(),
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ series: metrics }),
@@ -103,8 +104,8 @@ async function queryMetricsFromDatadog(
     const response = await fetch(url, {
       method: 'GET',
       headers: {
-        'DD-API-KEY': DD_API_KEY,
-        'DD-APPLICATION-KEY': DD_APP_KEY || 'mock-app-key',
+        'DD-API-KEY': getDD_API_KEY(),
+        'DD-APPLICATION-KEY': getDD_APP_KEY() || 'mock-app-key',
         'Content-Type': 'application/json',
       },
       signal: controller.signal,
@@ -173,7 +174,7 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
       const response = await fetch(`${DD_API_BASE_URL}/api/v1/validate`, {
         method: 'GET',
         headers: {
-          'DD-API-KEY': DD_API_KEY,
+          'DD-API-KEY': getDD_API_KEY(),
           'Content-Type': 'application/json',
         },
       });
@@ -623,7 +624,7 @@ describeIf('Datadog Metrics Retrieval Integration Tests', () => {
         await fetch('https://invalid-datadog-endpoint.example.com/api/v1/series', {
           method: 'POST',
           headers: {
-            'DD-API-KEY': DD_API_KEY,
+            'DD-API-KEY': getDD_API_KEY(),
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({ series: [] }),
