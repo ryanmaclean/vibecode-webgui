@@ -19,6 +19,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { cache, CacheTTL } from '@/lib/cache/valkey-client'
+import { createProblemResponse } from '@/lib/utils/api-response'
 
 /**
  * Rate limit configuration
@@ -218,24 +219,22 @@ export async function applyRateLimit(
 
     if (!success) {
       // Rate limit exceeded
-      const errorResponse = NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: config.message || 'Too many requests, please try again later',
-          type: 'https://vibecode.dev/errors/rate-limit-exceeded',
+      const errorResponse = createProblemResponse({
+        title: 'Rate limit exceeded',
+        status: 429,
+        detail: config.message || 'Too many requests, please try again later',
+        type: 'https://vibecode.dev/errors/rate-limit-exceeded',
+        code: 'RATE_LIMIT_EXCEEDED',
+        extensions: {
           retryAfter: config.windowSeconds,
         },
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/problem+json',
-            'Retry-After': config.windowSeconds.toString(),
-            'X-RateLimit-Limit': config.maxRequests.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': Math.floor(resetTime / 1000).toString(),
-          },
-        }
-      )
+        headers: {
+          'Retry-After': config.windowSeconds.toString(),
+          'X-RateLimit-Limit': config.maxRequests.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.floor(resetTime / 1000).toString(),
+        },
+      })
 
       return {
         success: false,

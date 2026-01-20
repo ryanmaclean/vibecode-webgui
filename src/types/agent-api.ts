@@ -358,6 +358,9 @@ export interface ProblemDetails {
   /** Distributed tracing ID for debugging */
   trace_id?: string;
 
+  /** Stable machine-readable error code */
+  code?: string;
+
   /** Additional problem-specific fields */
   [key: string]: unknown;
 }

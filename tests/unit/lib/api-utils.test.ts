@@ -58,7 +58,9 @@ describe('API Utilities', () => {
 
       expect(result).toBeInstanceOf(NextResponse)
       const json = await (result as NextResponse).json()
-      expect(json.error).toBe('Authentication required')
+      expect(json.success).toBe(false)
+      expect(json.error.code).toBe('AUTHENTICATION_REQUIRED')
+      expect(json.error.message).toContain('Authentication required')
     })
 
     it('should return 401 when no user in session', async () => {
@@ -80,7 +82,7 @@ describe('API Utilities', () => {
 
       const json = await (result as NextResponse).json()
       expect(json).toHaveProperty('error')
-      expect(json.error).toContain('Authentication')
+      expect(json.error.message).toContain('Authentication')
     })
   })
 
@@ -145,7 +147,8 @@ describe('API Utilities', () => {
       const result = await requireRole('admin', request)
 
       const json = await (result as NextResponse).json()
-      expect(json.error).toBe('Insufficient permissions')
+      expect(json.error.code).toBe('INSUFFICIENT_PERMISSIONS')
+      expect(json.error.message).toContain('Required role')
     })
 
     it('should work with different role names', async () => {
@@ -259,15 +262,15 @@ describe('API Utilities', () => {
       expect(response).toBeInstanceOf(NextResponse)
       const json = await response.json()
 
-      expect(json.message).toBe('Success')
-      expect(json.result).toBe(42)
-      expect(json).toHaveProperty('timestamp')
+      expect(json.success).toBe(true)
+      expect(json.data).toEqual(data)
+      expect(json.meta.timestamp).toBeDefined()
     })
 
     it('should include additional fields', async () => {
       const data = { message: 'Success' }
       const additionalFields = { requestId: '123', processingTime: 100 }
-      const response = createSuccessResponse(data, additionalFields)
+      const response = createSuccessResponse(data, { additionalFields })
 
       const json = await response.json()
 
@@ -280,7 +283,8 @@ describe('API Utilities', () => {
 
       const json = await response.json()
 
-      expect(json).toHaveProperty('timestamp')
+      expect(json.success).toBe(true)
+      expect(json.meta.timestamp).toBeDefined()
     })
 
     it('should preserve nested objects', async () => {
@@ -295,9 +299,9 @@ describe('API Utilities', () => {
 
       const json = await response.json()
 
-      expect(json.user.id).toBe('123')
-      expect(json.user.profile.name).toBe('Test')
-      expect(json.items).toEqual([1, 2, 3])
+      expect(json.data.user.id).toBe('123')
+      expect(json.data.user.profile.name).toBe('Test')
+      expect(json.data.items).toEqual([1, 2, 3])
     })
   })
 
@@ -309,7 +313,8 @@ describe('API Utilities', () => {
       expect(response.status).toBe(500)
 
       const json = await response.json()
-      expect(json.error).toBe('Something went wrong')
+      expect(json.success).toBe(false)
+      expect(json.error.message).toBe('Something went wrong')
     })
 
     it('should create error response with custom status code', async () => {
@@ -322,7 +327,7 @@ describe('API Utilities', () => {
       const response = createErrorResponse('Error')
 
       const json = await response.json()
-      expect(json).toHaveProperty('timestamp')
+      expect(json.meta.timestamp).toBeDefined()
     })
 
     it('should include additional fields', async () => {
@@ -333,7 +338,7 @@ describe('API Utilities', () => {
 
       const json = await response.json()
       expect(json.field).toBe('email')
-      expect(json.code).toBe('INVALID_FORMAT')
+      expect(json.error.code).toBe('INVALID_FORMAT')
     })
 
     it('should work with various HTTP status codes', async () => {
@@ -353,7 +358,7 @@ describe('API Utilities', () => {
 
       expect(response.status).toBe(500)
       const json = await response.json()
-      expect(json.error).toBe('Database connection failed')
+      expect(json.error.message).toBe('Database connection failed')
     })
 
     it('should use fallback message in details', async () => {
@@ -361,7 +366,9 @@ describe('API Utilities', () => {
       const response = createErrorResponseFromError(error, 500, 'Database error')
 
       const json = await response.json()
-      expect(json.details).toBe('Database error')
+      expect(json.title).toBe('Database error')
+      expect(json.error.message).toBe('Connection timeout')
+      expect(json.error.code).toBe('INTERNAL_SERVER_ERROR')
     })
 
     it('should work with custom status code', async () => {
@@ -375,7 +382,7 @@ describe('API Utilities', () => {
       const response = createErrorResponseFromError('string error')
 
       const json = await response.json()
-      expect(json.error).toBe('Unknown error')
+      expect(json.error.message).toBe('Unknown error')
     })
 
     it('should include timestamp', async () => {
@@ -383,7 +390,7 @@ describe('API Utilities', () => {
       const response = createErrorResponseFromError(error)
 
       const json = await response.json()
-      expect(json).toHaveProperty('timestamp')
+      expect(json.meta.timestamp).toBeDefined()
     })
   })
 
@@ -393,14 +400,15 @@ describe('API Utilities', () => {
 
       expect(response).toBeInstanceOf(NextResponse)
       const json = await response.json()
-      expect(json.status).toBe('healthy')
+      expect(json.success).toBe(true)
+      expect(json.data.status).toBe('healthy')
     })
 
     it('should create health response with unhealthy status', async () => {
       const response = createHealthResponse('unhealthy')
 
       const json = await response.json()
-      expect(json.status).toBe('unhealthy')
+      expect(json.data.status).toBe('unhealthy')
     })
 
     it('should support all status types', async () => {
@@ -415,7 +423,7 @@ describe('API Utilities', () => {
       for (const status of statuses) {
         const response = createHealthResponse(status)
         const json = await response.json()
-        expect(json.status).toBe(status)
+        expect(json.data.status).toBe(status)
       }
     })
 
@@ -423,7 +431,7 @@ describe('API Utilities', () => {
       const response = createHealthResponse('healthy')
 
       const json = await response.json()
-      expect(json).toHaveProperty('timestamp')
+      expect(json.meta.timestamp).toBeDefined()
     })
 
     it('should include additional data', async () => {
@@ -435,17 +443,17 @@ describe('API Utilities', () => {
       const response = createHealthResponse('healthy', additionalData)
 
       const json = await response.json()
-      expect(json.database).toBe('connected')
-      expect(json.redis).toBe('connected')
-      expect(json.uptime).toBe(12345)
+      expect(json.data.database).toBe('connected')
+      expect(json.data.redis).toBe('connected')
+      expect(json.data.uptime).toBe(12345)
     })
 
     it('should handle empty additional data', async () => {
       const response = createHealthResponse('healthy', {})
 
       const json = await response.json()
-      expect(json.status).toBe('healthy')
-      expect(json).toHaveProperty('timestamp')
+      expect(json.data.status).toBe('healthy')
+      expect(json.meta.timestamp).toBeDefined()
     })
 
     it('should preserve nested additional data', async () => {
@@ -458,8 +466,8 @@ describe('API Utilities', () => {
       const response = createHealthResponse('healthy', additionalData)
 
       const json = await response.json()
-      expect(json.checks.database.status).toBe('ok')
-      expect(json.checks.cache.latency).toBe(2)
+      expect(json.data.checks.database.status).toBe('ok')
+      expect(json.data.checks.cache.latency).toBe(2)
     })
   })
 

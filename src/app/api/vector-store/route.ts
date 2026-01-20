@@ -9,6 +9,7 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { enhancedVectorStore } from '@/lib/vector-stores/enhanced-vector-store'
 import { z } from '@/lib/zod-compat'
+import { createErrorResponse } from '@/lib/utils/api-response'
 // import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic'
@@ -53,7 +54,10 @@ export async function GET(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return createErrorResponse('Unauthorized', 401, {
+        code: 'UNAUTHORIZED',
+        detail: 'Authentication required to access the vector store.',
+      })
     }
 
     const { searchParams } = new URL(req.url)
@@ -92,14 +96,10 @@ export async function GET(req: NextRequest) {
     })
   } catch (error) {
     console.error('Vector store API error:', error)
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Internal server error',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return createErrorResponse('Vector store error', 500, {
+      code: 'VECTOR_STORE_INTERNAL_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred while handling the vector store request.',
+    })
   }
 }
 
@@ -110,7 +110,10 @@ export async function POST(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return createErrorResponse('Unauthorized', 401, {
+        code: 'UNAUTHORIZED',
+        detail: 'Authentication required to search the vector store.',
+      })
     }
 
     const body = await req.json()
@@ -143,24 +146,16 @@ export async function POST(req: NextRequest) {
     console.error('Vector store search error:', error)
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid request parameters',
-          errors: error.issues
-        },
-        { status: 400 }
-      )
+      return createErrorResponse('Invalid request parameters', 400, {
+        code: 'VECTOR_STORE_INVALID_REQUEST',
+        errors: error.issues,
+      })
     }
 
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Search failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return createErrorResponse('Search failed', 500, {
+      code: 'VECTOR_STORE_SEARCH_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred during vector search.',
+    })
   }
 }
 
@@ -171,7 +166,10 @@ export async function PUT(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return createErrorResponse('Unauthorized', 401, {
+        code: 'UNAUTHORIZED',
+        detail: 'Authentication required to store documents.',
+      })
     }
 
     const body = await req.json()
@@ -200,24 +198,16 @@ export async function PUT(req: NextRequest) {
     console.error('Vector store storage error:', error)
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid request parameters',
-          errors: error.issues
-        },
-        { status: 400 }
-      )
+      return createErrorResponse('Invalid request parameters', 400, {
+        code: 'VECTOR_STORE_INVALID_REQUEST',
+        errors: error.issues,
+      })
     }
 
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Storage failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return createErrorResponse('Storage failed', 500, {
+      code: 'VECTOR_STORE_STORAGE_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred while storing documents.',
+    })
   }
 }
 
@@ -228,7 +218,10 @@ export async function DELETE(req: NextRequest) {
   try {
     const session = await getServerSession(authOptions)
     if (!session || !session.user || !session.user.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return createErrorResponse('Unauthorized', 401, {
+        code: 'UNAUTHORIZED',
+        detail: 'Authentication required to delete documents.',
+      })
     }
 
     const body = await req.json()
@@ -253,24 +246,16 @@ export async function DELETE(req: NextRequest) {
     console.error('Vector store deletion error:', error)
     
     if (error instanceof z.ZodError) {
-      return NextResponse.json(
-        {
-          status: 'error',
-          message: 'Invalid request parameters',
-          errors: error.issues
-        },
-        { status: 400 }
-      )
+      return createErrorResponse('Invalid request parameters', 400, {
+        code: 'VECTOR_STORE_INVALID_REQUEST',
+        errors: error.issues,
+      })
     }
 
-    return NextResponse.json(
-      {
-        status: 'error',
-        message: 'Deletion failed',
-        error: error instanceof Error ? error.message : 'Unknown error'
-      },
-      { status: 500 }
-    )
+    return createErrorResponse('Deletion failed', 500, {
+      code: 'VECTOR_STORE_DELETION_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred while deleting documents.',
+    })
   }
 }
 
