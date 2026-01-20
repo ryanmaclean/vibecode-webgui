@@ -4,7 +4,6 @@
  */
 
 import { jest } from '@jest/globals'
-import path from 'path'
 
 // Define SpyInstance type directly since it's not properly exported
 type SpyInstance = jest.SpiedFunction<any>
@@ -39,20 +38,14 @@ const mockTracer = {
   addTags: jest.fn()
 }
 
-const instrumentModulePath = path.join(process.cwd(), 'src/instrument')
-
 const loadHealthMonitoring = () => {
   let module: any
   jest.isolateModules(() => {
-    jest.doMock('../../instrument', () => ({
+    // Mock @/instrument - the path alias used by health-monitoring.ts
+    jest.doMock('@/instrument', () => ({
       __esModule: true,
       default: mockTracer
-    }), { virtual: true })
-
-    jest.doMock(instrumentModulePath, () => ({
-      __esModule: true,
-      default: mockTracer
-    }), { virtual: true })
+    }))
 
     module = require('@/lib/monitoring/health-monitoring')
   })
