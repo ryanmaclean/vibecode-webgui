@@ -3,6 +3,7 @@ import { body, param, query } from 'express-validator';
 import { AIController } from '../controllers/ai-controller';
 import { requirePermission } from '../middleware/auth';
 import { asyncHandler } from '../middleware/error-handler';
+import { cacheResponse } from '../middleware/response-cache';
 import { validationMiddleware } from '../middleware/validation';
 
 const router = Router();
@@ -57,6 +58,7 @@ router.get('/models',
         query('healthy_only').optional().isBoolean().withMessage('Healthy only must be a boolean')
     ],
     validationMiddleware,
+    cacheResponse({ ttlSeconds: 300, keyPrefix: 'cache:api:models' }),
     asyncHandler(aiController.getModels.bind(aiController))
 );
 
@@ -67,6 +69,7 @@ router.get('/models/:modelId',
         param('modelId').isString().notEmpty().withMessage('Model ID is required')
     ],
     validationMiddleware,
+    cacheResponse({ ttlSeconds: 300, keyPrefix: 'cache:api:model' }),
     asyncHandler(aiController.getModel.bind(aiController))
 );
 
@@ -104,6 +107,7 @@ router.get('/models/:modelId/metrics',
         param('modelId').isString().notEmpty().withMessage('Model ID is required')
     ],
     validationMiddleware,
+    cacheResponse({ ttlSeconds: 60, keyPrefix: 'cache:api:model-metrics' }),
     asyncHandler(aiController.getModelMetrics.bind(aiController))
 );
 
@@ -147,6 +151,7 @@ router.post('/validate',
 // Get service status
 router.get('/status',
     requirePermission('ai:access'),
+    cacheResponse({ ttlSeconds: 30, keyPrefix: 'cache:api:status' }),
     asyncHandler(aiController.getServiceStatus.bind(aiController))
 );
 
