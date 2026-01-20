@@ -138,6 +138,7 @@ migration-report.txt
 *.conflict-backup-*
 
 .claude/
+.beads/
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
