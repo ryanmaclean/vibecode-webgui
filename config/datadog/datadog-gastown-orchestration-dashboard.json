@@ -1,14 +1,137 @@
 {
   "title": "Gas Town Orchestration Monitor",
-  "description": "Real-time monitoring of Gas Town multi-agent orchestration - polecats, beads, PRs, GitHub Actions CI",
+  "description": "Real-time monitoring of Gas Town multi-agent orchestration with dedicated polecat lifecycle, workload, cost, and alert visibility",
   "widgets": [
     {
       "id": "active-polecats",
       "definition": {
         "type": "query_value",
-        "requests": [{"q": "sum:gastown.polecats.active{*}", "aggregator": "last"}],
+        "requests": [
+          {
+            "q": "sum:gastown.polecats.active{$rig,$agent_type,$polecat}",
+            "aggregator": "last"
+          }
+        ],
         "title": "Active Polecats",
         "precision": 0
+      }
+    },
+    {
+      "id": "active-polecats-by-rig",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:gastown.polecats.active{$rig,$agent_type,$polecat} by {rig}",
+            "display_type": "area",
+            "style": {"palette": "dog_classic"}
+          }
+        ],
+        "title": "Active Polecats by Rig",
+        "show_legend": true
+      }
+    },
+    {
+      "id": "polecat-lifecycle",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:gastown.polecats.spawned{$rig,$agent_type,$polecat}.as_count() by {agent_type}",
+            "display_type": "line",
+            "style": {"palette": "purple"}
+          },
+          {
+            "q": "sum:gastown.polecats.completed{$rig,$agent_type,$polecat}.as_count() by {agent_type}",
+            "display_type": "line",
+            "style": {"palette": "green"}
+          },
+          {
+            "q": "sum:gastown.polecats.failed{$rig,$agent_type,$polecat}.as_count() by {agent_type}",
+            "display_type": "line",
+            "style": {"palette": "red"}
+          }
+        ],
+        "title": "Polecat Lifecycle by Agent Type",
+        "show_legend": true
+      }
+    },
+    {
+      "id": "polecat-work-distribution",
+      "definition": {
+        "type": "heatmap",
+        "requests": [
+          {
+            "q": "sum:gastown.beads.hooked{$rig,$priority,$agent_type,$polecat} by {priority,rig}",
+            "style": {"palette": "dog_classic"}
+          }
+        ],
+        "title": "Work Distribution by Priority & Rig"
+      }
+    },
+    {
+      "id": "polecat-token-usage",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "sum:gastown.polecats.tokens.generated{$rig,$agent_type,$polecat}.as_rate() by {polecat}",
+            "display_type": "line",
+            "style": {"palette": "cool"}
+          },
+          {
+            "q": "sum:gastown.polecats.cost.usd{$rig,$agent_type,$polecat}.as_rate()",
+            "display_type": "line",
+            "style": {"palette": "orange"},
+            "on_right_yaxis": true
+          }
+        ],
+        "title": "Token Usage & Cost per Polecat",
+        "show_legend": true,
+        "yaxis": {"label": "Tokens/sec", "scale": "linear", "include_zero": true},
+        "yaxis_secondary": {"label": "USD/sec", "scale": "linear", "include_zero": true}
+      }
+    },
+    {
+      "id": "polecat-error-rate",
+      "definition": {
+        "type": "query_value",
+        "requests": [
+          {
+            "q": "(sum:gastown.polecats.failed{$rig,$agent_type,$polecat}.as_rate() / sum:gastown.polecats.spawned{$rig,$agent_type,$polecat}.as_rate()) * 100",
+            "aggregator": "last"
+          }
+        ],
+        "title": "Polecat Error Rate",
+        "custom_unit": "%",
+        "precision": 2
+      }
+    },
+    {
+      "id": "polecat-error-trend",
+      "definition": {
+        "type": "timeseries",
+        "requests": [
+          {
+            "q": "(sum:gastown.polecats.failed{$rig,$agent_type,$polecat}.as_rate() / sum:gastown.polecats.spawned{$rig,$agent_type,$polecat}.as_rate()) * 100",
+            "display_type": "line",
+            "style": {"palette": "red"}
+          },
+          {
+            "q": "sum:gastown.polecats.failed{$rig,$agent_type,$polecat}.as_count() by {agent_type}",
+            "display_type": "bars",
+            "style": {"palette": "dog_classic"},
+            "on_right_yaxis": true
+          }
+        ],
+        "title": "Error Trend & Alert Thresholds",
+        "markers": [
+          {"value": "y = 5", "display_type": "warning dashed", "label": "Warning >5%"},
+          {"value": "y = 10", "display_type": "error dashed", "label": "Critical >10%"}
+        ],
+        "show_legend": true,
+        "yaxis": {"label": "Error Rate (%)", "scale": "linear", "include_zero": true},
+        "yaxis_secondary": {"label": "Failures/min", "scale": "linear", "include_zero": true}
       }
     },
     {
@@ -41,14 +164,6 @@
           {"q": "sum:ci.test.tests_failed{service:vibecode-webgui}.as_count()", "display_type": "line", "style": {"palette": "red"}}
         ],
         "title": "CI Test Results"
-      }
-    },
-    {
-      "id": "polecat-activity",
-      "definition": {
-        "type": "timeseries",
-        "requests": [{"q": "sum:gastown.polecats.active{*} by {rig}", "display_type": "area"}],
-        "title": "Polecat Activity by Rig"
       }
     },
     {
@@ -97,7 +212,9 @@
   ],
   "template_variables": [
     {"name": "rig", "default": "*", "prefix": "rig"},
-    {"name": "priority", "default": "*", "prefix": "priority"}
+    {"name": "priority", "default": "*", "prefix": "priority"},
+    {"name": "agent_type", "default": "*", "prefix": "agent_type"},
+    {"name": "polecat", "default": "*", "prefix": "polecat"}
   ],
   "layout_type": "ordered"
 }
