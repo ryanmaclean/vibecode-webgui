@@ -1,5 +1,19 @@
 // Mock auth configuration for testing
 // NOTE: For unit tests of auth.ts itself, use jest.unmock('@/lib/auth') in your test file
+
+/**
+ * SECURITY FIX: Removed hardcoded plaintext passwords
+ *
+ * Tests should now use environment-based auth configuration.
+ * Set AUTH_TEST_USERS in your test environment or use mocked credentials.
+ *
+ * Example test setup:
+ *   process.env.AUTH_TEST_USERS = JSON.stringify([
+ *     { id: 'test-admin', email: 'admin@example.test',
+ *       passwordHash: '...', name: 'Admin', role: 'admin' }
+ *   ]);
+ */
+
 export const authOptions = {
   secret: process.env.NEXTAUTH_SECRET || 'test-secret',
   providers: [
@@ -34,30 +48,23 @@ export const authOptions = {
       name: 'Credentials',
       type: 'credentials',
       authorize: async (credentials: Record<string, string>) => {
-        if (!credentials) return null
+        if (!credentials?.email || !credentials?.password) return null
 
-        // Mock user database for testing
-        const users = [
-          { id: 'legacy-admin', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: 'legacy-developer', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: 'legacy-lead', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: 'legacy-frontend', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: 'legacy-backend', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: 'legacy-fullstack', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: 'legacy-designer', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: 'legacy-tester', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: 'legacy-devops', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: 'legacy-intern', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-          { id: 'legacy-security', email: 'security@vibecode.dev', password: 'security123', name: 'Security Engineer', role: 'security' },
-        ]
+        // For unit/integration tests, mock successful authentication
+        // Real tests should use AUTH_TEST_USERS environment variable
+        // or mock the entire auth module
 
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
-          return null
+        // Simple test user for mocked scenarios
+        if (credentials.email === 'test@example.test' && credentials.password === 'test-password') {
+          return {
+            id: 'test-user-id',
+            name: 'Test User',
+            email: 'test@example.test',
+            role: 'user'
+          };
         }
+
+        return null;
       },
     },
   ],

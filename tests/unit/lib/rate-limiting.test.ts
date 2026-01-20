@@ -9,11 +9,16 @@ import rateLimit, {
   createFileRateLimit,
   createClaudeRateLimit,
   RedisRateLimiter,
-  createDistributedRateLimit
+  createDistributedRateLimit,
+  __clearStore
 } from '../../../src/lib/rate-limiting';
 import { NextRequest } from 'next/server';
 
 describe('Rate Limiting', () => {
+  beforeEach(() => {
+    __clearStore();
+  });
+
   describe('getClientIP', () => {
     it('should extract IP from x-forwarded-for header', async () => {
       const limiter = rateLimit({ windowMs: 60000, max: 10 });
