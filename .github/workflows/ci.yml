@@ -11,10 +11,6 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-env:
-  DD_SERVICE: vibecode-webgui
-  DD_ENV: ci
-
 jobs:
   lint:
     name: Lint & Type Check
@@ -77,27 +73,22 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
-      - name: Install Datadog CI CLI
-        run: npm install -g @datadog/datadog-ci
-
       - name: Run all tests with coverage
         run: npm run test:coverage
         env:
-          # Datadog CI Visibility - Test instrumentation
+          DD_CI_VISIBILITY_ENABLED: true
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+          DD_ENV: ci
+          DD_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+          DD_GIT_COMMIT_SHA: ${{ github.sha }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_SERVICE: vibecode-webgui
+          DD_SITE: datadoghq.com
+          DD_VERSION: ${{ github.sha }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
-          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
-          DD_SITE: datadoghq.com
-          DD_SERVICE: ${{ env.DD_SERVICE }}
-          DD_ENV: ${{ env.DD_ENV }}
-          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-          DD_GIT_COMMIT_SHA: ${{ github.sha }}
-          DD_GIT_BRANCH: ${{ github.ref_name }}
-          DD_GIT_COMMIT_MESSAGE: ${{ github.event.head_commit.message }}
-          DD_GIT_COMMIT_AUTHOR_NAME: ${{ github.event.head_commit.author.name }}
-          DD_GIT_COMMIT_AUTHOR_EMAIL: ${{ github.event.head_commit.author.email }}
+          NODE_OPTIONS: -r dd-trace/ci/init
           REDIS_URL: redis://localhost:6379
           CI: true
 
@@ -106,15 +97,11 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.com
-          DD_ENV: ${{ env.DD_ENV }}
-          DD_SERVICE: ${{ env.DD_SERVICE }}
+          DD_ENV: ci
+          DD_SERVICE: vibecode-webgui
         run: |
-          # Upload JUnit XML test results with flaky test detection
-          datadog-ci junit upload \
-            --service $DD_SERVICE \
-            --env $DD_ENV \
-            --tags "test.framework:jest,ci.workflow:${{ github.workflow }},ci.job:test" \
-            test-results/*.xml || echo "No test results to upload"
+          npm install -g @datadog/datadog-ci
+          datadog-ci junit upload --service vibecode-webgui test-results/*.xml || echo "No test results to upload"
 
       - name: Generate test summary
         if: always()
@@ -259,36 +246,3 @@ jobs:
 
           echo "" >> $GITHUB_STEP_SUMMARY
           echo "### All critical jobs passed! 🎉" >> $GITHUB_STEP_SUMMARY
-
-  # Datadog CI Visibility - Deployment tracking
-  datadog-deployment:
-    name: Track Deployment Event
-    runs-on: ubuntu-latest
-    needs: [status-check]
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Install Datadog CI CLI
-        run: npm install -g @datadog/datadog-ci
-
-      - name: Send deployment event to Datadog
-        env:
-          DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_SITE: datadoghq.com
-        run: |
-          if [ -z "$DD_API_KEY" ]; then
-            echo "DD_API_KEY not set, skipping deployment tracking"
-            exit 0
-          fi
-
-          # Create deployment event
-          datadog-ci deployment mark \
-            --service ${{ env.DD_SERVICE }} \
-            --env production \
-            --revision ${{ github.sha }} \
-            --tags "branch:main,workflow:${{ github.workflow }},actor:${{ github.actor }}" \
-            || echo "Failed to send deployment event"
-
-          echo "## Deployment Event Tracked" >> $GITHUB_STEP_SUMMARY
-          echo "Sent deployment event for commit ${{ github.sha }} to Datadog" >> $GITHUB_STEP_SUMMARY
