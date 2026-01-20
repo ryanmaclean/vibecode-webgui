@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: webhook-service
+    app.kubernetes.io/component: integrations
+spec:
+  selector:
+    app: webhook-service
+  ports:
+    - name: http
+      protocol: TCP
+      port: 5001
+      targetPort: 5001
+  type: ClusterIP

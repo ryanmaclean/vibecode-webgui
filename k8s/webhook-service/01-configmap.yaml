@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: webhook-service-config
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: webhook-service
+    app.kubernetes.io/component: integrations
+
+data:
+  PORT: "5001"
+  JSON_LIMIT: "1mb"
