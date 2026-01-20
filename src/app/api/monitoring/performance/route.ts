@@ -49,16 +49,16 @@ const performanceMonitor = {
   }),
   optimizeMemoryUsage: () => ({ status: 'success', message: 'Memory optimization triggered' }),
   clearCache: () => ({ status: 'success', message: 'Cache cleared successfully' }),
-  submitLoadTestResults: async (data: any) => Math.random() > 0.5,
-  submitSyntheticTestResults: async (data: any) => Math.random() > 0.5,
-  submitLighthouseResults: async (data: any) => Math.random() > 0.5,
-  trackWebVitals: (data: any) => {
+  submitLoadTestResults: async () => Math.random() > 0.5,
+  submitSyntheticTestResults: async () => Math.random() > 0.5,
+  submitLighthouseResults: async () => Math.random() > 0.5,
+  trackWebVitals: () => {
     // Web vitals tracked
   },
-  trackAPIPerformance: (endpoint: string, method: string, responseTime: number, status: number) => {
-    // API performance tracked  
+  trackAPIPerformance: () => {
+    // API performance tracked
   },
-  trackResourceLoading: (data: any) => {
+  trackResourceLoading: () => {
     // Resource loading tracked
   }
 }
@@ -115,12 +115,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    const { type, data } = body
+    const { type } = body
 
     switch (type) {
       case 'load_test_results':
-        const loadTestPassed = await performanceMonitor.submitLoadTestResults(data)
-        
+        const loadTestPassed = await performanceMonitor.submitLoadTestResults()
+
         return NextResponse.json({
           success: true,
           test_passed: loadTestPassed,
@@ -129,8 +129,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'synthetic_test_results':
-        const syntheticTestPassed = await performanceMonitor.submitSyntheticTestResults(data)
-        
+        const syntheticTestPassed = await performanceMonitor.submitSyntheticTestResults()
+
         return NextResponse.json({
           success: true,
           test_passed: syntheticTestPassed,
@@ -139,8 +139,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'lighthouse_results':
-        const lighthousePassed = await performanceMonitor.submitLighthouseResults(data)
-        
+        const lighthousePassed = await performanceMonitor.submitLighthouseResults()
+
         return NextResponse.json({
           success: true,
           audit_passed: lighthousePassed,
@@ -149,8 +149,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'web_vitals':
-        performanceMonitor.trackWebVitals(data)
-        
+        performanceMonitor.trackWebVitals()
+
         return NextResponse.json({
           success: true,
           message: 'Web Vitals metric recorded',
@@ -158,13 +158,8 @@ export async function POST(request: NextRequest) {
         })
 
       case 'api_performance':
-        performanceMonitor.trackAPIPerformance(
-          data.endpoint,
-          data.method,
-          data.responseTime,
-          data.status
-        )
-        
+        performanceMonitor.trackAPIPerformance()
+
         return NextResponse.json({
           success: true,
           message: 'API performance metric recorded',
@@ -172,7 +167,7 @@ export async function POST(request: NextRequest) {
         })
 
       case 'resource_performance':
-        performanceMonitor.trackResourceLoading(data)
+        performanceMonitor.trackResourceLoading()
         
         return NextResponse.json({
           success: true,

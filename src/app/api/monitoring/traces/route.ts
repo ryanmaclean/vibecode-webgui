@@ -109,7 +109,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET(request: NextRequest) {
+export async function GET() {
   return NextResponse.json({
     endpoint: 'OpenTelemetry Traces Collection',
     description: 'Receives OTLP trace data from client-side instrumentation',

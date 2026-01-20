@@ -9,12 +9,42 @@ import { withAIAuth, AuthenticatedRequest } from '@/lib/auth/middleware'
 import { logger } from '@/lib/logger'
 import { z } from 'zod'
 import { cache, CacheTTL } from '@/lib/cache/unified-cache-client'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { createErrorResponseFromError } from '@/lib/utils/api-response'
 import * as crypto from 'crypto'
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 const { ReadableStream, TextEncoder } = globalThis
+
+const chatRateLimiter = createAPIRateLimit(60)
+type ChatRateLimitResult = Awaited<ReturnType<typeof chatRateLimiter>>
+
+function applyChatRateLimitHeaders(response: NextResponse, info: ChatRateLimitResult): NextResponse {
+  response.headers.set('X-RateLimit-Limit', info.limit.toString())
+  response.headers.set('X-RateLimit-Remaining', info.remaining.toString())
+  response.headers.set('X-RateLimit-Reset', info.reset.toString())
+  return response
+}
+
+function buildChatRateLimitResponse(info: ChatRateLimitResult): NextResponse {
+  const retryAfter = info.retryAfter ?? 60
+  return applyChatRateLimitHeaders(
+    NextResponse.json(
+      {
+        error: 'Rate limit exceeded',
+        retryAfter
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': retryAfter.toString()
+        }
+      }
+    ),
+    info
+  )
+}
 
 // Zod validation schema for chat requests
 const chatRequestSchema = z.object({
@@ -62,6 +92,11 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
   const startTime = Date.now()
   const requestId = crypto.randomUUID()
   let processingTime = 0
+  const rateLimitInfo = await chatRateLimiter(request)
+
+  if (!rateLimitInfo.success) {
+    return buildChatRateLimitResponse(rateLimitInfo)
+  }
 
   // Record initial request metrics
   logger.info('vibecode.api.ai.chat.requests', {
@@ -77,20 +112,23 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
     if (!validation.success) {
       logAIInteraction(request, 'chat_error', {
         error: 'Request validation failed',
-        validationErrors: validation.error.errors,
+        validationErrors: validation.error.issues,
         userId: request.user?.id,
       });
 
-      return NextResponse.json(
-        { 
+      return applyChatRateLimitHeaders(
+        NextResponse.json(
+        {
           error: 'Invalid request format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map((err) => ({
             field: err.path.join('.'),
             message: err.message
           }))
         },
         { status: 400 }
-      );
+      ),
+      rateLimitInfo
+    );
     }
 
     const { messages, model, stream, temperature, maxTokens } = validation.data as z.infer<typeof chatRequestSchema>;
@@ -112,12 +150,12 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           userRole: request.user?.role,
         });
         
-        return NextResponse.json({
+        return applyChatRateLimitHeaders(NextResponse.json({
           ...cached,
           from_cache: true,
           cache_hit: true,
           processing_time_ms: Date.now() - startTime
-        });
+        }), rateLimitInfo);
       }
     }
 
@@ -236,13 +274,16 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
           })
           
           // Use NextResponse for compatibility
-          return new NextResponse('AI functionality temporarily disabled for build compatibility', {
-            status: 200,
-            headers: {
-              'Content-Type': 'text/plain',
-              'X-Processing-Time': processingTime.toString(),
-            },
-          });
+          return applyChatRateLimitHeaders(
+            new NextResponse('AI functionality temporarily disabled for build compatibility', {
+              status: 200,
+              headers: {
+                'Content-Type': 'text/plain',
+                'X-Processing-Time': processingTime.toString(),
+              },
+            }),
+            rateLimitInfo
+          );
         }
       } catch (streamError) {
         logger.error('Streaming error', {
@@ -281,14 +322,17 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         }
       });
 
-      return new NextResponse(fallbackStream, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-          'X-Processing-Time': processingTime.toString(),
-        },
-      });
+      return applyChatRateLimitHeaders(
+        new NextResponse(fallbackStream, {
+          headers: {
+            'Content-Type': 'text/event-stream',
+            'Cache-Control': 'no-cache',
+            'Connection': 'keep-alive',
+            'X-Processing-Time': processingTime.toString(),
+          },
+        }),
+        rateLimitInfo
+      );
     }
 
     // Regular JSON response
@@ -327,7 +371,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       })
     }
     
-    return NextResponse.json(responseData);
+    return applyChatRateLimitHeaders(NextResponse.json(responseData), rateLimitInfo);
 
   } catch (error) {
     logger.error('Chat API error', {
@@ -369,24 +413,32 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       })
     }
 
-    return createErrorResponseFromError(
+    const errorResponse = createErrorResponseFromError(
       error,
       500,
       'AI chat request failed',
       requestId
     );
+
+    return applyChatRateLimitHeaders(errorResponse, rateLimitInfo)
   }
 }
 
 // Health check endpoint (authenticated)
 async function handleGET(request: AuthenticatedRequest): Promise<NextResponse> {
+  const rateLimitInfo = await chatRateLimiter(request)
+
+  if (!rateLimitInfo.success) {
+    return buildChatRateLimitResponse(rateLimitInfo)
+  }
+
   logAIInteraction(request, 'chat_request', {
     type: 'health_check',
     userId: request.user?.id,
     userRole: request.user?.role,
   });
 
-  return NextResponse.json({
+  return applyChatRateLimitHeaders(NextResponse.json({
     status: 'healthy',
     service: 'ai-chat-api',
     timestamp: new Date().toISOString(),
@@ -417,7 +469,7 @@ async function handleGET(request: AuthenticatedRequest): Promise<NextResponse> {
       rate_limited: true,
       input_validated: true,
     },
-  });
+  }), rateLimitInfo);
 }
 
 // Export authenticated handlers

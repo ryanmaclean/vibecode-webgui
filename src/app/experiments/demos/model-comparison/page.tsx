@@ -5,6 +5,14 @@ import { ModelLeaderboard, ModelComparisonChart } from '@/components/experiments
 import { askMultiModel, getModelLeaderboard, MODELS } from '@/lib/experiments/scenarios/multi-model';
 import type { ModelResponse } from '@/lib/experiments/scenarios/multi-model';
 import type { ModelLeaderboardEntry } from '@/components/experiments/ModelLeaderboard';
+import { z } from '@/lib/zod-compat';
+
+const questionSchema = z.object({
+  question: z
+    .string()
+    .trim()
+    .min(5, 'Please enter a question with at least 5 characters'),
+});
 
 /**
  * Multi-Model AI Selection Experiment Demo Page
@@ -51,10 +59,15 @@ export default function ModelComparisonPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!question.trim()) {
-      setError('Please enter a question');
+    const validation = questionSchema.safeParse({ question });
+    if (!validation.success) {
+      const [issue] = validation.error.issues;
+      setError(issue?.message ?? 'Invalid question');
       return;
     }
+
+    const cleanedQuestion = validation.data.question;
+    setQuestion(cleanedQuestion);
 
     setLoading(true);
     setError(null);
@@ -67,7 +80,7 @@ export default function ModelComparisonPage() {
       // Ask multi-model
       const result = await askMultiModel({
         userId,
-        question: question.trim()
+        question: cleanedQuestion
       });
 
       setResponse(result);

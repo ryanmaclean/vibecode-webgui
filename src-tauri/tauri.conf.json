@@ -12,9 +12,6 @@
   "bundle": {
     "active": true,
     "targets": "all",
-    "resources": [
-      "binaries/vibecode-vm"
-    ],
     "externalBin": [
       "binaries/vibecode-vm"
     ],

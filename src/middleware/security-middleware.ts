@@ -294,13 +294,8 @@ async function validateRequestSecurity(
             const body = JSON.parse(bodyText);
             validateAIQuery(body);
           
-          // Reconstruct request with validated body
-          const newRequest = new NextRequest(request.url, {
-            method: request.method,
-            headers: request.headers,
-            body: bodyText
-          });
-          
+          // Request validated successfully
+          // Note: Request reconstruction removed as it wasn't used
             return { valid: true };
           }
         } catch (error) {
@@ -324,11 +319,11 @@ async function validateRequestSecurity(
 /**
  * CORS validation
  */
-function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<string, string> } {
+function validateCORS(request: NextRequest): { valid: boolean; headers: Record<string, string> } {
   const origin = request.headers.get('origin');
-  
+
   if (!origin) {
-    return { valid: true }; // Same-origin requests don't have origin header
+    return { valid: true, headers: {} }; // Same-origin requests don't have origin header
   }
 
   if (SECURITY_CONFIG.allowedOrigins.includes(origin)) {
@@ -341,7 +336,7 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
     };
   }
 
-  return { valid: false };
+  return { valid: false, headers: {} };
 }
 
 /**

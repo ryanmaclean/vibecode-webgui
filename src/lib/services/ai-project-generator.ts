@@ -14,7 +14,7 @@ const ProjectTemplateSchema = z.object({
   framework: z.enum(['react', 'nextjs', 'vue', 'angular', 'svelte', 'node', 'python', 'go']),
   features: z.array(z.string()),
   dependencies: z.array(z.string()),
-  structure: z.record(z.string()), // file path -> content
+  structure: z.record(z.string(), z.string()), // file path -> content
   dockerfile: z.string().optional(),
   readme: z.string()
 })

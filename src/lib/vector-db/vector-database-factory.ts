@@ -13,6 +13,7 @@ import {
   PostgresVectorDatabaseAdapter,
   PostgresVectorDatabaseConfig,
 } from './postgres-vector-database-adapter';
+import { EnhancedVectorDatabaseAdapter } from './enhanced-vector-database-adapter';
 // import { logger } from '@/lib/logger';
 
 export class VectorDatabaseFactory {
@@ -25,8 +26,10 @@ export class VectorDatabaseFactory {
    */
   static async create(config: VectorDatabaseConfig): Promise<VectorDatabaseInterface> {
     switch (config.provider) {
-      case VectorDatabaseProvider.POSTGRES:
-        return new PostgresVectorDatabaseAdapter(config as PostgresVectorDatabaseConfig);
+      case VectorDatabaseProvider.POSTGRES: {
+        const adapter = new PostgresVectorDatabaseAdapter(config as PostgresVectorDatabaseConfig);
+        return new EnhancedVectorDatabaseAdapter(adapter, config);
+      }
 
       case VectorDatabaseProvider.SQLSERVER:
         console.warn('SQL Server adapter not yet implemented', {

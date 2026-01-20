@@ -122,6 +122,7 @@ export default function CollaborativeEditingSessions({
   const [showInviteModal, setShowInviteModal] = useState(false)
   const [selectedSession, setSelectedSession] = useState<CollaborativeSession | null>(null)
   const [inviteLink, setInviteLink] = useState('')
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [newSessionConfig, setNewSessionConfig] = useState<Partial<CollaborativeSession>>({
     sessionName: '',
     permissions: {
@@ -162,10 +163,13 @@ export default function CollaborativeEditingSessions({
 
     try {
       await navigator.clipboard.writeText(inviteLink)
-      // TODO: Show success toast
+      setCopyStatus('success')
+      // Reset status after 2 seconds
+      setTimeout(() => setCopyStatus('idle'), 2000)
     } catch (error) {
       console.error('Failed to copy invite link:', error)
-      // TODO: Show error toast
+      setCopyStatus('error')
+      setTimeout(() => setCopyStatus('idle'), 2000)
     }
   }, [inviteLink])
 
@@ -576,9 +580,22 @@ export default function CollaborativeEditingSessions({
                     />
                     <button
                       onClick={copyInviteLink}
-                      className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                      className={`px-3 py-2 rounded transition-colors ${
+                        copyStatus === 'success'
+                          ? 'bg-green-600 text-white'
+                          : copyStatus === 'error'
+                          ? 'bg-red-600 text-white'
+                          : 'bg-blue-600 text-white hover:bg-blue-700'
+                      }`}
+                      aria-label={copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed to copy' : 'Copy link'}
                     >
-                      <Copy className="w-4 h-4" />
+                      {copyStatus === 'success' ? (
+                        <CheckCircle className="w-4 h-4" />
+                      ) : copyStatus === 'error' ? (
+                        <XCircle className="w-4 h-4" />
+                      ) : (
+                        <Copy className="w-4 h-4" />
+                      )}
                     </button>
                   </div>
                 </div>

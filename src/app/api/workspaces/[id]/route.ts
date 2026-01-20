@@ -56,7 +56,7 @@ function validateWorkspaceId(id: string): { valid: boolean; error?: string } {
     if (error instanceof z.ZodError) {
       return {
         valid: false,
-        error: error.errors.map(e => e.message).join(', ')
+        error: error.issues.map(e => e.message).join(', ')
       }
     }
     return { valid: false, error: 'Validation failed' }
@@ -206,13 +206,13 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
     if (!updateValidation.success) {
       console.warn('Invalid workspace update payload', {
         workspaceId,
-        errors: updateValidation.error.errors,
+        errors: updateValidation.error.issues,
         ip: request.headers.get('x-forwarded-for') || 'unknown'
       })
       return NextResponse.json(
         {
           error: 'Invalid update payload',
-          details: updateValidation.error.errors.map(e => `${e.path.join('.')}: ${e.message}`)
+          details: updateValidation.error.issues.map(e => `${e.path.join('.')}: ${e.message}`)
         },
         { status: 400 }
       )

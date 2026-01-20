@@ -77,16 +77,16 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       // Check if it's a provider validation error
-      const providerError = error.errors.find(e => e.path.includes('provider'))
+      const providerError = error.issues.find(e => e.path.includes('provider'))
       if (providerError) {
         return NextResponse.json({
           error: providerError.message,
-          details: error.errors
+          details: error.issues
         }, { status: 400 })
       }
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -159,7 +159,7 @@ export async function PUT(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid SAML response format',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 

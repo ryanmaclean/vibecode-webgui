@@ -9,10 +9,13 @@
     "dev:sequential-thinking": "PORT=${PORT:-3004} node --watch servers/sequential_thinking/server.js"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.0.0"
+    "@modelcontextprotocol/sdk": "^1.25.2"
   },
   "engines": {
     "node": ">=16.0.0"
+  },
+  "overrides": {
+    "hono": "^4.11.4"
   },
   "private": true
 }

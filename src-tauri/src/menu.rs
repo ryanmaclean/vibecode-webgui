@@ -9,6 +9,7 @@ use tauri::tray::TrayIconBuilder;
 ///
 /// Menu structure:
 /// - Open VibeCode
+/// - Open OpenVSCode Server
 /// - Separator
 /// - Start Services
 /// - Stop Services
@@ -17,6 +18,7 @@ use tauri::tray::TrayIconBuilder;
 /// - Quit
 pub fn create_system_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let open_item = MenuItem::with_id(app, "open", "Open VibeCode", true, None::<&str>)?;
+    let openvscode_item = MenuItem::with_id(app, "openvscode", "Open OpenVSCode Server", true, None::<&str>)?;
     let start_item = MenuItem::with_id(app, "start", "Start Services", true, None::<&str>)?;
     let stop_item = MenuItem::with_id(app, "stop", "Stop Services", true, None::<&str>)?;
     let restart_item = MenuItem::with_id(app, "restart", "Restart Services", true, None::<&str>)?;
@@ -26,6 +28,7 @@ pub fn create_system_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Err
         app,
         &[
             &open_item,
+            &openvscode_item,
             &PredefinedMenuItem::separator(app)?,
             &start_item,
             &stop_item,
@@ -47,6 +50,7 @@ pub fn create_system_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Err
 ///
 /// Events:
 /// - "open": Shows and focuses the main window
+/// - "openvscode": Emits "open-openvscode" event to frontend to open OpenVSCode Server
 /// - "start": Emits "start-services" event to frontend
 /// - "stop": Emits "stop-services" event to frontend
 /// - "restart": Emits "restart-services" event to frontend
@@ -61,6 +65,11 @@ fn handle_menu_event(app: &AppHandle, event: tauri::menu::MenuEvent) {
                 if let Err(e) = window.set_focus() {
                     eprintln!("Failed to focus window: {}", e);
                 }
+            }
+        }
+        "openvscode" => {
+            if let Err(e) = app.emit("open-openvscode", ()) {
+                eprintln!("Failed to emit open-openvscode event: {}", e);
             }
         }
         "start" => {

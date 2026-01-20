@@ -8,6 +8,12 @@
 import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
+import { z } from '@/lib/zod-compat'
+
+const credentialsSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+})
 
 export default function SimpleSignInForm() {
   const [email, setEmail] = useState('developer@vibecode.dev')
@@ -21,10 +27,22 @@ export default function SimpleSignInForm() {
     setError(null)
     setIsSubmitting(true)
 
+    const validation = credentialsSchema.safeParse({ email, password })
+    if (!validation.success) {
+      const [issue] = validation.error.issues
+      setError(issue?.message ?? 'Invalid credentials')
+      setIsSubmitting(false)
+      return
+    }
+
+    const { email: sanitizedEmail, password: sanitizedPassword } = validation.data
+    setEmail(sanitizedEmail)
+    setPassword(sanitizedPassword)
+
     try {
       const result = await signIn('credentials', {
-        email,
-        password,
+        email: sanitizedEmail,
+        password: sanitizedPassword,
         redirect: false,
       })
 

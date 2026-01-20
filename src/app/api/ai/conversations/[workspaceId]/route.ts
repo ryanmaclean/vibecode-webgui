@@ -24,7 +24,7 @@ const conversationMessageSchema = z.object({
     .min(1, 'Message is required')
     .max(5000, 'Message too long')
     .regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
   model: z.string()
     .min(1, 'Model name is required')
     .max(100, 'Model name too long')
@@ -50,7 +50,7 @@ export async function GET(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -102,7 +102,7 @@ export async function POST(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: workspaceValidation.error.errors.map(err => ({
+          details: workspaceValidation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -117,7 +117,7 @@ export async function POST(
       return NextResponse.json(
         { 
           error: 'Invalid request format',
-          details: messageValidation.error.errors.map(err => ({
+          details: messageValidation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -208,7 +208,7 @@ export async function DELETE(
       return NextResponse.json(
         { 
           error: 'Invalid workspace ID format',
-          details: validation.error.errors.map(err => ({
+          details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))

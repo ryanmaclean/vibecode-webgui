@@ -1,0 +1,113 @@
+# Datadog APM Integration for Gas Town
+# Traces all agent work and reports to Datadog
+
+name: datadog-apm
+description: "APM tracing for Gas Town agents using dd-trace"
+
+# APM Configuration
+apm:
+  enabled: true
+  service: gastown-agents
+  env: development
+  version: "1.0.0"
+
+  # dd-trace for JavaScript/TypeScript
+  javascript:
+    tracer: dd-trace
+    config:
+      logInjection: true
+      runtimeMetrics: true
+      profiling: true
+
+  # ddtrace for Python
+  python:
+    tracer: ddtrace
+    config:
+      patch_all: true
+      analytics_enabled: true
+
+# Agent-specific spans
+spans:
+  # Sensei (Mayor) operations
+  sensei:
+    operation: "gastown.sensei"
+    resource: "orchestration"
+    tags:
+      agent.type: sensei
+      agent.role: orchestrator
+
+  # Jidoka (Polecat) operations
+  jidoka:
+    operation: "gastown.jidoka"
+    resource: "task_execution"
+    tags:
+      agent.type: jidoka
+      agent.role: worker
+
+  # Kaizen (Review) operations
+  kaizen:
+    operation: "gastown.kaizen"
+    resource: "code_review"
+    tags:
+      agent.type: kaizen
+      agent.role: reviewer
+
+  # Ollama operations (quick decisions)
+  ollama:
+    operation: "gastown.ollama"
+    resource: "quick_decision"
+    tags:
+      agent.type: ollama
+      agent.role: fast_processor
+      model: "${OLLAMA_MODEL}"
+
+# Custom metrics
+metrics:
+  # Task completion time
+  - name: gastown.task.duration
+    type: histogram
+    tags: [agent_type, task_type, priority]
+
+  # Agent utilization
+  - name: gastown.agent.active
+    type: gauge
+    tags: [agent_type, rig]
+
+  # Token usage (for cost tracking)
+  - name: gastown.tokens.used
+    type: counter
+    tags: [agent_type, model, operation]
+
+  # Ollama vs Claude routing
+  - name: gastown.routing.decision
+    type: counter
+    tags: [chosen_agent, task_complexity]
+
+# Routing rules for agent selection
+routing:
+  # Use Ollama for quick tasks
+  ollama_tasks:
+    - lint_check
+    - format_check
+    - import_scan
+    - todo_scan
+    - dependency_check
+    - file_classification
+    max_tokens: 1000
+    max_complexity: low
+
+  # Use Claude for complex tasks
+  claude_tasks:
+    - architecture_design
+    - security_analysis
+    - multi_file_refactor
+    - test_generation
+    - code_review
+    min_complexity: medium
+
+  # Use Codex for code generation
+  codex_tasks:
+    - implementation
+    - bug_fix
+    - feature_add
+    type: code_modification

@@ -228,6 +228,70 @@ security:
     readOnlyRootFilesystem: false
     allowPrivilegeEscalation: false
 
+# External Secrets Operator configuration
+# See: https://external-secrets.io/
+externalSecrets:
+  # Enable External Secrets Operator integration
+  # When enabled, secrets will be synced from external secret stores
+  # When disabled, hardcoded secrets from secret.yaml will be used (NOT RECOMMENDED for production)
+  enabled: false
+
+  # Refresh interval for syncing secrets
+  refreshInterval: 1h
+
+  # Reference to SecretStore or ClusterSecretStore
+  secretStore:
+    # Name of the SecretStore resource
+    name: vibecode-secret-store
+    # Kind: SecretStore (namespace-scoped) or ClusterSecretStore (cluster-scoped)
+    kind: SecretStore
+
+  # Secret mappings to external secret store
+  # Each secret requires a 'key' (path in external store) and optional 'property' (for JSON secrets)
+  secrets:
+    # Code-server password
+    password:
+      key: vibecode/code-server/password
+      # property: password  # Uncomment if the secret is a JSON object
+
+    # Database connection string
+    databaseUrl:
+      key: vibecode/database/url
+      # property: connection_string
+
+    # JWT secret for session management
+    jwtSecret:
+      key: vibecode/jwt/secret
+      # property: token
+
+    # GitHub OAuth credentials
+    githubClientId:
+      key: vibecode/oauth/github/client-id
+      # property: client_id
+
+    githubClientSecret:
+      key: vibecode/oauth/github/client-secret
+      # property: client_secret
+
+    # Google OAuth credentials
+    googleClientId:
+      key: vibecode/oauth/google/client-id
+      # property: client_id
+
+    googleClientSecret:
+      key: vibecode/oauth/google/client-secret
+      # property: client_secret
+
+    # OpenRouter API key
+    openRouterApiKey:
+      key: vibecode/ai/openrouter/api-key
+      # property: api_key
+
+    # Artificial Analysis API key
+    artificialAnalysisApiKey:
+      key: vibecode/ai/artificial-analysis/api-key
+      # property: api_key
+
 # Ingress controller configuration
 ingress:
   enabled: true
@@ -258,6 +322,48 @@ storage:
       size: 100Gi
       accessMode: ReadWriteMany
       reclaimPolicy: Retain
+
+# Persistent Volume Claim configuration (per-user workspaces)
+persistence:
+  # Enable persistent storage
+  enabled: true
+
+  # Storage size and limits
+  size: 10Gi
+  maxSize: 50Gi
+
+  # Access mode (ReadWriteOnce for security - prevents multi-attach vulnerabilities)
+  accessMode: ReadWriteOnce
+
+  # Data classification for compliance
+  # Options: internal, confidential, restricted
+  dataClassification: internal
+
+  # Backup and retention policies
+  backupPolicy: daily  # none, daily, weekly
+  retentionDays: 30
+
+  # Snapshot configuration (optional)
+  snapshotClass: ""  # Kubernetes VolumeSnapshotClass name
+
+  # Performance tier selection
+  # Options: standard, performance, premium
+  performanceTier: standard
+
+  # Volume mode (optional)
+  # Options: Filesystem, Block
+  volumeMode: Filesystem
+
+  # Encryption at rest configuration
+  encryption:
+    enabled: true
+    # Storage provisioner for encryption (CSI-based recommended)
+    provisioner: "kubernetes.io/no-provisioner"
+    # KMS key ID or encryption provider identifier (optional)
+    key: ""
+
+  # Enhanced security features
+  securityEnhanced: true  # Enables nosuid, nodev, noexec mount options
 
 # Auto-scaling configuration
 autoscaling:
