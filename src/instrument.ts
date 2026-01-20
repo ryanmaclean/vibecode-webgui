@@ -37,6 +37,8 @@ function getTracer() {
     console.log('🚫 Monitoring disabled by environment flags/bypass conditions');
     return {
       init: () => console.log('Mock tracer initialized'),
+      addTags: () => {},
+      use: () => {},
       // Add other tracer methods as needed
     };
   }
@@ -188,6 +190,8 @@ function getTracer() {
     console.log('⚠️ Monitoring failed to initialize, using mock tracer');
     return {
       init: () => console.log('Mock tracer initialized'),
+      addTags: () => {},
+      use: () => {},
       // Add other tracer methods as needed
     };
   }

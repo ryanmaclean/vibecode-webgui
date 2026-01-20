@@ -3,7 +3,7 @@
  * Coverage target: 80%+
  */
 
-import { WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client';
+import type { WebSocketStreamConfig } from '@/lib/streaming/websocket-streaming-client';
 
 class MockWebSocket {
   static CONNECTING = 0;
@@ -51,14 +51,21 @@ jest.mock('@/lib/websocket-connection-pooling', () => ({
 }));
 
 describe('WebSocketStreamingClient', () => {
+  let WebSocketStreamingClient: typeof import('@/lib/streaming/websocket-streaming-client').WebSocketStreamingClient;
   let mockWs: MockWebSocket;
   let mockPool: MockPool;
-  let client: WebSocketStreamingClient | null = null;
+  let client: InstanceType<typeof WebSocketStreamingClient> | null = null;
+
+  const createClient = (config: Partial<WebSocketStreamConfig> = {}) => {
+    client = new WebSocketStreamingClient({ url: 'ws://test', ...config }, mockPool as any);
+    (client as any).pool = mockPool;
+    return client;
+  };
 
   beforeEach(() => {
-    // Use fake timers to prevent memory leaks from setTimeout
-    jest.useFakeTimers();
-
+    jest.resetModules();
+    jest.unmock('@/lib/streaming/websocket-streaming-client');
+    ({ WebSocketStreamingClient } = require('@/lib/streaming/websocket-streaming-client'));
     mockWs = new MockWebSocket('ws://test');
     mockPool = new MockPool();
 
@@ -78,17 +85,13 @@ describe('WebSocketStreamingClient', () => {
       client = null;
     }
 
-    // Clear all timers
-    jest.clearAllTimers();
-    jest.useRealTimers();
-
     // Clear all mocks
     jest.clearAllMocks();
   });
 
   describe('Connection', () => {
     test('should connect successfully', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const promise = client.connect();
       mockWs.simulateOpen();
       await promise;
@@ -96,21 +99,19 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle connection errors', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
-      const promise = client.connect();
-
       // Simulate connection error before open
       const error = new Error('Connection failed');
       (require('@/lib/websocket-connection-pooling').getPooledWebSocket as jest.Mock)
         .mockRejectedValueOnce(error);
 
-      await expect(client.connect()).rejects.toThrow();
+      createClient();
+      await expect(client.connect()).rejects.toThrow('Connection failed');
     });
   });
 
   describe('Streaming', () => {
     test('should send stream request', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -120,7 +121,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should receive chunks in order', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -140,7 +141,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle stream completion', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -157,7 +158,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle stream errors', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -180,7 +181,7 @@ describe('WebSocketStreamingClient', () => {
 
   describe('Stream Control', () => {
     test('should pause stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -194,7 +195,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should resume stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -208,7 +209,7 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should cancel stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -224,7 +225,7 @@ describe('WebSocketStreamingClient', () => {
 
   describe('Priority Handling', () => {
     test('should use high priority connection', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test', priority: 'high' }, mockPool as any);
+      createClient({ priority: 'high' });
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
@@ -236,7 +237,7 @@ describe('WebSocketStreamingClient', () => {
 
   describe('Cleanup', () => {
     test('should release connection on disconnect', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      createClient();
       const connectPromise = client.connect();
       mockWs.simulateOpen();
       await connectPromise;
