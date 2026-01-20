@@ -14,6 +14,10 @@ permissions:
   pull-requests: write
   checks: write
 
+env:
+  DD_ENV: ci
+  DD_SERVICE: vibecode-webgui
+
 jobs:
   pr-info:
     name: PR Information
@@ -145,6 +149,8 @@ jobs:
           --health-retries 5
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -155,10 +161,13 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Install Datadog CI
+        run: npm install -g @datadog/datadog-ci
+
       - name: Run all tests
         id: tests
         run: |
-          npm test 2>&1 | tee test-output.txt
+          npm test -- --ci --reporters=default --reporters=jest-junit 2>&1 | tee test-output.txt
           echo "status=$?" >> $GITHUB_OUTPUT
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
@@ -167,6 +176,19 @@ jobs:
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
           REDIS_URL: redis://localhost:6379
           CI: true
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+        continue-on-error: true
+
+      - name: Upload test results to Datadog
+        if: always() && secrets.DD_API_KEY != ''
+        run: |
+          datadog-ci junit upload \
+            --service vibecode-webgui \
+            --env ci \
+            ./test-results/junit.xml
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
         continue-on-error: true
 
       - name: Extract test results

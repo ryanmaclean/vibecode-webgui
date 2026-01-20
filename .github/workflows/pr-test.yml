@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+env:
+  DD_ENV: ci
+  DD_SERVICE: vibecode-webgui
+
 jobs:
   test-pr:
     name: Test PR Changes
@@ -29,6 +33,9 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
         continue-on-error: false
+
+      - name: Install Datadog CI
+        run: npm install -g @datadog/datadog-ci
 
       - name: Run TypeScript type check
         id: typecheck
@@ -81,7 +88,7 @@ jobs:
         id: test
         run: |
           echo "## Test Suite" >> $GITHUB_STEP_SUMMARY
-          npm test 2>&1 | tee test.log || true
+          npm test -- --ci --reporters=default --reporters=jest-junit 2>&1 | tee test.log || true
           if [ ${PIPESTATUS[0]} -eq 0 ]; then
             echo "✅ Tests passed" >> $GITHUB_STEP_SUMMARY
           else
@@ -90,6 +97,22 @@ jobs:
             tail -50 test.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
+        env:
+          JEST_JUNIT_OUTPUT_DIR: ./test-results
+          JEST_JUNIT_OUTPUT_NAME: junit.xml
+        continue-on-error: true
+
+      - name: Upload test results to Datadog
+        if: always() && secrets.DD_API_KEY != ''
+        run: |
+          if [ -f ./test-results/junit.xml ]; then
+            datadog-ci junit upload \
+              --service vibecode-webgui \
+              --env ci \
+              ./test-results/junit.xml
+          fi
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
         continue-on-error: true
 
       - name: Check for launcher test script

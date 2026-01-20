@@ -3,7 +3,7 @@
  * Tests end-to-end agent workflows with mocked OpenAI responses
  */
 
-import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals'
+import { describe, it, expect, beforeAll, afterAll, beforeEach, afterEach, jest } from '@jest/globals'
 import { NextRequest } from 'next/server'
 import { POST, GET, DELETE } from '@/app/api/agents/[...path]/route'
 
@@ -20,7 +20,24 @@ jest.mock('@/lib/auth', () => ({
   authOptions: {},
 }))
 
+// Mock the thread manager to prevent singleton state pollution
+jest.mock('@/lib/agents/thread-manager', () => {
+  const originalModule = jest.requireActual('@/lib/agents/thread-manager')
+  return {
+    ...originalModule,
+    getThreadManager: jest.fn(() => ({
+      createThread: jest.fn(),
+      getSession: jest.fn(),
+      addMessage: jest.fn(),
+      getMessageHistory: jest.fn(),
+      deleteThread: jest.fn(),
+      stop: jest.fn(),
+    })),
+  }
+})
+
 const mockFetch = jest.fn()
+const originalFetch = global.fetch
 global.fetch = mockFetch as any
 
 describe('Agents API Integration', () => {
@@ -30,11 +47,18 @@ describe('Agents API Integration', () => {
 
   afterAll(() => {
     delete process.env.OPENAI_API_KEY
+    // Restore original fetch
+    global.fetch = originalFetch
   })
 
   beforeEach(() => {
     jest.clearAllMocks()
     mockFetch.mockReset()
+  })
+
+  afterEach(() => {
+    // Ensure mock state is fully cleaned
+    jest.restoreAllMocks()
   })
 
   describe('Agent Management', () => {

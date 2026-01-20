@@ -463,3 +463,14 @@ export function initializeThreadManager(
   globalThreadManager = new ThreadManager(config)
   return globalThreadManager
 }
+
+/**
+ * Reset the global thread manager (for testing purposes)
+ * This stops any existing manager and clears the singleton reference
+ */
+export function resetGlobalThreadManager(): void {
+  if (globalThreadManager) {
+    globalThreadManager.stop()
+    globalThreadManager = null
+  }
+}

@@ -92,6 +92,14 @@ describe('Health Monitoring Module', () => {
   afterEach(() => {
     jest.restoreAllMocks()
     delete (mockTracer as any).__healthMonitoringInitialized
+    // Reset mock logger call history to prevent state leakage
+    mockLogger.info.mockClear()
+    mockLogger.warn.mockClear()
+    mockLogger.error.mockClear()
+    mockLogger.debug.mockClear()
+    // Reset mock tracer
+    mockTracer.init.mockClear()
+    mockTracer.addTags.mockClear()
   })
 
   describe('MetricsCollector', () => {

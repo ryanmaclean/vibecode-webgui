@@ -4,6 +4,17 @@
 
 set -e
 
+# Source Datadog logging library if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh" ]; then
+    source "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh"
+elif [ -f "scripts/lib/datadog-logging.sh" ]; then
+    source "scripts/lib/datadog-logging.sh"
+fi
+
+# Log script execution start
+dd_info "Docker build script started" "action:start"
+
 # Default values
 TARGET="production"
 TAG="vibecode-webgui"
@@ -167,10 +178,19 @@ fi
 
 # Execute the build
 print_status "Executing: $BUILD_CMD"
+dd_info "Starting Docker build" "target:$TARGET,tag:$TAG,platform:$PLATFORM"
+BUILD_START_TIME=$(date +%s)
 if eval $BUILD_CMD; then
+    BUILD_END_TIME=$(date +%s)
+    BUILD_DURATION=$((BUILD_END_TIME - BUILD_START_TIME))
+    dd_info "Build completed successfully" "target:$TARGET,tag:$TAG,duration:${BUILD_DURATION}s"
+    dd_metric "docker.build.duration" "$BUILD_DURATION" "gauge" "target:$TARGET"
+    dd_metric "docker.build.success" "1" "count" "target:$TARGET"
     print_success "Build completed successfully!"
     print_success "Image: $TAG"
 else
+    dd_error "Build failed" "target:$TARGET,tag:$TAG"
+    dd_metric "docker.build.failure" "1" "count" "target:$TARGET"
     print_error "Build failed!"
     exit 1
 fi

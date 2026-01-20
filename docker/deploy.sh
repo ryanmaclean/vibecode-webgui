@@ -4,6 +4,17 @@
 
 set -e
 
+# Source Datadog logging library if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh" ]; then
+    source "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh"
+elif [ -f "scripts/lib/datadog-logging.sh" ]; then
+    source "scripts/lib/datadog-logging.sh"
+fi
+
+# Log script execution start
+dd_info "Docker deploy script started" "action:start"
+
 # Default values
 ENVIRONMENT="dev"
 COMPOSE_FILE=""
@@ -144,54 +155,78 @@ cd docker
 case $ENVIRONMENT in
     dev|prod|test)
         print_status "Starting Docker Compose deployment..."
+        dd_info "Starting Docker Compose deployment" "env:$ENVIRONMENT"
+        DEPLOY_START_TIME=$(date +%s)
         if docker-compose -f $COMPOSE_FILE up --build -d; then
+            DEPLOY_END_TIME=$(date +%s)
+            DEPLOY_DURATION=$((DEPLOY_END_TIME - DEPLOY_START_TIME))
+            dd_info "Deployment completed successfully" "env:$ENVIRONMENT,duration:${DEPLOY_DURATION}s"
+            dd_metric "docker.deploy.duration" "$DEPLOY_DURATION" "gauge" "env:$ENVIRONMENT"
+            dd_metric "docker.deploy.success" "1" "count" "env:$ENVIRONMENT"
             print_success "Deployment completed successfully!"
             print_status "Services running:"
             docker-compose -f $COMPOSE_FILE ps
         else
+            dd_error "Deployment failed" "env:$ENVIRONMENT"
+            dd_metric "docker.deploy.failure" "1" "count" "env:$ENVIRONMENT"
             print_error "Deployment failed!"
             exit 1
         fi
         ;;
     aks)
         print_status "Preparing AKS deployment..."
-        
+        dd_info "Preparing AKS deployment" "env:$ENVIRONMENT,namespace:$NAMESPACE"
+        DEPLOY_START_TIME=$(date +%s)
+
         # Check if kubectl is available
         if ! command -v kubectl &> /dev/null; then
+            dd_error "kubectl not found" "env:$ENVIRONMENT"
             print_error "kubectl is not installed or not in PATH"
             exit 1
         fi
-        
+
         # Check if helm is available
         if ! command -v helm &> /dev/null; then
+            dd_error "helm not found" "env:$ENVIRONMENT"
             print_error "helm is not installed or not in PATH"
             exit 1
         fi
-        
+
         # Build image if registry is provided
         if [ -n "$REGISTRY" ]; then
             print_status "Building and pushing image to registry..."
             IMAGE_TAG="$REGISTRY/vibecode-webgui:latest"
+            dd_info "Building and pushing image" "registry:$REGISTRY"
             if ../build.sh aks --tag $IMAGE_TAG --push; then
+                dd_info "Image built and pushed successfully" "tag:$IMAGE_TAG"
                 print_success "Image built and pushed successfully!"
             else
+                dd_error "Failed to build and push image" "tag:$IMAGE_TAG"
                 print_error "Failed to build and push image"
                 exit 1
             fi
         fi
-        
+
         # Deploy to AKS using Helm
         print_status "Deploying to AKS using Helm..."
+        dd_info "Starting Helm deployment" "namespace:$NAMESPACE"
         if helm upgrade --install vibecode-app ../charts/vibecode \
             --namespace $NAMESPACE \
             --set image.repository="$REGISTRY/vibecode-webgui" \
             --set image.tag="latest" \
             --wait --timeout=600s; then
+            DEPLOY_END_TIME=$(date +%s)
+            DEPLOY_DURATION=$((DEPLOY_END_TIME - DEPLOY_START_TIME))
+            dd_info "AKS deployment completed successfully" "namespace:$NAMESPACE,duration:${DEPLOY_DURATION}s"
+            dd_metric "aks.deploy.duration" "$DEPLOY_DURATION" "gauge" "namespace:$NAMESPACE"
+            dd_metric "aks.deploy.success" "1" "count" "namespace:$NAMESPACE"
             print_success "AKS deployment completed successfully!"
             print_status "Checking deployment status..."
             kubectl rollout status deployment/vibecode-app -n $NAMESPACE --timeout=300s
             kubectl get pods -n $NAMESPACE -l app.kubernetes.io/name=vibecode
         else
+            dd_error "AKS deployment failed" "namespace:$NAMESPACE"
+            dd_metric "aks.deploy.failure" "1" "count" "namespace:$NAMESPACE"
             print_error "AKS deployment failed!"
             exit 1
         fi

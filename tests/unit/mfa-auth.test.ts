@@ -81,8 +81,8 @@ describe('MFA Authentication Provider', () => {
 
     it('should reject invalid TOTP code', async () => {
       const speakeasy = jest.requireMock('speakeasy')
-      // Use jest.spyOn to mock the verify method directly
-      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(false)
+      // Use the mock's helper method for proper state isolation
+      speakeasy.totp.__setVerifyReturnValue(false)
 
       const result = await mfaProvider.verifyTOTP('user123', '000000')
 
@@ -92,8 +92,8 @@ describe('MFA Authentication Provider', () => {
 
     it('should handle rate limiting', async () => {
       const speakeasy = jest.requireMock('speakeasy')
-      // Simulate multiple failed attempts
-      jest.spyOn(speakeasy.totp, 'verify').mockReturnValue(false)
+      // Use the mock's helper method for proper state isolation
+      speakeasy.totp.__setVerifyReturnValue(false)
 
       for (let i = 0; i < 5; i++) {
         await mfaProvider.verifyTOTP('user123', '000000')

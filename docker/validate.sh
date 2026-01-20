@@ -4,6 +4,17 @@
 
 set -e
 
+# Source Datadog logging library if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh" ]; then
+    source "$SCRIPT_DIR/../scripts/lib/datadog-logging.sh"
+elif [ -f "scripts/lib/datadog-logging.sh" ]; then
+    source "scripts/lib/datadog-logging.sh"
+fi
+
+# Log script execution start
+dd_info "Docker validation script started" "action:start"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -154,6 +165,8 @@ done
 
 # Summary
 echo ""
+dd_info "Docker structure validation completed successfully" "action:complete"
+dd_metric "docker.validation.success" "1" "count"
 print_success "🎉 Docker structure validation completed!"
 print_status "The new consolidated Docker structure is ready to use."
 print_status ""

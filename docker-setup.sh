@@ -4,6 +4,15 @@
 
 set -e
 
+# Source Datadog logging library if available
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -f "$SCRIPT_DIR/scripts/lib/datadog-logging.sh" ]; then
+    source "$SCRIPT_DIR/scripts/lib/datadog-logging.sh"
+fi
+
+# Log script execution start
+dd_info "Docker setup script started" "action:start"
+
 echo "======================================"
 echo "  Docker Client Setup for VibeCode"
 echo "======================================"
@@ -251,5 +260,7 @@ else
 fi
 
 echo ""
+dd_info "Docker setup script completed successfully" "action:complete"
+dd_metric "docker.setup.success" "1" "count"
 echo "Setup script completed successfully!"
 echo ""
