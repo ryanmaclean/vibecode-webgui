@@ -101,13 +101,46 @@ codeServer:
       nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
       nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
       nginx.ingress.kubernetes.io/websocket-services: "code-server-{USER_ID}"
-      nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
-      nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+
+    # Security configuration
+    security:
+      # Enable comprehensive security headers
+      headers: true
+
+    # Rate limiting configuration
+    rateLimit:
+      enabled: true
+      rps: 100  # Requests per second
+      connections: 10  # Max concurrent connections per IP
+      burstMultiplier: 5  # Burst multiplier for rate limiting
+
+    # Request size limits
+    requestLimits:
+      proxyBodySize: "10m"  # Maximum request body size
+      clientBodyBufferSize: "1m"  # Client body buffer size
+
+    # TLS hardening configuration
+    tls:
+      hardening: true
+      protocols: "TLSv1.2 TLSv1.3"
+      ciphers: "ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305"
+
+    # Timeout configuration for long-running code-server sessions
+    timeouts:
+      connect: "60"  # seconds
+      send: "3600"  # seconds (1 hour)
+      read: "3600"  # seconds (1 hour)
+
+    # Optional IP whitelist (comma-separated CIDR ranges)
+    # Example: "10.0.0.0/8,172.16.0.0/12,192.168.0.0/16"
+    ipWhitelist: ""
+
     hosts:
       - host: "{USER_ID}.vibecode.local"
         paths:
           - path: /
             pathType: Prefix
+
     tls:
       - secretName: "{USER_ID}-tls"
         hosts:
