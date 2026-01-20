@@ -140,7 +140,7 @@ describe('auth.ts Configuration', () => {
       const result = await authorizeFunction(credentials)
 
       expect(result).toEqual({
-        id: '2',
+        id: 'legacy-developer',
         name: 'Developer User',
         email: 'developer@vibecode.dev',
         role: 'developer',
