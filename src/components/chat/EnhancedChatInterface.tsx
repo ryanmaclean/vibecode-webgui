@@ -58,6 +58,8 @@ export const EnhancedChatInterface = ({
   const [messages, setMessages] = useState<Message[]>([])
   const [input, setInput] = useState('')
   const [isStreaming, setIsStreaming] = useState(false)
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [selectedModel, setSelectedModel] = useState('anthropic/claude-3.5-sonnet')
   const [contextFiles, setContextFiles] = useState<string[]>(initialContext)
   const [showSettings, setShowSettings] = useState(false)
@@ -94,6 +96,8 @@ export const EnhancedChatInterface = ({
   }
 
   const loadConversation = async () => {
+    setIsLoadingHistory(true)
+    setLoadError(null)
     try {
       const response = await fetch('/api/chat/mongodb-simple', {
         method: 'POST',
@@ -108,6 +112,10 @@ export const EnhancedChatInterface = ({
         })
       })
 
+      if (!response.ok) {
+        throw new Error('Failed to load conversation history')
+      }
+
       const data = await response.json()
       if (data.success && data.conversation) {
         setMessages(data.conversation.messages.map((msg: any) => ({
@@ -117,6 +125,9 @@ export const EnhancedChatInterface = ({
       }
     } catch (error) {
       console.error('Failed to load conversation:', error)
+      setLoadError('Failed to load conversation history. Please refresh to try again.')
+    } finally {
+      setIsLoadingHistory(false)
     }
   }
 
@@ -161,7 +172,7 @@ export const EnhancedChatInterface = ({
         attachedFiles.forEach(file => formData.append('files', file))
         formData.append('workspaceId', workspaceId)
 
-        await fetch('/api/ai/upload', {
+        const uploadResponse = await fetch('/api/ai/upload', {
           method: 'POST',
           headers: {
             'x-test-user-id': 'enhanced-chat-user',
@@ -169,11 +180,16 @@ export const EnhancedChatInterface = ({
           },
           body: formData
         })
+
+        if (!uploadResponse.ok) {
+          const errorData = await uploadResponse.json().catch(() => ({}))
+          throw new Error(errorData.error || 'Failed to upload files')
+        }
       }
 
       // Save user message to MongoDB
       if (conversationId) {
-        await fetch('/api/chat/mongodb-simple', {
+        const saveResponse = await fetch('/api/chat/mongodb-simple', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -187,6 +203,11 @@ export const EnhancedChatInterface = ({
             from: 'user'
           })
         })
+
+        if (!saveResponse.ok) {
+          console.error('Failed to save message to conversation history')
+          // Non-critical error - continue with AI response
+        }
       }
 
       // Stream AI response
@@ -386,6 +407,25 @@ export const EnhancedChatInterface = ({
         <CardContent className="flex-1 overflow-hidden p-0">
           <ScrollArea className="h-full p-4">
             <div className="space-y-4">
+              {/* Loading state */}
+              {isLoadingHistory && (
+                <div className="flex justify-center py-8">
+                  <div className="flex items-center space-x-2 text-muted-foreground">
+                    <Sparkles className="w-4 h-4 animate-pulse" aria-hidden="true" />
+                    <span>Loading conversation...</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Error state */}
+              {loadError && (
+                <div className="flex justify-center py-4">
+                  <div className="p-3 bg-destructive/10 text-destructive rounded-lg text-sm">
+                    {loadError}
+                  </div>
+                </div>
+              )}
+
               {messages.map((message) => (
                 <div key={message.id} className={`flex ${message.from === 'user' ? 'justify-end' : 'justify-start'}`}>
                   <div className={`max-w-[80%] ${message.from === 'user' ? 'order-2' : 'order-1'}`}>
