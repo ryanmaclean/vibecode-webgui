@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig } from '@/lib/file-system-operations'
+import { createFileRateLimit } from '@/lib/rate-limiting'
 import {
   validateQueryParams,
   validateRequestBody
@@ -25,7 +26,50 @@ import {
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+const fileRateLimiter = createFileRateLimit()
+type FileRateLimitResult = Awaited<ReturnType<typeof fileRateLimiter>>
+
+function applyFileRateLimitHeaders(response: NextResponse, info: FileRateLimitResult): NextResponse {
+  response.headers.set('X-RateLimit-Limit', info.limit.toString())
+  response.headers.set('X-RateLimit-Remaining', info.remaining.toString())
+  response.headers.set('X-RateLimit-Reset', info.reset.toString())
+  return response
+}
+
+function buildFileRateLimitResponse(info: FileRateLimitResult): NextResponse {
+  const retryAfter = info.retryAfter ?? 60
+  return applyFileRateLimitHeaders(
+    NextResponse.json(
+      {
+        error: 'File API rate limit exceeded',
+        retryAfter
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': retryAfter.toString()
+        }
+      }
+    ),
+    info
+  )
+}
+
+function withFileRateLimit(
+  handler: (request: NextRequest) => Promise<NextResponse>
+) {
+  return async (request: NextRequest): Promise<NextResponse> => {
+    const rateInfo = await fileRateLimiter(request)
+    if (!rateInfo.success) {
+      return buildFileRateLimitResponse(rateInfo)
+    }
+
+    const response = await handler(request)
+    return applyFileRateLimitHeaders(response, rateInfo)
+  }
+}
+
+async function handleGET(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -134,7 +178,7 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -244,7 +288,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function handlePUT(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -323,7 +367,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+async function handleDELETE(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -388,6 +432,11 @@ export async function DELETE(request: NextRequest) {
     )
   }
 }
+
+export const GET = withFileRateLimit(handleGET)
+export const POST = withFileRateLimit(handlePOST)
+export const PUT = withFileRateLimit(handlePUT)
+export const DELETE = withFileRateLimit(handleDELETE)
 
 export async function OPTIONS(_request: NextRequest) {
   return new NextResponse(null, {
