@@ -98,6 +98,11 @@ export class VectorStore {
   
   /**
    * Semantic search using cosine similarity
+   *
+   * Performance optimization: Uses materialized CTE to compute distance once
+   * instead of 3 times (SELECT, WHERE, ORDER BY). This follows pgvector best
+   * practices for queries that combine nearest neighbor search with distance
+   * thresholds.
    */
   async search(
     queryEmbedding: number[],
@@ -108,37 +113,54 @@ export class VectorStore {
     } = {}
   ): Promise<SearchResult[]> {
     const { limit = 10, threshold = 0.7, metadata } = options;
-    
+
+    // Over-fetch multiplier to ensure enough results after threshold filtering
+    const overFetchMultiplier = 3;
+    const fetchLimit = limit * overFetchMultiplier;
+
     try {
-      let query = `
-        SELECT 
+      // Build metadata filter clause if needed
+      const metadataFilter = metadata
+        ? `AND metadata @> $2::jsonb`
+        : '';
+
+      // Use materialized CTE to compute distance once, then filter by threshold
+      // This avoids computing the distance 3x per row (major performance win)
+      const query = `
+        WITH nearest_candidates AS MATERIALIZED (
+          SELECT
+            id,
+            content,
+            metadata,
+            embedding <=> $1::vector AS distance
+          FROM ${this.tableName}
+          WHERE 1 = 1 ${metadataFilter}
+          ORDER BY embedding <=> $1::vector
+          LIMIT $${metadata ? 3 : 2}
+        )
+        SELECT
           id,
           content,
           metadata,
-          1 - (embedding <=> $1::vector) as similarity
-        FROM ${this.tableName}
-        WHERE 1 - (embedding <=> $1::vector) > $2
+          1 - distance AS similarity
+        FROM nearest_candidates
+        WHERE 1 - distance > $${metadata ? 4 : 3}
+        ORDER BY distance
+        LIMIT $${metadata ? 5 : 4}
       `;
-      
-      const params: any[] = [JSON.stringify(queryEmbedding), threshold];
-      
-      // Add metadata filtering if provided
-      if (metadata) {
-        query += ` AND metadata @> $3::jsonb`;
-        params.push(JSON.stringify(metadata));
-      }
-      
-      query += ` ORDER BY embedding <=> $1::vector LIMIT $${params.length + 1}`;
-      params.push(limit);
-      
+
+      const params: any[] = metadata
+        ? [JSON.stringify(queryEmbedding), JSON.stringify(metadata), fetchLimit, threshold, limit]
+        : [JSON.stringify(queryEmbedding), fetchLimit, threshold, limit];
+
       const results = await prisma.$queryRawUnsafe<any[]>(query, ...params);
-      
-      logger.debug('Search completed', { 
+
+      logger.debug('Search completed', {
         resultCount: results.length,
         threshold,
-        limit 
+        limit
       });
-      
+
       return results.map(row => ({
         id: row.id,
         content: row.content,

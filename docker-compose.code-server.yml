@@ -10,6 +10,6 @@ services:
       - ./code-server:/home/coder
       - ./code-server-config.yaml:/home/coder/.config/code-server/config.yaml
     environment:
-      - PASSWORD=vibecode123
+      - PASSWORD=${CODE_SERVER_PASSWORD}
     command: --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry --disable-update-check
     restart: unless-stopped
