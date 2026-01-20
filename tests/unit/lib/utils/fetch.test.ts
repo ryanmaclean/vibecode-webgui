@@ -17,7 +17,10 @@ const mockFetch = jest.fn<typeof fetch>();
 global.fetch = mockFetch as unknown as typeof fetch;
 
 // Import the function after mocking
-import { fetchWithRetry, FetchError, isFetchError } from '@/lib/utils/fetch';
+import { fetchWithRetry, FetchError, isFetchError, TimeoutError } from '@/lib/utils/fetch';
+
+const realSetTimeout = global.setTimeout;
+const realClearTimeout = global.clearTimeout;
 
 const createResponse = (status: number, body?: Record<string, unknown>): Response => {
   const response = new Response(body ? JSON.stringify(body) : null, {
@@ -43,16 +46,33 @@ describe('fetchWithRetry', () => {
   beforeEach(() => {
     jest.clearAllMocks();
 
+    const timers = new Map<number, ReturnType<typeof realSetTimeout>>();
+    let nextId = 1;
+
     setTimeoutSpy = jest.spyOn(global, 'setTimeout');
     setTimeoutSpy.mockImplementation(((handler: TimerHandler, timeout?: number, ...args: any[]) => {
-      if (typeof handler === 'function') {
-        handler(...args);
-      }
-      return 123 as unknown as ReturnType<typeof setTimeout>;
+      const id = nextId++;
+      const timer = realSetTimeout(() => {
+        timers.delete(id);
+        if (typeof handler === 'function') {
+          handler(...args);
+        }
+      }, 0);
+      timers.set(id, timer);
+      return id as unknown as ReturnType<typeof setTimeout>;
     }) as typeof setTimeout);
 
     clearTimeoutSpy = jest.spyOn(global, 'clearTimeout');
-    clearTimeoutSpy.mockImplementation((() => undefined) as typeof clearTimeout);
+    clearTimeoutSpy.mockImplementation(((id: unknown) => {
+      if (typeof id === 'number') {
+        const timer = timers.get(id);
+        if (timer) {
+          realClearTimeout(timer);
+          timers.delete(id);
+        }
+      }
+      return undefined;
+    }) as typeof clearTimeout);
   });
 
   afterEach(() => {
@@ -292,7 +312,7 @@ describe('fetchWithRetry', () => {
       await fetchWithRetry('https://api.example.com/test', { timeout: 5000 });
 
       expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 5000);
-      expect(clearTimeoutSpy).toHaveBeenCalledWith(123);
+      expect(clearTimeoutSpy).toHaveBeenCalledWith(expect.any(Number));
     });
 
     it('should use default timeout when not specified', async () => {
@@ -302,6 +322,42 @@ describe('fetchWithRetry', () => {
       await fetchWithRetry('https://api.example.com/test');
 
       expect(setTimeoutSpy).toHaveBeenCalledWith(expect.any(Function), 30000); // Default 30s
+    });
+
+    it('should throw TimeoutError when the request exceeds the timeout', async () => {
+      mockFetch.mockImplementation((_, options?: RequestInit) => {
+        const signal = options?.signal as AbortSignal | undefined;
+
+        return new Promise((_resolve, reject) => {
+          const rejectWithAbort = () => {
+            const abortError = new Error('Request aborted');
+            abortError.name = 'AbortError';
+            reject(abortError);
+          };
+
+          if (signal?.aborted) {
+            rejectWithAbort();
+            return;
+          }
+
+          signal?.addEventListener('abort', rejectWithAbort, { once: true });
+        });
+      });
+
+      await expect(fetchWithRetry('https://api.example.com/test', { timeout: 1000 }))
+        .rejects.toThrow(TimeoutError);
+    });
+  });
+
+  describe('Non-OK Response Handling', () => {
+    it('should return response when failOnNonOk is false', async () => {
+      const errorResponse = createResponse(400);
+      mockFetch.mockResolvedValueOnce(errorResponse);
+
+      const response = await fetchWithRetry('https://api.example.com/test', { failOnNonOk: false });
+
+      expect(response).toBe(errorResponse);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
     });
   });
 

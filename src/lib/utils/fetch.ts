@@ -81,6 +81,8 @@ interface FetchWithRetryOptions extends RequestInit {
   shouldRetry?: (error: Error, response: Response | null, attempt: number) => boolean;
   /** Called before each retry attempt */
   onRetry?: (attempt: number, error: Error, delay: number) => void;
+  /** When false, callers handle non-OK responses manually */
+  failOnNonOk?: boolean;
 }
 
 /**
@@ -98,11 +100,11 @@ export async function fetchWithRetry(
     retryStatusCodes = RETRY_STATUS_CODES,
     shouldRetry: customShouldRetry,
     onRetry,
+    failOnNonOk = true,
+    signal: externalSignal,
     ...fetchOptions
   } = options;
 
-  const controller = new AbortController();
-  const timeoutId = setTimeout(() => controller.abort(), timeout);
   const url = typeof input === 'string' ? input : input.toString();
 
   let lastError: Error | null = null;
@@ -128,51 +130,93 @@ export async function fetchWithRetry(
   const shouldRetry = customShouldRetry || defaultShouldRetry;
 
   while (attempt <= retries) {
+    attempt++;
+    const controller = new AbortController();
+    let externalAbortCleanup: (() => void) | undefined;
+
+    if (externalSignal) {
+      if (externalSignal.aborted) {
+        controller.abort(externalSignal.reason);
+      } else {
+        const listener = () => controller.abort(externalSignal.reason);
+        externalSignal.addEventListener('abort', listener, { once: true });
+        externalAbortCleanup = () => externalSignal.removeEventListener('abort', listener);
+      }
+    }
+
+    const timeoutError = new TimeoutError(url, timeout);
+    const timeoutId = setTimeout(() => {
+      controller.abort(timeoutError);
+    }, timeout);
+
+    let shouldRetryRequest = false;
+
     try {
-      attempt++;
-      
       const response = await fetch(input, {
         ...fetchOptions,
         signal: controller.signal,
       });
-      
+
       lastResponse = response;
 
       if (!response.ok) {
-        throw new FetchError(
+        const httpError = new FetchError(
           `HTTP error! status: ${response.status}`,
           response.status,
           url,
           attempt
         );
+        lastError = httpError;
+
+        shouldRetryRequest = shouldRetry(httpError, response, attempt);
+
+        if (!shouldRetryRequest) {
+          if (failOnNonOk) {
+            throw httpError;
+          }
+          return response;
+        }
+      } else {
+        clearTimeout(timeoutId);
+        externalAbortCleanup?.();
+        return response;
+      }
+    } catch (error: unknown) {
+      let err = error as Error & { status?: number };
+
+      if (err.name === 'AbortError') {
+        if (controller.signal.reason instanceof TimeoutError) {
+          err = controller.signal.reason;
+        } else if (controller.signal.reason instanceof Error) {
+          err = controller.signal.reason;
+        }
       }
 
-      clearTimeout(timeoutId);
-      return response;
-      
-    } catch (error: unknown) {
-      const err = error as Error & { status?: number };
       lastError = err;
-      
-      // Check if we should retry
-      if (!shouldRetry(err, lastResponse, attempt)) {
+      shouldRetryRequest = shouldRetry(err, lastResponse, attempt);
+
+      if (!shouldRetryRequest) {
+        clearTimeout(timeoutId);
+        externalAbortCleanup?.();
         break;
       }
-      
-      // Calculate delay with exponential backoff and jitter
-      const baseDelay = retryDelay * Math.pow(2, attempt - 1);
-      const delay = Math.min(baseDelay + getJitter(), 30000); // Cap at 30s
-      
-      // Notify about the retry
-      onRetry?.(attempt, err, delay);
-      
-      // Wait before retrying
-      await new Promise(resolve => setTimeout(resolve, delay));
+    } finally {
+      clearTimeout(timeoutId);
+      externalAbortCleanup?.();
     }
-  }
 
-  // Clean up timeout to prevent memory leaks
-  clearTimeout(timeoutId);
+    // Calculate delay with exponential backoff and jitter
+    const baseDelay = retryDelay * Math.pow(2, attempt - 1);
+    const delay = Math.min(baseDelay + getJitter(), 30000); // Cap at 30s
+
+    // Notify about the retry
+    if (lastError) {
+      onRetry?.(attempt, lastError, delay);
+    }
+
+    // Wait before retrying
+    await new Promise(resolve => setTimeout(resolve, delay));
+  }
 
   // Throw enhanced error with full context
   if (lastError instanceof FetchError) {
