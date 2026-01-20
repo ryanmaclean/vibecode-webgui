@@ -1,0 +1,65 @@
+# Jidoka (自働化) - Automation with Human Touch
+# Autonomous worker task execution with quality gates
+
+name: jidoka
+description: "Autonomous task execution with built-in quality checks"
+
+principles:
+  # Stop and fix: If quality issue detected, stop and alert
+  stop_on_failure: true
+
+  # Built-in quality: Every task includes verification
+  verify_before_complete: true
+
+  # Human escalation: Complex decisions go to Sensei
+  escalate_threshold: medium
+
+task_lifecycle:
+  # 1. Pick up work from Kanban
+  - name: claim_kanban
+    action: bd hook <bead-id>
+
+  # 2. Execute with quality checks
+  - name: execute
+    steps:
+      - understand_requirements
+      - implement_solution
+      - write_tests
+      - verify_locally
+
+  # 3. Quality gate
+  - name: quality_gate
+    checks:
+      - tests_pass
+      - lint_clean
+      - no_regressions
+    on_failure: andon_pull
+
+  # 4. Submit for review
+  - name: submit
+    action: create_pr
+    auto_merge: false  # Requires Kaizen review
+
+  # 5. Self-destruct after completion
+  - name: cleanup
+    action: gt handoff
+    preserve_context: false
+
+# Andon Pull - Escalation when quality gate fails
+andon:
+  trigger_conditions:
+    - test_failure
+    - lint_error
+    - type_error
+    - security_vulnerability
+  actions:
+    - notify_sensei
+    - create_blocking_bead
+    - pause_worker
+
+# Worker Pool Configuration
+pool:
+  min_workers: 2
+  max_workers: 8
+  scale_trigger: queue_depth > 10
+  scale_down_delay: 15m

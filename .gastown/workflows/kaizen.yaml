@@ -1,0 +1,67 @@
+# Kaizen (改善) - Continuous Improvement Workflow
+# Regular code review sweeps to maintain quality
+
+name: kaizen
+description: "Continuous improvement through systematic code review"
+
+schedule:
+  frequency: daily
+  time: "09:00"
+  timezone: UTC
+
+triggers:
+  - on_pr_merge
+  - on_convoy_complete
+  - manual
+
+phases:
+  # Phase 1: Code Quality Scan
+  - name: quality_scan
+    agent: kaizen
+    tasks:
+      - lint_check
+      - type_check
+      - security_scan
+    output: quality_report.md
+
+  # Phase 2: Test Coverage Analysis
+  - name: test_analysis
+    agent: kaizen
+    tasks:
+      - coverage_report
+      - identify_gaps
+      - suggest_tests
+    output: test_gaps.md
+
+  # Phase 3: Performance Review
+  - name: performance_review
+    agent: kaizen
+    tasks:
+      - profile_hot_paths
+      - memory_analysis
+      - bundle_size_check
+    output: performance_report.md
+
+  # Phase 4: Documentation Check
+  - name: docs_review
+    agent: kaizen
+    tasks:
+      - api_docs_current
+      - readme_accurate
+      - changelog_updated
+    output: docs_status.md
+
+  # Phase 5: Create Improvement Beads
+  - name: file_beads
+    agent: sensei
+    tasks:
+      - create_beads_from_reports
+      - prioritize_by_impact
+      - assign_to_heijunka
+    output: improvement_kanban.md
+
+# Acceptance Criteria
+acceptance:
+  - all_phases_complete
+  - beads_created_for_issues
+  - reports_archived
