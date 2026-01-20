@@ -1,84 +1,76 @@
-TEST PROJECT!!!
-
-
-# VibeCode VM
+# VibeCode
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Version](https://img.shields.io/badge/version-1.5.0-blue.svg)](https://github.com/ryanmaclean/vibecode-webgui/releases)
+[![CI](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml/badge.svg)](https://github.com/ryanmaclean/vibecode-webgui/actions/workflows/ci.yml)
 
-**Lightweight, Fast Development VMs with Full IDE Support**
+**Containerized Development Environment with Full IDE Support**
 
-VibeCode VM is an ultra-lightweight virtual machine platform that boots a complete development environment in under 30 seconds. Built with Firecracker-style parallel service startup, it provides SSH access, PostgreSQL database, Valkey cache, and a full VS Code editor in a VM that compresses to just 59MB.
+VibeCode is a containerized development platform providing a complete development environment with SSH access, PostgreSQL database, Valkey cache, and a full VS Code editor in your browser.
 
 ## Features
 
-- **Lightning Fast Boot**: 26-second average boot time from cold start to ready IDE
-- **Ultra Compact**: 59MB compressed VM image (175MB uncompressed)
+- **Container Native**: Runs on Docker, Podman, Kubernetes, or Apple Containers
 - **Full Development Stack**:
   - OpenVSCode Server - Full VS Code editor in your browser
   - PostgreSQL 16 - Production-ready relational database
   - Valkey - High-performance in-memory data store
-  - SSH Server - Secure remote access with Dropbear
-- **Volume Mounting**: VirtioFS support for persistent storage and file sharing
-- **Network Ready**: Automatic DHCP with static IP fallback (192.168.64.10)
-- **Parallel Startup**: All services launch simultaneously for minimal boot time
-- **macOS Native**: Optimized for Apple Silicon using vfkit
+  - SSH Server - Secure remote access
+- **Volume Mounting**: Persistent storage and file sharing with host
+- **Multi-Platform**: macOS (Apple Silicon + Intel), Linux
+- **Orchestration Ready**: Works with Gas Town multi-agent orchestration
 
 ## Quick Start
 
 ### Prerequisites
 
-- macOS with Apple Silicon (ARM64) or Intel
-- [vfkit](https://github.com/crc-org/vfkit) v0.6.1 or later: `brew install vfkit`
+- Docker, Podman, or compatible container runtime
 - 2GB RAM available
 - 500MB disk space
 
-### Installation (Recommended Method)
-
-Use the unified launcher tool for the best experience:
+### Installation
 
 ```bash
-# 1. Install vfkit
-brew install vfkit
+# Clone the repository
+git clone https://github.com/ryanmaclean/vibecode-webgui.git
+cd vibecode-webgui
 
-# 2. Run the installer
+# Start with Docker Compose
+docker compose up -d
+
+# Or use the launcher
 ./install.sh
+vibecode start
 
-# 3. Start the VM
-vibecode-vm start
+# Check status
+vibecode status
 
-# 4. Check status
-vibecode-vm status
-
-# 5. Access services (use IP from status)
-vibecode-vm ssh              # SSH access
-open http://<VM_IP>:8080     # OpenVSCode in browser
+# Access services
+vibecode ssh              # SSH access
+open http://localhost:8080     # OpenVSCode in browser
 ```
 
 See [QUICK-START.md](QUICK-START.md) for more details.
 
-### Manual Launch (Alternative)
+### Container Runtimes
 
-If you prefer to manage vfkit directly:
+VibeCode supports multiple container runtimes:
 
-```bash
-vfkit \
-  --cpus 2 \
-  --memory 2048 \
-  --kernel azure/linux-kernel-arm64 \
-  --initrd azure/unified-services-static-optimized.cpio.gz \
-  --device virtio-net,nat,mac=52:54:00:12:34:70 \
-  --device virtio-serial,logFilePath=console.log \
-  --device virtio-rng \
-  --device virtio-fs,sharedDir=$HOME/vibecode-shared,mountTag=hostshare \
-  --gui
-```
+| Runtime | Status | Notes |
+|---------|--------|-------|
+| Docker | Supported | Primary runtime |
+| Podman | Supported | Daemonless alternative |
+| Kubernetes | Supported | Production orchestration |
+| Apple Containers | Planned | Native macOS containers |
 
-Access services:
-- **OpenVSCode**: http://192.168.64.10:8080
-- **SSH**: `ssh root@192.168.64.10` (password: `vibecode`)
-- **PostgreSQL**: `psql -h 192.168.64.10 -U postgres`
-- **Valkey**: `redis-cli -h 192.168.64.10 -p 6379`
+See [Issue #877](https://github.com/ryanmaclean/vibecode-webgui/issues/877) for runtime roadmap.
+
+### Access Services
+
+- **OpenVSCode**: http://localhost:8080
+- **SSH**: `ssh root@localhost -p 2222` (password: `vibecode`)
+- **PostgreSQL**: `psql -h localhost -U postgres`
+- **Valkey**: `redis-cli -h localhost -p 6379`
 
 ## What's Inside
 
@@ -93,29 +85,27 @@ Access services:
 
 ### Performance
 
-- **Boot Time**: 26 seconds average (25-29s range)
+- **Startup Time**: ~5 seconds from container start to IDE ready
 - **Memory Usage**: ~400MB baseline
-- **Disk Size**: 59MB compressed, 175MB uncompressed
+- **Image Size**: ~500MB compressed
 - **Services**: Parallel startup for maximum efficiency
 
 ## Volume Mounting
 
-Share files between your host and the VM using VirtioFS:
+Share files between your host and the container:
 
 ```bash
-vfkit \
-  --cpus 2 \
-  --memory 2048 \
-  --kernel linux-kernel-arm64 \
-  --initrd unified-services-static.cpio.gz \
-  --device virtio-net,nat,mac=52:54:00:12:34:70 \
-  --device virtio-serial,logFilePath=console.log \
-  --device virtio-rng \
-  --device virtio-fs,sharedDir=/path/to/project,mountTag=hostshare \
-  --gui
+# Docker
+docker run -v /path/to/project:/workspace vibecode
+
+# Docker Compose (recommended)
+# Edit docker-compose.yml volumes section
+volumes:
+  - ./workspace:/workspace
+  - vibecode-data:/data
 ```
 
-Files will be mounted at `/mnt/host` inside the VM. See [Volume Mounting Guide](docs/volume-mounting.md) for details.
+Files will be mounted at `/workspace` inside the container. See [Volume Mounting Guide](docs/volume-mounting.md) for details.
 
 ## Use Cases
 
@@ -125,40 +115,40 @@ Files will be mounted at `/mnt/host` inside the VM. See [Volume Mounting Guide](
 - **Prototyping**: Rapid application development with persistent storage
 - **CI/CD**: Lightweight build and test environments
 
-## Unified Launcher Tool
+## CLI Tool
 
-VibeCode VM includes a polished command-line tool for easy VM management:
+VibeCode includes a command-line tool for easy container management:
 
 ```bash
 # Start/stop/restart
-vibecode-vm start              # Start the VM
-vibecode-vm stop               # Stop the VM
-vibecode-vm restart            # Restart the VM
+vibecode start              # Start containers
+vibecode stop               # Stop containers
+vibecode restart            # Restart containers
 
 # Status and access
-vibecode-vm status             # Show VM and service status
-vibecode-vm ssh                # SSH into the VM
-vibecode-vm logs               # View console logs
-vibecode-vm logs -f            # Follow logs in real-time
+vibecode status             # Show container and service status
+vibecode ssh                # SSH into the container
+vibecode logs               # View container logs
+vibecode logs -f            # Follow logs in real-time
 
 # Configuration
-vibecode-vm config show        # Show current configuration
-vibecode-vm config edit        # Edit configuration
+vibecode config show        # Show current configuration
+vibecode config edit        # Edit configuration
 
 # Help
-vibecode-vm help               # Show help
-vibecode-vm version            # Show version info
+vibecode help               # Show help
+vibecode version            # Show version info
 ```
 
 ### Features
 
-- Single command to start/stop/restart VM
-- Automatic service status checking
+- Single command to start/stop/restart containers
+- Automatic service health checking
 - Built-in SSH with password handling
 - Log viewing and following
 - Configuration management
-- Shared directory setup
-- Optional Datadog monitoring integration
+- Volume mounting setup
+- Datadog monitoring integration
 
 See [UNIFIED-TOOL-GUIDE.md](UNIFIED-TOOL-GUIDE.md) for complete documentation.
 
@@ -177,34 +167,34 @@ Want to customize the VM or build it yourself? See [CONTRIBUTING.md](CONTRIBUTIN
 
 ## Performance Benchmarks
 
-Tested on Apple Silicon (M-series processors):
+Tested on Apple Silicon and Linux:
 
-- **Boot to IDE Ready**: 26 seconds average
-- **Cold Start**: 25 seconds minimum
+- **Container Start**: ~5 seconds to IDE ready
+- **Image Pull**: ~30 seconds (first time only)
 - **Service Startup**: Parallel (all services launch simultaneously)
-- **Network Ready**: 5-10 seconds
 - **Memory Footprint**: ~400MB baseline, ~800MB with active workload
+- **Image Size**: ~500MB compressed
 
 ## Technical Highlights
 
-- **Firecracker-Style Init**: Parallel service startup for minimal boot time
-- **BusyBox Base**: Minimal Linux environment (~5MB)
-- **Static Binaries**: No dynamic library dependencies for core services
-- **Optimized Build**: Aggressive size reduction (89MB → 59MB)
-- **VirtioFS Ready**: Kernel module support for volume mounting
+- **Container Native**: Runs on any OCI-compliant runtime
+- **Multi-Arch**: Supports ARM64 and AMD64 architectures
+- **Parallel Startup**: Services launch simultaneously for fast boot
+- **Optimized Images**: Minimal base images with multi-stage builds
+- **Health Checks**: Built-in container health monitoring
 
 ## System Requirements
 
 ### Host System
-- macOS 12.0 (Monterey) or later
-- Apple Silicon (M1, M2, M3, or later)
-- 4GB RAM (2GB for VM, 2GB for host)
+- macOS, Linux, or Windows with WSL2
+- Docker, Podman, or compatible container runtime
+- 4GB RAM (2GB for container, 2GB for host)
 - 1GB free disk space
 
-### VM Resources
+### Container Resources
 - 2 CPU cores (configurable)
 - 2GB RAM (configurable, minimum 1GB)
-- ~200MB disk space for runtime
+- ~500MB disk space for images
 
 ## Community & Support
 
@@ -219,12 +209,11 @@ VibeCode VM is open source software licensed under the [MIT License](LICENSE).
 ## Acknowledgments
 
 Built with:
-- [vfkit](https://github.com/crc-org/vfkit) - Virtualization toolkit for macOS
 - [OpenVSCode Server](https://github.com/gitpod-io/openvscode-server) - VS Code in the browser
 - [PostgreSQL](https://www.postgresql.org/) - World's most advanced open source database
 - [Valkey](https://valkey.io/) - High-performance in-memory data store
-- [Dropbear SSH](https://matt.ucc.asn.au/dropbear/dropbear.html) - Lightweight SSH server
-- [BusyBox](https://busybox.net/) - Minimal Linux utilities
+- [Docker](https://www.docker.com/) - Container platform
+- [Gas Town](https://github.com/ryanmaclean/gas-town) - Multi-agent orchestration
 
 ## Project Status
 
