@@ -46,5 +46,43 @@
         "CC-BY-4.0"
       ]
     }
+  },
+  "ciVisibility": {
+    "enabled": true,
+    "serviceName": "vibecode-webgui",
+    "env": "${CI_ENV:-ci}",
+    "git": {
+      "uploadRepositoryMetadata": true,
+      "searchCommits": 1000
+    }
+  },
+  "test": {
+    "enabled": true,
+    "testResults": {
+      "format": "junit",
+      "files": ["test-results/*.xml"]
+    },
+    "coverage": {
+      "enabled": true,
+      "files": ["coverage/lcov.info"]
+    }
+  },
+  "profiling": {
+    "enabled": true,
+    "serviceName": "vibecode-webgui",
+    "env": "${CI_ENV:-ci}",
+    "exporters": ["datadog"]
+  },
+  "tags": [
+    "team:platform",
+    "service:vibecode-webgui",
+    "env:${CI_ENV:-ci}",
+    "language:typescript",
+    "framework:nextjs"
+  ],
+  "synthetics": {
+    "enabled": true,
+    "configPath": "monitoring/datadog/synthetics/*.json",
+    "publicIds": ["vib-ecd-aig-perf"]
   }
 }
