@@ -171,16 +171,10 @@ class UserService {
     const securityTab = screen.getByRole('tab', { name: /Security/ });
     fireEvent.click(securityTab);
 
-    // The mock implementation returns a single result with stepId 'security', not 'security-review'
-    // So we need to check for the actual mock content
     await waitFor(() => {
-      const content = screen.queryByText(/Critical security issue/);
-      if (!content) {
-        // If the expected content is not there, the component is showing the mock
-        expect(screen.getByText(/Security review not available/)).toBeInTheDocument();
-      } else {
-        expect(content).toBeInTheDocument();
-      }
+      expect(
+        screen.getByText(/Mock security review - LangChain temporarily disabled/)
+      ).toBeInTheDocument();
     });
   });
 

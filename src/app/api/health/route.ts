@@ -98,14 +98,14 @@ export async function GET(request: NextRequest) {
     // logger.performance('health-check', responseTime, logContext)
 
     // Determine overall health status
-    const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
+    const hasFailures = Object.values(healthChecks.checks).some(check => check.status === 'error')
     if (hasFailures) {
       healthChecks.status = 'degraded'
       console.warn('Health check shows degraded status', { 
         ...logContext, 
         healthStatus: 'degraded',
         failedChecks: Object.entries(healthChecks.checks)
-          .filter(([, check]) => check.status !== 'healthy')
+          .filter(([, check]) => check.status === 'error')
           .map(([name]) => name)
       })
       

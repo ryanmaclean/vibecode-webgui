@@ -168,7 +168,7 @@ jest.mock('dompurify', () => ({
   default: {
     sanitize: jest.fn().mockImplementation((html) => html)
   }
-}));
+}), { virtual: true });
 
 describe('CollaborativeEditor', () => {
   // Get mocked collaboration manager functions

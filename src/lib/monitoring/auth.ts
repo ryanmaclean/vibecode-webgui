@@ -32,10 +32,10 @@ interface AuthResult {
  * @param requireAdminRole - If true, user must have an admin role (for read operations). If false, any authenticated user is allowed (for write operations)
  * @returns Promise<AuthResult> - Authorization result
  */
-export async function checkMonitoringAuth(request: NextRequest | Request, requireAdminRole: boolean = true): Promise<AuthResult> {
+export async function checkMonitoringAuth(request?: NextRequest | Request, requireAdminRole: boolean = true): Promise<AuthResult> {
   try {
     // Check for API key authentication first (for programmatic access)
-    const apiKey = 'headers' in request
+    const apiKey = request && 'headers' in request
       ? request.headers.get('x-api-key')
       : null
 
@@ -94,10 +94,10 @@ export async function checkMonitoringAuth(request: NextRequest | Request, requir
  * @param request - Next.js request object
  * @returns Promise<AuthResult> - Authorization result
  */
-export async function checkDashboardAuth(request: NextRequest | Request): Promise<AuthResult> {
+export async function checkDashboardAuth(request?: NextRequest | Request): Promise<AuthResult> {
   try {
     // Check for API key authentication first (for programmatic access)
-    const apiKey = 'headers' in request
+    const apiKey = request && 'headers' in request
       ? request.headers.get('x-api-key')
       : null
 
