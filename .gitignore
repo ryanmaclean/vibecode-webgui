@@ -368,3 +368,7 @@ QUICK_*.md
 USER_GUIDE_*.md
 PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
+
+# Gas Town local runtime
+.beads/
+.runtime/
