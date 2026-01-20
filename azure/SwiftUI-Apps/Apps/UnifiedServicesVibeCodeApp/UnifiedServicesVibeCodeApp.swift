@@ -4,6 +4,7 @@
 //
 // Created: 2025-11-27
 // Updated: 2026-01-13 - Converted to menubar app (Agent 22)
+// Updated: 2026-01-19 - Fixed menubar lag with state caching and adaptive timer (mm-82w)
 // Purpose: Menubar app for Unified Services VM (OpenVSCode + Valkey + PostgreSQL + SSH)
 //
 
@@ -25,7 +26,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var statusItem: NSStatusItem?
     var vmManager = UnifiedServicesVMManager()
     var menu: NSMenu?
-    
+
     // Menu items that need updating
     var statusMenuItem: NSMenuItem?
     var ipMenuItem: NSMenuItem?
@@ -38,12 +39,20 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     var stopMenuItem: NSMenuItem?
     var copyIPMenuItem: NSMenuItem?
     var showConsoleMenuItem: NSMenuItem?
-    
+
     // Console window
     var consoleWindow: NSWindow?
-    
+
     // Timer for updating menu
     var updateTimer: Timer?
+
+    // MARK: - State Caching for Lag Prevention
+    // Cache previous state to avoid redundant UI updates
+    private var cachedIsRunning: Bool = false
+    private var cachedIPAddress: String? = nil
+    private var cachedStatus: String = ""
+    private var isStableState: Bool = false
+    private var stableStateCounter: Int = 0
     
     func applicationDidFinishLaunching(_ notification: Notification) {
         // Create status item in menubar
@@ -65,12 +74,11 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         vmManager.startVM()
         
         // Set up timer to update menu based on VM state
-        updateTimer = Timer.scheduledTimer(withTimeInterval: 1.0, repeats: true) { [weak self] _ in
-            self?.updateMenuState()
-        }
-        
-        // Initial menu update
-        updateMenuState()
+        // Uses adaptive interval: faster during state transitions, slower when stable
+        scheduleUpdateTimer(interval: 1.0)
+
+        // Initial menu update (force update to set initial state)
+        updateMenuState(forceUpdate: true)
     }
     
     func setupMenu() {
@@ -151,13 +159,58 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         statusItem?.menu = menu
     }
     
-    func updateMenuState() {
+    // MARK: - Adaptive Timer Management
+
+    /// Schedule the update timer with adaptive interval.
+    /// Uses longer intervals when VM is in a stable state to reduce main thread work.
+    private func scheduleUpdateTimer(interval: TimeInterval) {
+        updateTimer?.invalidate()
+        updateTimer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
+            self?.updateMenuState(forceUpdate: false)
+        }
+    }
+
+    /// Update menu state with change detection to prevent redundant UI updates.
+    /// This is the key fix for menubar lag - only update UI elements when state actually changes.
+    func updateMenuState(forceUpdate: Bool = false) {
         guard let button = statusItem?.button else { return }
-        
+
+        // Read current state from VM manager
         let isRunning = vmManager.isRunning
         let ipAddress = vmManager.vmIPAddress
         let status = vmManager.status
-        
+
+        // Check if state has actually changed (key optimization for lag prevention)
+        let stateChanged = forceUpdate ||
+            isRunning != cachedIsRunning ||
+            ipAddress != cachedIPAddress ||
+            status != cachedStatus
+
+        // If nothing changed, skip all UI updates to prevent main thread congestion
+        guard stateChanged else {
+            // Track stable state for adaptive timer
+            stableStateCounter += 1
+            if stableStateCounter >= 5 && !isStableState {
+                // Switch to slower update interval when stable
+                isStableState = true
+                scheduleUpdateTimer(interval: 2.0)
+            }
+            return
+        }
+
+        // State changed - reset stable state tracking
+        stableStateCounter = 0
+        if isStableState {
+            isStableState = false
+            scheduleUpdateTimer(interval: 1.0)
+        }
+
+        // Update cache
+        cachedIsRunning = isRunning
+        cachedIPAddress = ipAddress
+        cachedStatus = status
+
+        // Batch all UI updates together (reduces layout passes)
         // Update menubar icon based on state
         if isRunning && ipAddress != nil && ipAddress != "Starting..." {
             button.title = "🟢 VibeCode"
@@ -169,7 +222,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             button.title = "⚫ VibeCode"
             button.toolTip = "Unified Services VM - Stopped"
         }
-        
+
         // Update status text
         if let ip = ipAddress, ip != "Starting..." {
             statusMenuItem?.title = "VM Status: Running ✓"
@@ -178,26 +231,26 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         } else {
             statusMenuItem?.title = "VM Status: Stopped"
         }
-        
-        // Update IP display
+
+        // Update IP display and service info
         if let ip = ipAddress, ip != "Starting..." {
             ipMenuItem?.title = "VM IP: \(ip)"
             ipMenuItem?.isHidden = false
             copyIPMenuItem?.isHidden = false
-            
+
             // Show service links
             openVSCodeMenuItem?.title = "Open OpenVSCode Server (http://\(ip):8080)"
             openVSCodeMenuItem?.isHidden = false
-            
+
             valkeyInfoMenuItem?.title = "Valkey: redis-cli -h \(ip) -p 6379"
             valkeyInfoMenuItem?.isHidden = false
-            
+
             postgresInfoMenuItem?.title = "PostgreSQL: psql -h \(ip) -U postgres"
             postgresInfoMenuItem?.isHidden = false
-            
+
             sshInfoMenuItem?.title = "SSH: ssh root@\(ip) (password: vibecode)"
             sshInfoMenuItem?.isHidden = false
-            
+
             separatorAfterServices?.isHidden = false
         } else {
             ipMenuItem?.isHidden = true
@@ -208,7 +261,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             sshInfoMenuItem?.isHidden = true
             separatorAfterServices?.isHidden = true
         }
-        
+
         // Update start/stop buttons
         startMenuItem?.isEnabled = !isRunning
         stopMenuItem?.isEnabled = isRunning
@@ -234,7 +287,7 @@ class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let originalTitle = statusMenuItem?.title
             statusMenuItem?.title = "✓ IP Address copied to clipboard!"
             DispatchQueue.main.asyncAfter(deadline: .now() + 2.0) { [weak self] in
-                self?.updateMenuState()
+                self?.updateMenuState(forceUpdate: true)
             }
         }
     }

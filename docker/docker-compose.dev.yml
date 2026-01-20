@@ -41,7 +41,7 @@ services:
     environment:
       POSTGRES_DB: vibecode_dev
       POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: password
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "5432:5432"
     volumes:

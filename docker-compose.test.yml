@@ -6,7 +6,7 @@ services:
     environment:
       POSTGRES_DB: vibecode_test
       POSTGRES_USER: test_user
-      POSTGRES_PASSWORD: test_password
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-test_password}
     ports:
       - "5434:5432"
     volumes:
@@ -39,9 +39,9 @@ services:
       - "3003:3000"
     environment:
       - NODE_ENV=test
-      - DATABASE_URL=postgresql://test_user:test_password@postgres:5432/vibecode_test
+      - DATABASE_URL=postgresql://test_user:${POSTGRES_TEST_PASSWORD:-test_password}@postgres:5432/vibecode_test
       - REDIS_URL=redis://redis:6379
-      - NEXTAUTH_SECRET=test-secret-for-kind-testing
+      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET_TEST:-test-secret-for-kind-testing}
       - NEXTAUTH_URL=http://localhost:3003
       - USE_CONNECTION_POOL=true
       - CONNECTION_POOL_MAX_CONNECTIONS=10

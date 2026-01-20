@@ -32,7 +32,7 @@ services:
     environment:
       POSTGRES_DB: testdb
       POSTGRES_USER: test
-      POSTGRES_PASSWORD: test
+      POSTGRES_PASSWORD: ${POSTGRES_TEST_PASSWORD:-test}
     ports:
       - "5432:5432"
     volumes:
