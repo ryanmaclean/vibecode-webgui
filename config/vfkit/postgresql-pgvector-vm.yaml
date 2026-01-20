@@ -3,7 +3,7 @@
 # Usage: vfkit --config postgresql-pgvector-vm.yaml
 #
 # Features:
-# - PostgreSQL 16+ with pgvector 0.6.0+ extension
+# - PostgreSQL 16+ with pgvector 0.8.0+ extension
 # - Optimized for vector similarity search (HNSW, IVFFlat indexes)
 # - SSL/TLS enabled
 # - Production-ready with backup support
@@ -93,9 +93,9 @@ setup: |
     shadow
 
   # Install pgvector from source (Alpine doesn't have pre-built package for ARM64)
-  echo "[3/10] Building and installing pgvector 0.7.4..."
+  echo "[3/10] Building and installing pgvector 0.8.0..."
   cd /tmp
-  git clone --branch v0.7.4 https://github.com/pgvector/pgvector.git
+  git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
   cd pgvector
   make USE_PGXS=1
   make install USE_PGXS=1
@@ -438,5 +438,5 @@ restart: unless-stopped
 labels:
   - "com.vibecode.service=postgresql"
   - "com.vibecode.version=16"
-  - "com.vibecode.extension=pgvector-0.7.4"
+  - "com.vibecode.extension=pgvector-0.8.0"
   - "com.vibecode.environment=production"

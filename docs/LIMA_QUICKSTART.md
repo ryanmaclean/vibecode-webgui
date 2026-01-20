@@ -43,7 +43,7 @@ VibeCode uses three Lima VMs:
 - **Name:** `vibecode-pgvector`
 - **OS:** Ubuntu 24.04 ARM64
 - **Resources:** 4 CPUs, 8GB RAM, 3 disks (20GB + 100GB + 50GB)
-- **Services:** PostgreSQL 16 + pgvector 0.7.4
+- **Services:** PostgreSQL 16 + pgvector 0.8.0
 - **Ports:** 5432, 9187
 
 ### 3. Node.js Dev VM (Development)

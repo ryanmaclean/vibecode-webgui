@@ -49,9 +49,9 @@ cat > root/build-postgresql.sh <<'BUILD'
 echo "=== Building PostgreSQL with pgvector ==="
 apk add build-base wget postgresql-dev
 cd /tmp
-wget https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.1.tar.gz
-tar xzf v0.5.1.tar.gz
-cd pgvector-0.5.1
+wget https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.0.tar.gz
+tar xzf v0.8.0.tar.gz
+cd pgvector-0.8.0
 make
 make install
 echo "✅ pgvector built"
