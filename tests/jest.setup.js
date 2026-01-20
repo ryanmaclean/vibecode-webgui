@@ -1,8 +1,10 @@
 // Jest setup file
 import '@testing-library/jest-dom';
+import { jest } from '@jest/globals';
 
 // Mock global objects - Enhanced fetch mock with proper Response object (Issue #791)
 // URL-aware mock responses for common API endpoints (Issue #848)
+// Fixed Node 20 compatibility by explicitly importing jest (Issue mm-tdy3)
 const getMockResponse = (url) => {
   const urlStr = typeof url === 'string' ? url : url?.url || '';
 
@@ -157,14 +159,20 @@ jest.mock('next/server', () => {
 });
 
 // Mock logger to prevent auth module loading issues (Issue #792)
+// Added createChildLogger for Node 20 compatibility (Issue mm-tdy3)
+const mockLoggerFns = () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  log: jest.fn(),
+  child: jest.fn(() => mockLoggerFns()),
+});
+
 jest.mock('@/lib/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    log: jest.fn(),
-  },
+  logger: mockLoggerFns(),
+  createChildLogger: jest.fn(() => mockLoggerFns()),
+  createLogger: jest.fn(() => mockLoggerFns()),
 }));
 
 // Mock environment variables
