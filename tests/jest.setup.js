@@ -1,26 +1,142 @@
 // Jest setup file
 import '@testing-library/jest-dom';
+import { jest } from '@jest/globals';
 
 // Mock global objects - Enhanced fetch mock with proper Response object (Issue #791)
-global.fetch = jest.fn((url, options) =>
-  Promise.resolve({
-    ok: true,
-    status: 200,
-    statusText: 'OK',
+// URL-aware mock responses for common API endpoints (Issue #848)
+// Fixed Node 20 compatibility by explicitly importing jest (Issue mm-tdy3)
+const getMockResponse = (url) => {
+  const urlStr = typeof url === 'string' ? url : url?.url || '';
+
+  // Auth-required endpoints - return 401 by default (tests can override)
+  if (urlStr.includes('/api/ai/litellm') || urlStr.includes('/api/ai/chat')) {
+    return {
+      status: 401,
+      ok: false,
+      data: { error: 'Unauthorized', message: 'Authentication required' },
+    };
+  }
+
+  // Health and monitoring endpoints
+  if (urlStr.includes('/api/monitoring/health') || urlStr.includes('/api/health')) {
+    return {
+      status: 200,
+      ok: true,
+      data: {
+        status: 'healthy',
+        timestamp: new Date().toISOString(),
+        uptime: 3600,
+        version: '1.0.0',
+        checks: {
+          database: {
+            status: 'healthy',
+            responseTime: 5,
+            lastChecked: Date.now(),
+            details: { version: 'PostgreSQL 16.0', activeConnections: 10, maxConnections: 100 },
+          },
+          redis: {
+            status: 'healthy',
+            responseTime: 2,
+            lastChecked: Date.now(),
+            details: { version: 'Redis 7.2.0', memoryUsed: '50MB', maxMemory: '256MB' },
+          },
+          datadog: { status: 'healthy', responseTime: 10, lastChecked: Date.now() },
+          memory: {
+            status: 'healthy',
+            usage: 0.5,
+            threshold: 0.8,
+            details: { used: '512MB', total: '1024MB', percentage: '50%' },
+          },
+        },
+        components: {
+          datadog: {
+            status: 'healthy',
+            connected: true,
+            details: { integrationTested: true, apiKeyValid: true, lastCheck: new Date().toISOString() },
+          },
+          database: { status: 'healthy', connected: true, details: { connectionPool: 10, active: 2 } },
+          redis: { status: 'healthy', connected: true, details: { latency: 1, memoryUsage: 0.3 } },
+        },
+      },
+    };
+  }
+
+  // Metrics endpoints
+  if (urlStr.includes('/api/monitoring/metrics') || urlStr.includes('/api/metrics')) {
+    return {
+      status: 200,
+      ok: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        system: {
+          cpu: 25.5,
+          memory: 42.3,
+          loadAverage: [1.5, 1.2, 0.9],
+          network: { rx: 1024000, tx: 512000 },
+        },
+        application: {
+          requestCount: 1000,
+          responseTime: 45.2,
+          errorRate: 0.5,
+        },
+      },
+    };
+  }
+
+  // System monitoring endpoints
+  if (urlStr.includes('/api/monitoring/system') || urlStr.includes('/api/monitoring/application') ||
+      urlStr.includes('/api/monitoring/database') || urlStr.includes('/api/monitoring/errors')) {
+    return {
+      status: 200,
+      ok: true,
+      data: {
+        timestamp: new Date().toISOString(),
+        status: 'healthy',
+        data: {},
+      },
+    };
+  }
+
+  // Datadog API endpoints
+  if (urlStr.includes('datadoghq.com')) {
+    if (urlStr.includes('/api/v1/validate')) {
+      return { status: 200, ok: true, data: { valid: true } };
+    }
+    if (urlStr.includes('/api/v1/series')) {
+      return { status: 202, ok: true, data: { status: 'ok' } };
+    }
+    if (urlStr.includes('/api/v1/query')) {
+      return { status: 200, ok: true, data: { series: [], status: 'ok' } };
+    }
+    return { status: 200, ok: true, data: { status: 'ok' } };
+  }
+
+  // Default response for unmatched URLs
+  return { status: 200, ok: true, data: {} };
+};
+
+global.fetch = jest.fn((url, options) => {
+  const urlStr = typeof url === 'string' ? url : url?.url || '';
+  const mockResponse = getMockResponse(url);
+
+  return Promise.resolve({
+    ok: mockResponse.ok,
+    status: mockResponse.status,
+    statusText: mockResponse.ok ? 'OK' : 'Unauthorized',
     headers: new Headers({ 'content-type': 'application/json' }),
-    url: typeof url === 'string' ? url : url.url,
+    url: urlStr,
     redirected: false,
     type: 'basic',
     body: null,
     bodyUsed: false,
-    json: () => Promise.resolve({}),
-    text: () => Promise.resolve(''),
-    blob: () => Promise.resolve(new Blob()),
+    json: () => Promise.resolve(mockResponse.data),
+    text: () => Promise.resolve(JSON.stringify(mockResponse.data)),
+    blob: () => Promise.resolve(new Blob([JSON.stringify(mockResponse.data)])),
     arrayBuffer: () => Promise.resolve(new ArrayBuffer(0)),
     formData: () => Promise.resolve(new FormData()),
     clone: function() { return { ...this }; },
-  })
-);
+  });
+});
 
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({
@@ -43,14 +159,20 @@ jest.mock('next/server', () => {
 });
 
 // Mock logger to prevent auth module loading issues (Issue #792)
+// Added createChildLogger for Node 20 compatibility (Issue mm-tdy3)
+const mockLoggerFns = () => ({
+  info: jest.fn(),
+  warn: jest.fn(),
+  error: jest.fn(),
+  debug: jest.fn(),
+  log: jest.fn(),
+  child: jest.fn(() => mockLoggerFns()),
+});
+
 jest.mock('@/lib/logger', () => ({
-  logger: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-    log: jest.fn(),
-  },
+  logger: mockLoggerFns(),
+  createChildLogger: jest.fn(() => mockLoggerFns()),
+  createLogger: jest.fn(() => mockLoggerFns()),
 }));
 
 // Mock environment variables
