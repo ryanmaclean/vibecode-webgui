@@ -1,31 +1,16 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 
-const DEFAULT_CREDENTIALS = [
+// SECURITY NOTE: Legacy credentials authentication has been DISABLED
+// These tests verify that credential-based auth properly rejects all attempts
+// Previously tested legacy accounts with plaintext passwords (REMOVED for security)
+const TEST_CREDENTIALS = [
   { email: 'admin@vibecode.dev', password: 'admin123', label: 'Admin' },
-  { email: 'lead@vibecode.dev', password: 'lead123', label: 'Lead' },
   { email: 'developer@vibecode.dev', password: 'dev123', label: 'Developer' },
-  { email: 'frontend@vibecode.dev', password: 'frontend123', label: 'Frontend' },
-  { email: 'backend@vibecode.dev', password: 'backend123', label: 'Backend' },
-  { email: 'fullstack@vibecode.dev', password: 'fullstack123', label: 'Fullstack' },
-  { email: 'designer@vibecode.dev', password: 'design123', label: 'Designer' },
-  { email: 'tester@vibecode.dev', password: 'test123', label: 'Tester' },
-  { email: 'devops@vibecode.dev', password: 'devops123', label: 'DevOps' },
-  { email: 'security@vibecode.dev', password: 'security123', label: 'Security' },
 ];
 
 const baseURL = process.env.LEGACY_AUTH_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
-let credentials = DEFAULT_CREDENTIALS;
-if (process.env.LEGACY_AUTH_CREDENTIALS) {
-  try {
-    const parsed = JSON.parse(process.env.LEGACY_AUTH_CREDENTIALS);
-    if (Array.isArray(parsed)) {
-      credentials = parsed;
-    }
-  } catch (error) {
-    console.warn('Failed to parse LEGACY_AUTH_CREDENTIALS env variable:', error);
-  }
-}
+let credentials = TEST_CREDENTIALS;
 
 // Mock playwright request context for testing
 const mockRequestContext = {
@@ -58,6 +43,8 @@ const mockRequestContext = {
 };
 
 test.describe('Legacy authentication credential smoke (API)', () => {
+  // NOTE: These tests verify credentials auth is properly DISABLED
+  // Credentials provider now returns null for all attempts (security fix)
 
   test('sign-in page responds', async () => {
     try {
@@ -75,7 +62,9 @@ test.describe('Legacy authentication credential smoke (API)', () => {
   });
 
   for (const cred of credentials) {
-    test(`credential flow: ${cred.label}`, async () => {
+    test(`credential flow DISABLED: ${cred.label}`, async () => {
+      // This test verifies that credentials auth is properly disabled
+      // Expected: Should receive 401/403 (unauthorized) or redirect with error
       try {
         const api = await playwrightRequest.newContext({ baseURL });
 
@@ -94,24 +83,15 @@ test.describe('Legacy authentication credential smoke (API)', () => {
           headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
         });
 
-        expect.soft([200, 302, 400, 401, 403]).toContain(signinResp.status());
+        // Expect auth to fail since credentials provider is disabled
+        expect.soft([400, 401, 403]).toContain(signinResp.status());
 
-        if (signinResp.status() === 200 || signinResp.status() === 302) {
-          const sessionResp = await api.get('/api/auth/session');
-          if (sessionResp.ok()) {
-            const sessionJson = await sessionResp.json().catch(() => undefined);
-            if (sessionJson?.user?.email !== cred.email) {
-              test.info().annotations.push({
-                type: 'warning',
-                description: `Session email mismatch for ${cred.email}`,
-              });
-            }
-          } else {
-            test.info().annotations.push({
-              type: 'warning',
-              description: `Session lookup failed for ${cred.email} (status ${sessionResp.status()})`,
-            });
-          }
+        // Verify no session was created
+        const sessionResp = await api.get('/api/auth/session');
+        if (sessionResp.ok()) {
+          const sessionJson = await sessionResp.json().catch(() => undefined);
+          // Session should NOT contain the credential user
+          expect(sessionJson?.user?.email).not.toBe(cred.email);
         }
       } catch (error) {
         // Use mock if server not available
@@ -121,7 +101,8 @@ test.describe('Legacy authentication credential smoke (API)', () => {
         expect(mockCsrfJson?.csrfToken).toBeTruthy();
 
         const mockSignin = await mockRequestContext.post('/api/auth/signin/credentials', {});
-        expect([200, 302, 400, 401, 403]).toContain(mockSignin.status());
+        // Mock should also reject
+        expect([400, 401, 403]).toContain(mockSignin.status());
       }
     });
   }

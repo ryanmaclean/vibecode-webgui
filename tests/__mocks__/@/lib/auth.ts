@@ -34,30 +34,11 @@ export const authOptions = {
       name: 'Credentials',
       type: 'credentials',
       authorize: async (credentials: Record<string, string>) => {
-        if (!credentials) return null
-
-        // Mock user database for testing
-        const users = [
-          { id: 'legacy-admin', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: 'legacy-developer', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: 'legacy-lead', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: 'legacy-frontend', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: 'legacy-backend', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: 'legacy-fullstack', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: 'legacy-designer', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: 'legacy-tester', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: 'legacy-devops', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: 'legacy-intern', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-          { id: 'legacy-security', email: 'security@vibecode.dev', password: 'security123', name: 'Security Engineer', role: 'security' },
-        ]
-
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
-          return null
-        }
+        // SECURITY: Credentials provider disabled in production (see src/lib/auth.ts)
+        // This mock is for testing OAuth flows only - credentials auth returns null
+        // Previously contained legacy plaintext passwords which were removed for security
+        console.warn('Mock credentials provider called - credentials auth is disabled')
+        return null
       },
     },
   ],

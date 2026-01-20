@@ -129,8 +129,9 @@ jest.mock('../services/datadog-metrics', () => ({
 import express from 'express';
 import request from 'supertest';
 
-// Use test API key if OPENROUTER_API_KEY is not set in environment
-const TEST_API_KEY = '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';
+// Use environment variable for API key - no hardcoded keys for security
+// Set OPENROUTER_API_KEY environment variable before running tests
+const TEST_API_KEY = process.env.OPENROUTER_TEST_API_KEY || 'test-key-placeholder';
 
 async function buildApp() {
   let createApp: (() => express.Express) | undefined;

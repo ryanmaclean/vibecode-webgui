@@ -97,29 +97,19 @@ export const authOptions: NextAuthOptions = {
       async authorize(credentials) {
         if (!credentials) return null
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: 'legacy-admin', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: 'legacy-developer', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: 'legacy-lead', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: 'legacy-frontend', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: 'legacy-backend', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: 'legacy-fullstack', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: 'legacy-designer', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: 'legacy-tester', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: 'legacy-devops', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: 'legacy-intern', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-          { id: 'legacy-security', email: 'security@vibecode.dev', password: 'security123', name: 'Security Engineer', role: 'security' },
-        ]
+        // SECURITY WARNING: This credential provider is disabled for security reasons.
+        // Previously contained hardcoded plaintext passwords which is a critical security vulnerability.
+        //
+        // To enable credential-based authentication:
+        // 1. Set up a proper database with Prisma adapter (uncomment PrismaAdapter above)
+        // 2. Use bcrypt/argon2 for password hashing
+        // 3. Implement proper user registration and password reset flows
+        // 4. Never store plaintext passwords
+        //
+        // For development, use GitHub or Google OAuth providers instead.
 
-        const user = users.find(u => u.email === credentials.email)
-
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
-          return null
-        }
+        logger.warn('Credentials provider called but is disabled for security. Use OAuth providers instead.')
+        return null
       },
     }),
   ],
