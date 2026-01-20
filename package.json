@@ -314,7 +314,7 @@
     "jest-junit": "16.0.0",
     "jest-watch-typeahead": "3.0.1",
     "lighthouse": "13.0.1",
-    "markdownlint-cli2": "0.19.1",
+    "markdownlint-cli2": "0.20.0",
     "msw": "^2.10.5",
     "null-loader": "4.0.1",
     "pg": "8.16.3",
