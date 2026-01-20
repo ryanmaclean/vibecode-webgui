@@ -14,6 +14,10 @@ permissions:
   pull-requests: write
   checks: write
 
+env:
+  DD_SERVICE: vibecode-webgui
+  DD_ENV: ci
+
 jobs:
   pr-info:
     name: PR Information
@@ -155,16 +159,27 @@ jobs:
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Install Datadog CI CLI
+        run: npm install -g @datadog/datadog-ci
+
       - name: Run all tests
         id: tests
         run: |
           npm test 2>&1 | tee test-output.txt
           echo "status=$?" >> $GITHUB_OUTPUT
         env:
+          # Datadog CI Visibility - Test instrumentation
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
+          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+          DD_SITE: datadoghq.com
+          DD_SERVICE: ${{ env.DD_SERVICE }}
+          DD_ENV: ${{ env.DD_ENV }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          DD_GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
           REDIS_URL: redis://localhost:6379
           CI: true
         continue-on-error: true
@@ -174,11 +189,15 @@ jobs:
         env:
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_SITE: datadoghq.com
-          DD_ENV: ci
-          DD_SERVICE: vibecode-webgui
+          DD_ENV: ${{ env.DD_ENV }}
+          DD_SERVICE: ${{ env.DD_SERVICE }}
         run: |
-          npm install -g @datadog/datadog-ci
-          datadog-ci junit upload --service vibecode-webgui test-results/*.xml || echo "No test results to upload"
+          # Upload JUnit XML test results with flaky test detection
+          datadog-ci junit upload \
+            --service $DD_SERVICE \
+            --env $DD_ENV \
+            --tags "test.framework:jest,ci.workflow:${{ github.workflow }},ci.job:test-pr,pr.number:${{ github.event.pull_request.number }}" \
+            test-results/*.xml || echo "No test results to upload"
 
       - name: Extract test results
         if: always()

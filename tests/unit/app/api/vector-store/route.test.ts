@@ -87,7 +87,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it('should handle health check action', async () => {
@@ -134,7 +135,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Health check failed');
     });
   });
 
@@ -177,7 +179,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate search parameters', async () => {
@@ -191,8 +194,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Invalid request parameters');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Invalid request parameters');
     });
 
     it('should include performance metrics', async () => {
@@ -215,8 +218,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Search failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Search failed');
     });
   });
 
@@ -260,7 +263,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate store parameters', async () => {
@@ -299,8 +303,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Storage failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Storage failed');
     });
   });
 
@@ -334,7 +338,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate delete parameters', async () => {
@@ -345,7 +350,7 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.status).toBe('error');
+      expect(data.success).toBe(false);
     });
 
     it('should accept fileIds for deletion', async () => {
@@ -374,8 +379,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Deletion failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Deletion failed');
     });
   });
 

@@ -21,6 +21,40 @@ metadata:
     {{ $key }}: {{ $value | replace "{USER_ID}" $userId | quote }}
     {{- end }}
     {{- end }}
+    {{- if $root.Values.codeServer.ingress.security.headers }}
+    # Security Headers
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "X-Frame-Options: DENY";
+      more_set_headers "X-Content-Type-Options: nosniff";
+      more_set_headers "X-XSS-Protection: 1; mode=block";
+      more_set_headers "Referrer-Policy: strict-origin-when-cross-origin";
+      more_set_headers "Permissions-Policy: geolocation=(), microphone=(), camera=()";
+      more_set_headers "Content-Security-Policy: default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' wss: https:; frame-ancestors 'none';";
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains; preload";
+    {{- end }}
+    {{- if $root.Values.codeServer.ingress.rateLimit.enabled }}
+    # Rate Limiting
+    nginx.ingress.kubernetes.io/limit-rps: {{ $root.Values.codeServer.ingress.rateLimit.rps | quote }}
+    nginx.ingress.kubernetes.io/limit-connections: {{ $root.Values.codeServer.ingress.rateLimit.connections | quote }}
+    nginx.ingress.kubernetes.io/limit-burst-multiplier: {{ $root.Values.codeServer.ingress.rateLimit.burstMultiplier | quote }}
+    {{- end }}
+    # Request Size Limits
+    nginx.ingress.kubernetes.io/proxy-body-size: {{ $root.Values.codeServer.ingress.requestLimits.proxyBodySize | quote }}
+    nginx.ingress.kubernetes.io/client-body-buffer-size: {{ $root.Values.codeServer.ingress.requestLimits.clientBodyBufferSize | quote }}
+    {{- if $root.Values.codeServer.ingress.tls.hardening }}
+    # TLS Hardening
+    nginx.ingress.kubernetes.io/ssl-protocols: {{ $root.Values.codeServer.ingress.tls.protocols | quote }}
+    nginx.ingress.kubernetes.io/ssl-ciphers: {{ $root.Values.codeServer.ingress.tls.ciphers | quote }}
+    nginx.ingress.kubernetes.io/ssl-prefer-server-ciphers: "true"
+    {{- end }}
+    # Timeouts for long-running code-server sessions
+    nginx.ingress.kubernetes.io/proxy-connect-timeout: {{ $root.Values.codeServer.ingress.timeouts.connect | quote }}
+    nginx.ingress.kubernetes.io/proxy-send-timeout: {{ $root.Values.codeServer.ingress.timeouts.send | quote }}
+    nginx.ingress.kubernetes.io/proxy-read-timeout: {{ $root.Values.codeServer.ingress.timeouts.read | quote }}
+    {{- if $root.Values.codeServer.ingress.ipWhitelist }}
+    # IP Whitelist
+    nginx.ingress.kubernetes.io/whitelist-source-range: {{ $root.Values.codeServer.ingress.ipWhitelist | quote }}
+    {{- end }}
 spec:
   {{- if $root.Values.codeServer.ingress.className }}
   ingressClassName: {{ $root.Values.codeServer.ingress.className }}

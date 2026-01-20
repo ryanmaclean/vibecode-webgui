@@ -115,7 +115,7 @@ const getMockResponse = (url) => {
   return { status: 200, ok: true, data: {} };
 };
 
-global.fetch = jest.fn((url, options) => {
+const defaultFetchMock = jest.fn((url, options) => {
   const urlStr = typeof url === 'string' ? url : url?.url || '';
   const mockResponse = getMockResponse(url);
 
@@ -138,6 +138,22 @@ global.fetch = jest.fn((url, options) => {
   });
 });
 
+const restoreDefaultFetchMock = () => {
+  global.fetch = defaultFetchMock;
+};
+
+restoreDefaultFetchMock();
+
+beforeEach(() => {
+  restoreDefaultFetchMock();
+  defaultFetchMock.mockClear();
+});
+
+afterEach(() => {
+  restoreDefaultFetchMock();
+  defaultFetchMock.mockClear();
+});
+
 // Mock Next.js modules
 jest.mock('next/navigation', () => ({
   useRouter: () => ({
@@ -157,6 +173,17 @@ jest.mock('next/server', () => {
   const mockModule = jest.requireActual('./__mocks__/next/server.ts');
   return mockModule;
 });
+
+jest.mock('next-auth', () => ({
+  __esModule: true,
+  getServerSession: jest.fn().mockResolvedValue({
+    user: {
+      id: 'test-user',
+      email: 'test@example.com',
+      role: 'admin',
+    },
+  }),
+}));
 
 // Mock logger to prevent auth module loading issues (Issue #792)
 // Added createChildLogger for Node 20 compatibility (Issue mm-tdy3)

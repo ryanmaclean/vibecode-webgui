@@ -10,6 +10,7 @@ const helmet = require('helmet');
 const pty = require('node-pty');
 const chokidar = require('chokidar');
 const winston = require('winston');
+const { createGracefulShutdown } = require('./graceful-shutdown');
 
 // Initialize Winston logger for server
 const logger = winston.createLogger({
@@ -41,6 +42,7 @@ const logger = winston.createLogger({
 const PORT = process.env.WS_PORT || 3001;
 const REDIS_URL = process.env.REDIS_URL || 'redis://localhost:6379';
 const JWT_SECRET = process.env.NEXTAUTH_SECRET || process.env.JWT_SECRET;
+const SHUTDOWN_TIMEOUT_MS = parseInt(process.env.SHUTDOWN_TIMEOUT_MS || '10000', 10);
 
 // Security check: ensure JWT_SECRET is configured in production
 if (process.env.NODE_ENV === 'production' && !JWT_SECRET) {
@@ -108,7 +110,13 @@ app.get('/health', async (req, res) => {
 // Initialize Redis client
 const redis = Redis.createClient({ url: REDIS_URL });
 redis.on('error', (err) => logger.error('Redis Client Error', { error: err.message, stack: err.stack }));
-redis.connect();
+redis.connect().catch((error) => {
+  logger.error('Failed to connect to Redis', {
+    error: error.message,
+    stack: error.stack,
+  });
+  process.exit(1);
+});
 
 // Initialize Socket.IO
 const io = socketIo(server, {
@@ -199,6 +207,42 @@ const requireRole = (role) => {
 const terminals = new Map();
 const fileWatchers = new Map();
 
+const { shutdown: executeGracefulShutdown } = createGracefulShutdown({
+  server,
+  io,
+  redisClient: redis,
+  terminals,
+  fileWatchers,
+  logger,
+  timeoutMs: SHUTDOWN_TIMEOUT_MS,
+});
+
+const shutdownSignals = ['SIGTERM', 'SIGINT'];
+shutdownSignals.forEach((signal) => {
+  process.once(signal, () => {
+    executeGracefulShutdown(signal).catch((error) => {
+      logger.error('Graceful shutdown failed', {
+        signal,
+        error: error.message,
+        stack: error.stack,
+      });
+      process.exit(1);
+    });
+  });
+});
+
+const unexpectedErrorHandler = (type) => (error) => {
+  const normalizedError = error instanceof Error ? error : new Error(String(error));
+  logger.error(`Unexpected ${type} encountered`, {
+    error: normalizedError.message,
+    stack: normalizedError.stack,
+  });
+  executeGracefulShutdown(type, { exitCode: 1 }).catch(() => process.exit(1));
+};
+
+process.on('unhandledRejection', unexpectedErrorHandler('unhandledRejection'));
+process.on('uncaughtException', unexpectedErrorHandler('uncaughtException'));
+
 // Socket.IO connection handler
 io.on('connection', (socket) => {
   logger.info('User connected', {
@@ -258,6 +302,7 @@ io.on('connection', (socket) => {
         env: process.env
       });
 
+      terminal.socket = socket.id;
       terminals.set(terminalId, terminal);
 
       // Send terminal output to client
@@ -423,30 +468,6 @@ io.on('connection', (socket) => {
         userId: socket.user?.id
       });
     }
-  });
-});
-
-// Graceful shutdown
-process.on('SIGTERM', async () => {
-  logger.info('SIGTERM received, shutting down gracefully');
-
-  // Close all terminals
-  for (const terminal of terminals.values()) {
-    terminal.destroy();
-  }
-
-  // Close file watchers
-  for (const watcher of fileWatchers.values()) {
-    await watcher.close();
-  }
-
-  // Close Redis connection
-  await redis.quit();
-
-  // Close server
-  server.close(() => {
-    logger.info('Server closed successfully');
-    process.exit(0);
   });
 });
 

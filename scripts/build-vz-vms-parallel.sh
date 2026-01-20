@@ -4,6 +4,12 @@
 
 set -e
 
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+OUTPUT_DIR="${PROJECT_ROOT}/dist/vm-images"
+LOG_DIR="${PROJECT_ROOT}/logs"
+EFI_HELPER="${PROJECT_ROOT}/scripts/vfkit/create-efi-variable-store.sh"
+
 echo "======================================================================"
 echo "  Parallel VZ VM Builder with Datadog"
 echo "======================================================================"
@@ -34,8 +40,8 @@ echo "Parallel builds: $PARALLEL_JOBS concurrent jobs"
 echo ""
 
 # Create output directory
-mkdir -p dist/vm-images
-mkdir -p logs
+mkdir -p "$OUTPUT_DIR"
+mkdir -p "$LOG_DIR"
 
 # Define VMs to build
 declare -a VMS=(
@@ -55,7 +61,7 @@ ALPINE_SHA="sha512:30b347397387926eeb939d93c926e09833f5b49c6c6de5cc225ccdfe6e54a
 build_vm() {
     local VM_NAME=$1
     local VM_DESC=$2
-    local LOG_FILE="logs/build-${VM_NAME}.log"
+    local LOG_FILE="${LOG_DIR}/build-${VM_NAME}.log"
     
     echo "[${VM_NAME}] Starting build at $(date +%H:%M:%S)" | tee -a "$LOG_FILE"
     
@@ -162,12 +168,12 @@ EOF
         
         # Create EFI NVRAM
         echo "[${VM_NAME}] Creating EFI NVRAM..."
-        dd if=/dev/zero of="${VM_NAME}-efi.nvram" bs=1m count=1 2>&1
+        bash "$EFI_HELPER" "${VM_NAME}-efi.nvram"
         
         # Copy files to output directory
         echo "[${VM_NAME}] Copying to dist/vm-images/..."
-        cp "${VM_NAME}.img" "/Users/ryan.maclean/vibecode-webgui/dist/vm-images/"
-        cp "${VM_NAME}-efi.nvram" "/Users/ryan.maclean/vibecode-webgui/dist/vm-images/"
+        cp "${VM_NAME}.img" "$OUTPUT_DIR/"
+        cp "${VM_NAME}-efi.nvram" "$OUTPUT_DIR/"
         
         # Cleanup
         cd /
@@ -182,7 +188,7 @@ EOF
         echo "✅ ${VM_NAME} (${VM_DESC})"
         return 0
     else
-        echo "❌ ${VM_NAME} (${VM_DESC}) - check logs/${LOG_FILE}"
+        echo "❌ ${VM_NAME} (${VM_DESC}) - check ${LOG_FILE}"
         return 1
     fi
 }
@@ -241,9 +247,9 @@ echo ""
 echo "Total time: ${MINUTES}m ${SECONDS}s"
 echo ""
 echo "Built VMs:"
-ls -lh dist/vm-images/*.img 2>/dev/null || echo "No VMs built"
+ls -lh "$OUTPUT_DIR"/*.img 2>/dev/null || echo "No VMs built"
 echo ""
-echo "Build logs: logs/build-*.log"
+echo "Build logs: ${LOG_DIR}/build-*.log"
 echo ""
 
 if [ $BUILD_EXIT -eq 0 ]; then
@@ -259,4 +265,3 @@ else
     echo "⚠️  Some builds failed - check logs above"
     exit 1
 fi
-
