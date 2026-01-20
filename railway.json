@@ -17,8 +17,17 @@
         "NODE_ENV": "production",
         "PORT": "$PORT",
         "RAILWAY_STATIC_URL": "$RAILWAY_STATIC_URL",
-        "RAILWAY_PUBLIC_DOMAIN": "$RAILWAY_PUBLIC_DOMAIN"
+        "RAILWAY_PUBLIC_DOMAIN": "$RAILWAY_PUBLIC_DOMAIN",
+        "CORS_ORIGIN": "https://vibecode.dev"
       }
+    }
+  },
+  "headers": {
+    "/api/*": {
+      "Access-Control-Allow-Origin": "https://vibecode.dev",
+      "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
+      "Access-Control-Allow-Headers": "Content-Type, Authorization",
+      "Access-Control-Allow-Credentials": "true"
     }
   }
 }
