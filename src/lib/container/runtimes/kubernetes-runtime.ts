@@ -304,8 +304,32 @@ export class KubernetesRuntime implements ContainerRuntime {
     logger.debug('Executing kubectl command', { command: kubectlCmd });
     
     if (options?.input) {
-      // Use echo to pipe input
-      return exec(`echo '${options.input}' | ${kubectlCmd}`);
+      // Use stdin piping safely without shell interpolation
+      const { spawn } = await import('child_process');
+      return new Promise((resolve, reject) => {
+        const parts = kubectlCmd.split(' ');
+        const proc = spawn(parts[0], parts.slice(1), {
+          stdio: ['pipe', 'pipe', 'pipe']
+        });
+        
+        let stdout = '';
+        let stderr = '';
+        
+        proc.stdout.on('data', (data) => { stdout += data; });
+        proc.stderr.on('data', (data) => { stderr += data; });
+        
+        proc.on('close', (code) => {
+          if (code === 0) {
+            resolve({ stdout, stderr });
+          } else {
+            reject(new Error(`Command failed with code ${code}: ${stderr}`));
+          }
+        });
+        
+        // Write input to stdin
+        proc.stdin.write(options.input);
+        proc.stdin.end();
+      });
     }
     
     return exec(kubectlCmd);
@@ -382,8 +406,8 @@ export class KubernetesRuntime implements ContainerRuntime {
   /**
    * Map pod phase to container state
    */
-  private mapPodPhase(phase: string): any {
-    const phaseMap: Record<string, any> = {
+  private mapPodPhase(phase: string): ContainerState {
+    const phaseMap: Record<string, ContainerState> = {
       'Pending': 'created',
       'Running': 'running',
       'Succeeded': 'exited',

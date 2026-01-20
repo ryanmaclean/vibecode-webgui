@@ -2,6 +2,7 @@
  * Apple Container Runtime Adapter
  * 
  * Adapts the existing AppleContainerRuntime to the unified ContainerRuntime interface
+ * Note: This wraps the legacy implementation found in ../apple-container.ts
  */
 
 import type {
@@ -19,6 +20,7 @@ import type {
   LogOptions,
   AppleContainerConfig,
 } from '../runtime-interface';
+// Import the existing Apple Container implementation
 import { AppleContainerRuntime as LegacyAppleRuntime } from '../apple-container';
 import { logger } from '@/lib/logger';
 
