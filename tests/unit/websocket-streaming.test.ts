@@ -3,6 +3,9 @@
  * Coverage target: 80%+
  */
 
+// Use the real implementation, not the auto-mock
+jest.unmock('@/lib/streaming/websocket-streaming-client');
+
 import { WebSocketStreamingClient } from '@/lib/streaming/websocket-streaming-client';
 
 class MockWebSocket {
@@ -91,19 +94,19 @@ describe('WebSocketStreamingClient', () => {
       client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const promise = client.connect();
       mockWs.simulateOpen();
+      await jest.runAllTimersAsync();
       await promise;
       expect(mockWs.readyState).toBe(MockWebSocket.OPEN);
     });
 
     test('should handle connection errors', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
-      const promise = client.connect();
-
-      // Simulate connection error before open
+      // Simulate connection error
       const error = new Error('Connection failed');
       (require('@/lib/websocket-connection-pooling').getPooledWebSocket as jest.Mock)
         .mockRejectedValueOnce(error);
 
+      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      await jest.runAllTimersAsync();
       await expect(client.connect()).rejects.toThrow();
     });
   });
@@ -113,16 +116,20 @@ describe('WebSocketStreamingClient', () => {
       client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.runAllTimersAsync();
       await connectPromise;
 
       await client.stream({}, { onChunk: jest.fn() });
+      await jest.runAllTimersAsync();
       expect(mockPool.sendMessage).toHaveBeenCalled();
     });
 
     test('should receive chunks in order', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      // Disable timeout to prevent stream from being removed
+      client = new WebSocketStreamingClient({ url: 'ws://test', timeout: 0 }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.advanceTimersByTimeAsync(10);
       await connectPromise;
 
       const chunks: any[] = [];
@@ -130,6 +137,7 @@ describe('WebSocketStreamingClient', () => {
 
       // Get the onMessage handler from subscribeToConnection
       const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
+      expect(subscribeCall).toBeDefined();
       const messageHandler = subscribeCall[2].onMessage;
 
       // Simulate receiving chunks
@@ -140,9 +148,11 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should handle stream completion', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      // Disable timeout to prevent stream from being removed
+      client = new WebSocketStreamingClient({ url: 'ws://test', timeout: 0 }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.advanceTimersByTimeAsync(10);
       await connectPromise;
 
       const handlers = { onChunk: jest.fn(), onComplete: jest.fn() };
@@ -150,6 +160,7 @@ describe('WebSocketStreamingClient', () => {
 
       // Get the onMessage handler from subscribeToConnection
       const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
+      expect(subscribeCall).toBeDefined();
       const messageHandler = subscribeCall[2].onMessage;
 
       messageHandler(JSON.stringify({ type: 'stream-complete', requestId, timestamp: 0 }));
@@ -160,10 +171,12 @@ describe('WebSocketStreamingClient', () => {
       client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.runAllTimersAsync();
       await connectPromise;
 
       const handlers = { onChunk: jest.fn(), onError: jest.fn() };
       const requestId = await client.stream({}, handlers);
+      await jest.runAllTimersAsync();
 
       // Get the onMessage handler from subscribeToConnection
       const subscribeCall = mockPool.subscribeToConnection.mock.calls[0];
@@ -180,9 +193,11 @@ describe('WebSocketStreamingClient', () => {
 
   describe('Stream Control', () => {
     test('should pause stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      // Disable timeout to prevent stream from being removed
+      client = new WebSocketStreamingClient({ url: 'ws://test', timeout: 0 }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.advanceTimersByTimeAsync(10);
       await connectPromise;
 
       const requestId = await client.stream({}, { onChunk: jest.fn() });
@@ -194,9 +209,11 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should resume stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      // Disable timeout to prevent stream from being removed
+      client = new WebSocketStreamingClient({ url: 'ws://test', timeout: 0 }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.advanceTimersByTimeAsync(10);
       await connectPromise;
 
       const requestId = await client.stream({}, { onChunk: jest.fn() });
@@ -208,9 +225,11 @@ describe('WebSocketStreamingClient', () => {
     });
 
     test('should cancel stream', async () => {
-      client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
+      // Disable timeout to prevent stream from being removed
+      client = new WebSocketStreamingClient({ url: 'ws://test', timeout: 0 }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.advanceTimersByTimeAsync(10);
       await connectPromise;
 
       const requestId = await client.stream({}, { onChunk: jest.fn() });
@@ -227,6 +246,7 @@ describe('WebSocketStreamingClient', () => {
       client = new WebSocketStreamingClient({ url: 'ws://test', priority: 'high' }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.runAllTimersAsync();
       await connectPromise;
 
       expect(require('@/lib/websocket-connection-pooling').getPooledWebSocket)
@@ -239,6 +259,7 @@ describe('WebSocketStreamingClient', () => {
       client = new WebSocketStreamingClient({ url: 'ws://test' }, mockPool as any);
       const connectPromise = client.connect();
       mockWs.simulateOpen();
+      await jest.runAllTimersAsync();
       await connectPromise;
 
       client.disconnect();

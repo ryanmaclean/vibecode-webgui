@@ -286,11 +286,13 @@ describe('NativeVMProvider', () => {
 
       (provider as any).processes.set('test-vm', mockProc);
 
-      jest.spyOn(provider as any, 'sendRequest').mockImplementation(
-        () => new Promise(resolve => setTimeout(resolve, 15000))
+      // Mock sendRequest to reject (simulating a communication failure)
+      jest.spyOn(provider as any, 'sendRequest').mockRejectedValue(
+        new Error('Communication timeout')
       );
 
-      await expect(provider.stop('test-vm')).rejects.toThrow();
+      // stop() should throw after force killing
+      await expect(provider.stop('test-vm')).rejects.toThrow('Communication timeout');
 
       expect(mockProc.kill).toHaveBeenCalledWith('SIGKILL');
     });

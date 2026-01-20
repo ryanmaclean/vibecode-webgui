@@ -46,8 +46,9 @@ export function checkRateLimit(
   // Handle simple string-based rate limiting (for testing)
   if (typeof requestOrIdentifier === 'string') {
     const identifier = requestOrIdentifier
-    const maxRequests = optionsOrMaxRequests as number
-    const windowMs = windowMsParam as number
+    // Default to 100 requests per minute if not specified
+    const maxRequests = (optionsOrMaxRequests as number) || 100
+    const windowMs = windowMsParam || 60 * 1000
     const now = Date.now()
 
     const current = rateLimitStore.get(identifier)
