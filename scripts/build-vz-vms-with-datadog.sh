@@ -6,8 +6,11 @@ set -e
 
 DATADOG_API_KEY="${DATADOG_API_KEY:-}"
 DATADOG_SITE="${DATADOG_SITE:-datadoghq.com}"
-DIST_DIR="$(cd "$(dirname "$0")/../dist/vm-images" && pwd)"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+DIST_DIR="${PROJECT_ROOT}/dist/vm-images"
 BUILD_DIR="/tmp/vibecode-vz-build"
+EFI_HELPER="${PROJECT_ROOT}/scripts/vfkit/create-efi-variable-store.sh"
 
 if [ -z "$DATADOG_API_KEY" ]; then
     echo "❌ Error: DATADOG_API_KEY environment variable not set"
@@ -199,7 +202,7 @@ METADATA
     # Create EFI NVRAM
     local efi_nvram="${DIST_DIR}/${vm_name}-efi.nvram"
     echo "🔐 Creating EFI variable store..."
-    dd if=/dev/zero of="$efi_nvram" bs=131072 count=1 2>/dev/null
+    bash "$EFI_HELPER" "$efi_nvram"
     
     echo "✅ $vm_name built successfully"
     echo "   Disk: $raw_img"
@@ -350,4 +353,3 @@ echo ""
 echo "⚠️  Note: On first boot, cloud-init will run and install services."
 echo "   Subsequent boots will be fast as everything is pre-configured."
 echo ""
-
