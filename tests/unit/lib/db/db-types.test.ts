@@ -376,7 +376,7 @@ describe('Database Types', () => {
         connectionTime: 150,
         pgVectorAvailable: true,
         documentTableExists: true,
-        pgVectorVersion: '0.5.0',
+        pgVectorVersion: '0.8.0',
         indices: {
           exists: true,
           count: 3,
@@ -437,7 +437,7 @@ describe('Database Types', () => {
       expect(healthResult.connectionTime).toBe(150)
       expect(healthResult.pgVectorAvailable).toBe(true)
       expect(healthResult.documentTableExists).toBe(true)
-      expect(healthResult.pgVectorVersion).toBe('0.5.0')
+      expect(healthResult.pgVectorVersion).toBe('0.8.0')
 
       expect(healthResult.indices?.exists).toBe(true)
       expect(healthResult.indices?.count).toBe(3)
