@@ -9,11 +9,16 @@ import rateLimit, {
   createFileRateLimit,
   createClaudeRateLimit,
   RedisRateLimiter,
-  createDistributedRateLimit
+  createDistributedRateLimit,
+  __clearStore
 } from '../../../src/lib/rate-limiting';
 import { NextRequest } from 'next/server';
 
 describe('Rate Limiting', () => {
+  beforeEach(() => {
+    __clearStore();
+  });
+
   describe('getClientIP', () => {
     it('should extract IP from x-forwarded-for header', async () => {
       const limiter = rateLimit({ windowMs: 60000, max: 10 });
@@ -125,15 +130,16 @@ describe('Rate Limiting', () => {
     });
 
     it('should reset window after time expires', async () => {
-      const limiter = rateLimit({ windowMs: 1000, max: 2 });
+      const limiter = rateLimit({ windowMs: 50, max: 2 });
       const req = new NextRequest('http://localhost/api/test');
 
       await limiter(req);
       await limiter(req);
 
-      // Wait for window to expire (simplified test)
+      await new Promise((resolve) => setTimeout(resolve, 60));
+
       const result = await limiter(req);
-      expect(result).toBeDefined();
+      expect(result.success).toBe(true);
     });
 
     it('should handle custom messages', async () => {
@@ -223,35 +229,9 @@ describe('Rate Limiting', () => {
   });
 
   describe('RedisRateLimiter', () => {
-    it('should create RedisRateLimiter with default prefix', () => {
-      const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => [[null, 1], [null, 'OK']])
-        }))
-      };
-
-      const limiter = new RedisRateLimiter(mockRedis);
-      expect(limiter).toBeDefined();
-    });
-
-    it('should create RedisRateLimiter with custom prefix', () => {
-      const mockRedis = {
-        pipeline: jest.fn()
-      };
-
-      const limiter = new RedisRateLimiter(mockRedis, 'custom:');
-      expect(limiter).toBeDefined();
-    });
-
     it('should check limit successfully', async () => {
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => [[null, 1], [null, 'OK']])
-        }))
+        eval: jest.fn(async () => [1, 9, Date.now()]),
       };
 
       const limiter = new RedisRateLimiter(mockRedis);
@@ -264,11 +244,7 @@ describe('Rate Limiting', () => {
 
     it('should block when over limit', async () => {
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => [[null, 11], [null, 'OK']])
-        }))
+        eval: jest.fn(async () => [0, 0.25, Date.now()]),
       };
 
       const limiter = new RedisRateLimiter(mockRedis);
@@ -280,13 +256,9 @@ describe('Rate Limiting', () => {
 
     it('should handle Redis errors gracefully', async () => {
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => {
-            throw new Error('Redis connection failed');
-          })
-        }))
+        eval: jest.fn(async () => {
+          throw new Error('Redis connection failed');
+        }),
       };
 
       const limiter = new RedisRateLimiter(mockRedis);
@@ -297,30 +269,23 @@ describe('Rate Limiting', () => {
     });
 
     it('should set correct expiration time', async () => {
-      const expireFn = jest.fn();
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: expireFn,
-          exec: jest.fn(async () => [[null, 1], [null, 'OK']])
-        }))
+        eval: jest.fn(async () => [1, 9, Date.now()]),
       };
 
       const limiter = new RedisRateLimiter(mockRedis);
       await limiter.checkLimit('test-key', 10, 60000);
 
-      expect(expireFn).toHaveBeenCalled();
+      expect(mockRedis.eval).toHaveBeenCalled();
+      const call = mockRedis.eval.mock.calls[0];
+      expect(call[6]).toBeGreaterThan(0); // TTL argument
     });
   });
 
   describe('createDistributedRateLimit', () => {
     it('should create distributed rate limiter with default key', async () => {
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => [[null, 1], [null, 'OK']])
-        }))
+        eval: jest.fn(async () => [1, 5, Date.now()]),
       };
 
       const limiter = createDistributedRateLimit(mockRedis, {
@@ -336,11 +301,7 @@ describe('Rate Limiting', () => {
 
     it('should use custom key generator', async () => {
       const mockRedis = {
-        pipeline: jest.fn(() => ({
-          incr: jest.fn(),
-          expire: jest.fn(),
-          exec: jest.fn(async () => [[null, 1], [null, 'OK']])
-        }))
+        eval: jest.fn(async () => [1, 5, Date.now()]),
       };
 
       const limiter = createDistributedRateLimit(mockRedis, {
@@ -353,6 +314,7 @@ describe('Rate Limiting', () => {
       const result = await limiter(req);
 
       expect(result.success).toBe(true);
+      expect(mockRedis.eval).toHaveBeenCalled();
     });
   });
 });

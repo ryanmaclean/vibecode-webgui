@@ -54,9 +54,12 @@ describe('LiteLLM Integration Tests', () => {
   });
 
   beforeEach(() => {
+    // Restore original fetch mock to ensure proper status/ok properties
+    global.fetch = originalFetch;
+
     // Create fresh client for each test
     client = new LiteLLMClient(TEST_CONFIG);
-    
+
     // Reset mocks
     jest.clearAllMocks();
   });

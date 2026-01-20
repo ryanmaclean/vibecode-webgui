@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { z, ZodError, ZodSchema } from 'zod'
+import { createErrorResponse } from '@/lib/utils/api-response'
 
 export interface ValidationOptions {
   /** Transform successful validation results */
@@ -58,46 +59,37 @@ export async function validateRequestBody<T extends ZodSchema>(
 
       return {
         success: false,
-        error: NextResponse.json(
-          {
-            error: 'Validation failed',
-            message: mainMessage,
-            ...(verboseErrors && {
-              details: error.issues.map(err => ({
-                field: err.path.join('.'),
-                message: options.customMessages?.[err.path.join('.')] || err.message,
-                code: err.code
-              }))
-            })
-          },
-          { status: 400 }
-        )
+        error: createErrorResponse('Validation failed', 400, {
+          code: 'VALIDATION_ERROR',
+          detail: mainMessage,
+          ...(verboseErrors && {
+            errors: error.issues.map(err => ({
+              field: err.path.join('.'),
+              message: options.customMessages?.[err.path.join('.')] || err.message,
+              code: err.code,
+            })),
+          }),
+        }),
       }
     }
 
     if (error instanceof SyntaxError) {
       return {
         success: false,
-        error: NextResponse.json(
-          {
-            error: 'Invalid JSON',
-            message: 'Request body must be valid JSON'
-          },
-          { status: 400 }
-        )
+        error: createErrorResponse('Invalid JSON', 400, {
+          code: 'INVALID_JSON',
+          detail: 'Request body must be valid JSON',
+        }),
       }
     }
 
     // Unexpected error
     return {
       success: false,
-      error: NextResponse.json(
-        {
-          error: 'Validation error',
-          message: 'An unexpected error occurred during validation'
-        },
-        { status: 500 }
-      )
+      error: createErrorResponse('Validation error', 500, {
+        code: 'VALIDATION_UNEXPECTED',
+        detail: 'An unexpected error occurred during validation',
+      }),
     }
   }
 }
@@ -149,32 +141,26 @@ export function validateQueryParams<T extends ZodSchema>(
 
       return {
         success: false,
-        error: NextResponse.json(
-          {
-            error: 'Invalid query parameters',
-            message: 'Query parameters contain invalid or missing values',
-            ...(verboseErrors && {
-              details: error.issues.map(err => ({
-                field: err.path.join('.'),
-                message: options.customMessages?.[err.path.join('.')] || err.message,
-                code: err.code
-              }))
-            })
-          },
-          { status: 400 }
-        )
+        error: createErrorResponse('Invalid query parameters', 400, {
+          code: 'INVALID_QUERY_PARAMS',
+          detail: 'Query parameters contain invalid or missing values',
+          ...(verboseErrors && {
+            errors: error.issues.map(err => ({
+              field: err.path.join('.'),
+              message: options.customMessages?.[err.path.join('.')] || err.message,
+              code: err.code,
+            })),
+          }),
+        }),
       }
     }
 
     return {
       success: false,
-      error: NextResponse.json(
-        {
-          error: 'Validation error',
-          message: 'An unexpected error occurred during validation'
-        },
-        { status: 500 }
-      )
+      error: createErrorResponse('Validation error', 500, {
+        code: 'VALIDATION_UNEXPECTED',
+        detail: 'An unexpected error occurred during validation',
+      }),
     }
   }
 }
@@ -209,32 +195,26 @@ export function validatePathParams<T extends ZodSchema>(
 
       return {
         success: false,
-        error: NextResponse.json(
-          {
-            error: 'Invalid path parameters',
-            message: 'URL path contains invalid parameters',
-            ...(verboseErrors && {
-              details: error.issues.map(err => ({
-                field: err.path.join('.'),
-                message: options.customMessages?.[err.path.join('.')] || err.message,
-                code: err.code
-              }))
-            })
-          },
-          { status: 400 }
-        )
+        error: createErrorResponse('Invalid path parameters', 400, {
+          code: 'INVALID_PATH_PARAMS',
+          detail: 'URL path contains invalid parameters',
+          ...(verboseErrors && {
+            errors: error.issues.map(err => ({
+              field: err.path.join('.'),
+              message: options.customMessages?.[err.path.join('.')] || err.message,
+              code: err.code,
+            })),
+          }),
+        }),
       }
     }
 
     return {
       success: false,
-      error: NextResponse.json(
-        {
-          error: 'Validation error',
-          message: 'An unexpected error occurred during validation'
-        },
-        { status: 500 }
-      )
+      error: createErrorResponse('Validation error', 500, {
+        code: 'VALIDATION_UNEXPECTED',
+        detail: 'An unexpected error occurred during validation',
+      }),
     }
   }
 }
@@ -263,13 +243,10 @@ export function createValidatedHandler<T extends ZodSchema>(
       return await handler(validation.data, req)
     } catch (error) {
       console.error('Handler error:', error)
-      return NextResponse.json(
-        {
-          error: 'Internal server error',
-          message: error instanceof Error ? error.message : 'Unknown error occurred'
-        },
-        { status: 500 }
-      )
+      return createErrorResponse('Internal server error', 500, {
+        code: 'INTERNAL_SERVER_ERROR',
+        detail: error instanceof Error ? error.message : 'Unknown error occurred',
+      })
     }
   }
 }

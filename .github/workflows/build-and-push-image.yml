@@ -129,24 +129,39 @@ jobs:
       if: always()
 
   deploy-to-aks:
-    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    # Only run if Azure credentials are configured and we're on main branch
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push' && vars.AKS_CLUSTER_NAME != ''
     needs: [build-and-push, security-scan]
     runs-on: ubuntu-latest
     environment: production
-    
+
     steps:
+    - name: Check Azure credentials
+      id: check-azure
+      run: |
+        if [ -z "${{ secrets.AZURE_CREDENTIALS }}" ]; then
+          echo "skip=true" >> $GITHUB_OUTPUT
+          echo "::warning::Azure credentials not configured, skipping AKS deployment"
+        else
+          echo "skip=false" >> $GITHUB_OUTPUT
+        fi
+
     - name: Checkout repository
+      if: steps.check-azure.outputs.skip != 'true'
       uses: actions/checkout@v4
 
     - name: Azure CLI Login
+      if: steps.check-azure.outputs.skip != 'true'
       uses: azure/login@v1
       with:
         creds: ${{ secrets.AZURE_CREDENTIALS }}
 
     - name: Set up kubectl
+      if: steps.check-azure.outputs.skip != 'true'
       uses: azure/setup-kubectl@v3
 
     - name: Get AKS credentials
+      if: steps.check-azure.outputs.skip != 'true'
       run: |
         az aks get-credentials \
           --resource-group ${{ vars.AZURE_RESOURCE_GROUP }} \
@@ -154,10 +169,11 @@ jobs:
           --overwrite-existing
 
     - name: Update Helm deployment
+      if: steps.check-azure.outputs.skip != 'true'
       run: |
         # Extract image tag from build output
         IMAGE_TAG="${{ needs.build-and-push.outputs.image-tag }}"
-        
+
         # Update Helm deployment with new image
         helm upgrade --install vibecode-app charts/vibecode \
           --namespace vibecode-platform \
@@ -167,13 +183,15 @@ jobs:
           --wait --timeout=600s
 
     - name: Verify deployment
+      if: steps.check-azure.outputs.skip != 'true'
       run: |
         kubectl rollout status deployment/vibecode-app -n vibecode-platform --timeout=300s
         kubectl get pods -n vibecode-platform -l app.kubernetes.io/name=vibecode
 
     - name: Post deployment notification
-      if: always()
+      if: always() && steps.check-azure.outputs.skip != 'true'
       uses: 8398a7/action-slack@v3
+      continue-on-error: true
       with:
         status: ${{ job.status }}
         channel: '#deployments'

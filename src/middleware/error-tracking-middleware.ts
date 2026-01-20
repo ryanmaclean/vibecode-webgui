@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { trackApiError, trackError } from '../lib/monitoring/error-tracking';
+import { createProblemResponse } from '@/lib/utils/api-response';
 // import { logger } from '@/lib/logger';
 export interface ErrorTrackingMiddlewareOptions {
   /**
@@ -154,13 +155,12 @@ export function withJsonErrorTracking<T = any>(
         }
       );
 
-      return NextResponse.json(
-        { 
-          error: 'Internal Server Error',
-          message: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Something went wrong'
-        },
-        { status: 500 }
-      );
+      return createProblemResponse({
+        title: 'Internal Server Error',
+        status: 500,
+        detail: process.env.NODE_ENV === 'development' ? (error as Error).message : 'Something went wrong',
+        code: 'INTERNAL_SERVER_ERROR',
+      });
     }
   }, options);
 }
@@ -187,10 +187,12 @@ export function withMethodErrorTracking<T = any>(
         }
       );
 
-      return NextResponse.json(
-        { error: 'Method Not Allowed' },
-        { status: 405 }
-      );
+      return createProblemResponse({
+        title: 'Method Not Allowed',
+        status: 405,
+        detail: `Allowed methods: ${allowedMethods.join(', ')}`,
+        code: 'METHOD_NOT_ALLOWED',
+      });
     }
 
     return handler(request, context);

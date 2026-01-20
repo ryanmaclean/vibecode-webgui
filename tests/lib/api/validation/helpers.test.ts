@@ -89,7 +89,8 @@ describe('api/validation/helpers', () => {
       const resetTime = Date.now() + 60000;
       const response = createRateLimitResponse(resetTime);
       const body = await response.json();
-      expect(body.error).toBe('Rate limit exceeded');
+      expect(body.error.code).toBe('RATE_LIMIT_EXCEEDED');
+      expect(body.error.message).toBe('Too many requests, please try again later');
       expect(body.retryAfter).toBeDefined();
     });
   });
@@ -99,8 +100,8 @@ describe('api/validation/helpers', () => {
       const response = createErrorResponse('Test error');
       expect(response.status).toBe(500);
       const body = await response.json();
-      expect(body.error).toBe('Test error');
-      expect(body.timestamp).toBeDefined();
+      expect(body.error.message).toBe('Test error');
+      expect(body.meta.timestamp).toBeDefined();
     });
 
     it('should accept custom status code', async () => {
@@ -112,13 +113,13 @@ describe('api/validation/helpers', () => {
       const response = createErrorResponse('Error', 400, { field: 'email', code: 'INVALID' });
       const body = await response.json();
       expect(body.field).toBe('email');
-      expect(body.code).toBe('INVALID');
+      expect(body.error.code).toBe('INVALID');
     });
 
     it('should include timestamp', async () => {
       const response = createErrorResponse('Test');
       const body = await response.json();
-      expect(body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(body.meta.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
   });
 
@@ -130,18 +131,20 @@ describe('api/validation/helpers', () => {
       const body = await response.json();
       expect(body.success).toBe(true);
       expect(body.data).toEqual(data);
+      expect(body.meta.timestamp).toBeDefined();
     });
 
     it('should accept custom status code', async () => {
-      const response = createSuccessResponse({ created: true }, 201);
+      const response = createSuccessResponse({ created: true }, { status: 201 });
       expect(response.status).toBe(201);
     });
 
     it('should include metadata', async () => {
       const response = createSuccessResponse(
         { result: 'ok' },
-        200,
-        { page: 1, total: 10 }
+        {
+          additionalFields: { page: 1, total: 10 },
+        }
       );
       const body = await response.json();
       expect(body.page).toBe(1);
@@ -151,7 +154,7 @@ describe('api/validation/helpers', () => {
     it('should include timestamp', async () => {
       const response = createSuccessResponse({ test: true });
       const body = await response.json();
-      expect(body.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+      expect(body.meta.timestamp).toMatch(/^\d{4}-\d{2}-\d{2}T/);
     });
 
     it('should handle null data', async () => {

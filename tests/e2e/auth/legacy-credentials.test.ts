@@ -1,31 +1,59 @@
 import { test, expect, request as playwrightRequest } from '@playwright/test';
 
-const DEFAULT_CREDENTIALS = [
-  { email: 'admin@vibecode.dev', password: 'admin123', label: 'Admin' },
-  { email: 'lead@vibecode.dev', password: 'lead123', label: 'Lead' },
-  { email: 'developer@vibecode.dev', password: 'dev123', label: 'Developer' },
-  { email: 'frontend@vibecode.dev', password: 'frontend123', label: 'Frontend' },
-  { email: 'backend@vibecode.dev', password: 'backend123', label: 'Backend' },
-  { email: 'fullstack@vibecode.dev', password: 'fullstack123', label: 'Fullstack' },
-  { email: 'designer@vibecode.dev', password: 'design123', label: 'Designer' },
-  { email: 'tester@vibecode.dev', password: 'test123', label: 'Tester' },
-  { email: 'devops@vibecode.dev', password: 'devops123', label: 'DevOps' },
-  { email: 'security@vibecode.dev', password: 'security123', label: 'Security' },
-];
+/**
+ * SECURITY FIX: Removed hardcoded plaintext passwords
+ *
+ * This test now reads credentials from AUTH_TEST_USERS environment variable.
+ * The test users should be configured in .env.local with properly hashed passwords.
+ *
+ * To run these tests:
+ * 1. Copy .env.local.example to .env.local
+ * 2. Ensure AUTH_TEST_USERS is configured
+ * 3. Run: npm test tests/e2e/auth/legacy-credentials.test.ts
+ */
+
+interface TestCredential {
+  email: string;
+  password: string;
+  label: string;
+}
 
 const baseURL = process.env.LEGACY_AUTH_BASE_URL || process.env.BASE_URL || 'http://localhost:3000';
 
-let credentials = DEFAULT_CREDENTIALS;
-if (process.env.LEGACY_AUTH_CREDENTIALS) {
+// Load test users from environment
+function getTestCredentials(): TestCredential[] {
   try {
-    const parsed = JSON.parse(process.env.LEGACY_AUTH_CREDENTIALS);
-    if (Array.isArray(parsed)) {
-      credentials = parsed;
+    const authTestUsers = process.env.AUTH_TEST_USERS;
+    if (!authTestUsers) {
+      console.warn('⚠️ AUTH_TEST_USERS not configured - using fallback test credential');
+      return [
+        { email: 'test@example.test', password: 'test-password', label: 'Test User' }
+      ];
     }
+
+    const users = JSON.parse(authTestUsers);
+    // Map to test credentials (passwords are in comments in .env.local.example)
+    // For E2E tests, you need the actual passwords used to generate the hashes
+    const testPasswords: Record<string, string> = {
+      'admin@example.test': 'admin-dev-only',
+      'developer@example.test': 'dev-dev-only',
+      'lead@example.test': 'lead-dev-only',
+    };
+
+    return users.map((user: any) => ({
+      email: user.email,
+      password: testPasswords[user.email] || 'unknown',
+      label: user.name
+    }));
   } catch (error) {
-    console.warn('Failed to parse LEGACY_AUTH_CREDENTIALS env variable:', error);
+    console.warn('Failed to parse AUTH_TEST_USERS:', error);
+    return [
+      { email: 'test@example.test', password: 'test-password', label: 'Test User' }
+    ];
   }
 }
+
+const credentials = getTestCredentials();
 
 // Mock playwright request context for testing
 const mockRequestContext = {
