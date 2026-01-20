@@ -3,10 +3,12 @@
  * Provides performance metrics over configurable time ranges
  *
  * Foundation for Enhanced Monitoring Dashboards feature (AGENT 92)
+ * Protected with admin-only authentication (hq-018)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { performanceMonitor } from '@/lib/monitoring/performance-monitoring'
+import { checkDashboardAuth, getDashboardUnauthorizedResponse } from '@/lib/monitoring/auth'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -29,6 +31,12 @@ interface PerformanceMetrics {
 }
 
 export async function GET(request: NextRequest) {
+  // Check admin authentication
+  const authResult = await checkDashboardAuth(request)
+  if (!authResult.isAuthorized) {
+    return getDashboardUnauthorizedResponse(authResult.error)
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const timeRange = searchParams.get('range') || '1h' // 1h, 6h, 24h, 7d
