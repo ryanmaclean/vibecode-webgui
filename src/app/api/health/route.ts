@@ -79,7 +79,7 @@ export async function GET(request: NextRequest) {
     })
     return validation.error
   }
-  const { filter: _filter, format: _format, verbose: _verbose } = validation.data
+  const { filter: _filter, format: _format } = validation.data
 
   try {
     // Collect health snapshot
@@ -161,7 +161,7 @@ async function checkDiskSpace() {
   try {
     // Basic disk space check (platform-specific)
     const fs = await import('fs/promises')
-    const _stats = await fs.stat(process.cwd())
+    await fs.stat(process.cwd())
 
     return {
       status: 'healthy',

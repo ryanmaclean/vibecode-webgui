@@ -1,7 +1,7 @@
 /**
  * Core monitoring module with StatsD integration.
  */
-import { logger } from '@/lib/logger';
+// import { logger } from '@/lib/logger';
 import { getDatadogApiKey, getDatadogSite } from './monitoring/datadog-env';
 
 interface MetricData {

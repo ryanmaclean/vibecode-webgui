@@ -6,7 +6,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { getSecurityStats } from '../../../../middleware/security-middleware';
-import { aiRateLimiter, AISecurityLogger } from '../../../../lib/security/input-validator';
 
 interface SecurityMetrics {
   timestamp: string;
@@ -217,15 +216,15 @@ function addSecurityEvent(
 }
 
 // Export helper functions for use by middleware
-function _incrementRateLimitCounter() {
+export function incrementRateLimitCounter() {
   rateLimitedRequests++;
 }
 
-function _incrementSuspiciousActivityCounter() {
+export function incrementSuspiciousActivityCounter() {
   suspiciousActivities++;
 }
 
-function _logSecurityEvent(
+export function logSecurityEvent(
   type: string,
   severity: 'low' | 'medium' | 'high' | 'critical',
   message: string
