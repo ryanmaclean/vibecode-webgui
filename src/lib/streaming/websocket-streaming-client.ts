@@ -82,6 +82,12 @@ export interface WebSocketStreamConfig {
   debug?: boolean
   /** Request timeout (ms) */
   timeout?: number
+  /** Base delay for reconnection in ms (default: 1000) */
+  reconnectBaseDelay?: number
+  /** Maximum reconnection attempts (default: 5) */
+  maxReconnectAttempts?: number
+  /** Heartbeat interval in ms (default: 30000). Set to 0 to disable. */
+  heartbeatInterval?: number
 }
 
 export interface StreamHandlers {
@@ -119,6 +125,9 @@ export class WebSocketStreamingClient {
   private subscriberId: string
   private activeStreams = new Map<string, ActiveStream>()
   private connected = false
+  private reconnectAttempts = 0
+  private heartbeatTimer: NodeJS.Timeout | null = null
+  private lastPongTime: number = 0
 
   constructor(
     config: WebSocketStreamConfig,
@@ -129,7 +138,10 @@ export class WebSocketStreamingClient {
       priority: config.priority || 'normal',
       autoReconnect: config.autoReconnect ?? true,
       debug: config.debug ?? false,
-      timeout: config.timeout || 60000
+      timeout: config.timeout || 60000,
+      reconnectBaseDelay: config.reconnectBaseDelay || 1000,
+      maxReconnectAttempts: config.maxReconnectAttempts || 5,
+      heartbeatInterval: config.heartbeatInterval ?? 30000
     }
 
     this.subscriberId = this.generateId('subscriber')
@@ -153,6 +165,7 @@ export class WebSocketStreamingClient {
 
       this.connectionId = connection.id
       this.connected = true
+      this.reconnectAttempts = 0 // Reset on successful connection
 
       // Subscribe to connection events
       if (this.pool) {
@@ -162,6 +175,9 @@ export class WebSocketStreamingClient {
           onError: (error) => this.handleConnectionError(error)
         })
       }
+
+      // Start heartbeat monitoring
+      this.startHeartbeat()
 
       this.log('Connected:', connection.id)
     } catch (error) {
@@ -178,6 +194,9 @@ export class WebSocketStreamingClient {
       return
     }
 
+    // Stop heartbeat monitoring
+    this.stopHeartbeat()
+
     // Cancel all active streams
     for (const [requestId, stream] of this.activeStreams) {
       this.cancelStream(requestId)
@@ -188,6 +207,7 @@ export class WebSocketStreamingClient {
 
     this.connectionId = null
     this.connected = false
+    this.reconnectAttempts = 0 // Reset on intentional disconnect
     this.log('Disconnected')
   }
 
@@ -356,23 +376,50 @@ export class WebSocketStreamingClient {
     try {
       // Parse message
       const messageStr = typeof data === 'string' ? data : data.toString('utf-8')
-      const message = JSON.parse(messageStr) as WebSocketMessage
+      const message = JSON.parse(messageStr) as WebSocketMessage | { type: 'ping' | 'pong'; timestamp?: number }
 
       switch (message.type) {
         case 'stream-chunk':
-          this.handleStreamChunk(message)
+          this.handleStreamChunk(message as StreamChunk)
           break
         case 'stream-complete':
-          this.handleStreamComplete(message)
+          this.handleStreamComplete(message as StreamComplete)
           break
         case 'stream-error':
-          this.handleStreamError(message)
+          this.handleStreamError(message as StreamError)
+          break
+        case 'pong':
+          this.handlePong()
+          break
+        case 'ping':
+          // Respond to server ping with pong
+          this.sendPong()
           break
         default:
           this.log('Unknown message type:', message)
       }
     } catch (error) {
       this.log('Message parse error:', error)
+    }
+  }
+
+  /**
+   * Send pong response to server ping
+   */
+  private async sendPong(): Promise<void> {
+    if (!this.connected || !this.connectionId || !this.pool) {
+      return
+    }
+
+    try {
+      const pongMessage = {
+        type: 'pong' as const,
+        timestamp: Date.now()
+      }
+      await this.pool.sendMessage(this.connectionId, JSON.stringify(pongMessage))
+      this.log('Pong sent in response to server ping')
+    } catch (error) {
+      this.log('Failed to send pong:', error)
     }
   }
 
@@ -472,6 +519,13 @@ export class WebSocketStreamingClient {
   private handleDisconnect(): void {
     this.log('Connection closed')
 
+    // Stop heartbeat monitoring
+    this.stopHeartbeat()
+
+    // Check if we've exhausted reconnection attempts
+    const canReconnect = this.config.autoReconnect &&
+      this.reconnectAttempts < this.config.maxReconnectAttempts
+
     // Notify all active streams
     Array.from(this.activeStreams.entries()).forEach(([requestId, stream]) => {
       const error: StreamError = {
@@ -480,7 +534,7 @@ export class WebSocketStreamingClient {
         error: {
           code: 'DISCONNECTED',
           message: 'WebSocket connection closed',
-          recoverable: this.config.autoReconnect
+          recoverable: canReconnect
         }
       }
 
@@ -492,14 +546,25 @@ export class WebSocketStreamingClient {
     this.connected = false
     this.connectionId = null
 
-    // Attempt reconnection if enabled
-    if (this.config.autoReconnect) {
-      this.log('Auto-reconnecting...')
+    // Attempt reconnection with exponential backoff if enabled
+    if (canReconnect) {
+      this.reconnectAttempts++
+      // Exponential backoff: delay = baseDelay * 2^(attempt-1)
+      // With jitter to prevent thundering herd
+      const baseDelay = this.config.reconnectBaseDelay * Math.pow(2, this.reconnectAttempts - 1)
+      const jitter = Math.random() * 0.3 * baseDelay // 0-30% jitter
+      const delay = Math.min(baseDelay + jitter, 30000) // Cap at 30 seconds
+
+      this.log(`Auto-reconnecting in ${Math.round(delay)}ms (attempt ${this.reconnectAttempts}/${this.config.maxReconnectAttempts})...`)
+
       setTimeout(() => {
         this.connect().catch(error => {
           this.log('Reconnection failed:', error)
+          // handleDisconnect will be called again via onError/onClose handlers
         })
-      }, 1000)
+      }, delay)
+    } else if (this.config.autoReconnect) {
+      this.log(`Max reconnection attempts (${this.config.maxReconnectAttempts}) exhausted`)
     }
   }
 
@@ -533,6 +598,82 @@ export class WebSocketStreamingClient {
 
     const data = JSON.stringify(message)
     await this.pool.sendMessage(this.connectionId, data)
+  }
+
+  // ==========================================================================
+  // Heartbeat Management
+  // ==========================================================================
+
+  /**
+   * Start heartbeat monitoring to detect stale connections
+   */
+  private startHeartbeat(): void {
+    if (this.config.heartbeatInterval <= 0) {
+      return
+    }
+
+    this.lastPongTime = Date.now()
+    this.heartbeatTimer = setInterval(() => {
+      this.sendHeartbeat()
+    }, this.config.heartbeatInterval)
+
+    this.log('Heartbeat started with interval:', this.config.heartbeatInterval, 'ms')
+  }
+
+  /**
+   * Stop heartbeat monitoring
+   */
+  private stopHeartbeat(): void {
+    if (this.heartbeatTimer) {
+      clearInterval(this.heartbeatTimer)
+      this.heartbeatTimer = null
+      this.log('Heartbeat stopped')
+    }
+  }
+
+  /**
+   * Send a heartbeat ping message
+   */
+  private async sendHeartbeat(): Promise<void> {
+    if (!this.connected || !this.connectionId) {
+      return
+    }
+
+    // Check if we missed too many pongs (connection may be stale)
+    const timeSinceLastPong = Date.now() - this.lastPongTime
+    const missedHeartbeats = Math.floor(timeSinceLastPong / this.config.heartbeatInterval)
+
+    if (missedHeartbeats >= 2) {
+      this.log('Connection appears stale - missed', missedHeartbeats, 'heartbeats')
+      // Force reconnection by treating as disconnect
+      this.handleDisconnect()
+      return
+    }
+
+    try {
+      // Send ping message through the stream protocol
+      const pingMessage = {
+        type: 'ping' as const,
+        timestamp: Date.now()
+      }
+
+      if (this.pool && this.connectionId) {
+        await this.pool.sendMessage(this.connectionId, JSON.stringify(pingMessage))
+        this.log('Heartbeat ping sent')
+      }
+    } catch (error) {
+      this.log('Heartbeat ping failed:', error)
+      // Connection may be broken, trigger reconnect
+      this.handleDisconnect()
+    }
+  }
+
+  /**
+   * Handle pong response from server
+   */
+  private handlePong(): void {
+    this.lastPongTime = Date.now()
+    this.log('Heartbeat pong received')
   }
 
   // ==========================================================================

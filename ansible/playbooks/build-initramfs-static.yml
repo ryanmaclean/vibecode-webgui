@@ -64,8 +64,9 @@
     alpine_version: "v3.20"
     alpine_arch: "aarch64"
 
-    # Root password hash for 'vibecode' (openssl passwd -6 -salt vibecode vibecode)
-    shadow_password: "$6$vibecode$vQV9vbWp4TC3qmWb/NZzb.VCtcJRd8c.1N0o6S4q1D50tuRDDfbhtkfIqN6cuyenVRkOm8xiH8i7gH6D/ZM.K0"
+    # Root password hash (generate with: openssl passwd -6 -salt <yoursalt> <yourpassword>)
+    # Pass via environment variable: ANSIBLE_ROOT_PASSWORD_HASH
+    shadow_password: "{{ lookup('env', 'ANSIBLE_ROOT_PASSWORD_HASH') | default('*', true) }}"
 
     # Services configuration
     services:
