@@ -3,9 +3,11 @@
  * Provides AI model usage, costs, and performance metrics
  *
  * Enhanced Monitoring Dashboards feature (AGENT 97)
+ * Protected with admin-only authentication (hq-018)
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
+import { checkDashboardAuth, getDashboardUnauthorizedResponse } from '@/lib/monitoring/auth'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -44,7 +46,13 @@ interface AIUsageMetrics {
   }>
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Check admin authentication
+  const authResult = await checkDashboardAuth(request)
+  if (!authResult.isAuthorized) {
+    return getDashboardUnauthorizedResponse(authResult.error)
+  }
+
   try {
     // In a production environment, this would aggregate data from:
     // - AI request logs

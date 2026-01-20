@@ -138,6 +138,7 @@ migration-report.txt
 *.conflict-backup-*
 
 .claude/
+.beads/
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
@@ -368,4 +369,7 @@ QUICK_*.md
 USER_GUIDE_*.md
 PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
+
+# Gas Town local runtime
 .beads/
+.runtime/

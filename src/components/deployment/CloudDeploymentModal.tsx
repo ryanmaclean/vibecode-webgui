@@ -138,24 +138,30 @@ export function CloudDeploymentModal({
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto">
+    <div
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-2 sm:p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="deploy-modal-title"
+    >
+      <div className="bg-white rounded-lg w-full max-w-full sm:max-w-4xl h-full sm:h-auto sm:max-h-[90vh] overflow-y-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-gray-200">
-          <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 rounded-lg">
-              <CloudIcon className="h-6 w-6 text-blue-600" />
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="p-2 bg-blue-100 rounded-lg flex-shrink-0">
+              <CloudIcon className="h-6 w-6 text-blue-600" aria-hidden="true" />
             </div>
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Deploy to Cloud</h2>
-              <p className="text-sm text-gray-600">Deploy &quot;{generatedProject.name}&quot; to your preferred cloud provider</p>
+            <div className="min-w-0">
+              <h2 id="deploy-modal-title" className="text-lg sm:text-xl font-semibold text-gray-900 truncate">Deploy to Cloud</h2>
+              <p className="text-sm text-gray-600 truncate">Deploy &quot;{generatedProject.name}&quot; to your preferred cloud provider</p>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+            className="p-2 sm:p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 hover:bg-gray-100 rounded-lg transition-colors flex-shrink-0 flex items-center justify-center focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            aria-label="Close modal"
           >
-            <XMarkIcon className="h-5 w-5 text-gray-500" />
+            <XMarkIcon className="h-5 w-5 text-gray-500" aria-hidden="true" />
           </button>
         </div>
 

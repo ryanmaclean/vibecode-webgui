@@ -1,4 +1,0 @@
-- Bats tests cover happy path, MOCK_TOOL_MISSING, MOCK_KUBECTL_EXEC_FAIL, MOCK_TIMEOUT_EXIT, MOCK_KUBECTL_WAIT_FAIL, retry with MOCK_KUBECTL_GET_SEQUENCE + MOCK_KUBECTL_EXEC_FAIL_ONCE.
-- No assertions currently validate telemetry `tool=/status=/duration_ms=` output or secret masking.
-- PATH-without-kubectl and Ready pod exhaustion scenarios are absent.
-- Issue #417 targets adding these cases before enabling `npm run test:scripts` in CI.
