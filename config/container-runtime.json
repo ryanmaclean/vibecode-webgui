@@ -1,10 +1,32 @@
 {
   "$schema": "./container-runtime.schema.json",
+  "selectedRuntime": "docker",
   "runtime": {
     "version": "2.0.0",
     "dataDirectory": "/usr/local/var/vibecode/containers",
     "imageCacheDirectory": "/usr/local/var/vibecode/images",
     "logDirectory": "/usr/local/var/log/vibecode"
+  },
+  "docker": {
+    "socketPath": "/var/run/docker.sock",
+    "useDesktop": false,
+    "useColima": false,
+    "tlsVerify": false
+  },
+  "podman": {
+    "machine": "podman-machine-default",
+    "rootless": true
+  },
+  "kubernetes": {
+    "context": "minikube",
+    "namespace": "vibecode",
+    "useKind": false,
+    "useMinikube": false,
+    "useK3s": false
+  },
+  "apple": {
+    "isolation": "vm",
+    "enableRosetta": true
   },
   "defaults": {
     "cpuCount": 2,

@@ -1,9 +1,111 @@
 {
   "$schema": "http://json-schema.org/draft-07/schema#",
-  "title": "Apple Container Runtime Configuration",
+  "title": "Container Runtime Configuration",
   "type": "object",
-  "required": ["runtime", "defaults"],
+  "required": ["selectedRuntime", "runtime", "defaults"],
   "properties": {
+    "selectedRuntime": {
+      "type": "string",
+      "enum": ["docker", "podman", "kubernetes", "apple"],
+      "description": "The container runtime to use"
+    },
+    "docker": {
+      "type": "object",
+      "properties": {
+        "host": {
+          "type": "string",
+          "description": "Docker host URL (e.g., tcp://localhost:2375)"
+        },
+        "socketPath": {
+          "type": "string",
+          "description": "Path to Docker socket"
+        },
+        "useDesktop": {
+          "type": "boolean",
+          "description": "Use Docker Desktop"
+        },
+        "useColima": {
+          "type": "boolean",
+          "description": "Use Colima"
+        },
+        "tlsVerify": {
+          "type": "boolean",
+          "description": "Enable TLS verification"
+        }
+      }
+    },
+    "podman": {
+      "type": "object",
+      "properties": {
+        "machine": {
+          "type": "string",
+          "description": "Podman machine name (macOS)"
+        },
+        "socketPath": {
+          "type": "string",
+          "description": "Path to Podman socket"
+        },
+        "remoteHost": {
+          "type": "string",
+          "description": "Remote Podman host"
+        },
+        "rootless": {
+          "type": "boolean",
+          "description": "Use rootless mode"
+        }
+      }
+    },
+    "kubernetes": {
+      "type": "object",
+      "properties": {
+        "context": {
+          "type": "string",
+          "description": "Kubernetes context to use"
+        },
+        "namespace": {
+          "type": "string",
+          "description": "Namespace for deployments"
+        },
+        "useKind": {
+          "type": "boolean",
+          "description": "Use kind for local development"
+        },
+        "useMinikube": {
+          "type": "boolean",
+          "description": "Use minikube for local development"
+        },
+        "useK3s": {
+          "type": "boolean",
+          "description": "Use k3s for local development"
+        },
+        "kubeconfig": {
+          "type": "string",
+          "description": "Path to kubeconfig file"
+        }
+      }
+    },
+    "apple": {
+      "type": "object",
+      "properties": {
+        "binaryPath": {
+          "type": "string",
+          "description": "Path to container binary"
+        },
+        "isolation": {
+          "type": "string",
+          "enum": ["process", "vm"],
+          "description": "Container isolation mode"
+        },
+        "enableRosetta": {
+          "type": "boolean",
+          "description": "Enable Rosetta translation"
+        },
+        "dataDirectory": {
+          "type": "string",
+          "description": "Container data directory"
+        }
+      }
+    },
     "runtime": {
       "type": "object",
       "required": ["version", "dataDirectory"],
