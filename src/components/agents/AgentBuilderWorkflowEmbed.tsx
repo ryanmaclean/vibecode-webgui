@@ -29,6 +29,7 @@ import { Separator } from '@/components/ui/separator'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Badge } from '@/components/ui/badge'
 import type { AgentBuilderSession, AgentBuilderSessionRequest } from '@/types/agent-builder'
+import { z } from '@/lib/zod-compat'
 
 export interface AgentBuilderWorkflowEmbedProps {
   initialWorkflowId?: string
@@ -38,6 +39,60 @@ type NumberInputValue = number | ''
 
 const MAX_SESSION_DURATION_SECONDS = 60 * 60 * 24 // 24 hours constraint from API docs
 const MAX_RATE_LIMIT = 1000
+
+const workflowConfigSchema = z
+  .object({
+    workflowId: z
+      .string()
+      .trim()
+      .min(3, 'Workflow ID is required')
+      .max(64, 'Workflow ID must be 64 characters or fewer'),
+    version: z.string().trim().max(32).optional(),
+    expiresInSeconds: z
+      .number()
+      .int()
+      .min(60, 'Expiry must be at least 60 seconds')
+      .max(MAX_SESSION_DURATION_SECONDS, `Expiry cannot exceed ${MAX_SESSION_DURATION_SECONDS} seconds`)
+      .optional(),
+    rateLimitPerMinute: z
+      .number()
+      .int()
+      .min(1, 'Rate limit must be at least 1 request per minute')
+      .max(MAX_RATE_LIMIT, `Rate limit cannot exceed ${MAX_RATE_LIMIT}`)
+      .optional(),
+    autoTitleEnabled: z.boolean(),
+    uploadsEnabled: z.boolean(),
+    uploadsMaxFiles: z.number().int().min(1).max(100).optional(),
+    uploadsMaxSize: z.number().int().min(1).max(512).optional(),
+    historyEnabled: z.boolean(),
+    historyRecentThreads: z.number().int().min(1).max(100).optional(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.uploadsEnabled) {
+      if (typeof data.uploadsMaxFiles !== 'number') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Specify a maximum file count when uploads are enabled',
+          path: ['uploadsMaxFiles'],
+        })
+      }
+      if (typeof data.uploadsMaxSize !== 'number') {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: 'Specify a maximum file size when uploads are enabled',
+          path: ['uploadsMaxSize'],
+        })
+      }
+    }
+
+    if (!data.historyEnabled && typeof data.historyRecentThreads === 'number') {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'History count applies only when chat history is enabled',
+        path: ['historyRecentThreads'],
+      })
+    }
+  })
 
 export function AgentBuilderWorkflowEmbed({ initialWorkflowId }: AgentBuilderWorkflowEmbedProps) {
   const [workflowId, setWorkflowId] = useState(initialWorkflowId ?? '')
@@ -179,22 +234,45 @@ export function AgentBuilderWorkflowEmbed({ initialWorkflowId }: AgentBuilderWor
     event.preventDefault()
     if (isConnecting) return
 
-    if (!workflowId.trim()) {
-      setFormError('Workflow ID is required')
+    let stateVariables: AgentBuilderSessionRequest['stateVariables']
+    try {
+      stateVariables = parseStateVariables(stateVariablesInput)
+    } catch (error) {
+      setFormError(error instanceof Error ? error.message : 'State variables must be valid JSON')
       return
     }
 
+    const sanitizedForm = {
+      workflowId: workflowId.trim(),
+      version: version.trim() || undefined,
+      expiresInSeconds: typeof expiresInSeconds === 'number' ? expiresInSeconds : undefined,
+      rateLimitPerMinute: typeof rateLimitPerMinute === 'number' ? rateLimitPerMinute : undefined,
+      autoTitleEnabled,
+      uploadsEnabled,
+      uploadsMaxFiles: typeof uploadsMaxFiles === 'number' ? uploadsMaxFiles : undefined,
+      uploadsMaxSize: typeof uploadsMaxSize === 'number' ? uploadsMaxSize : undefined,
+      historyEnabled,
+      historyRecentThreads:
+        typeof historyRecentThreads === 'number' ? historyRecentThreads : undefined,
+    }
+
+    const validation = workflowConfigSchema.safeParse(sanitizedForm)
+    if (!validation.success) {
+      const [issue] = validation.error.issues
+      setFormError(issue?.message ?? 'Invalid workflow configuration')
+      return
+    }
+
+    const validatedForm = validation.data
+
     setIsConnecting(true)
     try {
-      const stateVariables = parseStateVariables(stateVariablesInput)
       const sessionConfig: AgentBuilderSessionRequest = {
-        workflowId: workflowId.trim(),
-        version: version.trim() || undefined,
+        workflowId: validatedForm.workflowId,
+        version: validatedForm.version || undefined,
         stateVariables,
-        expiresInSeconds:
-          typeof expiresInSeconds === 'number' ? Math.min(expiresInSeconds, MAX_SESSION_DURATION_SECONDS) : undefined,
-        rateLimitPerMinute:
-          typeof rateLimitPerMinute === 'number' ? Math.min(rateLimitPerMinute, MAX_RATE_LIMIT) : undefined,
+        expiresInSeconds: validatedForm.expiresInSeconds,
+        rateLimitPerMinute: validatedForm.rateLimitPerMinute,
         chatkit: buildChatKitOverrides(),
       }
 
