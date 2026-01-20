@@ -13,7 +13,7 @@ log:
 # Identity validation configuration
 identity_validation:
   reset_password:
-    jwt_secret: "insecure_jwt_secret_change_in_production"
+    jwt_secret: "${AUTHELIA_JWT_SECRET}"
 
 # Time-based One-Time Password configuration
 totp:
@@ -76,9 +76,9 @@ access_control:
       resources:
         - "^/api/.*$"
 
-# Session configuration  
+# Session configuration
 session:
-  secret: "insecure_session_secret_change_in_production"
+  secret: "${AUTHELIA_SESSION_SECRET}"
   name: 'vibecode_session'
   expiration: 1h
   inactivity: 5m
@@ -105,13 +105,13 @@ regulation:
 
 # Storage configuration
 storage:
-  encryption_key: "vibecode-storage-encryption-key-change-in-production"
+  encryption_key: "${AUTHELIA_STORAGE_ENCRYPTION_KEY}"
   postgres:
     address: tcp://db:5432
     database: vibecode
     schema: public
     username: vibecode
-    password: "password"
+    password: "${AUTHELIA_DB_PASSWORD}"
     timeout: 5s
 
 # Notification configuration
