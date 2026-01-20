@@ -77,6 +77,7 @@ const config = {
     '<rootDir>/tests/e2e/', // Playwright tests - run with 'npm run test:e2e'
     '<rootDir>/tests/comprehensive/', // Playwright tests - run with 'npm run test:e2e'
     '<rootDir>/docs/e2e/', // Playwright tests - run with 'npm run test:e2e'
+    '<rootDir>/azure/SwiftUI-Apps/Tests/e2e/', // Playwright tests - excluded from Jest runs
     '<rootDir>/archive/', // Archived code and tests - excluded from Jest runs
     '<rootDir>/code-server/',
     '<rootDir>/openvscode-server/',
