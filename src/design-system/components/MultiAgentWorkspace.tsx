@@ -8,8 +8,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Menu, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
+import { Menu, X, Maximize, Minimize } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AgentSelector, Agent } from './AgentSelector';
 import { ConversationThread, Message } from './ConversationThread';

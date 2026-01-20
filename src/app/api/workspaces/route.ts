@@ -13,9 +13,9 @@ const CreateWorkspaceRequestSchema = z.object({
   projectName: z.string(),
   framework: z.string(),
   userId: z.string().optional().default('anonymous'),
-  files: z.record(z.string()),
+  files: z.record(z.string(), z.string()),
   dependencies: z.array(z.string()).default([]),
-  environment: z.record(z.string()).default({})
+  environment: z.record(z.string(), z.string()).default({})
 })
 
 export async function POST(request: NextRequest) {
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest) {
     if (error instanceof z.ZodError) {
       return ErrorResponses.validationError(
         'Invalid request format for workspace creation',
-        error.errors.map(e => `${e.path.join('.')}: ${e.message}`),
+        error.issues.map(e => `${e.path.join('.')}: ${e.message}`),
         requestId
       )
     }

@@ -25,11 +25,11 @@ export async function POST(request: Request) {
       validatedData = gradioRunSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.warn('Gradio run validation failed', { errors: error.errors });
+        console.warn('Gradio run validation failed', { errors: error.issues });
         return NextResponse.json(
           {
             error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
+            details: error.issues.map(e => ({
               field: e.path.join('.'),
               message: e.message
             }))

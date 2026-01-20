@@ -22,7 +22,7 @@ const searchRequestSchema = z.object({
 const storeEmbeddingSchema = z.object({
   content: z.string().min(1, 'Content cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.string(), z.any()).optional()
 });
 
 const batchSearchSchema = z.object({

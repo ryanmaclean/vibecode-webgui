@@ -44,14 +44,14 @@ export const aiQuerySchema = z.object({
       'Query contains potentially unsafe content'
     ),
   context: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const promptSchema = z.object({
   content: z.string()
     .min(1, 'Prompt cannot be empty')
     .max(MAX_LENGTHS.prompt, `Prompt cannot exceed ${MAX_LENGTHS.prompt} characters`),
-  variables: z.record(z.string()).optional(),
+  variables: z.record(z.string(), z.string()).optional(),
   systemPrompt: z.string().optional(),
 });
 

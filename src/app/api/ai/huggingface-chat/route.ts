@@ -34,12 +34,12 @@ export async function POST(request: NextRequest) {
       validatedData = huggingfaceChatSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.warn('HuggingFace chat validation failed', { errors: error.errors });
+        console.warn('HuggingFace chat validation failed', { errors: error.issues });
         return NextResponse.json(
           {
             success: false,
             error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
+            details: error.issues.map(e => ({
               field: e.path.join('.'),
               message: e.message
             }))

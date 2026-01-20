@@ -48,7 +48,7 @@ import { cn } from '@/lib/utils'
 
 type FileType = 'file' | 'directory'
 
-interface AgentFile {
+export interface AgentFile {
   id: string
   name: string
   type: FileType
@@ -60,7 +60,7 @@ interface AgentFile {
   children?: AgentFile[]
 }
 
-interface AgentFileBrowserProps {
+export interface AgentFileBrowserProps {
   /** Root files and directories */
   files: AgentFile[]
   /** Currently selected file IDs */
