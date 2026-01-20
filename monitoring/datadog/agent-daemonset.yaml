@@ -1,0 +1,383 @@
+# Datadog Agent DaemonSet with Application Security Monitoring (ASM) enabled
+# This configuration enables runtime threat detection, vulnerability management,
+# and attack attribution capabilities for the VibeCode platform.
+#
+# ASM Features:
+# - SQL injection detection
+# - Cross-site scripting (XSS) detection
+# - Remote code execution (RCE) detection
+# - API key leakage detection
+# - Automatic IP blocking
+# - Compliance reporting (PCI-DSS, SOC 2, HIPAA)
+#
+# Reference: https://docs.datadoghq.com/security/application_security/
+
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: datadog
+  labels:
+    app: datadog-agent
+    app.kubernetes.io/name: datadog-agent
+    app.kubernetes.io/component: agent
+    app.kubernetes.io/part-of: datadog-monitoring
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+      annotations:
+        # Force pod restart when config changes
+        checksum/config: "{{ include (print $.Template.BasePath \"/configmap.yaml\") . | sha256sum }}"
+    spec:
+      serviceAccountName: datadog-agent
+      hostNetwork: true
+      hostPID: true
+      containers:
+      - name: agent
+        image: gcr.io/datadoghq/agent:7
+        imagePullPolicy: Always
+        env:
+        # Basic Datadog configuration
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+
+        - name: DD_SITE
+          value: "datadoghq.com"
+
+        - name: DD_ENV
+          value: "production"
+
+        - name: DD_SERVICE
+          value: "vibecode-webgui"
+
+        - name: DD_VERSION
+          value: "1.5.0"
+
+        # Kubernetes integration
+        - name: DD_KUBERNETES_KUBELET_HOST
+          valueFrom:
+            fieldRef:
+              fieldPath: status.hostIP
+
+        - name: KUBERNETES
+          value: "true"
+
+        - name: DD_HEALTH_PORT
+          value: "5555"
+
+        # APM (Application Performance Monitoring)
+        - name: DD_APM_ENABLED
+          value: "true"
+
+        - name: DD_APM_NON_LOCAL_TRAFFIC
+          value: "true"
+
+        # ============================
+        # APPLICATION SECURITY MONITORING (ASM)
+        # ============================
+
+        # Enable ASM - Runtime application security
+        - name: DD_APPSEC_ENABLED
+          value: "true"
+
+        # Enable Software Composition Analysis (SCA)
+        # Detects vulnerable dependencies in runtime
+        - name: DD_APPSEC_SCA_ENABLED
+          value: "true"
+
+        # ASM Rules Configuration
+        # Options: "recommended" (default), "strict", "monitoring", or custom file path
+        - name: DD_APPSEC_RULES
+          value: "/etc/datadog/asm/rules.json"
+
+        # ASM Reporting Interval (seconds)
+        # How often to send security signals to Datadog
+        - name: DD_APPSEC_REPORTING_INTERVAL
+          value: "60"
+
+        # WAF (Web Application Firewall) timeout in microseconds
+        # Maximum time spent analyzing a request
+        - name: DD_APPSEC_WAF_TIMEOUT
+          value: "20000"
+
+        # ASM Sampling Rate (0.0 to 1.0)
+        # 1.0 = analyze 100% of traces for security threats
+        - name: DD_APPSEC_TRACE_RATE_LIMIT
+          value: "100"
+
+        # Enable blocking mode (vs monitoring only)
+        # When true, ASM will block malicious requests
+        - name: DD_APPSEC_BLOCKING_ENABLED
+          value: "true"
+
+        # IP Blocking Configuration
+        - name: DD_APPSEC_IP_BLOCKING_ENABLED
+          value: "true"
+
+        - name: DD_APPSEC_IP_BLOCKING_CONFIG
+          value: "/etc/datadog/asm/ip-blocklist.json"
+
+        # User Blocking Configuration
+        # Block specific authenticated users exhibiting malicious behavior
+        - name: DD_APPSEC_USER_BLOCKING_ENABLED
+          value: "true"
+
+        # ASM HTTP Blocked Response
+        # HTTP status code and template for blocked requests
+        - name: DD_APPSEC_HTTP_BLOCKED_TEMPLATE_JSON
+          value: '{"errors": [{"title": "Security Policy Violation", "detail": "Your request was blocked by our security system"}]}'
+
+        # ============================
+        # DATABASE MONITORING (DBM)
+        # ============================
+        - name: DD_DBM_PROPAGATION_MODE
+          value: "full"
+
+        # ============================
+        # LOGS
+        # ============================
+        - name: DD_LOGS_ENABLED
+          value: "true"
+
+        - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
+          value: "true"
+
+        - name: DD_AC_EXCLUDE
+          value: "name:datadog-agent"
+
+        # ============================
+        # PROCESS MONITORING
+        # ============================
+        - name: DD_PROCESS_AGENT_ENABLED
+          value: "true"
+
+        # ============================
+        # RUNTIME METRICS
+        # ============================
+        - name: DD_RUNTIME_METRICS_ENABLED
+          value: "true"
+
+        # ============================
+        # PROFILING
+        # ============================
+        - name: DD_PROFILING_ENABLED
+          value: "true"
+
+        # ============================
+        # COMPLIANCE & SECURITY RULES
+        # ============================
+
+        # Enable OOTB (Out-Of-The-Box) detection rules
+        - name: DD_COMPLIANCE_ENABLED
+          value: "true"
+
+        # Cloud Security Posture Management (CSPM)
+        - name: DD_COMPLIANCE_CONFIG_ENABLED
+          value: "true"
+
+        # Cloud Workload Security (CWS)
+        - name: DD_RUNTIME_SECURITY_CONFIG_ENABLED
+          value: "true"
+
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "200m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+
+        volumeMounts:
+        - name: dockersocketdir
+          mountPath: /var/run/docker.sock
+          readOnly: true
+
+        - name: procdir
+          mountPath: /host/proc
+          readOnly: true
+
+        - name: cgroups
+          mountPath: /host/sys/fs/cgroup
+          readOnly: true
+
+        - name: pointerdir
+          mountPath: /opt/datadog-agent/run
+
+        # ASM Configuration Files
+        - name: asm-rules
+          mountPath: /etc/datadog/asm
+          readOnly: true
+
+        livenessProbe:
+          httpGet:
+            path: /live
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 5555
+          initialDelaySeconds: 15
+          periodSeconds: 15
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+
+      volumes:
+      - name: dockersocketdir
+        hostPath:
+          path: /var/run/docker.sock
+
+      - name: procdir
+        hostPath:
+          path: /proc
+
+      - name: cgroups
+        hostPath:
+          path: /sys/fs/cgroup
+
+      - name: pointerdir
+        hostPath:
+          path: /opt/datadog-agent/run
+          type: DirectoryOrCreate
+
+      # ASM Configuration ConfigMap
+      - name: asm-rules
+        configMap:
+          name: datadog-asm-config
+          items:
+          - key: rules.json
+            path: rules.json
+          - key: ip-blocklist.json
+            path: ip-blocklist.json
+
+      tolerations:
+      - operator: Exists
+        effect: NoSchedule
+      - operator: Exists
+        effect: NoExecute
+---
+# ConfigMap for ASM Rules and IP Blocklist
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-asm-config
+  namespace: datadog
+  labels:
+    app: datadog-agent
+    app.kubernetes.io/name: datadog-asm-config
+data:
+  rules.json: |
+    # Custom ASM rules will be mounted from monitoring/datadog/asm/rules.json
+    {}
+
+  ip-blocklist.json: |
+    # IP blocklist will be mounted from monitoring/datadog/asm/ip-blocklist.json
+    {}
+---
+# ServiceAccount for Datadog Agent
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: datadog
+  labels:
+    app: datadog-agent
+---
+# ClusterRole for Datadog Agent
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+  labels:
+    app: datadog-agent
+rules:
+- apiGroups:
+  - ""
+  resources:
+  - nodes
+  - nodes/metrics
+  - nodes/spec
+  - nodes/proxy
+  - nodes/stats
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - ""
+  resources:
+  - endpoints
+  - events
+  - services
+  - pods
+  - componentstatuses
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "quota.openshift.io"
+  resources:
+  - clusterresourcequotas
+  verbs:
+  - get
+  - list
+- apiGroups:
+  - "apps"
+  resources:
+  - deployments
+  - replicasets
+  - daemonsets
+  - statefulsets
+  verbs:
+  - get
+  - list
+  - watch
+- apiGroups:
+  - "batch"
+  resources:
+  - jobs
+  - cronjobs
+  verbs:
+  - get
+  - list
+  - watch
+- nonResourceURLs:
+  - /version
+  - /healthz
+  - /metrics
+  verbs:
+  - get
+---
+# ClusterRoleBinding for Datadog Agent
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+  labels:
+    app: datadog-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+- kind: ServiceAccount
+  name: datadog-agent
+  namespace: datadog

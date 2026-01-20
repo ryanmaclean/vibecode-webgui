@@ -1,0 +1,366 @@
+{
+  "version": "2.1",
+  "metadata": {
+    "name": "VibeCode Custom ASM Rules",
+    "description": "Custom security rules for the VibeCode platform",
+    "created": "2026-01-18",
+    "author": "AGENT-08: datadog-asm-implementer",
+    "rules_count": 12
+  },
+  "rules": [
+    {
+      "id": "vibecode-sql-injection-001",
+      "name": "SQL Injection Detection - Query Parameters",
+      "description": "Detects SQL injection attempts in query parameters",
+      "enabled": true,
+      "tags": [
+        "type:sqli",
+        "severity:high",
+        "cwe:89",
+        "owasp:a03",
+        "attack:injection"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.query"},
+              {"address": "server.request.path_params"}
+            ],
+            "regex": "(?i)(union|select|insert|delete|update|drop|alter|create|truncate|exec|execute|declare|cast|convert)\\s+(all|distinct|from|into|table|database|column|where|and|or|order|group|having|limit)"
+          }
+        }
+      ],
+      "transformers": ["lowercase", "unicode_normalize"],
+      "on_match": ["block"],
+      "actions": {
+        "block": {
+          "status_code": 403,
+          "type": "json",
+          "parameters": {
+            "type": "blocked",
+            "title": "Security Policy Violation",
+            "detail": "Potential SQL injection detected"
+          }
+        }
+      }
+    },
+    {
+      "id": "vibecode-sql-injection-002",
+      "name": "SQL Injection Detection - Request Body",
+      "description": "Detects SQL injection attempts in request body",
+      "enabled": true,
+      "tags": [
+        "type:sqli",
+        "severity:high",
+        "cwe:89",
+        "owasp:a03"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"}
+            ],
+            "regex": "(?i)(';|\"\\s*;|1=1|1'\\s*=\\s*'1|admin'--|or\\s+1=1|union\\s+select)"
+          }
+        }
+      ],
+      "transformers": ["lowercase", "remove_comments"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-xss-detection-001",
+      "name": "Cross-Site Scripting (XSS) Detection - Script Tags",
+      "description": "Detects XSS attempts using script tags",
+      "enabled": true,
+      "tags": [
+        "type:xss",
+        "severity:high",
+        "cwe:79",
+        "owasp:a03",
+        "attack:xss"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(?i)(<script[^>]*>|</script>|javascript:|onerror\\s*=|onload\\s*=|eval\\(|alert\\(|prompt\\(|confirm\\()"
+          }
+        }
+      ],
+      "transformers": ["lowercase", "html_entity_decode"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-xss-detection-002",
+      "name": "Cross-Site Scripting (XSS) Detection - Event Handlers",
+      "description": "Detects XSS attempts using HTML event handlers",
+      "enabled": true,
+      "tags": [
+        "type:xss",
+        "severity:high",
+        "cwe:79",
+        "owasp:a03"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(?i)(on(abort|blur|change|click|dblclick|error|focus|keydown|keypress|keyup|load|mousedown|mousemove|mouseout|mouseover|mouseup|reset|resize|select|submit|unload))\\s*="
+          }
+        }
+      ],
+      "transformers": ["lowercase", "remove_nulls"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-rce-detection-001",
+      "name": "Remote Code Execution (RCE) Detection",
+      "description": "Detects attempts to execute system commands",
+      "enabled": true,
+      "tags": [
+        "type:rce",
+        "severity:critical",
+        "cwe:78",
+        "owasp:a03",
+        "attack:command-injection"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(?i)(&&|\\|\\||;|`|\\$\\(|%0a|%0d|\\n|\\r)(cat|ls|pwd|whoami|wget|curl|nc|netcat|bash|sh|python|perl|ruby|php|node)"
+          }
+        }
+      ],
+      "transformers": ["lowercase", "url_decode"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-api-key-leak-001",
+      "name": "API Key Leakage Detection - Response Body",
+      "description": "Detects API keys being leaked in responses",
+      "enabled": true,
+      "tags": [
+        "type:sensitive-data",
+        "severity:critical",
+        "cwe:200",
+        "owasp:a01",
+        "compliance:pci-dss"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.response.body"}
+            ],
+            "regex": "(sk-[a-zA-Z0-9]{32,}|pk_live_[a-zA-Z0-9]{24,}|sk_live_[a-zA-Z0-9]{24,}|AKIA[0-9A-Z]{16}|AIza[0-9A-Za-z\\-_]{35})"
+          }
+        }
+      ],
+      "transformers": [],
+      "on_match": ["monitor", "block"],
+      "actions": {
+        "monitor": {
+          "log_level": "critical"
+        }
+      }
+    },
+    {
+      "id": "vibecode-jwt-leak-001",
+      "name": "JWT Token Leakage Detection",
+      "description": "Detects JWT tokens being leaked in logs or responses",
+      "enabled": true,
+      "tags": [
+        "type:sensitive-data",
+        "severity:high",
+        "cwe:200",
+        "owasp:a01"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.response.body"},
+              {"address": "server.response.headers"}
+            ],
+            "regex": "eyJ[a-zA-Z0-9_-]{10,}\\.eyJ[a-zA-Z0-9_-]{10,}\\.[a-zA-Z0-9_-]{10,}"
+          }
+        }
+      ],
+      "transformers": [],
+      "on_match": ["monitor"]
+    },
+    {
+      "id": "vibecode-path-traversal-001",
+      "name": "Path Traversal Detection",
+      "description": "Detects directory traversal attempts",
+      "enabled": true,
+      "tags": [
+        "type:path-traversal",
+        "severity:high",
+        "cwe:22",
+        "owasp:a01",
+        "attack:lfi"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.query"},
+              {"address": "server.request.path_params"}
+            ],
+            "regex": "(\\.\\./|\\.\\.\\\\/|%2e%2e%2f|%2e%2e/|\\.\\.%2f|%2e%2e%5c)"
+          }
+        }
+      ],
+      "transformers": ["lowercase", "url_decode"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-nosql-injection-001",
+      "name": "NoSQL Injection Detection",
+      "description": "Detects NoSQL injection attempts (MongoDB, etc.)",
+      "enabled": true,
+      "tags": [
+        "type:nosql-injection",
+        "severity:high",
+        "cwe:943",
+        "owasp:a03"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(?i)(\\$ne|\\$gt|\\$lt|\\$gte|\\$lte|\\$regex|\\$where|\\$exists|\\$type|\\$or|\\$and|\\$not|\\$nor)"
+          }
+        }
+      ],
+      "transformers": ["lowercase"],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-ldap-injection-001",
+      "name": "LDAP Injection Detection",
+      "description": "Detects LDAP injection attempts",
+      "enabled": true,
+      "tags": [
+        "type:ldap-injection",
+        "severity:high",
+        "cwe:90",
+        "owasp:a03"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(\\*\\)|\\(\\||\\(\\&|\\(\\!|\\*\\(|\\)\\(cn=)"
+          }
+        }
+      ],
+      "transformers": [],
+      "on_match": ["block"]
+    },
+    {
+      "id": "vibecode-ssrf-detection-001",
+      "name": "Server-Side Request Forgery (SSRF) Detection",
+      "description": "Detects SSRF attempts targeting internal resources",
+      "enabled": true,
+      "tags": [
+        "type:ssrf",
+        "severity:critical",
+        "cwe:918",
+        "owasp:a10"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"},
+              {"address": "server.request.query"}
+            ],
+            "regex": "(?i)(localhost|127\\.0\\.0\\.1|0\\.0\\.0\\.0|169\\.254\\.|10\\.|172\\.(1[6-9]|2[0-9]|3[0-1])\\.|192\\.168\\.)"
+          }
+        }
+      ],
+      "transformers": ["url_decode"],
+      "on_match": ["monitor", "block"]
+    },
+    {
+      "id": "vibecode-xxe-detection-001",
+      "name": "XML External Entity (XXE) Detection",
+      "description": "Detects XXE injection attempts",
+      "enabled": true,
+      "tags": [
+        "type:xxe",
+        "severity:high",
+        "cwe:611",
+        "owasp:a05"
+      ],
+      "conditions": [
+        {
+          "operator": "match_regex",
+          "parameters": {
+            "inputs": [
+              {"address": "server.request.body"}
+            ],
+            "regex": "(?i)(<!ENTITY|<!DOCTYPE|SYSTEM|PUBLIC|file://|php://|data://|expect://|zip://)"
+          }
+        }
+      ],
+      "transformers": ["lowercase"],
+      "on_match": ["block"]
+    }
+  ],
+  "rule_overrides": {
+    "description": "Override default Datadog rules",
+    "overrides": [
+      {
+        "rule_id": "crs-942-100",
+        "enabled": true,
+        "on_match": ["block"]
+      },
+      {
+        "rule_id": "crs-941-100",
+        "enabled": true,
+        "on_match": ["block"]
+      }
+    ]
+  },
+  "exclusions": {
+    "description": "Paths excluded from ASM scanning",
+    "paths": [
+      "/api/health",
+      "/api/metrics",
+      "/_next/static",
+      "/favicon.ico"
+    ]
+  }
+}
