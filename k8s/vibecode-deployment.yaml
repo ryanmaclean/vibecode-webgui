@@ -48,7 +48,7 @@ spec:
             done
             echo "PostgreSQL is ready!"
       - name: wait-for-valkey
-        image: valkey/valkey:7-alpine
+        image: valkey/valkey:8.1-alpine
         command:
           - sh
           - -c

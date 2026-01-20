@@ -67,7 +67,7 @@ services:
 
   # Redis for caching and sessions
   redis:
-    image: redis:7-alpine
+    image: redis:8.1-alpine
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 10s

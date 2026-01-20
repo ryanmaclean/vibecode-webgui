@@ -223,7 +223,7 @@ echo "-------------------------------------" | tee -a $TEST_RESULTS_FILE
 # Common images used in the project
 images=(
             "pgvector/pgvector:pg16"
-    "redis:7-alpine"
+    "redis:8.1-alpine"
     "nginx:alpine"
     "datadog/agent:latest"
     "timberio/vector:latest-alpine"

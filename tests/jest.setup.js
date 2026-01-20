@@ -38,7 +38,7 @@ const getMockResponse = (url) => {
             status: 'healthy',
             responseTime: 2,
             lastChecked: Date.now(),
-            details: { version: 'Redis 7.2.0', memoryUsed: '50MB', maxMemory: '256MB' },
+            details: { version: 'Redis 8.1.0', memoryUsed: '50MB', maxMemory: '256MB' },
           },
           datadog: { status: 'healthy', responseTime: 10, lastChecked: Date.now() },
           memory: {

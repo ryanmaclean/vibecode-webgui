@@ -38,7 +38,7 @@ services:
 
   # Redis Cache
   litellm-redis:
-    image: redis:7-alpine
+    image: redis:8.1-alpine
     container_name: litellm-redis
     restart: unless-stopped
     command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
