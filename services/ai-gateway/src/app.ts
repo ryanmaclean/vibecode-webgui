@@ -4,10 +4,9 @@ import cors from 'cors';
 import helmet from 'helmet';
 import rateLimit from 'express-rate-limit';
 import { config } from './config/environment';
-import { logger } from './utils/logger';
-import { trace, SpanStatusCode } from '@opentelemetry/api';
 import { errorHandler } from './middleware/error-handler';
 import { authMiddleware } from './middleware/auth';
+import { requestLoggingMiddleware } from './middleware/request-logging';
 import { aiRoutes } from './routes/ai-routes';
 import { healthRoutes } from './routes/health-routes';
 import { metricsRoutes } from './routes/metrics-routes';
@@ -59,57 +58,7 @@ export function createApp(): express.Application {
   app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
   // Inbound request tracing + logging
-  app.use((req, res, next) => {
-    const tracer = trace.getTracer('ai-gateway');
-    const requestId = (req.headers['x-request-id'] as string) || `req_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    (req as any).requestId = requestId;
-    res.setHeader('X-Request-ID', requestId);
-
-    tracer.startActiveSpan(`HTTP ${req.method} ${req.path}`, (span) => {
-      try {
-        const ua = req.get('User-Agent') || '';
-        span.setAttribute('http.method', String(req.method || ''));
-        span.setAttribute('http.target', String((req as any).originalUrl || req.url || ''));
-        span.setAttribute('http.route', String((req as any).path || ''));
-        span.setAttribute('http.client_ip', String((req as any).ip || ''));
-        span.setAttribute('user_agent', ua);
-        span.setAttribute('request_id', requestId);
-
-        // Propagate traceparent to response for client-side correlation
-        const ctx = span.spanContext();
-        if (ctx && ctx.traceId && ctx.spanId) {
-          const sampled = (ctx.traceFlags & 0x01) === 0x01 ? '01' : '00';
-          const traceparent = `00-${ctx.traceId}-${ctx.spanId}-${sampled}`;
-          res.setHeader('traceparent', traceparent);
-        }
-
-        logger.info('Incoming request', {
-          requestId,
-          method: req.method,
-          url: req.url,
-          userAgent: ua,
-          ip: req.ip,
-          trace_id: ctx?.traceId,
-          span_id: ctx?.spanId
-        });
-
-        res.on('finish', () => {
-          span.setAttribute('http.status_code', res.statusCode);
-          if (res.statusCode >= 500) {
-            span.setStatus({ code: SpanStatusCode.ERROR, message: `HTTP ${res.statusCode}` });
-          }
-          span.end();
-        });
-
-        next();
-      } catch (err) {
-        span.recordException(err as any);
-        span.setStatus({ code: SpanStatusCode.ERROR, message: 'middleware error' });
-        span.end();
-        next(err as any);
-      }
-    });
-  });
+  app.use(requestLoggingMiddleware);
 
   // Routes
   app.use('/health', healthRoutes);
