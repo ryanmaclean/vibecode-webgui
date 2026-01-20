@@ -1,17 +1,17 @@
 /**
  * Container Management API
  *
- * Endpoints for managing Apple Container instances
+ * Endpoints for managing containers using the unified runtime interface
  */
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
-import { appleContainer } from '@/lib/container/apple-container'
-import type { ContainerOptions } from '@/lib/container/types'
+import { getRuntimeWithFallback } from '@/lib/container/runtime-factory'
+import type { ContainerOptions } from '@/lib/container/runtime-interface'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { createContainerSchema } from '@/lib/api/validation/schemas'
-// import { logger } from '@/lib/logger';
+
 /**
  * GET /api/containers
  * List all containers
@@ -24,17 +24,20 @@ export async function GET() {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if Apple Container is available
-    const isAvailable = await appleContainer.isAvailable()
+    // Get runtime
+    const runtime = await getRuntimeWithFallback()
+    
+    // Check if runtime is available
+    const isAvailable = await runtime.isAvailable()
     if (!isAvailable) {
       return NextResponse.json(
-        { error: 'Apple Container CLI not available' },
+        { error: `Container runtime ${runtime.name} not available` },
         { status: 503 }
       )
     }
 
     // List containers
-    const result = await appleContainer.list()
+    const result = await runtime.list({ all: true })
 
     if (!result.success) {
       return NextResponse.json(
@@ -44,6 +47,7 @@ export async function GET() {
     }
 
     return NextResponse.json({
+      runtime: runtime.name,
       containers: result.containers,
       count: result.containers.length,
     })
@@ -84,17 +88,20 @@ export async function POST(req: NextRequest) {
       timestamp: new Date().toISOString()
     })
 
-    // Check if Apple Container is available
-    const isAvailable = await appleContainer.isAvailable()
+    // Get runtime
+    const runtime = await getRuntimeWithFallback()
+
+    // Check if runtime is available
+    const isAvailable = await runtime.isAvailable()
     if (!isAvailable) {
       return NextResponse.json(
-        { error: 'Apple Container CLI not available' },
+        { error: `Container runtime ${runtime.name} not available` },
         { status: 503 }
       )
     }
 
     // Start container
-    const result = await appleContainer.start(image, options as ContainerOptions)
+    const result = await runtime.start(image, options as ContainerOptions)
 
     if (!result.success) {
       return NextResponse.json(
@@ -104,9 +111,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Get container details
-    const containerInfo = await appleContainer.inspect(result.id)
+    const containerInfo = await runtime.inspect(result.id!)
 
     return NextResponse.json({
+      runtime: runtime.name,
       id: result.id,
       name: result.name,
       info: containerInfo,
