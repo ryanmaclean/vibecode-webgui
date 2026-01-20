@@ -226,6 +226,48 @@ storage:
       accessMode: ReadWriteMany
       reclaimPolicy: Retain
 
+# Persistent Volume Claim configuration (per-user workspaces)
+persistence:
+  # Enable persistent storage
+  enabled: true
+
+  # Storage size and limits
+  size: 10Gi
+  maxSize: 50Gi
+
+  # Access mode (ReadWriteOnce for security - prevents multi-attach vulnerabilities)
+  accessMode: ReadWriteOnce
+
+  # Data classification for compliance
+  # Options: internal, confidential, restricted
+  dataClassification: internal
+
+  # Backup and retention policies
+  backupPolicy: daily  # none, daily, weekly
+  retentionDays: 30
+
+  # Snapshot configuration (optional)
+  snapshotClass: ""  # Kubernetes VolumeSnapshotClass name
+
+  # Performance tier selection
+  # Options: standard, performance, premium
+  performanceTier: standard
+
+  # Volume mode (optional)
+  # Options: Filesystem, Block
+  volumeMode: Filesystem
+
+  # Encryption at rest configuration
+  encryption:
+    enabled: true
+    # Storage provisioner for encryption (CSI-based recommended)
+    provisioner: "kubernetes.io/no-provisioner"
+    # KMS key ID or encryption provider identifier (optional)
+    key: ""
+
+  # Enhanced security features
+  securityEnhanced: true  # Enables nosuid, nodev, noexec mount options
+
 # Auto-scaling configuration
 autoscaling:
   enabled: false
