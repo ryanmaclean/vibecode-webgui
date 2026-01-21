@@ -7,6 +7,16 @@
 
 import { NextRequest } from 'next/server';
 
+// Mock rate limiting to prevent 429 responses during tests
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 10,
+    remaining: 9,
+    reset: Date.now() + 60000
+  }))
+}))
+
 // Mock rate limiter to prevent rate limiting during tests
 jest.mock('@/lib/rate-limiter', () => ({
   checkRateLimit: jest.fn().mockResolvedValue({

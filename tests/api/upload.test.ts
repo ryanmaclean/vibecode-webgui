@@ -13,24 +13,21 @@
 import { NextRequest } from 'next/server';
 import { POST, OPTIONS } from '@/app/api/upload/route';
 
-// Mock rate limiter to prevent rate limiting during tests
-jest.mock('@/lib/rate-limiter', () => ({
-  checkRateLimit: jest.fn().mockResolvedValue({
-    allowed: true,
-    limit: 10,
-    remaining: 9,
-    reset: Math.floor(Date.now() / 1000) + 300,
-    current: 1,
-  }),
-  createRateLimitedResponse: jest.fn(),
-  applyRateLimitHeaders: jest.fn((response) => response),
-  RateLimitPresets: {
-    UPLOAD: {
-      maxRequests: 10,
-      windowSeconds: 300,
-      message: 'Too many upload attempts. Please wait before trying again.',
-    },
-  },
+// Mock rate limiting to prevent rate limiting during tests
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 20,
+    remaining: 19,
+    reset: Date.now() + 60000
+  }))
+}));
+
+// Mock next-auth to bypass authentication during tests
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn().mockResolvedValue({
+    user: { id: 'test-user-id', email: 'test@example.com' }
+  })
 }));
 
 /**
@@ -543,10 +540,19 @@ describe('API: /api/upload', () => {
 
   describe('CORS Support', () => {
     it('should handle OPTIONS preflight request', async () => {
-      const response = await OPTIONS();
+      const mockHeaders = new Map<string, string>();
+      mockHeaders.set('origin', 'http://localhost:3000');
+
+      const mockRequest = {
+        headers: {
+          get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+        },
+      } as unknown as NextRequest;
+
+      const response = await OPTIONS(mockRequest);
       expect(response.status).toBe(200);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
       expect(response.headers.get('Access-Control-Allow-Methods')).toContain('POST');
       expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Content-Type');
     });
