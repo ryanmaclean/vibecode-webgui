@@ -474,12 +474,10 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     // The workspace-access module expects numeric user IDs from the database
     const userIdNum = parseInt(userId, 10)
 
-    // If userId is not a valid number, try looking up by string ID
-    // This handles cases where userId might be a string identifier
-    if (isNaN(userIdNum)) {
-      // For string-based user IDs, we cannot proceed with current schema
-      // Log and deny access for non-numeric user IDs
-      console.warn('Non-numeric userId provided for workspace access check:', userId)
+    // If userId is not a valid number or is non-positive, deny access
+    // This prevents security issues with invalid user IDs
+    if (isNaN(userIdNum) || userIdNum <= 0) {
+      console.warn('Invalid numeric userId for workspace access check:', userId)
       return false
     }
 

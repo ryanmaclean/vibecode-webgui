@@ -1,10 +1,25 @@
+/**
+ * Login Tracking API
+ * Tracks authentication events for security monitoring and analytics
+ *
+ * Rate Limited: 10 requests per 5 minutes (standard auth)
+ */
+
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
+import {
+  checkRateLimit,
+  createRateLimitedResponse,
+  applyRateLimitHeaders,
+  RateLimitPresets,
+} from '@/lib/rate-limiter'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+const RATE_LIMIT_PREFIX = 'login-tracking'
 
 // Zod validation schemas
 const loginTrackingSchema = z.object({
@@ -120,6 +135,12 @@ function logUserAuth(
 
 // Track login attempts
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for login tracking
+  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.AUTH_STANDARD, RATE_LIMIT_PREFIX)
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.AUTH_STANDARD)
+  }
+
   try {
     const body = await request.json();
     const validatedData = loginTrackingSchema.parse(body);
@@ -135,25 +156,34 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
 
-    return NextResponse.json({
-      success: true,
-      message: `${event} logged successfully`,
-      timestamp: new Date().toISOString(),
-    });
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        success: true,
+        message: `${event} logged successfully`,
+        timestamp: new Date().toISOString(),
+      }),
+      rateLimitResult
+    );
 
   } catch (error) {
     // Server error logged
-    
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: error.issues
-      }, { status: 400 })
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          error: 'Invalid request parameters',
+          details: error.issues
+        }, { status: 400 }),
+        rateLimitResult
+      )
     }
 
-    return NextResponse.json(
-      { error: 'Failed to track login event' },
-      { status: 500 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: 'Failed to track login event' },
+        { status: 500 }
+      ),
+      rateLimitResult
     );
   }
 }

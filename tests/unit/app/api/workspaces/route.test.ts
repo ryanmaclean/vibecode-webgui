@@ -30,6 +30,37 @@ jest.mock('@/lib/logger', () => ({
   }
 }));
 
+// Mock the logging module
+jest.mock('@/lib/logging', () => ({
+  createServiceLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
+  })),
+  createPerformanceTimer: jest.fn(() => ({
+    stop: jest.fn(() => 100)
+  })),
+  logError: jest.fn(),
+  apiLogger: {
+    logRequest: jest.fn(() => ({ requestId: 'test-request-id' })),
+    logResponse: jest.fn()
+  }
+}));
+
+// Mock cache-utils
+jest.mock('@/lib/cache/cache-utils', () => ({
+  cacheGet: jest.fn().mockResolvedValue(null),
+  cacheSet: jest.fn().mockResolvedValue(true),
+  cacheDelete: jest.fn().mockResolvedValue(true),
+  CacheKeyGenerators: {
+    workspace: jest.fn((id: string) => `workspace:${id}`)
+  },
+  TTLPresets: {
+    SHORT: 300
+  }
+}));
+
 // Mock API utilities
 jest.mock('@/lib/api-utils', () => ({
   createErrorResponse: jest.fn((title: string, status: number, details: any) => {

@@ -2,11 +2,18 @@
  * Chat Service with PostgreSQL (Prisma)
  * Handles chat message storage, retrieval, and conversation management
  * using PostgreSQL as the persistence layer
+ *
+ * Optimized with:
+ * - Query caching for frequently accessed data
+ * - Batch operations to prevent N+1 queries
+ * - Index-aware query patterns
  */
 
 import { v4 as uuidv4 } from 'uuid';
 import prisma from '@/lib/prisma';
 import type { Prisma, Conversation, Message, ChatSession } from '@prisma/client';
+import { QueryCacheManager, CacheInvalidation } from '../database/query-cache-strategy';
+import { metrics } from '../server-monitoring';
 
 // Re-export enums for convenience
 export { ConversationStatus, MessageRole } from '@prisma/client';
@@ -92,12 +99,17 @@ export class ChatPostgresService {
   }
 
   /**
-   * Get conversation by ID
+   * Get conversation by ID (with caching)
    */
   async getConversation(conversationId: string): Promise<Conversation | null> {
-    return await prisma.conversation.findUnique({
-      where: { id: conversationId },
-    });
+    return QueryCacheManager.executeWithCache(
+      'conversation',
+      'getById',
+      { conversationId },
+      () => prisma.conversation.findUnique({
+        where: { id: conversationId },
+      })
+    );
   }
 
   /**
@@ -122,7 +134,7 @@ export class ChatPostgresService {
   }
 
   /**
-   * Update conversation
+   * Update conversation (with cache invalidation)
    */
   async updateConversation(
     conversationId: string,
@@ -144,10 +156,15 @@ export class ChatPostgresService {
       updateData.archived_at = new Date();
     }
 
-    return await prisma.conversation.update({
+    const result = await prisma.conversation.update({
       where: { id: conversationId },
       data: updateData,
     });
+
+    // Invalidate cache for this conversation
+    await CacheInvalidation.onConversationUpdate(conversationId);
+
+    return result;
   }
 
   /**
@@ -172,7 +189,8 @@ export class ChatPostgresService {
   }
 
   /**
-   * Get conversations for a user
+   * Get conversations for a user (with caching for common queries)
+   * Optimized: Uses composite index on (user_id, status, updated_at)
    */
   async getUserConversations(
     userId: number,
@@ -192,6 +210,24 @@ export class ChatPostgresService {
 
     if (workspaceId) {
       where.workspace_id = workspaceId;
+    }
+
+    // Use caching for first page of common queries
+    const shouldCache = offset === 0 && limit <= 50 && !workspaceId;
+
+    if (shouldCache) {
+      return QueryCacheManager.executeWithCache(
+        'conversation',
+        'getUserConversations',
+        { userId, status, limit },
+        () => prisma.conversation.findMany({
+          where,
+          orderBy: { updated_at: 'desc' },
+          skip: offset,
+          take: limit,
+        }),
+        { customTTL: 60 } // Short TTL for active data
+      );
     }
 
     return await prisma.conversation.findMany({
@@ -259,34 +295,48 @@ export class ChatPostgresService {
   }
 
   /**
-   * Add a message to a conversation
+   * Add a message to a conversation (optimized with transaction)
+   * Uses a transaction to ensure atomicity of message creation and count update
    */
   async addMessage(input: ChatMessageInput): Promise<Message> {
-    const message = await prisma.message.create({
-      data: {
-        conversation_id: input.conversationId,
-        role: input.role,
-        content: input.content,
-        tokens: input.tokens,
-        model: input.model,
-        provider: input.provider,
-        duration_ms: input.durationMs,
-        files: input.files as Prisma.InputJsonValue,
-        metadata: input.metadata as Prisma.InputJsonValue,
-      },
+    const startTime = Date.now();
+
+    // Use transaction for atomicity
+    const message = await prisma.$transaction(async (tx) => {
+      const msg = await tx.message.create({
+        data: {
+          conversation_id: input.conversationId,
+          role: input.role,
+          content: input.content,
+          tokens: input.tokens,
+          model: input.model,
+          provider: input.provider,
+          duration_ms: input.durationMs,
+          files: input.files as Prisma.InputJsonValue,
+          metadata: input.metadata as Prisma.InputJsonValue,
+        },
+      });
+
+      // Update conversation message count and tokens in same transaction
+      await tx.conversation.update({
+        where: { id: input.conversationId },
+        data: {
+          message_count: { increment: 1 },
+          total_tokens: input.tokens
+            ? { increment: input.tokens }
+            : undefined,
+          updated_at: new Date(),
+        },
+      });
+
+      return msg;
     });
 
-    // Update conversation message count and tokens
-    await prisma.conversation.update({
-      where: { id: input.conversationId },
-      data: {
-        message_count: { increment: 1 },
-        total_tokens: input.tokens
-          ? { increment: input.tokens }
-          : undefined,
-        updated_at: new Date(),
-      },
-    });
+    // Invalidate conversation cache
+    await CacheInvalidation.onConversationUpdate(input.conversationId);
+
+    // Track metrics
+    metrics.histogram('chat.addMessage.duration', Date.now() - startTime);
 
     return message;
   }
@@ -348,21 +398,31 @@ export class ChatPostgresService {
   }
 
   /**
-   * Delete message
+   * Delete message (optimized with transaction)
+   * Uses transaction to ensure atomicity of deletion and count update
    */
   async deleteMessage(messageId: string): Promise<void> {
+    // First fetch the message to get conversation_id for cache invalidation
     const message = await prisma.message.findUnique({
       where: { id: messageId },
+      select: { id: true, conversation_id: true, tokens: true },
     });
 
-    if (message) {
-      await prisma.message.delete({
+    if (!message) {
+      return; // Message not found, nothing to delete
+    }
+
+    const conversationId = message.conversation_id;
+
+    // Use transaction for atomicity
+    await prisma.$transaction(async (tx) => {
+      // Delete message and update counts in same transaction
+      await tx.message.delete({
         where: { id: messageId },
       });
 
-      // Update conversation message count
-      await prisma.conversation.update({
-        where: { id: message.conversation_id },
+      await tx.conversation.update({
+        where: { id: conversationId },
         data: {
           message_count: { decrement: 1 },
           total_tokens: message.tokens
@@ -370,7 +430,10 @@ export class ChatPostgresService {
             : undefined,
         },
       });
-    }
+    });
+
+    // Invalidate cache after transaction commits
+    await CacheInvalidation.onConversationUpdate(conversationId);
   }
 
   /**
@@ -675,6 +738,247 @@ export class ChatPostgresService {
     });
 
     return result.count;
+  }
+
+  // =====================================================
+  // Batch Operations (prevents N+1 queries)
+  // =====================================================
+
+  /**
+   * Batch get multiple conversations by IDs
+   * Prevents N+1 when loading conversation lists with details
+   */
+  async batchGetConversations(
+    conversationIds: string[],
+    options: { includeMessages?: boolean; messageLimit?: number } = {}
+  ): Promise<Map<string, Conversation & { messages?: Message[] }>> {
+    if (conversationIds.length === 0) {
+      return new Map();
+    }
+
+    const startTime = Date.now();
+    const { includeMessages = false, messageLimit = 10 } = options;
+
+    const conversations = await prisma.conversation.findMany({
+      where: { id: { in: conversationIds } },
+      include: includeMessages
+        ? {
+            messages: {
+              take: messageLimit,
+              orderBy: { created_at: 'desc' },
+            },
+          }
+        : undefined,
+    });
+
+    metrics.histogram('chat.batchGetConversations.duration', Date.now() - startTime, {
+      count: conversationIds.length.toString(),
+    });
+
+    return new Map(conversations.map((conv) => [conv.id, conv]));
+  }
+
+  /**
+   * Batch add multiple messages (for bulk operations)
+   * More efficient than adding messages one-by-one
+   */
+  async batchAddMessages(
+    messages: Array<ChatMessageInput>
+  ): Promise<{ created: number; errors: string[] }> {
+    if (messages.length === 0) {
+      return { created: 0, errors: [] };
+    }
+
+    const startTime = Date.now();
+    const errors: string[] = [];
+    let created = 0;
+
+    // Group messages by conversation for efficient count updates
+    const messagesByConversation = new Map<string, ChatMessageInput[]>();
+    for (const msg of messages) {
+      const existing = messagesByConversation.get(msg.conversationId) ?? [];
+      existing.push(msg);
+      messagesByConversation.set(msg.conversationId, existing);
+    }
+
+    // Process in batches per conversation to maintain data integrity
+    const conversationEntries = Array.from(messagesByConversation.entries());
+    for (const [conversationId, conversationMessages] of conversationEntries) {
+      try {
+        await prisma.$transaction(async (tx) => {
+          // Batch create all messages for this conversation
+          await tx.message.createMany({
+            data: conversationMessages.map((msg) => ({
+              conversation_id: msg.conversationId,
+              role: msg.role,
+              content: msg.content,
+              tokens: msg.tokens,
+              model: msg.model,
+              provider: msg.provider,
+              duration_ms: msg.durationMs,
+              files: msg.files as Prisma.InputJsonValue,
+              metadata: msg.metadata as Prisma.InputJsonValue,
+            })),
+          });
+
+          // Calculate total tokens to add
+          const totalTokens = conversationMessages.reduce(
+            (sum, msg) => sum + (msg.tokens ?? 0),
+            0
+          );
+
+          // Update conversation counts once
+          await tx.conversation.update({
+            where: { id: conversationId },
+            data: {
+              message_count: { increment: conversationMessages.length },
+              total_tokens: totalTokens > 0 ? { increment: totalTokens } : undefined,
+              updated_at: new Date(),
+            },
+          });
+
+          created += conversationMessages.length;
+        });
+
+        // Invalidate cache for this conversation
+        await CacheInvalidation.onConversationUpdate(conversationId);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Conversation ${conversationId}: ${errorMessage}`);
+      }
+    }
+
+    metrics.histogram('chat.batchAddMessages.duration', Date.now() - startTime, {
+      count: messages.length.toString(),
+      conversations: messagesByConversation.size.toString(),
+    });
+
+    return { created, errors };
+  }
+
+  /**
+   * Batch delete multiple messages
+   * More efficient than deleting messages one-by-one
+   */
+  async batchDeleteMessages(messageIds: string[]): Promise<{ deleted: number; errors: string[] }> {
+    if (messageIds.length === 0) {
+      return { deleted: 0, errors: [] };
+    }
+
+    const startTime = Date.now();
+    const errors: string[] = [];
+
+    // First, fetch all messages to get conversation IDs and token counts
+    const messages = await prisma.message.findMany({
+      where: { id: { in: messageIds } },
+      select: { id: true, conversation_id: true, tokens: true },
+    });
+
+    // Group by conversation for efficient count updates
+    const messagesByConversation = new Map<
+      string,
+      Array<{ id: string; tokens: number | null }>
+    >();
+    for (const msg of messages) {
+      const existing = messagesByConversation.get(msg.conversation_id) ?? [];
+      existing.push({ id: msg.id, tokens: msg.tokens });
+      messagesByConversation.set(msg.conversation_id, existing);
+    }
+
+    let deleted = 0;
+
+    // Process each conversation's messages
+    const deleteEntries = Array.from(messagesByConversation.entries());
+    for (const [conversationId, conversationMessages] of deleteEntries) {
+      try {
+        const totalTokens = conversationMessages.reduce(
+          (sum, msg) => sum + (msg.tokens ?? 0),
+          0
+        );
+
+        await prisma.$transaction(async (tx) => {
+          // Delete all messages for this conversation
+          const result = await tx.message.deleteMany({
+            where: {
+              id: { in: conversationMessages.map((m) => m.id) },
+            },
+          });
+
+          // Update conversation counts
+          await tx.conversation.update({
+            where: { id: conversationId },
+            data: {
+              message_count: { decrement: result.count },
+              total_tokens: totalTokens > 0 ? { decrement: totalTokens } : undefined,
+            },
+          });
+
+          deleted += result.count;
+        });
+
+        // Invalidate cache
+        await CacheInvalidation.onConversationUpdate(conversationId);
+      } catch (error) {
+        const errorMessage = error instanceof Error ? error.message : String(error);
+        errors.push(`Conversation ${conversationId}: ${errorMessage}`);
+      }
+    }
+
+    metrics.histogram('chat.batchDeleteMessages.duration', Date.now() - startTime, {
+      requested: messageIds.length.toString(),
+      deleted: deleted.toString(),
+    });
+
+    return { deleted, errors };
+  }
+
+  /**
+   * Get messages for multiple conversations at once
+   * Prevents N+1 when displaying conversation lists with previews
+   */
+  async batchGetConversationMessages(
+    conversationIds: string[],
+    options: { limit?: number } = {}
+  ): Promise<Map<string, Message[]>> {
+    if (conversationIds.length === 0) {
+      return new Map();
+    }
+
+    const startTime = Date.now();
+    const { limit = 10 } = options;
+
+    // Fetch messages for all conversations in a single query
+    const messages = await prisma.message.findMany({
+      where: { conversation_id: { in: conversationIds } },
+      orderBy: { created_at: 'desc' },
+    });
+
+    // Group by conversation and limit per conversation
+    const grouped = new Map<string, Message[]>();
+    const conversationCounts = new Map<string, number>();
+
+    for (const msg of messages) {
+      const count = conversationCounts.get(msg.conversation_id) ?? 0;
+      if (count < limit) {
+        const existing = grouped.get(msg.conversation_id) ?? [];
+        existing.push(msg);
+        grouped.set(msg.conversation_id, existing);
+        conversationCounts.set(msg.conversation_id, count + 1);
+      }
+    }
+
+    // Ensure all requested conversations have an entry (even if empty)
+    for (const id of conversationIds) {
+      if (!grouped.has(id)) {
+        grouped.set(id, []);
+      }
+    }
+
+    metrics.histogram('chat.batchGetConversationMessages.duration', Date.now() - startTime, {
+      conversations: conversationIds.length.toString(),
+    });
+
+    return grouped;
   }
 }
 

@@ -1,15 +1,43 @@
 /**
- * Workspace management tools for MCP
+ * Workspace Management Tools for MCP
+ *
+ * Provides MCP tool handlers for workspace lifecycle management including
+ * creation, listing, status checking, and deletion.
  *
  * Integrates with the workspace provisioning services:
  * - Apple Container (local development on macOS)
  * - Kubernetes (production deployment)
+ *
+ * The appropriate backend is selected automatically based on runtime availability.
+ *
+ * @module mcp/tools/workspace
+ *
+ * @example
+ * ```typescript
+ * import { createWorkspace, listWorkspaces, deleteWorkspace } from '@/mcp/tools/workspace';
+ *
+ * // Create a new React workspace
+ * const result = await createWorkspace({
+ *   name: 'my-app',
+ *   template: 'react',
+ *   description: 'My new React application'
+ * });
+ *
+ * // List all workspaces
+ * const list = await listWorkspaces();
+ *
+ * // Delete a workspace
+ * await deleteWorkspace({ workspaceId: result.workspaceId });
+ * ```
  */
 
 import type { CreateWorkspaceArgs } from '../types.js';
 import { WorkspaceServiceFactory, type WorkspaceRuntime } from '@/lib/services/workspace-service-factory';
 
-// Template to framework mapping
+/**
+ * Maps project templates to their corresponding framework identifiers.
+ * Used when creating workspaces to configure the appropriate framework settings.
+ */
 const templateFrameworkMap: Record<CreateWorkspaceArgs['template'], string> = {
   react: 'react',
   nextjs: 'nextjs',
@@ -19,7 +47,10 @@ const templateFrameworkMap: Record<CreateWorkspaceArgs['template'], string> = {
   rust: 'actix',
 };
 
-// Template to initial files mapping
+/**
+ * Maps project templates to their initial boilerplate files.
+ * Each template includes the minimal starter code for the respective framework.
+ */
 const templateFiles: Record<CreateWorkspaceArgs['template'], Record<string, string>> = {
   react: {
     'src/App.tsx': `import React from 'react';\n\nexport default function App() {\n  return <div>Hello from VibeCode!</div>;\n}\n`,
@@ -42,7 +73,10 @@ const templateFiles: Record<CreateWorkspaceArgs['template'], Record<string, stri
   },
 };
 
-// Template to dependencies mapping
+/**
+ * Maps project templates to their required package dependencies.
+ * These dependencies are installed when the workspace is provisioned.
+ */
 const templateDependencies: Record<CreateWorkspaceArgs['template'], string[]> = {
   react: ['react', 'react-dom'],
   nextjs: ['next', 'react', 'react-dom'],
@@ -52,6 +86,30 @@ const templateDependencies: Record<CreateWorkspaceArgs['template'], string[]> = 
   rust: [],
 };
 
+/**
+ * Creates a new development workspace with the specified template.
+ * Automatically selects the appropriate runtime (Apple Container or Kubernetes)
+ * based on availability.
+ *
+ * @param args - The workspace creation arguments
+ * @param args.name - Name for the workspace
+ * @param args.template - Project template: 'react', 'nextjs', 'nodejs', 'python', 'go', or 'rust'
+ * @param args.description - Optional description for the workspace
+ * @returns MCP response object with workspace details or error information
+ *
+ * @example
+ * ```typescript
+ * const result = await createWorkspace({
+ *   name: 'my-nextjs-app',
+ *   template: 'nextjs',
+ *   description: 'My Next.js portfolio site'
+ * });
+ *
+ * if (result.content[0].text.includes('"success": true')) {
+ *   console.log('Workspace created successfully');
+ * }
+ * ```
+ */
 export async function createWorkspace(args: CreateWorkspaceArgs) {
   const { name, template, description } = args;
 
@@ -138,6 +196,24 @@ export async function createWorkspace(args: CreateWorkspaceArgs) {
   }
 }
 
+/**
+ * Lists all workspaces across the available runtime.
+ * Returns normalized workspace information regardless of the underlying backend.
+ *
+ * @returns Object containing success status, runtime type, workspace list, and features
+ *
+ * @example
+ * ```typescript
+ * const result = await listWorkspaces();
+ *
+ * if (result.success) {
+ *   console.log(`Using runtime: ${result.runtime}`);
+ *   result.workspaces.forEach(ws => {
+ *     console.log(`${ws.name}: ${ws.status}`);
+ *   });
+ * }
+ * ```
+ */
 export async function listWorkspaces() {
   try {
     // Check runtime availability
@@ -179,6 +255,25 @@ export async function listWorkspaces() {
   }
 }
 
+/**
+ * Deletes a workspace and its associated resources.
+ * The workspace is removed from the underlying runtime (Apple Container or Kubernetes).
+ *
+ * @param args - The deletion arguments
+ * @param args.workspaceId - The unique identifier of the workspace to delete
+ * @returns Object containing success status and message or error
+ *
+ * @example
+ * ```typescript
+ * const result = await deleteWorkspace({ workspaceId: 'my-app-1234567890' });
+ *
+ * if (result.success) {
+ *   console.log(result.message);
+ * } else {
+ *   console.error(result.error);
+ * }
+ * ```
+ */
 export async function deleteWorkspace(args: { workspaceId: string }) {
   try {
     const runtimeInfo = await WorkspaceServiceFactory.getRuntimeInfo();
@@ -205,6 +300,26 @@ export async function deleteWorkspace(args: { workspaceId: string }) {
   }
 }
 
+/**
+ * Gets the current status of a specific workspace.
+ * Returns detailed information including endpoints and resource status.
+ *
+ * @param args - The status query arguments
+ * @param args.workspaceId - The unique identifier of the workspace to query
+ * @returns Object containing success status, workspace details, and runtime info
+ *
+ * @example
+ * ```typescript
+ * const result = await getWorkspaceStatus({ workspaceId: 'my-app-1234567890' });
+ *
+ * if (result.success) {
+ *   console.log(`Status: ${result.workspace.status}`);
+ *   console.log(`URL: ${result.workspace.url}`);
+ * } else {
+ *   console.error(result.message);
+ * }
+ * ```
+ */
 export async function getWorkspaceStatus(args: { workspaceId: string }) {
   try {
     const runtimeInfo = await WorkspaceServiceFactory.getRuntimeInfo();
@@ -239,6 +354,24 @@ export async function getWorkspaceStatus(args: { workspaceId: string }) {
   }
 }
 
+/**
+ * Gets information about the available workspace runtime.
+ * Returns details about which backend is available and its capabilities.
+ *
+ * @returns Runtime information object from WorkspaceServiceFactory
+ *
+ * @example
+ * ```typescript
+ * const info = await getRuntimeInfo();
+ *
+ * if (info.available) {
+ *   console.log(`Runtime: ${info.runtime}`);
+ *   console.log('Features:', info.features);
+ * } else {
+ *   console.log('No workspace runtime available');
+ * }
+ * ```
+ */
 export async function getRuntimeInfo() {
   return WorkspaceServiceFactory.getRuntimeInfo();
 }

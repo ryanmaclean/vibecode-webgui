@@ -1,10 +1,47 @@
 /**
  * Vector Search Library for VibeCode Platform
- * Integrates pgvector with AI project generation workflow
+ *
+ * Integrates pgvector with AI project generation workflow to enable semantic
+ * similarity search across code snippets, documentation, and other embedded content.
+ *
+ * @module vector-search
+ *
+ * @example
+ * ```typescript
+ * import { VectorSearchService } from '@/lib/vector-search';
+ *
+ * const searchService = new VectorSearchService();
+ *
+ * // Store an embedding
+ * const id = await searchService.storeEmbedding(
+ *   'code',
+ *   'hash123',
+ *   [0.1, 0.2, ...],
+ *   { language: 'typescript', framework: 'react' }
+ * );
+ *
+ * // Search for similar code
+ * const results = await searchService.findSimilarCode(queryEmbedding, 'typescript', 'react');
+ *
+ * // Don't forget to close when done
+ * await searchService.close();
+ * ```
  */
 
 import { Pool } from 'pg';
 
+/**
+ * Represents a stored embedding record in the database.
+ *
+ * @interface EmbeddingRecord
+ * @property id - Unique identifier for the embedding
+ * @property content_type - Type of content (e.g., 'code', 'documentation')
+ * @property content_hash - Hash of the original content for deduplication
+ * @property embedding - The vector embedding as an array of numbers
+ * @property metadata - Additional metadata about the content
+ * @property created_at - Timestamp when the record was created
+ * @property updated_at - Timestamp when the record was last updated
+ */
 interface EmbeddingRecord {
   id: number;
   content_type: string;
@@ -15,6 +52,16 @@ interface EmbeddingRecord {
   updated_at: Date;
 }
 
+/**
+ * Represents a search result with similarity score.
+ *
+ * @interface SearchResult
+ * @property id - Unique identifier of the matching embedding
+ * @property content_type - Type of the matched content
+ * @property content_hash - Hash of the matched content
+ * @property metadata - Metadata associated with the matched content
+ * @property similarity - Similarity score (lower is more similar, using L2 distance)
+ */
 interface SearchResult {
   id: number;
   content_type: string;
@@ -23,6 +70,16 @@ interface SearchResult {
   similarity: number;
 }
 
+/**
+ * Options for configuring similarity search queries.
+ *
+ * @interface SearchOptions
+ * @property content_type - Filter by content type (e.g., 'code', 'documentation')
+ * @property language - Filter by programming language
+ * @property framework - Filter by framework (e.g., 'react', 'nextjs')
+ * @property limit - Maximum number of results to return (default: 10)
+ * @property similarity_threshold - Maximum distance threshold for results (default: 1.0)
+ */
 interface SearchOptions {
   content_type?: string;
   language?: string;
@@ -32,16 +89,36 @@ interface SearchOptions {
 }
 
 /**
- * Query rate tracker for monitoring similarity search performance
- * Uses a sliding window approach to track queries per minute
+ * Tracks query rates for monitoring similarity search performance.
+ * Uses a sliding window approach to calculate queries per minute.
+ *
+ * @class QueryRateTracker
+ *
+ * @example
+ * ```typescript
+ * const tracker = new QueryRateTracker();
+ *
+ * // Record queries as they happen
+ * tracker.recordQuery();
+ *
+ * // Get current rate
+ * const qpm = tracker.getQueriesPerMinute();
+ * console.log(`Current query rate: ${qpm} queries/minute`);
+ * ```
  */
 class QueryRateTracker {
+  /** Array of timestamps for recorded queries */
   private queryTimestamps: number[] = [];
-  private readonly windowMs: number = 60 * 1000; // 1 minute window
-  private readonly maxStoredQueries: number = 10000; // Prevent unbounded memory growth
+  /** Tracking window duration in milliseconds (1 minute) */
+  private readonly windowMs: number = 60 * 1000;
+  /** Maximum stored queries to prevent unbounded memory growth */
+  private readonly maxStoredQueries: number = 10000;
 
   /**
-   * Record a new query timestamp
+   * Records a new query timestamp for rate tracking.
+   * Automatically cleans up old entries outside the tracking window.
+   *
+   * @returns void
    */
   recordQuery(): void {
     const now = Date.now();
@@ -52,7 +129,10 @@ class QueryRateTracker {
   }
 
   /**
-   * Remove timestamps outside the tracking window
+   * Removes timestamps outside the tracking window and enforces memory limits.
+   *
+   * @param now - Current timestamp in milliseconds
+   * @returns void
    */
   private cleanup(now: number): void {
     const cutoff = now - this.windowMs;
@@ -69,7 +149,18 @@ class QueryRateTracker {
   }
 
   /**
-   * Get the average queries per minute over the tracking window
+   * Calculates the average queries per minute over the tracking window.
+   * Returns 0 if less than 1 second of data is available to avoid misleading extrapolation.
+   *
+   * @returns The calculated queries per minute rate
+   *
+   * @example
+   * ```typescript
+   * const rate = tracker.getQueriesPerMinute();
+   * if (rate > 1000) {
+   *   console.warn('High query rate detected');
+   * }
+   * ```
    */
   getQueriesPerMinute(): number {
     const now = Date.now();
@@ -96,19 +187,59 @@ class QueryRateTracker {
   }
 
   /**
-   * Reset the tracker
+   * Resets the tracker by clearing all recorded timestamps.
+   *
+   * @returns void
    */
   reset(): void {
     this.queryTimestamps = [];
   }
 }
 
-// Global query rate tracker instance
+/** Global query rate tracker instance for monitoring search performance */
 const queryRateTracker = new QueryRateTracker();
 
+/**
+ * Service for performing vector similarity searches using pgvector.
+ * Provides methods for storing embeddings, performing similarity searches,
+ * and retrieving statistics.
+ *
+ * @class VectorSearchService
+ *
+ * @example
+ * ```typescript
+ * const service = new VectorSearchService();
+ *
+ * // Store embeddings
+ * await service.storeEmbedding('code', 'abc123', embedding, { language: 'typescript' });
+ *
+ * // Search for similar content
+ * const results = await service.similaritySearch(queryEmbedding, {
+ *   content_type: 'code',
+ *   limit: 5,
+ *   similarity_threshold: 0.8
+ * });
+ *
+ * // Clean up
+ * await service.close();
+ * ```
+ */
 export class VectorSearchService {
+  /** PostgreSQL connection pool for pgvector queries */
   private pool: Pool;
 
+  /**
+   * Creates a new VectorSearchService instance with a configured connection pool.
+   * Connection settings are loaded from environment variables with sensible defaults.
+   *
+   * Environment variables:
+   * - PGVECTOR_HOST: Database host (default: pgvector service in k8s)
+   * - PGVECTOR_PORT: Database port (default: 5432)
+   * - PGVECTOR_DATABASE: Database name (default: 'vibecode')
+   * - PGVECTOR_USER: Database user (default: 'vibecode')
+   * - PGVECTOR_PASSWORD: Database password (required)
+   * - NODE_ENV: Environment mode (production enables SSL)
+   */
   constructor() {
     this.pool = new Pool({
       host: process.env.PGVECTOR_HOST || 'pgvector-vibecode-pgvector.vibecode-webgui.svc.cluster.local',
@@ -124,7 +255,25 @@ export class VectorSearchService {
   }
 
   /**
-   * Store an embedding in the vector database
+   * Stores an embedding in the vector database.
+   * Uses upsert semantics - if content_hash already exists, updates the embedding and metadata.
+   *
+   * @param content_type - Type of content (e.g., 'code', 'documentation')
+   * @param content_hash - Unique hash of the content for deduplication
+   * @param embedding - Vector embedding as an array of numbers
+   * @param metadata - Optional metadata to associate with the embedding
+   * @returns The ID of the inserted or updated embedding record
+   * @throws Error if database operation fails
+   *
+   * @example
+   * ```typescript
+   * const id = await service.storeEmbedding(
+   *   'code',
+   *   sha256(codeSnippet),
+   *   await generateEmbedding(codeSnippet),
+   *   { language: 'typescript', framework: 'react', file: 'App.tsx' }
+   * );
+   * ```
    */
   async storeEmbedding(
     content_type: string,
@@ -159,7 +308,30 @@ export class VectorSearchService {
   }
 
   /**
-   * Perform semantic similarity search
+   * Performs semantic similarity search using vector distance.
+   * Uses L2 (Euclidean) distance for similarity ranking.
+   *
+   * @param queryEmbedding - The query vector to search against
+   * @param options - Search configuration options
+   * @param options.content_type - Filter by content type
+   * @param options.language - Filter by programming language (from metadata)
+   * @param options.framework - Filter by framework (from metadata)
+   * @param options.limit - Maximum results to return (default: 10)
+   * @param options.similarity_threshold - Maximum distance threshold (default: 1.0)
+   * @returns Array of search results sorted by similarity (most similar first)
+   * @throws Error if database query fails
+   *
+   * @example
+   * ```typescript
+   * const results = await service.similaritySearch(queryEmbedding, {
+   *   content_type: 'code',
+   *   language: 'typescript',
+   *   limit: 10,
+   *   similarity_threshold: 0.5
+   * });
+   *
+   * results.forEach(r => console.log(`${r.content_hash}: ${r.similarity}`));
+   * ```
    */
   async similaritySearch(
     queryEmbedding: number[],
@@ -238,7 +410,25 @@ export class VectorSearchService {
   }
 
   /**
-   * Find similar code snippets for AI project generation
+   * Finds similar code snippets for AI project generation.
+   * Convenience method that wraps similaritySearch with code-specific defaults.
+   *
+   * @param queryEmbedding - The query vector to search against
+   * @param language - Optional programming language filter
+   * @param framework - Optional framework filter
+   * @param limit - Maximum results to return (default: 5)
+   * @returns Array of similar code search results
+   * @throws Error if database query fails
+   *
+   * @example
+   * ```typescript
+   * const similarCode = await service.findSimilarCode(
+   *   embedding,
+   *   'typescript',
+   *   'nextjs',
+   *   10
+   * );
+   * ```
    */
   async findSimilarCode(
     queryEmbedding: number[],
@@ -256,7 +446,19 @@ export class VectorSearchService {
   }
 
   /**
-   * Find relevant documentation for context
+   * Finds relevant documentation for context in AI project generation.
+   * Convenience method that wraps similaritySearch with documentation-specific defaults.
+   *
+   * @param queryEmbedding - The query vector to search against
+   * @param limit - Maximum results to return (default: 3)
+   * @returns Array of relevant documentation search results
+   * @throws Error if database query fails
+   *
+   * @example
+   * ```typescript
+   * const docs = await service.findRelevantDocs(embedding, 5);
+   * docs.forEach(doc => console.log(doc.metadata.title));
+   * ```
    */
   async findRelevantDocs(
     queryEmbedding: number[],
@@ -270,7 +472,35 @@ export class VectorSearchService {
   }
 
   /**
-   * Hybrid search combining vector similarity with metadata filters
+   * Performs hybrid search combining vector similarity with advanced metadata filters.
+   * Supports multiple filter arrays and date range filtering.
+   *
+   * @param queryEmbedding - The query vector to search against
+   * @param filters - Filter configuration object
+   * @param filters.content_types - Array of content types to include
+   * @param filters.languages - Array of programming languages to include
+   * @param filters.frameworks - Array of frameworks to include
+   * @param filters.date_range - Optional date range filter with start and end dates
+   * @param limit - Maximum results to return (default: 10)
+   * @returns Array of search results matching the filters, sorted by similarity
+   * @throws Error if database query fails
+   *
+   * @example
+   * ```typescript
+   * const results = await service.hybridSearch(
+   *   queryEmbedding,
+   *   {
+   *     content_types: ['code', 'documentation'],
+   *     languages: ['typescript', 'javascript'],
+   *     frameworks: ['react', 'nextjs'],
+   *     date_range: {
+   *       start: new Date('2024-01-01'),
+   *       end: new Date()
+   *     }
+   *   },
+   *   20
+   * );
+   * ```
    */
   async hybridSearch(
     queryEmbedding: number[],
@@ -343,7 +573,23 @@ export class VectorSearchService {
   }
 
   /**
-   * Get embedding statistics for monitoring
+   * Gets embedding statistics for monitoring and analytics.
+   * Returns aggregate counts and the current query rate.
+   *
+   * @returns Statistics object containing:
+   *   - total_embeddings: Total count of stored embeddings
+   *   - by_content_type: Counts grouped by content type
+   *   - by_language: Counts grouped by programming language
+   *   - avg_similarity_queries_per_minute: Current query rate
+   * @throws Error if database query fails
+   *
+   * @example
+   * ```typescript
+   * const stats = await service.getStats();
+   * console.log(`Total embeddings: ${stats.total_embeddings}`);
+   * console.log(`By type:`, stats.by_content_type);
+   * console.log(`Query rate: ${stats.avg_similarity_queries_per_minute} qpm`);
+   * ```
    */
   async getStats(): Promise<{
     total_embeddings: number;
@@ -389,7 +635,16 @@ export class VectorSearchService {
   }
 
   /**
-   * Close the connection pool
+   * Closes the connection pool and releases all database connections.
+   * Should be called when the service is no longer needed.
+   *
+   * @returns Promise that resolves when all connections are closed
+   *
+   * @example
+   * ```typescript
+   * // Clean shutdown
+   * await service.close();
+   * ```
    */
   async close(): Promise<void> {
     await this.pool.end();

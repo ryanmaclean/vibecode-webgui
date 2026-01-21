@@ -1,6 +1,8 @@
 /**
  * Vector Search API Route for VibeCode Platform
  * Provides semantic search capabilities for AI project generation
+ *
+ * Rate Limited: 50 requests per minute (resource-heavy operations)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -10,6 +12,15 @@ import { z } from '@/lib/zod-compat';
 // import { logger } from '@/lib/logger';
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client';
 import crypto from 'crypto';
+import {
+  checkRateLimit,
+  createRateLimitedResponse,
+  applyRateLimitHeaders,
+  RateLimitPresets,
+  type RateLimitResult,
+} from '@/lib/rate-limiter';
+
+const RATE_LIMIT_PREFIX = 'vector-search';
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']).optional(),
@@ -34,30 +45,45 @@ const batchSearchSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for vector search (resource-heavy)
+  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX);
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH);
+  }
+
   try {
     const body = await request.json();
     const action = request.nextUrl.searchParams.get('action') || 'search';
 
+    let response: NextResponse;
     switch (action) {
       case 'search':
-        return await handleSearch(body);
+        response = await handleSearch(body);
+        break;
       case 'store':
-        return await handleStore(body);
+        response = await handleStore(body);
+        break;
       case 'batch-search':
-        return await handleBatchSearch(body);
+        response = await handleBatchSearch(body);
+        break;
       case 'hybrid-search':
-        return await handleHybridSearch(body);
+        response = await handleHybridSearch(body);
+        break;
       default:
-        return NextResponse.json(
+        response = NextResponse.json(
           { error: 'Invalid action. Supported: search, store, batch-search, hybrid-search' },
           { status: 400 }
         );
     }
+    return applyRateLimitHeaders(response, rateLimitResult);
   } catch (error) {
     console.error('Vector search API error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
-      { status: 500 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
+        { status: 500 }
+      ),
+      rateLimitResult
     );
   }
 }
@@ -281,25 +307,34 @@ async function handleHybridSearch(body: any) {
 }
 
 export async function GET(request: NextRequest) {
+  // Apply rate limiting for vector search GET operations
+  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX);
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH);
+  }
+
   const action = request.nextUrl.searchParams.get('action');
 
   if (action === 'stats') {
     // Cache statistics for 60 seconds to reduce database load
     const statsCacheKey = 'vector-search:stats';
     const cached = await cache.get(statsCacheKey);
-    
+
     if (cached) {
-      return NextResponse.json({
-        success: true,
-        stats: cached,
-        from_cache: true
-      });
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          success: true,
+          stats: cached,
+          from_cache: true
+        }),
+        rateLimitResult
+      );
     }
 
     const vectorSearch = new VectorSearchService();
     try {
       const stats = await vectorSearch.getStats();
-      
+
       // Include cache statistics
       const cacheStats = await cache.getStats();
       const enhancedStats = {
@@ -311,14 +346,17 @@ export async function GET(request: NextRequest) {
           estimated_cache_hit_rate: cacheStats.hitRate
         }
       };
-      
+
       await cache.set(statsCacheKey, enhancedStats, CacheTTL.SHORT);
-      
-      return NextResponse.json({
-        success: true,
-        stats: enhancedStats,
-        from_cache: false
-      });
+
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          success: true,
+          stats: enhancedStats,
+          from_cache: false
+        }),
+        rateLimitResult
+      );
     } finally {
       await vectorSearch.close();
     }
@@ -330,33 +368,43 @@ export async function GET(request: NextRequest) {
     if (keys.length > 0) {
       await cache.del(keys);
     }
-    
-    return NextResponse.json({
-      success: true,
-      message: `Cleared ${keys.length} vector search cache entries`,
-      cleared_keys: keys.length
-    });
+
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        success: true,
+        message: `Cleared ${keys.length} vector search cache entries`,
+        cleared_keys: keys.length
+      }),
+      rateLimitResult
+    );
   }
 
-  return NextResponse.json({
-    success: true,
-    message: 'VibeCode Vector Search API with Advanced Caching',
-    endpoints: {
-      'POST /api/vector-search?action=search': 'Semantic similarity search (cached)',
-      'POST /api/vector-search?action=store': 'Store new embedding',
-      'POST /api/vector-search?action=batch-search': 'Batch similarity search (cached)',
-      'POST /api/vector-search?action=hybrid-search': 'Advanced hybrid search',
-      'GET /api/vector-search?action=stats': 'Get database statistics (cached)',
-      'GET /api/vector-search?action=cache-clear': 'Clear vector search cache'
-    },
-    cache_features: {
-      'search_caching': 'Individual and batch searches cached for 30 minutes',
-      'embedding_caching': 'Generated embeddings cached to avoid OpenAI API calls',
-      'stats_caching': 'Statistics cached for 60 seconds',
-      'performance_gain': 'Expected 70-90% latency reduction for repeated queries'
-    },
-    version: '1.1.0'
-  });
+  return applyRateLimitHeaders(
+    NextResponse.json({
+      success: true,
+      message: 'VibeCode Vector Search API with Advanced Caching',
+      endpoints: {
+        'POST /api/vector-search?action=search': 'Semantic similarity search (cached)',
+        'POST /api/vector-search?action=store': 'Store new embedding',
+        'POST /api/vector-search?action=batch-search': 'Batch similarity search (cached)',
+        'POST /api/vector-search?action=hybrid-search': 'Advanced hybrid search',
+        'GET /api/vector-search?action=stats': 'Get database statistics (cached)',
+        'GET /api/vector-search?action=cache-clear': 'Clear vector search cache'
+      },
+      cache_features: {
+        'search_caching': 'Individual and batch searches cached for 30 minutes',
+        'embedding_caching': 'Generated embeddings cached to avoid OpenAI API calls',
+        'stats_caching': 'Statistics cached for 60 seconds',
+        'performance_gain': 'Expected 70-90% latency reduction for repeated queries'
+      },
+      version: '1.1.0',
+      rate_limiting: {
+        'limit': `${RateLimitPresets.VECTOR_SEARCH.maxRequests} requests per ${RateLimitPresets.VECTOR_SEARCH.windowSeconds} seconds`,
+        'algorithm': 'sliding window'
+      }
+    }),
+    rateLimitResult
+  );
 }
 
 // Helper function to generate consistent cache keys for vector searches

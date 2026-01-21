@@ -58,3 +58,42 @@ export {
   recordCLIMetrics,
   createTracedCommand,
 } from './gastown-cli-tracing';
+
+// Export from performance utilities
+export type {
+  PerformanceThresholds,
+  MemorySnapshot,
+  CpuSnapshot,
+  RequestTimingResult,
+  QueryTimingResult,
+  ApiCallTimingResult,
+  ApiHandler
+} from './performance';
+export {
+  // Configuration
+  configureThresholds,
+  getThresholds,
+  // Request timing
+  requestTimingMiddleware,
+  createRequestTimer,
+  // Memory tracking
+  getMemorySnapshot,
+  trackMemoryUsage,
+  withMemoryTracking,
+  // CPU tracking
+  getCpuSnapshot,
+  trackCpuUsage,
+  withCpuTracking,
+  // Database query timing
+  trackDatabaseQuery,
+  createDatabaseTimer,
+  // External API timing
+  trackExternalApiCall,
+  createTimedFetch,
+  createExternalApiTimer,
+  // Performance tracker class
+  PerformanceTracker,
+  // Utilities
+  formatDuration,
+  formatBytes
+} from './performance';

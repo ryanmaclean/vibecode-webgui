@@ -13,6 +13,41 @@
 import { NextRequest } from 'next/server';
 import { POST, OPTIONS } from '@/app/api/upload/route';
 
+// Mock rate limiter to prevent rate limiting during tests
+jest.mock('@/lib/rate-limiter', () => ({
+  checkRateLimit: jest.fn().mockResolvedValue({
+    allowed: true,
+    limit: 10,
+    remaining: 9,
+    reset: Math.floor(Date.now() / 1000) + 300,
+    current: 1,
+  }),
+  createRateLimitedResponse: jest.fn(),
+  applyRateLimitHeaders: jest.fn((response) => response),
+  RateLimitPresets: {
+    UPLOAD: {
+      maxRequests: 10,
+      windowSeconds: 300,
+      message: 'Too many upload attempts. Please wait before trying again.',
+    },
+  },
+}));
+
+/**
+ * Helper to create a mock NextRequest with proper headers
+ */
+function createMockRequest(formData: FormData): NextRequest {
+  const mockHeaders = new Map<string, string>();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
+  return {
+    formData: async () => formData,
+    headers: {
+      get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+    },
+  } as unknown as NextRequest;
+}
+
 describe('API: /api/upload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -28,9 +63,7 @@ describe('API: /api/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -54,9 +87,7 @@ describe('API: /api/upload', () => {
         'data.json'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -75,9 +106,7 @@ describe('API: /api/upload', () => {
         'script.js'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -92,9 +121,7 @@ describe('API: /api/upload', () => {
         'script.ts'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -119,9 +146,7 @@ describe('API: /api/upload', () => {
         'file3.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -141,9 +166,7 @@ describe('API: /api/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -161,9 +184,7 @@ describe('API: /api/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -189,9 +210,7 @@ describe('API: /api/upload', () => {
           'test.txt'
         );
 
-        const mockRequest = {
-          formData: async () => formData,
-        } as unknown as NextRequest;
+        const mockRequest = createMockRequest(formData);
 
         const response = await POST(mockRequest);
         expect(response.status).toBe(200);
@@ -204,9 +223,7 @@ describe('API: /api/upload', () => {
       const formData = new FormData();
       formData.append('workspaceId', 'test-workspace');
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -227,9 +244,7 @@ describe('API: /api/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -250,9 +265,7 @@ describe('API: /api/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -272,9 +285,7 @@ describe('API: /api/upload', () => {
         '../../../etc/passwd'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -292,9 +303,7 @@ describe('API: /api/upload', () => {
         'test\0.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -312,9 +321,7 @@ describe('API: /api/upload', () => {
         'folder/file.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -333,9 +340,7 @@ describe('API: /api/upload', () => {
         longName
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -354,9 +359,7 @@ describe('API: /api/upload', () => {
         boundaryName
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -376,9 +379,7 @@ describe('API: /api/upload', () => {
         'large.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(413);
@@ -401,9 +402,7 @@ describe('API: /api/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(413);
@@ -424,9 +423,7 @@ describe('API: /api/upload', () => {
         'limit.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -443,9 +440,7 @@ describe('API: /api/upload', () => {
         'virus.exe'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -463,9 +458,7 @@ describe('API: /api/upload', () => {
         'document.pdf'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -480,9 +473,7 @@ describe('API: /api/upload', () => {
         'image.png'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -497,9 +488,7 @@ describe('API: /api/upload', () => {
         'file.bin'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -511,9 +500,15 @@ describe('API: /api/upload', () => {
 
   describe('Error Handling', () => {
     it('should handle malformed form data', async () => {
+      const mockHeaders = new Map<string, string>();
+      mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
       const mockRequest = {
         formData: async () => {
           throw new Error('Failed to parse form data');
+        },
+        headers: {
+          get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
         },
       } as unknown as NextRequest;
 
@@ -525,9 +520,15 @@ describe('API: /api/upload', () => {
     });
 
     it('should provide detailed error messages', async () => {
+      const mockHeaders = new Map<string, string>();
+      mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
       const mockRequest = {
         formData: async () => {
           throw new Error('Network timeout');
+        },
+        headers: {
+          get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
         },
       } as unknown as NextRequest;
 
@@ -561,9 +562,7 @@ describe('API: /api/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -588,9 +587,7 @@ describe('API: /api/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       const data = await response.json();

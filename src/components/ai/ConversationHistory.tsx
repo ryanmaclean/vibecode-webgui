@@ -17,7 +17,7 @@
 
 'use client'
 
-import React, { useState, useMemo, useCallback, useEffect } from 'react'
+import React, { useState, useMemo, useCallback, useEffect, memo } from 'react'
 import {
   Search,
   Filter,
@@ -37,6 +37,7 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { cn } from '@/lib/utils'
 import type { AgentType } from '@/types/agent-api'
+import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 
 // ============================================================================
 // Type Definitions
@@ -193,7 +194,7 @@ interface ConversationItemProps {
   onExport?: () => void
 }
 
-function ConversationItem({
+const ConversationItem = memo(function ConversationItem({
   conversation,
   isSelected,
   onSelect,
@@ -210,6 +211,20 @@ function ConversationItem({
     setShowMenu(false)
   }, [conversation, onExport])
 
+  // Memoize keydown handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault()
+      onSelect()
+    }
+  }, [onSelect])
+
+  // Memoize menu toggle handler
+  const handleMenuToggle = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation()
+    setShowMenu(prev => !prev)
+  }, [])
+
   return (
     <div
       className={cn(
@@ -220,12 +235,7 @@ function ConversationItem({
       onClick={onSelect}
       role="button"
       tabIndex={0}
-      onKeyDown={(e) => {
-        if (e.key === 'Enter' || e.key === ' ') {
-          e.preventDefault()
-          onSelect()
-        }
-      }}
+      onKeyDown={handleKeyDown}
       aria-label={`Select conversation: ${conversation.title}`}
       aria-current={isSelected ? 'true' : undefined}
     >
@@ -240,10 +250,7 @@ function ConversationItem({
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-            onClick={(e) => {
-              e.stopPropagation()
-              setShowMenu(!showMenu)
-            }}
+            onClick={handleMenuToggle}
             aria-label="Conversation actions"
           >
             <MoreVertical className="h-3 w-3" aria-hidden="true" />
@@ -303,7 +310,7 @@ function ConversationItem({
       )}
     </div>
   )
-}
+})
 
 // ============================================================================
 // Conversation Group Component
@@ -318,7 +325,7 @@ interface ConversationGroupItemProps {
   onConversationExport?: (conversationId: string) => void
 }
 
-function ConversationGroupItem({
+const ConversationGroupItem = memo(function ConversationGroupItem({
   group,
   selectedConversationId,
   onToggle,
@@ -362,13 +369,13 @@ function ConversationGroupItem({
       )}
     </div>
   )
-}
+})
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export function ConversationHistory({
+const ConversationHistoryContent = memo(function ConversationHistoryContent({
   conversations,
   onConversationSelect,
   onConversationDelete,
@@ -438,6 +445,21 @@ export function ConversationHistory({
     )
   }, [])
 
+  // Memoize search change handler
+  const handleSearchChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(e.target.value)
+  }, [])
+
+  // Memoize sort change handler
+  const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setSortBy(e.target.value as SortOption)
+  }, [])
+
+  // Memoize filter change handler
+  const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
+    setFilterBy(e.target.value as FilterOption)
+  }, [])
+
   return (
     <Card className={cn("flex flex-col h-full", className)}>
       <CardHeader className="pb-3 border-b">
@@ -451,7 +473,7 @@ export function ConversationHistory({
               type="text"
               placeholder="Search conversations..."
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={handleSearchChange}
               className="w-full pl-9 pr-3 py-2 text-sm rounded-md border border-input bg-background ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
               aria-label="Search conversations"
             />
@@ -462,7 +484,7 @@ export function ConversationHistory({
         <div className="flex items-center gap-2 mt-3">
           <select
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortOption)}
+            onChange={handleSortChange}
             className="flex-1 px-2 py-1 text-xs rounded-md border border-input bg-background"
             aria-label="Sort conversations"
           >
@@ -474,7 +496,7 @@ export function ConversationHistory({
 
           <select
             value={filterBy}
-            onChange={(e) => setFilterBy(e.target.value as FilterOption)}
+            onChange={handleFilterChange}
             className="flex-1 px-2 py-1 text-xs rounded-md border border-input bg-background"
             aria-label="Filter conversations"
           >
@@ -527,5 +549,22 @@ export function ConversationHistory({
         </ScrollArea>
       </CardContent>
     </Card>
+  )
+})
+
+/**
+ * ConversationHistory with Error Boundary
+ * Wraps the component with AI-specific error handling
+ */
+export function ConversationHistory(props: ConversationHistoryProps) {
+  return (
+    <AIErrorBoundary
+      componentName="ConversationHistory"
+      onError={(error, errorInfo) => {
+        console.error('ConversationHistory error:', error, errorInfo)
+      }}
+    >
+      <ConversationHistoryContent {...props} />
+    </AIErrorBoundary>
   )
 }

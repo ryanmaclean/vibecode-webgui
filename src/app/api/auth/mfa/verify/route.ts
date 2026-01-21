@@ -1,6 +1,8 @@
 /**
  * MFA Verification API
  * Handles multi-factor authentication challenges and verification
+ *
+ * Rate Limited: 5 requests per 5 minutes (strict, security-sensitive)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -8,8 +10,16 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { mfaProvider } from '@/lib/auth/mfa-provider'
 import { z } from '@/lib/zod-compat'
+import {
+  checkRateLimit,
+  createRateLimitedResponse,
+  applyRateLimitHeaders,
+  RateLimitPresets,
+} from '@/lib/rate-limiter'
 
 export const dynamic = 'force-dynamic'
+
+const RATE_LIMIT_PREFIX = 'mfa-verify'
 
 const challengeSchema = z.object({
   preferredDeviceId: z.string().optional()
@@ -27,10 +37,19 @@ const verifySchema = z.object({
  * POST /api/auth/mfa/verify - Create MFA challenge
  */
 export async function POST(req: NextRequest) {
+  // Apply rate limiting for MFA verification (security-sensitive)
+  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.MFA_VERIFY, RATE_LIMIT_PREFIX)
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.MFA_VERIFY)
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+      return applyRateLimitHeaders(
+        NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
+        rateLimitResult
+      )
     }
 
     const body = await req.json()
@@ -38,28 +57,37 @@ export async function POST(req: NextRequest) {
 
     const challenge = await mfaProvider.createChallenge(session.user.id, preferredDeviceId)
 
-    return NextResponse.json({
-      status: 'success',
-      data: {
-        challengeId: challenge.challengeId,
-        availableDevices: challenge.availableDevices
-      },
-      message: 'MFA challenge created'
-    })
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        status: 'success',
+        data: {
+          challengeId: challenge.challengeId,
+          availableDevices: challenge.availableDevices
+        },
+        message: 'MFA challenge created'
+      }),
+      rateLimitResult
+    )
   } catch (error) {
     // Server error logged
-    
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: error.issues
-      }, { status: 400 })
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          error: 'Invalid request parameters',
+          details: error.issues
+        }, { status: 400 }),
+        rateLimitResult
+      )
     }
 
-    return NextResponse.json({
-      error: 'MFA challenge failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        error: 'MFA challenge failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 }),
+      rateLimitResult
+    )
   }
 }
 
@@ -67,45 +95,63 @@ export async function POST(req: NextRequest) {
  * PUT /api/auth/mfa/verify - Verify MFA challenge
  */
 export async function PUT(req: NextRequest) {
+  // Apply strict rate limiting for MFA verification attempts
+  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.MFA_VERIFY, RATE_LIMIT_PREFIX)
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.MFA_VERIFY)
+  }
+
   try {
     const body = await req.json()
     const { challengeId, token, backupCode } = verifySchema.parse(body)
 
     const result = await mfaProvider.verifyChallenge(
-      challengeId, 
-      token || '', 
+      challengeId,
+      token || '',
       backupCode
     )
 
     if (result.success) {
-      return NextResponse.json({
-        status: 'success',
-        data: {
-          deviceId: result.deviceId,
-          deviceType: result.deviceType,
-          remainingBackupCodes: result.remainingBackupCodes
-        },
-        message: 'MFA verification successful'
-      })
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          status: 'success',
+          data: {
+            deviceId: result.deviceId,
+            deviceType: result.deviceType,
+            remainingBackupCodes: result.remainingBackupCodes
+          },
+          message: 'MFA verification successful'
+        }),
+        rateLimitResult
+      )
     } else {
-      return NextResponse.json({
-        error: result.error || 'MFA verification failed'
-      }, { status: 400 })
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          error: result.error || 'MFA verification failed'
+        }, { status: 400 }),
+        rateLimitResult
+      )
     }
   } catch (error) {
     // Server error logged
-    
+
     if (error instanceof z.ZodError) {
-      return NextResponse.json({
-        error: 'Invalid request parameters',
-        details: error.issues
-      }, { status: 400 })
+      return applyRateLimitHeaders(
+        NextResponse.json({
+          error: 'Invalid request parameters',
+          details: error.issues
+        }, { status: 400 }),
+        rateLimitResult
+      )
     }
 
-    return NextResponse.json({
-      error: 'MFA verification failed',
-      details: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 })
+    return applyRateLimitHeaders(
+      NextResponse.json({
+        error: 'MFA verification failed',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      }, { status: 500 }),
+      rateLimitResult
+    )
   }
 }
 

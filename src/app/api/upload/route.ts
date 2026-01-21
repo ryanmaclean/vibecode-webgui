@@ -10,15 +10,25 @@
  * - Secure filename validation (no path traversal)
  * - Filesystem storage with workspace isolation
  * - Progress tracking support
+ *
+ * Rate Limited: 10 uploads per 5 minutes
  */
 
 import { NextRequest, NextResponse } from 'next/server';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import {
+  checkRateLimit,
+  createRateLimitedResponse,
+  applyRateLimitHeaders,
+  RateLimitPresets,
+} from '@/lib/rate-limiter';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+const RATE_LIMIT_PREFIX = 'upload';
 
 // File upload limits (must match client-side validation)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -157,6 +167,12 @@ function validateFileSize(size: number): { valid: boolean; error?: string } {
  * POST handler for file uploads
  */
 export async function POST(request: NextRequest) {
+  // Apply rate limiting for uploads (resource-intensive)
+  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.UPLOAD, RATE_LIMIT_PREFIX);
+  if (!rateLimitResult.allowed) {
+    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.UPLOAD);
+  }
+
   try {
     // Parse form data
     const formData = await request.formData();
@@ -166,45 +182,57 @@ export async function POST(request: NextRequest) {
     // Validate workspace ID
     const workspaceValidation = validateWorkspaceId(workspaceId);
     if (!workspaceValidation.valid) {
-      return NextResponse.json(
-        {
-          error: workspaceValidation.error,
-          details: workspaceValidation.error,
-        },
-        { status: 400 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          {
+            error: workspaceValidation.error,
+            details: workspaceValidation.error,
+          },
+          { status: 400 }
+        ),
+        rateLimitResult
       );
     }
 
     // Validate file count
     if (files.length === 0) {
-      return NextResponse.json(
-        {
-          error: 'No files provided',
-          details: 'At least one file is required',
-        },
-        { status: 400 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          {
+            error: 'No files provided',
+            details: 'At least one file is required',
+          },
+          { status: 400 }
+        ),
+        rateLimitResult
       );
     }
 
     if (files.length > MAX_FILE_COUNT) {
-      return NextResponse.json(
-        {
-          error: `Maximum ${MAX_FILE_COUNT} files allowed per upload`,
-          details: `Received ${files.length} files`,
-        },
-        { status: 400 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          {
+            error: `Maximum ${MAX_FILE_COUNT} files allowed per upload`,
+            details: `Received ${files.length} files`,
+          },
+          { status: 400 }
+        ),
+        rateLimitResult
       );
     }
 
     // Calculate total size
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
-      return NextResponse.json(
-        {
-          error: 'Total upload size exceeds 50MB limit',
-          details: `Total size: ${Math.round(totalSize / 1024 / 1024)}MB`,
-        },
-        { status: 413 }
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          {
+            error: 'Total upload size exceeds 50MB limit',
+            details: `Total size: ${Math.round(totalSize / 1024 / 1024)}MB`,
+          },
+          { status: 413 }
+        ),
+        rateLimitResult
       );
     }
 
@@ -213,36 +241,45 @@ export async function POST(request: NextRequest) {
       // Validate filename
       const filenameValidation = validateFilename(file.name);
       if (!filenameValidation.valid) {
-        return NextResponse.json(
-          {
-            error: filenameValidation.error,
-            details: `File: ${file.name}`,
-          },
-          { status: 400 }
+        return applyRateLimitHeaders(
+          NextResponse.json(
+            {
+              error: filenameValidation.error,
+              details: `File: ${file.name}`,
+            },
+            { status: 400 }
+          ),
+          rateLimitResult
         );
       }
 
       // Validate MIME type
       const mimeValidation = validateMimeType(file.type);
       if (!mimeValidation.valid) {
-        return NextResponse.json(
-          {
-            error: mimeValidation.error,
-            details: `File: ${file.name} (${file.type})`,
-          },
-          { status: 415 }
+        return applyRateLimitHeaders(
+          NextResponse.json(
+            {
+              error: mimeValidation.error,
+              details: `File: ${file.name} (${file.type})`,
+            },
+            { status: 415 }
+          ),
+          rateLimitResult
         );
       }
 
       // Validate file size
       const sizeValidation = validateFileSize(file.size);
       if (!sizeValidation.valid) {
-        return NextResponse.json(
-          {
-            error: sizeValidation.error,
-            details: `File: ${file.name} (${Math.round(file.size / 1024 / 1024)}MB)`,
-          },
-          { status: 413 }
+        return applyRateLimitHeaders(
+          NextResponse.json(
+            {
+              error: sizeValidation.error,
+              details: `File: ${file.name} (${Math.round(file.size / 1024 / 1024)}MB)`,
+            },
+            { status: 413 }
+          ),
+          rateLimitResult
         );
       }
     }
@@ -291,16 +328,22 @@ export async function POST(request: NextRequest) {
       analysis,
     };
 
-    return NextResponse.json(response, { status: 200 });
+    return applyRateLimitHeaders(
+      NextResponse.json(response, { status: 200 }),
+      rateLimitResult
+    );
   } catch (error) {
     console.error('File upload error:', error);
 
-    return NextResponse.json(
-      {
-        error: 'Failed to process file upload',
-        details: error instanceof Error ? error.message : 'Unknown error',
-      },
-      { status: 500 }
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        {
+          error: 'Failed to process file upload',
+          details: error instanceof Error ? error.message : 'Unknown error',
+        },
+        { status: 500 }
+      ),
+      rateLimitResult
     );
   }
 }

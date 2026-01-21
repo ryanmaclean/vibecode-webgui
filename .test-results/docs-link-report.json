@@ -1,24 +1,24 @@
 {
-  "timestamp": "2026-01-06T22:04:19.062Z",
+  "timestamp": "2026-01-21T19:18:17.040Z",
   "baseSegment": "vibecode-webgui",
   "pagesChecked": 100,
   "emptyLinks": 0,
   "brokenCount": 4,
   "brokenLinks": [
     {
-      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/guides/quick-start/index.html",
+      "from": "/Users/studio/gt/mbp_m1/crew/default/docs/dist/guides/quick-start/index.html",
       "to": "../monitoring/overview/"
     },
     {
-      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/guides/quick-start/index.html",
+      "from": "/Users/studio/gt/mbp_m1/crew/default/docs/dist/guides/quick-start/index.html",
       "to": "../azure-infrastructure/"
     },
     {
-      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/guides/quick-start/index.html",
+      "from": "/Users/studio/gt/mbp_m1/crew/default/docs/dist/guides/quick-start/index.html",
       "to": "../contributing/"
     },
     {
-      "from": "/Users/ryan.maclean/vibecode-webgui/docs/dist/monitoring/overview/index.html",
+      "from": "/Users/studio/gt/mbp_m1/crew/default/docs/dist/monitoring/overview/index.html",
       "to": "../DATADOG_LOCAL_DEVELOPMENT/"
     }
   ]

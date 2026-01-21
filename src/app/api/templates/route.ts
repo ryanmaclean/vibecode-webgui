@@ -3,9 +3,15 @@
  * Provides actual project templates for quick project creation
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createErrorResponse } from '@/lib/api-utils'
-// import { logger } from '@/lib/logger';
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
+import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
+import { z } from '@/lib/zod-compat'
+import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
 interface ProjectTemplate {
   id: string
   name: string
@@ -596,129 +602,149 @@ Happy coding! 🐍`
 
 export async function GET() {
   try {
-    return NextResponse.json({
-      templates,
-      count: templates.length,
-      categories: {
-        languages: [...new Set(templates.map(t => t.language))],
-        frameworks: [...new Set(templates.map(t => t.framework))],
-        difficulties: [...new Set(templates.map(t => t.difficulty))]
-      }
-    })
+    // Use cache for templates response (templates rarely change)
+    const response = await cacheGetOrSet(
+      CacheKeyGenerators.templates(),
+      async () => ({
+        templates,
+        count: templates.length,
+        categories: {
+          languages: [...new Set(templates.map(t => t.language))],
+          frameworks: [...new Set(templates.map(t => t.framework))],
+          difficulties: [...new Set(templates.map(t => t.difficulty))]
+        }
+      }),
+      { ttl: TTLPresets.TEMPLATES } // 2 hours cache
+    );
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
   }
 }
 
-interface TemplateSubmission {
-  name: string
-  description: string
-  category: 'frontend' | 'fullstack' | 'backend' | 'mobile' | 'desktop' | 'library'
-  language: string
-  framework: string
-  complexity: 'beginner' | 'intermediate' | 'advanced'
-  tags: string[]
-  dependencies: Record<string, string>
-  scripts: Record<string, string>
-  envVars: Array<{
-    name: string
-    defaultValue?: string
-    description?: string
-  }>
-  documentation: {
-    setup: string[]
-    usage: string[]
-    deployment: string[]
-  }
-  features: {
-    dockerSupport: boolean
-    kubernetesSupport: boolean
-    cicdTemplate: boolean
-    testingSetup: boolean
-    monitoringSetup: boolean
-  }
+// Infer type from zod schema
+type TemplateSubmission = z.infer<typeof templateSubmissionSchema>
+
+// Response type for template submission
+interface TemplateSubmissionResponse {
+  success: boolean
+  message: string
+  templateId: string
+  template: ProjectTemplate
 }
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   try {
-    const body: TemplateSubmission = await request.json()
-
-    // Validate required fields
-    if (!body.name || body.name.trim().length < 3) {
-      return createErrorResponse('Template name must be at least 3 characters', 400)
+    // Require authentication for template submission
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Authentication required to submit templates', 401)
     }
 
-    if (!body.description || body.description.trim().length < 20) {
-      return createErrorResponse('Template description must be at least 20 characters', 400)
+    // Validate request body with zod schema
+    const validation = await validateRequestBody(request, templateSubmissionSchema)
+    if (!validation.success) {
+      return validation.error
     }
 
-    const validCategories = ['frontend', 'fullstack', 'backend', 'mobile', 'desktop', 'library']
-    if (!body.category || !validCategories.includes(body.category)) {
-      return createErrorResponse('Invalid category', 400)
-    }
+    const body = validation.data
 
-    const validComplexities = ['beginner', 'intermediate', 'advanced']
-    if (!body.complexity || !validComplexities.includes(body.complexity)) {
-      return createErrorResponse('Invalid complexity level', 400)
-    }
+    // Apply additional sanitization to user-provided text fields
+    const sanitizedName = body.name.trim()
+    const cleanDescription = sanitizeDescription(body.description, 1000)
+    const cleanTags = sanitizeTags(body.tags || [])
 
     // Generate a unique ID for the template
     const templateId = `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
 
-    // Map complexity to difficulty
-    const difficultyMap: Record<string, 'beginner' | 'intermediate' | 'advanced'> = {
-      beginner: 'beginner',
-      intermediate: 'intermediate',
-      advanced: 'advanced'
+    // Build sanitized submission for file generation
+    const sanitizedSubmission: TemplateSubmission = {
+      name: sanitizedName,
+      description: cleanDescription,
+      category: body.category,
+      language: body.language.toLowerCase(),
+      framework: body.framework.toLowerCase(),
+      complexity: body.complexity,
+      tags: cleanTags,
+      dependencies: body.dependencies || {},
+      scripts: body.scripts || {},
+      envVars: body.envVars || [],
+      documentation: body.documentation || { setup: [], usage: [], deployment: [] },
+      features: body.features || {
+        dockerSupport: false,
+        kubernetesSupport: false,
+        cicdTemplate: false,
+        testingSetup: false,
+        monitoringSetup: false
+      }
     }
 
     // Create the new template object
     const newTemplate: ProjectTemplate = {
       id: templateId,
-      name: body.name.trim(),
-      description: body.description.trim(),
-      language: body.language || 'typescript',
-      framework: body.framework || 'react',
-      tags: body.tags || [],
-      difficulty: difficultyMap[body.complexity] || 'intermediate',
+      name: sanitizedName,
+      description: cleanDescription,
+      language: sanitizedSubmission.language,
+      framework: sanitizedSubmission.framework,
+      tags: cleanTags,
+      difficulty: body.complexity,
       estimatedTime: body.complexity === 'beginner' ? '30 minutes' :
                      body.complexity === 'intermediate' ? '60 minutes' : '90 minutes',
       features: [
-        ...(body.features?.dockerSupport ? ['Docker Support'] : []),
-        ...(body.features?.kubernetesSupport ? ['Kubernetes Support'] : []),
-        ...(body.features?.cicdTemplate ? ['CI/CD Pipeline'] : []),
-        ...(body.features?.testingSetup ? ['Testing Setup'] : []),
-        ...(body.features?.monitoringSetup ? ['Monitoring Setup'] : []),
+        ...(sanitizedSubmission.features?.dockerSupport ? ['Docker Support'] : []),
+        ...(sanitizedSubmission.features?.kubernetesSupport ? ['Kubernetes Support'] : []),
+        ...(sanitizedSubmission.features?.cicdTemplate ? ['CI/CD Pipeline'] : []),
+        ...(sanitizedSubmission.features?.testingSetup ? ['Testing Setup'] : []),
+        ...(sanitizedSubmission.features?.monitoringSetup ? ['Monitoring Setup'] : []),
       ],
       icon: getCategoryIcon(body.category),
-      files: generateTemplateFiles(body),
-      dependencies: body.dependencies,
-      scripts: body.scripts,
-      setupInstructions: body.documentation?.setup || []
+      files: generateTemplateFiles(sanitizedSubmission),
+      dependencies: sanitizedSubmission.dependencies,
+      scripts: sanitizedSubmission.scripts,
+      setupInstructions: sanitizedSubmission.documentation?.setup || []
     }
 
     // In a real implementation, this would save to a database
     // For now, we return success with the created template
-    console.info('Template submitted:', newTemplate.name, newTemplate.id)
+    console.info('Template submitted:', newTemplate.name, newTemplate.id, 'by user:', session.user.email)
 
-    return NextResponse.json({
+    // Invalidate templates cache so new template appears
+    await CacheInvalidators.invalidateTemplates()
+
+    const response: TemplateSubmissionResponse = {
       success: true,
       message: 'Template submitted successfully',
       templateId: newTemplate.id,
       template: newTemplate
-    }, { status: 201 })
+    }
+
+    return NextResponse.json(response, { status: 201 })
 
   } catch (error) {
     console.error('Template submission error:', error)
 
+    if (error instanceof z.ZodError) {
+      return createErrorResponse('Invalid request data', 400, {
+        code: 'VALIDATION_ERROR',
+        errors: error.issues.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
+      })
+    }
+
     if (error instanceof SyntaxError) {
-      return createErrorResponse('Invalid JSON in request body', 400)
+      return createErrorResponse('Invalid JSON in request body', 400, {
+        code: 'INVALID_JSON'
+      })
     }
 
     return createErrorResponse(
       error instanceof Error ? error.message : 'Failed to submit template',
-      500
+      500,
+      { code: 'TEMPLATE_SUBMISSION_ERROR' }
     )
   }
 }
