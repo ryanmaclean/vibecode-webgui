@@ -6,7 +6,8 @@
 import tracer from 'dd-trace';
 
 // Initialize tracer if not already done
-if (!tracer.isStarted) {
+// Use type assertion since isStarted may not be in types but exists at runtime
+if (!(tracer as any)._initialized) {
   tracer.init({
     service: 'vibecode-ai',
     env: process.env.DD_ENV || process.env.NODE_ENV || 'development',

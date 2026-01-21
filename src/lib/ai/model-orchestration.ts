@@ -47,7 +47,8 @@ export enum TaskType {
   GENERAL_CHAT = 'general_chat',
   FUNCTION_CALLING = 'function_calling',
   JSON_GENERATION = 'json_generation',
-  MULTIMODAL = 'multimodal'
+  MULTIMODAL = 'multimodal',
+  REASONING = 'reasoning'
 }
 
 // Request context for model selection

@@ -229,7 +229,7 @@ export class EnhancedAIClient {
         }
       }
       
-      throw new Error(`All providers failed. Last error: ${error.message}`);
+      throw new Error(`All providers failed. Last error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -255,7 +255,7 @@ export class EnhancedAIClient {
         return await this.handleAnthropic(client as OpenAI, messages, config);
       
       case 'ollama':
-        return await this.handleOllama(client as { apiKey: string; endpoint: string }, messages, config);
+        return await this.handleOllama(client as OpenAI, messages, config);
       
       case 'gemini':
         return await this.handleGemini(client as { apiKey: string; endpoint: string }, messages, config);
