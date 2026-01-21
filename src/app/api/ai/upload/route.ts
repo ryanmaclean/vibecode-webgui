@@ -7,8 +7,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
+
+// Rate limiting
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute for upload endpoints (more restrictive)
 
 // File upload limits
 const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
@@ -109,6 +113,23 @@ function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
  */
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authentication check
     const session = await getServerSession(authOptions)
     if (!session?.user) {

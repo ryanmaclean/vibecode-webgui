@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { z } from '@/lib/zod-compat'
 
 // Security: Input validation schema
@@ -29,8 +30,28 @@ const ClaudeGenerateRequestSchema = z.object({
     })
 })
 
+// Rate limiting: 30 requests per minute for AI generation endpoints
+const apiRateLimit = createAPIRateLimit(30)
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user) {
