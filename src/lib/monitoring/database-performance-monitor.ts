@@ -452,36 +452,36 @@ export class DatabasePerformanceMonitor {
       const [connections, longRunning, size, cacheStats] = await Promise.all([
         // Connection statistics
         this.prisma.$queryRaw`
-          SELECT 
+          SELECT
             COUNT(*) as total,
             COUNT(*) FILTER (WHERE state = 'active') as active
           FROM pg_stat_activity
           WHERE application_name LIKE 'vibecode%'
-        ` as [{ total: bigint; active: bigint }],
+        ` as unknown as [{ total: bigint; active: bigint }],
 
         // Long running queries (> 30 seconds)
         this.prisma.$queryRaw`
           SELECT COUNT(*) as count
-          FROM pg_stat_activity 
-          WHERE state = 'active' 
+          FROM pg_stat_activity
+          WHERE state = 'active'
           AND now() - query_start > interval '30 seconds'
           AND application_name LIKE 'vibecode%'
-        ` as [{ count: bigint }],
+        ` as unknown as [{ count: bigint }],
 
         // Database size
         this.prisma.$queryRaw`
           SELECT pg_size_pretty(pg_database_size(current_database())) as size
-        ` as [{ size: string }],
+        ` as unknown as [{ size: string }],
 
         // Cache hit ratio
         this.prisma.$queryRaw`
-          SELECT 
+          SELECT
             ROUND(
-              (sum(heap_blks_hit) * 100.0) / 
+              (sum(heap_blks_hit) * 100.0) /
               GREATEST(sum(heap_blks_hit) + sum(heap_blks_read), 1)
             , 2) as cache_hit_ratio
           FROM pg_statio_user_tables
-        ` as [{ cache_hit_ratio: number }],
+        ` as unknown as [{ cache_hit_ratio: number }],
       ]);
 
       return {

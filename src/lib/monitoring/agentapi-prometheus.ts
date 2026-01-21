@@ -46,13 +46,14 @@ class AgentAPIPrometheusExporter {
       });
 
       // Create Prometheus exporter
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       this.exporter = new PrometheusExporter(
         {
           port: config.port,
           endpoint: config.endpoint,
           host: config.host,
           preventServerStart: config.preventServerStart
-        },
+        } as any,
         () => {
           console.info(
             `Prometheus metrics available at http://${config.host || 'localhost'}:${config.port}${config.endpoint}`
@@ -67,9 +68,9 @@ class AgentAPIPrometheusExporter {
         readers: [this.exporter as any]
       });
 
-      console.info('✅ AgentAPI Prometheus exporter initialized');
+      console.info('AgentAPI Prometheus exporter initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize Prometheus exporter:', error);
+      console.error('Failed to initialize Prometheus exporter:', error);
       throw error;
     }
   }
@@ -113,7 +114,8 @@ class AgentAPIPrometheusExporter {
     // Collect metrics from the exporter (triggers collection cycle)
     // Note: PrometheusExporter serves metrics via HTTP endpoint, not getMetrics()
     // We collect our custom metrics in Prometheus format
-    await this.exporter.collect();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (this.exporter as any).collect();
 
     // Custom metrics in Prometheus format
     const customMetrics = this.formatCustomMetrics();
@@ -154,7 +156,7 @@ class AgentAPIPrometheusExporter {
   async shutdown(): Promise<void> {
     if (this.meterProvider) {
       await this.meterProvider.shutdown();
-      console.info('✅ Prometheus exporter shutdown complete');
+      console.info('Prometheus exporter shutdown complete');
     }
   }
 
