@@ -230,7 +230,7 @@ export default function CodeServerIntegration({
 
   return (
     <div className={`w-full h-full ${className}`}>
-      <PanelGroup direction="horizontal">
+      <PanelGroup orientation="horizontal">
         {/* Code Server Panel */}
         <Panel defaultSize={activePanel ? (isMaximized ? 30 : 70) : 100} minSize={20}>
           <div className="relative w-full h-full">
@@ -314,7 +314,7 @@ export default function CodeServerIntegration({
             <PanelResizeHandle className="w-1 bg-gray-200 dark:bg-gray-700 hover:bg-blue-500 dark:hover:bg-blue-600 transition-colors" />
 
             <Panel
-              ref={panelRef}
+              panelRef={panelRef}
               defaultSize={panelSize}
               minSize={25}
               maxSize={80}
@@ -333,7 +333,7 @@ export default function CodeServerIntegration({
                   <AICodeAssistant
                     codeContext={getCodeContext()}
                     selectedText={codeServerState.selectedText || undefined}
-                    onCodeGenerated={handleCodeInsert}
+                    onCodeGenerated={(code: string) => handleCodeInsert(code, codeServerState.language || 'javascript')}
                     onAnalysisComplete={(analysis) => {
                       // Debug log removed
                       // Could send results back to code-server for inline display

@@ -8,7 +8,7 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Select } from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Alert } from '@/components/ui/alert';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -255,17 +255,20 @@ export function ChatInterface({
           Model
         </label>
         <Select
-          id="model-select"
           value={selectedModel}
-          onChange={(e) => setSelectedModel((e.target as HTMLSelectElement).value)}
+          onValueChange={setSelectedModel}
           disabled={isLoading || isStreaming}
-          data-testid="model-selector"
         >
-          {AVAILABLE_MODELS.map((model) => (
-            <option key={model.id} value={model.id}>
-              {model.name}
-            </option>
-          ))}
+          <SelectTrigger id="model-select" data-testid="model-selector">
+            <SelectValue placeholder="Select a model" />
+          </SelectTrigger>
+          <SelectContent>
+            {AVAILABLE_MODELS.map((model) => (
+              <SelectItem key={model.id} value={model.id}>
+                {model.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
         </Select>
       </div>
 
