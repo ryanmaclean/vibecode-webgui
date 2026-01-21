@@ -2,7 +2,7 @@ import { Pool, PoolClient, PoolConfig, QueryResult } from 'pg';
 import { EventEmitter } from 'events';
 // import { logger } from '@/lib/logger';
 import { getGlobalCoordinator } from './connection-pool-coordinator';
-import { ConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolState, PoolStatusInfo } from './connection-pool-types';
+import { PoolConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolState, PoolStatusInfo } from './connection-pool-types';
 // Use console for logging
 const createLogger = (name: string) => ({
   info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
@@ -55,8 +55,9 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
   private pool: Pool;
   private readonly logger = createLogger('VectorConnectionPool');
   private readonly options: any;
-  private readonly name: string;
-  
+  public readonly name: string;
+  public status: PoolState = PoolState.ACTIVE;
+
   // Metrics
   private totalCreated: number = 0;
   private totalAcquired: number = 0;
@@ -83,7 +84,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     config: PoolConfig,
     options: Partial<typeof DEFAULT_POOL_CONFIG> = {},
     name: string = 'vector-db-pool',
-    budget?: ConnectionBudget
+    budget?: PoolConnectionBudget
   ) {
     super();
 
@@ -108,7 +109,8 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     if (budget) {
       try {
         const coordinator = getGlobalCoordinator();
-        coordinator.registerPool(this, budget);
+        // Cast to any to handle type compatibility between PoolConnectionBudget and internal PoolBudget
+        coordinator.registerPool(this, budget as any);
         this.logger.info(`Registered with global coordinator`);
       } catch (error) {
         this.logger.warn('Failed to register with coordinator, operating independently');
@@ -340,16 +342,17 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
       : 0;
 
     return {
-      totalCreated: this.totalCreated,
-      totalAcquired: this.totalAcquired,
-      totalReleased: this.totalReleased,
-      totalDestroyed: this.totalDestroyed,
-      totalErrors: this.totalErrors,
-      totalTimeouts: this.totalTimeouts,
-      totalExhausted: this.totalExhausted,
-      avgAcquireTime,
-      peakConnections: Math.max(this.poolSize, this.activeConnections),
-      activeConnections: this.activeConnections
+      activeConnections: this.activeConnections,
+      idleConnections: this.poolSize - this.activeConnections,
+      totalConnections: this.poolSize,
+      acquiredConnections: this.totalAcquired,
+      pendingAcquires: this.waitingClients,
+      errors: this.totalErrors,
+      averageAcquireTime: avgAcquireTime,
+      averageHoldTime: 0,
+      poolSize: this.poolSize,
+      waitingClients: this.waitingClients,
+      totalTimeouts: this.totalTimeouts
     };
   }
 
@@ -394,17 +397,35 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
   }
 
   /**
+   * Drains the pool by waiting for all connections to be released
+   */
+  public async drain(): Promise<void> {
+    this.status = PoolState.DRAINING;
+    this.isShuttingDown = true;
+
+    this.logger.info(`Draining pool "${this.name}"...`);
+
+    while (this.activeConnections > 0) {
+      await new Promise(resolve => setTimeout(resolve, 100));
+    }
+
+    this.logger.info(`Pool "${this.name}" drained successfully`);
+  }
+
+  /**
    * Closes the pool and all active connections
    */
   public async close(): Promise<void> {
     this.isShuttingDown = true;
-    
+    this.status = PoolState.CLOSED;
+
     this.logger.info(`Shutting down pool "${this.name}"...`);
-    
+
     try {
       await this.pool.end();
       this.logger.info(`Pool "${this.name}" successfully shut down`);
     } catch (error) {
+      this.status = PoolState.ERROR;
       this.logger.error(`Error shutting down pool "${this.name}"`);
       throw error;
     }

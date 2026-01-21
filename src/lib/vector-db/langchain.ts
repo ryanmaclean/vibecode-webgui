@@ -38,8 +38,8 @@ export class VectorRetriever extends BaseRetriever {
    */
   async invoke(query: string, options?: any): Promise<any> {
     const startTime = Date.now();
-    const results = await this.store.search("pgvector", { query });
-    const content = results.map((r) => ({ content: r.embedding }));
+    const results = await this.store.searchWithText(query);
+    const content = results.map((r) => ({ content: r.chunk.content }));
     const latency = Date.now() - startTime;
     try {
       const run = await mlflowClient.startRun(`VectorRetrieval-${Date.now()}`);
