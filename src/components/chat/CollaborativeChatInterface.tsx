@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react'
-import { Users, Wifi, WifiOff, Eye, MessageCircle, UserCircle } from 'lucide-react'
+import { Users, Wifi, WifiOff, Eye, MessageCircle } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import { Card, CardContent } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useCollaboration } from '@/hooks/useCollaboration'
+import { useCollaboration, type CollaborativeUser } from '@/hooks/useCollaboration'
 import HuggingFaceChatInterface from './HuggingFaceChatInterface'
 
 interface CollaborativeChatInterfaceProps {
@@ -49,11 +49,11 @@ export const CollaborativeChatInterface = ({
   useEffect(() => {
     const handleMouseMove = (e: MouseEvent) => {
       if (!chatContainerRef.current) return
-      
+
       const rect = chatContainerRef.current.getBoundingClientRect()
       const x = ((e.clientX - rect.left) / rect.width) * 100 // Percentage
       const y = ((e.clientY - rect.top) / rect.height) * 100 // Percentage
-      
+
       setMousePosition({ x, y })
       updateCursor(x, y)
     }
@@ -63,6 +63,7 @@ export const CollaborativeChatInterface = ({
       container.addEventListener('mousemove', handleMouseMove)
       return () => container.removeEventListener('mousemove', handleMouseMove)
     }
+    return undefined
   }, [updateCursor])
 
   // Handle typing indicators
@@ -79,11 +80,14 @@ export const CollaborativeChatInterface = ({
   }
 
   const renderCursors = () => {
-    if (!cursors) return null
+    if (!cursors || cursors.length === 0) return null
 
-    return Array.from(cursors.entries()).map(([cursorUserId, cursor]) => {
+    return cursors.map((cursor) => {
+      const cursorUserId = cursor.userId
       const user = activeUsers.find(u => u.id === cursorUserId)
       if (!user || cursorUserId === userId) return null
+
+      const userColor = user.color ?? '#6b7280'
 
       return (
         <div
@@ -98,12 +102,12 @@ export const CollaborativeChatInterface = ({
           {/* Cursor dot */}
           <div
             className="w-3 h-3 rounded-full border-2 border-white shadow-lg"
-            style={{ backgroundColor: user.color }}
+            style={{ backgroundColor: userColor }}
           />
           {/* User label */}
           <div
             className="absolute top-4 left-0 px-2 py-1 text-xs text-white rounded shadow-lg whitespace-nowrap"
-            style={{ backgroundColor: user.color }}
+            style={{ backgroundColor: userColor }}
           >
             {user.name}
           </div>
@@ -114,7 +118,7 @@ export const CollaborativeChatInterface = ({
 
   const renderTypingIndicators = () => {
     if (!conversationId) return null
-    
+
     const currentTypingUsers = typingUsers(conversationId)
     if (currentTypingUsers.length === 0) return null
 
@@ -124,7 +128,7 @@ export const CollaborativeChatInterface = ({
         <span className="text-sm text-blue-700">
           {currentTypingUsers.length === 1 ? (
             <>
-              <span style={{ color: currentTypingUsers[0].color }} className="font-medium">
+              <span style={{ color: currentTypingUsers[0].color ?? '#3b82f6' }} className="font-medium">
                 {currentTypingUsers[0].name}
               </span>
               {' '}is typing...
@@ -132,10 +136,10 @@ export const CollaborativeChatInterface = ({
           ) : (
             <>
               <span className="font-medium">
-                {currentTypingUsers.slice(0, 2).map((user: { id: string; color: string; name: string }, index: number) => (
+                {currentTypingUsers.slice(0, 2).map((user: CollaborativeUser, index: number) => (
                   <span key={user.id}>
                     {index > 0 && ', '}
-                    <span style={{ color: user.color }}>{user.name}</span>
+                    <span style={{ color: user.color ?? '#3b82f6' }}>{user.name}</span>
                   </span>
                 ))}
                 {currentTypingUsers.length > 2 && ` and ${currentTypingUsers.length - 2} others`}
@@ -165,7 +169,7 @@ export const CollaborativeChatInterface = ({
                   {isConnected ? 'Connected' : 'Disconnected'}
                 </span>
               </div>
-              
+
               {connectionError && (
                 <Badge variant="destructive" className="text-xs">
                   {connectionError}
@@ -180,7 +184,7 @@ export const CollaborativeChatInterface = ({
                   {activeUsers.length} online
                 </span>
               </div>
-              
+
               <Button
                 variant="outline"
                 size="sm"
@@ -200,25 +204,28 @@ export const CollaborativeChatInterface = ({
                 <span className="text-xs font-medium text-gray-600">Active Users:</span>
               </div>
               <div className="flex flex-wrap gap-2">
-                {activeUsers.map((user) => (
-                  <div
-                    key={user.id}
-                    className="flex items-center space-x-2 px-3 py-1 rounded-full border"
-                    style={{ borderColor: user.color + '40', backgroundColor: user.color + '10' }}
-                  >
-                    <div 
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: user.color }}
-                    />
-                    <span className="text-sm font-medium" style={{ color: user.color }}>
-                      {user.name}
-                      {user.id === userId && ' (You)'}
-                    </span>
-                    {user.isActive && (
-                      <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
-                    )}
-                  </div>
-                ))}
+                {activeUsers.map((user) => {
+                  const userColor = user.color ?? '#6b7280'
+                  return (
+                    <div
+                      key={user.id}
+                      className="flex items-center space-x-2 px-3 py-1 rounded-full border"
+                      style={{ borderColor: userColor + '40', backgroundColor: userColor + '10' }}
+                    >
+                      <div
+                        className="w-3 h-3 rounded-full"
+                        style={{ backgroundColor: userColor }}
+                      />
+                      <span className="text-sm font-medium" style={{ color: userColor }}>
+                        {user.name}
+                        {user.id === userId && ' (You)'}
+                      </span>
+                      {user.isActive && (
+                        <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
+                      )}
+                    </div>
+                  )
+                })}
               </div>
             </div>
           )}
@@ -226,17 +233,17 @@ export const CollaborativeChatInterface = ({
       </Card>
 
       {/* Chat Interface with Collaboration */}
-      <div 
+      <div
         ref={chatContainerRef}
         className="flex-1 relative"
         style={{ position: 'relative' }}
       >
         {/* Render other users' cursors */}
         {renderCursors()}
-        
+
         {/* Typing Indicators */}
         {renderTypingIndicators()}
-        
+
         {/* Main Chat Interface */}
         <HuggingFaceChatInterface
           conversationId={conversationId}
