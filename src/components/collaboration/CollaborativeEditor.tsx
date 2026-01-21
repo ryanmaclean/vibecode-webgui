@@ -211,7 +211,7 @@ export const CollaborativeEditor: React.FC<CollaborativeEditorProps> = ({
       setIsConnected(true)
 
     } catch (error) {
-      logger.error('Failed to initialize collaboration:', error)
+      logger.error('Failed to initialize collaboration:', { error: error instanceof Error ? error.message : String(error) })
       setConnectionError(`Failed to connect: ${error instanceof Error ? error.message : 'Unknown error'}`)
     }
   }, [documentId, projectId, filePath, currentUser, initialContent, getLanguageExtension, onContentChange, readOnly])
