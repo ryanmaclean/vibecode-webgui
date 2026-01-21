@@ -3,7 +3,7 @@
  * Establishes performance baselines and monitors deviations
  */
 
-import { logger } from '@/lib/logger'
+import { logger, logPerformance } from '@/lib/logger'
 import { datadogMetrics } from './datadog-metrics'
 
 export interface PerformanceBaseline {
@@ -91,8 +91,7 @@ class PerformanceMonitoringService {
     }
     
     // Log the measurement
-    logger.performance(operation, duration, {
-      operation,
+    logPerformance(operation, duration, {
       tags: JSON.stringify(tags),
       baseline_exists: this.baselines.has(operation)
     })
@@ -267,7 +266,8 @@ class PerformanceMonitoringService {
         })
         
         // Submit critical performance metric
-        logger.counter('vibecode.performance.alerts.critical', 1, {
+        logger.info('vibecode.performance.alerts.critical', {
+          count: 1,
           operation: alert.operation,
           metric: alert.metric
         })
@@ -281,7 +281,8 @@ class PerformanceMonitoringService {
         })
         
         // Submit warning performance metric
-        logger.counter('vibecode.performance.alerts.warning', 1, {
+        logger.info('vibecode.performance.alerts.warning', {
+          count: 1,
           operation: alert.operation,
           metric: alert.metric
         })
@@ -435,5 +436,3 @@ class PerformanceMonitoringService {
 // Export singleton instance
 export const performanceBaselines = new PerformanceMonitoringService()
 
-// Export types
-export type { PerformanceBaseline, PerformanceAlert }

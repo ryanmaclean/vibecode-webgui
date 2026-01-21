@@ -84,7 +84,7 @@ export interface AgentCompletion {
 
 export interface AgentCodeAction {
   title: string
-  kind: monaco.languages.CodeActionKind
+  kind: string
   edit?: monaco.languages.WorkspaceEdit
   command?: monaco.languages.Command
   diagnostics?: monaco.editor.IMarkerData[]
@@ -475,27 +475,47 @@ export class MonacoAgentAPI {
     }
   }
 
-  private applyDiagnostics(model: monaco.editor.ITextModel, diagnostics: AgentDiagnostic[]): void {
-    const markers: monaco.editor.IMarkerData[] = diagnostics.map(d => ({
-      severity: d.severity,
-      message: d.message,
-      startLineNumber: d.startLine,
-      startColumn: d.startColumn,
-      endLineNumber: d.endLine,
-      endColumn: d.endColumn,
-      source: d.source,
-      code: d.code,
-      relatedInformation: d.relatedInformation?.map(info => ({
-        resource: monaco.Uri.file(info.file),
-        message: info.message,
-        startLineNumber: info.startLine,
-        startColumn: info.startColumn,
-        endLineNumber: info.endLine,
-        endColumn: info.endColumn,
-      })),
-    }))
+  private applyDiagnostics(
+    model: monaco.editor.ITextModel,
+    diagnostics: AgentDiagnostic[],
+    monacoInstance?: typeof import('monaco-editor')
+  ): void {
+    // Note: In production, monacoInstance should be passed from the caller
+    // This method requires the monaco namespace for Uri.file and editor.setModelMarkers
+    if (!monacoInstance) {
+      this.log('Monaco instance not provided, skipping diagnostics application')
+      return
+    }
 
-    monaco.editor.setModelMarkers(model, 'agent-api', markers)
+    const markers: monaco.editor.IMarkerData[] = diagnostics.map(d => {
+      const marker: monaco.editor.IMarkerData = {
+        severity: d.severity,
+        message: d.message,
+        startLineNumber: d.startLine,
+        startColumn: d.startColumn,
+        endLineNumber: d.endLine,
+        endColumn: d.endColumn,
+      }
+      if (d.source !== undefined) {
+        marker.source = d.source
+      }
+      if (d.code !== undefined) {
+        marker.code = String(d.code)
+      }
+      if (d.relatedInformation) {
+        marker.relatedInformation = d.relatedInformation.map(info => ({
+          resource: monacoInstance.Uri.file(info.file),
+          message: info.message,
+          startLineNumber: info.startLine,
+          startColumn: info.startColumn,
+          endLineNumber: info.endLine,
+          endColumn: info.endColumn,
+        }))
+      }
+      return marker
+    })
+
+    monacoInstance.editor.setModelMarkers(model, 'agent-api', markers)
     this.log(`Applied ${markers.length} diagnostics`)
   }
 
@@ -674,7 +694,7 @@ export class MonacoAgentAPI {
  * Register all Monaco providers for agent API integration
  */
 export function registerMonacoAgentProviders(
-  monacoInstance: typeof monaco,
+  monacoInstance: typeof import('monaco-editor'),
   languageId: string,
   agentAPI: MonacoAgentAPI
 ): monaco.IDisposable[] {
@@ -687,7 +707,7 @@ export function registerMonacoAgentProviders(
       provideCompletionItems: async (model, position, context, token) => {
         const completions = await agentAPI.requestCompletions(position, context)
         return {
-          suggestions: completions,
+          suggestions: completions as unknown as monaco.languages.CompletionItem[],
         }
       },
     })
