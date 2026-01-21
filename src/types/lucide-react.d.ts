@@ -369,6 +369,36 @@ declare module 'lucide-react' {
   export const PersonPointingLeft: LucideIcon
   export const PersonPointingRight: LucideIcon
 
+  // Additional icons needed by components
+  export const Loader2: LucideIcon
+  export const LoaderCircle: LucideIcon
+  export const TriangleAlert: LucideIcon
+  export const FileSearch: LucideIcon
+  export const GitBranch: LucideIcon
+  export const GitBranchPlus: LucideIcon
+  export const GitFork: LucideIcon
+  export const GitCommit: LucideIcon
+  export const GitMerge: LucideIcon
+  export const GitPullRequest: LucideIcon
+  export const TestTube: LucideIcon
+  export const TestTube2: LucideIcon
+  export const FlaskConical: LucideIcon
+  export const BookOpen: LucideIcon
+  export const Rocket: LucideIcon
+  export const Trash2: LucideIcon
+  export const Cursor: LucideIcon
+  export const MousePointer: LucideIcon
+  export const MousePointer2: LucideIcon
+  export const TextCursor: LucideIcon
+  export const Brain: LucideIcon
+  export const BrainCircuit: LucideIcon
+  export const BrainCog: LucideIcon
+  export const Tools: LucideIcon
+  export const Command: LucideIcon
+  export const Keyboard: LucideIcon
+  export const CheckCheck: LucideIcon
+  export const CheckSquare: LucideIcon
+
   // Default export (if any)
   const lucideReact: {
     [key: string]: LucideIcon

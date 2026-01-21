@@ -4,6 +4,9 @@
  */
 
 declare module '@tauri-apps/api/core' {
+  // Main invoke function
+  export function invoke<T>(cmd: string, args?: Record<string, unknown>): Promise<T>;
+
   export namespace vm {
     // ==================== Data Types ====================
 
