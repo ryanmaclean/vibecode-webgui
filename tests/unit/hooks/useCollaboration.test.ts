@@ -134,7 +134,7 @@ describe('useCollaboration', () => {
     })
 
     it('should initialize socket connection when enabled', async () => {
-      const { result } = renderHook(() => useCollaboration(defaultProps))
+      renderHook(() => useCollaboration(defaultProps))
 
       // Wait for the hook to initialize and set up event handlers
       await waitFor(() => {
