@@ -37,6 +37,8 @@ HEALER_TARGET = os.getenv("GASTOWN_HEALER_TARGET", "")
 HEALER_AGENT = os.getenv("GASTOWN_HEALER_AGENT", "")
 COMMAND_TIMEOUT = float(os.getenv("GASTOWN_WEBHOOK_CMD_TIMEOUT", "15"))
 WEBHOOK_SECRET = os.getenv("GITHUB_WEBHOOK_SECRET", "")
+SYNC_REPOS = os.getenv("GASTOWN_WEBHOOK_SYNC_REPOS", "false").lower() in {"1", "true", "yes"}
+SYNC_REPOS_INTERVAL = float(os.getenv("GASTOWN_WEBHOOK_SYNC_INTERVAL", "60"))
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s %(message)s")
 logger = logging.getLogger("gastown.webhook")
@@ -47,6 +49,7 @@ start_time = time.time()
 metrics = Counter()
 metrics_by_event = Counter()
 metrics_by_action = Counter()
+last_repo_sync = 0.0
 
 
 def _trace_context_tags() -> Dict[str, Any]:
@@ -137,6 +140,24 @@ def run_command(command: List[str], *, capture_output: bool = False) -> subproce
         text=True,
         timeout=COMMAND_TIMEOUT,
     )
+
+
+def maybe_sync_repos() -> None:
+    global last_repo_sync
+    if not SYNC_REPOS:
+        return
+
+    now = time.time()
+    if now - last_repo_sync < SYNC_REPOS_INTERVAL:
+        return
+
+    try:
+        run_command(["bd", "repo", "sync"])
+        last_repo_sync = now
+        metrics["repo_sync_total"] += 1
+    except Exception as exc:
+        log_warning("Failed to sync repos", error=str(exc))
+        metrics["repo_sync_errors_total"] += 1
 
 
 def create_bead(title: str, description: str, priority: str, external_ref: str) -> Optional[str]:
@@ -310,6 +331,12 @@ async def prometheus_metrics() -> PlainTextResponse:
         "# HELP gastown_webhook_command_errors_total Failures running bd/gt commands",
         "# TYPE gastown_webhook_command_errors_total counter",
         f"gastown_webhook_command_errors_total {metrics['bead_create_errors_total'] + metrics['bead_update_errors_total'] + metrics['bead_close_errors_total'] + metrics['bead_sling_errors_total']}",
+        "# HELP gastown_webhook_repo_sync_total Repo syncs triggered for cross-rig hydration",
+        "# TYPE gastown_webhook_repo_sync_total counter",
+        f"gastown_webhook_repo_sync_total {metrics['repo_sync_total']}",
+        "# HELP gastown_webhook_repo_sync_errors_total Repo sync failures",
+        "# TYPE gastown_webhook_repo_sync_errors_total counter",
+        f"gastown_webhook_repo_sync_errors_total {metrics['repo_sync_errors_total']}",
         "# HELP gastown_webhook_events_by_type_total Webhook events by type",
         "# TYPE gastown_webhook_events_by_type_total counter",
         "# HELP gastown_webhook_events_by_action_total Webhook events by action",
@@ -350,6 +377,8 @@ async def handle_webhook(request: Request) -> JSONResponse:
         metrics_by_event[event] += 1
     if action:
         metrics_by_action[action] += 1
+
+    maybe_sync_repos()
 
     if tracer is not None:
         with tracer.trace("github.webhook", service=SERVICE_NAME) as span:

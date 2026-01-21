@@ -19,7 +19,11 @@ FastAPI service that bridges GitHub webhooks to Gas Town automation (bd/gt).
 - `GASTOWN_HEALER_TARGET` - Target for workflow failure beads (optional)
 - `GASTOWN_HEALER_AGENT` - Agent override for workflow failure beads (optional)
 - `GASTOWN_WEBHOOK_CMD_TIMEOUT` - Seconds to wait for bd/gt commands (default: 15)
+- `GASTOWN_WEBHOOK_SYNC_REPOS` - Run `bd repo sync` before handling events (default: false)
+- `GASTOWN_WEBHOOK_SYNC_INTERVAL` - Minimum seconds between syncs (default: 60)
 - `DD_SERVICE` - Datadog service name (default: `gastown-webhook`)
+
+When enabling cross-rig sync, add additional rigs with `bd repo add <path>` so `bd repo sync` can hydrate them.
 
 ## Local Run
 

@@ -8,6 +8,7 @@ import Script from 'next/script';
 import { TauriMenuBarProvider } from '@/components/TauriMenuBarProvider';
 import { TauriIdeBootstrapper } from '@/components/TauriIdeBootstrapper';
 import RUMInitializer from '@/components/RUMInitializer';
+import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
 // const geistSans = Geist({
@@ -84,9 +85,11 @@ export default function RootLayout({
         <Providers>
           <TauriMenuBarProvider />
           <TauriIdeBootstrapper />
-          <main id="main-content">
-            {children}
-          </main>
+          <ErrorBoundary>
+            <main id="main-content">
+              {children}
+            </main>
+          </ErrorBoundary>
         </Providers>
       </body>
     </html>
