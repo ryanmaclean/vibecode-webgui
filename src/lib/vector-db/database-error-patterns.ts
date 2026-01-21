@@ -3,8 +3,8 @@
  * This file contains provider-specific error patterns to enhance error categorization accuracy
  */
 
-// Import VectorDBErrorType from the original file to avoid circular dependency
-import { VectorDBErrorType } from './vector-db-error-handler';
+// Import VectorDbErrorType from the new handler which has more complete error types
+import { VectorDbErrorType, VectorDBErrorType } from './vector-db-error-handler-new';
 
 /**
  * Interface for database-specific error patterns
@@ -19,7 +19,7 @@ export interface DbErrorPattern {
   // Name patterns
   names?: string[];
   // Error types
-  types?: VectorDBErrorType[];
+  types?: VectorDbErrorType[];
   // SQLSTATE codes (for SQL databases)
   sqlStates?: string[];
   // Additional condition function for complex cases
@@ -495,7 +495,7 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
  * @param provider The database provider name (postgres, redis, etc.)
  * @returns The appropriate VectorDBErrorType
  */
-export function categorizeErrorWithProvider(error: any, provider: string): VectorDBErrorType {
+export function categorizeErrorWithProvider(error: any, provider: string): VectorDbErrorType {
   if (!error) {
     return VectorDBErrorType.UNKNOWN_ERROR;
   }

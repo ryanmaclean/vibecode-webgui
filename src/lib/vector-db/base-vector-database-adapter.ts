@@ -157,7 +157,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       return;
     }
 
-    const poolConfig: ConnectionPoolConfig = {
+    const poolConfig: ConnectionPoolConfig<unknown> = {
       minConnections: this.config.minPoolSize ?? 2,
       maxConnections: this.config.maxPoolSize ?? 10,
       createConnection: () => this.createPoolConnection(),

@@ -28,9 +28,9 @@ export async function checkPostgresHealth(): Promise<boolean> {
  */
 export async function checkWeaviateHealth(): Promise<boolean> {
   try {
-    const resp = await weaviateClient.health.check();
-    // The client returns an object with `healthy` boolean property
-    return !!resp?.healthy;
+    const resp = await weaviateClient.healthCheck();
+    // The client returns an object with `healthy` boolean property or just boolean
+    return typeof resp === 'boolean' ? resp : !!resp?.healthy;
   } catch (err) {
     console.error("Weaviate health check failed:", err);
     return false;
