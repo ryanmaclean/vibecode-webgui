@@ -12,34 +12,26 @@ import path from 'path'
 import { getServerSession } from 'next-auth'
 import { getSecureClaudeCliInstance } from '@/lib/claude-cli-integration-secure'
 import type { SecureClaudeCliConfig } from '@/lib/claude-cli-integration-secure'
-import rateLimit from '@/lib/rate-limiting'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
-// Rate limiting: 20 requests per minute per user
-const rateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 20,
-  keyGenerator: (req: NextRequest) => {
-    const session = req.headers.get('x-user-session')
-    return session || req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous'
-  }
-})
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimiter(request)
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimitResult.retryAfter
-        },
+        { error: 'Too many requests' },
         {
           status: 429,
           headers: {
-            'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
-          }
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
         }
       )
     }
