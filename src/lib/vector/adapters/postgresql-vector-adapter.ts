@@ -26,7 +26,8 @@ import {
   VectorSearchOptions,
   VectorStoreStats
 } from '../interfaces/vector-types';
-import { VectorDbErrorHandler, VectorDbErrorType, VectorDbError } from '@/lib/vector-db/vector-db-error-handler';
+import { VectorDbErrorHandler, VectorDbError } from '@/lib/vector-db/vector-db-error-handler';
+import { metrics } from '@/lib/server-monitoring';
 // import { logger } from '@/lib/logger';
 
 interface PostgreSQLVectorConfig extends VectorDatabaseConfig {
@@ -60,11 +61,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     } as PostgreSQLVectorConfig;
 
     // Initialize error handler
-    this.errorHandler = new VectorDbErrorHandler(
-      'postgres',
-      this.config.enableLogging || false,
-      this.config.enableMetrics || false
-    );
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
@@ -103,8 +100,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'connect',
-        VectorDbErrorType.CONNECTION_FAILED,
-        this.errorHandler.isNetworkError(error),
         {
           connectionString: this.config.connectionString ? '[REDACTED]' : undefined
         }
@@ -119,8 +114,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('Prisma client not initialized'),
-        'verifyPgVectorExtension',
-        VectorDbErrorType.INITIALIZATION
+        'verifyPgVectorExtension'
       );
     }
 
@@ -134,8 +128,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('pgVector extension is not installed in the database'),
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { extensionName: 'vector' }
         );
       }
@@ -149,8 +141,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('Vector data type not found, pgVector extension may be incorrectly installed'),
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { typeName: 'vector' }
         );
       }
@@ -164,8 +154,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'verifyPgVectorExtension',
-          VectorDbErrorType.CONFIGURATION_ERROR,
-          false,
           { extensionName: 'vector' }
         );
       }
@@ -178,7 +166,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
    */
   async disconnect(): Promise<void> {
     try {
-      await this.prisma.$disconnect();
+      if (this.prisma) {
+        await this.prisma.$disconnect();
+      }
       this.isConnectionActive = false;
     } catch (error) {
       console.error('Error disconnecting from PostgreSQL:', error);
@@ -204,9 +194,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'storeVectors',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'storeVectors'
       );
     }
 
@@ -252,8 +240,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             throw this.errorHandler.handleError(
               chunkError,
               'storeVectors.insertChunk',
-              VectorDbErrorType.VECTOR_CREATION_FAILED,
-              this.errorHandler.isNetworkError(chunkError),
               {
                 fileId,
                 chunkId,
@@ -272,7 +258,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       // Invalidate cache if cache adapter is available
       if (this.cacheAdapter) {
         try {
-          await this.cacheAdapter.invalidateCache({ fileId });
+          await this.cacheAdapter.invalidate('rag_chunks');
         } catch (cacheError) {
           console.warn('Failed to invalidate cache after storing vectors:', cacheError);
         }
@@ -308,9 +294,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'findSimilar',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'findSimilar'
       );
     }
 
@@ -567,9 +551,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'deleteVectors',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'deleteVectors'
       );
     }
 
@@ -583,7 +565,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       // Invalidate cache if cache adapter is available
       if (this.cacheAdapter) {
         try {
-          await this.cacheAdapter.invalidateCache({ fileId });
+          await this.cacheAdapter.invalidate('rag_chunks');
         } catch (cacheError) {
           console.warn('Failed to invalidate cache after deleting vectors:', cacheError);
         }
@@ -618,9 +600,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'updateVector',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'updateVector'
       );
     }
 
@@ -712,9 +692,7 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'fallbackTextSearch',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'fallbackTextSearch'
       );
     }
 
@@ -775,8 +753,6 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
-          VectorDbErrorType.QUERY_FAILED,
-          false,
           {
             query: query.length > 100 ? query.substring(0, 100) + '...' : query,
             workspaceId: options.workspaceId,
