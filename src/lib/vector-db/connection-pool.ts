@@ -96,7 +96,7 @@ export class ConnectionPool<T> {
       this.status = PoolStatus.ACTIVE;
     } catch (error) {
       console.error('Failed to initialize connection pool:', error);
-      this.status = PoolStatus.ERRORED;
+      this.status = PoolStatus.ERROR;
     }
   }
 

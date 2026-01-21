@@ -376,7 +376,7 @@ let globalOrchestration: VMOrchestrationBridge | null = null
  */
 export function getVMOrchestration(config?: VMPoolConfig): VMOrchestrationBridge {
   if (!globalOrchestration) {
-    globalOrchestration = new VMOrchestrationBridge(config)
+    globalOrchestration = new VMOrchestrationBridge(config ? { poolConfig: config } : undefined)
   }
   return globalOrchestration
 }
