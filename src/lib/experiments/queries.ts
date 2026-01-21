@@ -3,13 +3,13 @@ import { chiSquareTest } from './statistics';
 
 const prisma = new PrismaClient();
 
-interface VariantDistribution {
+export interface VariantDistribution {
   variantKey: string;
   count: number;
   percentage: number;
 }
 
-interface MetricAggregation {
+export interface MetricAggregation {
   variantKey: string;
   count: number;
   mean: number;
@@ -22,14 +22,14 @@ interface MetricAggregation {
   p99?: number;
 }
 
-interface TimeSeriesDataPoint {
+export interface TimeSeriesPoint {
   timestamp: Date;
   variantKey: string;
   count: number;
   average: number;
 }
 
-interface RetentionCohort {
+export interface RetentionCohort {
   variantKey: string;
   day0: number;
   day1?: number;
@@ -37,7 +37,7 @@ interface RetentionCohort {
   day30?: number;
 }
 
-interface SampleRatioResult {
+export interface SampleRatioCheck {
   isPassing: boolean;
   observedRatio: Record<string, number>;
   expectedRatio: Record<string, number>;
@@ -197,7 +197,7 @@ export class ExperimentQueries {
     granularity: 'hour' | 'day' = 'day',
     startDate?: Date,
     endDate?: Date
-  ): Promise<TimeSeriesDataPoint[]> {
+  ): Promise<TimeSeriesPoint[]> {
     const whereClause: Prisma.ExperimentMetricWhereInput = { metricName };
     if (startDate && endDate) {
       whereClause.timestamp = { gte: startDate, lte: endDate };
@@ -319,7 +319,7 @@ export class ExperimentQueries {
   async calculateSampleRatio(
     experimentKey: string,
     expectedRatio: Record<string, number>
-  ): Promise<SampleRatioResult> {
+  ): Promise<SampleRatioCheck> {
     const experiment = await prisma.experiment.findUnique({
       where: { key: experimentKey },
       include: {
@@ -513,3 +513,4 @@ export class ExperimentQueries {
 }
 
 export const queries = new ExperimentQueries();
+export const experimentQueries = queries;
