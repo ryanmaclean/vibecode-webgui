@@ -43,7 +43,7 @@ function ensureWebSocketServer() {
       const mockReq = {
         url: url.toString(),
         headers: new Map()
-      } as NextRequest;
+      } as unknown as NextRequest;
 
       const validation = validateQueryParams(mockReq, terminalWebSocketQuerySchema);
       if (!validation.success) {
@@ -139,17 +139,19 @@ export async function GET(request: NextRequest) {
 }
 
 // Handle WebSocket upgrade
-const handler = async (req: Request, _res: unknown) => {
+const handler = async (req: Request, _res: unknown): Promise<NextResponse> => {
   if (!req.headers.get('upgrade')?.toLowerCase().includes('websocket')) {
     return new NextResponse('Expected Upgrade: WebSocket', { status: 426 });
   }
 
   const wss = ensureWebSocketServer();
-  
+
   // @ts-expect-error - Next.js specific handling for WebSocket upgrade
   wss.handleUpgrade(req, (req as any).socket, Buffer.alloc(0), (ws) => {
     wss.emit('connection', ws, req);
   });
+
+  return new NextResponse(null, { status: 101 });
 };
 
 export { handler as POST };

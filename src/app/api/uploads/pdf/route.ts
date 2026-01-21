@@ -109,11 +109,11 @@ export async function POST(request: NextRequest) {
       metadata: {
         originalFileName: file.name,
         uploader: (formData.get('uploader') as string) || 'unknown',
-        securityValidation: {
+        securityValidation: JSON.stringify({
           validated: true,
           warnings: validationResult.warnings,
           validatedAt: new Date().toISOString()
-        }
+        })
       }
     })
   } catch (error) {

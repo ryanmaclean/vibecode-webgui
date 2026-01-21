@@ -74,11 +74,11 @@ export async function POST(request: NextRequest) {
         try {
           // Generate project from template
           const options: GenerateFromTemplateOptions = {
-            name: validatedData.projectName,
-            templateId: validatedData.templateId,
-            description: validatedData.customizations?.description,
+            projectName: validatedData.projectName,
+            template: validatedData.templateId,
+            customizations: validatedData.customizations,
             features: validatedData.features,
-            customVariables: validatedData.envOverrides,
+            envOverrides: validatedData.envOverrides,
           }
 
           const generatedProject = await generateFromTemplate(options)
@@ -134,7 +134,7 @@ export async function POST(request: NextRequest) {
               setupTime: template.estimatedSetupTime
             },
             generationTime,
-            setupInstructions: generatedProject.setupInstructions || template.setupInstructions || [],
+            setupInstructions: generatedProject.setupInstructions || [],
             envVars: generatedProject.envVars?.filter((env: { value?: string }) => env.value) || [],
             nextSteps: [
               `Navigate to /workspace/${workspaceId}`,

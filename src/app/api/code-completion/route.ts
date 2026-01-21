@@ -4,7 +4,7 @@ import OpenAI from 'openai'
 // import { logger } from '../../../lib/logger'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { loadSecret } from '@/lib/security/macos-keychain'
+import { loadSecret } from '@/lib/security/macos-keychain-server'
 import { fetchWithRetry } from '@/lib/utils/fetch'
 
 // Code completion request validation schema

@@ -162,7 +162,7 @@ async function handleBatchSearch(body: any) {
       const searchParams = { content_type, language, framework, limit };
       const cacheKey = generateVectorSearchCacheKey(query, searchParams);
       
-      const cached = await cache.get(cacheKey);
+      const cached = await cache.get<{ results: unknown[]; total_results: number }>(cacheKey);
       if (cached) {
         batchResults.push({
           query,

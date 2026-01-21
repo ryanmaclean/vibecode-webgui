@@ -21,7 +21,8 @@ export async function GET(
 ) {
   try {
     const { sessionId } = await context.params;
-    
+
+    const sessions = getSessionStore();
     const session = sessions.get(sessionId);
     if (!session) {
       return NextResponse.json(
