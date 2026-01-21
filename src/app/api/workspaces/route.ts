@@ -6,7 +6,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
-import { createErrorResponse, getErrorMessage, createErrorResponseFromError } from '@/lib/api-utils'
+import { createErrorResponse, getErrorMessage, createErrorResponseFromError, ApiErrors } from '@/lib/api-utils'
 import { logger } from '@/lib/logger';
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
@@ -78,9 +78,8 @@ export async function POST(request: NextRequest) {
 
     // Handle validation errors
     if (error instanceof z.ZodError) {
-      return ErrorResponses.validationError(
-        'Invalid request format for workspace creation',
-        error.issues.map(e => `${e.path.join('.')}: ${e.message}`),
+      return ApiErrors.badRequest(
+        `Invalid request format for workspace creation: ${error.issues.map(e => `${e.path.join('.')}: ${e.message}`).join(', ')}`,
         requestId
       )
     }
@@ -88,21 +87,21 @@ export async function POST(request: NextRequest) {
     // Handle Kubernetes errors
     if (error instanceof Error) {
       if (error.message.includes('Unauthorized') || error.message.includes('Forbidden')) {
-        return ErrorResponses.forbidden(
+        return ApiErrors.forbidden(
           'Insufficient permissions to create workspace',
           requestId
         )
       }
 
       if (error.message.includes('timeout')) {
-        return ErrorResponses.badRequest(
+        return ApiErrors.badRequest(
           'Workspace creation timed out. Please try again.',
           requestId
         )
       }
 
       if (error.message.includes('quota') || error.message.includes('resource')) {
-        return ErrorResponses.serviceUnavailable(
+        return ApiErrors.serviceUnavailable(
           'Insufficient cluster resources. Please try again later.',
           requestId
         )
@@ -150,7 +149,7 @@ export async function GET(request: NextRequest) {
 
       if (!workspace) {
         console.warn('Workspace not found', { ...logContext, workspaceId })
-        return ErrorResponses.notFound(
+        return ApiErrors.notFound(
           `Workspace with ID ${workspaceId} not found`,
           requestId
         )
