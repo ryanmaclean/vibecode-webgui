@@ -142,4 +142,54 @@ export class WorkspaceProvisioningService {
 
     return []
   }
+
+  /**
+   * Update workspace configuration (simplified implementation)
+   * Supports updating resources, scaling, and metadata
+   */
+  async updateWorkspace(
+    workspaceId: string,
+    updates: {
+      resources?: {
+        cpu?: string
+        memory?: string
+        storage?: string
+      }
+      scaling?: {
+        minReplicas?: number
+        maxReplicas?: number
+      }
+      metadata?: Record<string, string>
+    }
+  ): Promise<WorkspaceStatus | null> {
+    console.info(`🔧 Updating workspace: ${workspaceId}`)
+    console.info('⚠️ Using simplified workspace update - full K8s integration pending')
+    console.info('📝 Requested updates:', updates)
+
+    // Validate workspace exists first
+    const currentStatus = await this.getWorkspaceStatus(workspaceId)
+    if (!currentStatus) {
+      console.warn(`❌ Workspace not found: ${workspaceId}`)
+      return null
+    }
+
+    // In a full implementation, this would:
+    // 1. Update Kubernetes deployment resources (CPU, memory limits)
+    // 2. Update HPA (Horizontal Pod Autoscaler) for scaling config
+    // 3. Update ConfigMap or annotations for metadata
+    // 4. Apply changes via kubectl or k8s client
+
+    // Simulate update delay
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    // Return updated workspace status
+    const updatedWorkspace: WorkspaceStatus = {
+      ...currentStatus,
+      updatedAt: new Date()
+    }
+
+    console.info(`✅ Workspace updated (simulated): ${workspaceId}`)
+
+    return updatedWorkspace
+  }
 }

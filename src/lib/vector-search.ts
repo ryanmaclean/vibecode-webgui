@@ -31,6 +31,81 @@ interface SearchOptions {
   similarity_threshold?: number;
 }
 
+/**
+ * Query rate tracker for monitoring similarity search performance
+ * Uses a sliding window approach to track queries per minute
+ */
+class QueryRateTracker {
+  private queryTimestamps: number[] = [];
+  private readonly windowMs: number = 60 * 1000; // 1 minute window
+  private readonly maxStoredQueries: number = 10000; // Prevent unbounded memory growth
+
+  /**
+   * Record a new query timestamp
+   */
+  recordQuery(): void {
+    const now = Date.now();
+    this.queryTimestamps.push(now);
+
+    // Cleanup old entries and prevent memory growth
+    this.cleanup(now);
+  }
+
+  /**
+   * Remove timestamps outside the tracking window
+   */
+  private cleanup(now: number): void {
+    const cutoff = now - this.windowMs;
+
+    // Remove old timestamps
+    while (this.queryTimestamps.length > 0 && this.queryTimestamps[0] < cutoff) {
+      this.queryTimestamps.shift();
+    }
+
+    // Safety: if we have too many entries, keep only the most recent ones
+    if (this.queryTimestamps.length > this.maxStoredQueries) {
+      this.queryTimestamps = this.queryTimestamps.slice(-this.maxStoredQueries);
+    }
+  }
+
+  /**
+   * Get the average queries per minute over the tracking window
+   */
+  getQueriesPerMinute(): number {
+    const now = Date.now();
+    this.cleanup(now);
+
+    // Count queries in the last minute
+    const cutoff = now - this.windowMs;
+    const queriesInWindow = this.queryTimestamps.filter(ts => ts >= cutoff).length;
+
+    // Calculate rate (queries per minute)
+    // If window is less than a minute old, extrapolate
+    const windowStart = this.queryTimestamps.length > 0
+      ? Math.max(this.queryTimestamps[0], cutoff)
+      : now;
+    const actualWindowMs = now - windowStart;
+
+    if (actualWindowMs < 1000) {
+      // Less than 1 second of data, return 0 to avoid misleading extrapolation
+      return 0;
+    }
+
+    // Scale to per-minute rate
+    return (queriesInWindow / actualWindowMs) * this.windowMs;
+  }
+
+  /**
+   * Reset the tracker
+   */
+  reset(): void {
+    this.queryTimestamps = [];
+  }
+}
+
+// Global query rate tracker instance
+const queryRateTracker = new QueryRateTracker();
+
 export class VectorSearchService {
   private pool: Pool;
 
@@ -90,6 +165,9 @@ export class VectorSearchService {
     queryEmbedding: number[],
     options: SearchOptions = {}
   ): Promise<SearchResult[]> {
+    // Record query for rate tracking
+    queryRateTracker.recordQuery();
+
     const client = await this.pool.connect();
     try {
       const {
@@ -204,6 +282,9 @@ export class VectorSearchService {
     },
     limit: number = 10
   ): Promise<SearchResult[]> {
+    // Record query for rate tracking
+    queryRateTracker.recordQuery();
+
     const client = await this.pool.connect();
     try {
       const conditions: string[] = [];
@@ -300,7 +381,7 @@ export class VectorSearchService {
           acc[row.language] = parseInt(row.count);
           return acc;
         }, {}),
-        avg_similarity_queries_per_minute: 0 // TODO: Implement query rate tracking
+        avg_similarity_queries_per_minute: Math.round(queryRateTracker.getQueriesPerMinute() * 100) / 100
       };
     } finally {
       client.release();

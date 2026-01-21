@@ -19,6 +19,7 @@ import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/m
 import { fileSyncQuerySchema, fileSyncBulkSchema } from '@/lib/api/validation/schemas'
 import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
 import { dogstatsd } from 'dd-trace'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -268,22 +269,51 @@ if (!(globalThis as any).wss) {
 
       // Event handler for file sync events
       const handleFileSyncEvent = (event: FileSyncEvent) => {
-        const connections = workspaceConnections.get(workspaceId)
-        if (connections) {
-          connections.forEach(client => {
+        const allConnections = workspaceConnections.get(workspaceId)
+        if (!allConnections) return
+
+        // Get subscribers for this specific file path
+        const fileSubscribers = subscriptionManager.getSubscribers(workspaceId, event.path)
+
+        // Convert FileSyncEvent to a serializable object
+        const eventData: Record<string, unknown> = {
+          type: event.type,
+          path: event.path,
+          metadata: event.metadata,
+          operation: event.operation,
+          ...(event.conflictInfo && { conflictInfo: event.conflictInfo })
+        }
+        const eventDataStr = JSON.stringify(eventData)
+
+        // Track metrics for targeted vs broadcast
+        let targetedCount = 0
+        const totalConnections = allConnections.size
+
+        // If there are file-specific subscribers, send only to them
+        if (fileSubscribers.size > 0) {
+          fileSubscribers.forEach(client => {
             if (client.readyState === WebSocket.OPEN) {
-              // Convert FileSyncEvent to a serializable object
-              const eventData: Record<string, unknown> = {
-                type: event.type,
-                path: event.path,
-                metadata: event.metadata,
-                operation: event.operation,
-                ...(event.conflictInfo && { conflictInfo: event.conflictInfo })
-              }
-              client.send(JSON.stringify(eventData))
+              client.send(eventDataStr)
+              targetedCount++
+            }
+          })
+        } else {
+          // No file-specific subscribers, broadcast to all workspace connections
+          allConnections.forEach(client => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(eventDataStr)
+              targetedCount++
             }
           })
         }
+
+        // Record broadcast metrics
+        recordBroadcastMetrics({
+          workspaceId,
+          path: event.path,
+          targeted: targetedCount,
+          totalConnections
+        })
       }
 
       // Subscribe to file system events
@@ -306,7 +336,68 @@ if (!(globalThis as any).wss) {
 
             case 'subscribe-file':
               // Subscribe to specific file changes
-              // TODO: Implement file-specific subscriptions
+              if (message.payload?.path && typeof message.payload.path === 'string') {
+                const filePath = message.payload.path.trim()
+
+                // Validate file path format (prevent path traversal)
+                if (!filePath || filePath.includes('..') || filePath.startsWith('/')) {
+                  ws.send(JSON.stringify({
+                    type: 'error',
+                    reason: 'Invalid file path format'
+                  }))
+                  break
+                }
+
+                // Use the subscription manager to handle file-specific subscriptions
+                const outcome = subscriptionManager.subscribe(workspaceId, filePath, ws)
+
+                if (outcome.ok) {
+                  ws.send(JSON.stringify({
+                    type: 'subscribed',
+                    path: outcome.path,
+                    workspaceId
+                  }))
+                  dogstatsd.increment('filesync.subscription.success', 1, {
+                    workspace: sanitizeTagValue(workspaceId),
+                    path: sanitizeTagValue(outcome.path),
+                  })
+                } else {
+                  ws.send(JSON.stringify({
+                    type: 'subscription-error',
+                    reason: outcome.reason
+                  }))
+                  dogstatsd.increment('filesync.subscription.error', 1, {
+                    workspace: sanitizeTagValue(workspaceId),
+                    reason: outcome.reason.toLowerCase().replace(/\s+/g, '_'),
+                  })
+                }
+              } else {
+                ws.send(JSON.stringify({
+                  type: 'error',
+                  reason: 'File path required for subscription'
+                }))
+              }
+              break
+
+            case 'unsubscribe-file':
+              // Unsubscribe from specific file changes
+              if (message.payload?.path && typeof message.payload.path === 'string') {
+                const filePath = message.payload.path.trim()
+
+                // Remove subscription for this workspace/file combination
+                const removed = subscriptionManager.removeForWorkspace(workspaceId, ws)
+
+                ws.send(JSON.stringify({
+                  type: 'unsubscribed',
+                  path: filePath,
+                  workspaceId,
+                  removedCount: removed
+                }))
+
+                dogstatsd.increment('filesync.subscription.removed', removed, {
+                  workspace: sanitizeTagValue(workspaceId),
+                })
+              }
               break
 
             default:
@@ -325,6 +416,14 @@ if (!(globalThis as any).wss) {
           if (connections.size === 0) {
             workspaceConnections.delete(workspaceId)
           }
+        }
+
+        // Clean up file-specific subscriptions for this socket
+        const removedSubscriptions = subscriptionManager.removeSocket(ws)
+        if (removedSubscriptions > 0) {
+          dogstatsd.increment('filesync.subscription.cleanup', removedSubscriptions, {
+            workspace: sanitizeTagValue(workspaceId),
+          })
         }
 
         fileSystem.off('file-sync', handleFileSyncEvent)
@@ -348,13 +447,15 @@ if (!(globalThis as any).wss) {
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -363,7 +464,25 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  return true // Temporary - allow all access for development
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
+
+    // If userId is not a valid number, deny access
+    if (isNaN(userIdNum)) {
+      console.warn('Non-numeric userId provided for workspace access check:', userId)
+      return false
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }
 
 export async function OPTIONS(_request: NextRequest) {

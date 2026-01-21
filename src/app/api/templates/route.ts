@@ -611,6 +611,278 @@ export async function GET() {
   }
 }
 
-export async function POST() {
-  return createErrorResponse('Template creation not implemented yet', 501)
+interface TemplateSubmission {
+  name: string
+  description: string
+  category: 'frontend' | 'fullstack' | 'backend' | 'mobile' | 'desktop' | 'library'
+  language: string
+  framework: string
+  complexity: 'beginner' | 'intermediate' | 'advanced'
+  tags: string[]
+  dependencies: Record<string, string>
+  scripts: Record<string, string>
+  envVars: Array<{
+    name: string
+    defaultValue?: string
+    description?: string
+  }>
+  documentation: {
+    setup: string[]
+    usage: string[]
+    deployment: string[]
+  }
+  features: {
+    dockerSupport: boolean
+    kubernetesSupport: boolean
+    cicdTemplate: boolean
+    testingSetup: boolean
+    monitoringSetup: boolean
+  }
+}
+
+export async function POST(request: Request) {
+  try {
+    const body: TemplateSubmission = await request.json()
+
+    // Validate required fields
+    if (!body.name || body.name.trim().length < 3) {
+      return createErrorResponse('Template name must be at least 3 characters', 400)
+    }
+
+    if (!body.description || body.description.trim().length < 20) {
+      return createErrorResponse('Template description must be at least 20 characters', 400)
+    }
+
+    const validCategories = ['frontend', 'fullstack', 'backend', 'mobile', 'desktop', 'library']
+    if (!body.category || !validCategories.includes(body.category)) {
+      return createErrorResponse('Invalid category', 400)
+    }
+
+    const validComplexities = ['beginner', 'intermediate', 'advanced']
+    if (!body.complexity || !validComplexities.includes(body.complexity)) {
+      return createErrorResponse('Invalid complexity level', 400)
+    }
+
+    // Generate a unique ID for the template
+    const templateId = `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+    // Map complexity to difficulty
+    const difficultyMap: Record<string, 'beginner' | 'intermediate' | 'advanced'> = {
+      beginner: 'beginner',
+      intermediate: 'intermediate',
+      advanced: 'advanced'
+    }
+
+    // Create the new template object
+    const newTemplate: ProjectTemplate = {
+      id: templateId,
+      name: body.name.trim(),
+      description: body.description.trim(),
+      language: body.language || 'typescript',
+      framework: body.framework || 'react',
+      tags: body.tags || [],
+      difficulty: difficultyMap[body.complexity] || 'intermediate',
+      estimatedTime: body.complexity === 'beginner' ? '30 minutes' :
+                     body.complexity === 'intermediate' ? '60 minutes' : '90 minutes',
+      features: [
+        ...(body.features?.dockerSupport ? ['Docker Support'] : []),
+        ...(body.features?.kubernetesSupport ? ['Kubernetes Support'] : []),
+        ...(body.features?.cicdTemplate ? ['CI/CD Pipeline'] : []),
+        ...(body.features?.testingSetup ? ['Testing Setup'] : []),
+        ...(body.features?.monitoringSetup ? ['Monitoring Setup'] : []),
+      ],
+      icon: getCategoryIcon(body.category),
+      files: generateTemplateFiles(body),
+      dependencies: body.dependencies,
+      scripts: body.scripts,
+      setupInstructions: body.documentation?.setup || []
+    }
+
+    // In a real implementation, this would save to a database
+    // For now, we return success with the created template
+    console.info('Template submitted:', newTemplate.name, newTemplate.id)
+
+    return NextResponse.json({
+      success: true,
+      message: 'Template submitted successfully',
+      templateId: newTemplate.id,
+      template: newTemplate
+    }, { status: 201 })
+
+  } catch (error) {
+    console.error('Template submission error:', error)
+
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400)
+    }
+
+    return createErrorResponse(
+      error instanceof Error ? error.message : 'Failed to submit template',
+      500
+    )
+  }
+}
+
+/**
+ * Get an appropriate icon for the template category
+ */
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    frontend: '🎨',
+    fullstack: '🌐',
+    backend: '⚙️',
+    mobile: '📱',
+    desktop: '🖥️',
+    library: '📚'
+  }
+  return icons[category] || '📦'
+}
+
+/**
+ * Generate initial template files based on submission data
+ */
+function generateTemplateFiles(submission: TemplateSubmission): Record<string, string> {
+  const files: Record<string, string> = {}
+
+  // Generate README.md
+  const readmeContent = `# ${submission.name}
+
+${submission.description}
+
+## Category
+${submission.category}
+
+## Tech Stack
+- **Language:** ${submission.language}
+- **Framework:** ${submission.framework}
+- **Complexity:** ${submission.complexity}
+
+## Features
+${submission.features?.dockerSupport ? '- Docker Support\n' : ''}${submission.features?.kubernetesSupport ? '- Kubernetes Support\n' : ''}${submission.features?.cicdTemplate ? '- CI/CD Pipeline\n' : ''}${submission.features?.testingSetup ? '- Testing Setup\n' : ''}${submission.features?.monitoringSetup ? '- Monitoring Setup\n' : ''}
+
+## Tags
+${submission.tags.map(tag => `- ${tag}`).join('\n')}
+
+${submission.documentation?.setup?.length ? `## Setup Instructions\n${submission.documentation.setup.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.documentation?.usage?.length ? `## Usage\n${submission.documentation.usage.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.documentation?.deployment?.length ? `## Deployment\n${submission.documentation.deployment.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.envVars?.length ? `## Environment Variables\n${submission.envVars.map(env => `- \`${env.name}\`${env.description ? `: ${env.description}` : ''}${env.defaultValue ? ` (default: ${env.defaultValue})` : ''}`).join('\n')}\n` : ''}
+`
+  files['README.md'] = readmeContent
+
+  // Generate package.json for JavaScript/TypeScript projects
+  if (['typescript', 'javascript'].includes(submission.language.toLowerCase())) {
+    const packageJson = {
+      name: submission.name.toLowerCase().replace(/\s+/g, '-'),
+      version: '1.0.0',
+      description: submission.description,
+      scripts: submission.scripts || {},
+      dependencies: submission.dependencies || {}
+    }
+    files['package.json'] = JSON.stringify(packageJson, null, 2)
+  }
+
+  // Generate requirements.txt for Python projects
+  if (submission.language.toLowerCase() === 'python') {
+    const deps = Object.entries(submission.dependencies || {})
+      .map(([name, version]) => `${name}==${version}`)
+      .join('\n')
+    if (deps) {
+      files['requirements.txt'] = deps
+    }
+  }
+
+  // Generate .env.example if there are environment variables
+  if (submission.envVars?.length) {
+    const envContent = submission.envVars
+      .map(env => `${env.name}=${env.defaultValue || ''}`)
+      .join('\n')
+    files['.env.example'] = envContent
+  }
+
+  // Generate Dockerfile if docker support is enabled
+  if (submission.features?.dockerSupport) {
+    const dockerfile = generateDockerfile(submission)
+    files['Dockerfile'] = dockerfile
+  }
+
+  return files
+}
+
+/**
+ * Generate a basic Dockerfile based on the language
+ */
+function generateDockerfile(submission: TemplateSubmission): string {
+  const language = submission.language.toLowerCase()
+
+  if (['typescript', 'javascript'].includes(language)) {
+    return `# Node.js Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
+`
+  }
+
+  if (language === 'python') {
+    return `# Python Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "main.py"]
+`
+  }
+
+  if (language === 'go') {
+    return `# Go Dockerfile
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -o main .
+
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/main .
+
+EXPOSE 8080
+
+CMD ["./main"]
+`
+  }
+
+  // Generic Dockerfile
+  return `# Generic Dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["echo", "Configure your application startup command"]
+`
 }

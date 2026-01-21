@@ -42,6 +42,7 @@ export const connectionPool: {
   maxSize: number;
   minSize: number;
   inUse: number;
+  waitingAcquires: number;
   lastValidated: Map<string, number>;
   lastUsed: Map<string, number>;
   creationTimes: Map<string, number>;
@@ -56,12 +57,14 @@ export const connectionPool: {
     connectionValidations: number;
     connectionValidationFailures: number;
     dynamicPoolAdjustments: number;
+    peakWaitingAcquires: number;
   };
 } = {
   clients: new Map(),
   maxSize: poolConfig.maxSize,
   minSize: poolConfig.minSize,
   inUse: 0,
+  waitingAcquires: 0,
   lastValidated: new Map(),
   lastUsed: new Map(),
   creationTimes: new Map(),
@@ -76,8 +79,35 @@ export const connectionPool: {
     connectionValidations: 0,
     connectionValidationFailures: 0,
     dynamicPoolAdjustments: 0,
+    peakWaitingAcquires: 0,
   }
 };
+
+/**
+ * Increment waiting acquires counter when a request is waiting for a connection
+ */
+export function incrementWaitingAcquires(): void {
+  connectionPool.waitingAcquires++;
+  if (connectionPool.waitingAcquires > connectionPool.usage.peakWaitingAcquires) {
+    connectionPool.usage.peakWaitingAcquires = connectionPool.waitingAcquires;
+  }
+}
+
+/**
+ * Decrement waiting acquires counter when a connection is acquired or request times out
+ */
+export function decrementWaitingAcquires(): void {
+  if (connectionPool.waitingAcquires > 0) {
+    connectionPool.waitingAcquires--;
+  }
+}
+
+/**
+ * Get current number of waiting acquires
+ */
+export function getWaitingAcquires(): number {
+  return connectionPool.waitingAcquires;
+}
 
 /**
  * Find the least recently used connection

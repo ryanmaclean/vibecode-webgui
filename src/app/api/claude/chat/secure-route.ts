@@ -13,6 +13,7 @@ import { getServerSession } from 'next-auth'
 import { getSecureClaudeCliInstance } from '@/lib/claude-cli-integration-secure'
 import type { SecureClaudeCliConfig } from '@/lib/claude-cli-integration-secure'
 import rateLimit from '@/lib/rate-limiting'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
 // Rate limiting: 20 requests per minute per user
 const rateLimiter = rateLimit({
@@ -234,14 +235,15 @@ function validateAndSanitizeFiles(files: string[]): string[] {
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation with database
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
-  // Basic format validation
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -250,14 +252,27 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  // TODO: Database query
-  // const access = await db.query(
-  //   'SELECT role FROM user_workspaces WHERE user_id = $1 AND workspace_id = $2',
-  //   [userId, workspaceId]
-  // )
-  // return access.rows.length > 0
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
 
-  return true // Temporary for development
+    // If userId is not a valid number, try looking up by string ID
+    // This handles cases where userId might be a string identifier
+    if (isNaN(userIdNum)) {
+      // For string-based user IDs, we use the workspace_id (string) lookup
+      // The checkWorkspaceAccess function will handle the workspace_id -> id conversion
+      return await checkWorkspaceAccess(0, workspaceId)
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }
 
 export async function OPTIONS(_request: NextRequest) {

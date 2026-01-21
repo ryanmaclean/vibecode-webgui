@@ -76,6 +76,40 @@ export default function CursorTracking({
   const updateTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   /**
+   * Check if a position is visible within the editor viewport
+   */
+  const isPositionInViewport = useCallback((position: CursorPosition): boolean => {
+    if (!editorView || !editorRect) return false
+
+    try {
+      const pos = editorView.state.doc.line(position.line + 1).from + position.column
+      const coords = editorView.coordsAtPos(pos)
+
+      if (!coords) return false
+
+      // Get the visible area of the editor
+      const scrollDOM = editorView.scrollDOM
+      const scrollTop = scrollDOM.scrollTop
+      const scrollLeft = scrollDOM.scrollLeft
+      const viewportWidth = scrollDOM.clientWidth
+      const viewportHeight = scrollDOM.clientHeight
+
+      // Calculate relative position within the scroll container
+      const relativeX = coords.left - editorRect.left + scrollLeft
+      const relativeY = coords.top - editorRect.top + scrollTop
+
+      // Check if the position is within the visible viewport bounds
+      const isVisibleHorizontally = relativeX >= scrollLeft && relativeX <= scrollLeft + viewportWidth
+      const isVisibleVertically = relativeY >= scrollTop && relativeY <= scrollTop + viewportHeight
+
+      return isVisibleHorizontally && isVisibleVertically
+    } catch (error) {
+      console.warn('Failed to check viewport visibility:', error)
+      return false
+    }
+  }, [editorView, editorRect])
+
+  /**
    * Convert editor position to screen coordinates
    */
   const getScreenPosition = useCallback((position: CursorPosition): { x: number; y: number } | null => {
@@ -263,7 +297,7 @@ if (!editorView || !editorRect) return null
             metadata: {
               isActive: state.cursor.isActive || false,
               isTyping: state.cursor.isTyping || false,
-              viewportVisible: true // TODO: Check if cursor is in viewport
+              viewportVisible: isPositionInViewport(state.cursor.position)
             }
           }
           newCursors.set(state.cursor.userId, cursor)
@@ -279,7 +313,7 @@ if (!editorView || !editorRect) return null
     return () => {
       awareness.off('update', handleAwarenessUpdate)
     }
-  }, [awareness, currentUserId, cursorFadeTimeout])
+  }, [awareness, currentUserId, cursorFadeTimeout, isPositionInViewport])
 
   /**
    * Set up editor event listeners
@@ -386,6 +420,42 @@ if (!editorView || !editorRect) return null
   }, [getScreenPosition, showCursorLabels])
 
   /**
+   * Get line height from editor view
+   */
+  const getLineHeight = useCallback((): number => {
+    if (!editorView) return 20 // Default fallback
+    try {
+      // Get line height from editor's default line height or measure from DOM
+      const lineHeight = editorView.defaultLineHeight
+      return lineHeight > 0 ? lineHeight : 20
+    } catch {
+      return 20
+    }
+  }, [editorView])
+
+  /**
+   * Get the width of text from start column to end of line or specific column
+   */
+  const getLineWidth = useCallback((line: number, startColumn: number, endColumn?: number): number => {
+    if (!editorView || !editorRect) return 0
+
+    try {
+      const docLine = editorView.state.doc.line(line + 1)
+      const startPos = docLine.from + startColumn
+      const endPos = endColumn !== undefined ? docLine.from + endColumn : docLine.to
+
+      const startCoords = editorView.coordsAtPos(startPos)
+      const endCoords = editorView.coordsAtPos(endPos)
+
+      if (!startCoords || !endCoords) return 0
+
+      return endCoords.left - startCoords.left
+    } catch {
+      return 0
+    }
+  }, [editorView, editorRect])
+
+  /**
    * Render selection overlay
    */
   const renderSelection = useCallback((cursor: UserCursor) => {
@@ -396,19 +466,78 @@ if (!editorView || !editorRect) return null
 
     if (!startPos || !endPos) return null
 
-    // Simple single-line selection for now
-    // TODO: Handle multi-line selections
     const isMultiLine = cursor.selection.start.line !== cursor.selection.end.line
+    const lineHeight = getLineHeight()
 
     if (isMultiLine) {
-      // For multi-line selections, we'd need to render multiple rectangles
-      return null
+      // Multi-line selection: render multiple rectangles for each line
+      const selectionRects: React.ReactNode[] = []
+      const startLine = cursor.selection.start.line
+      const endLine = cursor.selection.end.line
+
+      for (let lineNum = startLine; lineNum <= endLine; lineNum++) {
+        let lineStartColumn: number
+        let lineEndColumn: number | undefined
+        let rectWidth: number
+
+        if (lineNum === startLine) {
+          // First line: from selection start to end of line
+          lineStartColumn = cursor.selection.start.column
+          lineEndColumn = undefined // End of line
+          rectWidth = getLineWidth(lineNum, lineStartColumn)
+          // Ensure minimum width for visibility
+          if (rectWidth <= 0) rectWidth = 50
+        } else if (lineNum === endLine) {
+          // Last line: from start of line to selection end
+          lineStartColumn = 0
+          lineEndColumn = cursor.selection.end.column
+          rectWidth = getLineWidth(lineNum, lineStartColumn, lineEndColumn)
+          if (rectWidth <= 0) rectWidth = 50
+        } else {
+          // Middle lines: full line width
+          lineStartColumn = 0
+          lineEndColumn = undefined
+          rectWidth = getLineWidth(lineNum, 0)
+          if (rectWidth <= 0) rectWidth = 100 // Fallback for empty/short lines
+        }
+
+        // Get screen position for this line's start
+        const linePos = getScreenPosition({
+          line: lineNum,
+          column: lineStartColumn,
+          offset: 0 // Offset is recalculated in getScreenPosition
+        })
+
+        if (linePos) {
+          selectionRects.push(
+            <motion.div
+              key={`${cursor.userId}-selection-line-${lineNum}`}
+              initial={{ opacity: 0 }}
+              animate={{
+                opacity: 0.3,
+                x: linePos.x,
+                y: linePos.y
+              }}
+              exit={{ opacity: 0 }}
+              className="absolute pointer-events-none z-40 rounded-sm"
+              style={{
+                backgroundColor: cursor.userColor,
+                width: rectWidth + 'px',
+                height: lineHeight + 'px',
+                transform: 'translate(0, 0)'
+              }}
+            />
+          )
+        }
+      }
+
+      return <>{selectionRects}</>
     }
 
+    // Single-line selection
     const left = Math.min(startPos.x, endPos.x)
     const right = Math.max(startPos.x, endPos.x)
     const width = right - left
-    const height = 20 // Approximate line height
 
     return (
       <motion.div
@@ -424,12 +553,12 @@ if (!editorView || !editorRect) return null
         style={{
           backgroundColor: cursor.userColor,
           width: width + 'px',
-          height: height + 'px',
+          height: lineHeight + 'px',
           transform: 'translate(0, 0)' // Reset transform for motion
         }}
       />
     )
-  }, [getScreenPosition, showSelections])
+  }, [getScreenPosition, showSelections, getLineHeight, getLineWidth])
 
   /**
    * Get visible cursors

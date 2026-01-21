@@ -22,6 +22,7 @@ import {
   fileUpdateSchema,
   fileDeleteSchema
 } from '@/lib/api/validation/schemas'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -451,17 +452,15 @@ export async function OPTIONS(_request: NextRequest) {
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation
-  // This should check database for user permissions to workspace
-
-  // For now, basic validation
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
-  // Validate format
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -470,13 +469,26 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  // TODO: Add database query to check user_workspaces table
-  // Example:
-  // const access = await db.query(
-  //   'SELECT 1 FROM user_workspaces WHERE user_id = $1 AND workspace_id = $2',
-  //   [userId, workspaceId]
-  // )
-  // return access.rows.length > 0
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
 
-  return true // Temporary - allow all access for development
+    // If userId is not a valid number, try looking up by string ID
+    // This handles cases where userId might be a string identifier
+    if (isNaN(userIdNum)) {
+      // For string-based user IDs, we cannot proceed with current schema
+      // Log and deny access for non-numeric user IDs
+      console.warn('Non-numeric userId provided for workspace access check:', userId)
+      return false
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }

@@ -4,7 +4,7 @@
  */
 
 import { spawn, ChildProcess } from 'child_process';
-import { existsSync, mkdirSync } from 'fs';
+import { existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, unlinkSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 
@@ -19,20 +19,92 @@ export interface VMConfig {
 
 export interface VMInfo {
   name: string;
-  type: string;
+  type: VMConfig['type'];
   status: 'running' | 'stopped' | 'error';
   pid?: number;
   uptime?: number;
+  createdAt?: string;
+}
+
+interface VMMetadata {
+  name: string;
+  type: VMConfig['type'];
+  createdAt: string;
+  cpus?: number;
+  memory?: number;
+  disk?: number;
+}
+
+interface RunningVMState {
+  process: ChildProcess;
+  type: VMConfig['type'];
+  startedAt: number;
 }
 
 class VMManager {
   private vzBinary: string;
   private vmBaseDir: string;
-  private runningVMs: Map<string, ChildProcess> = new Map();
+  private runningVMs: Map<string, RunningVMState> = new Map();
 
   constructor() {
     this.vzBinary = join(process.cwd(), 'vz-swift/.build/debug/vibecode-vm');
     this.vmBaseDir = join(homedir(), '.vfkit/vms');
+
+    // Ensure base directory exists
+    if (!existsSync(this.vmBaseDir)) {
+      mkdirSync(this.vmBaseDir, { recursive: true });
+    }
+  }
+
+  /**
+   * Get the metadata file path for a VM
+   */
+  private getMetadataPath(name: string): string {
+    return join(this.vmBaseDir, name, 'vm-metadata.json');
+  }
+
+  /**
+   * Save VM metadata to disk
+   */
+  private saveMetadata(metadata: VMMetadata): void {
+    const vmDir = join(this.vmBaseDir, metadata.name);
+    if (!existsSync(vmDir)) {
+      mkdirSync(vmDir, { recursive: true });
+    }
+    const metadataPath = this.getMetadataPath(metadata.name);
+    writeFileSync(metadataPath, JSON.stringify(metadata, null, 2), 'utf-8');
+  }
+
+  /**
+   * Load VM metadata from disk
+   */
+  private loadMetadata(name: string): VMMetadata | null {
+    const metadataPath = this.getMetadataPath(name);
+    if (!existsSync(metadataPath)) {
+      return null;
+    }
+    try {
+      const content = readFileSync(metadataPath, 'utf-8');
+      return JSON.parse(content) as VMMetadata;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get all VM directories (both running and stopped)
+   */
+  private getVMDirectories(): string[] {
+    if (!existsSync(this.vmBaseDir)) {
+      return [];
+    }
+    try {
+      return readdirSync(this.vmBaseDir, { withFileTypes: true })
+        .filter(dirent => dirent.isDirectory())
+        .map(dirent => dirent.name);
+    } catch {
+      return [];
+    }
   }
 
   /**
@@ -41,7 +113,7 @@ class VMManager {
   async createVM(config: VMConfig): Promise<{ success: boolean; message: string }> {
     try {
       const vmDir = join(this.vmBaseDir, config.name);
-      
+
       // Ensure VM directory exists
       if (!existsSync(vmDir)) {
         mkdirSync(vmDir, { recursive: true });
@@ -54,6 +126,17 @@ class VMManager {
           message: `VZ binary not found: ${this.vzBinary}. Run: cd vz-swift && swift build`
         };
       }
+
+      // Save VM metadata to disk for persistence
+      const metadata: VMMetadata = {
+        name: config.name,
+        type: config.type,
+        createdAt: new Date().toISOString(),
+        cpus: config.cpus,
+        memory: config.memory,
+        disk: config.disk,
+      };
+      this.saveMetadata(metadata);
 
       return {
         success: true,
@@ -70,7 +153,7 @@ class VMManager {
   /**
    * Start a VM
    */
-  async startVM(name: string, type: string = 'linux'): Promise<{ success: boolean; message: string; pid?: number }> {
+  async startVM(name: string, type?: string): Promise<{ success: boolean; message: string; pid?: number }> {
     try {
       if (this.runningVMs.has(name)) {
         return {
@@ -79,12 +162,21 @@ class VMManager {
         };
       }
 
-      const vmProcess = spawn(this.vzBinary, [type, name], {
+      // Load metadata to get VM type if not provided
+      const metadata = this.loadMetadata(name);
+      const vmType = (type as VMConfig['type']) || metadata?.type || 'linux';
+
+      const vmProcess = spawn(this.vzBinary, [vmType, name], {
         detached: true,
         stdio: ['ignore', 'pipe', 'pipe']
       });
 
-      this.runningVMs.set(name, vmProcess);
+      // Track both the process and its type
+      this.runningVMs.set(name, {
+        process: vmProcess,
+        type: vmType,
+        startedAt: Date.now(),
+      });
 
       vmProcess.unref();
 
@@ -117,16 +209,16 @@ class VMManager {
    */
   async stopVM(name: string): Promise<{ success: boolean; message: string }> {
     try {
-      const vmProcess = this.runningVMs.get(name);
-      
-      if (!vmProcess) {
+      const vmState = this.runningVMs.get(name);
+
+      if (!vmState) {
         return {
           success: false,
           message: `VM ${name} is not running`
         };
       }
 
-      vmProcess.kill('SIGTERM');
+      vmState.process.kill('SIGTERM');
       this.runningVMs.delete(name);
 
       return {
@@ -146,18 +238,47 @@ class VMManager {
    */
   async listVMs(): Promise<VMInfo[]> {
     const vms: VMInfo[] = [];
+    const runningNames = new Set(this.runningVMs.keys());
 
-    // List running VMs
-    for (const [name, process] of Array.from(this.runningVMs.entries())) {
+    // List running VMs with proper type tracking
+    for (const [name, vmState] of Array.from(this.runningVMs.entries())) {
+      const metadata = this.loadMetadata(name);
+      const uptime = Math.floor((Date.now() - vmState.startedAt) / 1000);
       vms.push({
         name,
-        type: 'linux', // TODO: Track type
+        type: vmState.type,
         status: 'running',
-        pid: process.pid
+        pid: vmState.process.pid,
+        uptime,
+        createdAt: metadata?.createdAt,
       });
     }
 
-    // TODO: List stopped VMs from filesystem
+    // List stopped VMs from filesystem
+    const vmDirectories = this.getVMDirectories();
+    for (const vmName of vmDirectories) {
+      // Skip if already in running VMs
+      if (runningNames.has(vmName)) {
+        continue;
+      }
+
+      const metadata = this.loadMetadata(vmName);
+      if (metadata) {
+        vms.push({
+          name: vmName,
+          type: metadata.type,
+          status: 'stopped',
+          createdAt: metadata.createdAt,
+        });
+      } else {
+        // VM directory exists but no metadata - legacy VM
+        vms.push({
+          name: vmName,
+          type: 'linux', // Default for legacy VMs without metadata
+          status: 'stopped',
+        });
+      }
+    }
 
     return vms;
   }
@@ -166,22 +287,56 @@ class VMManager {
    * Get VM status
    */
   async getVMStatus(name: string): Promise<VMInfo> {
-    const vmProcess = this.runningVMs.get(name);
-    
-    if (vmProcess && vmProcess.pid) {
+    const vmState = this.runningVMs.get(name);
+    const metadata = this.loadMetadata(name);
+
+    if (vmState && vmState.process.pid) {
+      const uptime = Math.floor((Date.now() - vmState.startedAt) / 1000);
       return {
         name,
-        type: 'linux',
+        type: vmState.type,
         status: 'running',
-        pid: vmProcess.pid
+        pid: vmState.process.pid,
+        uptime,
+        createdAt: metadata?.createdAt,
       };
     }
 
+    // VM is not running - get type from metadata
     return {
       name,
-      type: 'linux',
-      status: 'stopped'
+      type: metadata?.type || 'linux',
+      status: 'stopped',
+      createdAt: metadata?.createdAt,
     };
+  }
+
+  /**
+   * Delete a VM and its associated data
+   */
+  async deleteVM(name: string): Promise<{ success: boolean; message: string }> {
+    try {
+      // Stop the VM if running
+      if (this.runningVMs.has(name)) {
+        await this.stopVM(name);
+      }
+
+      // Remove metadata file
+      const metadataPath = this.getMetadataPath(name);
+      if (existsSync(metadataPath)) {
+        unlinkSync(metadataPath);
+      }
+
+      return {
+        success: true,
+        message: `VM ${name} deleted successfully`
+      };
+    } catch (error) {
+      return {
+        success: false,
+        message: `Failed to delete VM: ${error instanceof Error ? error.message : String(error)}`
+      };
+    }
   }
 }
 
@@ -194,4 +349,5 @@ export const startVM = async (args: { name: string; type?: string }) => vmManage
 export const stopVM = async (args: { name: string }) => vmManager.stopVM(args.name);
 export const listVMs = async () => vmManager.listVMs();
 export const getVMStatus = async (args: { name: string }) => vmManager.getVMStatus(args.name);
+export const deleteVM = async (args: { name: string }) => vmManager.deleteVM(args.name);
 

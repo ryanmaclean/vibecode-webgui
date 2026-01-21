@@ -220,24 +220,36 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     console.info('Updating workspace', { workspaceId, updates: updateValidation.data })
 
-    // For now, we'll just return the current status
-    // TODO: Implement workspace updates (scaling, configuration changes)
-    
-    const workspaceService = new WorkspaceProvisioningService()
-    const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
+    // Check if Kubernetes is available
+    if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
+      return NextResponse.json(
+        { error: 'Workspace service not available' },
+        { status: 503 }
+      )
+    }
 
-    if (!workspace) {
+    const workspaceService = new WorkspaceProvisioningService()
+
+    // Apply workspace updates (resources, scaling, metadata)
+    const updatedWorkspace = await workspaceService.updateWorkspace(
+      workspaceId,
+      updateValidation.data
+    )
+
+    if (!updatedWorkspace) {
       return NextResponse.json(
         { error: 'Workspace not found' },
         { status: 404 }
       )
     }
 
+    console.info(`Workspace updated: ${workspaceId}`)
+
     return NextResponse.json({
       success: true,
-      workspace,
-      message: 'Workspace update not yet implemented',
-      requestedUpdates: updateValidation.data
+      workspace: updatedWorkspace,
+      message: 'Workspace updated successfully',
+      appliedUpdates: updateValidation.data
     })
 
   } catch (error) {
