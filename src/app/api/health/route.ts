@@ -5,6 +5,7 @@
  * SECURITY: Phase 4 - Batch 3 validation added
  */
 
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -63,7 +64,7 @@ export async function collectHealthSnapshot(startTime: number) {
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  const requestId = crypto.randomUUID()
+  const requestId = randomUUID()
   const clientIp = request.headers.get('x-forwarded-for') ||
                    request.headers.get('x-real-ip') ||
                    'unknown'
@@ -210,14 +211,59 @@ async function checkDiskSpace() {
 }
 
 
+/**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  // Default allowed origins for health checks
+  return [
+    'https://vibecode.dev',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ]
+}
+
+/**
+ * Validate and return CORS origin if allowed
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+
+  const allowedOrigins = getAllowedOrigins()
+
+  // Check if the request origin is in the allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return null
+}
+
 // Handle CORS for health checks
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '3600',
+  }
+
+  // Only set Access-Control-Allow-Origin if the origin is validated
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
+    headers,
   })
 }
