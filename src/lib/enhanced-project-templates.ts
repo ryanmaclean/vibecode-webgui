@@ -4,7 +4,20 @@
  */
 
 import { GeneratedProject } from './templates/generator';
-import { TemplateFile } from './templates/index';
+import { EnvVariable, TemplateFile } from './templates/index';
+
+/**
+ * Helper function to convert TemplateFile[] to files with size property
+ */
+function convertFilesWithSize(
+  templateFiles: TemplateFile[]
+): Array<{ path: string; content: string; size: number }> {
+  return templateFiles.map((f) => ({
+    path: f.path,
+    content: f.content,
+    size: f.content.length
+  }));
+}
 
 /**
  * Enhanced template configuration
@@ -53,7 +66,7 @@ export class EnhancedProjectTemplates {
       deployment = 'vercel'
     } = options;
 
-    const files: TemplateFile[] = [
+    const templateFiles: TemplateFile[] = [
       // Core configuration files
       {
         path: 'package.json',
@@ -103,10 +116,14 @@ export class EnhancedProjectTemplates {
       }
     ];
 
+    const files = convertFilesWithSize(templateFiles);
+
     return {
-      id: `nextjs-ai-saas-${Date.now()}`,
+      id: 'nextjs-ai-saas-' + Date.now().toString(),
       name: projectName,
-      description: `Next.js AI SaaS application with ${aiProvider} integration, ${database} database, and ${authentication} authentication`,
+      description: 'Next.js AI SaaS application with ' + aiProvider + ' integration, ' + database + ' database, and ' + authentication + ' authentication',
+      templateId: 'nextjs-ai-saas',
+      templateName: 'Next.js AI SaaS Application',
       category: 'fullstack',
       tags: ['nextjs', 'ai', 'saas', aiProvider, database, authentication],
       complexity: 'advanced' as const,
@@ -119,9 +136,17 @@ export class EnhancedProjectTemplates {
       scripts: this.getNextjsScripts(),
       envVars: this.getNextjsEnvVars(options),
       documentation: {
-        readme: `# ${projectName}\n\nNext.js AI SaaS application with comprehensive features.`,
-        setup: this.getNextjsSetupInstructions(options).join('\n'),
-        deployment: this.getNextjsDeploymentGuide(deployment).join('\n')
+        setup: this.getNextjsSetupInstructions(options),
+        deployment: this.getNextjsDeploymentGuide(deployment),
+        usage: ['Use the dashboard at /dashboard', 'Access AI chat at /api/ai/chat']
+      },
+      metadata: {
+        features: ['ai-integration', 'authentication', 'database', 'api'],
+        frameworks: ['nextjs'],
+        language: ['typescript'],
+        complexity: 'advanced' as const,
+        estimatedSetupTime: '45 minutes',
+        tags: ['nextjs', 'ai', 'saas', aiProvider, database, authentication]
       },
       createdAt: new Date(),
       estimatedTime: 45,
@@ -151,7 +176,7 @@ export class EnhancedProjectTemplates {
       deployment = 'docker'
     } = options;
 
-    const files: TemplateFile[] = [
+    const templateFiles: TemplateFile[] = [
       {
         path: 'requirements.txt',
         content: this.generatePythonRequirements(options),
@@ -169,10 +194,14 @@ export class EnhancedProjectTemplates {
       }
     ];
 
+    const files = convertFilesWithSize(templateFiles);
+
     return {
-      id: `python-ml-platform-${Date.now()}`,
+      id: 'python-ml-platform-' + Date.now().toString(),
       name: projectName,
-      description: `Python ML platform with ${framework}, ${mlFramework}, and ${vectorDb} integration`,
+      description: 'Python ML platform with ' + framework + ', ' + mlFramework + ', and ' + vectorDb + ' integration',
+      templateId: 'python-ml-platform',
+      templateName: 'Python ML Platform',
       category: 'data',
       tags: ['python', 'ml', 'ai', framework, mlFramework, vectorDb],
       complexity: 'advanced' as const,
@@ -185,9 +214,20 @@ export class EnhancedProjectTemplates {
       scripts: this.getPythonScripts(),
       envVars: this.getPythonEnvVars(options),
       documentation: {
-        readme: `# ${projectName}\n\nPython ML platform with comprehensive MLOps capabilities.`,
-        setup: this.getPythonSetupInstructions(options).join('\n'),
-        deployment: this.getPythonDeploymentGuide(deployment).join('\n')
+        setup: this.getPythonSetupInstructions(options),
+        deployment: this.getPythonDeploymentGuide(deployment),
+        usage: [
+          'Access API at http://localhost:8000',
+          'View docs at http://localhost:8000/docs'
+        ]
+      },
+      metadata: {
+        features: ['ml-pipeline', 'vector-db', 'api', 'jupyter'],
+        frameworks: [framework, mlFramework],
+        language: ['python'],
+        complexity: 'advanced' as const,
+        estimatedSetupTime: '60 minutes',
+        tags: ['python', 'ml', 'ai', framework, mlFramework, vectorDb]
       },
       createdAt: new Date(),
       estimatedTime: 60,
@@ -216,7 +256,7 @@ export class EnhancedProjectTemplates {
       deployment = 'docker'
     } = options;
 
-    const files: TemplateFile[] = [
+    const templateFiles: TemplateFile[] = [
       {
         path: 'Cargo.toml',
         content: this.generateCargoToml(projectName, options),
@@ -229,10 +269,14 @@ export class EnhancedProjectTemplates {
       }
     ];
 
+    const files = convertFilesWithSize(templateFiles);
+
     return {
-      id: `rust-web-api-${Date.now()}`,
+      id: 'rust-web-api-' + Date.now().toString(),
       name: projectName,
-      description: `Rust web API with ${framework}, ${database} database, and ${auth} authentication`,
+      description: 'Rust web API with ' + framework + ', ' + database + ' database, and ' + auth + ' authentication',
+      templateId: 'rust-web-api',
+      templateName: 'Rust Web API',
       category: 'backend',
       tags: ['rust', 'web-api', 'async', framework, database, auth],
       complexity: 'advanced' as const,
@@ -245,9 +289,20 @@ export class EnhancedProjectTemplates {
       scripts: this.getRustScripts(),
       envVars: this.getRustEnvVars(options),
       documentation: {
-        readme: `# ${projectName}\n\nHigh-performance Rust web API with modern architecture.`,
-        setup: this.getRustSetupInstructions(options).join('\n'),
-        deployment: this.getRustDeploymentGuide(deployment).join('\n')
+        setup: this.getRustSetupInstructions(options),
+        deployment: this.getRustDeploymentGuide(deployment),
+        usage: [
+          'Access API at http://localhost:8000',
+          'Health check at http://localhost:8000/health'
+        ]
+      },
+      metadata: {
+        features: ['web-api', 'authentication', 'database', 'async'],
+        frameworks: [framework],
+        language: ['rust'],
+        complexity: 'advanced' as const,
+        estimatedSetupTime: '30 minutes',
+        tags: ['rust', 'web-api', 'async', framework, database, auth]
       },
       createdAt: new Date(),
       estimatedTime: 30,
@@ -279,7 +334,13 @@ export class EnhancedProjectTemplates {
       category: 'ai-saas',
       complexity: 'advanced',
       technologies: ['Next.js', 'React', 'TypeScript', 'Tailwind CSS', 'AI APIs'],
-      features: ['AI Chat', 'User Authentication', 'Payment Processing', 'Dashboard', 'Analytics'],
+      features: [
+        'AI Chat',
+        'User Authentication',
+        'Payment Processing',
+        'Dashboard',
+        'Analytics'
+      ],
       integrations: ['OpenAI', 'Anthropic', 'Stripe', 'Auth0', 'Supabase'],
       deploymentTargets: ['Vercel', 'AWS', 'Docker'],
       estimatedTimeHours: 8
@@ -291,7 +352,13 @@ export class EnhancedProjectTemplates {
       category: 'ml-platform',
       complexity: 'expert',
       technologies: ['Python', 'FastAPI', 'PyTorch', 'MLflow', 'Docker'],
-      features: ['Model Training', 'Inference API', 'Experiment Tracking', 'Model Serving', 'Data Pipeline'],
+      features: [
+        'Model Training',
+        'Inference API',
+        'Experiment Tracking',
+        'Model Serving',
+        'Data Pipeline'
+      ],
       integrations: ['PyTorch', 'TensorFlow', 'MLflow', 'Jupyter', 'PostgreSQL'],
       deploymentTargets: ['Docker', 'AWS', 'GCP', 'Kubernetes'],
       estimatedTimeHours: 12
@@ -303,7 +370,13 @@ export class EnhancedProjectTemplates {
       category: 'web-api',
       complexity: 'advanced',
       technologies: ['Rust', 'Axum', 'tokio', 'SQLx', 'JWT'],
-      features: ['REST API', 'Authentication', 'Database Integration', 'Async Operations', 'Error Handling'],
+      features: [
+        'REST API',
+        'Authentication',
+        'Database Integration',
+        'Async Operations',
+        'Error Handling'
+      ],
       integrations: ['PostgreSQL', 'Redis', 'JWT Auth'],
       deploymentTargets: ['Docker', 'AWS', 'GCP'],
       estimatedTimeHours: 6
@@ -311,101 +384,75 @@ export class EnhancedProjectTemplates {
   }
 
   // Helper methods for generating specific file content
-  // (These would be implemented with actual template content)
 
-  private generateNextjsPackageJson(projectName: string, options: any): string {
-    return JSON.stringify({
-      name: projectName,
-      version: "0.1.0",
-      private: true,
-      scripts: {
-        dev: "next dev",
-        build: "next build",
-        start: "next start",
-        lint: "next lint"
+  private generateNextjsPackageJson(projectName: string, _options: unknown): string {
+    return JSON.stringify(
+      {
+        name: projectName,
+        version: '0.1.0',
+        private: true,
+        scripts: {
+          dev: 'next dev',
+          build: 'next build',
+          start: 'next start',
+          lint: 'next lint'
+        },
+        dependencies: {
+          next: '^14.0.0',
+          react: '^18.0.0',
+          'react-dom': '^18.0.0'
+        },
+        devDependencies: {
+          typescript: '^5.0.0',
+          '@types/react': '^18.0.0',
+          '@types/node': '^18.0.0'
+        }
       },
-      dependencies: {
-        "next": "^14.0.0",
-        "react": "^18.0.0",
-        "react-dom": "^18.0.0"
-      },
-      devDependencies: {
-        "typescript": "^5.0.0",
-        "@types/react": "^18.0.0",
-        "@types/node": "^18.0.0"
-      }
-    }, null, 2);
+      null,
+      2
+    );
   }
 
-  private generateNextjsConfig(options: any): string {
-    return `/** @type {import('next').NextConfig} */
-const nextConfig = {
-  reactStrictMode: true,
-  swcMinify: true,
-  experimental: {
-    appDir: true,
-  },
-}
-
-module.exports = nextConfig;`;
+  private generateNextjsConfig(_options: unknown): string {
+    return '/** @type {import(\'next\').NextConfig} */\nconst nextConfig = {\n  reactStrictMode: true,\n  swcMinify: true,\n  experimental: {\n    appDir: true,\n  },\n}\n\nmodule.exports = nextConfig;';
   }
 
   private generateTailwindConfig(): string {
-    return `/** @type {import('tailwindcss').Config} */
-module.exports = {
-  content: ['./src/**/*.{js,ts,jsx,tsx}'],
-  theme: {
-    extend: {},
-  },
-  plugins: [],
-}`;
+    return '/** @type {import(\'tailwindcss\').Config} */\nmodule.exports = {\n  content: [\'./src/**/*.{js,ts,jsx,tsx}\'],\n  theme: {\n    extend: {},\n  },\n  plugins: [],\n}';
   }
 
   private generateTsConfig(): string {
-    return JSON.stringify({
-      compilerOptions: {
-        target: "es5",
-        lib: ["dom", "dom.iterable", "es6"],
-        allowJs: true,
-        skipLibCheck: true,
-        strict: true,
-        forceConsistentCasingInFileNames: true,
-        noEmit: true,
-        esModuleInterop: true,
-        module: "esnext",
-        moduleResolution: "node",
-        resolveJsonModule: true,
-        isolatedModules: true,
-        jsx: "preserve",
-        incremental: true,
-        plugins: [{
-          name: "next"
-        }],
-        baseUrl: ".",
-        paths: {
-          "@/*": ["./src/*"]
-        }
+    return JSON.stringify(
+      {
+        compilerOptions: {
+          target: 'es5',
+          lib: ['dom', 'dom.iterable', 'es6'],
+          allowJs: true,
+          skipLibCheck: true,
+          strict: true,
+          forceConsistentCasingInFileNames: true,
+          noEmit: true,
+          esModuleInterop: true,
+          module: 'esnext',
+          moduleResolution: 'node',
+          resolveJsonModule: true,
+          isolatedModules: true,
+          jsx: 'preserve',
+          incremental: true,
+          plugins: [{ name: 'next' }],
+          baseUrl: '.',
+          paths: { '@/*': ['./src/*'] }
+        },
+        include: ['next-env.d.ts', '**/*.ts', '**/*.tsx', '.next/types/**/*.ts'],
+        exclude: ['node_modules']
       },
-      include: ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],
-      exclude: ["node_modules"]
-    }, null, 2);
+      null,
+      2
+    );
   }
 
-  private generateEnvExample(options: any): string {
-    return `# AI Provider Configuration
-OPENAI_API_KEY=your_openai_api_key_here
-ANTHROPIC_API_KEY=your_anthropic_api_key_here
-
-# Database Configuration
-DATABASE_URL=postgresql://username:password@localhost:5432/dbname
-
-# Authentication
-NEXTAUTH_SECRET=your_nextauth_secret_here
-NEXTAUTH_URL=http://localhost:3000
-
-# Vector Database
-PINECONE_API_KEY=your_pinecone_api_key_here
-PINECONE_ENVIRONMENT=us-east-1-gcp`;
+  private generateEnvExample(_options: unknown): string {
+    return '# AI Provider Configuration\nOPENAI_API_KEY=your_openai_api_key_here\nANTHROPIC_API_KEY=your_anthropic_api_key_here\n\n# Database Configuration\nDATABASE_URL=postgresql://username:password@localhost:5432/dbname\n\n# Authentication\nNEXTAUTH_SECRET=your_nextauth_secret_here\nNEXTAUTH_URL=http://localhost:3000\n\n# Vector Database\nPINECONE_API_KEY=your_pinecone_api_key_here\nPINECONE_ENVIRONMENT=us-east-1-gcp';
   }
 
   private generateEnvLocal(): string {
@@ -413,94 +460,33 @@ PINECONE_ENVIRONMENT=us-east-1-gcp`;
   }
 
   private generateHomePage(): string {
-    return `import { NextPage } from 'next';
-
-const HomePage: NextPage = () => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-4xl font-bold text-center text-gray-900">
-          Welcome to Your AI SaaS Platform
-        </h1>
-        <p className="text-xl text-center text-gray-600 mt-4">
-          Build amazing AI-powered applications with our comprehensive platform
-        </p>
-      </div>
-    </div>
-  );
-};
-
-export default HomePage;`;
+    return 'import { NextPage } from \'next\';\n\nconst HomePage: NextPage = () => {\n  return (\n    <div className="min-h-screen bg-gray-50">\n      <div className="container mx-auto px-4 py-8">\n        <h1 className="text-4xl font-bold text-center text-gray-900">\n          Welcome to Your AI SaaS Platform\n        </h1>\n        <p className="text-xl text-center text-gray-600 mt-4">\n          Build amazing AI-powered applications with our comprehensive platform\n        </p>\n      </div>\n    </div>\n  );\n};\n\nexport default HomePage;';
   }
 
   private generateDashboardPage(): string {
-    return `import { NextPage } from 'next';
-
-const DashboardPage: NextPage = () => {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="container mx-auto px-4 py-8">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">AI Chat</h2>
-            <p className="text-gray-600">Start a conversation with AI</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Analytics</h2>
-            <p className="text-gray-600">View your usage statistics</p>
-          </div>
-          <div className="bg-white p-6 rounded-lg shadow">
-            <h2 className="text-xl font-semibold mb-4">Settings</h2>
-            <p className="text-gray-600">Configure your preferences</p>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-};
-
-export default DashboardPage;`;
+    return 'import { NextPage } from \'next\';\n\nconst DashboardPage: NextPage = () => {\n  return (\n    <div className="min-h-screen bg-gray-50">\n      <div className="container mx-auto px-4 py-8">\n        <h1 className="text-3xl font-bold text-gray-900 mb-8">Dashboard</h1>\n        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">\n          <div className="bg-white p-6 rounded-lg shadow">\n            <h2 className="text-xl font-semibold mb-4">AI Chat</h2>\n            <p className="text-gray-600">Start a conversation with AI</p>\n          </div>\n          <div className="bg-white p-6 rounded-lg shadow">\n            <h2 className="text-xl font-semibold mb-4">Analytics</h2>\n            <p className="text-gray-600">View your usage statistics</p>\n          </div>\n          <div className="bg-white p-6 rounded-lg shadow">\n            <h2 className="text-xl font-semibold mb-4">Settings</h2>\n            <p className="text-gray-600">Configure your preferences</p>\n          </div>\n        </div>\n      </div>\n    </div>\n  );\n};\n\nexport default DashboardPage;';
   }
 
   private generateChatApiRoute(): string {
-    return `import { NextApiRequest, NextApiResponse } from 'next';
-
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ message: 'Method not allowed' });
+    return 'import { NextApiRequest, NextApiResponse } from \'next\';\n\nexport default async function handler(req: NextApiRequest, res: NextApiResponse) {\n  if (req.method !== \'POST\') {\n    return res.status(405).json({ message: \'Method not allowed\' });\n  }\n\n  try {\n    const { message } = req.body;\n\n    // AI integration would go here\n    const response = { reply: \'Hello! This is a placeholder AI response.\' };\n\n    res.status(200).json(response);\n  } catch (error) {\n    console.error(\'Chat API error:\', error);\n    res.status(500).json({ message: \'Internal server error\' });\n  }\n}';
   }
 
-  try {
-    const { message } = req.body;
-    
-    // AI integration would go here
-    const response = { reply: 'Hello! This is a placeholder AI response.' };
-    
-    res.status(200).json(response);
-  } catch (error) {
-    console.error('Chat API error:', error);
-    res.status(500).json({ message: 'Internal server error' });
-  }
-}`;
-  }
-
-  private getNextjsDependencies(options: any): Record<string, string> {
+  private getNextjsDependencies(_options: unknown): Record<string, string> {
     return {
-      "next": "^14.0.0",
-      "react": "^18.0.0",
-      "react-dom": "^18.0.0",
-      "typescript": "^5.0.0",
-      "tailwindcss": "^3.0.0"
+      next: '^14.0.0',
+      react: '^18.0.0',
+      'react-dom': '^18.0.0',
+      typescript: '^5.0.0',
+      tailwindcss: '^3.0.0'
     };
   }
 
   private getNextjsDevDependencies(): Record<string, string> {
     return {
-      "@types/react": "^18.0.0",
-      "@types/node": "^18.0.0",
-      "eslint": "^8.0.0",
-      "eslint-config-next": "^14.0.0"
+      '@types/react': '^18.0.0',
+      '@types/node': '^18.0.0',
+      eslint: '^8.0.0',
+      'eslint-config-next': '^14.0.0'
     };
   }
 
@@ -515,15 +501,15 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     };
   }
 
-  private getNextjsEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getNextjsEnvVars(_options: unknown): Array<EnvVariable & { value?: string }> {
     return [
-      { name: 'OPENAI_API_KEY', value: '', description: 'OpenAI API key for AI features' },
-      { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
-      { name: 'NEXTAUTH_SECRET', value: '', description: 'NextAuth.js secret key' }
+      { name: 'OPENAI_API_KEY', description: 'OpenAI API key for AI features', required: true, value: '' },
+      { name: 'DATABASE_URL', description: 'Database connection string', required: true, value: '' },
+      { name: 'NEXTAUTH_SECRET', description: 'NextAuth.js secret key', required: true, value: '' }
     ];
   }
 
-  private getNextjsSetupInstructions(options: any): string[] {
+  private getNextjsSetupInstructions(_options: unknown): string[] {
     return [
       '1. Install dependencies: npm install',
       '2. Copy .env.example to .env.local and fill in your API keys',
@@ -552,86 +538,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Python ML Platform methods
-  private generatePythonRequirements(options: any): string {
-    return `fastapi==0.104.1
-uvicorn==0.24.0
-pydantic==2.5.0
-sqlalchemy==2.0.23
-alembic==1.13.0
-torch==2.1.0
-transformers==4.35.0
-numpy==1.24.3
-pandas==2.1.3
-scikit-learn==1.3.2
-mlflow==2.8.0
-jupyter==1.0.0
-pytest==7.4.3
-black==23.11.0
-isort==5.12.0
-flake8==6.1.0`;
+  private generatePythonRequirements(_options: unknown): string {
+    return 'fastapi==0.104.1\nuvicorn==0.24.0\npydantic==2.5.0\nsqlalchemy==2.0.23\nalembic==1.13.0\ntorch==2.1.0\ntransformers==4.35.0\nnumpy==1.24.3\npandas==2.1.3\nscikit-learn==1.3.2\nmlflow==2.8.0\njupyter==1.0.0\npytest==7.4.3\nblack==23.11.0\nisort==5.12.0\nflake8==6.1.0';
   }
 
   private generatePyprojectToml(projectName: string): string {
-    return `[build-system]
-requires = ["setuptools>=61.0", "wheel"]
-build-backend = "setuptools.build_meta"
-
-[project]
-name = "${projectName}"
-version = "0.1.0"
-description = "Machine Learning Platform"
-readme = "README.md"
-authors = [{name = "Your Name", email = "your.email@example.com"}]
-classifiers = [
-    "Development Status :: 3 - Alpha",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-]
-requires-python = ">=3.9"
-dependencies = [
-    "fastapi>=0.100.0",
-    "uvicorn[standard]>=0.23.0",
-]
-
-[project.optional-dependencies]
-dev = [
-    "pytest>=7.0.0",
-    "black>=23.0.0",
-    "isort>=5.12.0",
-    "flake8>=6.0.0",
-]`;
+    return '[build-system]\nrequires = ["setuptools>=61.0", "wheel"]\nbuild-backend = "setuptools.build_meta"\n\n[project]\nname = "' + projectName + '"\nversion = "0.1.0"\ndescription = "Machine Learning Platform"\nreadme = "README.md"\nauthors = [{name = "Your Name", email = "your.email@example.com"}]\nclassifiers = [\n    "Development Status :: 3 - Alpha",\n    "Intended Audience :: Developers",\n    "License :: OSI Approved :: MIT License",\n    "Programming Language :: Python :: 3",\n    "Programming Language :: Python :: 3.9",\n    "Programming Language :: Python :: 3.10",\n    "Programming Language :: Python :: 3.11",\n]\nrequires-python = ">=3.9"\ndependencies = [\n    "fastapi>=0.100.0",\n    "uvicorn[standard]>=0.23.0",\n]\n\n[project.optional-dependencies]\ndev = [\n    "pytest>=7.0.0",\n    "black>=23.0.0",\n    "isort>=5.12.0",\n    "flake8>=6.0.0",\n]';
   }
 
   private generatePythonMain(framework: string): string {
     if (framework === 'fastapi') {
-      return `from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
-import uvicorn
-
-app = FastAPI(title="ML Platform API", version="0.1.0")
-
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-@app.get("/")
-async def root():
-    return {"message": "ML Platform API is running"}
-
-@app.get("/health")
-async def health_check():
-    return {"status": "healthy"}
-
-if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)`;
+      return 'from fastapi import FastAPI\nfrom fastapi.middleware.cors import CORSMiddleware\nimport uvicorn\n\napp = FastAPI(title="ML Platform API", version="0.1.0")\n\napp.add_middleware(\n    CORSMiddleware,\n    allow_origins=["*"],\n    allow_credentials=True,\n    allow_methods=["*"],\n    allow_headers=["*"],\n)\n\n@app.get("/")\nasync def root():\n    return {"message": "ML Platform API is running"}\n\n@app.get("/health")\nasync def health_check():\n    return {"status": "healthy"}\n\nif __name__ == "__main__":\n    uvicorn.run(app, host="0.0.0.0", port=8000)';
     }
     return '# Main application entry point\nprint("Hello, World!")';
   }
@@ -647,15 +564,15 @@ if __name__ == "__main__":
     };
   }
 
-  private getPythonEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getPythonEnvVars(_options: unknown): Array<EnvVariable & { value?: string }> {
     return [
-      { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
-      { name: 'MLFLOW_TRACKING_URI', value: '', description: 'MLflow tracking server URI' },
-      { name: 'MODEL_REGISTRY_URI', value: '', description: 'Model registry URI' }
+      { name: 'DATABASE_URL', description: 'Database connection string', required: true, value: '' },
+      { name: 'MLFLOW_TRACKING_URI', description: 'MLflow tracking server URI', required: false, value: '' },
+      { name: 'MODEL_REGISTRY_URI', description: 'Model registry URI', required: false, value: '' }
     ];
   }
 
-  private getPythonSetupInstructions(options: any): string[] {
+  private getPythonSetupInstructions(_options: unknown): string[] {
     return [
       '1. Create virtual environment: python -m venv venv',
       '2. Activate virtual environment: source venv/bin/activate (Linux/Mac) or venv\\Scripts\\activate (Windows)',
@@ -665,7 +582,7 @@ if __name__ == "__main__":
     ];
   }
 
-  private getPythonDeploymentGuide(deployment: string): string[] {
+  private getPythonDeploymentGuide(_deployment: string): string[] {
     return [
       '1. Build Docker image: docker build -t ml-platform .',
       '2. Run container: docker run -p 8000:8000 ml-platform'
@@ -673,80 +590,12 @@ if __name__ == "__main__":
   }
 
   // Rust Web API methods
-  private generateCargoToml(projectName: string, options: any): string {
-    return `[package]
-name = "${projectName}"
-version = "0.1.0"
-edition = "2021"
-
-[dependencies]
-axum = "0.7"
-tokio = { version = "1.0", features = ["full"] }
-tower = "0.4"
-tower-http = { version = "0.5", features = ["fs", "trace"] }
-tracing = "0.1"
-tracing-subscriber = { version = "0.3", features = ["env-filter"] }
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
-jsonwebtoken = "9.2"
-bcrypt = "0.15"
-uuid = { version = "1.0", features = ["v4"] }
-chrono = { version = "0.4", features = ["serde"] }
-anyhow = "1.0"
-thiserror = "1.0"
-dotenv = "0.15"
-
-[dev-dependencies]
-reqwest = { version = "0.11", features = ["json"] }
-testcontainers = "0.15"`;
+  private generateCargoToml(projectName: string, _options: unknown): string {
+    return '[package]\nname = "' + projectName + '"\nversion = "0.1.0"\nedition = "2021"\n\n[dependencies]\naxum = "0.7"\ntokio = { version = "1.0", features = ["full"] }\ntower = "0.4"\ntower-http = { version = "0.5", features = ["fs", "trace"] }\ntracing = "0.1"\ntracing-subscriber = { version = "0.3", features = ["env-filter"] }\nserde = { version = "1.0", features = ["derive"] }\nserde_json = "1.0"\nsqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }\njsonwebtoken = "9.2"\nbcrypt = "0.15"\nuuid = { version = "1.0", features = ["v4"] }\nchrono = { version = "0.4", features = ["serde"] }\nanyhow = "1.0"\nthiserror = "1.0"\ndotenv = "0.15"\n\n[dev-dependencies]\nreqwest = { version = "0.11", features = ["json"] }\ntestcontainers = "0.15"';
   }
 
   private generateRustMain(_framework: string): string {
-    return `use axum::{
-    routing::get,
-    Router,
-    response::Json,
-    http::StatusCode,
-};
-use std::net::SocketAddr;
-use tower::ServiceBuilder;
-use tower_http::trace::TraceLayer;
-use tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};
-
-#[tokio::main]
-async fn main() {
-    tracing_subscriber::registry()
-        .with(tracing_subscriber::EnvFilter::new(
-            std::env::var("RUST_LOG")
-                .unwrap_or_else(|_| "info".into()),
-        ))
-        .with(tracing_subscriber::fmt::layer())
-        .init();
-
-    let app = Router::new()
-        .route("/", get(root))
-        .route("/health", get(health_check))
-        .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));
-
-    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));
-    tracing::info!("listening on {}", addr);
-    
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
-}
-
-async fn root() -> Json<serde_json::Value> {
-    Json(serde_json::json!({
-        "message": "Rust Web API is running"
-    }))
-}
-
-async fn health_check() -> StatusCode {
-    StatusCode::OK
-}`;
+    return 'use axum::{\n    routing::get,\n    Router,\n    response::Json,\n    http::StatusCode,\n};\nuse std::net::SocketAddr;\nuse tower::ServiceBuilder;\nuse tower_http::trace::TraceLayer;\nuse tracing_subscriber::{layer::SubscriberExt, util::SubscriberInitExt};\n\n#[tokio::main]\nasync fn main() {\n    tracing_subscriber::registry()\n        .with(tracing_subscriber::EnvFilter::new(\n            std::env::var("RUST_LOG")\n                .unwrap_or_else(|_| "info".into()),\n        ))\n        .with(tracing_subscriber::fmt::layer())\n        .init();\n\n    let app = Router::new()\n        .route("/", get(root))\n        .route("/health", get(health_check))\n        .layer(ServiceBuilder::new().layer(TraceLayer::new_for_http()));\n\n    let addr = SocketAddr::from(([0, 0, 0, 0], 8000));\n    tracing::info!("listening on {}", addr);\n\n    axum::Server::bind(&addr)\n        .serve(app.into_make_service())\n        .await\n        .unwrap();\n}\n\nasync fn root() -> Json<serde_json::Value> {\n    Json(serde_json::json!({\n        "message": "Rust Web API is running"\n    }))\n}\n\nasync fn health_check() -> StatusCode {\n    StatusCode::OK\n}';
   }
 
   private getRustScripts(): Record<string, string> {
@@ -760,15 +609,15 @@ async fn health_check() -> StatusCode {
     };
   }
 
-  private getRustEnvVars(options: any): Array<{ name: string; value: string; description: string }> {
+  private getRustEnvVars(_options: unknown): Array<EnvVariable & { value?: string }> {
     return [
-      { name: 'DATABASE_URL', value: '', description: 'Database connection string' },
-      { name: 'JWT_SECRET', value: '', description: 'JWT signing secret' },
-      { name: 'RUST_LOG', value: 'info', description: 'Log level configuration' }
+      { name: 'DATABASE_URL', description: 'Database connection string', required: true, value: '' },
+      { name: 'JWT_SECRET', description: 'JWT signing secret', required: true, value: '' },
+      { name: 'RUST_LOG', description: 'Log level configuration', required: false, defaultValue: 'info', value: 'info' }
     ];
   }
 
-  private getRustSetupInstructions(options: any): string[] {
+  private getRustSetupInstructions(_options: unknown): string[] {
     return [
       '1. Install Rust: https://rustup.rs/',
       '2. Install cargo-watch: cargo install cargo-watch',

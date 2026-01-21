@@ -3,22 +3,21 @@
  * Issue #953: Improve API route test coverage
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { NextRequest } from 'next/server';
 
 // Mock the validation middleware
-vi.mock('@/lib/api/validation/middleware', () => ({
-  validateQueryParams: vi.fn(() => ({ success: true })),
+jest.mock('@/lib/api/validation/middleware', () => ({
+  validateQueryParams: jest.fn(() => ({ success: true, data: { filter: undefined, format: undefined } })),
 }));
 
 // Mock the schema
-vi.mock('@/lib/api/validation/schemas', () => ({
+jest.mock('@/lib/api/validation/schemas', () => ({
   healthCheckQuerySchema: {},
 }));
 
 describe('Health API Routes', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('GET /api/health/simple', () => {
