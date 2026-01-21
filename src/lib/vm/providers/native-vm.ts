@@ -229,13 +229,20 @@ export class NativeVMProvider implements VMProvider {
 
       // Wait for graceful shutdown
       const timedOut = await new Promise<boolean>((resolve) => {
+        let resolved = false;
         const timeout = setTimeout(() => {
-          resolve(true);
+          if (!resolved) {
+            resolved = true;
+            resolve(true);
+          }
         }, 10000);
 
         proc.once('exit', () => {
-          clearTimeout(timeout);
-          resolve(false);
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve(false);
+          }
         });
       });
 
