@@ -78,6 +78,11 @@ VibeCode implements multiple layers of security:
 - Dependabot for automated dependency updates
 - Regular security audits and penetration testing
 
+### Credential Rotation
+
+For credential rotation procedures, see the authoritative runbook:
+- **[Credential Rotation Runbook](docs/security/credential-rotation.md)**
+
 ### Security Best Practices for Contributors
 
 When contributing to VibeCode:

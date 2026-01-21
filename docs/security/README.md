@@ -28,6 +28,15 @@ Comprehensive security analyses, threat models, and compliance documentation for
 
 ## Security Documentation Catalog
 
+### Credential Management
+
+- **[credential-rotation.md](./credential-rotation.md)** - Authoritative credential rotation runbook
+  - API key rotation (OpenAI, Datadog)
+  - Database credential rotation (PostgreSQL)
+  - Secret generation (CSRF, NextAuth, JWT)
+  - macOS Keychain storage procedures
+  - Verification and post-rotation checklists
+
 ### GitHub Actions Security
 
 - **[GITHUB_ACTIONS_SECURITY_CHECKLIST.md](./GITHUB_ACTIONS_SECURITY_CHECKLIST.md)**
