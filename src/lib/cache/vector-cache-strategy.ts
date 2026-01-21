@@ -3,6 +3,8 @@
  * Implements caching for vector similarity searches with Redis backend
  */
 
+import { CacheTTL } from './cache-constants';
+
 // Vector similarity query type
 export interface VectorSimilarityQuery {
   embedding: number[];
@@ -25,7 +27,6 @@ export type VectorSimilarityResults = Array<{
 
 // Dynamic import for Redis to avoid circular dependencies
 let redisClient: any = null;
-let CacheTTL: any = null;
 
 // Statistics tracking
 let hitCount = 0;
@@ -39,8 +40,8 @@ async function getRedisClient() {
   if (!redisClient) {
     try {
       const redisModule = await import('./redis-client');
-      redisClient = redisModule.cache;
-      CacheTTL = redisModule.CacheTTL;
+      // Use getRedisClient function instead of cache property
+      redisClient = await redisModule.getRedisClient();
     } catch (err) {
       // Redis not available, use in-memory fallback
       redisClient = null;
@@ -166,7 +167,7 @@ export class VectorCacheManager {
       const cacheKey = this.calculateCacheKey(query, workspace);
 
       // Determine TTL based on query characteristics
-      let ttl = customTtl || this.calculateTtl(query, results);
+      const ttl = customTtl || this.calculateTtl(query, results);
 
       // Store in cache
       await redis.set(cacheKey, JSON.stringify(results), ttl);
@@ -182,17 +183,17 @@ export class VectorCacheManager {
    * Calculate appropriate TTL for a query
    */
   private static calculateTtl(query: VectorSimilarityQuery, results: VectorSimilarityResults): number {
-    // Get TTL values from cache config
-    const EMBEDDINGS_TTL = CacheTTL?.EMBEDDINGS || 2592000; // 30 days
-    const MEDIUM_TTL = CacheTTL?.MEDIUM || 300; // 5 minutes
+    // Use CacheTTL from cache-constants
+    const VERY_LONG_TTL = CacheTTL.VERY_LONG; // 24 hours (86400 seconds)
+    const MEDIUM_TTL = CacheTTL.MEDIUM; // 30 minutes (1800 seconds)
 
     // Shorter TTL for small result sets (likely specific queries)
     if (results.length < 3) {
       return Math.floor(MEDIUM_TTL / 2); // Half of MEDIUM TTL
     }
 
-    // Use EMBEDDINGS TTL for code embeddings
-    return EMBEDDINGS_TTL;
+    // Use VERY_LONG TTL for code embeddings
+    return VERY_LONG_TTL;
   }
 
   /**

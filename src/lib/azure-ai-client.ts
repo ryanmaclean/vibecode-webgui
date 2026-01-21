@@ -91,7 +91,7 @@ export interface EmbeddingResponse {
 }
 
 export class AzureAIClient {
-  private openaiClient: OpenAI;
+  private openaiClient!: OpenAI;
   // Optional Azure SDK clients, loaded lazily if dependencies are available
   private visionClient?: any;
   private languageClient?: any;
