@@ -29,6 +29,12 @@ declare module 'lucide-react' {
   export const Pause: LucideIcon
   export const Stop: LucideIcon
   export const Download: LucideIcon
+  export const Globe: LucideIcon
+  export const Github: LucideIcon
+  export const Paperclip: LucideIcon
+  export const DollarSign: LucideIcon
+  export const FileCode: LucideIcon
+  export const Volume2: LucideIcon
   export const Copy: LucideIcon
   export const Check: LucideIcon
   export const X: LucideIcon
