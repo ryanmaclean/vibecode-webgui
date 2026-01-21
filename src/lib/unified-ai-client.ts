@@ -2,7 +2,7 @@
 // Provides seamless switching between providers while maintaining compatibility
 
 import OpenAI from 'openai'
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging'
 import {
   retryWithBackoff,
   CircuitBreakerRegistry,
@@ -24,6 +24,12 @@ const aiProviderCircuitBreakers = new CircuitBreakerRegistry({
   failureThreshold: 5,
   cooldownPeriod: 30000,
   successThreshold: 2,
+})
+
+// Service logger for unified AI client
+const log = createServiceLogger({
+  service: 'vibecode-webgui',
+  component: 'unified-ai-client'
 })
 
 /**
@@ -196,8 +202,8 @@ export class UnifiedAIClient {
         baseURL: AI_PROVIDERS.ollama.baseURL,
         apiKey: 'ollama' // Ollama doesn't require real API key
       }))
-    } catch (error) {
-      console.warn('Ollama not available:', error)
+    } catch {
+      // Ollama not available - this is expected if not running locally
     }
 
     try {
@@ -205,8 +211,8 @@ export class UnifiedAIClient {
         baseURL: AI_PROVIDERS.localai.baseURL,
         apiKey: 'localai' // LocalAI doesn't require real API key
       }))
-    } catch (error) {
-      console.warn('LocalAI not available:', error)
+    } catch {
+      // LocalAI not available - this is expected if not running locally
     }
   }
 
@@ -242,7 +248,7 @@ export class UnifiedAIClient {
       await client.models.list()
       return true
     } catch (error) {
-      console.warn(`Provider ${providerId} connection failed:`, error)
+      log.debug(`Provider ${providerId} connection test failed`, { error: error instanceof Error ? error.message : String(error) })
       return false
     }
   }
@@ -271,7 +277,7 @@ export class UnifiedAIClient {
     if (!isConnected) {
       // Try fallback to OpenRouter if available
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for model: ${model}`)
+        log.info('Falling back to OpenRouter', { originalModel: model, reason: 'connection_failed' })
         return this.chat(messages, `openai/gpt-3.5-turbo`, options)
       }
       throw new Error(`Provider ${providerId} is not available`)
@@ -327,17 +333,24 @@ export class UnifiedAIClient {
             timeout: 60000,
             isRetryable: shouldRetryError,
             onRetry: (attempt, error, delay) => {
-              console.warn(
-                `[UnifiedAI] Request to ${providerId} failed, ` +
-                `retrying in ${Math.round(delay / 1000)}s (attempt ${attempt}/${RETRY_CONFIG.maxRetries}): ${error.message}`
-              )
+              log.warn('Request failed, retrying', {
+                providerId,
+                attempt,
+                maxRetries: RETRY_CONFIG.maxRetries,
+                delayMs: Math.round(delay),
+                error: error.message
+              })
             },
           }
         )
         // Note: Circuit breaker fallback is handled in the catch block below
       )
     } catch (error) {
-      console.error(`Chat error with ${providerId}:`, error)
+      log.error('Chat request failed', {
+        providerId,
+        model,
+        error: error instanceof Error ? error.message : String(error)
+      })
 
       // If circuit breaker is open or retries exhausted, try fallback
       if (
@@ -345,7 +358,7 @@ export class UnifiedAIClient {
         providerId !== 'openrouter' &&
         this.clients.has('openrouter')
       ) {
-        console.warn(`Falling back to OpenRouter for failed request`)
+        log.info('Falling back to OpenRouter', { reason: 'circuit_open_or_retries_exhausted' })
         return this.chat(messages, 'openai/gpt-3.5-turbo', options)
       }
 
@@ -384,7 +397,7 @@ export class UnifiedAIClient {
     if (!circuitBreaker.isHealthy()) {
       // Circuit is open, try fallback
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`[UnifiedAI] Circuit open for ${providerId}, falling back to OpenRouter`)
+        log.info('Circuit open, falling back to OpenRouter', { providerId })
         yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
         return
       }
@@ -435,10 +448,12 @@ export class UnifiedAIClient {
         if (shouldRetryError(error) && attempt < RETRY_CONFIG.maxRetries) {
           const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt) +
             (RETRY_CONFIG.baseDelayMs * 0.1 * (Math.random() * 2 - 1))
-          console.warn(
-            `[UnifiedAI] Stream request to ${providerId} failed, ` +
-            `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
-          )
+          log.warn('Stream request failed, retrying', {
+            providerId,
+            attempt: attempt + 1,
+            maxRetries: RETRY_CONFIG.maxRetries,
+            delayMs: Math.round(delayMs)
+          })
           await sleep(Math.min(delayMs, RETRY_CONFIG.maxDelayMs))
           continue
         }
@@ -448,11 +463,15 @@ export class UnifiedAIClient {
       }
     }
 
-    console.error(`Stream error with ${providerId}:`, lastError)
+    log.error('Stream request failed after all retries', {
+      providerId,
+      model,
+      error: lastError instanceof Error ? lastError.message : String(lastError)
+    })
 
     // Try fallback to OpenRouter if not already using it
     if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-      console.warn(`Falling back to OpenRouter for failed stream`)
+      log.info('Falling back to OpenRouter for failed stream', { providerId })
       yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
       return
     }
@@ -533,10 +552,10 @@ export class UnifiedAIClient {
     if (providerId) {
       const breaker = aiProviderCircuitBreakers.get(providerId)
       breaker.reset()
-      console.log(`[UnifiedAI] Circuit breaker reset for ${providerId}`)
+      log.info('Circuit breaker reset', { providerId })
     } else {
       aiProviderCircuitBreakers.resetAll()
-      console.log('[UnifiedAI] All circuit breakers reset')
+      log.info('All circuit breakers reset')
     }
   }
 }

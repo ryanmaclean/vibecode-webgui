@@ -9,7 +9,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging'
+
+const log = createServiceLogger({
+  service: 'vibecode-webgui',
+  component: 'health-check'
+})
 
 /**
  * Collects health snapshot with performance metrics
