@@ -305,8 +305,10 @@ class EnhancedAlertingService {
     zScore: number
   ) {
     const severity = zScore > 4 ? 'critical' : zScore > 3 ? 'warning' : 'info'
-    
-    logger[severity](`Anomaly detected: ${operation}.${metric}`, {
+
+    // Map severity to logger method
+    const logMethod = severity === 'critical' ? 'error' : severity === 'warning' ? 'warn' : 'info'
+    logger[logMethod](`Anomaly detected: ${operation}.${metric}`, {
       operation,
       metric,
       current_value: value,
@@ -360,15 +362,15 @@ class EnhancedAlertingService {
   private evaluateAlertConditions(alert: SmartAlert, metric: string, value: number): boolean {
     return alert.conditions.every(condition => {
       if (condition.metric !== metric) return true // Skip non-matching metrics
-      
-      let threshold = condition.value
-      
+
+      let threshold: number
+
       // Resolve baseline-relative thresholds
-      if (typeof threshold === 'string' && threshold.startsWith('baseline_')) {
+      if (typeof condition.value === 'string' && condition.value.startsWith('baseline_')) {
         const baseline = performanceBaselines.getBaseline(alert.operation)
         if (!baseline) return false // No baseline available
-        
-        switch (threshold) {
+
+        switch (condition.value) {
           case 'baseline_p95':
             threshold = baseline.p95
             break
@@ -381,8 +383,10 @@ class EnhancedAlertingService {
           default:
             return false
         }
+      } else {
+        threshold = condition.value as number
       }
-      
+
       // Evaluate condition
       switch (condition.operator) {
         case '>':
@@ -409,8 +413,10 @@ class EnhancedAlertingService {
   private triggerAlert(alert: SmartAlert, context: { operation: string; metric: string; value: number }) {
     alert.lastTriggered = new Date()
     alert.triggerCount++
-    
-    logger[alert.severity](`Alert triggered: ${alert.name}`, {
+
+    // Map severity to logger method
+    const logMethod = alert.severity === 'critical' ? 'error' : alert.severity === 'warning' ? 'warn' : 'info'
+    logger[logMethod](`Alert triggered: ${alert.name}`, {
       alert_id: alert.id,
       alert_name: alert.name,
       operation: context.operation,
@@ -440,7 +446,8 @@ class EnhancedAlertingService {
     switch (action.type) {
       case 'log':
         const level = action.config.level || alert.severity
-        logger[level as keyof typeof logger](`Alert action: ${alert.name}`, {
+        const actionLogMethod = level === 'critical' ? 'error' : level === 'warning' ? 'warn' : 'info'
+        logger[actionLogMethod](`Alert action: ${alert.name}`, {
           action_type: action.type,
           alert_id: alert.id,
           ...context
@@ -635,6 +642,3 @@ class EnhancedAlertingService {
 
 // Export singleton instance
 export const enhancedAlerting = new EnhancedAlertingService()
-
-// Export types
-export type { SmartAlert, AlertCondition, AlertAction, AnomalyDetectionConfig }

@@ -42,8 +42,8 @@ export interface AgentPlan {
 }
 
 export class Agent {
-  private id: string
-  private name: string
+  public readonly id: string
+  public readonly name: string
   private description: string
   private capabilities: Map<string, AgentCapability>
   private aiClient: UnifiedAIClient
@@ -104,28 +104,28 @@ Provide detailed reasoning and results.`
 
       // Use AI to reason about the task
       const response = await this.aiClient.chat(messages, this.model)
-      
+
       // Execute any required capabilities
-      let finalResult = response.content
-      
+      let finalResult: string | { aiReasoning: string; capabilityResults: unknown } = response.content
+
       for (const capabilityName of task.capabilities) {
         const capability = this.capabilities.get(capabilityName)
         if (capability) {
           try {
             const capResult = await capability.execute(
-              { task, aiResponse: response.content }, 
+              { task, aiResponse: response.content },
               context
             )
             finalResult = { aiReasoning: response.content, capabilityResults: capResult }
           } catch (error) {
-            logger.warn(`Capability ${capabilityName} failed:`, error)
+            logger.warn(`Capability ${capabilityName} failed:`, error instanceof Error ? { message: error.message } : undefined)
           }
         }
       }
 
       return finalResult
     } catch (error) {
-      logger.error(`Agent ${this.name} task execution failed:`, error)
+      logger.error(`Agent ${this.name} task execution failed:`, error instanceof Error ? { message: error.message } : undefined)
       throw error
     }
   }
@@ -157,9 +157,10 @@ export class AgentCoordinator {
       parameters: { workspaceId: 'string' },
       execute: async (input, context) => {
         // Use vector search to get code context
+        const workspaceIdNum = context.workspaceId ? parseInt(context.workspaceId, 10) : undefined
         const codeContext = await vectorStore.getContext(
           'code structure dependencies patterns',
-          context.workspaceId,
+          workspaceIdNum,
           5000,
           0.6
         )
@@ -345,8 +346,8 @@ export class AgentWorkflow {
       } catch (error) {
         task.status = 'failed'
         task.error = error instanceof Error ? error.message : 'Unknown error'
-        logger.error(`Task ${task.id} failed:`, error)
-        
+        logger.error(`Task ${task.id} failed:`, error instanceof Error ? { message: error.message } : undefined)
+
         // Decide whether to continue or abort based on task priority
         if (task.priority === 'high') {
           throw new Error(`Critical task failed: ${task.description}`)

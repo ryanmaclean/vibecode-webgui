@@ -1,6 +1,6 @@
 /**
  * Prisma Monitor Integration
- * 
+ *
  * Provides seamless integration between Prisma queries and the database performance monitor.
  * Automatically tracks query performance without requiring manual instrumentation.
  */
@@ -8,6 +8,17 @@
 import { PrismaClient } from '@prisma/client';
 import { DatabasePerformanceMonitor } from './database-performance-monitor';
 // import { logger } from '@/lib/logger';
+
+/**
+ * Performance alert type matching DatabasePerformanceMonitor's onAlert callback
+ */
+interface PerformanceAlert {
+  type: 'slow_query' | 'high_error_rate' | 'connection_pool_full' | 'memory_usage';
+  severity: 'warning' | 'critical';
+  message: string;
+  metrics: Record<string, unknown>;
+  timestamp: Date;
+}
 
 interface PrismaQueryEvent {
   timestamp: Date;
@@ -53,13 +64,20 @@ export class MonitoredPrismaClient extends PrismaClient {
    * Setup Prisma event listeners for automatic monitoring
    */
   private setupEventListeners(): void {
+    // Use type assertion to handle Prisma's event system
+    const client = this as unknown as {
+      $on(event: 'query', callback: (event: PrismaQueryEvent) => void): void;
+      $on(event: 'error', callback: (event: PrismaLogEvent) => void): void;
+      $on(event: 'warn', callback: (event: PrismaLogEvent) => void): void;
+    };
+
     // Query event listener
-    this.$on('query' as any, (event: PrismaQueryEvent) => {
+    client.$on('query', (event: PrismaQueryEvent) => {
       this.handleQueryEvent(event);
     });
 
     // Error event listener
-    this.$on('error' as any, (event: PrismaLogEvent) => {
+    client.$on('error', (event: PrismaLogEvent) => {
       console.error('Prisma error event:', {
         message: event.message,
         target: event.target,
@@ -68,7 +86,7 @@ export class MonitoredPrismaClient extends PrismaClient {
     });
 
     // Warning event listener
-    this.$on('warn' as any, (event: PrismaLogEvent) => {
+    client.$on('warn', (event: PrismaLogEvent) => {
       console.warn('Prisma warning event:', {
         message: event.message,
         target: event.target,
@@ -224,14 +242,31 @@ export function createMonitoredPrisma(options?: ConstructorParameters<typeof Pri
 
 /**
  * Middleware for existing Prisma client to add monitoring
+ * Note: Uses type assertion for $use which may be deprecated in newer Prisma versions.
+ * Consider using Prisma Client Extensions for newer versions.
  */
 export function addMonitoringMiddleware(prisma: PrismaClient): DatabasePerformanceMonitor {
   const monitor = new DatabasePerformanceMonitor(prisma);
 
+  // Type for middleware params and next function
+  type MiddlewareParams = {
+    model?: string;
+    action: string;
+    args: unknown;
+    dataPath: string[];
+    runInTransaction: boolean;
+  };
+  type MiddlewareNext = (params: MiddlewareParams) => Promise<unknown>;
+
+  // Use type assertion for $use middleware (may be deprecated in newer Prisma)
+  const prismaWithMiddleware = prisma as unknown as {
+    $use(middleware: (params: MiddlewareParams, next: MiddlewareNext) => Promise<unknown>): void;
+  };
+
   // Add middleware to intercept all queries
-  prisma.$use(async (params, next) => {
+  prismaWithMiddleware.$use(async (params: MiddlewareParams, next: MiddlewareNext) => {
     const startTime = Date.now();
-    const operation = params.action.toUpperCase() as any;
+    const operation = params.action.toUpperCase() as 'SELECT' | 'INSERT' | 'UPDATE' | 'DELETE' | 'TRANSACTION';
     const modelName = params.model || 'unknown';
     const queryName = `${operation}_${modelName}`;
 
@@ -250,7 +285,7 @@ export function addMonitoringMiddleware(prisma: PrismaClient): DatabasePerforman
       return result;
     } catch (error) {
       const duration = Date.now() - startTime;
-      
+
       monitor.trackQuery({
         query: queryName,
         duration,
@@ -271,9 +306,9 @@ export function addMonitoringMiddleware(prisma: PrismaClient): DatabasePerforman
  */
 export function createPerformanceAlertHandler(
   webhookUrl?: string,
-  slackChannel?: string
+  _slackChannel?: string
 ) {
-  return (alert: Parameters<DatabasePerformanceMonitor['onAlert']>[0][0]) => {
+  return (alert: PerformanceAlert) => {
     const alertMessage = {
       text: `🔍 Database Performance Alert`,
       attachments: [
