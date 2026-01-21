@@ -11,7 +11,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { User, Cursor, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
+import { User, MousePointer2 as Cursor, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
 
 export interface UserPresence {
