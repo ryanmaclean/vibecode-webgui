@@ -157,7 +157,7 @@ export function validateEnv(): Env {
 
     if (warnings.length > 0) {
       console.warn('⚠️  Environment variable warnings:')
-      warnings.forEach(warning => console.warn(\`  - \${warning}\`))
+      warnings.forEach(warning => console.warn(`  - ${warning}`))
     }
 
     return validatedEnv
@@ -166,7 +166,7 @@ export function validateEnv(): Env {
     if (error instanceof z.ZodError) {
       console.error('❌ Environment variable validation failed:')
       error.issues.forEach(err => {
-        console.error(\`  - \${err.path.join('.')}: \${err.message}\`)
+        console.error(`  - ${err.path.join('.')}: ${err.message}`)
       })
 
       // In development, provide helpful suggestions
