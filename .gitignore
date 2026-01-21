@@ -31,10 +31,16 @@ Thumbs.db
 
 # Large binary files - use GitHub Releases
 *.cpio.gz
+*.img.gz
 azure/*.img
 azure/*.qcow2
 azure/*.iso
 releases/
+
+# Pre-built binaries - build from source instead
+bin/busybox
+bin/vibecode-vm
+*.bin
 
 # Temporary files
 tmp/

@@ -1,0 +1,77 @@
+# VibeCode Azure Infrastructure - DEVELOPMENT Configuration
+# Minimal cost-optimized configuration for development/testing
+# Copy to terraform.tfvars or use: tofu apply -var-file=terraform.tfvars.dev
+
+# Project Configuration
+project_name = "vibecode"
+environment  = "dev"
+azure_region = "East US 2"
+
+additional_tags = {
+  Owner       = "Development"
+  CostCenter  = "Engineering"
+  Purpose     = "Development/Testing"
+}
+
+# AKS Configuration - Minimal for dev
+aks_kubernetes_version    = "1.30"
+aks_system_node_vm_size   = "Standard_D2s_v3"  # Smaller for dev
+aks_system_node_count     = 1                   # Single node
+aks_user_node_vm_size     = "Standard_D4s_v3"  # Smaller for dev
+aks_user_node_count       = 1                   # Single node
+aks_user_node_min_count   = 1
+aks_user_node_max_count   = 3
+
+# PostgreSQL Configuration - Minimal for dev
+postgresql_sku_name                        = "B_Standard_B2s"  # Burstable for dev
+postgresql_storage_mb                      = 32768             # 32GB
+postgresql_backup_retention_days           = 7
+postgresql_geo_redundant_backup_enabled    = false  # Save cost
+postgresql_high_availability_enabled       = false  # Save cost
+postgresql_version                         = "16"
+postgresql_admin_username                  = "vibecodeusr"
+
+# Azure AI Services - Optional for dev
+azure_openai_sku_name = "S0"
+azure_openai_deployments = [
+  {
+    name          = "gpt-4o-mini"
+    model_name    = "gpt-4o-mini"
+    model_version = "2024-07-18"
+    scale_type    = "Standard"
+    capacity      = 10
+  }
+]
+
+cognitive_services_sku = "S0"
+
+# Monitoring - Reduced retention for dev
+log_analytics_retention_days = 7
+
+# Container Registry - Basic for dev
+acr_sku           = "Basic"
+acr_admin_enabled = true  # Easier for dev
+
+# Security - Relaxed for dev
+enable_network_policy  = false
+enable_private_cluster = false
+authorized_ip_ranges   = []
+
+# Backup - Disabled for dev
+enable_backup           = false
+backup_retention_days   = 7
+
+# Redis/Valkey - Use Valkey on AKS for dev (no Azure cost)
+redis_deployment_type = "valkey"
+
+valkey_config = {
+  cluster_size       = 1
+  replica_count      = 0
+  memory_limit       = "1Gi"
+  cpu_limit          = "500m"
+  storage_size       = "5Gi"
+  storage_class      = "managed-csi"
+  enable_persistence = true
+  enable_monitoring  = true
+  namespace          = "valkey"
+}

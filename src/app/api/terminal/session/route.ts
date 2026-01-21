@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { WebSocketServer, WebSocket } from 'ws';
-import { spawn } from 'node-pty';
+import type { IPty } from 'node-pty';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { getToken } from 'next-auth/jwt';
@@ -8,6 +8,18 @@ import { validateQueryParams } from '@/lib/api/validation/middleware';
 import { terminalWebSocketQuerySchema } from '@/lib/api/validation/schemas';
 // import { logger } from '@/lib/logger';
 import path from 'path';
+
+// Force dynamic rendering to prevent static analysis during build
+export const dynamic = 'force-dynamic';
+
+// Dynamic import for node-pty to avoid build-time loading
+let nodePty: typeof import('node-pty') | null = null;
+const getNodePty = async () => {
+  if (!nodePty) {
+    nodePty = await import('node-pty');
+  }
+  return nodePty;
+};
 
 // Store active PTY processes
 interface PtyProcess {
@@ -24,7 +36,7 @@ function ensureWebSocketServer() {
   if (!wss) {
     wss = new WebSocketServer({ noServer: true });
 
-    wss.on('connection', (ws: WebSocket, request: NextRequest) => {
+    wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
       const url = new URL(request.url || '', 'http://localhost');
 
       // SECURITY: Validate query parameters
@@ -53,9 +65,10 @@ function ensureWebSocketServer() {
           return;
         }
 
-        // Create a new PTY process for this session
+        // Create a new PTY process for this session (using dynamic import)
+        const pty = await getNodePty();
         const shell = process.env.SHELL || '/bin/bash';
-        const ptyProcess = spawn(shell, [], {
+        const ptyProcess = pty.spawn(shell, [], {
           name: 'xterm-256color',
           cols: 80,
           rows: 30,
@@ -124,9 +137,6 @@ export async function GET(request: NextRequest) {
   // This will be handled by the WebSocket upgrade
   return new NextResponse(null, { status: 101 });
 }
-
-// This is needed for WebSocket upgrade handling
-export const dynamic = 'force-dynamic';
 
 // Handle WebSocket upgrade
 const handler = async (req: Request, _res: unknown) => {

@@ -34,7 +34,7 @@ variable "additional_tags" {
 variable "aks_kubernetes_version" {
   description = "Kubernetes version for AKS cluster"
   type        = string
-  default     = "1.28"
+  default     = "1.30"  # Updated Jan 2026 - use 'az aks get-versions -l eastus -o table' to check available
 }
 
 variable "aks_system_node_vm_size" {

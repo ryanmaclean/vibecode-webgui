@@ -14,8 +14,14 @@ data:
   PORT: "3000"
   DD_SITE: "datadoghq.com"
   DD_SERVICE: "vibecode-webgui"
-  DD_VERSION: "1.0.0"
-  DD_ENV: "kind-test"
+  DD_VERSION: "1.5.0"
+  DD_ENV: "kind-local"
+  DD_ENABLED: "false"
+  DISABLE_AI: "true"
+  DD_LLMOBS_ENABLED: "false"
+  DD_LLMOBS_AGENTLESS_ENABLED: "false"
+  DD_LLMOBS_ML_APP: "vibecode"
+  DD_IAST_ENABLED: "false"
 
 ---
 apiVersion: apps/v1
@@ -26,7 +32,7 @@ metadata:
   labels:
     app: vibecode-webgui
 spec:
-  replicas: 2
+  replicas: 1
   selector:
     matchLabels:
       app: vibecode-webgui
@@ -133,6 +139,16 @@ spec:
             configMapKeyRef:
               name: vibecode-config
               key: DD_IAST_ENABLED
+        - name: DD_ENABLED
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DD_ENABLED
+        - name: DISABLE_AI
+          valueFrom:
+            configMapKeyRef:
+              name: vibecode-config
+              key: DISABLE_AI
         # vibecode-secrets-based variables (including dev login)
 
         - name: DD_API_KEY
@@ -216,41 +232,36 @@ spec:
             secretKeyRef:
               name: oauth-secrets
               key: NEXTAUTH_SECRET
+        # Temporarily using TCP probes to test connectivity
         startupProbe:
-          httpGet:
-            path: /vibecode-webgui/api/health/simple
+          tcpSocket:
             port: 3000
-            scheme: HTTP
-          failureThreshold: 30  # Allow up to 5 minutes for startup (30 * 10s)
-          periodSeconds: 10
-          timeoutSeconds: 5
+          failureThreshold: 30
+          periodSeconds: 5
+          timeoutSeconds: 3
         readinessProbe:
-          httpGet:
-            path: /vibecode-webgui/api/health/simple
+          tcpSocket:
             port: 3000
-            scheme: HTTP
-          initialDelaySeconds: 5
+          initialDelaySeconds: 10
           periodSeconds: 10
-          timeoutSeconds: 5
+          timeoutSeconds: 3
           successThreshold: 1
           failureThreshold: 3
         livenessProbe:
-          httpGet:
-            path: /vibecode-webgui/api/health/simple
+          tcpSocket:
             port: 3000
-            scheme: HTTP
           initialDelaySeconds: 30
           periodSeconds: 30
-          timeoutSeconds: 10
+          timeoutSeconds: 5
           successThreshold: 1
           failureThreshold: 3
         resources:
           requests:
-            memory: "512Mi"
+            memory: "1Gi"
             cpu: "250m"
           limits:
-            memory: "1Gi"
-            cpu: "500m"
+            memory: "3Gi"
+            cpu: "1500m"
 ---
 apiVersion: v1
 kind: Service

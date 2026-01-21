@@ -188,13 +188,14 @@ export class AIIntegration {
         aiAnalytics.logEvent('default_prompts_initialized');
       }
     } catch (error) {
-      console.error('Failed to initialize default prompts:', error);
+      // ChromaDB may not be available - gracefully degrade
+      console.warn('Failed to initialize default prompts (ChromaDB may be unavailable):', error instanceof Error ? error.message : String(error));
       if (this.config.enableAnalytics) {
-        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
-          context: 'initializeDefaultPrompts' 
+        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), {
+          context: 'initializeDefaultPrompts'
         });
       }
-      throw error;
+      // Don't throw - allow app to continue without vector search
     }
   }
 
@@ -218,23 +219,28 @@ export class AIIntegration {
       }
       return true;
     } catch (error) {
-      console.error('Failed to initialize AI integration:', error);
+      // ChromaDB may not be available - gracefully degrade
+      console.warn('Failed to initialize AI integration (ChromaDB may be unavailable):', error instanceof Error ? error.message : String(error));
       if (this.config.enableAnalytics) {
-        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), { 
-          context: 'AIIntegration.initialize' 
+        aiAnalytics.trackError(error instanceof Error ? error : new Error(String(error)), {
+          context: 'AIIntegration.initialize'
         });
       }
-      throw error;
+      // Don't throw - allow app to continue without vector search
+      return false;
     }
   }
 }
 
-// Export singleton instance
-export const ai = AIIntegration.getInstance();
+// Export singleton instance - only create if AI features are enabled
+const isAIDisabled = process.env.DISABLE_AI === 'true' || process.env.SKIP_AI_INIT === 'true';
+export const ai = isAIDisabled ? null : AIIntegration.getInstance();
 
-// Initialize on import if in a Node.js environment
-if (typeof window === 'undefined') {
+// Initialize on import if in a Node.js environment and AI is enabled
+if (typeof window === 'undefined' && !isAIDisabled && ai) {
   ai.initialize().catch(error => {
-    console.error('Failed to initialize AI integration:', error);
+    console.warn('Failed to initialize AI integration (continuing without AI features):', error instanceof Error ? error.message : String(error));
   });
+} else if (isAIDisabled) {
+  console.info('🛑 AI features disabled via environment variable');
 }
