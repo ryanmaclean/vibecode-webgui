@@ -118,7 +118,7 @@ function getPodmanSocket(os: string, home: string): string {
     case 'darwin':
       return join(home, '.local', 'share', 'containers', 'podman', 'machine', 'podman.sock');
     case 'linux':
-      return `/run/user/${process.getuid()}/podman/podman.sock`;
+      return `/run/user/${process.getuid?.() ?? 1000}/podman/podman.sock`;
     case 'win32':
       return '//./pipe/podman-machine-default';
     default:

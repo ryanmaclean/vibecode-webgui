@@ -28,6 +28,11 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     // Input validation
     const validatedInput = validateAIQuery(req.body);
 
+    // Check if AI is available
+    if (!ai) {
+      return res.status(503).json({ error: 'AI service is not available' });
+    }
+
     // Perform secure AI query
     const results = await ai.secureQuery(validatedInput, userId);
 

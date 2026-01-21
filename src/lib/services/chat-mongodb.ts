@@ -984,7 +984,7 @@ export class ChatMongoDBService {
    */
   async getConversationById(
     conversationId: string
-  ): Promise<(ChatConversation & { id: string; messages: Array<{ content: string; from: string }> }) | null> {
+  ): Promise<(Omit<ChatConversation, 'messages'> & { id: string; messages: Array<{ content: string; from: string }> }) | null> {
     if (!this.conversationsCollection || !this.messagesCollection) {
       throw new Error('Chat service not initialized');
     }
@@ -1004,7 +1004,15 @@ export class ChatMongoDBService {
       .toArray();
 
     return {
-      ...conversation,
+      _id: conversation._id,
+      workspaceId: conversation.workspaceId,
+      userId: conversation.userId,
+      title: conversation.title,
+      createdAt: conversation.createdAt,
+      updatedAt: conversation.updatedAt,
+      isActive: conversation.isActive,
+      sessionId: conversation.sessionId,
+      model: conversation.model,
       id: conversation._id?.toString() || '',
       messages: messages.map(msg => ({
         content: msg.content,

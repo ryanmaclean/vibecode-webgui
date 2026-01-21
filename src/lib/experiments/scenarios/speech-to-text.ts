@@ -17,6 +17,7 @@ import { tTest } from '../statistics';
 import { detectSampleRatioMismatch } from '../srm-detector';
 import type { Guardrail } from '../guardrails';
 import { GUARDRAIL_TEMPLATES } from '../guardrail-templates';
+import { ExperimentStatus } from '@prisma/client';
 
 // ==================== TYPES ====================
 
@@ -654,6 +655,6 @@ export async function initializeSpeechExperiment(): Promise<void> {
       guardrails
     },
     hypothesis,
-    'running'
+    ExperimentStatus.RUNNING
   );
 }

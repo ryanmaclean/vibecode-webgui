@@ -69,7 +69,7 @@ const createAnthropicSpan = (model: string, params: Record<string, any> = {}) =>
 };
 
 // StatsD client for custom metrics
-const statsd = new StatsD({
+const statsdClient = new StatsD({
   host: process.env.DD_STATSD_HOST || 'localhost',
   port: parseInt(process.env.DD_STATSD_PORT || '8125'),
   prefix: 'vibecode.',
@@ -79,6 +79,38 @@ const statsd = new StatsD({
     `version:${process.env.DD_VERSION || '2.0.0'}`
   ]
 })
+
+// Typed wrapper for statsd to handle tags properly - supports (stat, value, tags) or (stat, value, sampleRate, tags)
+const statsd = {
+  increment: (stat: string, value?: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
+    if (Array.isArray(tagsOrSampleRate)) {
+      (statsdClient.increment as Function)(stat, value, 1, tagsOrSampleRate);
+    } else {
+      (statsdClient.increment as Function)(stat, value, tagsOrSampleRate, tags);
+    }
+  },
+  gauge: (stat: string, value: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
+    if (Array.isArray(tagsOrSampleRate)) {
+      (statsdClient.gauge as Function)(stat, value, 1, tagsOrSampleRate);
+    } else {
+      (statsdClient.gauge as Function)(stat, value, tagsOrSampleRate, tags);
+    }
+  },
+  histogram: (stat: string, value: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
+    if (Array.isArray(tagsOrSampleRate)) {
+      (statsdClient.histogram as Function)(stat, value, 1, tagsOrSampleRate);
+    } else {
+      (statsdClient.histogram as Function)(stat, value, tagsOrSampleRate, tags);
+    }
+  },
+  timing: (stat: string, time: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
+    if (Array.isArray(tagsOrSampleRate)) {
+      (statsdClient.timing as Function)(stat, time, 1, tagsOrSampleRate);
+    } else {
+      (statsdClient.timing as Function)(stat, time, tagsOrSampleRate, tags);
+    }
+  }
+};
 
 export class EnhancedDatadogMonitoring {
   private static instance: EnhancedDatadogMonitoring

@@ -13,6 +13,7 @@ interface LiteLLMConfig {
   enableLogging?: boolean;
   enableCaching?: boolean;
   userAgent?: string;
+  extraHeaders?: Record<string, string>;
 }
 
 interface ChatMessage {

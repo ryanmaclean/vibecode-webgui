@@ -9,7 +9,6 @@ export {
   logger,
   tracer,
   metrics,
-  console,
   performanceMiddleware,
   getHealthCheck,
   MetricsCollector,
