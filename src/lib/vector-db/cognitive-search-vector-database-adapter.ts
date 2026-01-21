@@ -7,7 +7,7 @@ import { BaseVectorDatabaseAdapter } from './base-vector-database-adapter';
 import { VectorDatabaseConfig, VectorDatabaseProvider, SearchResult, SearchOptions as VectorSearchOptions } from './vector-types';
 import { metrics } from '../server-monitoring';
 import { logger } from '../logger';
-import { VectorDBError, VectorDBErrorType } from './vector-db-error-handler';
+import { VectorDbError, VectorDbErrorType } from './vector-db-error-handler';
 
 /**
  * Azure Cognitive Search specific configuration options
@@ -121,13 +121,15 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         metrics.increment('azure_search.store_chunks.error');
       }
       
-      throw new VectorDBError(
-        `Error storing chunks in Azure Cognitive Search: ${errorMessage}`,
-        VectorDBErrorType.VECTOR_CREATION_FAILED,
-        'storeChunks',
-        'azure-search',
-        error
-      );
+      throw new VectorDbError({
+        type: VectorDbErrorType.VECTOR_CREATION_FAILED,
+        message: `Error storing chunks in Azure Cognitive Search: ${errorMessage}`,
+        originalError: error instanceof Error ? error : undefined,
+        context: { operation: 'storeChunks', provider: 'azure-search', fileId, chunkCount: chunks.length },
+        timestamp: new Date(),
+        retryable: false,
+        severity: 'medium'
+      });
     }
   }
 
@@ -225,13 +227,15 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         metrics.increment('azure_search.delete_chunks.error');
       }
       
-      throw new VectorDBError(
-        `Error deleting chunks for file ID ${fileId}: ${errorMessage}`,
-        VectorDBErrorType.VECTOR_DELETION_FAILED,
-        'deleteFileChunks',
-        'azure-search',
-        error
-      );
+      throw new VectorDbError({
+        type: VectorDbErrorType.STORAGE_ERROR,
+        message: `Error deleting chunks for file ID ${fileId}: ${errorMessage}`,
+        originalError: error instanceof Error ? error : undefined,
+        context: { operation: 'deleteFileChunks', provider: 'azure-search', fileId },
+        timestamp: new Date(),
+        retryable: true,
+        severity: 'medium'
+      });
     }
   }
 
