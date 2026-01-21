@@ -5,22 +5,35 @@
 
 
 import { createLogger, format, transports } from 'winston';
-import tracer from 'dd-trace';
-// // // import { logger } from '@/lib/logger';
-// Initialize Datadog tracer (should be done before importing other modules)
-if (process.env.DD_API_KEY) {
-  tracer.init({
-    service: 'vibecode-webgui',
-    env: process.env.NODE_ENV || 'development',
-    version: process.env.APP_VERSION || '1.0.0',
-    logInjection: true,
-    runtimeMetrics: true,
-    profiling: true,
-    appsec: true, // Application Security Management
-  })
-  console.info('🔍 Datadog APM tracer initialized')
+
+// Safe import and initialization of dd-trace
+let tracer: any = { init: () => {}, scope: () => ({ active: () => null }), use: () => {} };
+const isTracingDisabled = process.env.DD_ENABLED === 'false' || process.env.SKIP_MONITORING === 'true';
+
+// Skip tracer initialization completely if disabled
+if (!isTracingDisabled) {
+  try {
+    if (process.env.DD_API_KEY && typeof window === 'undefined') {
+      const ddTrace = require('dd-trace');
+      ddTrace.init({
+        service: 'vibecode-webgui',
+        env: process.env.NODE_ENV || 'development',
+        version: process.env.APP_VERSION || '1.0.0',
+        logInjection: true,
+        runtimeMetrics: true,
+        profiling: false, // Disable profiling to reduce conflicts
+        appsec: false, // Disable ASM to reduce conflicts
+      });
+      tracer = ddTrace;
+      console.info('🔍 Datadog APM tracer initialized');
+    } else if (!process.env.DD_API_KEY) {
+      console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)');
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize Datadog tracer:', error instanceof Error ? error.message : String(error));
+  }
 } else {
-  console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)')
+  console.info('🛑 Datadog APM tracing disabled via DD_ENABLED=false');
 }
 
 // Custom Winston formatter for structured logging

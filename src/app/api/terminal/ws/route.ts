@@ -7,12 +7,21 @@ import { NextRequest } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { WebSocketServer } from 'ws'
-import { spawn, IPty } from 'node-pty'
+import type { IPty } from 'node-pty'
 import { ClaudeCliIntegration } from '@/lib/claude-cli-integration'
 import { datadogMonitoring } from '@/lib/monitoring/enhanced-datadog-integration'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Dynamic import for node-pty to avoid build-time loading
+let nodePty: typeof import('node-pty') | null = null;
+const getNodePty = async () => {
+  if (!nodePty) {
+    nodePty = await import('node-pty');
+  }
+  return nodePty;
+};
 
 // Terminal session management
 const terminalSessions = new Map<string, {
@@ -159,8 +168,9 @@ const webSocketHandler = (ws: any, request: any) => {
         return
       }
 
-      // Create PTY process
-      const ptyProcess = spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
+      // Create PTY process using dynamic import
+      const pty = await getNodePty();
+      const ptyProcess = pty.spawn(process.platform === 'win32' ? 'cmd.exe' : 'bash', [], {
         name: 'xterm-256color',
         cols,
         rows,

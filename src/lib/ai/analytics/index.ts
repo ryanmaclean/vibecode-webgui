@@ -1,6 +1,16 @@
 import { EventEmitter } from 'events';
 import { PerformanceMonitor } from '../../monitoring/performance-monitoring';
 
+// Safe import for error tracking (may not be available on server-side)
+let trackErrorFn: ((error: Error, context?: Record<string, any>) => void) | null = null;
+if (typeof window !== 'undefined') {
+  import('../../monitoring/error-tracking').then(mod => {
+    trackErrorFn = mod.trackError;
+  }).catch(() => {
+    // Error tracking not available
+  });
+}
+
 type MetricEvent = {
   name: string;
   value: number;
@@ -102,11 +112,13 @@ export class AIAnalytics extends EventEmitter {
     this.logEvent('error', errorEvent);
     this.emit('error_occurred', errorEvent);
     
-    // Send to Datadog Error Tracking
-    trackError(error, {
-      component: 'ai-analytics',
-      metadata: context
-    });
+    // Send to Datadog Error Tracking (if available)
+    if (trackErrorFn) {
+      trackErrorFn(error, {
+        component: 'ai-analytics',
+        metadata: context
+      });
+    }
     
     return errorEvent;
   }
