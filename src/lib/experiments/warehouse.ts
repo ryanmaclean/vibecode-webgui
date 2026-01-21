@@ -376,21 +376,23 @@ export class ExperimentWarehouse {
     hypothesis?: string,
     status?: ExperimentStatus
   ): Promise<any> {
+    // Hypothesis is stored within config JSON since it's not a separate field in schema
+    const configWithHypothesis = hypothesis
+      ? { ...config, hypothesis }
+      : config;
     return await prisma.experiment.upsert({
       where: { key },
       update: {
         name,
-        config,
-        hypothesis,
-        status: status || ExperimentStatus.DRAFT
+        config: configWithHypothesis,
+        status: status || ExperimentStatus.DRAFT,
       },
       create: {
         key,
         name,
-        config,
-        hypothesis,
-        status: status || ExperimentStatus.DRAFT
-      }
+        config: configWithHypothesis,
+        status: status || ExperimentStatus.DRAFT,
+      },
     });
   }
 

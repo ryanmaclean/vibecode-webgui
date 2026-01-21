@@ -70,7 +70,7 @@ export class AgentAPIClient {
   async listAgents(
     query?: ListAgentsQuery
   ): Promise<APIResponse<AgentListResponse>> {
-    const queryString = query ? this.buildQueryString(query) : '';
+    const queryString = query ? this.buildQueryString(query as Record<string, unknown>) : '';
     return this.request<AgentListResponse>(`/agents${queryString}`);
   }
 
@@ -82,7 +82,7 @@ export class AgentAPIClient {
     agentId: string,
     query?: StopAgentQuery
   ): Promise<APIResponse<StopAgentResponse>> {
-    const queryString = query ? this.buildQueryString(query) : '';
+    const queryString = query ? this.buildQueryString(query as Record<string, unknown>) : '';
     return this.request<StopAgentResponse>(
       `/agents/${agentId}${queryString}`,
       {
@@ -143,7 +143,7 @@ export class AgentAPIClient {
       onHeartbeat?: (data: { timestamp: string }) => void;
     }
   ): EventSource {
-    const queryString = query ? this.buildQueryString(query) : '';
+    const queryString = query ? this.buildQueryString(query as Record<string, unknown>) : '';
     const url = `${this.baseUrl}/agents/${agentId}/events${queryString}`;
     const eventSource = new EventSource(url);
 

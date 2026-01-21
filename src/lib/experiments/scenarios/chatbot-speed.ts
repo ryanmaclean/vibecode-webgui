@@ -497,8 +497,11 @@ export function calculateEngagementScore(session: {
  */
 function calculateAvgResponseTime(session: ChatSession): number {
   const responseTimes = session.messages
-    .filter(m => m.role === 'assistant' && m.metrics?.totalResponseMs)
-    .map(m => m.metrics!.totalResponseMs)
+    .filter(
+      (m): m is typeof m & { metrics: { totalResponseMs: number } } =>
+        m.role === 'assistant' && m.metrics?.totalResponseMs !== undefined
+    )
+    .map(m => m.metrics.totalResponseMs)
 
   if (responseTimes.length === 0) return 0
   return responseTimes.reduce((sum, time) => sum + time, 0) / responseTimes.length
