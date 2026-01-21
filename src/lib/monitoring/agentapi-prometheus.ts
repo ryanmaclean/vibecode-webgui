@@ -11,7 +11,7 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 interface PrometheusConfig {
   port: number;
   endpoint: string;
-  hostname?: string;
+  host?: string;
   preventServerStart?: boolean;
 }
 
@@ -50,20 +50,21 @@ class AgentAPIPrometheusExporter {
         {
           port: config.port,
           endpoint: config.endpoint,
-          host: config.hostname,
+          host: config.host,
           preventServerStart: config.preventServerStart
         },
         () => {
           console.info(
-            `📊 Prometheus metrics available at http://${config.hostname || 'localhost'}:${config.port}${config.endpoint}`
+            `Prometheus metrics available at http://${config.host || 'localhost'}:${config.port}${config.endpoint}`
           );
         }
       );
 
       // Create meter provider with Prometheus exporter
+      // PrometheusExporter extends MetricReader, so it can be used directly
       this.meterProvider = new MeterProvider({
         resource,
-        readers: [this.exporter]
+        readers: [this.exporter as any]
       });
 
       console.info('✅ AgentAPI Prometheus exporter initialized');
@@ -109,13 +110,15 @@ class AgentAPIPrometheusExporter {
       throw new Error('Prometheus exporter not initialized');
     }
 
-    // Standard metrics from OpenTelemetry
-    const standardMetrics = await this.exporter.getMetrics();
+    // Collect metrics from the exporter (triggers collection cycle)
+    // Note: PrometheusExporter serves metrics via HTTP endpoint, not getMetrics()
+    // We collect our custom metrics in Prometheus format
+    await this.exporter.collect();
 
-    // Custom metrics
+    // Custom metrics in Prometheus format
     const customMetrics = this.formatCustomMetrics();
 
-    return `${standardMetrics}\n${customMetrics}`;
+    return customMetrics;
   }
 
   /**
@@ -267,7 +270,7 @@ export function initializeDefaultPrometheusExporter(): void {
   prometheusExporter.initialize({
     port: parseInt(process.env.PROMETHEUS_PORT || '9090', 10),
     endpoint: process.env.PROMETHEUS_ENDPOINT || '/metrics',
-    hostname: process.env.PROMETHEUS_HOST || '0.0.0.0'
+    host: process.env.PROMETHEUS_HOST || '0.0.0.0'
   });
 
   // Start automatic process metrics collection
@@ -275,4 +278,4 @@ export function initializeDefaultPrometheusExporter(): void {
 }
 
 // Export types
-export type { PrometheusConfig, MetricSnapshot, StandardMetrics };
+export type { PrometheusConfig, MetricSnapshot };

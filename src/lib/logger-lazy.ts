@@ -21,25 +21,26 @@ function getLogger(): StructuredLogger {
     const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
     
     // Simple console-based logger to avoid Winston circular dependencies
+    // Use globalThis.console to avoid shadowing by the exported 'console' function
     loggerInstance = {
       error: (message: unknown, metadata?: Record<string, unknown>) => {
         if (logLevel === 'debug' || logLevel === 'info' || logLevel === 'warn' || logLevel === 'error') {
-          console.error(`[ERROR] ${message}`, metadata ? JSON.stringify(metadata) : '');
+          globalThis.console.error(`[ERROR] ${message}`, metadata ? JSON.stringify(metadata) : '');
         }
       },
       warn: (message: unknown, metadata?: Record<string, unknown>) => {
         if (logLevel === 'debug' || logLevel === 'info' || logLevel === 'warn') {
-          console.warn(`[WARN] ${message}`, metadata ? JSON.stringify(metadata) : '');
+          globalThis.console.warn(`[WARN] ${message}`, metadata ? JSON.stringify(metadata) : '');
         }
       },
       info: (message: unknown, metadata?: Record<string, unknown>) => {
         if (logLevel === 'debug' || logLevel === 'info') {
-          console.info(`[INFO] ${message}`, metadata ? JSON.stringify(metadata) : '');
+          globalThis.console.info(`[INFO] ${message}`, metadata ? JSON.stringify(metadata) : '');
         }
       },
       debug: (message: unknown, metadata?: Record<string, unknown>) => {
         if (logLevel === 'debug') {
-          console.debug(`[DEBUG] ${message}`, metadata ? JSON.stringify(metadata) : '');
+          globalThis.console.debug(`[DEBUG] ${message}`, metadata ? JSON.stringify(metadata) : '');
         }
       }
     };

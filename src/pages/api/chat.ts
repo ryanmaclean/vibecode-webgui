@@ -13,10 +13,7 @@ export default async function handler(req: Request) {
     let model;
     if (process.env.OPENROUTER_API_KEY) {
       // Use OpenRouter with OpenAI-compatible interface
-      model = openai('gpt-3.5-turbo', {
-        apiKey: process.env.OPENROUTER_API_KEY,
-        baseURL: 'https://openrouter.ai/api/v1',
-      } as any);
+      model = openai('gpt-3.5-turbo');
     } else if (process.env.OPENAI_API_KEY && process.env.OPENAI_API_KEY !== 'sk-test-dummy-key-for-testing-only') {
       model = openai('gpt-4o-mini');
     } else {
@@ -34,15 +31,15 @@ export default async function handler(req: Request) {
       system: 'You are a helpful coding assistant for VibeCode. When asked about a GitHub repository, use the getGithubRepoInfo tool to provide information.',
       messages,
       tools,
-      maxSteps: 5,
+      maxToolRoundtrips: 5,
     });
 
     return result.toTextStreamResponse();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Chat API error:', error);
-    return new Response(JSON.stringify({ 
+    return new Response(JSON.stringify({
       error: 'Failed to process request',
-      details: error.message 
+      details: error instanceof Error ? error.message : String(error)
     }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }

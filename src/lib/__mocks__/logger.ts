@@ -12,22 +12,34 @@
  * - Type exports
  */
 
+// Define the mock logger methods interface to avoid implicit 'any' return types
+interface MockLoggerMethods {
+  error: jest.Mock;
+  warn: jest.Mock;
+  info: jest.Mock;
+  debug: jest.Mock;
+  http: jest.Mock;
+  log: jest.Mock;
+  child: jest.Mock;
+  _context?: Record<string, unknown>;
+}
+
 // Create a mock logger function that can be used by both main and child loggers
-const createMockLoggerMethods = () => ({
+const createMockLoggerMethods = (): MockLoggerMethods => ({
   error: jest.fn(),
   warn: jest.fn(),
   info: jest.fn(),
   debug: jest.fn(),
   http: jest.fn(),
   log: jest.fn(),
-  child: jest.fn((contextMetadata: Record<string, unknown>) => createMockChildLogger(contextMetadata)),
+  child: jest.fn((contextMetadata: Record<string, unknown>): MockLoggerMethods => createMockChildLogger(contextMetadata)),
 });
 
 // Create a mock child logger with the same interface
-const createMockChildLogger = (contextMetadata: Record<string, unknown>) => {
-  const childMethods = createMockLoggerMethods();
+const createMockChildLogger = (contextMetadata: Record<string, unknown>): MockLoggerMethods => {
+  const childMethods: MockLoggerMethods = createMockLoggerMethods();
   // Store context for potential test assertions
-  (childMethods as any)._context = contextMetadata;
+  childMethods._context = contextMetadata;
   return childMethods;
 };
 

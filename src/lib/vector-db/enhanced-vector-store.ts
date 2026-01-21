@@ -1,11 +1,11 @@
 // vibecode-webgui/src/lib/vector-db/enhanced-vector-store.ts
 
+import type { VectorDatabaseInterface } from "./vector-database-interface";
 import type {
-  VectorDatabaseInterface,
   VectorDatabaseConfig,
   SearchOptions,
   SearchResult,
-} from "./vector-database-interface";
+} from "./vector-types";
 import { EnhancedVectorDatabaseAdapter } from "./enhanced-vector-database-adapter";
 import { getMetricsCollector } from "@/lib/db/database-metrics";
 
