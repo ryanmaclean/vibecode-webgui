@@ -12,6 +12,9 @@ import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { createContainerSchema } from '@/lib/api/validation/schemas'
 import { createServiceLogger } from '@/lib/logging'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60)
 
 const log = createServiceLogger({
   service: 'vibecode-webgui',
@@ -21,8 +24,25 @@ const log = createServiceLogger({
  * GET /api/containers
  * List all containers
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(req)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session) {
@@ -67,6 +87,23 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(req)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session) {
