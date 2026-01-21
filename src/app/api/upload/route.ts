@@ -11,7 +11,7 @@
  * - Filesystem storage with workspace isolation
  * - Progress tracking support
  *
- * Rate Limited: 10 uploads per 5 minutes
+ * Rate Limited: 20 requests per minute
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -20,17 +20,12 @@ import { authOptions } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
-import {
-  checkRateLimit,
-  createRateLimitedResponse,
-  applyRateLimitHeaders,
-  RateLimitPresets,
-} from '@/lib/rate-limiter';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
 
-const RATE_LIMIT_PREFIX = 'upload';
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - file uploads
 
 // File upload limits (must match client-side validation)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -169,22 +164,30 @@ function validateFileSize(size: number): { valid: boolean; error?: string } {
  * POST handler for file uploads
  */
 export async function POST(request: NextRequest) {
-  // Apply rate limiting for uploads (resource-intensive)
-  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.UPLOAD, RATE_LIMIT_PREFIX);
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.UPLOAD);
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   try {
     // Authentication check
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
-      return applyRateLimitHeaders(
-        NextResponse.json(
-          { error: 'Unauthorized', message: 'Authentication required for file uploads' },
-          { status: 401 }
-        ),
-        rateLimitResult
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for file uploads' },
+        { status: 401 }
       );
     }
 
@@ -196,57 +199,45 @@ export async function POST(request: NextRequest) {
     // Validate workspace ID
     const workspaceValidation = validateWorkspaceId(workspaceId);
     if (!workspaceValidation.valid) {
-      return applyRateLimitHeaders(
-        NextResponse.json(
-          {
-            error: workspaceValidation.error,
-            details: workspaceValidation.error,
-          },
-          { status: 400 }
-        ),
-        rateLimitResult
+      return NextResponse.json(
+        {
+          error: workspaceValidation.error,
+          details: workspaceValidation.error,
+        },
+        { status: 400 }
       );
     }
 
     // Validate file count
     if (files.length === 0) {
-      return applyRateLimitHeaders(
-        NextResponse.json(
-          {
-            error: 'No files provided',
-            details: 'At least one file is required',
-          },
-          { status: 400 }
-        ),
-        rateLimitResult
+      return NextResponse.json(
+        {
+          error: 'No files provided',
+          details: 'At least one file is required',
+        },
+        { status: 400 }
       );
     }
 
     if (files.length > MAX_FILE_COUNT) {
-      return applyRateLimitHeaders(
-        NextResponse.json(
-          {
-            error: `Maximum ${MAX_FILE_COUNT} files allowed per upload`,
-            details: `Received ${files.length} files`,
-          },
-          { status: 400 }
-        ),
-        rateLimitResult
+      return NextResponse.json(
+        {
+          error: `Maximum ${MAX_FILE_COUNT} files allowed per upload`,
+          details: `Received ${files.length} files`,
+        },
+        { status: 400 }
       );
     }
 
     // Calculate total size
     const totalSize = files.reduce((sum, file) => sum + file.size, 0);
     if (totalSize > MAX_TOTAL_SIZE) {
-      return applyRateLimitHeaders(
-        NextResponse.json(
-          {
-            error: 'Total upload size exceeds 50MB limit',
-            details: `Total size: ${Math.round(totalSize / 1024 / 1024)}MB`,
-          },
-          { status: 413 }
-        ),
-        rateLimitResult
+      return NextResponse.json(
+        {
+          error: 'Total upload size exceeds 50MB limit',
+          details: `Total size: ${Math.round(totalSize / 1024 / 1024)}MB`,
+        },
+        { status: 413 }
       );
     }
 
@@ -255,45 +246,36 @@ export async function POST(request: NextRequest) {
       // Validate filename
       const filenameValidation = validateFilename(file.name);
       if (!filenameValidation.valid) {
-        return applyRateLimitHeaders(
-          NextResponse.json(
-            {
-              error: filenameValidation.error,
-              details: `File: ${file.name}`,
-            },
-            { status: 400 }
-          ),
-          rateLimitResult
+        return NextResponse.json(
+          {
+            error: filenameValidation.error,
+            details: `File: ${file.name}`,
+          },
+          { status: 400 }
         );
       }
 
       // Validate MIME type
       const mimeValidation = validateMimeType(file.type);
       if (!mimeValidation.valid) {
-        return applyRateLimitHeaders(
-          NextResponse.json(
-            {
-              error: mimeValidation.error,
-              details: `File: ${file.name} (${file.type})`,
-            },
-            { status: 415 }
-          ),
-          rateLimitResult
+        return NextResponse.json(
+          {
+            error: mimeValidation.error,
+            details: `File: ${file.name} (${file.type})`,
+          },
+          { status: 415 }
         );
       }
 
       // Validate file size
       const sizeValidation = validateFileSize(file.size);
       if (!sizeValidation.valid) {
-        return applyRateLimitHeaders(
-          NextResponse.json(
-            {
-              error: sizeValidation.error,
-              details: `File: ${file.name} (${Math.round(file.size / 1024 / 1024)}MB)`,
-            },
-            { status: 413 }
-          ),
-          rateLimitResult
+        return NextResponse.json(
+          {
+            error: sizeValidation.error,
+            details: `File: ${file.name} (${Math.round(file.size / 1024 / 1024)}MB)`,
+          },
+          { status: 413 }
         );
       }
     }
@@ -342,22 +324,16 @@ export async function POST(request: NextRequest) {
       analysis,
     };
 
-    return applyRateLimitHeaders(
-      NextResponse.json(response, { status: 200 }),
-      rateLimitResult
-    );
+    return NextResponse.json(response, { status: 200 });
   } catch (error) {
     console.error('File upload error:', error);
 
-    return applyRateLimitHeaders(
-      NextResponse.json(
-        {
-          error: 'Failed to process file upload',
-          details: error instanceof Error ? error.message : 'Unknown error',
-        },
-        { status: 500 }
-      ),
-      rateLimitResult
+    return NextResponse.json(
+      {
+        error: 'Failed to process file upload',
+        details: error instanceof Error ? error.message : 'Unknown error',
+      },
+      { status: 500 }
     );
   }
 }

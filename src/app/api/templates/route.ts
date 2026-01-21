@@ -12,6 +12,9 @@ import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
 import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
 import { z } from '@/lib/zod-compat'
 import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - template browsing
 interface ProjectTemplate {
   id: string
   name: string
@@ -600,8 +603,25 @@ Happy coding! 🐍`
   }
 ]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Use cache for templates response (templates rarely change)
     const response = await cacheGetOrSet(
       CacheKeyGenerators.templates(),
@@ -637,6 +657,23 @@ interface TemplateSubmissionResponse {
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Require authentication for template submission
     const session = await getServerSession(authOptions)
     if (!session?.user) {
