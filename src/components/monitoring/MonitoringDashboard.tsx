@@ -258,7 +258,7 @@ export default function MonitoringDashboard() {
                   <BarChart data={metrics.network.history}>
                     <XAxis dataKey="time" fontSize={12} />
                     <YAxis fontSize={12} tickFormatter={formatBytes} />
-                    <Tooltip formatter={(value: number) => formatBytes(value)} />
+                    <Tooltip formatter={((value: number) => formatBytes(value)) as any} />
                     <Legend />
                     <Bar dataKey="in" name="Incoming" fill="#8884d8" />
                     <Bar dataKey="out" name="Outgoing" fill="#82ca9d" />
@@ -285,7 +285,7 @@ export default function MonitoringDashboard() {
                       <Cell fill="#8884d8" />
                       <Cell fill="#eeeeee" />
                     </Pie>
-                    <Tooltip formatter={(value: number) => `${value.toFixed(1)}%`} />
+                    <Tooltip formatter={((value: number) => `${value.toFixed(1)}%`) as any} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>

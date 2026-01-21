@@ -16,8 +16,8 @@ export default function Marketplace() {
     // Store selected template in sessionStorage for the project generator
     sessionStorage.setItem('selectedTemplate', JSON.stringify(template))
 
-    // Redirect to main page with template parameter - use marketplaceId or fallback to id
-    const templateId = template.marketplaceId || template.id
+    // Redirect to main page with template parameter - use id (marketplaceId was removed from type)
+    const templateId = template.id
     router.push(`/?template=${templateId}`)
   }
 

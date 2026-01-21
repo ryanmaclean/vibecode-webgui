@@ -727,7 +727,7 @@ ${template.documentation.usage.join('\n')}
 
 ## Features
 
-${template.features?.join('\n') || 'Modern development setup'}
+${(template as MarketplaceTemplate & { features?: string[] }).features?.join('\n') || 'Modern development setup'}
 
 ## Contributing
 

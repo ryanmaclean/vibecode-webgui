@@ -215,7 +215,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
       }
     } catch (error) {
       aiError = error;
-      response = `I apologize, but I'm experiencing technical difficulties. Error: ${error.message}. Please try again later.`;
+      response = `I apologize, but I'm experiencing technical difficulties. Error: ${error instanceof Error ? error.message : 'Unknown error'}. Please try again later.`;
     }
     processingTime = Date.now() - startTime
 

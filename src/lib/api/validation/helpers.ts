@@ -97,7 +97,7 @@ export function checkRateLimit(
   const {
     maxRequests = 100,
     windowMs = 60 * 1000, // 1 minute
-    keyGenerator = (req) => req.ip || 'unknown'
+    keyGenerator = (req) => req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown'
   } = options
 
   const key = keyGenerator(request)
@@ -239,8 +239,7 @@ export function isAuthenticated(request: NextRequest): boolean {
  * Get request IP address
  */
 export function getClientIP(request: NextRequest): string {
-  return request.ip || 
-         request.headers.get('x-forwarded-for')?.split(',')[0] ||
+  return request.headers.get('x-forwarded-for')?.split(',')[0] ||
          request.headers.get('x-real-ip') ||
          'unknown'
 }

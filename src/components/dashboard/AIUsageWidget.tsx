@@ -222,10 +222,10 @@ export function AIUsageWidget({
                     border: '1px solid #ccc',
                     borderRadius: '4px'
                   }}
-                  formatter={(value: number, name: string) => {
+                  formatter={((value: number, name: string) => {
                     if (name === 'cost') return `$${value.toFixed(2)}`
                     return value
-                  }}
+                  }) as any}
                 />
                 <Legend />
                 <Bar dataKey="requests" fill="#3b82f6" name="Requests" />

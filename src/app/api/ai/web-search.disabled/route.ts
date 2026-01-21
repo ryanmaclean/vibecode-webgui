@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
         } catch (error) {
           return {
             ...result,
-            contentError: `Scraping failed: ${error.message}`
+            contentError: `Scraping failed: ${error instanceof Error ? error.message : 'Unknown error'}`
           }
         }
       })

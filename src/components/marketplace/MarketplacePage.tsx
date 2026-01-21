@@ -29,13 +29,14 @@ export function MarketplacePage({
   const [view, setView] = useState<'browse' | 'submit'>('browse')
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null)
 
-  const handleSelectTemplate = (template: MarketplaceTemplate) => {
-    setSelectedTemplate(template)
-    onSelectTemplate?.(template)
-    
+  const handleSelectTemplate = (template: MarketplaceTemplate | Record<string, unknown>) => {
+    const marketplaceTemplate = template as MarketplaceTemplate
+    setSelectedTemplate(marketplaceTemplate)
+    onSelectTemplate?.(marketplaceTemplate)
+
     // If onStartProject is provided, use it; otherwise use onSelectTemplate
     if (onStartProject) {
-      onStartProject(template)
+      onStartProject(marketplaceTemplate)
     }
   }
 
@@ -107,7 +108,7 @@ export function MarketplacePage({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <TemplateMarketplace
-          onTemplateSelect={handleSelectTemplate}
+          onTemplateSelect={handleSelectTemplate as any}
           selectedTemplateId={selectedTemplate?.id}
           selectedCategory={selectedCategory}
         />

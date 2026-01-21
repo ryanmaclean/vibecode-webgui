@@ -147,7 +147,7 @@ export function GitHubIntegrationModal({
     try {
       await navigator.clipboard.writeText(text)
     } catch (error) {
-      logger.error('Failed to copy to clipboard:', error)
+      logger.error('Failed to copy to clipboard:', error as Record<string, unknown>)
     }
   }
 
