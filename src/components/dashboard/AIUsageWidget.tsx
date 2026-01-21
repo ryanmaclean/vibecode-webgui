@@ -281,7 +281,7 @@ function AIUsageWidgetInner({
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
                   contentStyle={tooltipStyle}
-                  formatter={tooltipFormatter as any}
+                  formatter={tooltipFormatter}
                 />
                 <Legend />
                 <Bar dataKey="requests" fill="#3b82f6" name="Requests" />
