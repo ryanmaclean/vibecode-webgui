@@ -363,15 +363,40 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  return ['https://vibecode.dev', 'http://localhost:3000', 'http://localhost:8080']
+}
+
+/**
+ * Validate request origin against allowed origins
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null
+  const allowedOrigins = getAllowedOrigins()
+  if (allowedOrigins.includes(requestOrigin)) return requestOrigin
+  return null
+}
+
+/**
  * OPTIONS handler for CORS
  */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+  return new NextResponse(null, { status: 200, headers })
 }

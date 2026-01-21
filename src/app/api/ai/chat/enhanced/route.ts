@@ -1,7 +1,7 @@
 // Enhanced AI Chat API using Vercel AI SDK
 // Multi-provider support with standardized streaming and tool calling
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
@@ -114,7 +114,7 @@ async function buildEnhancedRAGContext(workspaceId: string, userQuery: string, u
 // Enhanced tool simulation (integrated into system prompt)
 function getToolCapabilities(enableTools: boolean): string {
   if (!enableTools) return ''
-  
+
   return `
 
 **Available AI Tools:**
@@ -124,6 +124,23 @@ function getToolCapabilities(enableTools: boolean): string {
 - **RAG Context**: Automatically retrieves relevant code context using vector search
 
 When you need to use these capabilities, mention them explicitly in your response.`
+}
+
+// Get allowed origins from environment or use defaults
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  return ['https://vibecode.dev', 'http://localhost:3000', 'http://localhost:8080']
+}
+
+// Validate and return CORS origin if allowed
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null
+  const allowedOrigins = getAllowedOrigins()
+  if (allowedOrigins.includes(requestOrigin)) return requestOrigin
+  return null
 }
 
 export async function POST(request: AuthenticatedRequest) {
@@ -288,20 +305,29 @@ ${getToolCapabilities(enableTools)}
 
     const { Response: GlobalResponse } = globalThis
 
-      return new GlobalResponse(customReadable, {
-        headers: {
-          'Content-Type': 'text/event-stream',
-          'Cache-Control': 'no-cache',
-          'Connection': 'keep-alive',
-          'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'X-Model-Used': selectedModel,
-        'X-Provider': SUPPORTED_MODELS[selectedModel],
-        'X-RAG-Status': ragResult ? 'active' : 'inactive',
-        'X-Tools-Enabled': enableTools.toString(),
-        'X-Enhanced-Features': 'multi-provider,rag,context-aware'
-      }
+    // Validate CORS origin
+    const requestOrigin = (request as any).headers?.get('origin')
+    const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'X-Model-Used': selectedModel,
+      'X-Provider': SUPPORTED_MODELS[selectedModel],
+      'X-RAG-Status': ragResult ? 'active' : 'inactive',
+      'X-Tools-Enabled': enableTools.toString(),
+      'X-Enhanced-Features': 'multi-provider,rag,context-aware'
+    }
+
+    if (validatedOrigin) {
+      responseHeaders['Access-Control-Allow-Origin'] = validatedOrigin
+      responseHeaders['Vary'] = 'Origin'
+    }
+
+    return new GlobalResponse(customReadable, {
+      headers: responseHeaders
     })
 
   } catch (error) {
@@ -317,14 +343,17 @@ ${getToolCapabilities(enableTools)}
 }
 
 // CORS support
-export async function OPTIONS() {
-  const { Response: GlobalResponse } = globalThis
-  return new GlobalResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+  return new NextResponse(null, { status: 200, headers })
 }
