@@ -15,7 +15,10 @@ detectDockerRuntime,
 } from '@/lib/docker/detection';
 // import { logger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 export const dynamic = 'force-dynamic';
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - status checks
 
 const dockerActionSchema = z.object({
   action: z.enum(['start-colima', 'status', 'info']),
@@ -26,6 +29,23 @@ const dockerActionSchema = z.object({
  * Returns comprehensive Docker runtime status
  */
 export async function GET(request: Request) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const url = new URL(request.url);
     const detailed = url.searchParams.get('detailed') === 'true';
@@ -77,6 +97,23 @@ export async function GET(request: Request) {
  * Attempts to start Colima if installed or perform Docker actions
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const body = await request.json();
     const { action } = dockerActionSchema.parse(body);
