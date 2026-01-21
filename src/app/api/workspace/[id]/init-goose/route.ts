@@ -3,6 +3,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { exec } from 'child_process';
 import { promisify } from 'util';
+import path from 'path';
+import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
+import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
 // import { logger } from '@/lib/logger';
 const execAsync = promisify(exec);
 
