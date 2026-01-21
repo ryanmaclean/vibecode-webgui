@@ -10,6 +10,13 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 // import { logger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+  clampOffset,
+  getPaginationFromSearchParams,
+} from '@/lib/api/pagination';
 
 // Zod validation schemas
 const workspaceIdSchema = z.object({
@@ -64,13 +71,26 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get conversation history from database
-    const conversations = await getWorkspaceConversations(workspaceId);
+    // Extract and validate pagination parameters
+    const { searchParams } = new URL(request.url);
+    const pagination = getPaginationFromSearchParams(
+      searchParams,
+      MAX_PAGE_SIZE.CONVERSATIONS,
+      DEFAULT_PAGE_SIZE.CONVERSATIONS
+    );
+
+    // Get conversation history from database with pagination
+    const conversations = await getWorkspaceConversations(workspaceId, pagination.limit, pagination.offset);
 
     return NextResponse.json({
       conversations,
       workspaceId,
-      count: conversations.length
+      count: conversations.length,
+      pagination: {
+        limit: pagination.limit,
+        offset: pagination.offset,
+        hasMore: conversations.length === pagination.limit
+      }
     });
 
   } catch (error) {
@@ -257,8 +277,12 @@ async function validateWorkspaceAccess(userId: string, workspaceId: string): Pro
 /**
  * Get conversation history for a workspace
  */
-async function getWorkspaceConversations(workspaceId: string): Promise<any[]> {
+async function getWorkspaceConversations(workspaceId: string, limit: number = DEFAULT_PAGE_SIZE.CONVERSATIONS, offset: number = 0): Promise<any[]> {
   try {
+    // Ensure limit and offset are capped to prevent resource exhaustion
+    const safeLimit = clampLimit(limit, MAX_PAGE_SIZE.CONVERSATIONS, DEFAULT_PAGE_SIZE.CONVERSATIONS);
+    const safeOffset = clampOffset(offset);
+
     // This would integrate with your chat/conversation storage system
     // For now, return empty array as a placeholder
     return [];

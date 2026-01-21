@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
 import { createErrorResponse, getErrorMessage, createErrorResponseFromError, ApiErrors } from '@/lib/api-utils'
@@ -14,6 +16,11 @@ import {
   apiLogger
 } from '@/lib/logging'
 import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils'
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  getPaginationFromSearchParams,
+} from '@/lib/api/pagination'
 
 const log = createServiceLogger({
   service: 'vibecode-webgui',
@@ -38,9 +45,25 @@ export async function POST(request: NextRequest) {
   })
 
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      log.warn('Unauthorized workspace creation attempt', {
+        requestId: requestContext.requestId,
+        operation: 'create_workspace'
+      })
+      const response = ApiErrors.unauthorized(
+        'Authentication required to create workspaces',
+        requestContext.requestId
+      )
+      apiLogger.logResponse(requestContext, response, startTime)
+      return response
+    }
+
     log.info('Workspace creation API called', {
       requestId: requestContext.requestId,
-      operation: 'create_workspace'
+      operation: 'create_workspace',
+      userId: session.user.id
     })
 
     // Parse and validate request
@@ -177,10 +200,26 @@ export async function GET(request: NextRequest) {
   })
 
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      log.warn('Unauthorized workspace access attempt', {
+        requestId: requestContext.requestId,
+        operation
+      })
+      const response = ApiErrors.unauthorized(
+        'Authentication required to access workspaces',
+        requestContext.requestId
+      )
+      apiLogger.logResponse(requestContext, response, startTime)
+      return response
+    }
+
     log.info('Workspace management API called', {
       requestId: requestContext.requestId,
       operation,
-      workspaceId
+      workspaceId,
+      userId: session.user.id
     })
 
     // Check if Kubernetes is available
@@ -270,13 +309,21 @@ export async function GET(request: NextRequest) {
       apiLogger.logResponse(requestContext, response, startTime)
       return response
     } else {
-      // List all workspaces
-      log.debug('Listing all workspaces', {
-        requestId: requestContext.requestId
+      // List all workspaces with pagination
+      const pagination = getPaginationFromSearchParams(
+        searchParams,
+        MAX_PAGE_SIZE.WORKSPACES,
+        DEFAULT_PAGE_SIZE.WORKSPACES
+      )
+
+      log.debug('Listing workspaces with pagination', {
+        requestId: requestContext.requestId,
+        limit: pagination.limit,
+        offset: pagination.offset
       })
 
-      // Try cache first for workspace list
-      const listCacheKey = 'workspaces:list:all'
+      // Try cache first for workspace list (cache key includes pagination)
+      const listCacheKey = `workspaces:list:${pagination.limit}:${pagination.offset}`
       const cachedList = await cacheGet<unknown[]>(listCacheKey)
 
       if (cachedList) {
@@ -298,7 +345,12 @@ export async function GET(request: NextRequest) {
           count: cachedList.length,
           service: 'Workspace Provisioning',
           available: true,
-          requestId: requestContext.requestId
+          requestId: requestContext.requestId,
+          pagination: {
+            limit: pagination.limit,
+            offset: pagination.offset,
+            hasMore: cachedList.length === pagination.limit
+          }
         })
         response.headers.set('x-request-id', requestContext.requestId)
         response.headers.set('x-cache', 'HIT')
@@ -322,13 +374,23 @@ export async function GET(request: NextRequest) {
         durationMs: duration
       })
 
+      // Apply pagination to results (workspace service may return all, we slice here)
+      const paginatedWorkspaces = workspaces.slice(pagination.offset, pagination.offset + pagination.limit)
+
       const response = NextResponse.json({
         success: true,
-        workspaces,
-        count: workspaces.length,
+        workspaces: paginatedWorkspaces,
+        count: paginatedWorkspaces.length,
+        totalCount: workspaces.length,
         service: 'Workspace Provisioning',
         available: true,
-        requestId: requestContext.requestId
+        requestId: requestContext.requestId,
+        pagination: {
+          limit: pagination.limit,
+          offset: pagination.offset,
+          hasMore: pagination.offset + pagination.limit < workspaces.length,
+          total: workspaces.length
+        }
       })
       response.headers.set('x-request-id', requestContext.requestId)
       response.headers.set('x-cache', 'MISS')

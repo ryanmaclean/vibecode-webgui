@@ -15,6 +15,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
@@ -174,6 +176,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: 'Unauthorized', message: 'Authentication required for file uploads' },
+          { status: 401 }
+        ),
+        rateLimitResult
+      );
+    }
+
     // Parse form data
     const formData = await request.formData();
     const workspaceId = formData.get('workspaceId') as string | null;

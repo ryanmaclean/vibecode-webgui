@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { IDEFactory } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
 
@@ -20,6 +22,15 @@ export async function GET(
   context: RouteContext
 ) {
   try {
+    // Authentication check
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to access IDE session' },
+        { status: 401 }
+      );
+    }
+
     const { sessionId } = await context.params;
 
     const sessions = getSessionStore();
@@ -28,6 +39,14 @@ export async function GET(
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
+      );
+    }
+
+    // Authorization check - users can only access their own sessions unless admin
+    if (authSession.user.role !== 'admin' && session.userId !== authSession.user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'You do not have access to this IDE session' },
+        { status: 403 }
       );
     }
 
@@ -63,14 +82,31 @@ export async function DELETE(
   context: RouteContext
 ) {
   try {
+    // Authentication check
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to delete IDE session' },
+        { status: 401 }
+      );
+    }
+
     const { sessionId } = await context.params;
-    
+
     const sessionStore = getSessionStore();
     const session = sessionStore.get(sessionId);
     if (!session) {
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
+      );
+    }
+
+    // Authorization check - users can only delete their own sessions unless admin
+    if (authSession.user.role !== 'admin' && session.userId !== authSession.user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'You do not have access to delete this IDE session' },
+        { status: 403 }
       );
     }
 
@@ -99,6 +135,15 @@ export async function PATCH(
   context: RouteContext
 ) {
   try {
+    // Authentication check
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to update IDE session' },
+        { status: 401 }
+      );
+    }
+
     const { sessionId } = await context.params;
     const body = await request.json();
     const { action, extensionId } = body;
@@ -109,6 +154,14 @@ export async function PATCH(
       return NextResponse.json(
         { error: 'Session not found' },
         { status: 404 }
+      );
+    }
+
+    // Authorization check - users can only update their own sessions unless admin
+    if (authSession.user.role !== 'admin' && session.userId !== authSession.user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'You do not have access to update this IDE session' },
+        { status: 403 }
       );
     }
 

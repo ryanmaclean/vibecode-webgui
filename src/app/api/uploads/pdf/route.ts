@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
@@ -12,6 +14,14 @@ export const dynamic = 'force-dynamic'
 const MAX_UPLOAD_BYTES = Number(process.env.PDF_UPLOAD_MAX_BYTES ?? 25 * 1024 * 1024)
 
 export async function POST(request: NextRequest) {
+  // Authentication check
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Authentication required for PDF uploads' },
+      { status: 401 }
+    )
+  }
   // Note: In test environment, content-type might not be set correctly
   // so we'll check for formData availability instead
   const contentType = request.headers.get('content-type')

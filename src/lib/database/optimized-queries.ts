@@ -10,6 +10,11 @@
 import { PrismaClient, Prisma } from '@prisma/client';
 import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '../cache/cache-utils';
 import { metrics } from '../server-monitoring';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination';
 
 // Type definitions for batch operations
 interface BatchQueryOptions<K, T> {
@@ -628,9 +633,10 @@ export class OptimizedQueries {
     const {
       includeWorkspaces = true,
       includeProjects = true,
-      workspaceLimit = 10,
-      projectLimit = 10,
     } = options;
+    // Validate and cap limits to prevent resource exhaustion
+    const workspaceLimit = clampLimit(options.workspaceLimit ?? 10, MAX_PAGE_SIZE.WORKSPACES, 10);
+    const projectLimit = clampLimit(options.projectLimit ?? 10, MAX_PAGE_SIZE.PROJECTS, 10);
 
     // Build include clause based on options
     const include: Prisma.UserInclude = {};
@@ -675,7 +681,9 @@ export class OptimizedQueries {
     const prisma = this.getPrisma();
     const startTime = Date.now();
 
-    const { messageLimit = 50, includeUser = false } = options;
+    const { includeUser = false } = options;
+    // Validate and cap messageLimit to prevent resource exhaustion
+    const messageLimit = clampLimit(options.messageLimit ?? 50, MAX_PAGE_SIZE.MESSAGES, 50);
 
     const conversations = await prisma.conversation.findMany({
       where: { id: { in: conversationIds } },
@@ -709,7 +717,9 @@ export class OptimizedQueries {
     const prisma = this.getPrisma();
     const startTime = Date.now();
 
-    const { status = 'active', limit = 20 } = options;
+    const { status = 'active' } = options;
+    // Validate and cap limit to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? 20, MAX_PAGE_SIZE.PROJECTS, 20);
 
     const projects = await prisma.project.findMany({
       where: {

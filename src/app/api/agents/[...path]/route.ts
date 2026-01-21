@@ -33,6 +33,11 @@ import {
 } from '@/lib/agents/thread-manager'
 import { logger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination'
 
 const { Response: GlobalResponse, ReadableStream, TextEncoder } = globalThis
 
@@ -234,7 +239,9 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 async function handleListAgents(request: NextRequest, userId: string) {
   const { client } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
-  const limit = Number(searchParams.get('limit')) || 20
+  // Validate and cap limit parameter to prevent resource exhaustion
+  const requestedLimit = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE.AGENTS
+  const limit = clampLimit(requestedLimit, MAX_PAGE_SIZE.AGENTS, DEFAULT_PAGE_SIZE.AGENTS)
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
 
   const response = await client.listAgents({ limit, order })

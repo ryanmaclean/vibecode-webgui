@@ -14,6 +14,12 @@ import prisma from '@/lib/prisma';
 import type { Prisma, Conversation, Message, ChatSession } from '@prisma/client';
 import { QueryCacheManager, CacheInvalidation } from '../database/query-cache-strategy';
 import { metrics } from '../server-monitoring';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+  clampOffset,
+} from '@/lib/api/pagination';
 
 // Re-export enums for convenience
 export { ConversationStatus, MessageRole } from '@prisma/client';
@@ -119,7 +125,9 @@ export class ChatPostgresService {
     conversationId: string,
     options: { limit?: number; offset?: number } = {}
   ): Promise<(Conversation & { messages: Message[] }) | null> {
-    const { limit = 100, offset = 0 } = options;
+    // Validate and cap pagination parameters to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? DEFAULT_PAGE_SIZE.MESSAGES, MAX_PAGE_SIZE.MESSAGES, DEFAULT_PAGE_SIZE.MESSAGES);
+    const offset = clampOffset(options.offset ?? 0);
 
     return await prisma.conversation.findUnique({
       where: { id: conversationId },
@@ -201,7 +209,10 @@ export class ChatPostgresService {
       offset?: number;
     } = {}
   ): Promise<Conversation[]> {
-    const { workspaceId, status = 'ACTIVE', limit = 50, offset = 0 } = options;
+    const { workspaceId, status = 'ACTIVE' } = options;
+    // Validate and cap pagination parameters to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? DEFAULT_PAGE_SIZE.CONVERSATIONS, MAX_PAGE_SIZE.CONVERSATIONS, DEFAULT_PAGE_SIZE.CONVERSATIONS);
+    const offset = clampOffset(options.offset ?? 0);
 
     const where: Prisma.ConversationWhereInput = {
       user_id: userId,
@@ -252,9 +263,10 @@ export class ChatPostgresService {
       startDate,
       endDate,
       searchTerm,
-      limit = 20,
-      offset = 0,
     } = options;
+    // Validate and cap pagination parameters to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? DEFAULT_PAGE_SIZE.CONVERSATIONS, MAX_PAGE_SIZE.CONVERSATIONS, DEFAULT_PAGE_SIZE.CONVERSATIONS);
+    const offset = clampOffset(options.offset ?? 0);
 
     const where: Prisma.ConversationWhereInput = {};
 
@@ -348,7 +360,10 @@ export class ChatPostgresService {
     conversationId: string,
     options: { limit?: number; offset?: number; before?: Date; after?: Date } = {}
   ): Promise<Message[]> {
-    const { limit = 100, offset = 0, before, after } = options;
+    const { before, after } = options;
+    // Validate and cap pagination parameters to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? DEFAULT_PAGE_SIZE.MESSAGES, MAX_PAGE_SIZE.MESSAGES, DEFAULT_PAGE_SIZE.MESSAGES);
+    const offset = clampOffset(options.offset ?? 0);
 
     const where: Prisma.MessageWhereInput = {
       conversation_id: conversationId,
@@ -449,9 +464,10 @@ export class ChatPostgresService {
       startDate,
       endDate,
       searchTerm,
-      limit = 50,
-      offset = 0,
     } = options;
+    // Validate and cap pagination parameters to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? DEFAULT_PAGE_SIZE.MESSAGES, MAX_PAGE_SIZE.MESSAGES, DEFAULT_PAGE_SIZE.MESSAGES);
+    const offset = clampOffset(options.offset ?? 0);
 
     const where: Prisma.MessageWhereInput = {};
 
@@ -708,8 +724,11 @@ export class ChatPostgresService {
    */
   async getConversationsByWorkspace(
     workspaceId: number,
-    limit = 50
+    requestedLimit?: number
   ): Promise<Conversation[]> {
+    // Validate and cap limit parameter to prevent resource exhaustion
+    const limit = clampLimit(requestedLimit ?? DEFAULT_PAGE_SIZE.CONVERSATIONS, MAX_PAGE_SIZE.CONVERSATIONS, DEFAULT_PAGE_SIZE.CONVERSATIONS);
+
     return await prisma.conversation.findMany({
       where: {
         workspace_id: workspaceId,
@@ -757,7 +776,9 @@ export class ChatPostgresService {
     }
 
     const startTime = Date.now();
-    const { includeMessages = false, messageLimit = 10 } = options;
+    const { includeMessages = false } = options;
+    // Validate and cap messageLimit to prevent resource exhaustion
+    const messageLimit = clampLimit(options.messageLimit ?? 10, MAX_PAGE_SIZE.MESSAGES, 10);
 
     const conversations = await prisma.conversation.findMany({
       where: { id: { in: conversationIds } },
@@ -945,7 +966,8 @@ export class ChatPostgresService {
     }
 
     const startTime = Date.now();
-    const { limit = 10 } = options;
+    // Validate and cap limit to prevent resource exhaustion
+    const limit = clampLimit(options.limit ?? 10, MAX_PAGE_SIZE.MESSAGES, 10);
 
     // Fetch messages for all conversations in a single query
     const messages = await prisma.message.findMany({

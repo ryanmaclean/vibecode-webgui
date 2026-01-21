@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 import {
   BarChart,
   Bar,
@@ -63,7 +63,64 @@ interface AIUsageWidgetProps {
 
 const COLORS = ['#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ef4444']
 
-export function AIUsageWidget({
+// Memoized provider item component to prevent re-renders when sibling items change
+interface ProviderItemProps {
+  name: string
+  provider: ProviderUsage
+}
+
+const ProviderItem = memo(function ProviderItem({ name, provider }: ProviderItemProps) {
+  return (
+    <div className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+      <div className="flex items-center">
+        <div className="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
+        <div>
+          <div className="font-medium text-gray-900 capitalize">{name}</div>
+          <div className="text-xs text-gray-500">
+            {provider.requests} requests • {provider.avgLatency}ms avg
+          </div>
+        </div>
+      </div>
+      <div className="text-right">
+        <div className="font-semibold text-gray-900">${provider.cost.toFixed(2)}</div>
+        <div className="text-xs text-gray-500">
+          {(provider.tokens.total / 1000).toFixed(1)}K tokens
+        </div>
+      </div>
+    </div>
+  )
+})
+
+// Memoized cost distribution item component
+interface CostItemProps {
+  provider: string
+  percentage: number
+  colorIndex: number
+}
+
+const CostItem = memo(function CostItem({ provider, percentage, colorIndex }: CostItemProps) {
+  // Memoize the style object to prevent recreation
+  const dotStyle = useMemo(() => ({
+    backgroundColor: COLORS[colorIndex % COLORS.length]
+  }), [colorIndex])
+
+  return (
+    <div className="flex items-center justify-between">
+      <div className="flex items-center">
+        <div
+          className="w-3 h-3 rounded-full mr-2"
+          style={dotStyle}
+        ></div>
+        <span className="text-sm text-gray-700 capitalize">{provider}</span>
+      </div>
+      <span className="text-sm font-semibold text-gray-900">
+        {percentage.toFixed(1)}%
+      </span>
+    </div>
+  )
+})
+
+function AIUsageWidgetInner({
   refreshInterval = 60000,
   className = ''
 }: AIUsageWidgetProps) {
@@ -72,31 +129,67 @@ export function AIUsageWidget({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    async function fetchUsage() {
-      try {
-        const res = await fetch('/api/dashboard/ai-usage')
+  // Memoized fetch function to prevent recreation on every render
+  const fetchUsage = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dashboard/ai-usage')
 
-        if (!res.ok) {
-          throw new Error(`API returned ${res.status}: ${res.statusText}`)
-        }
-
-        const json = await res.json()
-        setData(json)
-        setLastUpdate(new Date())
-        setError(null)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch AI usage data')
-      } finally {
-        setLoading(false)
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`)
       }
-    }
 
+      const json = await res.json()
+      setData(json)
+      setLastUpdate(new Date())
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch AI usage data')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
     fetchUsage()
     const interval = setInterval(fetchUsage, refreshInterval)
     return () => clearInterval(interval)
-  }, [refreshInterval])
+  }, [fetchUsage, refreshInterval])
 
+  // All hooks must be called before any early returns (React Rules of Hooks)
+  // Memoize chart data transformations to prevent recalculation on every render
+  const topModelsData = useMemo(() => {
+    if (!data) return []
+    return data.models.slice(0, 5).map(model => ({
+      name: model.name.replace(/^(gpt-|claude-|llama-)/, ''),
+      requests: model.requests,
+      cost: model.cost
+    }))
+  }, [data])
+
+  // Memoize pie chart data for cost breakdown (currently unused but available for future use)
+  const pieData = useMemo(() => {
+    if (!data) return []
+    return data.costByProvider.map((item) => ({
+      name: item.provider,
+      value: item.cost,
+      percentage: item.percentage
+    }))
+  }, [data])
+
+  // Memoize tooltip formatter to prevent recreation on every render
+  const tooltipFormatter = useCallback((value: number, name: string) => {
+    if (name === 'cost') return `$${value.toFixed(2)}`
+    return value
+  }, [])
+
+  // Memoize tooltip style object to prevent object recreation
+  const tooltipStyle = useMemo(() => ({
+    backgroundColor: 'rgba(255, 255, 255, 0.95)',
+    border: '1px solid #ccc',
+    borderRadius: '4px'
+  }), [])
+
+  // Early returns after all hooks have been called
   if (loading) {
     return (
       <div className={`bg-white rounded-lg shadow p-6 border ${className}`}>
@@ -128,20 +221,6 @@ export function AIUsageWidget({
   if (!data) {
     return null
   }
-
-  // Prepare chart data for top models
-  const topModelsData = data.models.slice(0, 5).map(model => ({
-    name: model.name.replace(/^(gpt-|claude-|llama-)/, ''),
-    requests: model.requests,
-    cost: model.cost
-  }))
-
-  // Prepare pie chart data for cost breakdown
-  const pieData = data.costByProvider.map((item, index) => ({
-    name: item.provider,
-    value: item.cost,
-    percentage: item.percentage
-  }))
 
   return (
     <div className={`bg-white rounded-lg shadow border ${className}`}>
@@ -180,23 +259,7 @@ export function AIUsageWidget({
           <h4 className="text-sm font-semibold text-gray-700 mb-3">Provider Usage</h4>
           <div className="grid gap-3">
             {Object.entries(data.providers).map(([name, provider]) => (
-              <div key={name} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                <div className="flex items-center">
-                  <div className="w-3 h-3 rounded-full bg-blue-500 mr-3"></div>
-                  <div>
-                    <div className="font-medium text-gray-900 capitalize">{name}</div>
-                    <div className="text-xs text-gray-500">
-                      {provider.requests} requests • {provider.avgLatency}ms avg
-                    </div>
-                  </div>
-                </div>
-                <div className="text-right">
-                  <div className="font-semibold text-gray-900">${provider.cost.toFixed(2)}</div>
-                  <div className="text-xs text-gray-500">
-                    {(provider.tokens.total / 1000).toFixed(1)}K tokens
-                  </div>
-                </div>
-              </div>
+              <ProviderItem key={name} name={name} provider={provider} />
             ))}
           </div>
         </div>
@@ -217,15 +280,8 @@ export function AIUsageWidget({
                 />
                 <YAxis tick={{ fontSize: 11 }} />
                 <Tooltip
-                  contentStyle={{
-                    backgroundColor: 'rgba(255, 255, 255, 0.95)',
-                    border: '1px solid #ccc',
-                    borderRadius: '4px'
-                  }}
-                  formatter={((value: number, name: string) => {
-                    if (name === 'cost') return `$${value.toFixed(2)}`
-                    return value
-                  }) as any}
+                  contentStyle={tooltipStyle}
+                  formatter={tooltipFormatter as any}
                 />
                 <Legend />
                 <Bar dataKey="requests" fill="#3b82f6" name="Requests" />
@@ -240,18 +296,12 @@ export function AIUsageWidget({
           <div className="flex items-center justify-between">
             <div className="space-y-2 flex-1">
               {data.costByProvider.map((item, index) => (
-                <div key={item.provider} className="flex items-center justify-between">
-                  <div className="flex items-center">
-                    <div
-                      className="w-3 h-3 rounded-full mr-2"
-                      style={{ backgroundColor: COLORS[index % COLORS.length] }}
-                    ></div>
-                    <span className="text-sm text-gray-700 capitalize">{item.provider}</span>
-                  </div>
-                  <span className="text-sm font-semibold text-gray-900">
-                    {item.percentage.toFixed(1)}%
-                  </span>
-                </div>
+                <CostItem
+                  key={item.provider}
+                  provider={item.provider}
+                  percentage={item.percentage}
+                  colorIndex={index}
+                />
               ))}
             </div>
           </div>
@@ -266,3 +316,6 @@ export function AIUsageWidget({
     </div>
   )
 }
+
+// Export the memoized widget component
+export const AIUsageWidget = memo(AIUsageWidgetInner)

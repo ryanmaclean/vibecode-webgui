@@ -1,5 +1,10 @@
 /**
  * Monitoring module exports
+ *
+ * This module provides a comprehensive monitoring solution with:
+ * - Pluggable metrics providers (DataDog, StatsD, Console, NoOp, Mock)
+ * - Dependency injection for better testability
+ * - Backward-compatible API
  */
 
 export { monitoring } from './datadog-client';
@@ -16,8 +21,47 @@ export {
 } from './health-monitoring';
 
 // Export from datadog-metrics
-export type { MetricOptions } from './datadog-metrics';
+export type { MetricOptions as DatadogMetricOptions } from './datadog-metrics';
 export { increment, gauge, histogram } from './datadog-metrics';
+
+// =============================================================================
+// Metrics Provider System (Dependency Injection)
+// =============================================================================
+
+// Export the IMetricsProvider interface and all provider implementations
+export type {
+  IMetricsProvider,
+  IMetricsProviderWithHealth,
+  MetricTags,
+  MetricOptions,
+  MetricsProviderConfig,
+  ConsoleProviderOptions,
+  DataDogProviderOptions,
+  StatsDProviderOptions,
+  MockMetricCall,
+} from './metrics-provider';
+
+export {
+  // Provider classes
+  NoOpMetricsProvider,
+  ConsoleMetricsProvider,
+  DataDogMetricsProvider,
+  StatsDMetricsProvider,
+  MockMetricsProvider,
+  CompositeMetricsProvider,
+
+  // Factory functions
+  createNoOpProvider,
+  createConsoleProvider,
+  createDataDogProvider,
+  createStatsDProvider,
+  createMockProvider,
+  createCompositeProvider,
+
+  // Registry
+  metricsRegistry,
+  getMetricsProvider,
+} from './metrics-provider';
 
 // Export from datadog-integration
 export type { DatadogConfig } from './datadog-integration';

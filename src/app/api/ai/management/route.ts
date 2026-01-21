@@ -10,6 +10,11 @@ import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
 import { z } from 'zod';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination';
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const aiManagementActionSchema = z.object({
@@ -188,7 +193,8 @@ async function handleOverview(userId?: string, timeframe = '24h') {
     litellmClient.getUsageStats(userId, timeframe)
   ]);
 
-  // Get recent AI requests from database
+  // Get recent AI requests from database (limited for overview)
+  const RECENT_REQUESTS_LIMIT = 10;
   const recentRequests = await prisma.aIRequest.findMany({
     where: {
       ...(userId && { user_id: parseInt(userId) }),
@@ -197,7 +203,7 @@ async function handleOverview(userId?: string, timeframe = '24h') {
       }
     },
     orderBy: { created_at: 'desc' },
-    take: 10,
+    take: RECENT_REQUESTS_LIMIT,
     include: {
       user: {
         select: {
@@ -311,7 +317,8 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
   // Get usage from LiteLLM proxy
   const proxyUsage = await litellmClient.getUsageStats(filterUserId, timeframe);
 
-  // Get detailed usage from database
+  // Get detailed usage from database (with pagination limit to prevent resource exhaustion)
+  const usageQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const dbRequests = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
@@ -329,7 +336,9 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
       duration_ms: true,
       status: true,
       created_at: true
-    }
+    },
+    take: usageQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   // Aggregate database statistics
@@ -374,6 +383,8 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
 }
 
 async function handleCostAnalysis(requestUserId?: string, filterUserId?: string, timeframe = '24h') {
+  // Apply pagination limit to prevent resource exhaustion
+  const costQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const dbRequests = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
@@ -392,7 +403,9 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
       output_tokens: true,
       created_at: true,
       user_id: true
-    }
+    },
+    take: costQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   const costAnalysis = {
@@ -447,6 +460,8 @@ async function handleHealthCheck() {
 }
 
 async function handlePerformanceMetrics(timeframe = '24h') {
+  // Apply pagination limit to prevent resource exhaustion
+  const performanceQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const requests = await prisma.aIRequest.findMany({
     where: {
       created_at: {
@@ -463,7 +478,9 @@ async function handlePerformanceMetrics(timeframe = '24h') {
       input_tokens: true,
       output_tokens: true,
       status: true
-    }
+    },
+    take: performanceQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   const performance = {

@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
 import { z } from '@/lib/zod-compat';
@@ -52,6 +54,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return applyRateLimitHeaders(
+        NextResponse.json(
+          { error: 'Unauthorized', message: 'Authentication required for vector search' },
+          { status: 401 }
+        ),
+        rateLimitResult
+      );
+    }
+
     const body = await request.json();
     const action = request.nextUrl.searchParams.get('action') || 'search';
 
@@ -311,6 +325,18 @@ export async function GET(request: NextRequest) {
   const rateLimitResult = await checkRateLimit(request, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX);
   if (!rateLimitResult.allowed) {
     return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH);
+  }
+
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return applyRateLimitHeaders(
+      NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for vector search' },
+        { status: 401 }
+      ),
+      rateLimitResult
+    );
   }
 
   const action = request.nextUrl.searchParams.get('action');
