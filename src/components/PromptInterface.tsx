@@ -1029,7 +1029,7 @@ export default function LandingPage() {
         )}
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1">
         {/* Enhanced Chat Interface Panel */}
         <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
           <div className="h-full border-r border-border/50 flex flex-col">
