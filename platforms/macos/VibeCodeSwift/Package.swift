@@ -19,6 +19,7 @@ let package = Package(
         .library(name: "VibeCodeCore", targets: ["VibeCodeCore"]),
         .library(name: "EFIBootManager", targets: ["EFIBootManager"]),
         .library(name: "VMCompression", targets: ["VMCompression"]),
+        .library(name: "VMCore", targets: ["VMCore"]),
         .executable(
             name: "VibeCode",
             targets: ["VibeCode"]
@@ -44,9 +45,14 @@ let package = Package(
             path: "Sources/Compression",
             swiftSettings: swiftSettings
         ),
+        .target(
+            name: "VMCore",
+            path: "Sources/VM",
+            swiftSettings: swiftSettings
+        ),
         .executableTarget(
             name: "VibeCode",
-            dependencies: ["VibeCodeCore", "VMCompression"],
+            dependencies: ["VibeCodeCore", "VMCompression", "VMCore"],
             path: "Sources",
             exclude: [
                 "Core",
