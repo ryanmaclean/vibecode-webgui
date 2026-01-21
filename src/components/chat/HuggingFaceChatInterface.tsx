@@ -633,7 +633,7 @@ export const HuggingFaceChatInterface = ({
                   }}
                   className="text-amber-700 border-amber-300 hover:bg-amber-100"
                 >
-                  Switch to {availableModels.concat(huggingFaceModels).find(m => m.id === lastModelSuggestion.suggested)?.name || lastModelSuggestion.suggested}
+                  Switch to {[...availableModels, ...huggingFaceModels].find(m => m.id === lastModelSuggestion.suggested)?.name || lastModelSuggestion.suggested}
                 </Button>
                 <Button
                   variant="ghost"

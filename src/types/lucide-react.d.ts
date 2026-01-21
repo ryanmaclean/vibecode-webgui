@@ -91,6 +91,10 @@ declare module 'lucide-react' {
   export const Heart: LucideIcon
   export const Bookmark: LucideIcon
   export const Share: LucideIcon
+  export const Share2: LucideIcon
+  export const QrCode: LucideIcon
+  export const AlertTriangle: LucideIcon
+  export const GripVertical: LucideIcon
   export const Link: LucideIcon
   export const ExternalLink: LucideIcon
   export const Mail: LucideIcon

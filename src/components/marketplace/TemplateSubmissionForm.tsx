@@ -66,8 +66,8 @@ const templateFormSchema = z.object({
   framework: z.string().trim().min(2, 'Select a framework'),
   complexity: z.enum(['beginner', 'intermediate', 'advanced']),
   tags: z.array(z.string().trim().min(1)).max(20).default([]),
-  dependencies: z.record(z.string().trim().min(1)).default({}),
-  scripts: z.record(z.string().trim().min(1)).default({}),
+  dependencies: z.record(z.string(), z.string().trim().min(1)).default({}),
+  scripts: z.record(z.string(), z.string().trim().min(1)).default({}),
   envVars: z
     .array(
       z.object({
@@ -216,7 +216,7 @@ export function TemplateSubmissionForm({
     });
 
     try {
-      await onSubmit?.(validation.data);
+      await onSubmit?.(validation.data as TemplateFormData);
 
       setSubmissionStatus({
         status: 'success',
