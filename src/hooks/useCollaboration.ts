@@ -403,7 +403,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
   const joinWorkspace = useCallback(async (wsId: string, user: Omit<User, 'isActive' | 'lastSeen'>) => {
     try {
       setWorkspaceId(wsId);
-      setConnectionError(undefined);
+      setConnectionError(null);
 
       // Create full user object
       const fullUser: User = {
@@ -667,7 +667,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     if (!workspaceId || !currentUser) return;
 
     try {
-      setConnectionError(undefined);
+      setConnectionError(null);
       await simulateConnection(workspaceId);
       setIsConnected(true);
     } catch (error) {
@@ -688,7 +688,7 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
    */
   const disconnect = useCallback(async () => {
     setIsConnected(false);
-    setConnectionError(undefined);
+    setConnectionError(null);
     setActiveUsers([]);
     setTypingState({});
     setCursors([]);
@@ -712,23 +712,19 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     await new Promise(resolve => setTimeout(resolve, 500));
 
     // Simulate other users in workspace
-    const mockUsers: User[] = [
+    const mockUsers: CollaborativeUser[] = [
       {
         id: 'user-2',
         name: 'Alice Developer',
-        email: 'alice@example.com',
         color: '#ef4444',
         isActive: true,
-        role: 'collaborator',
         lastSeen: new Date()
       },
       {
         id: 'user-3',
         name: 'Bob Designer',
-        email: 'bob@example.com',
         color: '#22c55e',
         isActive: true,
-        role: 'viewer',
         lastSeen: new Date()
       }
     ];
@@ -756,10 +752,10 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
       clearInterval(heartbeatIntervalRef.current);
       heartbeatIntervalRef.current = null;
     }
-    Object.values(cursorTimeoutRef.current).forEach(timeout => {
-      clearTimeout(timeout);
-    });
-    cursorTimeoutRef.current = {};
+    if (cursorTimeoutRef.current) {
+      clearInterval(cursorTimeoutRef.current);
+      cursorTimeoutRef.current = null;
+    }
   }, []);
 
   // Auto-connect on mount
@@ -782,14 +778,14 @@ export function useCollaboration(options: UseCollaborationOptions = {}): UseColl
     // State
     workspaceId,
     currentUser,
-    activeUsers,
+    activeUsers: activeUsers as unknown as User[],
     workspaceActivity,
     chatMessages,
     isConnected,
-    connectionError,
+    connectionError: connectionError ?? undefined,
 
     // Computed properties
-    onlineUsers,
+    onlineUsers: onlineUsers as unknown as User[],
     recentActivity,
     unreadMessages,
 

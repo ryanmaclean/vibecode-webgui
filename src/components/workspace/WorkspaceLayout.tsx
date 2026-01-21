@@ -5,7 +5,7 @@
 
 'use client'
 
-import { useState, useRef, useCallback } from 'react'
+import { useState, useRef, useCallback, useEffect } from 'react'
 import CodeServerIDE from '@/components/ide/CodeServerIDE'
 import CodeAssistant from '@/components/ai/CodeAssistant'
 import EnhancedTerminal from '@/components/terminal/EnhancedTerminal'
@@ -52,17 +52,19 @@ export default function WorkspaceLayout({
   }, [])
 
   // Mouse event listeners
-  useState(() => {
-    if (typeof window !== 'undefined') {
-      window.addEventListener('mousemove', handleMouseMove)
-      window.addEventListener('mouseup', handleMouseUp)
-
-      return () => {
-        window.removeEventListener('mousemove', handleMouseMove)
-        window.removeEventListener('mouseup', handleMouseUp)
-      }
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
     }
-  })
+
+    window.addEventListener('mousemove', handleMouseMove)
+    window.addEventListener('mouseup', handleMouseUp)
+
+    return () => {
+      window.removeEventListener('mousemove', handleMouseMove)
+      window.removeEventListener('mouseup', handleMouseUp)
+    }
+  }, [handleMouseMove, handleMouseUp])
 
   return (
     <div ref={layoutRef} className={`flex flex-col h-screen bg-gray-900 ${className}`}>
@@ -163,20 +165,20 @@ export default function WorkspaceLayout({
             <CodeServerIDE
               workspaceId={workspaceId}
               className="h-full"
-              onReady={(iframe) => {
-                logger.info('Code-server IDE ready (terminal disabled):', iframe)
-                
+              onReady={(iframe: HTMLIFrameElement) => {
+                logger.info('Code-server IDE ready (terminal disabled):', { iframe: iframe.src })
+
                 // Hide the built-in terminal since we use our enhanced terminal
                 try {
                   iframe.contentWindow?.postMessage({
                     type: 'workbench.action.togglePanel'
                   }, '*')
                 } catch (error) {
-                  logger.info('Could not hide terminal panel:', error)
+                  logger.info('Could not hide terminal panel:', { error: error instanceof Error ? error.message : String(error) })
                 }
               }}
-              onError={(error) => {
-                logger.error('Code-server IDE error:', error)
+              onError={(error: Error) => {
+                logger.error('Code-server IDE error:', { message: error.message })
               }}
             />
           </div>
@@ -195,8 +197,8 @@ export default function WorkspaceLayout({
               theme="dark"
               enableAI={true}
               enableWebGL={true}
-              onReady={(terminal) => {
-                logger.info('Enhanced AI terminal ready:', terminal)
+              onReady={(terminal: unknown) => {
+                logger.info('Enhanced AI terminal ready:', terminal as Record<string, unknown>)
               }}
             />
           </div>
