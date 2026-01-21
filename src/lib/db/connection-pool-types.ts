@@ -9,6 +9,17 @@ export interface ConnectionBudget {
   total: number;
 }
 
+/**
+ * Extended connection budget for pool configuration
+ */
+export interface PoolConnectionBudget {
+  min: number;
+  max: number;
+  priority: number;
+  canBorrow: boolean;
+  borrowed: number;
+}
+
 export interface PoolMetrics {
   activeConnections: number;
   idleConnections: number;
