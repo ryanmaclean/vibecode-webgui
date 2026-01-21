@@ -28,7 +28,7 @@ const dockerActionSchema = z.object({
  * GET /api/docker/status
  * Returns comprehensive Docker runtime status
  */
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {

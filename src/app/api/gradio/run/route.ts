@@ -1,4 +1,4 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -19,7 +19,7 @@ const gradioRunSchema = z.object({
 // A simple in-memory store to keep track of running Gradio processes
 const runningProcesses: Map<string, any> = new Map();
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request)
   if (!rateLimitResult.success) {
