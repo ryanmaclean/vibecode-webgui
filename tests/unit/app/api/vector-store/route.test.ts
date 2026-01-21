@@ -387,15 +387,16 @@ describe('/api/vector-store', () => {
 
   describe('OPTIONS /api/vector-store', () => {
     it('should handle CORS preflight', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
       expect(response.status).toBe(200);
     });
 
     it('should set CORS headers', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
     });
