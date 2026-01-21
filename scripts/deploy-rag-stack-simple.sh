@@ -49,7 +49,7 @@ echo "✅ PostgreSQL 16 + pgvector ready"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-echo "2️⃣  Deploying Valkey 7.2"
+echo "2️⃣  Deploying Valkey 8.1"
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
 echo ""
 
@@ -61,7 +61,7 @@ ssh $HOST "docker run -d \
   --network $NETWORK \
   -p 6379:6379 \
   --restart unless-stopped \
-  valkey/valkey:7.2-alpine \
+  valkey/valkey:8.1-alpine \
   valkey-server --maxmemory 512mb --maxmemory-policy allkeys-lru"
 
 echo "Waiting for Valkey to start..."
@@ -72,7 +72,7 @@ echo "Verifying Valkey..."
 ssh $HOST "docker exec rag-valkey valkey-cli ping"
 ssh $HOST "docker exec rag-valkey valkey-cli INFO server | grep -E 'redis_version|valkey_version'"
 
-echo "✅ Valkey 7.2 ready"
+echo "✅ Valkey 8.1 ready"
 
 echo ""
 echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"

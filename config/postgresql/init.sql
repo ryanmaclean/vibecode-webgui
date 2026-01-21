@@ -1,5 +1,5 @@
 -- VibeCode PostgreSQL + pgvector Initialization Script
--- PostgreSQL 16+ with pgvector 0.6.0+
+-- PostgreSQL 16+ with pgvector 0.8.0+
 --
 -- This script:
 -- 1. Creates the vibecode database and user

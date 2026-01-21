@@ -59,7 +59,7 @@ echo ""
 echo "Phase 2: Downloading Sources (Parallel)"
 echo "────────────────────────────────────────"
 
-VALKEY_VERSION="7.2.8"
+VALKEY_VERSION="8.1.0"
 PGVECTOR_VERSION="0.9.0"
 
 cd /tmp

@@ -98,16 +98,18 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
         env:
-          CI: true
-          # Datadog CI Visibility - Test instrumentation
+          DD_CI_VISIBILITY_ENABLED: true
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
-          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
-          DD_SITE: datadoghq.com
-          DD_SERVICE: ${{ env.DD_SERVICE }}
           DD_ENV: ${{ env.DD_ENV }}
-          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-          DD_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
           DD_GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
+          DD_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_SERVICE: ${{ env.DD_SERVICE }}
+          DD_SITE: datadoghq.com
+          DD_VERSION: ${{ github.sha }}
+          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+          NODE_OPTIONS: -r dd-trace/ci/init
+          CI: true
         continue-on-error: true
 
       - name: Upload test results to Datadog

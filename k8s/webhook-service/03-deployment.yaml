@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-service
+  namespace: vibecode-platform
+  labels:
+    app.kubernetes.io/name: webhook-service
+    app.kubernetes.io/component: integrations
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: webhook-service
+  template:
+    metadata:
+      labels:
+        app: webhook-service
+        app.kubernetes.io/name: webhook-service
+        app.kubernetes.io/component: integrations
+    spec:
+      containers:
+        - name: webhook-service
+          image: ghcr.io/vibecode/webhook-service:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5001
+              name: http
+          envFrom:
+            - configMapRef:
+                name: webhook-service-config
+            - secretRef:
+                name: webhook-service-secrets
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "100m"
+              memory: "128Mi"
+            limits:
+              cpu: "500m"
+              memory: "256Mi"
+          securityContext:
+            allowPrivilegeEscalation: false
+            runAsNonRoot: true
+            runAsUser: 1001
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault

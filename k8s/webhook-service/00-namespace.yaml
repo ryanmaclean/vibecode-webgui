@@ -1,0 +1,9 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vibecode-platform
+  labels:
+    name: vibecode-platform
+    environment: production
+    app.kubernetes.io/name: vibecode
+    app.kubernetes.io/component: platform

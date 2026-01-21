@@ -31,7 +31,7 @@ This setup provides a production-ready PostgreSQL 16+ database with pgvector ext
 ### Key Features
 
 - PostgreSQL 16.x (latest stable)
-- pgvector 0.7.4+ (vector extension)
+- pgvector 0.8.0+ (vector extension)
 - HNSW indexing (high recall, fast queries)
 - IVFFlat indexing (fast builds, good for smaller datasets)
 - Optimized configuration for vector workloads
@@ -60,7 +60,7 @@ This setup provides a production-ready PostgreSQL 16+ database with pgvector ext
 │  │             vfkit VM (Alpine ARM64)                   │ │
 │  │                                                       │ │
 │  │  ┌─────────────────────────────────────────────────┐ │ │
-│  │  │      PostgreSQL 16 + pgvector 0.7.4           │ │ │
+│  │  │      PostgreSQL 16 + pgvector 0.8.0           │ │ │
 │  │  │                                                 │ │ │
 │  │  │  ├─ vibecode database                          │ │ │
 │  │  │  ├─ rag_chunks table (vector embeddings)       │ │ │
@@ -194,7 +194,7 @@ VibeCode PostgreSQL + pgvector Setup
 ==========================================
 [1/10] Updating system packages...
 [2/10] Installing PostgreSQL 16 and dependencies...
-[3/10] Building and installing pgvector 0.7.4...
+[3/10] Building and installing pgvector 0.8.0...
 [4/10] Setting up PostgreSQL user and directories...
 [5/10] Mounting data and backup volumes...
 [6/10] Initializing PostgreSQL cluster...
@@ -228,7 +228,7 @@ vibecode=> \dx
  pg_stat_statements | 1.10    | public     | track planning and execution statistics of all SQL statements
  pgcrypto           | 1.3     | public     | cryptographic functions
  uuid-ossp          | 1.1     | public     | generate universally unique identifiers (UUIDs)
- vector             | 0.7.4   | public     | vector data type and ivfflat and hnsw access methods
+ vector             | 0.8.0   | public     | vector data type and ivfflat and hnsw access methods
 
 # Test vector operations
 vibecode=> SELECT '[1,2,3]'::vector <=> '[4,5,6]'::vector;

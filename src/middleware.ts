@@ -21,12 +21,15 @@ function addSecurityHeaders(response: NextResponse): NextResponse {
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // Skip middleware for static assets
+  // Skip middleware for static assets and health endpoints
   if (
     pathname.startsWith('/_next/static') ||
     pathname.startsWith('/_next/image') ||
     pathname.startsWith('/favicon.ico') ||
-    pathname.startsWith('/public')
+    pathname.startsWith('/public') ||
+    pathname.startsWith('/api/health') ||
+    pathname === '/api/healthz' ||
+    pathname === '/api/readyz'
   ) {
     return NextResponse.next();
   }
@@ -61,6 +64,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|public/).*)',
+    // Exclude static assets, health checks, and internal Next.js routes
+    '/((?!_next/static|_next/image|favicon.ico|public/|api/health|api/healthz|api/readyz).*)',
   ],
 };

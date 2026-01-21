@@ -31,7 +31,7 @@ Install services individually for more control:
 
 ```bash
 # In Alpine VM
-/path/to/compile-valkey-musl.sh 7.2.8
+/path/to/compile-valkey-musl.sh 8.1.0
 
 # Start Valkey
 rc-service valkey start

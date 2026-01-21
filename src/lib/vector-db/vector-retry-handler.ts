@@ -4,7 +4,7 @@
  */
 
 // import { logger } from '../logger';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler-new';
+import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
 
 /**
  * Retry configuration interface

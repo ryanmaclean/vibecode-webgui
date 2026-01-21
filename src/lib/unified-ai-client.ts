@@ -3,6 +3,67 @@
 
 import OpenAI from 'openai'
 // import { logger } from '@/lib/logger';
+
+// Retry configuration for rate limiting (429) errors
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000, // 1 second initial delay
+  maxDelayMs: 30000, // 30 seconds max delay
+}
+
+/**
+ * Sleep helper for async delay
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Calculate exponential backoff delay with jitter
+ */
+function getBackoffDelay(attempt: number, retryAfterMs?: number): number {
+  if (retryAfterMs) {
+    return Math.min(retryAfterMs, RETRY_CONFIG.maxDelayMs)
+  }
+  // Exponential backoff: 1s, 2s, 4s, 8s...
+  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt)
+  // Add jitter (±10%) to prevent thundering herd
+  const jitter = exponentialDelay * 0.1 * (Math.random() * 2 - 1)
+  return Math.min(exponentialDelay + jitter, RETRY_CONFIG.maxDelayMs)
+}
+
+/**
+ * Check if an error is a rate limit (429) error
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof OpenAI.APIError) {
+    return error.status === 429
+  }
+  // Check for rate limit error messages
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+    return message.includes('429') ||
+           message.includes('rate limit') ||
+           message.includes('too many requests')
+  }
+  return false
+}
+
+/**
+ * Extract retry-after delay from error if available
+ */
+function getRetryAfterMs(error: unknown): number | undefined {
+  if (error instanceof OpenAI.APIError && error.headers) {
+    const retryAfter = error.headers['retry-after']
+    if (retryAfter) {
+      const seconds = parseInt(retryAfter, 10)
+      if (!isNaN(seconds)) {
+        return seconds * 1000
+      }
+    }
+  }
+  return undefined
+}
 export interface UnifiedAIProvider {
   id: string
   name: string
@@ -232,45 +293,66 @@ export class UnifiedAIClient {
       presencePenalty = 0
     } = options
 
-    try {
-      const response = await client.chat.completions.create({
-        model,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: topP,
-        frequency_penalty: frequencyPenalty,
-        presence_penalty: presencePenalty,
-        stream: false
-      })
+    // Retry loop for rate limit (429) errors with exponential backoff
+    let lastError: Error | unknown
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        const response = await client.chat.completions.create({
+          model,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          frequency_penalty: frequencyPenalty,
+          presence_penalty: presencePenalty,
+          stream: false
+        })
 
-      const choice = response.choices[0]
-      if (!choice?.message?.content) {
-        throw new Error('No content in response')
-      }
+        const choice = response.choices[0]
+        if (!choice?.message?.content) {
+          throw new Error('No content in response')
+        }
 
-      return {
-        content: choice.message.content,
-        model,
-        provider: providerId,
-        usage: response.usage ? {
-          promptTokens: response.usage.prompt_tokens,
-          completionTokens: response.usage.completion_tokens,
-          totalTokens: response.usage.total_tokens
-        } : undefined,
-        finishReason: choice.finish_reason || undefined
+        return {
+          content: choice.message.content,
+          model,
+          provider: providerId,
+          usage: response.usage ? {
+            promptTokens: response.usage.prompt_tokens,
+            completionTokens: response.usage.completion_tokens,
+            totalTokens: response.usage.total_tokens
+          } : undefined,
+          finishReason: choice.finish_reason || undefined
+        }
+      } catch (error) {
+        lastError = error
+
+        // Check if this is a rate limit error and we have retries left
+        if (isRateLimitError(error) && attempt < RETRY_CONFIG.maxRetries) {
+          const retryAfterMs = getRetryAfterMs(error)
+          const delayMs = getBackoffDelay(attempt, retryAfterMs)
+          console.warn(
+            `[UnifiedAI] Rate limited (429) by ${providerId}, ` +
+            `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+          )
+          await sleep(delayMs)
+          continue
+        }
+
+        // For non-429 errors or exhausted retries, break out
+        break
       }
-    } catch (error) {
-      console.error(`Chat error with ${providerId}:`, error)
-      
-      // Try fallback to OpenRouter if not already using it
-      if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for failed request`)
-        return this.chat(messages, 'openai/gpt-3.5-turbo', options)
-      }
-      
-      throw error
     }
+
+    console.error(`Chat error with ${providerId}:`, lastError)
+
+    // Try fallback to OpenRouter if not already using it
+    if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
+      console.warn(`Falling back to OpenRouter for failed request`)
+      return this.chat(messages, 'openai/gpt-3.5-turbo', options)
+    }
+
+    throw lastError
   }
 
   public async *chatStream(
@@ -299,50 +381,73 @@ export class UnifiedAIClient {
       presencePenalty = 0
     } = options
 
-    try {
-      const stream = await client.chat.completions.create({
-        model,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: topP,
-        frequency_penalty: frequencyPenalty,
-        presence_penalty: presencePenalty,
-        stream: true
-      })
-
-      for await (const chunk of stream) {
-        const choice = chunk.choices[0]
-        const content = choice?.delta?.content || ''
-
-        yield {
-          content,
-          done: choice?.finish_reason !== null,
+    // Retry loop for rate limit (429) errors with exponential backoff
+    let lastError: Error | unknown
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        const stream = await client.chat.completions.create({
           model,
-          provider: providerId,
-          usage: chunk.usage ? {
-            promptTokens: chunk.usage.prompt_tokens || 0,
-            completionTokens: chunk.usage.completion_tokens || 0,
-            totalTokens: chunk.usage.total_tokens || 0
-          } : undefined
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          frequency_penalty: frequencyPenalty,
+          presence_penalty: presencePenalty,
+          stream: true
+        })
+
+        for await (const chunk of stream) {
+          const choice = chunk.choices[0]
+          const content = choice?.delta?.content || ''
+
+          yield {
+            content,
+            done: choice?.finish_reason !== null,
+            model,
+            provider: providerId,
+            usage: chunk.usage ? {
+              promptTokens: chunk.usage.prompt_tokens || 0,
+              completionTokens: chunk.usage.completion_tokens || 0,
+              totalTokens: chunk.usage.total_tokens || 0
+            } : undefined
+          }
+
+          if (choice?.finish_reason) {
+            break
+          }
+        }
+        // Stream completed successfully, exit retry loop
+        return
+      } catch (error) {
+        lastError = error
+
+        // Check if this is a rate limit error and we have retries left
+        if (isRateLimitError(error) && attempt < RETRY_CONFIG.maxRetries) {
+          const retryAfterMs = getRetryAfterMs(error)
+          const delayMs = getBackoffDelay(attempt, retryAfterMs)
+          console.warn(
+            `[UnifiedAI] Rate limited (429) by ${providerId} during stream, ` +
+            `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+          )
+          await sleep(delayMs)
+          continue
         }
 
-        if (choice?.finish_reason) {
-          break
-        }
+        // For non-429 errors or exhausted retries, break out
+        break
       }
-    } catch (error) {
-      console.error(`Stream error with ${providerId}:`, error)
-      
-      // Try fallback to OpenRouter if not already using it
-      if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for failed stream`)
-        yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
-        return
-      }
-      
-      throw error
     }
+
+    console.error(`Stream error with ${providerId}:`, lastError)
+
+    // Try fallback to OpenRouter if not already using it
+    if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
+      console.warn(`Falling back to OpenRouter for failed stream`)
+      yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
+      return
+    }
+
+    throw lastError
   }
 
   public getAvailableProviders(): UnifiedAIProvider[] {

@@ -120,7 +120,7 @@ services:
   # Valkey Cache (BSD-licensed Redis fork for legal compliance)
   # Uses Valkey instead of Redis to avoid RSAL/SSPL licensing issues
   valkey:
-    image: valkey/valkey:7-alpine
+    image: valkey/valkey:8.1-alpine
     platform: ${DOCKER_PLATFORM:-linux/amd64}
     ports:
       - "6379:6379"

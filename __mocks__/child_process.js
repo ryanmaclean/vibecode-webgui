@@ -74,7 +74,7 @@ const mockDockerResponses = {
       retries: 5
       test: redis-cli ping
       timeout: 5s
-    image: valkey/valkey:7-alpine
+    image: valkey/valkey:8.1-alpine
     networks:
       vibecode-network: null
     ports:
@@ -160,7 +160,7 @@ volumes:
       retries: 5
       test: redis-cli ping
       timeout: 5s
-    image: valkey/valkey:7-alpine
+    image: valkey/valkey:8.1-alpine
     networks:
       vibecode-network: null
     ports:
@@ -283,13 +283,13 @@ vibecode-webgui-postgres-1      pgvector/pgvector:pg15   "docker-entrypoint.s…
   },
   'docker-compose ps redis': {
     stdout: `NAME                         IMAGE                  COMMAND                  SERVICE   CREATED         STATUS                   PORTS
-vibecode-webgui-redis-1      valkey/valkey:7-alpine "docker-entrypoint.s…"   redis     10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:6379->6379/tcp
+vibecode-webgui-redis-1      valkey/valkey:8.1-alpine "docker-entrypoint.s…"   redis     10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:6379->6379/tcp
 `,
     stderr: ''
   },
   'docker compose ps redis': {
     stdout: `NAME                         IMAGE                  COMMAND                  SERVICE   CREATED         STATUS                   PORTS
-vibecode-webgui-redis-1      valkey/valkey:7-alpine "docker-entrypoint.s…"   redis     10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:6379->6379/tcp
+vibecode-webgui-redis-1      valkey/valkey:8.1-alpine "docker-entrypoint.s…"   redis     10 minutes ago   Up 10 minutes (healthy)   0.0.0.0:6379->6379/tcp
 `,
     stderr: ''
   },

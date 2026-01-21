@@ -41,6 +41,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Setup Datadog CI
+        uses: datadog/agent-github-action@v1
+        # Note: Skipped gracefully if DD_API_KEY not configured
+        continue-on-error: true
+        with:
+          api_key: ${{ secrets.DD_API_KEY }}
+
       - name: Setup GitHub Pages
         id: pages
         uses: actions/configure-pages@v5

@@ -10,7 +10,7 @@ WORKDIR /app
 COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
 RUN \
   if [ -f yarn.lock ]; then yarn install --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
+  elif [ -f package-lock.json ]; then npm ci --legacy-peer-deps --ignore-scripts; \
   elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
   else echo "Lockfile not found." && exit 1; \
   fi
@@ -25,7 +25,15 @@ COPY . .
 # Next.js collects completely anonymous telemetry data about general usage.
 # Learn more here: https://nextjs.org/telemetry
 # Uncomment the following line in case you want to disable telemetry during the build.
-ENV NEXT_TELEMETRY_DISABLED 1
+ENV NEXT_TELEMETRY_DISABLED=1
+
+# Disable monitoring/tracing during build to avoid bundling tracer code
+ENV DD_ENABLED=false
+ENV SKIP_MONITORING=true
+ENV DISABLE_AI=true
+
+# Generate Prisma client (skipped in deps stage due to --ignore-scripts)
+RUN npx prisma generate
 
 RUN yarn build
 
@@ -46,6 +54,9 @@ COPY --from=builder /app/public ./public
 RUN mkdir .next
 RUN chown nextjs:nodejs .next
 
+# Create logs directory with proper permissions
+RUN mkdir -p logs && chown nextjs:nodejs logs
+
 # Automatically leverage output traces to reduce image size
 # https://nextjs.org/docs/advanced-features/output-file-tracing
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
@@ -55,9 +66,11 @@ USER nextjs
 
 EXPOSE 3000
 
-ENV PORT 3000
+ENV PORT=3000
 # set hostname to localhost
-ENV HOSTNAME "0.0.0.0"
+ENV HOSTNAME="0.0.0.0"
+# Increase Node.js memory limit (2GB for production workloads)
+ENV NODE_OPTIONS="--max-old-space-size=2048"
 
 # server.js is created by next build from the standalone output
 # https://nextjs.org/docs/pages/api-reference/next-config-js/output

@@ -36,9 +36,9 @@ cat > root/build-valkey.sh <<'BUILD'
 echo "=== Building Valkey ==="
 apk add build-base wget
 cd /tmp
-wget https://github.com/valkey-io/valkey/archive/refs/tags/7.2.8.tar.gz
-tar xzf 7.2.8.tar.gz
-cd valkey-7.2.8
+wget https://github.com/valkey-io/valkey/archive/refs/tags/8.1.0.tar.gz
+tar xzf 8.1.0.tar.gz
+cd valkey-8.1.0
 make -j$(nproc) MALLOC=libc USE_SYSTEMD=no BUILD_TLS=no
 strip src/valkey-server
 echo "✅ Valkey built: $(du -h src/valkey-server)"
@@ -49,9 +49,9 @@ cat > root/build-postgresql.sh <<'BUILD'
 echo "=== Building PostgreSQL with pgvector ==="
 apk add build-base wget postgresql-dev
 cd /tmp
-wget https://github.com/pgvector/pgvector/archive/refs/tags/v0.5.1.tar.gz
-tar xzf v0.5.1.tar.gz
-cd pgvector-0.5.1
+wget https://github.com/pgvector/pgvector/archive/refs/tags/v0.8.0.tar.gz
+tar xzf v0.8.0.tar.gz
+cd pgvector-0.8.0
 make
 make install
 echo "✅ pgvector built"

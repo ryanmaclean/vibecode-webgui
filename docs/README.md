@@ -49,6 +49,7 @@
 |----------|-------------|-------|--------|
 | **[ARCHITECTURE_DIAGRAM.md](./ARCHITECTURE_DIAGRAM.md)** | Complete system architecture with Mermaid | 800+ | ✅ Complete |
 | **[ARCHITECTURE.md](./ARCHITECTURE.md)** | Detailed system design (legacy) | 1,100+ | Archive |
+| **[architecture/AKS_ARCHITECTURE.md](./architecture/AKS_ARCHITECTURE.md)** | AKS cluster architecture overview | N/A | ✅ Complete |
 | **[BACKEND_DECISION.md](./BACKEND_DECISION.md)** | Backend choice rationale (OpenVSCode vs code-server) | 331 | ✅ Complete |
 | **[CODE_SERVER_COMPARISON.md](./CODE_SERVER_COMPARISON.md)** | Technical comparison of IDE backends | 194 | ✅ Complete |
 
