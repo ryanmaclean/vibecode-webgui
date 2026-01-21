@@ -19,9 +19,9 @@ services:
       - redis
     restart: unless-stopped
 
-  # PostgreSQL Database
+  # PostgreSQL Database with pgvector
   postgres:
-    image: postgres:16
+    image: pgvector/pgvector:pg17
     environment:
       - POSTGRES_DB=vibecode
       - POSTGRES_USER=postgres
@@ -33,9 +33,9 @@ services:
       - "5432:5432"
     restart: unless-stopped
 
-  # Redis for caching and sessions
+  # Valkey for caching and sessions (Redis-compatible)
   redis:
-    image: redis:7-alpine
+    image: valkey/valkey:8.1-alpine
     ports:
       - "6379:6379"
     volumes:
