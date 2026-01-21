@@ -357,16 +357,12 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
 
       if (fileIds && fileIds.length > 0) {
         whereConditions.push(`rc.file_id = ANY($\${paramIndex}::int[])`);
-        params.push(`{\${fileIds.join(',')}}`);
+        params.push(fileIds);
         paramIndex++;
       }
 
-      const whereClause = whereConditions.length > 0 ? `WHERE \${whereConditions.join(' AND ')}` : '';
-
       // Add embedding parameter
       const embeddingParamIndex = paramIndex++;
-      const limitParamIndex = paramIndex++;
-
       // Determine distance operator based on search method
       let distanceOperator = '<=>'; // Cosine distance by default
       if (this.postgresConfig.pgSearchMethod === 'inner_product') {
@@ -374,6 +370,17 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       } else if (this.postgresConfig.pgSearchMethod === 'euclidean') {
         distanceOperator = '<->'; // Euclidean distance
       }
+
+      const normalizedThreshold = Math.max(0, Math.min(1, threshold));
+      const useThreshold = this.postgresConfig.pgSearchMethod !== 'inner_product';
+      const thresholdParamIndex = useThreshold ? paramIndex++ : null;
+      if (useThreshold && thresholdParamIndex) {
+        whereConditions.push(`rc.embedding \${distanceOperator} $\${embeddingParamIndex}::vector <= $\${thresholdParamIndex}`);
+      }
+
+      const limitParamIndex = paramIndex++;
+
+      const whereClause = whereConditions.length > 0 ? `WHERE \${whereConditions.join(' AND ')}` : '';
 
       // Calculate similarity expression based on search method
       const similarityExpression = this.postgresConfig.pgSearchMethod === 'inner_product'
@@ -404,7 +411,11 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       `;
 
       // Add parameters in the correct order
-      params.push(embeddingString, limit);
+      params.push(embeddingString);
+      if (useThreshold && thresholdParamIndex) {
+        params.push(1 - normalizedThreshold);
+      }
+      params.push(limit);
 
       // Define interface for raw SQL result
       interface RawResult {
