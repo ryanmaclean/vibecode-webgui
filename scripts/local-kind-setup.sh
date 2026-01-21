@@ -252,14 +252,14 @@ EOF
     # Also load common images we'll need
     echo "📦 Pre-pulling common images..."
     docker pull postgres:16 >/dev/null 2>&1 &
-    docker pull redis:7-alpine >/dev/null 2>&1 &
+    docker pull redis:8.1-alpine >/dev/null 2>&1 &
     docker pull ghcr.io/berriai/litellm:main-latest >/dev/null 2>&1 &
     
     # Wait for pulls to complete
     wait
     
     kind load docker-image postgres:16 --name ${CLUSTER_NAME}
-    kind load docker-image redis:7-alpine --name ${CLUSTER_NAME}
+    kind load docker-image redis:8.1-alpine --name ${CLUSTER_NAME}
     kind load docker-image ghcr.io/berriai/litellm:main-latest --name ${CLUSTER_NAME}
     
     echo "✅ Docker images loaded into KIND cluster!"

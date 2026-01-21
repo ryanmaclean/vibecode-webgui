@@ -85,6 +85,15 @@ jobs:
       REDIS_URL: redis://localhost:6379
       NEXTAUTH_SECRET: test-secret-key-for-ci
       NODE_ENV: test
+      DD_CI_VISIBILITY_ENABLED: true
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_ENV: ci
+      DD_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
+      DD_GIT_COMMIT_SHA: ${{ github.sha }}
+      DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+      DD_SERVICE: vibecode-webgui
+      DD_SITE: datadoghq.com
+      DD_VERSION: ${{ github.sha }}
     services:
       postgres:
         image: postgres:16
@@ -149,10 +158,14 @@ jobs:
           npm test -- --passWithNoTests \
             --testPathIgnorePatterns="tests/e2e|tests/k8s" \
             --maxWorkers=2
+        env:
+          NODE_OPTIONS: -r dd-trace/ci/init
         continue-on-error: true
 
       - name: Run integration tests
         run: npm run test:integration || echo "Integration tests completed with warnings"
+        env:
+          NODE_OPTIONS: -r dd-trace/ci/init
         continue-on-error: true
 
       - name: Upload test results

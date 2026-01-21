@@ -108,6 +108,21 @@ volumes:
 
 Files will be mounted at `/workspace` inside the container. See [Volume Mounting Guide](docs/volume-mounting.md) for details.
 
+## Gas Town CI Failure Webhook
+
+VibeCode now exposes `POST /api/webhooks/github-actions`, which ingests GitHub Actions
+`workflow_run` failures and automatically slings beads to Gas Town polecats.
+
+1. Configure the following environment variables (see `env.*.example`):
+   - `GITHUB_WEBHOOK_SECRET` – shared secret used to verify incoming notifications
+   - `GASTOWN_WEBHOOK_URL` (+ optional `GASTOWN_API_TOKEN`, `GASTOWN_RIG`, `GASTOWN_DEFAULT_PRIORITY`)
+2. Add the secrets `GASTOWN_WEBHOOK` and `GITHUB_WEBHOOK_SECRET` to your GitHub repository.
+3. The workflow in `.github/workflows/notify-gastown.yml` will post `workflow_run`
+   failures to the webhook, including the raw event payload and HMAC signature.
+
+When Gas Town acknowledges the request it responds with the bead ID and assigned
+polecat, and the webhook logs trace IDs + payload metadata for observability.
+
 ## Use Cases
 
 - **Development Environments**: Full-stack development with code editor, database, and cache

@@ -48,7 +48,7 @@ spec:
             done
             echo "PostgreSQL is ready!"
       - name: wait-for-valkey
-        image: valkey/valkey:7-alpine
+        image: valkey/valkey:8.1-alpine
         command:
           - sh
           - -c
@@ -60,8 +60,8 @@ spec:
             echo "Valkey is ready!"
       containers:
       - name: vibecode-webgui
-        image: vibecode-webgui:latest
-        imagePullPolicy: IfNotPresent
+        image: vibecodeacr.azurecr.io/vibecode-webgui:v1.5.0
+        imagePullPolicy: Always
         ports:
         - containerPort: 3000
         env:

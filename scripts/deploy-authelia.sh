@@ -157,7 +157,7 @@ spec:
         fsGroup: 999
       containers:
       - name: redis
-        image: redis:7-alpine
+        image: redis:8.1-alpine
         ports:
         - containerPort: 6379
         resources:

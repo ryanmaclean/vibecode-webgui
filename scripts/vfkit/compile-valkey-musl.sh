@@ -3,7 +3,7 @@
 # Optimized for minimal size and maximum performance
 set -euo pipefail
 
-VALKEY_VERSION="${1:-7.2.8}"
+VALKEY_VERSION="${1:-8.1.0}"
 BUILD_DIR="/tmp/valkey-build"
 INSTALL_PREFIX="${2:-/usr/local}"
 

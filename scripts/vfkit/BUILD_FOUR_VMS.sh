@@ -105,9 +105,9 @@ apk add --no-cache --initdb valkey || {
     echo "⚠️  Valkey package not in repos, building from source..."
     apk add --no-cache --initdb build-base wget
     cd /tmp
-    wget -q https://github.com/valkey-io/valkey/archive/refs/tags/7.2.8.tar.gz
-    tar xzf 7.2.8.tar.gz
-    cd valkey-7.2.8
+    wget -q https://github.com/valkey-io/valkey/archive/refs/tags/8.1.0.tar.gz
+    tar xzf 8.1.0.tar.gz
+    cd valkey-8.1.0
     make -j$(nproc) MALLOC=libc USE_SYSTEMD=no BUILD_TLS=no
     cp src/valkey-server /usr/local/bin/
     cp src/valkey-cli /usr/local/bin/

@@ -3,7 +3,7 @@
 # Alternative to musl for even smaller binaries
 set -euo pipefail
 
-VALKEY_VERSION="${1:-7.2.8}"
+VALKEY_VERSION="${1:-8.1.0}"
 BUILD_DIR="/tmp/valkey-uclibc-build"
 
 echo "=== Compiling Valkey ${VALKEY_VERSION} with uClibc ==="

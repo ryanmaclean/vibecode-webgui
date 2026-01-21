@@ -4,6 +4,40 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, jest } from '@jest/globals'
+
+// Mock logger BEFORE importing route to prevent "createChildLogger is not a function" error
+// This mock must be hoisted before any imports that use the logger
+jest.mock('@/lib/logger', () => ({
+  logger: {
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+    child: jest.fn(() => ({
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+      log: jest.fn(),
+    })),
+  },
+  createChildLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  })),
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+    log: jest.fn(),
+  })),
+}))
+
 import { NextRequest } from 'next/server'
 import { POST, GET, DELETE } from '@/app/api/agents/[...path]/route'
 

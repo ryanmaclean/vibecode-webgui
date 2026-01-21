@@ -51,7 +51,7 @@ psql -h localhost -p 5432 -U vibecode -d vibecode
 
 -- Test pgvector
 vibecode=> \dx
--- Should show: vector | 0.7.4
+-- Should show: vector | 0.8.0
 
 -- Test vector query
 vibecode=> SELECT '[1,2,3]'::vector <=> '[4,5,6]'::vector;
