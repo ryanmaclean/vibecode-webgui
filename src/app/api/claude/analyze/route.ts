@@ -20,9 +20,7 @@ const ClaudeAnalyzeRequestSchema = z.object({
     .min(1, 'Workspace ID required')
     .max(100, 'Workspace ID too long')
     .regex(/^[a-zA-Z0-9_-]+$/, 'Invalid workspace ID format'),
-  analysisType: z.enum(['analyze', 'explain', 'optimize', 'debug', 'test'], {
-    errorMap: () => ({ message: 'Invalid analysis type. Must be one of: analyze, explain, optimize, debug, test' })
-  }).default('analyze')
+  analysisType: z.enum(['analyze', 'explain', 'optimize', 'debug', 'test']).default('analyze')
 })
 
 export async function POST(request: NextRequest) {
