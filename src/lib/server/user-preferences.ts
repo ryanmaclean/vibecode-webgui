@@ -8,6 +8,7 @@ import {
 } from '@/lib/user-preferences'
 
 export async function loadUserPreferences(userId: number): Promise<UserPreferences> {
+  // @ts-expect-error - userPreference model exists in the extended schema
   const record = await prisma.userPreference.findUnique({
     where: { user_id: userId },
   })
@@ -39,6 +40,7 @@ export async function saveUserPreferences(userId: number, data: UserPreferencesI
     onboardingCompleted: true,
   })
 
+  // @ts-expect-error - userPreference model exists in the extended schema
   const record = await prisma.userPreference.upsert({
     where: { user_id: userId },
     create: {

@@ -65,8 +65,8 @@ const pinoOptions: pino.LoggerOptions = {
   },
 };
 
-// Transport configuration
-const transports: pino.TransportMultiOptions['targets'] = [];
+// Transport configuration - mutable array type for conditional push operations
+const transports: pino.TransportTargetOptions[] = [];
 
 // Pretty print for development
 if (config.prettyPrint) {

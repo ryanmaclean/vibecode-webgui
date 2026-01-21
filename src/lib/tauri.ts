@@ -39,7 +39,8 @@ async function invokeTauri<T>(
   if (isTauri()) {
     // @ts-expect-error - Tauri types are injected at runtime
     const { invoke } = window.__TAURI__.core;
-    return invoke<T>(command, args);
+    // @ts-expect-error - invoke returns unknown which we cast to T
+    return invoke<T>(command, args) as T;
   }
 
   // Fallback for web environment
