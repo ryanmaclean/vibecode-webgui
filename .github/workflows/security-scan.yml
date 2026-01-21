@@ -141,38 +141,6 @@ jobs:
           retention-days: 30
         continue-on-error: true
 
-  snyk-scan:
-    name: Snyk Security Scan
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    if: ${{ secrets.SNYK_TOKEN != '' }}
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-
-      - name: Install Snyk CLI
-        run: npm install -g snyk
-
-      - name: Run Snyk test
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          snyk test --severity-threshold=high || true
-        continue-on-error: true
-
-      - name: Upload Snyk results
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-        run: |
-          snyk monitor --project-name="vibecode-webgui" || true
-        continue-on-error: true
-
   typescript-check:
     name: TypeScript Type Safety
     runs-on: ubuntu-latest

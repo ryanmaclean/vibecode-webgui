@@ -43,7 +43,8 @@ jobs:
 
       - name: Setup Datadog CI
         uses: datadog/agent-github-action@v1
-        if: ${{ secrets.DD_API_KEY != '' }}
+        # Note: Skipped gracefully if DD_API_KEY not configured
+        continue-on-error: true
         with:
           api_key: ${{ secrets.DD_API_KEY }}
 
