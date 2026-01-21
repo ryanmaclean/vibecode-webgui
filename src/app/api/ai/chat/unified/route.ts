@@ -9,8 +9,13 @@ import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Rate limiter for AI endpoints (30 requests per minute - more restrictive)
+const apiRateLimit = createAPIRateLimit(30)
 
 /**
  * Get allowed origins from environment or use defaults
@@ -145,6 +150,23 @@ When you need specific capabilities, I'll automatically use the most appropriate
 
 export async function POST(request: NextRequest & AuthenticatedRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authentication check
     const session = (await getServerSession(authOptions)) as {
       user?: {

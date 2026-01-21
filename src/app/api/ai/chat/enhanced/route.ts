@@ -10,10 +10,14 @@ import OpenAI from 'openai'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Rate limiting for AI endpoints (more restrictive than other APIs)
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 // Provider configuration - Enhanced multi-provider support
 const SUPPORTED_MODELS = {
@@ -145,6 +149,23 @@ function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
 
 export async function POST(request: AuthenticatedRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authentication check
     const session = (await getServerSession(authOptions)) as {
       user?: {

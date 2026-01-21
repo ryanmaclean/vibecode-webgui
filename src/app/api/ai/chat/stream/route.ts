@@ -11,9 +11,13 @@ import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Rate limiter: 30 requests per minute for AI endpoints (more restrictive)
+const apiRateLimit = createAPIRateLimit(30)
 
 /**
  * Get allowed origins from environment or use defaults
@@ -144,6 +148,23 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
 
 export async function POST(req: AuthenticatedRequest & NextRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(req)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = (await getServerSession(authOptions)) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
       logger.warn('Streaming chat unauthorized access attempt')
