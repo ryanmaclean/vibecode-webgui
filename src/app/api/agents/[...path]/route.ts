@@ -449,16 +449,25 @@ async function handleThreadRuns(
         tools,
       })
 
+      // Use ReadableStream reader pattern instead of for-await-of
+      // to avoid async iterator type errors with ReadableStream
       const encodedStream = new ReadableStream<Uint8Array>({
         async start(controller) {
+          const reader = stream.getReader()
           try {
-            for await (const event of stream) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              if (value) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(value)}\n\n`))
+              }
             }
             controller.enqueue(encoder.encode('data: [DONE]\n\n'))
             controller.close()
           } catch (error) {
             controller.error(error)
+          } finally {
+            reader.releaseLock()
           }
         },
       })
