@@ -74,11 +74,14 @@ export async function GET(req: NextRequest) {
 
     if (action === 'providers') {
       const stats = await enhancedVectorStore.healthCheck()
+      const recommendedProvider = stats.providers.find(
+        (p) => p.available
+      )?.id || 'none'
       return NextResponse.json({
         status: 'success',
         data: {
           providers: stats.providers,
-          recommendedProvider: stats.providers.find((p: { available: boolean; features: { semanticSearch: boolean }; id: string }) => p.available && p.features.semanticSearch)?.id || 'none'
+          recommendedProvider
         }
       })
     }
@@ -133,7 +136,7 @@ export async function POST(req: NextRequest) {
       data: {
         results,
         query: searchOptions.query,
-        provider: results.length > 0 ? results[0].metadata.provider : 'none',
+        provider: results.length > 0 && results[0]?.metadata?.provider ? results[0].metadata.provider : 'none',
         performance: {
           queryTime,
           resultCount: results.length,
@@ -191,7 +194,7 @@ export async function PUT(req: NextRequest) {
           documentsProcessed: storeOptions.documents.length
         }
       },
-      message: `Stored ${results.totalStored} documents across available providers`,
+      message: `Stored ${results.stored} documents across available providers`,
       timestamp: new Date().toISOString()
     })
   } catch (error) {

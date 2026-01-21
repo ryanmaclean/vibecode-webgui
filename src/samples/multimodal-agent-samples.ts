@@ -564,8 +564,9 @@ Expected AI Response:
       };
 
     } catch (error) {
-      console.log(`⚠️ Error occurred: ${error.message}`);
-      console.error(`❌ Sample failed: ${error.message}`);
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      console.log(`Warning: Error occurred: ${errorMessage}`);
+      console.error(`Sample failed: ${errorMessage}`);
       throw error;
     }
   }

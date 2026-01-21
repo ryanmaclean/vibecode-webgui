@@ -360,7 +360,7 @@ describe('NativeVMProvider', () => {
       const promise = sendRequest(mockProc, 'vm.status', { vmId: 'test' });
 
       // Simulate response
-      const pendingRequests = (provider as any).pendingRequests;
+      const pendingRequests = (provider as any).pendingRequests as Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }>;
       const [[requestId, request]] = Array.from(pendingRequests.entries());
 
       // Verify request format
@@ -389,8 +389,8 @@ describe('NativeVMProvider', () => {
       const sendRequest = (provider as any).sendRequest.bind(provider);
       const promise = sendRequest(mockProc, 'vm.invalid', {});
 
-      const pendingRequests = (provider as any).pendingRequests;
-      const [[requestId, request]] = Array.from(pendingRequests.entries());
+      const pendingRequests = (provider as any).pendingRequests as Map<string, { resolve: (value: unknown) => void; reject: (error: Error) => void }>;
+      const [[, request]] = Array.from(pendingRequests.entries());
 
       // Simulate error response
       request.reject(new Error('Method not found'));
