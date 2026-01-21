@@ -6,11 +6,31 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../../lib/monitoring/auth'
 import { connectionPoolMonitor } from '../../../../../lib/monitoring/connection-pool-monitor'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(120) // 120 requests per minute - monitoring data
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // Check authentication
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
@@ -192,6 +212,23 @@ function generateRecommendations(pools: any[], _alerts: any[], capacityReports: 
  * POST - Update pool metrics (for external pool integrations)
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
     return getUnauthorizedResponse(authResult.error)
