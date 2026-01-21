@@ -51,12 +51,12 @@ function getTestUsers() {
   try {
     const testUsersJson = process.env.AUTH_TEST_USERS;
     if (!testUsersJson) {
-      logger.warn('⚠️ AUTH_TEST_USERS not configured - credentials auth disabled');
+      logger.warn('AUTH_TEST_USERS not configured - credentials auth disabled');
       return [];
     }
     return JSON.parse(testUsersJson);
   } catch (error) {
-    logger.error('❌ Failed to parse AUTH_TEST_USERS:', error);
+    logger.error('Failed to parse AUTH_TEST_USERS:', { error: error instanceof Error ? error.message : String(error) });
     return [];
   }
 }
@@ -85,8 +85,8 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string
-    role: string
+    id?: string | null
+    role?: string | null
     githubId?: string
     googleId?: string
   }
@@ -146,7 +146,7 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) {
-          logger.warn('❌ Missing email or password');
+          logger.warn('Missing email or password');
           return null;
         }
 
@@ -157,7 +157,7 @@ export const authOptions: NextAuthOptions = {
         const user = testUsers.find((u: any) => u.email === credentials.email);
 
         if (!user) {
-          logger.warn(`❌ User not found: ${credentials.email}`);
+          logger.warn(`User not found: ${credentials.email}`);
           return null;
         }
 
@@ -166,7 +166,7 @@ export const authOptions: NextAuthOptions = {
           const isValid = await verifyPassword(credentials.password, user.passwordHash);
 
           if (isValid) {
-            logger.info(`✅ Authentication successful: ${user.email}`);
+            logger.info(`Authentication successful: ${user.email}`);
             return {
               id: user.id,
               name: user.name,
@@ -174,11 +174,11 @@ export const authOptions: NextAuthOptions = {
               role: user.role
             };
           } else {
-            logger.warn(`❌ Invalid password for: ${credentials.email}`);
+            logger.warn(`Invalid password for: ${credentials.email}`);
             return null;
           }
         } catch (error) {
-          logger.error('❌ Password verification error:', error);
+          logger.error('Password verification error:', { error: error instanceof Error ? error.message : String(error) });
           return null;
         }
       },
@@ -196,7 +196,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      logger.info('🔄 JWT callback:', {
+      logger.info('JWT callback:', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -215,12 +215,12 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        logger.info('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        logger.info('JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      logger.info('📋 Session callback:', {
+      logger.info('Session callback:', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
@@ -228,11 +228,11 @@ export const authOptions: NextAuthOptions = {
       })
 
       if (token) {
-        session.user.id = token.id
-        session.user.role = token.role
-        session.user.email = token.email as string
-        session.user.name = token.name as string
-        logger.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        session.user.id = (token.id as string) ?? ''
+        session.user.role = (token.role as string) ?? 'user'
+        session.user.email = (token.email as string) ?? ''
+        session.user.name = (token.name as string) ?? ''
+        logger.info('Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
