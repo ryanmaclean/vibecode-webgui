@@ -91,20 +91,23 @@ if (!isBuilding && typeof (prisma as any).$use === 'function') {
       return result
     } catch (error) {
       // Record error metrics
+      const errorName = error instanceof Error ? error.name : 'unknown_error'
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
       metrics.increment('db.query.error', {
         service: 'vibecode-webgui',
         operation: params.action,
         model: params.model || 'unknown',
-        error: error?.name || 'unknown_error'
+        error: errorName
       })
-      
+
       if (span) {
         span.setTag('error', true)
-        span.setTag('error.msg', error?.message)
-        span.setTag('error.type', error?.name || 'DatabaseError')
+        span.setTag('error.msg', errorMessage)
+        span.setTag('error.type', errorName)
         span.finish()
       }
-      
+
       throw error
     }
   })

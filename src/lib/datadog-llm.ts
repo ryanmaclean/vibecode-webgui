@@ -113,7 +113,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      logger.error('Error in LLM workflow span:', error);
+      logger.error('Error in LLM workflow span:', { error: error instanceof Error ? error.message : String(error) });
       return operation(undefined);
     }
   }
@@ -169,7 +169,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      logger.error('Error in LLM task span:', error);
+      logger.error('Error in LLM task span:', { error: error instanceof Error ? error.message : String(error) });
       return operation(undefined);
     }
   }
@@ -209,7 +209,7 @@ class LLMObservability {
         });
       }
     } catch (error) {
-      logger.error('Error annotating LLM span:', error);
+      logger.error('Error annotating LLM span:', { error: error instanceof Error ? error.message : String(error) });
     }
   }
 
@@ -230,7 +230,7 @@ class LLMObservability {
         }
       });
     } catch (error) {
-      logger.error('Error flushing LLM observability data:', error);
+      logger.error('Error flushing LLM observability data:', { error: error instanceof Error ? error.message : String(error) });
       return Promise.resolve();
     }
   }
