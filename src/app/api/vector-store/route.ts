@@ -3,7 +3,7 @@
  * Unified API for multiple vector database providers
  * Supports PostgreSQL pgvector, Weaviate, and intelligent routing
  *
- * Rate Limited: 50 requests per minute (resource-heavy operations)
+ * Rate Limited: 30 requests per minute (resource-heavy operations)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -18,16 +18,11 @@ import {
   logError,
   apiLogger
 } from '@/lib/logging'
-import {
-  checkRateLimit,
-  createRateLimitedResponse,
-  applyRateLimitHeaders,
-  RateLimitPresets,
-} from '@/lib/rate-limiter'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
 
-const RATE_LIMIT_PREFIX = 'vector-store'
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 const log = createServiceLogger({
   service: 'vibecode-webgui',
@@ -71,10 +66,21 @@ const deleteSchema = z.object({
  * GET /api/vector-store - Health check and statistics
  */
 export async function GET(req: NextRequest) {
-  // Apply rate limiting for vector store operations
-  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH)
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   const startTime = Date.now()
@@ -93,7 +99,7 @@ export async function GET(req: NextRequest) {
         detail: 'Authentication required to access the vector store.',
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const { searchParams } = new URL(req.url)
@@ -126,7 +132,7 @@ export async function GET(req: NextRequest) {
       })
       response.headers.set('x-request-id', requestContext.requestId)
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     if (action === 'providers') {
@@ -149,7 +155,7 @@ export async function GET(req: NextRequest) {
       })
       response.headers.set('x-request-id', requestContext.requestId)
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const response = NextResponse.json({
@@ -165,7 +171,7 @@ export async function GET(req: NextRequest) {
     })
     response.headers.set('x-request-id', requestContext.requestId)
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   } catch (error) {
     logError(error, {
       operation: 'vector_store_get',
@@ -178,7 +184,7 @@ export async function GET(req: NextRequest) {
       detail: error instanceof Error ? error.message : 'Unknown error occurred while handling the vector store request.',
     })
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   }
 }
 
@@ -186,10 +192,21 @@ export async function GET(req: NextRequest) {
  * POST /api/vector-store - Search documents
  */
 export async function POST(req: NextRequest) {
-  // Apply rate limiting for vector search (resource-heavy)
-  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH)
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   const startTime = Date.now()
@@ -207,7 +224,7 @@ export async function POST(req: NextRequest) {
         detail: 'Authentication required to search the vector store.',
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const body = await req.json()
@@ -262,7 +279,7 @@ export async function POST(req: NextRequest) {
     })
     response.headers.set('x-request-id', requestContext.requestId)
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   } catch (error) {
     logError(error, {
       operation: 'vector_store_search',
@@ -281,7 +298,7 @@ export async function POST(req: NextRequest) {
         errors: error.issues,
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const response = createErrorResponse('Search failed', 500, {
@@ -289,7 +306,7 @@ export async function POST(req: NextRequest) {
       detail: error instanceof Error ? error.message : 'Unknown error occurred during vector search.',
     })
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   }
 }
 
@@ -297,10 +314,21 @@ export async function POST(req: NextRequest) {
  * PUT /api/vector-store - Store documents
  */
 export async function PUT(req: NextRequest) {
-  // Apply rate limiting for vector store operations (resource-heavy)
-  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH)
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   const startTime = Date.now()
@@ -318,7 +346,7 @@ export async function PUT(req: NextRequest) {
         detail: 'Authentication required to store documents.',
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const body = await req.json()
@@ -367,7 +395,7 @@ export async function PUT(req: NextRequest) {
     })
     response.headers.set('x-request-id', requestContext.requestId)
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   } catch (error) {
     logError(error, {
       operation: 'vector_store_put',
@@ -386,7 +414,7 @@ export async function PUT(req: NextRequest) {
         errors: error.issues,
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const response = createErrorResponse('Storage failed', 500, {
@@ -394,7 +422,7 @@ export async function PUT(req: NextRequest) {
       detail: error instanceof Error ? error.message : 'Unknown error occurred while storing documents.',
     })
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   }
 }
 
@@ -402,10 +430,21 @@ export async function PUT(req: NextRequest) {
  * DELETE /api/vector-store - Delete documents
  */
 export async function DELETE(req: NextRequest) {
-  // Apply rate limiting for vector delete operations
-  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.VECTOR_SEARCH, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.VECTOR_SEARCH)
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   const startTime = Date.now()
@@ -423,7 +462,7 @@ export async function DELETE(req: NextRequest) {
         detail: 'Authentication required to delete documents.',
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const body = await req.json()
@@ -468,7 +507,7 @@ export async function DELETE(req: NextRequest) {
     })
     response.headers.set('x-request-id', requestContext.requestId)
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   } catch (error) {
     logError(error, {
       operation: 'vector_store_delete',
@@ -487,7 +526,7 @@ export async function DELETE(req: NextRequest) {
         errors: error.issues,
       })
       apiLogger.logResponse(requestContext, response, startTime)
-      return applyRateLimitHeaders(response, rateLimitResult)
+      return response
     }
 
     const response = createErrorResponse('Deletion failed', 500, {
@@ -495,7 +534,7 @@ export async function DELETE(req: NextRequest) {
       detail: error instanceof Error ? error.message : 'Unknown error occurred while deleting documents.',
     })
     apiLogger.logResponse(requestContext, response, startTime)
-    return applyRateLimitHeaders(response, rateLimitResult)
+    return response
   }
 }
 

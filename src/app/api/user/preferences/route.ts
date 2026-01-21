@@ -5,11 +5,31 @@ import { getServerSession } from 'next-auth'
 
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { loadUserPreferences, saveUserPreferences } from '@/lib/server/user-preferences'
 import { userPreferencesInputSchema } from '@/lib/user-preferences'
 import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '@/lib/cache/cache-utils'
 
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - user settings
+
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions)
 
@@ -51,6 +71,23 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions)
 

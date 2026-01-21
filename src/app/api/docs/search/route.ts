@@ -4,6 +4,9 @@ import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/m
 import { docsSearchQuerySchema, docsSearchBodySchema } from '@/lib/api/validation/schemas';
 import { sanitizeSearchQuery } from '@/lib/api/validation/sanitize';
 import { createErrorResponse } from '@/lib/utils/api-response';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 // Response type definitions
 interface SearchResult {
@@ -33,6 +36,23 @@ interface DocsSearchResponse {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Validate query parameters with zod schema
     const validation = validateQueryParams(request, docsSearchQuerySchema);
@@ -141,6 +161,23 @@ export async function GET(request: NextRequest) {
 
 // POST support for more complex search queries with structured body
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Validate request body with zod schema
     const validation = await validateRequestBody(request, docsSearchBodySchema);
