@@ -4,6 +4,13 @@
 
 set -euo pipefail
 
+# Determine script directory for relative sourcing
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Source Datadog logging (optional - doesn't fail if unavailable)
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/datadog-logging.sh" 2>/dev/null || true
+
 # Configuration
 CLUSTER_NAME="vibecode-cluster"
 CONFIG_FILE="k8s/kind-cluster-config.yaml"
@@ -329,6 +336,8 @@ display_cluster_info() {
     echo ""
 
     log_success "Cluster setup completed successfully!"
+    dd_info "KIND cluster setup completed successfully" "script:setup-kind-cluster,cluster:${CLUSTER_NAME},status:success" 2>/dev/null || true
+    dd_metric "kind.cluster.setup.success" "1" "count" "cluster:${CLUSTER_NAME}" 2>/dev/null || true
     echo ""
     echo "To use the cluster:"
     echo "  kubectl config use-context kind-${CLUSTER_NAME}"
@@ -342,6 +351,7 @@ display_cluster_info() {
 # Main execution
 main() {
     log_info "Starting VibeCode KIND cluster setup..."
+    dd_info "KIND cluster setup started" "script:setup-kind-cluster" 2>/dev/null || true
 
     # Check if cluster already exists
     if cluster_exists; then
