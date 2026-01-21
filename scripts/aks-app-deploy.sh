@@ -4,6 +4,8 @@ set -euo pipefail
 # Deprecated: Application deployment is handled by scripts/app_deploy.py
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/datadog-logging.sh" 2>/dev/null || true
 PYTHON=${PYTHON:-python3}
 
 cat <<'MSG'
