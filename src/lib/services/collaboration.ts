@@ -7,8 +7,6 @@ import { Server as SocketIOServer } from 'socket.io';
 // import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 // import { logger } from '@/lib/logger';
 
-// Stub type for socket.io typed events
-type DefaultEventsMap = Record<string, (...args: any[]) => void>;
 export interface WorkspaceUser {
   userId: string;
   username: string;
@@ -50,7 +48,7 @@ export interface FileEdit {
  * Collaboration Service for real-time workspace features
  */
 export class CollaborationService {
-  private io: SocketIOServer<DefaultEventsMap, DefaultEventsMap> | null = null;
+  private io: SocketIOServer | null = null;
   private sessions: Map<string, WorkspaceSession> = new Map();
   private userSockets: Map<string, string> = new Map(); // userId -> socketId
   private socketUsers: Map<string, string> = new Map(); // socketId -> userId
@@ -69,7 +67,7 @@ export class CollaborationService {
   private setupSocketHandlers(): void {
     if (!this.io) return;
 
-    this.io.on('connection', (socket) => {
+    this.io.on('connection', (socket: any) => {
       console.info('User connected:', socket.id);
 
       // Handle user joining workspace
@@ -465,8 +463,10 @@ export class CollaborationService {
    */
   forceDisconnectUser(userId: string): void {
     const socketId = this.userSockets.get(userId);
-    if (socketId) {
-      const socket = this.io?.sockets.sockets.get(socketId);
+    if (socketId && this.io) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const sockets = (this.io as any).sockets?.sockets as Map<string, any> | undefined;
+      const socket = sockets?.get(socketId);
       if (socket) {
         socket.disconnect();
       }
@@ -482,11 +482,14 @@ export class CollaborationService {
     activeSessions: number;
     uptime: number;
   } {
-    const uptime = this.io ? Date.now() - (this.io as any).engine.startTime : 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const uptime = this.io ? Date.now() - (this.io as any).engine?.startTime : 0;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const sockets = this.io ? (this.io as any).sockets?.sockets as Map<string, any> | undefined : undefined;
 
     return {
       isHealthy: this.io !== null,
-      activeConnections: this.io?.sockets.sockets.size || 0,
+      activeConnections: sockets?.size ?? 0,
       activeSessions: this.sessions.size,
       uptime
     };
