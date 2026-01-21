@@ -136,8 +136,6 @@ export class RetryHandler {
           throw this.errorHandler.handleError(
             new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
             operationName,
-            VectorDbErrorType.SERVICE,
-            false,
             {
               circuitBroken: true,
               failureCount: this.failures.length,
@@ -171,8 +169,6 @@ export class RetryHandler {
           throw this.errorHandler.handleError(
             err,
             operationName,
-            undefined, // Let the error handler determine the type
-            false,
             { retryAttempt: attempt }
           );
         }
@@ -207,8 +203,6 @@ export class RetryHandler {
     throw this.errorHandler.handleError(
       lastError || new Error(`Unknown error in operation: ${operationName}`),
       operationName,
-      undefined, // Let the error handler determine the type
-      false,
       { maxRetries: this.config.maxRetries, allRetriesFailed: true }
     );
   }
@@ -333,6 +327,5 @@ export class RetryHandler {
   }
 }
 
-// Legacy types for backward compatibility
-import { VectorDBErrorType } from './vector-db-error-handler';
-export { VectorDBErrorType };
+// Legacy types for backward compatibility - use VectorDbErrorType
+export { VectorDbErrorType as VectorDBErrorType } from './vector-db-error-handler';

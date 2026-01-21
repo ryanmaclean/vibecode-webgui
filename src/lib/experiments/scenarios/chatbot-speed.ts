@@ -396,9 +396,10 @@ export async function sendChatMessage(request: ChatRequest): Promise<ChatRespons
     userSatisfaction: undefined
   })
 
+  const variantConfig = CHATBOT_EXPERIMENT.variants[session.variantKey as keyof typeof CHATBOT_EXPERIMENT.variants];
   return {
     variantKey: session.variantKey,
-    strategy: CHATBOT_EXPERIMENT.variants[session.variantKey].strategy,
+    strategy: variantConfig.strategy,
     message: response,
     metrics: {
       ttftMs,

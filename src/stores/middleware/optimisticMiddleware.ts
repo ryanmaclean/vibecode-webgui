@@ -114,6 +114,7 @@ class OptimisticUpdateManager<T = any> {
       this.cleanup(id);
       return update.previousState;
     }
+    return undefined;
   }
 
   /**
@@ -167,10 +168,12 @@ type OptimisticMiddlewareImpl = <
 >(
   initializer: StateCreator<
     T,
-    [...Mps, ['optimistic', OptimisticMiddleware<T>]],
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    any,
     Mcs
   >
-) => StateCreator<T, Mps, [['optimistic', OptimisticMiddleware<T>], ...Mcs]>;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+) => StateCreator<T, Mps, any>;
 
 /**
  * Create optimistic update middleware for Zustand
