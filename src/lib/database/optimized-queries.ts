@@ -12,7 +12,7 @@ import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from 
 import { metrics } from '../server-monitoring';
 
 // Type definitions for batch operations
-interface BatchQueryOptions<T> {
+interface BatchQueryOptions<K, T> {
   /** Maximum batch size for queries */
   batchSize?: number;
   /** Cache TTL in seconds */
@@ -21,6 +21,51 @@ interface BatchQueryOptions<T> {
   trackMetrics?: boolean;
   /** Custom cache key prefix */
   cachePrefix?: string;
+  /** Number of retry attempts for failed batch queries (default: 0) */
+  retryCount?: number;
+  /** Callback invoked when an error occurs during batch execution */
+  onError?: (error: Error, keys: K[]) => void;
+}
+
+/**
+ * Error class for batch query failures with context
+ */
+export class BatchQueryError extends Error {
+  public readonly keys: unknown[];
+  public readonly originalError: Error;
+  public readonly operation: string;
+  public readonly attemptNumber: number;
+
+  constructor(
+    message: string,
+    keys: unknown[],
+    originalError: Error,
+    operation: string,
+    attemptNumber: number = 1
+  ) {
+    super(message);
+    this.name = 'BatchQueryError';
+    this.keys = keys;
+    this.originalError = originalError;
+    this.operation = operation;
+    this.attemptNumber = attemptNumber;
+  }
+}
+
+/**
+ * Resolver type that can either resolve a value or reject with an error
+ */
+interface BatchResolver<V> {
+  resolve: (value: V | null) => void;
+  reject: (error: Error) => void;
+}
+
+/**
+ * Cached entry with expiration tracking for time-based cache invalidation
+ */
+interface CachedEntry<V> {
+  value: V;
+  expiresAt: number;
 }
 
 interface QueryMetrics {
@@ -41,16 +86,25 @@ interface IndexRecommendation {
 /**
  * DataLoader-style batch loader for preventing N+1 queries
  * Groups individual queries into efficient batch queries
+ *
+ * Enhanced error handling features:
+ * - Configurable retry logic with retryCount option
+ * - Detailed error context with BatchQueryError
+ * - Per-key error tracking within batches
+ * - Custom error callback via onError option
+ * - Proper promise rejection instead of resolving to null
  */
 export class BatchLoader<K, V> {
-  private batch: Map<K, Array<(value: V | null) => void>> = new Map();
+  private batch: Map<K, BatchResolver<V>[]> = new Map();
+  private cache: Map<K, CachedEntry<V>> = new Map();
   private batchScheduled = false;
+  private cacheCleanupTimer: ReturnType<typeof setInterval> | null = null;
   private readonly batchFn: (keys: K[]) => Promise<Map<K, V>>;
-  private readonly options: BatchQueryOptions<V>;
+  private readonly options: Required<Omit<BatchQueryOptions<K, V>, 'onError'>> & { onError?: (error: Error, keys: K[]) => void };
 
   constructor(
     batchFn: (keys: K[]) => Promise<Map<K, V>>,
-    options: BatchQueryOptions<V> = {}
+    options: BatchQueryOptions<K, V> = {}
   ) {
     this.batchFn = batchFn;
     this.options = {
@@ -58,19 +112,111 @@ export class BatchLoader<K, V> {
       cacheTTL: options.cacheTTL ?? TTLPresets.SHORT,
       trackMetrics: options.trackMetrics ?? true,
       cachePrefix: options.cachePrefix ?? 'batch',
+      retryCount: options.retryCount ?? 0,
+      onError: options.onError,
     };
+
+    // Start periodic cache cleanup if TTL is set
+    if (this.options.cacheTTL > 0) {
+      this.startCacheCleanup();
+    }
+  }
+
+  /**
+   * Start periodic cache cleanup to remove expired entries
+   */
+  private startCacheCleanup(): void {
+    // Clean up at half the TTL interval, or every minute, whichever is smaller
+    const cleanupInterval = Math.min(60000, (this.options.cacheTTL * 1000) / 2);
+
+    if (typeof setInterval !== 'undefined') {
+      this.cacheCleanupTimer = setInterval(() => {
+        this.cleanupExpiredCache();
+      }, cleanupInterval);
+    }
+  }
+
+  /**
+   * Remove expired entries from cache
+   */
+  private cleanupExpiredCache(): void {
+    const now = Date.now();
+    const keysToDelete: K[] = [];
+    this.cache.forEach((entry, key) => {
+      if (now > entry.expiresAt) {
+        keysToDelete.push(key);
+      }
+    });
+    keysToDelete.forEach(key => this.cache.delete(key));
+
+    if (this.options.trackMetrics && keysToDelete.length > 0) {
+      metrics.increment('db.batch.cache_expired', {
+        operation: this.options.cachePrefix,
+        count: keysToDelete.length.toString(),
+      });
+    }
+  }
+
+  /**
+   * Get a cached value if it exists and hasn't expired
+   */
+  private getCached(key: K): V | undefined {
+    const entry = this.cache.get(key);
+    if (!entry) {
+      return undefined;
+    }
+
+    // Check if expired
+    if (Date.now() > entry.expiresAt) {
+      this.cache.delete(key);
+      return undefined;
+    }
+
+    return entry.value;
+  }
+
+  /**
+   * Set a value in the cache with TTL
+   */
+  private setCached(key: K, value: V): void {
+    if (this.options.cacheTTL <= 0) {
+      return;
+    }
+
+    const expiresAt = Date.now() + (this.options.cacheTTL * 1000);
+    this.cache.set(key, { value, expiresAt });
   }
 
   /**
    * Load a single item - will be batched with other requests
+   * Returns a promise that properly rejects on error (not resolving to null)
    */
   async load(key: K): Promise<V | null> {
-    return new Promise((resolve) => {
+    // Check cache first (with TTL expiration check)
+    const cached = this.getCached(key);
+    if (cached !== undefined) {
+      if (this.options.trackMetrics) {
+        metrics.increment('db.batch.cache_hit', {
+          operation: this.options.cachePrefix,
+        });
+      }
+      return cached;
+    }
+
+    if (this.options.trackMetrics) {
+      metrics.increment('db.batch.cache_miss', {
+        operation: this.options.cachePrefix,
+      });
+    }
+
+    return new Promise((resolve, reject) => {
       const existing = this.batch.get(key);
+      const resolver: BatchResolver<V> = { resolve, reject };
+
       if (existing) {
-        existing.push(resolve);
+        existing.push(resolver);
       } else {
-        this.batch.set(key, [resolve]);
+        this.batch.set(key, [resolver]);
       }
 
       if (!this.batchScheduled) {
@@ -93,7 +239,117 @@ export class BatchLoader<K, V> {
   }
 
   /**
-   * Execute the batched query
+   * Format keys for logging (handles various key types)
+   */
+  private formatKeysForLog(keys: K[]): string {
+    if (keys.length === 0) return '[]';
+    if (keys.length <= 10) {
+      return JSON.stringify(keys);
+    }
+    const firstTen = keys.slice(0, 10).map(k => JSON.stringify(k)).join(', ');
+    return `[${firstTen}... and ${keys.length - 10} more]`;
+  }
+
+  /**
+   * Execute batch with retry logic
+   */
+  private async executeBatchWithRetry(
+    keys: K[],
+    currentBatch: Map<K, BatchResolver<V>[]>,
+    attemptNumber: number = 1
+  ): Promise<Map<K, V>> {
+    const startTime = Date.now();
+    const operation = this.options.cachePrefix ?? 'batch';
+
+    try {
+      const results = await this.batchFn(keys);
+
+      // Track successful metrics
+      if (this.options.trackMetrics) {
+        const queryTime = Date.now() - startTime;
+        metrics.histogram('db.batch.query_time', queryTime, {
+          operation,
+          batch_size: keys.length.toString(),
+          attempt: attemptNumber.toString(),
+        });
+        metrics.increment('db.batch.queries', {
+          operation,
+          status: 'success',
+        });
+      }
+
+      return results;
+    } catch (error) {
+      const err = error instanceof Error ? error : new Error(String(error));
+      const keysFormatted = this.formatKeysForLog(keys);
+
+      // Create detailed error with context
+      const batchError = new BatchQueryError(
+        `Batch query failed for operation '${operation}' on attempt ${attemptNumber}/${this.options.retryCount + 1}. Keys: ${keysFormatted}. Original error: ${err.message}`,
+        keys as unknown[],
+        err,
+        operation,
+        attemptNumber
+      );
+
+      // Log detailed error information
+      console.error(`[BatchLoader] Batch query error:`, {
+        operation,
+        attemptNumber,
+        maxAttempts: this.options.retryCount + 1,
+        batchSize: keys.length,
+        keys: keysFormatted,
+        error: err.message,
+        stack: err.stack,
+      });
+
+      // Track error metrics with detail
+      if (this.options.trackMetrics) {
+        metrics.increment('db.batch.errors', {
+          operation,
+          attempt: attemptNumber.toString(),
+          error_type: err.name || 'UnknownError',
+        });
+        metrics.histogram('db.batch.error_time', Date.now() - startTime, {
+          operation,
+          attempt: attemptNumber.toString(),
+        });
+      }
+
+      // Invoke custom error callback if provided
+      if (this.options.onError) {
+        try {
+          this.options.onError(batchError, keys);
+        } catch (callbackError) {
+          console.error('[BatchLoader] Error in onError callback:', callbackError);
+        }
+      }
+
+      // Retry if we have attempts remaining
+      if (attemptNumber <= this.options.retryCount) {
+        console.warn(`[BatchLoader] Retrying batch query (attempt ${attemptNumber + 1}/${this.options.retryCount + 1}) for operation '${operation}'`);
+
+        // Exponential backoff: 100ms, 200ms, 400ms, etc.
+        const backoffMs = Math.min(100 * Math.pow(2, attemptNumber - 1), 5000);
+        await new Promise(resolve => setTimeout(resolve, backoffMs));
+
+        if (this.options.trackMetrics) {
+          metrics.increment('db.batch.retries', {
+            operation,
+            attempt: (attemptNumber + 1).toString(),
+          });
+        }
+
+        return this.executeBatchWithRetry(keys, currentBatch, attemptNumber + 1);
+      }
+
+      // All retries exhausted, throw the error
+      throw batchError;
+    }
+  }
+
+  /**
+   * Execute the batched query with enhanced error handling
    */
   private async executeBatch(): Promise<void> {
     const currentBatch = new Map(this.batch);
@@ -103,52 +359,158 @@ export class BatchLoader<K, V> {
     if (currentBatch.size === 0) return;
 
     const keys = Array.from(currentBatch.keys());
-    const startTime = Date.now();
+    const operation = this.options.cachePrefix ?? 'batch';
 
     try {
-      // Execute batch query
-      const results = await this.batchFn(keys);
+      // Execute batch query with retry logic
+      const results = await this.executeBatchWithRetry(keys, currentBatch);
 
-      // Resolve all promises
+      // Resolve all promises with results
       const entries = Array.from(currentBatch.entries());
       for (const [key, resolvers] of entries) {
         const value = results.get(key) ?? null;
-        resolvers.forEach((resolve) => resolve(value));
+        // Cache the result with TTL
+        if (value !== null) {
+          this.setCached(key, value);
+        }
+        resolvers.forEach(({ resolve }) => resolve(value));
       }
 
-      // Track metrics
+    } catch (error) {
+      // All retries failed - reject all promises with the error
+      const err = error instanceof BatchQueryError ? error :
+        new BatchQueryError(
+          `Batch query failed for operation '${operation}'`,
+          keys as unknown[],
+          error instanceof Error ? error : new Error(String(error)),
+          operation
+        );
+
+      const batchEntries = Array.from(currentBatch.entries());
+      for (const [key, resolvers] of batchEntries) {
+        const keysFormatted = this.formatKeysForLog([key]);
+        const keyError = new BatchQueryError(
+          `Failed to load key ${keysFormatted} in batch operation '${operation}': ${err.message}`,
+          [key] as unknown[],
+          err.originalError,
+          operation,
+          err.attemptNumber
+        );
+        resolvers.forEach(({ reject }) => reject(keyError));
+      }
+
+      // Track final failure
       if (this.options.trackMetrics) {
-        const queryTime = Date.now() - startTime;
-        metrics.histogram('db.batch.query_time', queryTime, {
-          operation: this.options.cachePrefix ?? 'batch',
+        metrics.increment('db.batch.final_failures', {
+          operation,
           batch_size: keys.length.toString(),
         });
-        metrics.increment('db.batch.queries', {
-          operation: this.options.cachePrefix ?? 'batch',
-        });
       }
-    } catch (error) {
-      // Reject all promises on error
-      const batchEntries = Array.from(currentBatch.entries());
-      for (const [, resolvers] of batchEntries) {
-        resolvers.forEach((resolve) => resolve(null));
-      }
-
-      if (this.options.trackMetrics) {
-        metrics.increment('db.batch.errors', {
-          operation: this.options.cachePrefix ?? 'batch',
-        });
-      }
-
-      throw error;
     }
   }
 
   /**
-   * Clear the loader (useful between requests)
+   * Clear a specific key from cache, or clear pending batch if no key provided
+   * Use this when you know specific data has changed
+   *
+   * @param key Optional key to clear from cache. If not provided, clears pending batch only.
    */
-  clear(): void {
+  clear(key?: K): void {
+    if (key !== undefined) {
+      this.cache.delete(key);
+      if (this.options.trackMetrics) {
+        metrics.increment('db.batch.cache_invalidate', {
+          operation: this.options.cachePrefix,
+          scope: 'single',
+        });
+      }
+    } else {
+      this.batch.clear();
+    }
+  }
+
+  /**
+   * Clear multiple keys from cache
+   * Use this when multiple related records have changed
+   *
+   * @param keys Array of keys to clear from cache
+   */
+  clearMany(keys: K[]): void {
+    for (const key of keys) {
+      this.cache.delete(key);
+    }
+    if (this.options.trackMetrics && keys.length > 0) {
+      metrics.increment('db.batch.cache_invalidate', {
+        operation: this.options.cachePrefix,
+        scope: 'many',
+        count: keys.length.toString(),
+      });
+    }
+  }
+
+  /**
+   * Clear all cached values and pending batches
+   * Use this when bulk data changes or for complete cache invalidation
+   */
+  clearAll(): void {
     this.batch.clear();
+    this.cache.clear();
+    if (this.options.trackMetrics) {
+      metrics.increment('db.batch.cache_invalidate', {
+        operation: this.options.cachePrefix,
+        scope: 'all',
+      });
+    }
+  }
+
+  /**
+   * Prime the cache with a known value
+   * Use this to pre-populate cache after writes
+   *
+   * @param key Key to prime
+   * @param value Value to cache
+   */
+  prime(key: K, value: V): void {
+    this.setCached(key, value);
+  }
+
+  /**
+   * Prime multiple values into cache
+   * Use this after bulk operations to avoid cache misses
+   *
+   * @param entries Map of key-value pairs to prime
+   */
+  primeMany(entries: Map<K, V>): void {
+    entries.forEach((value, key) => {
+      this.setCached(key, value);
+    });
+  }
+
+  /**
+   * Get current cache size (useful for monitoring)
+   */
+  getCacheSize(): number {
+    return this.cache.size;
+  }
+
+  /**
+   * Get current pending batch size (useful for monitoring)
+   */
+  getPendingSize(): number {
+    return this.batch.size;
+  }
+
+  /**
+   * Dispose of the loader and clean up resources
+   * Call this when the loader is no longer needed
+   */
+  dispose(): void {
+    this.batch.clear();
+    this.cache.clear();
+    if (this.cacheCleanupTimer) {
+      clearInterval(this.cacheCleanupTimer);
+      this.cacheCleanupTimer = null;
+    }
   }
 }
 
@@ -741,13 +1103,119 @@ export class QueryContext {
   }
 
   /**
-   * Clear all loaders (call between requests)
+   * Clear pending batches for all loaders (call between requests)
+   * Note: This does NOT clear caches - use clearAllCaches() for that
    */
   clear(): void {
     this.userLoader.clear();
     this.workspaceLoader.clear();
     this.projectLoader.clear();
     this.conversationLoader.clear();
+  }
+
+  /**
+   * Clear all caches and pending batches
+   * Use this when you need a complete reset
+   */
+  clearAllCaches(): void {
+    this.userLoader.clearAll();
+    this.workspaceLoader.clearAll();
+    this.projectLoader.clearAll();
+    this.conversationLoader.clearAll();
+  }
+
+  /**
+   * Invalidate cache for a specific user
+   */
+  invalidateUser(id: number): void {
+    this.userLoader.clear(id);
+  }
+
+  /**
+   * Invalidate cache for specific users
+   */
+  invalidateUsers(ids: number[]): void {
+    this.userLoader.clearMany(ids);
+  }
+
+  /**
+   * Invalidate cache for a specific workspace
+   */
+  invalidateWorkspace(id: number): void {
+    this.workspaceLoader.clear(id);
+  }
+
+  /**
+   * Invalidate cache for specific workspaces
+   */
+  invalidateWorkspaces(ids: number[]): void {
+    this.workspaceLoader.clearMany(ids);
+  }
+
+  /**
+   * Invalidate cache for a specific project
+   */
+  invalidateProject(id: number): void {
+    this.projectLoader.clear(id);
+  }
+
+  /**
+   * Invalidate cache for specific projects
+   */
+  invalidateProjects(ids: number[]): void {
+    this.projectLoader.clearMany(ids);
+  }
+
+  /**
+   * Invalidate cache for a specific conversation
+   */
+  invalidateConversation(id: string): void {
+    this.conversationLoader.clear(id);
+  }
+
+  /**
+   * Invalidate cache for specific conversations
+   */
+  invalidateConversations(ids: string[]): void {
+    this.conversationLoader.clearMany(ids);
+  }
+
+  /**
+   * Prime user cache with known value (use after creates/updates)
+   */
+  primeUser(id: number, user: Prisma.UserGetPayload<{}>): void {
+    this.userLoader.prime(id, user);
+  }
+
+  /**
+   * Prime workspace cache with known value (use after creates/updates)
+   */
+  primeWorkspace(id: number, workspace: Prisma.WorkspaceGetPayload<{}>): void {
+    this.workspaceLoader.prime(id, workspace);
+  }
+
+  /**
+   * Prime project cache with known value (use after creates/updates)
+   */
+  primeProject(id: number, project: Prisma.ProjectGetPayload<{}>): void {
+    this.projectLoader.prime(id, project);
+  }
+
+  /**
+   * Prime conversation cache with known value (use after creates/updates)
+   */
+  primeConversation(id: string, conversation: Prisma.ConversationGetPayload<{}>): void {
+    this.conversationLoader.prime(id, conversation);
+  }
+
+  /**
+   * Dispose of all loaders and clean up resources
+   */
+  dispose(): void {
+    this.userLoader.dispose();
+    this.workspaceLoader.dispose();
+    this.projectLoader.dispose();
+    this.conversationLoader.dispose();
   }
 }
 
@@ -758,4 +1226,143 @@ export function createQueryContext(): QueryContext {
   return new QueryContext();
 }
 
+// =====================================================
+// Global Batch Loader Invalidation Helpers
+// =====================================================
+
+/**
+ * Registry to track all active BatchLoader instances for global invalidation
+ */
+class BatchLoaderRegistry {
+  private static loaders: Map<string, BatchLoader<unknown, unknown>> = new Map();
+
+  /**
+   * Register a loader for global invalidation
+   */
+  static register<K, V>(name: string, loader: BatchLoader<K, V>): void {
+    this.loaders.set(name, loader as BatchLoader<unknown, unknown>);
+  }
+
+  /**
+   * Unregister a loader
+   */
+  static unregister(name: string): void {
+    this.loaders.delete(name);
+  }
+
+  /**
+   * Get a registered loader
+   */
+  static get<K, V>(name: string): BatchLoader<K, V> | undefined {
+    return this.loaders.get(name) as BatchLoader<K, V> | undefined;
+  }
+
+  /**
+   * Clear all registered loaders' caches
+   */
+  static clearAll(): void {
+    this.loaders.forEach((loader) => {
+      loader.clearAll();
+    });
+  }
+
+  /**
+   * Dispose all registered loaders
+   */
+  static disposeAll(): void {
+    this.loaders.forEach((loader) => {
+      loader.dispose();
+    });
+    this.loaders.clear();
+  }
+
+  /**
+   * Get all registered loader names
+   */
+  static getRegisteredNames(): string[] {
+    return Array.from(this.loaders.keys());
+  }
+}
+
+/**
+ * BatchLoader invalidation helpers for use when data changes
+ * These helpers work with registered loaders for application-wide cache invalidation
+ */
+export const BatchLoaderInvalidation = {
+  /**
+   * Register a loader for global invalidation
+   */
+  register<K, V>(name: string, loader: BatchLoader<K, V>): void {
+    BatchLoaderRegistry.register(name, loader);
+  },
+
+  /**
+   * Unregister a loader
+   */
+  unregister(name: string): void {
+    BatchLoaderRegistry.unregister(name);
+  },
+
+  /**
+   * Clear all registered loaders' caches
+   * Use this for bulk data changes or deployment scenarios
+   */
+  clearAllLoaders(): void {
+    BatchLoaderRegistry.clearAll();
+    metrics.increment('db.batch.global_invalidate', { scope: 'all' });
+  },
+
+  /**
+   * Dispose all registered loaders (cleanup)
+   */
+  disposeAllLoaders(): void {
+    BatchLoaderRegistry.disposeAll();
+  },
+
+  /**
+   * Get registered loader names (for monitoring/debugging)
+   */
+  getRegisteredLoaders(): string[] {
+    return BatchLoaderRegistry.getRegisteredNames();
+  },
+
+  /**
+   * Invalidate a specific loader by name
+   */
+  invalidateLoader(name: string): boolean {
+    const loader = BatchLoaderRegistry.get(name);
+    if (loader) {
+      loader.clearAll();
+      metrics.increment('db.batch.global_invalidate', { scope: 'loader', loader: name });
+      return true;
+    }
+    return false;
+  },
+
+  /**
+   * Invalidate a specific key in a named loader
+   */
+  invalidateKey<K>(loaderName: string, key: K): boolean {
+    const loader = BatchLoaderRegistry.get<K, unknown>(loaderName);
+    if (loader) {
+      loader.clear(key);
+      return true;
+    }
+    return false;
+  },
+
+  /**
+   * Prime a value in a named loader (use after writes)
+   */
+  prime<K, V>(loaderName: string, key: K, value: V): boolean {
+    const loader = BatchLoaderRegistry.get<K, V>(loaderName);
+    if (loader) {
+      loader.prime(key, value);
+      return true;
+    }
+    return false;
+  },
+};
+
+export { BatchLoaderRegistry };
 export default OptimizedQueries;

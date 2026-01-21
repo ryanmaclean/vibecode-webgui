@@ -9,6 +9,7 @@
 
 import { cacheGet, cacheSet, cacheDelete, cacheDeletePattern, TTLPresets } from '../cache/cache-utils';
 import { metrics } from '../server-monitoring';
+import { BatchLoaderInvalidation } from './optimized-queries';
 
 /**
  * Cache strategy types for different query patterns
@@ -398,39 +399,67 @@ export class QueryCacheManager {
 
 /**
  * Cache invalidation helpers for common operations
+ * Integrates both QueryCacheManager and BatchLoader invalidation
  */
 export const CacheInvalidation = {
   /**
    * Invalidate all caches related to a user
+   * Clears both query cache and BatchLoader cache
    */
   async onUserUpdate(userId: number): Promise<void> {
+    // Invalidate query cache
     await QueryCacheManager.invalidateByTag('user');
-    // Also invalidate user-specific patterns
     await cacheDeletePattern(`*user:${userId}*`);
+
+    // Invalidate BatchLoader cache
+    BatchLoaderInvalidation.invalidateKey('user_loader', userId);
+
+    metrics.increment('cache.invalidation.user', { user_id: userId.toString() });
   },
 
   /**
    * Invalidate all caches related to a workspace
+   * Clears both query cache and BatchLoader cache
    */
   async onWorkspaceUpdate(workspaceId: number): Promise<void> {
+    // Invalidate query cache
     await QueryCacheManager.invalidateByTag('workspace');
     await cacheDeletePattern(`*workspace:${workspaceId}*`);
+
+    // Invalidate BatchLoader cache
+    BatchLoaderInvalidation.invalidateKey('workspace_loader', workspaceId);
+
+    metrics.increment('cache.invalidation.workspace', { workspace_id: workspaceId.toString() });
   },
 
   /**
    * Invalidate all caches related to a project
+   * Clears both query cache and BatchLoader cache
    */
   async onProjectUpdate(projectId: number): Promise<void> {
+    // Invalidate query cache
     await QueryCacheManager.invalidateByTag('project');
     await cacheDeletePattern(`*project:${projectId}*`);
+
+    // Invalidate BatchLoader cache
+    BatchLoaderInvalidation.invalidateKey('project_loader', projectId);
+
+    metrics.increment('cache.invalidation.project', { project_id: projectId.toString() });
   },
 
   /**
    * Invalidate all caches related to a conversation
+   * Clears both query cache and BatchLoader cache
    */
   async onConversationUpdate(conversationId: string): Promise<void> {
+    // Invalidate query cache
     await QueryCacheManager.invalidateByTag('conversation');
     await cacheDeletePattern(`*conversation:${conversationId}*`);
+
+    // Invalidate BatchLoader cache
+    BatchLoaderInvalidation.invalidateKey('conversation_loader', conversationId);
+
+    metrics.increment('cache.invalidation.conversation', { conversation_id: conversationId });
   },
 
   /**
@@ -439,6 +468,8 @@ export const CacheInvalidation = {
   async onFileUpdate(fileId: number): Promise<void> {
     await QueryCacheManager.invalidateByTag('file');
     await cacheDeletePattern(`*file:${fileId}*`);
+
+    metrics.increment('cache.invalidation.file', { file_id: fileId.toString() });
   },
 
   /**
@@ -449,13 +480,71 @@ export const CacheInvalidation = {
     if (workspaceId) {
       await cacheDeletePattern(`*rag*workspace:${workspaceId}*`);
     }
+
+    metrics.increment('cache.invalidation.rag', { workspace_id: workspaceId?.toString() ?? 'all' });
   },
 
   /**
    * Invalidate all query caches (nuclear option)
+   * Also clears all registered BatchLoader caches
    */
   async invalidateAll(): Promise<void> {
     await cacheDeletePattern('query:*');
+    BatchLoaderInvalidation.clearAllLoaders();
+
+    metrics.increment('cache.invalidation.all');
+  },
+
+  /**
+   * Invalidate multiple users at once
+   */
+  async onUsersUpdate(userIds: number[]): Promise<void> {
+    await QueryCacheManager.invalidateByTag('user');
+    for (const userId of userIds) {
+      await cacheDeletePattern(`*user:${userId}*`);
+      BatchLoaderInvalidation.invalidateKey('user_loader', userId);
+    }
+
+    metrics.increment('cache.invalidation.users_bulk', { count: userIds.length.toString() });
+  },
+
+  /**
+   * Invalidate multiple workspaces at once
+   */
+  async onWorkspacesUpdate(workspaceIds: number[]): Promise<void> {
+    await QueryCacheManager.invalidateByTag('workspace');
+    for (const workspaceId of workspaceIds) {
+      await cacheDeletePattern(`*workspace:${workspaceId}*`);
+      BatchLoaderInvalidation.invalidateKey('workspace_loader', workspaceId);
+    }
+
+    metrics.increment('cache.invalidation.workspaces_bulk', { count: workspaceIds.length.toString() });
+  },
+
+  /**
+   * Invalidate multiple projects at once
+   */
+  async onProjectsUpdate(projectIds: number[]): Promise<void> {
+    await QueryCacheManager.invalidateByTag('project');
+    for (const projectId of projectIds) {
+      await cacheDeletePattern(`*project:${projectId}*`);
+      BatchLoaderInvalidation.invalidateKey('project_loader', projectId);
+    }
+
+    metrics.increment('cache.invalidation.projects_bulk', { count: projectIds.length.toString() });
+  },
+
+  /**
+   * Invalidate multiple conversations at once
+   */
+  async onConversationsUpdate(conversationIds: string[]): Promise<void> {
+    await QueryCacheManager.invalidateByTag('conversation');
+    for (const conversationId of conversationIds) {
+      await cacheDeletePattern(`*conversation:${conversationId}*`);
+      BatchLoaderInvalidation.invalidateKey('conversation_loader', conversationId);
+    }
+
+    metrics.increment('cache.invalidation.conversations_bulk', { count: conversationIds.length.toString() });
   },
 };
 

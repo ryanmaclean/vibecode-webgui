@@ -21,6 +21,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createProblemResponse } from '@/lib/utils/api-response'
 
 /**
+ * Key uniqueness options for combining IP with additional identifiers
+ */
+export interface KeyUniquenessOptions {
+  /** Include user agent in key generation */
+  includeUserAgent?: boolean
+  /** Include session ID header name (e.g., 'x-session-id') */
+  sessionIdHeader?: string
+  /** Custom additional identifier extractor */
+  customIdentifier?: (req: NextRequest) => string | null
+}
+
+/**
  * Rate limit configuration
  */
 export interface SlidingWindowConfig {
@@ -30,10 +42,22 @@ export interface SlidingWindowConfig {
   windowSeconds: number
   /** Optional custom key generator function */
   keyGenerator?: (req: NextRequest) => string
+  /** Key uniqueness options for more robust identification */
+  keyUniqueness?: KeyUniquenessOptions
   /** Custom error message */
   message?: string
   /** Skip rate limiting for certain conditions */
   skip?: (req: NextRequest) => boolean | Promise<boolean>
+}
+
+/**
+ * Configuration validation error
+ */
+export class RateLimiterConfigError extends Error {
+  constructor(message: string) {
+    super(message)
+    this.name = 'RateLimiterConfigError'
+  }
 }
 
 /**
@@ -100,6 +124,10 @@ class InMemoryStorage implements RateLimitStorage {
   }
 
   async set(key: string, data: WindowData, ttlSeconds: number): Promise<void> {
+    // Validate TTL is positive before applying
+    if (ttlSeconds <= 0) {
+      return // Skip storage for non-positive TTL
+    }
     this.store.set(key, {
       data,
       expires: Date.now() + ttlSeconds * 1000,
@@ -107,6 +135,10 @@ class InMemoryStorage implements RateLimitStorage {
   }
 
   async increment(key: string, ttlSeconds: number): Promise<number> {
+    // Validate TTL is positive
+    if (ttlSeconds <= 0) {
+      throw new Error('TTL must be positive for increment operation')
+    }
     const existing = await this.get(key)
     const newCount = (existing?.count ?? 0) + 1
     await this.set(
@@ -138,26 +170,91 @@ function getMemoryStorage(): InMemoryStorage {
 
 /**
  * Extract client IP from request headers
- * Handles various proxy configurations
+ * Handles various proxy configurations with improved proxy chain handling
  */
 function getClientIP(req: NextRequest): string {
-  // Check for forwarded IP (behind proxy/load balancer)
-  const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
+  // Check Cloudflare first (most reliable when using Cloudflare)
+  const cfIP = req.headers.get('cf-connecting-ip')
+  if (cfIP) {
+    return cfIP.trim()
   }
 
-  // Check other common headers
-  const realIP =
-    req.headers.get('x-real-ip') ||
-    req.headers.get('cf-connecting-ip') ||
-    req.headers.get('true-client-ip')
+  // Check true-client-ip (Akamai and others)
+  const trueClientIP = req.headers.get('true-client-ip')
+  if (trueClientIP) {
+    return trueClientIP.trim()
+  }
 
+  // Check x-real-ip (nginx proxy)
+  const realIP = req.headers.get('x-real-ip')
   if (realIP) {
-    return realIP
+    return realIP.trim()
+  }
+
+  // Check for forwarded IP (behind proxy/load balancer)
+  // Take the leftmost IP that is not a private/internal address
+  const forwarded = req.headers.get('x-forwarded-for')
+  if (forwarded) {
+    const ips = forwarded.split(',').map((ip) => ip.trim())
+    // Return the first (client) IP from the chain
+    // In production, you may want to configure trusted proxy count
+    // to skip known proxy IPs from the right
+    const clientIP = ips[0]
+    if (clientIP) {
+      return clientIP
+    }
+  }
+
+  // Check Forwarded header (RFC 7239 standard)
+  const forwardedHeader = req.headers.get('forwarded')
+  if (forwardedHeader) {
+    const forMatch = forwardedHeader.match(/for=["']?([^"',;\s]+)["']?/i)
+    if (forMatch?.[1]) {
+      // Remove brackets from IPv6 addresses
+      return forMatch[1].replace(/^\[|\]$/g, '').trim()
+    }
   }
 
   return 'unknown'
+}
+
+/**
+ * Create a robust key generator that combines IP with additional identifiers
+ * to prevent rate limit bypass via header spoofing
+ */
+function createRobustKeyGenerator(options?: KeyUniquenessOptions): (req: NextRequest) => string {
+  return (req: NextRequest): string => {
+    const parts: string[] = []
+
+    // Always include IP as base identifier
+    const ip = getClientIP(req)
+    parts.push(ip)
+
+    if (options?.includeUserAgent) {
+      const userAgent = req.headers.get('user-agent')
+      if (userAgent) {
+        // Use a hash-like truncation for privacy and key length
+        const uaFingerprint = userAgent.slice(0, 50).replace(/[^a-zA-Z0-9]/g, '')
+        parts.push(`ua:${uaFingerprint}`)
+      }
+    }
+
+    if (options?.sessionIdHeader) {
+      const sessionId = req.headers.get(options.sessionIdHeader)
+      if (sessionId) {
+        parts.push(`sid:${sessionId}`)
+      }
+    }
+
+    if (options?.customIdentifier) {
+      const customId = options.customIdentifier(req)
+      if (customId) {
+        parts.push(`cid:${customId}`)
+      }
+    }
+
+    return parts.join(':')
+  }
 }
 
 /**
@@ -169,20 +266,67 @@ function getClientIP(req: NextRequest): string {
  * overlaps with the sliding window.
  */
 export class SlidingWindowRateLimiter {
-  private config: Required<Omit<SlidingWindowConfig, 'skip'>> & { skip?: SlidingWindowConfig['skip'] }
+  private config: Required<Omit<SlidingWindowConfig, 'skip' | 'keyUniqueness'>> & {
+    skip?: SlidingWindowConfig['skip']
+    keyUniqueness?: KeyUniquenessOptions
+  }
   private storage: RateLimitStorage
   private prefix: string
 
   constructor(config: SlidingWindowConfig, prefix: string = 'ratelimit') {
+    // Validate configuration before applying
+    this.validateConfig(config)
+
+    // Determine key generator: custom > robust with options > default IP-based
+    let keyGenerator: (req: NextRequest) => string
+    if (config.keyGenerator) {
+      keyGenerator = config.keyGenerator
+    } else if (config.keyUniqueness) {
+      keyGenerator = createRobustKeyGenerator(config.keyUniqueness)
+    } else {
+      keyGenerator = getClientIP
+    }
+
     this.config = {
       maxRequests: config.maxRequests,
       windowSeconds: config.windowSeconds,
-      keyGenerator: config.keyGenerator ?? getClientIP,
+      keyGenerator,
+      keyUniqueness: config.keyUniqueness,
       message: config.message ?? 'Rate limit exceeded. Please try again later.',
       skip: config.skip,
     }
     this.storage = getMemoryStorage()
     this.prefix = prefix
+  }
+
+  /**
+   * Validate rate limiter configuration
+   * Throws RateLimiterConfigError if configuration is invalid
+   */
+  private validateConfig(config: SlidingWindowConfig): void {
+    if (typeof config.maxRequests !== 'number' || config.maxRequests <= 0) {
+      throw new RateLimiterConfigError(
+        `maxRequests must be a positive number, got: ${config.maxRequests}`
+      )
+    }
+
+    if (!Number.isInteger(config.maxRequests)) {
+      throw new RateLimiterConfigError(
+        `maxRequests must be an integer, got: ${config.maxRequests}`
+      )
+    }
+
+    if (typeof config.windowSeconds !== 'number' || config.windowSeconds <= 0) {
+      throw new RateLimiterConfigError(
+        `windowSeconds must be a positive number, got: ${config.windowSeconds}`
+      )
+    }
+
+    if (!Number.isFinite(config.windowSeconds)) {
+      throw new RateLimiterConfigError(
+        `windowSeconds must be a finite number, got: ${config.windowSeconds}`
+      )
+    }
   }
 
   /**
@@ -512,4 +656,4 @@ export function applyRateLimitHeaders(
 }
 
 // Export for testing
-export { InMemoryStorage, getClientIP }
+export { InMemoryStorage, getClientIP, createRobustKeyGenerator }
