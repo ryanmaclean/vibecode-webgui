@@ -21,11 +21,14 @@ import {
   DEFAULT_PAGE_SIZE,
   getPaginationFromSearchParams,
 } from '@/lib/api/pagination'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 const log = createServiceLogger({
   service: 'vibecode-webgui',
   component: 'workspace-api'
 })
+
+const apiRateLimit = createAPIRateLimit(60) // 60 req/min for workspace operations
 
 const CreateWorkspaceRequestSchema = z.object({
   projectId: z.string(),
@@ -43,6 +46,20 @@ export async function POST(request: NextRequest) {
   const timer = createPerformanceTimer('workspace-creation', {
     requestId: requestContext.requestId
   })
+
+  // Rate limiting check
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+      },
+    })
+  }
 
   try {
     // Authentication check
@@ -198,6 +215,20 @@ export async function GET(request: NextRequest) {
     requestId: requestContext.requestId,
     workspaceId
   })
+
+  // Rate limiting check
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+      },
+    })
+  }
 
   try {
     // Authentication check

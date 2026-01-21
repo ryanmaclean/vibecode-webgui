@@ -9,6 +9,7 @@ import { litellmClient } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { z } from 'zod';
 import {
   MAX_PAGE_SIZE,
@@ -23,6 +24,8 @@ const aiManagementActionSchema = z.object({
 });
 
 export const runtime = 'nodejs';
+
+const apiRateLimit = createAPIRateLimit(60) // 60 req/min
 
 // Type Definitions
 interface AIRequestData {
@@ -99,6 +102,20 @@ interface PerformanceRequest {
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
     // Validate query parameters
     const queryValidation = validateQueryParams(request, aiManagementActionSchema);
     if (!queryValidation.success) {
@@ -680,7 +697,29 @@ function generateCostTimeline(_requests: any[], _timeframe: string) {
   return [];
 }
 
-export async function POST(_request: NextRequest) {
-  // Implementation for administrative actions like model configuration
-  return NextResponse.json({ message: 'POST endpoint not implemented' }, { status: 501 });
+export async function POST(request: NextRequest) {
+  try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
+    // Implementation for administrative actions like model configuration
+    return NextResponse.json({ message: 'POST endpoint not implemented' }, { status: 501 });
+  } catch (error) {
+    // Server error logged
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }
