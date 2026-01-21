@@ -48,25 +48,16 @@ export class RedisCacheClient {
         socket: {
           host: this.config.host,
           port: this.config.port,
+          reconnectStrategy: (retries: number) => {
+            if (retries > 10) {
+              console.error('Redis max retry attempts exceeded');
+              return new Error('Max retry attempts exceeded');
+            }
+            return Math.min(retries * 100, 3000);
+          }
         },
         password: this.config.password,
         database: this.config.database || 0,
-        keyPrefix: this.config.keyPrefix,
-        retry_strategy: (options: { error?: { code?: string }; total_retry_time?: number; attempt: number }) => {
-          if (options.error && options.error.code === 'ECONNREFUSED') {
-            console.error('Redis server connection refused');
-            return new Error('Redis server connection refused');
-          }
-          if (options.total_retry_time > 1000 * 60 * 60) {
-            console.error('Redis retry time exhausted');
-            return new Error('Retry time exhausted');
-          }
-          if (options.attempt > 10) {
-            console.error('Redis max retry attempts exceeded');
-            return new Error('Max retry attempts exceeded');
-          }
-          return Math.min(options.attempt * 100, 3000);
-        }
       });
 
       // Event listeners for monitoring
@@ -385,7 +376,7 @@ export class RedisCacheClient {
         return 30 * 60 * 1000; // 30 minutes
       case CacheTTL.LONG:
         return 2 * 60 * 60 * 1000; // 2 hours
-      case CacheTTL.EXTENDED:
+      case CacheTTL.VERY_LONG:
         return 24 * 60 * 60 * 1000; // 24 hours
       default:
         return 30 * 60 * 1000; // Default to medium
