@@ -13,7 +13,7 @@ import type { MCPClient } from '../mcp-client';
 export class UniversalAdapter extends BaseAgentAdapter {
   private protocol: 'agentapi' | 'mcp' | null = null;
   private agentId: string | null = null;
-  private mcpClient: MCPClient | null = null;
+  protected override mcpClient: MCPClient | null = null;
   private eventSource: EventSource | null = null;
 
   constructor(config: AgentConfig) {

@@ -249,4 +249,4 @@ export const ragSystem = new RAGSystem();
 
 // Re-export for convenience
 export { vectorStore, valkeyCache, embeddingService };
-export type { SearchResult, RAGDocument, RAGSearchOptions };
+export type { SearchResult };
