@@ -9,7 +9,7 @@
  * - Promise rejection behavior
  */
 
-import { BatchLoader, BatchQueryError } from '../../../../src/lib/database/optimized-queries';
+import { BatchLoader, BatchQueryError, BatchLoaderDisposedError } from '../../../../src/lib/database/optimized-queries';
 
 // Mock the metrics module
 jest.mock('../../../../src/lib/server-monitoring', () => ({
@@ -569,6 +569,329 @@ describe('BatchLoader Error Handling', () => {
 
       expect(result).toBe('primed-value');
       expect(batchFn).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('Memory management - dispose()', () => {
+    it('should clear all internal state on dispose', async () => {
+      const batchFn = jest.fn()
+        .mockResolvedValueOnce(new Map([[1, 'v1'], [2, 'v2']]));
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+      });
+
+      // Load some values to populate cache
+      await Promise.all([loader.load(1), loader.load(2)]);
+      expect(loader.getCacheSize()).toBe(2);
+
+      // Dispose
+      loader.dispose();
+
+      // Verify state is cleared
+      expect(loader.getCacheSize()).toBe(0);
+      expect(loader.getPendingSize()).toBe(0);
+      expect(loader.isDisposed()).toBe(true);
+    });
+
+    it('should be idempotent - calling dispose multiple times is safe', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      // Should not throw
+      loader.dispose();
+      loader.dispose();
+      loader.dispose();
+
+      expect(loader.isDisposed()).toBe(true);
+    });
+
+    it('should throw BatchLoaderDisposedError on load() after dispose', async () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      await expect(loader.load(1)).rejects.toThrow(BatchLoaderDisposedError);
+      await expect(loader.load(1)).rejects.toThrow('BatchLoader has been disposed');
+    });
+
+    it('should throw BatchLoaderDisposedError on loadMany() after dispose', async () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      await expect(loader.loadMany([1, 2, 3])).rejects.toThrow(BatchLoaderDisposedError);
+    });
+
+    it('should throw BatchLoaderDisposedError on clear() after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      expect(() => loader.clear(1)).toThrow(BatchLoaderDisposedError);
+      expect(() => loader.clear()).toThrow(BatchLoaderDisposedError);
+    });
+
+    it('should throw BatchLoaderDisposedError on clearMany() after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      expect(() => loader.clearMany([1, 2])).toThrow(BatchLoaderDisposedError);
+    });
+
+    it('should throw BatchLoaderDisposedError on clearAll() after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      expect(() => loader.clearAll()).toThrow(BatchLoaderDisposedError);
+    });
+
+    it('should throw BatchLoaderDisposedError on prime() after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      expect(() => loader.prime(1, 'value')).toThrow(BatchLoaderDisposedError);
+    });
+
+    it('should throw BatchLoaderDisposedError on primeMany() after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+      });
+
+      loader.dispose();
+
+      expect(() => loader.primeMany(new Map([[1, 'v1']]))).toThrow(BatchLoaderDisposedError);
+    });
+  });
+
+  describe('Memory management - TTL eviction', () => {
+    it('should return number of expired entries cleaned up', async () => {
+      // Use a very short TTL and real timers with manual Date.now mocking
+      const originalDateNow = Date.now;
+      let mockNow = originalDateNow();
+      jest.spyOn(Date, 'now').mockImplementation(() => mockNow);
+
+      const batchFn = jest.fn()
+        .mockResolvedValueOnce(new Map([[1, 'v1'], [2, 'v2'], [3, 'v3']]));
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        cacheTTL: 1, // 1 second TTL
+      });
+
+      try {
+        // Load values
+        await Promise.all([loader.load(1), loader.load(2), loader.load(3)]);
+        expect(loader.getCacheSize()).toBe(3);
+
+        // Advance mock time past TTL
+        mockNow += 2000;
+
+        // Manually trigger cleanup
+        const cleaned = loader.cleanupExpiredEntries();
+
+        expect(cleaned).toBe(3);
+        expect(loader.getCacheSize()).toBe(0);
+      } finally {
+        jest.spyOn(Date, 'now').mockRestore();
+        loader.dispose();
+      }
+    });
+
+    it('should not clean up entries that have not expired', async () => {
+      const originalDateNow = Date.now;
+      let mockNow = originalDateNow();
+      jest.spyOn(Date, 'now').mockImplementation(() => mockNow);
+
+      const batchFn = jest.fn()
+        .mockResolvedValueOnce(new Map([[1, 'v1'], [2, 'v2']]));
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        cacheTTL: 60, // 60 seconds TTL
+      });
+
+      try {
+        await Promise.all([loader.load(1), loader.load(2)]);
+        expect(loader.getCacheSize()).toBe(2);
+
+        // Advance time but not past TTL (only 30 seconds)
+        mockNow += 30000;
+
+        const cleaned = loader.cleanupExpiredEntries();
+
+        expect(cleaned).toBe(0);
+        expect(loader.getCacheSize()).toBe(2);
+      } finally {
+        jest.spyOn(Date, 'now').mockRestore();
+        loader.dispose();
+      }
+    });
+
+    it('should return 0 when cleanupExpiredEntries called after dispose', () => {
+      const loader = new BatchLoader<number, string>(jest.fn(), {
+        cachePrefix: 'test_loader',
+        cacheTTL: 60,
+      });
+
+      loader.dispose();
+
+      // Should not throw, just return 0
+      const cleaned = loader.cleanupExpiredEntries();
+      expect(cleaned).toBe(0);
+    });
+
+    it('should evict expired entries on access', async () => {
+      const originalDateNow = Date.now;
+      let mockNow = originalDateNow();
+      jest.spyOn(Date, 'now').mockImplementation(() => mockNow);
+
+      const batchFn = jest.fn()
+        .mockResolvedValueOnce(new Map([[1, 'v1']]));
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        cacheTTL: 1, // 1 second TTL
+      });
+
+      try {
+        // Load a value
+        await loader.load(1);
+        expect(loader.getCacheSize()).toBe(1);
+
+        // Advance time past TTL
+        mockNow += 2000;
+
+        // Next load should refetch
+        batchFn.mockResolvedValueOnce(new Map([[1, 'new-v1']]));
+        const result = await loader.load(1);
+
+        expect(result).toBe('new-v1');
+        expect(batchFn).toHaveBeenCalledTimes(2);
+      } finally {
+        jest.spyOn(Date, 'now').mockRestore();
+        loader.dispose();
+      }
+    });
+  });
+
+  describe('Memory management - LRU eviction', () => {
+    it('should evict least recently used entries when cache exceeds maxCacheSize', async () => {
+      const batchFn = jest.fn()
+        .mockImplementation(async (keys: number[]) => {
+          return new Map(keys.map(k => [k, `value-${k}`]));
+        });
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        maxCacheSize: 3,
+      });
+
+      // Load 3 items - should all fit
+      await loader.load(1);
+      await loader.load(2);
+      await loader.load(3);
+      expect(loader.getCacheSize()).toBe(3);
+
+      // Access item 1 to make it recently used
+      await loader.load(1);
+
+      // Load item 4 - should evict item 2 (least recently used)
+      await loader.load(4);
+      expect(loader.getCacheSize()).toBe(3);
+
+      // Item 1 should still be cached (was accessed recently)
+      batchFn.mockClear();
+      await loader.load(1);
+      expect(batchFn).not.toHaveBeenCalled();
+
+      // Item 2 should have been evicted
+      batchFn.mockResolvedValueOnce(new Map([[2, 'new-value-2']]));
+      const result = await loader.load(2);
+      expect(result).toBe('new-value-2');
+      expect(batchFn).toHaveBeenCalledWith([2]);
+    });
+
+    it('should not evict when cache is at or below maxCacheSize', async () => {
+      const batchFn = jest.fn()
+        .mockImplementation(async (keys: number[]) => {
+          return new Map(keys.map(k => [k, `value-${k}`]));
+        });
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        maxCacheSize: 5,
+      });
+
+      // Load 3 items - should all fit without eviction
+      await loader.load(1);
+      await loader.load(2);
+      await loader.load(3);
+
+      expect(loader.getCacheSize()).toBe(3);
+
+      // All should still be cached
+      batchFn.mockClear();
+      await loader.load(1);
+      await loader.load(2);
+      await loader.load(3);
+      expect(batchFn).not.toHaveBeenCalled();
+    });
+
+    it('should not perform LRU eviction when maxCacheSize is not set', async () => {
+      const batchFn = jest.fn()
+        .mockImplementation(async (keys: number[]) => {
+          return new Map(keys.map(k => [k, `value-${k}`]));
+        });
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        // No maxCacheSize set
+      });
+
+      // Load many items
+      for (let i = 1; i <= 100; i++) {
+        await loader.load(i);
+      }
+
+      // All should be cached
+      expect(loader.getCacheSize()).toBe(100);
+    });
+
+    it('should handle primeMany with LRU eviction', async () => {
+      const batchFn = jest.fn();
+
+      const loader = new BatchLoader<number, string>(batchFn, {
+        cachePrefix: 'test_loader',
+        maxCacheSize: 3,
+      });
+
+      // Prime 5 items - should evict oldest 2
+      loader.primeMany(new Map([
+        [1, 'v1'],
+        [2, 'v2'],
+        [3, 'v3'],
+        [4, 'v4'],
+        [5, 'v5'],
+      ]));
+
+      expect(loader.getCacheSize()).toBe(3);
     });
   });
 });

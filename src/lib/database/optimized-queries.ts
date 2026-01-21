@@ -30,6 +30,8 @@ interface BatchQueryOptions<K, T> {
   retryCount?: number;
   /** Callback invoked when an error occurs during batch execution */
   onError?: (error: Error, keys: K[]) => void;
+  /** Maximum number of entries to keep in cache (enables LRU eviction) */
+  maxCacheSize?: number;
 }
 
 /**
@@ -67,10 +69,22 @@ interface BatchResolver<V> {
 
 /**
  * Cached entry with expiration tracking for time-based cache invalidation
+ * and LRU access tracking
  */
 interface CachedEntry<V> {
   value: V;
   expiresAt: number;
+  lastAccessedAt: number;
+}
+
+/**
+ * Error thrown when attempting to use a disposed BatchLoader
+ */
+export class BatchLoaderDisposedError extends Error {
+  constructor(operation: string) {
+    super(`BatchLoader has been disposed. Cannot perform operation: ${operation}`);
+    this.name = 'BatchLoaderDisposedError';
+  }
 }
 
 interface QueryMetrics {
@@ -103,9 +117,11 @@ export class BatchLoader<K, V> {
   private batch: Map<K, BatchResolver<V>[]> = new Map();
   private cache: Map<K, CachedEntry<V>> = new Map();
   private batchScheduled = false;
+  private batchTimer: ReturnType<typeof setImmediate> | null = null;
   private cacheCleanupTimer: ReturnType<typeof setInterval> | null = null;
+  private disposed = false;
   private readonly batchFn: (keys: K[]) => Promise<Map<K, V>>;
-  private readonly options: Required<Omit<BatchQueryOptions<K, V>, 'onError'>> & { onError?: (error: Error, keys: K[]) => void };
+  private readonly options: Required<Omit<BatchQueryOptions<K, V>, 'onError' | 'maxCacheSize'>> & { onError?: (error: Error, keys: K[]) => void; maxCacheSize?: number };
 
   constructor(
     batchFn: (keys: K[]) => Promise<Map<K, V>>,
@@ -119,11 +135,28 @@ export class BatchLoader<K, V> {
       cachePrefix: options.cachePrefix ?? 'batch',
       retryCount: options.retryCount ?? 0,
       onError: options.onError,
+      maxCacheSize: options.maxCacheSize,
     };
 
     // Start periodic cache cleanup if TTL is set
     if (this.options.cacheTTL > 0) {
       this.startCacheCleanup();
+    }
+  }
+
+  /**
+   * Check if the loader has been disposed
+   */
+  isDisposed(): boolean {
+    return this.disposed;
+  }
+
+  /**
+   * Throw error if loader has been disposed
+   */
+  private ensureNotDisposed(operation: string): void {
+    if (this.disposed) {
+      throw new BatchLoaderDisposedError(operation);
     }
   }
 
@@ -142,9 +175,25 @@ export class BatchLoader<K, V> {
   }
 
   /**
-   * Remove expired entries from cache
+   * Remove expired entries from cache (internal use)
    */
   private cleanupExpiredCache(): void {
+    if (this.disposed) {
+      return;
+    }
+    this.cleanupExpiredEntries();
+  }
+
+  /**
+   * Remove expired entries from cache
+   * Can be called manually to trigger cleanup outside the periodic interval
+   * @returns Number of entries removed
+   */
+  cleanupExpiredEntries(): number {
+    if (this.disposed) {
+      return 0;
+    }
+
     const now = Date.now();
     const keysToDelete: K[] = [];
     this.cache.forEach((entry, key) => {
@@ -160,10 +209,13 @@ export class BatchLoader<K, V> {
         count: keysToDelete.length.toString(),
       });
     }
+
+    return keysToDelete.length;
   }
 
   /**
    * Get a cached value if it exists and hasn't expired
+   * Updates lastAccessedAt for LRU tracking
    */
   private getCached(key: K): V | undefined {
     const entry = this.cache.get(key);
@@ -171,32 +223,79 @@ export class BatchLoader<K, V> {
       return undefined;
     }
 
+    const now = Date.now();
+
     // Check if expired
-    if (Date.now() > entry.expiresAt) {
+    if (now > entry.expiresAt) {
       this.cache.delete(key);
       return undefined;
     }
 
+    // Update access time for LRU tracking
+    entry.lastAccessedAt = now;
     return entry.value;
   }
 
   /**
    * Set a value in the cache with TTL
+   * Triggers LRU eviction if maxCacheSize is exceeded
    */
   private setCached(key: K, value: V): void {
     if (this.options.cacheTTL <= 0) {
       return;
     }
 
-    const expiresAt = Date.now() + (this.options.cacheTTL * 1000);
-    this.cache.set(key, { value, expiresAt });
+    const now = Date.now();
+    const expiresAt = now + (this.options.cacheTTL * 1000);
+    this.cache.set(key, { value, expiresAt, lastAccessedAt: now });
+
+    // Trigger LRU eviction if needed
+    this.evictLRUIfNeeded();
+  }
+
+  /**
+   * Evict least recently used entries if cache exceeds maxCacheSize
+   */
+  private evictLRUIfNeeded(): void {
+    const maxSize = this.options.maxCacheSize;
+    if (maxSize === undefined || this.cache.size <= maxSize) {
+      return;
+    }
+
+    // Collect entries with their access times
+    const entries: Array<{ key: K; lastAccessedAt: number }> = [];
+    this.cache.forEach((entry, key) => {
+      entries.push({ key, lastAccessedAt: entry.lastAccessedAt });
+    });
+
+    // Sort by access time (oldest first)
+    entries.sort((a, b) => a.lastAccessedAt - b.lastAccessedAt);
+
+    // Calculate how many to evict
+    const evictCount = this.cache.size - maxSize;
+    const keysToEvict = entries.slice(0, evictCount).map(e => e.key);
+
+    // Evict oldest entries
+    for (const key of keysToEvict) {
+      this.cache.delete(key);
+    }
+
+    if (this.options.trackMetrics && keysToEvict.length > 0) {
+      metrics.increment('db.batch.cache_lru_evict', {
+        operation: this.options.cachePrefix,
+        count: keysToEvict.length.toString(),
+      });
+    }
   }
 
   /**
    * Load a single item - will be batched with other requests
    * Returns a promise that properly rejects on error (not resolving to null)
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   async load(key: K): Promise<V | null> {
+    this.ensureNotDisposed('load');
+
     // Check cache first (with TTL expiration check)
     const cached = this.getCached(key);
     if (cached !== undefined) {
@@ -228,7 +327,7 @@ export class BatchLoader<K, V> {
         this.batchScheduled = true;
         // Use setImmediate/nextTick to batch within the same event loop tick
         if (typeof setImmediate !== 'undefined') {
-          setImmediate(() => this.executeBatch());
+          this.batchTimer = setImmediate(() => this.executeBatch());
         } else {
           Promise.resolve().then(() => this.executeBatch());
         }
@@ -238,8 +337,10 @@ export class BatchLoader<K, V> {
 
   /**
    * Load multiple items at once
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   async loadMany(keys: K[]): Promise<Array<V | null>> {
+    this.ensureNotDisposed('loadMany');
     return Promise.all(keys.map((key) => this.load(key)));
   }
 
@@ -419,8 +520,10 @@ export class BatchLoader<K, V> {
    * Use this when you know specific data has changed
    *
    * @param key Optional key to clear from cache. If not provided, clears pending batch only.
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   clear(key?: K): void {
+    this.ensureNotDisposed('clear');
     if (key !== undefined) {
       this.cache.delete(key);
       if (this.options.trackMetrics) {
@@ -439,8 +542,10 @@ export class BatchLoader<K, V> {
    * Use this when multiple related records have changed
    *
    * @param keys Array of keys to clear from cache
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   clearMany(keys: K[]): void {
+    this.ensureNotDisposed('clearMany');
     for (const key of keys) {
       this.cache.delete(key);
     }
@@ -456,8 +561,10 @@ export class BatchLoader<K, V> {
   /**
    * Clear all cached values and pending batches
    * Use this when bulk data changes or for complete cache invalidation
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   clearAll(): void {
+    this.ensureNotDisposed('clearAll');
     this.batch.clear();
     this.cache.clear();
     if (this.options.trackMetrics) {
@@ -474,8 +581,10 @@ export class BatchLoader<K, V> {
    *
    * @param key Key to prime
    * @param value Value to cache
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   prime(key: K, value: V): void {
+    this.ensureNotDisposed('prime');
     this.setCached(key, value);
   }
 
@@ -484,8 +593,10 @@ export class BatchLoader<K, V> {
    * Use this after bulk operations to avoid cache misses
    *
    * @param entries Map of key-value pairs to prime
+   * @throws {BatchLoaderDisposedError} If the loader has been disposed
    */
   primeMany(entries: Map<K, V>): void {
+    this.ensureNotDisposed('primeMany');
     entries.forEach((value, key) => {
       this.setCached(key, value);
     });
@@ -506,15 +617,46 @@ export class BatchLoader<K, V> {
   }
 
   /**
-   * Dispose of the loader and clean up resources
-   * Call this when the loader is no longer needed
+   * Dispose of the loader and clean up all resources
+   * Call this when the loader is no longer needed to prevent memory leaks
+   *
+   * After calling dispose():
+   * - All internal Maps (cache, batch) are cleared
+   * - All pending timers are cancelled
+   * - Further operations will throw BatchLoaderDisposedError
+   *
+   * This method is idempotent - calling it multiple times is safe
    */
   dispose(): void {
+    if (this.disposed) {
+      return;
+    }
+
+    this.disposed = true;
+
+    // Clear all internal state
     this.batch.clear();
     this.cache.clear();
-    if (this.cacheCleanupTimer) {
+    this.batchScheduled = false;
+
+    // Cancel pending batch timer
+    if (this.batchTimer !== null) {
+      if (typeof clearImmediate !== 'undefined') {
+        clearImmediate(this.batchTimer);
+      }
+      this.batchTimer = null;
+    }
+
+    // Cancel periodic cache cleanup timer
+    if (this.cacheCleanupTimer !== null) {
       clearInterval(this.cacheCleanupTimer);
       this.cacheCleanupTimer = null;
+    }
+
+    if (this.options.trackMetrics) {
+      metrics.increment('db.batch.disposed', {
+        operation: this.options.cachePrefix,
+      });
     }
   }
 }
