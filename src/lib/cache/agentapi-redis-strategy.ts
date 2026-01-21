@@ -11,7 +11,7 @@
  */
 
 import { Redis } from 'ioredis';
-import { cache, CacheKeys, CacheTTL } from './redis-client';
+import { cache, CacheKeys, CacheTTL } from './unified-cache-client';
 import { metrics } from '../server-monitoring';
 // import { logger } from '@/lib/logger';
 // =====================================================

@@ -369,7 +369,8 @@ class MonitoringSetupService {
     console.log('📊 Monitoring setup report', report)
 
     // Submit setup metrics
-    logger.counter('vibecode.monitoring.setup.completed', 1, {
+    logger.info('Monitoring setup completed', {
+      metric: 'vibecode.monitoring.setup.completed',
       environment: this.config.environment,
       success: this.result.success.toString(),
       components_enabled: enabledComponents.length.toString()
@@ -424,6 +425,5 @@ export async function setupDevelopmentMonitoring(): Promise<MonitoringSetupResul
   return await setup.setupMonitoring()
 }
 
-// Export the service class and types
+// Export the service class
 export { MonitoringSetupService }
-export type { MonitoringSetupConfig, MonitoringSetupResult }
