@@ -4,7 +4,7 @@
  * Provides comprehensive observability for the enhanced platform
  */
 
-import { StatsD } from 'node-statsd'
+import StatsD from 'node-statsd'
 import tracer from 'dd-trace'
 // import { logger } from '@/lib/logger';
 // Initialize Datadog tracer with minimal configuration
