@@ -16,8 +16,11 @@ import {
   applyRateLimitHeaders,
   RateLimitPresets,
 } from '@/lib/rate-limiter'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
+
+const apiRateLimit = createAPIRateLimit(10) // 10 requests per minute - strict for security
 
 const RATE_LIMIT_PREFIX = 'mfa-verify'
 
@@ -36,11 +39,28 @@ const verifySchema = z.object({
 /**
  * POST /api/auth/mfa/verify - Create MFA challenge
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // Apply rate limiting for MFA verification (security-sensitive)
-  const rateLimitResult = await checkRateLimit(req, RateLimitPresets.MFA_VERIFY, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.MFA_VERIFY)
+  const legacyRateLimitResult = await checkRateLimit(request, RateLimitPresets.MFA_VERIFY, RATE_LIMIT_PREFIX)
+  if (!legacyRateLimitResult.allowed) {
+    return createRateLimitedResponse(legacyRateLimitResult, RateLimitPresets.MFA_VERIFY)
   }
 
   try {
@@ -48,11 +68,11 @@ export async function POST(req: NextRequest) {
     if (!session?.user?.id) {
       return applyRateLimitHeaders(
         NextResponse.json({ error: 'Unauthorized' }, { status: 401 }),
-        rateLimitResult
+        legacyRateLimitResult
       )
     }
 
-    const body = await req.json()
+    const body = await request.json()
     const { preferredDeviceId } = challengeSchema.parse(body)
 
     const challenge = await mfaProvider.createChallenge(session.user.id, preferredDeviceId)
@@ -66,7 +86,7 @@ export async function POST(req: NextRequest) {
         },
         message: 'MFA challenge created'
       }),
-      rateLimitResult
+      legacyRateLimitResult
     )
   } catch (error) {
     // Server error logged
@@ -77,7 +97,7 @@ export async function POST(req: NextRequest) {
           error: 'Invalid request parameters',
           details: error.issues
         }, { status: 400 }),
-        rateLimitResult
+        legacyRateLimitResult
       )
     }
 
@@ -86,7 +106,7 @@ export async function POST(req: NextRequest) {
         error: 'MFA challenge failed',
         details: error instanceof Error ? error.message : 'Unknown error'
       }, { status: 500 }),
-      rateLimitResult
+      legacyRateLimitResult
     )
   }
 }

@@ -9,17 +9,12 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
-import {
-  checkRateLimit,
-  createRateLimitedResponse,
-  applyRateLimitHeaders,
-  RateLimitPresets,
-} from '@/lib/rate-limiter'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
-
-const RATE_LIMIT_PREFIX = 'login-tracking'
 
 // Zod validation schemas
 const loginTrackingSchema = z.object({
@@ -135,10 +130,21 @@ function logUserAuth(
 
 // Track login attempts
 export async function POST(request: NextRequest) {
-  // Apply rate limiting for login tracking
-  const rateLimitResult = await checkRateLimit(request, RateLimitPresets.AUTH_STANDARD, RATE_LIMIT_PREFIX)
-  if (!rateLimitResult.allowed) {
-    return createRateLimitedResponse(rateLimitResult, RateLimitPresets.AUTH_STANDARD)
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
   }
 
   try {
@@ -156,40 +162,48 @@ export async function POST(request: NextRequest) {
       timestamp: new Date().toISOString()
     })
 
-    return applyRateLimitHeaders(
-      NextResponse.json({
-        success: true,
-        message: `${event} logged successfully`,
-        timestamp: new Date().toISOString(),
-      }),
-      rateLimitResult
-    );
+    return NextResponse.json({
+      success: true,
+      message: `${event} logged successfully`,
+      timestamp: new Date().toISOString(),
+    });
 
   } catch (error) {
     // Server error logged
 
     if (error instanceof z.ZodError) {
-      return applyRateLimitHeaders(
-        NextResponse.json({
-          error: 'Invalid request parameters',
-          details: error.issues
-        }, { status: 400 }),
-        rateLimitResult
-      )
+      return NextResponse.json({
+        error: 'Invalid request parameters',
+        details: error.issues
+      }, { status: 400 })
     }
 
-    return applyRateLimitHeaders(
-      NextResponse.json(
-        { error: 'Failed to track login event' },
-        { status: 500 }
-      ),
-      rateLimitResult
+    return NextResponse.json(
+      { error: 'Failed to track login event' },
+      { status: 500 }
     );
   }
 }
 
 // Health check and get current geographic stats
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   logUserAuth(request, 'login_attempt', {
     type: 'health_check',
     endpoint: '/api/auth/login-tracking',
