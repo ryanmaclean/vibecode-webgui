@@ -1,5 +1,5 @@
 import { openai } from '@ai-sdk/openai';
-import { streamText } from 'ai';
+import { streamText, stepCountIs } from 'ai';
 import { tools } from '../../lib/tools';
 // import { logger } from '@/lib/logger';
 // IMPORTANT! Set the runtime to edge
@@ -31,7 +31,7 @@ export default async function handler(req: Request) {
       system: 'You are a helpful coding assistant for VibeCode. When asked about a GitHub repository, use the getGithubRepoInfo tool to provide information.',
       messages,
       tools,
-      maxToolRoundtrips: 5,
+      stopWhen: stepCountIs(5),
     });
 
     return result.toTextStreamResponse();
