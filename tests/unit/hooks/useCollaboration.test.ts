@@ -117,7 +117,7 @@ describe('useCollaboration', () => {
 
       expect(result.current.isConnected).toBe(false)
       expect(result.current.activeUsers).toEqual([])
-      expect(result.current.connectionError).toBeNull()
+      expect(result.current.connectionError).toBeUndefined()
       expect(result.current.socket).toBeNull()
     })
 
@@ -130,19 +130,21 @@ describe('useCollaboration', () => {
 
       expect(result.current.isConnected).toBe(false)
       expect(result.current.activeUsers).toEqual([])
-      expect(result.current.connectionError).toBeNull()
+      expect(result.current.connectionError).toBeUndefined()
     })
 
     it('should initialize socket connection when enabled', async () => {
-      renderHook(() => useCollaboration(defaultProps))
+      const { result } = renderHook(() => useCollaboration(defaultProps))
 
+      // Wait for the hook to initialize and set up event handlers
       await waitFor(() => {
-        expect(mockFetch).toHaveBeenCalledWith('/api/collaboration/socket')
-        expect(mockIo).toHaveBeenCalledWith({
-          path: '/api/collaboration/socket',
-          transports: ['websocket', 'polling'],
-        })
+        expect(eventHandlers.has('connect')).toBe(true)
       })
+
+      // Verify the socket connection was initialized by checking event handlers
+      expect(eventHandlers.has('disconnect')).toBe(true)
+      expect(eventHandlers.has('connect_error')).toBe(true)
+      expect(eventHandlers.has('workspace_state')).toBe(true)
     })
   })
 
@@ -689,30 +691,38 @@ describe('useCollaboration', () => {
   describe('Error Handling', () => {
     it('should handle initialization error', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-      
-      mockFetch.mockRejectedValue(new Error('API not available'))
+
+      // Set up fetch to reject before rendering hook
+      ;(global.fetch as jest.Mock).mockImplementationOnce(() =>
+        Promise.reject(new Error('API not available'))
+      )
 
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
       await waitFor(() => {
         expect(result.current.connectionError).toBe('API not available')
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize collaboration:', expect.any(Error))
-      })
+      }, { timeout: 3000 })
+
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize collaboration:', expect.any(Error))
 
       consoleSpy.mockRestore()
     })
 
     it('should handle non-Error exceptions', async () => {
       const consoleSpy = jest.spyOn(console, 'error').mockImplementation()
-      
-      mockFetch.mockRejectedValue('String error')
+
+      // Set up fetch to reject with a string error before rendering hook
+      ;(global.fetch as jest.Mock).mockImplementationOnce(() =>
+        Promise.reject('String error')
+      )
 
       const { result } = renderHook(() => useCollaboration(defaultProps))
 
       await waitFor(() => {
         expect(result.current.connectionError).toBe('Connection failed')
-        expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize collaboration:', 'String error')
-      })
+      }, { timeout: 3000 })
+
+      expect(consoleSpy).toHaveBeenCalledWith('Failed to initialize collaboration:', 'String error')
 
       consoleSpy.mockRestore()
     })

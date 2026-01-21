@@ -40,16 +40,18 @@ jest.mock('dd-trace', () => ({
 
 // Mock winston with factory pattern
 // Create a shared object to hold mock logger (survives hoisting)
-const mockLoggerHolder = {
-  instance: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  }
-};
+// eslint-disable-next-line no-var
+var mockLoggerHolder: { instance: any };
 
 jest.mock('winston', () => {
+  mockLoggerHolder = {
+    instance: {
+      info: jest.fn(),
+      warn: jest.fn(),
+      error: jest.fn(),
+      debug: jest.fn(),
+    }
+  };
   return {
     createLogger: jest.fn(() => mockLoggerHolder.instance),
     format: {

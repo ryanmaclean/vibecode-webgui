@@ -326,7 +326,8 @@ describe('API Health Endpoints Error Scenarios', () => {
       expect(elapsed).toBeLessThan(1000); // Under 1 second
 
       const data = await response.json();
-      expect(data.status).toBe('healthy');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data.data.status).toBe('healthy');
     });
 
     it('readyz should be suitable for readiness probe', async () => {
@@ -343,7 +344,8 @@ describe('API Health Endpoints Error Scenarios', () => {
       expect(elapsed).toBeLessThan(1000); // Under 1 second
 
       const data = await response.json();
-      expect(data.status).toBe('ready');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data.data.status).toBe('ready');
     });
 
     it('should handle probe failures gracefully', async () => {

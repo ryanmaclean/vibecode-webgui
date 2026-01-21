@@ -12,15 +12,14 @@ jest.mock('@/lib/analytics', () => ({
   trackError: jest.fn()
 }));
 
-// Mock fetch globally with proper typing
-const mockFetch = jest.fn<typeof fetch>();
-global.fetch = mockFetch as unknown as typeof fetch;
-
 // Import the function after mocking
 import { fetchWithRetry, FetchError, isFetchError, TimeoutError } from '@/lib/utils/fetch';
 
 const realSetTimeout = global.setTimeout;
 const realClearTimeout = global.clearTimeout;
+
+// Mock fetch - will be set up in beforeEach
+let mockFetch: jest.Mock;
 
 const createResponse = (status: number, body?: Record<string, unknown>): Response => {
   const response = new Response(body ? JSON.stringify(body) : null, {
@@ -45,6 +44,10 @@ describe('fetchWithRetry', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Set up fetch mock before each test
+    mockFetch = jest.fn();
+    global.fetch = mockFetch as unknown as typeof fetch;
 
     const timers = new Map<number, ReturnType<typeof realSetTimeout>>();
     let nextId = 1;

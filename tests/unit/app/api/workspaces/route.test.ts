@@ -44,7 +44,33 @@ jest.mock('@/lib/api-utils', () => ({
       status,
       headers: { 'Content-Type': 'application/json' }
     });
-  })
+  }),
+  ApiErrors: {
+    badRequest: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    forbidden: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    serviceUnavailable: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    notFound: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    })
+  }
 }));
 
 // Mock ErrorResponses utility (appears to be a global or separate module)
