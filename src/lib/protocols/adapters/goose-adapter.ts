@@ -13,7 +13,7 @@ import type { MCPClient } from '../mcp-client';
 export class GooseAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;
-  private mcpClient: MCPClient | null = null;
+  protected override mcpClient: MCPClient | null = null;
 
   constructor(config: AgentConfig) {
     super(config);
