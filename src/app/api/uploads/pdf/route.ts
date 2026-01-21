@@ -6,14 +6,33 @@ import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
 import prisma from '@/lib/prisma'
 // import { logger } from '../../../../lib/logger'
-import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation';
+import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 
 export const dynamic = 'force-dynamic'
 
 const MAX_UPLOAD_BYTES = Number(process.env.PDF_UPLOAD_MAX_BYTES ?? 25 * 1024 * 1024)
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute for uploads
 
 export async function POST(request: NextRequest) {
+  // Rate limiting check
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // Authentication check
   const session = await getServerSession(authOptions)
   if (!session?.user?.id) {

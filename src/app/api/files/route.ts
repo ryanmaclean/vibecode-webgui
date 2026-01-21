@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig } from '@/lib/file-system-operations'
-import { createFileRateLimit } from '@/lib/rate-limiting'
+import { createFileRateLimit, createAPIRateLimit } from '@/lib/rate-limiting'
 import {
   validateQueryParams,
   validateRequestBody
@@ -28,6 +28,7 @@ import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace
 export const dynamic = 'force-dynamic'
 
 const fileRateLimiter = createFileRateLimit()
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute
 type FileRateLimitResult = Awaited<ReturnType<typeof fileRateLimiter>>
 
 function applyFileRateLimitHeaders(response: NextResponse, info: FileRateLimitResult): NextResponse {
@@ -72,6 +73,23 @@ function withFileRateLimit(
 
 async function handleGET(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {
@@ -181,6 +199,23 @@ async function handleGET(request: NextRequest) {
 
 async function handlePOST(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {

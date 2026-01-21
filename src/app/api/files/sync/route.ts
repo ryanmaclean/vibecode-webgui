@@ -20,9 +20,12 @@ import { fileSyncQuerySchema, fileSyncBulkSchema } from '@/lib/api/validation/sc
 import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
 import { dogstatsd } from 'dd-trace'
 import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger';
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 interface WebSocketMessage {
   type: string;
@@ -82,6 +85,22 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json(
