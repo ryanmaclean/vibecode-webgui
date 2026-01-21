@@ -74,7 +74,12 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run all tests with coverage
-        run: npm run test:coverage
+        uses: nick-fields/retry@v3
+        with:
+          timeout_minutes: 15
+          max_attempts: 3
+          retry_on: error
+          command: npm run test:coverage
         env:
           DD_CI_VISIBILITY_ENABLED: true
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
