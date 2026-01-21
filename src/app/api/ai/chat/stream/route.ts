@@ -1,7 +1,7 @@
 // Streaming AI Chat API - OpenRouter integration with multi-model support and RAG
 // Powers the AIChatInterface with real-time streaming responses and vector search context
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import OpenAI from 'openai'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
@@ -14,6 +14,40 @@ import type { AuthenticatedRequest } from '@/lib/auth/middleware'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+/**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  // Default allowed origins for streaming chat
+  return [
+    'https://vibecode.dev',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ]
+}
+
+/**
+ * Validate and return CORS origin if allowed
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+
+  const allowedOrigins = getAllowedOrigins()
+
+  // Check if the request origin is in the allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return null
+}
 
 
 interface ChatMessage {
@@ -108,7 +142,7 @@ async function buildWorkspaceContext(workspaceId: string, files: string[]) {
   }
 }
 
-export async function POST(req: AuthenticatedRequest) {
+export async function POST(req: AuthenticatedRequest & NextRequest) {
   try {
     const session = (await getServerSession(authOptions)) as { user?: { id?: string } } | null
     if (!session?.user?.id) {
@@ -206,15 +240,26 @@ export async function POST(req: AuthenticatedRequest) {
       }
     })
 
+    // Get and validate CORS origin
+    const requestOrigin = req.headers.get('origin')
+    const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    }
+
+    // Only set Access-Control-Allow-Origin if the origin is validated
+    if (validatedOrigin) {
+      responseHeaders['Access-Control-Allow-Origin'] = validatedOrigin
+      responseHeaders['Vary'] = 'Origin'
+    }
+
     return new GlobalResponse(customReadable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-      }
+      headers: responseHeaders
     })
 
   } catch (error) {
@@ -233,14 +278,24 @@ export async function POST(req: AuthenticatedRequest) {
 }
 
 // Handle preflight requests for CORS
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
   const { Response: GlobalResponse } = globalThis
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+
+  // Only set Access-Control-Allow-Origin if the origin is validated
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+
   return new GlobalResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers,
   })
 }
