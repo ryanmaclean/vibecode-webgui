@@ -1,0 +1,141 @@
+# VibeCode IDE Configuration
+# YAML configuration for flexible IDE setup
+
+# Default IDE selection
+ide:
+  # Available types: openvscode, code-server, theia
+  type: openvscode
+  
+  # Session configuration
+  session:
+    timeout: 3600  # seconds
+    maxPerUser: 5
+    autoCleanup: true
+    
+  # Resource limits
+  resources:
+    memory: "1g"
+    cpu: "2"
+    storage: "10g"
+
+# OpenVSCode Server Configuration
+openvscode:
+  enabled: true
+  image: gitpod/openvscode-server:latest
+  port: 3000
+  workspacePath: /workspace
+  
+  # Extensions to pre-install
+  extensions:
+    - ms-python.python
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    - eamodio.gitlens
+    - github.copilot
+    
+  # Authentication (handled externally in VibeCode)
+  auth:
+    enabled: false
+    
+  # Advanced settings
+  settings:
+    "workbench.colorTheme": "Dark (Visual Studio)"
+    "editor.fontSize": 14
+    "editor.tabSize": 2
+    "files.autoSave": "afterDelay"
+
+# Code-Server Configuration
+codeServer:
+  enabled: true
+  image: codercom/code-server:latest
+  port: 8080
+  workspacePath: /home/coder/project
+  
+  # Built-in authentication
+  auth:
+    enabled: true
+    password: "${CODE_SERVER_PASSWORD}"
+    # OAuth providers (optional)
+    oauth:
+      github:
+        enabled: false
+        clientId: "${GITHUB_CLIENT_ID}"
+        clientSecret: "${GITHUB_CLIENT_SECRET}"
+        
+  # Extensions (from Open VSX)
+  extensions:
+    - ms-python.python
+    - dbaeumer.vscode-eslint
+    - esbenp.prettier-vscode
+    
+  # Settings
+  settings:
+    "workbench.colorTheme": "Dark+"
+    "editor.fontSize": 14
+    "terminal.integrated.fontSize": 14
+
+# Eclipse Theia Configuration
+theia:
+  enabled: true
+  image: theiaide/theia:latest
+  port: 3000
+  workspacePath: /home/project
+  
+  # Theia plugins
+  plugins:
+    - vscode-builtin-typescript
+    - vscode-builtin-git
+    - vscode-builtin-python
+    
+  # Extensions (compatible VS Code extensions)
+  extensions:
+    - ms-python.python
+    - dbaeumer.vscode-eslint
+    
+  # Customization
+  branding:
+    name: "VibeCode IDE"
+    logo: "/assets/vibecode-logo.png"
+    theme: "dark"
+    
+  settings:
+    "workbench.colorTheme": "Dark (Theia)"
+    "editor.fontSize": 14
+
+# Container Runtime Configuration
+container:
+  runtime: docker  # docker | podman | kubernetes
+  
+  # Docker-specific settings
+  docker:
+    network: vibecode-network
+    volumes:
+      - type: bind
+        source: ./workspace
+        target: /workspace
+        
+  # Kubernetes-specific settings (when runtime is k8s)
+  kubernetes:
+    namespace: vibecode
+    storageClass: standard
+    ingress:
+      enabled: true
+      className: nginx
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+
+# Monitoring and Observability
+monitoring:
+  enabled: true
+  healthCheckInterval: 30  # seconds
+  metricsExport:
+    enabled: true
+    endpoint: http://datadog-agent:8125
+    
+# Feature Flags
+features:
+  extensionMarketplace: true
+  collaborativeEditing: false
+  aiAssistance: true
+  remoteSSH: true
+  debugging: true
