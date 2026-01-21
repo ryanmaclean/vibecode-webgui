@@ -73,7 +73,7 @@ export default function CursorTracking({
   const [cursors, setCursors] = useState<Map<string, UserCursor>>(new Map())
   const [editorRect, setEditorRect] = useState<DOMRect | null>(null)
   const lastUpdateRef = useRef<number>(0)
-  const updateTimeoutRef = useRef<NodeJS.Timeout>()
+  const updateTimeoutRef = useRef<NodeJS.Timeout | undefined>(undefined)
 
   /**
    * Convert editor position to screen coordinates
@@ -303,7 +303,7 @@ if (!editorView || !editorRect) return null
       }
     })
 
-    const view = EditorView.theme({}, { priority: 'low' })
+    const view = EditorView.theme({}, { dark: false })
     editorView.dispatch({
       effects: [
         // Type assertion for appendConfig StateEffect

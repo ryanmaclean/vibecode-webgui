@@ -75,7 +75,7 @@ export function MultimodalPromptInterface({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
   const recognitionRef = useRef<any>(null);
-  const recordingIntervalRef = useRef<NodeJS.Timeout>();
+  const recordingIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
   // Auto-scroll to bottom of messages

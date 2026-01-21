@@ -16,7 +16,7 @@ Send,
   Brain, 
   DollarSign, 
   Clock,
-  Tools,
+  Wrench as Tools,
   Search
 } from 'lucide-react'
 import { cn } from '@/lib/utils'
