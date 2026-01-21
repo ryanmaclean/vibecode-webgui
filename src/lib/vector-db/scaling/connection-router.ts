@@ -154,7 +154,7 @@ export class VectorDBConnectionRouter {
     // Start health checks
     this.startHealthChecks();
     
-    this.console.info(`Initialized connection router with ${this.readReplicas.length} read replicas`);
+    this.logger.info(`Initialized connection router with ${this.readReplicas.length} read replicas`);
   }
   
   /**
@@ -178,7 +178,7 @@ export class VectorDBConnectionRouter {
       // Log slow queries
       const duration = Date.now() - startTime;
       if (duration > this.logQueriesSlowerThan) {
-        this.console.warn(`Slow query detected (${duration}ms): ${query.substring(0, 100)}...`);
+        this.logger.warn(`Slow query detected (${duration}ms): ${query.substring(0, 100)}...`);
       }
       
       // Record metrics
@@ -195,8 +195,8 @@ export class VectorDBConnectionRouter {
       }
       
       return result;
-    } catch (error) {
-      this.console.error(`Query error: ${(error as Error).message}`, error as Error, {
+    } catch (error: unknown) {
+      this.logger.error(`Query error: ${(error as Error).message}`, error as Error, {
         query: query.substring(0, 200),
         params,
         queryType
@@ -225,14 +225,14 @@ export class VectorDBConnectionRouter {
       this.primaryStatus.failureCount = 0;
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       // Increment failure count
       this.primaryStatus.failureCount++;
       
       // Mark as unhealthy if too many failures
       if (this.primaryStatus.failureCount >= this.maxFailureCount) {
         this.primaryStatus.healthy = false;
-        this.console.error(`Primary database marked as unhealthy after ${this.primaryStatus.failureCount} failures`);
+        this.logger.error(`Primary database marked as unhealthy after ${this.primaryStatus.failureCount} failures`);
       }
       
       throw error;
@@ -248,12 +248,12 @@ export class VectorDBConnectionRouter {
     }
     
     // Find healthy replicas
-    const healthyReplicaIds = [...this.replicaStatus.entries()]
+    const healthyReplicaIds = Array.from(this.replicaStatus.entries())
       .filter(([_, status]) => status.healthy)
       .map(([id]) => id);
     
     if (healthyReplicaIds.length === 0) {
-      this.console.warn('No healthy read replicas available, routing to primary');
+      this.logger.warn('No healthy read replicas available, routing to primary');
       return this.routeToPrimary(query, params);
     }
     
@@ -262,7 +262,7 @@ export class VectorDBConnectionRouter {
     const replicaIndex = parseInt(replicaId.split('-')[1], 10);
     
     if (replicaIndex < 0 || replicaIndex >= this.readReplicas.length) {
-      this.console.warn(`Invalid replica index ${replicaIndex}, routing to primary`);
+      this.logger.warn(`Invalid replica index ${replicaIndex}, routing to primary`);
       return this.routeToPrimary(query, params);
     }
     
@@ -270,7 +270,7 @@ export class VectorDBConnectionRouter {
     const status = this.replicaStatus.get(replicaId);
     
     if (!status) {
-      this.console.warn(`No status found for replica ${replicaId}, routing to primary`);
+      this.logger.warn(`No status found for replica ${replicaId}, routing to primary`);
       return this.routeToPrimary(query, params);
     }
     
@@ -287,20 +287,20 @@ export class VectorDBConnectionRouter {
       this.replicaStatus.set(replicaId, status);
       
       return result;
-    } catch (error) {
+    } catch (error: unknown) {
       // Increment failure count
       status.failureCount++;
       
       // Mark as unhealthy if too many failures
       if (status.failureCount >= this.maxFailureCount) {
         status.healthy = false;
-        this.console.error(`Replica ${replicaId} marked as unhealthy after ${status.failureCount} failures`);
+        this.logger.error(`Replica ${replicaId} marked as unhealthy after ${status.failureCount} failures`);
       }
       
       this.replicaStatus.set(replicaId, status);
       
       // Try with primary instead
-      this.console.warn(`Replica ${replicaId} query failed, fallback to primary: ${(error as Error).message}`);
+      this.logger.warn(`Replica ${replicaId} query failed, fallback to primary: ${(error as Error).message}`);
       return this.routeToPrimary(query, params);
     }
   }
@@ -379,12 +379,12 @@ export class VectorDBConnectionRouter {
     this.healthCheckTimer = setInterval(async () => {
       try {
         await this.checkConnections();
-      } catch (error) {
-        this.console.error('Error during health check', error as Error);
+      } catch (error: unknown) {
+        this.logger.error('Error during health check', error as Error);
       }
     }, this.healthCheckInterval);
     
-    this.console.info(`Started health checks with interval ${this.healthCheckInterval}ms`);
+    this.logger.info(`Started health checks with interval ${this.healthCheckInterval}ms`);
   }
   
   /**
@@ -394,7 +394,7 @@ export class VectorDBConnectionRouter {
     if (this.healthCheckTimer) {
       clearInterval(this.healthCheckTimer);
       this.healthCheckTimer = null;
-      this.console.info('Stopped health checks');
+      this.logger.info('Stopped health checks');
     }
   }
   
@@ -402,7 +402,7 @@ export class VectorDBConnectionRouter {
    * Check health of all connections
    */
   private async checkConnections(): Promise<void> {
-    this.console.debug('Running connection health checks');
+    this.logger.debug('Running connection health checks');
     
     // Check primary
     await this.checkConnection(
@@ -422,9 +422,9 @@ export class VectorDBConnectionRouter {
     }
     
     // Log health status
-    this.console.debug('Connection health check results', {
+    this.logger.debug('Connection health check results', {
       primary: this.primaryStatus.healthy,
-      replicas: [...this.replicaStatus.entries()].map(([id, status]) => ({
+      replicas: Array.from(this.replicaStatus.entries()).map(([id, status]) => ({
         id,
         healthy: status.healthy,
         latency: status.latency
@@ -471,8 +471,8 @@ export class VectorDBConnectionRouter {
         failureCount: 0
       });
       
-      this.console.debug(`Health check for ${connectionId} succeeded with latency ${latency}ms`);
-    } catch (error) {
+      this.logger.debug(`Health check for ${connectionId} succeeded with latency ${latency}ms`);
+    } catch (error: unknown) {
       // Update status with failure
       const newFailureCount = currentStatus.failureCount + 1;
       const newHealthy = newFailureCount < this.maxFailureCount;
@@ -485,9 +485,9 @@ export class VectorDBConnectionRouter {
       });
       
       if (!newHealthy && currentStatus.healthy) {
-        this.console.error(`Connection ${connectionId} marked as unhealthy after ${newFailureCount} failures`, error as Error);
+        this.logger.error(`Connection ${connectionId} marked as unhealthy after ${newFailureCount} failures`, error as Error);
       } else {
-        this.console.warn(`Health check for ${connectionId} failed: ${(error as Error).message}`, {
+        this.logger.warn(`Health check for ${connectionId} failed: ${(error as Error).message}`, {
           failureCount: newFailureCount,
           maxFailures: this.maxFailureCount
         });
@@ -504,7 +504,7 @@ export class VectorDBConnectionRouter {
   } {
     return {
       primary: { ...this.primaryStatus },
-      replicas: Object.fromEntries([...this.replicaStatus.entries()].map(
+      replicas: Object.fromEntries(Array.from(this.replicaStatus.entries()).map(
         ([id, status]) => [id, { ...status }]
       ))
     };
@@ -515,6 +515,6 @@ export class VectorDBConnectionRouter {
    */
   public dispose(): void {
     this.stopHealthChecks();
-    this.console.info('Connection router disposed');
+    this.logger.info('Connection router disposed');
   }
 }
