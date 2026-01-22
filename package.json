@@ -147,7 +147,7 @@
     "@emotion/react": "^11.14.0",
     "@emotion/styled": "^11.14.1",
     "@heroicons/react": "2.2.0",
-    "@huggingface/inference": "4.13.0",
+    "@huggingface/inference": "4.13.10",
     "@kubernetes/client-node": "1.3.0",
     "@langchain/core": "^1.0.1",
     "@langchain/openai": "1.2.2",
