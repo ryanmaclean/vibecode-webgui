@@ -231,7 +231,7 @@
     "winston": "3.19.0",
     "ws": "^8.19.0",
     "zod": "4.3.5",
-    "zustand": "5.0.8"
+    "zustand": "5.0.10"
   },
   "overrides": {
     "ignore": "^7.0.5",
