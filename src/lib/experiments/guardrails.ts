@@ -15,6 +15,8 @@
 import { experimentQueries, type MetricAggregation } from './queries'
 import { tTest } from './statistics'
 import { logger, appLogger } from '@/lib/server-monitoring'
+import { transitionStatus } from './lifecycle'
+import { sendGuardrailAlert, sendBatchViolationAlert, type AlertConfig } from './alerts'
 
 /**
  * Guardrail definition with threshold and severity
@@ -452,19 +454,21 @@ export function getMonitoringStatus(experimentKey: string): {
  * Shutdown experiment due to guardrail violations
  *
  * Automatically pauses experiment and logs shutdown reason.
- * In a production system, this would also:
- * - Update experiment status in database
- * - Send alerts to stakeholders
- * - Redirect traffic to safe variant
+ * This function:
+ * - Updates experiment status in database to 'paused'
+ * - Sends alerts to stakeholders through configured channels
+ * - Logs comprehensive audit trail
  *
  * @param experimentKey - Experiment identifier
  * @param reason - Shutdown reason
  * @param violations - Violations that triggered shutdown
+ * @param alertConfig - Optional alert configuration for notification channels
  */
 export async function shutdownExperiment(
   experimentKey: string,
   reason: string,
-  violations: GuardrailViolation[]
+  violations: GuardrailViolation[],
+  alertConfig?: Partial<AlertConfig>
 ): Promise<void> {
   try {
     logger.error('Experiment shutdown initiated', {
@@ -490,18 +494,72 @@ export async function shutdownExperiment(
       }
     })
 
-    // TODO: Update experiment status in database
-    // await prisma.experiment.update({
-    //   where: { key: experimentKey },
-    //   data: {
-    //     status: 'paused',
-    //     shutdown_reason: reason,
-    //     shutdown_at: new Date()
-    //   }
-    // })
+    // Update experiment status in database to 'paused'
+    try {
+      await transitionStatus(
+        experimentKey,
+        'paused',
+        'system',
+        undefined,
+        `Guardrail violation: ${reason}`
+      )
 
-    // TODO: Send alerts
-    // await sendGuardrailAlert(violations[0], { experimentKey, channel: 'pagerduty', recipients: [...] })
+      logger.info('Experiment status updated to paused', {
+        experimentKey,
+        reason
+      })
+    } catch (transitionError) {
+      // Log but don't fail if transition fails (experiment may already be paused/completed)
+      logger.warn('Failed to transition experiment status during shutdown', {
+        experimentKey,
+        error: (transitionError as Error).message
+      })
+    }
+
+    // Send alerts for violations
+    if (violations.length > 0) {
+      // Default alert configuration if not provided
+      const defaultAlertConfig: AlertConfig = {
+        experimentKey,
+        channel: 'datadog',
+        recipients: [],
+        metadata: {
+          shutdownReason: reason,
+          violationCount: violations.length
+        }
+      }
+
+      const finalAlertConfig: AlertConfig = {
+        ...defaultAlertConfig,
+        ...alertConfig,
+        experimentKey // Ensure experimentKey is always correct
+      }
+
+      // Send batch alert for all violations
+      await sendBatchViolationAlert(experimentKey, violations, finalAlertConfig)
+
+      // For critical violations, also send individual alerts if PagerDuty is configured
+      const criticalViolations = violations.filter(v => v.severity === 'critical')
+      if (criticalViolations.length > 0 && alertConfig?.channel === 'pagerduty') {
+        for (const violation of criticalViolations) {
+          try {
+            await sendGuardrailAlert(violation, finalAlertConfig)
+          } catch (alertError) {
+            logger.warn('Failed to send individual alert for critical violation', {
+              experimentKey,
+              metric: violation.guardrail.metricName,
+              error: (alertError as Error).message
+            })
+          }
+        }
+      }
+
+      logger.info('Guardrail violation alerts sent', {
+        experimentKey,
+        channel: finalAlertConfig.channel,
+        violationCount: violations.length
+      })
+    }
 
   } catch (error) {
     logger.error('Failed to shutdown experiment', {

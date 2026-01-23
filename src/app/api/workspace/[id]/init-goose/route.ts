@@ -6,8 +6,11 @@ import { promisify } from 'util';
 import path from 'path';
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 // import { logger } from '@/lib/logger';
 const execAsync = promisify(exec);
+
+const apiRateLimit = createAPIRateLimit(10); // 10 requests per minute - initialization is expensive
 
 /**
  * POST /api/workspace/[id]/init-goose
@@ -24,6 +27,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   const session = await getServerSession(authOptions);
   if (!session) {
     return new NextResponse('Unauthorized', { status: 401 });

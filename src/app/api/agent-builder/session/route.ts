@@ -10,6 +10,9 @@ import { getAgentBuilderClient } from '@/lib/agents/agent-builder-client';
 import type { AgentBuilderSessionRequest } from '@/types/agent-builder';
 // import { console } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 const _logger = console;
 
@@ -48,6 +51,23 @@ const sessionRequestSchema = z.object({
 export const dynamic = 'force-dynamic';
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user) {

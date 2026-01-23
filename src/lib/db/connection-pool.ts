@@ -113,9 +113,9 @@ export class ConnectionPool {
       // Update metrics
       this.updateMetrics();
       
-      console.log(`Connection pool initialized with ${this.config.min} connections`);
-    } catch (error) {
-      console.error('Error initializing connection pool:', error);
+      // Pool initialized with minimum connections
+    } catch {
+      // Initialization error - pool will retry when connections are acquired
     }
   }
 
@@ -158,10 +158,7 @@ export class ConnectionPool {
           await conn.prisma.$disconnect();
           idsToRemove.push(id);
           this.metrics.metrics.dynamicPoolAdjustments++;
-        } catch (error) {
-          if (this.config.logErrors) {
-            console.error(`Error closing idle connection ${id}:`, error);
-          }
+        } catch {
           idsToRemove.push(id);
         }
       } else {
@@ -175,10 +172,8 @@ export class ConnectionPool {
           this.metrics.metrics.connectionValidationFailures++;
           try {
             await conn.prisma.$disconnect();
-          } catch (disconnectError) {
-            if (this.config.logErrors) {
-              console.error(`Error disconnecting invalid connection ${id}:`, disconnectError);
-            }
+          } catch {
+            // Disconnect error for invalid connection - continue with removal
           }
           idsToRemove.push(id);
         }
@@ -208,10 +203,8 @@ export class ConnectionPool {
           
           this.metrics.metrics.totalConnections++;
           this.metrics.metrics.dynamicPoolAdjustments++;
-        } catch (error) {
-          if (this.config.logErrors) {
-            console.error('Error creating new connection during validation:', error);
-          }
+        } catch {
+          // Connection creation error during validation - will retry later
         }
       }
     }
@@ -372,10 +365,8 @@ export class ConnectionPool {
     if (!found) {
       try {
         await prisma.$disconnect();
-      } catch (error) {
-        if (this.config.logErrors) {
-          console.error('Error disconnecting unknown connection:', error);
-        }
+      } catch {
+        // Disconnect error for unknown connection - safe to ignore
       }
     }
     
@@ -432,10 +423,8 @@ export class ConnectionPool {
     const closePromises = Array.from(this.connections.values()).map(async (conn) => {
       try {
         await conn.prisma.$disconnect();
-      } catch (error) {
-        if (this.config.logErrors) {
-          console.error('Error closing connection during pool shutdown:', error);
-        }
+      } catch {
+        // Connection close error during shutdown - safe to ignore
       }
     });
     
@@ -447,8 +436,6 @@ export class ConnectionPool {
     
     // Update metrics
     this.updateMetrics();
-    
-    console.log('Connection pool closed');
   }
 }
 

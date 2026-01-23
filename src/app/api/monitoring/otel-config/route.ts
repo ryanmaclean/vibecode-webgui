@@ -4,6 +4,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - config endpoint
 
 // Check if we're in a Docker build environment
 const isDockerBuild = (
@@ -34,6 +37,23 @@ if (!isDockerBuild) {
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // If in Docker build, return a simple response
   if (isDockerBuild) {
     return NextResponse.json({
@@ -160,6 +180,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const body = await request.json()
     const { action } = body

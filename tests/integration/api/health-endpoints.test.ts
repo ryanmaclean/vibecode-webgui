@@ -172,8 +172,9 @@ describe('API Health Endpoints Integration', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.status).toBe('healthy');
-      expect(data).toHaveProperty('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data.data.status).toBe('healthy');
+      expect(data.meta).toHaveProperty('timestamp');
     });
 
     it('should return valid timestamp', async () => {
@@ -181,18 +182,18 @@ describe('API Health Endpoints Integration', () => {
       const data = await response.json();
 
       const timestampRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-      expect(timestampRegex.test(data.timestamp)).toBe(true);
+      expect(timestampRegex.test(data.meta.timestamp)).toBe(true);
     });
 
     it('should have minimal response payload', async () => {
       const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
-      // Should only have status and timestamp
-      const keys = Object.keys(data);
-      expect(keys.length).toBe(2);
-      expect(keys).toContain('status');
-      expect(keys).toContain('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data).toHaveProperty('success');
+      expect(data).toHaveProperty('data');
+      expect(data).toHaveProperty('meta');
+      expect(data.data).toHaveProperty('status');
     });
 
     it('should respond quickly (liveness probe requirement)', async () => {
@@ -228,11 +229,11 @@ describe('API Health Endpoints Integration', () => {
       const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
-      // Should not expose internal details
-      expect(data).not.toHaveProperty('memory');
-      expect(data).not.toHaveProperty('checks');
-      expect(data).not.toHaveProperty('performance');
-      expect(data).not.toHaveProperty('uptime');
+      // Should not expose internal details in the data payload
+      expect(data.data).not.toHaveProperty('memory');
+      expect(data.data).not.toHaveProperty('checks');
+      expect(data.data).not.toHaveProperty('performance');
+      expect(data.data).not.toHaveProperty('uptime');
     });
   });
 
@@ -242,8 +243,9 @@ describe('API Health Endpoints Integration', () => {
       const data = await response.json();
 
       expect(response.status).toBe(200);
-      expect(data.status).toBe('ready');
-      expect(data).toHaveProperty('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data.data.status).toBe('ready');
+      expect(data.meta).toHaveProperty('timestamp');
     });
 
     it('should return valid timestamp', async () => {
@@ -251,18 +253,18 @@ describe('API Health Endpoints Integration', () => {
       const data = await response.json();
 
       const timestampRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-      expect(timestampRegex.test(data.timestamp)).toBe(true);
+      expect(timestampRegex.test(data.meta.timestamp)).toBe(true);
     });
 
     it('should have minimal response payload', async () => {
       const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
-      // Should only have status and timestamp
-      const keys = Object.keys(data);
-      expect(keys.length).toBe(2);
-      expect(keys).toContain('status');
-      expect(keys).toContain('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data).toHaveProperty('success');
+      expect(data).toHaveProperty('data');
+      expect(data).toHaveProperty('meta');
+      expect(data.data).toHaveProperty('status');
     });
 
     it('should respond quickly (readiness probe requirement)', async () => {
@@ -295,9 +297,9 @@ describe('API Health Endpoints Integration', () => {
       const readyzResponse = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const readyzData = await readyzResponse.json();
 
-      // Status should be different
-      expect(healthzData.status).toBe('healthy');
-      expect(readyzData.status).toBe('ready');
+      // Status should be different (in data payload)
+      expect(healthzData.data.status).toBe('healthy');
+      expect(readyzData.data.status).toBe('ready');
     });
   });
 
@@ -375,7 +377,9 @@ describe('API Health Endpoints Integration', () => {
       const timestamps = await Promise.all(
         responses.map(async r => {
           const data = await r.json();
-          return new Date(data.timestamp).getTime();
+          // /api/health returns timestamp at top level, /api/healthz and /api/readyz use meta.timestamp
+          const ts = data.timestamp || data.meta?.timestamp;
+          return new Date(ts).getTime();
         })
       );
 

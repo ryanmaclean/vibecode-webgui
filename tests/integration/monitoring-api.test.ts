@@ -10,6 +10,16 @@ import { getServerSession } from 'next-auth'
 // Strongly-typed mock for getServerSession to avoid 'any' casts in tests
 const mockedGetServerSession = getServerSession as jest.MockedFunction<typeof getServerSession>
 
+// Mock rate-limiting - must be before route imports
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 60,
+    remaining: 59,
+    reset: Date.now() + 60000
+  }))
+}))
+
 // Mock next-auth
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),

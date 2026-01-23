@@ -33,6 +33,14 @@ import {
 } from '@/lib/agents/thread-manager'
 import { logger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 const { Response: GlobalResponse, ReadableStream, TextEncoder } = globalThis
 
@@ -105,6 +113,23 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'GET')
 }
 
@@ -112,6 +137,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'POST')
 }
 
@@ -119,6 +161,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'DELETE')
 }
 
@@ -234,7 +293,9 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 async function handleListAgents(request: NextRequest, userId: string) {
   const { client } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
-  const limit = Number(searchParams.get('limit')) || 20
+  // Validate and cap limit parameter to prevent resource exhaustion
+  const requestedLimit = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE.AGENTS
+  const limit = clampLimit(requestedLimit, MAX_PAGE_SIZE.AGENTS, DEFAULT_PAGE_SIZE.AGENTS)
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
 
   const response = await client.listAgents({ limit, order })

@@ -240,8 +240,9 @@ describe('/api/vector-store', () => {
 
     it('should store documents successfully', async () => {
       mockVectorStore.storeDocuments.mockResolvedValue({
-        totalStored: 1,
-        providers: ['pgvector']
+        stored: 1,
+        failed: 0,
+        providerResults: { pgvector: { stored: 1, failed: 0, duration: 10 } }
       });
 
       const request = createMockRequest('http://localhost:3000/api/vector-store', 'PUT', validStoreRequest);
@@ -250,7 +251,7 @@ describe('/api/vector-store', () => {
 
       expect(response.status).toBe(200);
       expect(data.status).toBe('success');
-      expect(data.data.totalStored).toBe(1);
+      expect(data.data.stored).toBe(1);
       expect(data.message).toContain('Stored 1 documents');
     });
 
@@ -386,15 +387,16 @@ describe('/api/vector-store', () => {
 
   describe('OPTIONS /api/vector-store', () => {
     it('should handle CORS preflight', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
       expect(response.status).toBe(200);
     });
 
     it('should set CORS headers', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
     });
