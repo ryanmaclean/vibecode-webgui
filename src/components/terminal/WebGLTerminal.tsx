@@ -15,6 +15,30 @@ import { FitAddon } from '@xterm/addon-fit'
 import { WebLinksAddon } from '@xterm/addon-web-links'
 import '@xterm/xterm/css/xterm.css'
 
+// Extended Performance interface for memory info (Chrome-specific)
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
+// Extended Terminal interface with custom methods
+interface ExtendedTerminal extends Terminal {
+  clearTerminal?: () => void;
+  writeToTerminal?: (data: string) => void;
+  searchInTerminal?: (term: string, options?: SearchOptions) => boolean;
+}
+
+// Search options interface
+interface SearchOptions {
+  regex?: boolean;
+  wholeWord?: boolean;
+  caseSensitive?: boolean;
+  incremental?: boolean;
+}
+
 export interface WebGLTerminalProps {
   websocketUrl?: string
   workspaceId: string
@@ -321,8 +345,9 @@ export default function WebGLTerminal({
    * Get memory usage (approximation)
    */
   const getMemoryUsage = useCallback((): number => {
-    if ('memory' in performance) {
-      return Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)
+    const perfWithMemory = performance as PerformanceWithMemory;
+    if (perfWithMemory.memory) {
+      return Math.round(perfWithMemory.memory.usedJSHeapSize / 1024 / 1024)
     }
     return 0
   }, [])
@@ -361,7 +386,7 @@ export default function WebGLTerminal({
   /**
    * Search in terminal
    */
-  const searchInTerminal = useCallback((term: string, options?: any) => {
+  const searchInTerminal = useCallback((_term: string, _options?: SearchOptions) => {
     return false
   }, [])
 
@@ -396,9 +421,10 @@ export default function WebGLTerminal({
   useEffect(() => {
     if (isReady && terminal.current) {
       // Attach methods to terminal instance for external access
-      ;(terminal.current as any).clearTerminal = clearTerminal
-      ;(terminal.current as any).writeToTerminal = writeToTerminal
-      ;(terminal.current as any).searchInTerminal = searchInTerminal
+      const extendedTerminal = terminal.current as ExtendedTerminal;
+      extendedTerminal.clearTerminal = clearTerminal;
+      extendedTerminal.writeToTerminal = writeToTerminal;
+      extendedTerminal.searchInTerminal = searchInTerminal;
     }
   }, [isReady, clearTerminal, writeToTerminal, searchInTerminal])
 

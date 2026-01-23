@@ -217,8 +217,15 @@ class LLMObservability {
     if (!this.config.enabled) return Promise.resolve();
 
     try {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const ddTracer = tracer as any;
+      // Type definition for dd-trace internal structure used for flushing
+      interface DatadogTracerInternal {
+        tracer?: {
+          _writer?: {
+            flush?: (callback: () => void) => void;
+          };
+        };
+      }
+      const ddTracer = tracer as unknown as DatadogTracerInternal;
       return new Promise(resolve => {
         if (ddTracer.tracer?._writer?.flush) {
           ddTracer.tracer._writer.flush(() => {

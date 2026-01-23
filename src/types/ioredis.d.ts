@@ -1,6 +1,6 @@
 // Type definitions for ioredis
 declare module 'ioredis' {
-  export default class Redis {
+  class Redis {
     constructor(port?: number, host?: string, options?: RedisOptions);
     constructor(host?: string, options?: RedisOptions);
     constructor(options?: RedisOptions | string);
@@ -23,6 +23,9 @@ declare module 'ioredis' {
     ping(): Promise<string>;
     quit(): Promise<'OK'>;
   }
+
+  export default Redis;
+  export { Redis };
 
   export interface Pipeline {
     set(key: string, value: string): Pipeline;

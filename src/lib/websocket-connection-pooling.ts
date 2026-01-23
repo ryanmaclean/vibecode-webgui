@@ -258,7 +258,7 @@ export class WebSocketConnectionPool extends EventEmitter {
 
     const connection: PooledConnection = {
       id: connectionId,
-      socket: null as any, // Will be set below
+      socket: null as unknown as WebSocket, // Will be assigned in the Promise below
       url,
       state: 'connecting',
       lastUsed: Date.now(),

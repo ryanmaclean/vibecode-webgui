@@ -10,7 +10,7 @@
  * `CacheKeys`, `CacheTTL`) that the application expects.
  */
 
-import { Redis } from 'ioredis';
+import { Redis, RedisOptions } from 'ioredis';
 import { metrics } from '../server-monitoring';
 // import { logger } from '@/lib/logger';
 
@@ -89,7 +89,15 @@ try {
     if (connectionConfig.url) {
       valkeyClient = new Redis(connectionConfig.url);
     } else {
-      valkeyClient = new Redis(connectionConfig as any);
+      // Build Redis options object from standard config with defaults
+      // Type assertion needed due to ioredis overload resolution issues
+      const redisOptions: RedisOptions = {
+        host: connectionConfig.host ?? 'localhost',
+        port: connectionConfig.port ?? 6379,
+        ...(connectionConfig.password && { password: connectionConfig.password }),
+        ...(connectionConfig.db !== undefined && { db: connectionConfig.db })
+      };
+      valkeyClient = new Redis(redisOptions as unknown as string);
     }
 
     valkeyClient.on('connect', () => {

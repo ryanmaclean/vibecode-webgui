@@ -8,7 +8,11 @@
  * - Includes metadata for monitoring/debugging
  */
 
-const isEdgeRuntime = typeof (globalThis as any).EdgeRuntime !== 'undefined';
+// Type augmentation for Edge Runtime detection
+interface GlobalThisWithEdgeRuntime {
+  EdgeRuntime?: unknown;
+}
+const isEdgeRuntime = typeof (globalThis as GlobalThisWithEdgeRuntime).EdgeRuntime !== 'undefined';
 const isProduction = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
 

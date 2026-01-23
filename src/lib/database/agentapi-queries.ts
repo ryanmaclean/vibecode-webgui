@@ -19,6 +19,8 @@ import { QueryCacheManager } from './query-cache-strategy';
 
 // Type definitions for models not yet in Prisma schema
 // These allow the code to compile while the database schema is being developed
+// NOTE: Using 'any' is intentional here - these models will be replaced with
+// proper Prisma-generated types once the database schema is finalized.
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 type AgentModel = any;
 
@@ -56,6 +58,7 @@ const prismaBase = new PrismaClient({
 });
 
 // Cast to allow agent model references - these models are expected in the schema
+// NOTE: Using 'any' cast is intentional until Prisma schema is finalized
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 const prisma = prismaBase as any;
 

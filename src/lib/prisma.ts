@@ -47,8 +47,26 @@ export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
 // Note: $use middleware is deprecated in Prisma 5+, using extensions instead
-if (!isBuilding && typeof (prisma as any).$use === 'function') {
-  (prisma as any).$use(async (params: any, next: any) => {
+
+// Type definitions for Prisma middleware (deprecated but still used in some versions)
+interface PrismaMiddlewareParams {
+  model?: string;
+  action: string;
+  args: unknown;
+  dataPath: string[];
+  runInTransaction: boolean;
+}
+
+type PrismaMiddlewareNext = (params: PrismaMiddlewareParams) => Promise<unknown>;
+
+interface PrismaClientWithMiddleware extends PrismaClient {
+  $use?: (middleware: (params: PrismaMiddlewareParams, next: PrismaMiddlewareNext) => Promise<unknown>) => void;
+}
+
+const prismaWithMiddleware = prisma as PrismaClientWithMiddleware;
+
+if (!isBuilding && typeof prismaWithMiddleware.$use === 'function') {
+  prismaWithMiddleware.$use(async (params: PrismaMiddlewareParams, next: PrismaMiddlewareNext) => {
     const startTime = Date.now()
     const span = tracer?.startSpan?.('prisma.query', {
       tags: {
@@ -84,10 +102,11 @@ if (!isBuilding && typeof (prisma as any).$use === 'function') {
       })
       
       if (span) {
-        span.setTag('db.rows_affected', result?.count)
+        const resultWithCount = result as { count?: number } | undefined;
+        span.setTag('db.rows_affected', resultWithCount?.count)
         span.finish()
       }
-      
+
       return result
     } catch (error) {
       // Record error metrics

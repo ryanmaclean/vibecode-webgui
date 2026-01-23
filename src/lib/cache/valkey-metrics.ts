@@ -112,8 +112,15 @@ export class ValKeyMetricsCollector {
       
       // Get slowlog length - using generic 'call' since slowlog may not be directly exposed
       try {
-        const slowlog = await (this.client as any).call('SLOWLOG', 'LEN');
-        parsedMetrics.slowlog_length = typeof slowlog === 'number' ? slowlog : parseInt(slowlog.toString(), 10);
+        // RedisClientType may have call method for arbitrary commands
+        interface RedisClientWithCall {
+          call: (command: string, ...args: string[]) => Promise<unknown>;
+        }
+        const clientWithCall = this.client as unknown as RedisClientWithCall;
+        if (typeof clientWithCall.call === 'function') {
+          const slowlog = await clientWithCall.call('SLOWLOG', 'LEN');
+          parsedMetrics.slowlog_length = typeof slowlog === 'number' ? slowlog : parseInt(String(slowlog), 10);
+        }
       } catch (error) {
         console.warn('Error getting ValKey slowlog length', { error });
       }
@@ -171,9 +178,13 @@ export class ValKeyMetricsCollector {
           case 'keyspace_misses':
           case 'evicted_keys':
           case 'expired_keys':
-          case 'cluster_enabled':
-            metrics[key.trim() as keyof ValKeyMetrics] = parseInt(value.trim(), 10) as any;
+          case 'cluster_enabled': {
+            const numericValue = parseInt(value.trim(), 10);
+            const metricKey = key.trim() as keyof ValKeyMetrics;
+            // Type-safe assignment for numeric metric keys
+            (metrics as Record<string, number | boolean | undefined>)[metricKey] = numericValue;
             break;
+          }
           case 'mem_fragmentation_ratio':
             metrics.mem_fragmentation_ratio = parseFloat(value.trim());
             break;

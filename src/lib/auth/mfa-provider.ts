@@ -459,7 +459,7 @@ export class MFAProvider {
       challengeId,
       userId,
       deviceId: selectedDevice.id,
-      challengeType: selectedDevice.type as any,
+      challengeType: selectedDevice.type as MFAChallenge['challengeType'],
       expiresAt: new Date(Date.now() + 5 * 60 * 1000), // 5 minutes
       attempts: 0,
       maxAttempts: 3
