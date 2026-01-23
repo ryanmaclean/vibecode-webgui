@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { intelligentModelSelection } from '@/lib/services/intelligent-model-selection'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - read-heavy selection
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const modelSelectionRequestSchema = z.object({
@@ -24,6 +27,23 @@ const modelSelectionRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Development authentication bypass
     const testUserId = request.headers.get('x-test-user-id')
     if (!testUserId) {
@@ -115,6 +135,23 @@ export async function POST(request: NextRequest) {
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Development authentication bypass
     const testUserId = request.headers.get('x-test-user-id')
     if (!testUserId) {

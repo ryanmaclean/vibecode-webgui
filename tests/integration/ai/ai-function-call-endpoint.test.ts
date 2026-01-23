@@ -9,6 +9,16 @@
  * - Performance benchmarks
  */
 
+// Mock rate-limiting BEFORE imports
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 30,
+    remaining: 29,
+    reset: Date.now() + 60000
+  }))
+}));
+
 import { NextRequest } from 'next/server';
 import { POST } from '@/app/api/ai/function-call/route';
 

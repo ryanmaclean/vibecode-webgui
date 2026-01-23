@@ -5,9 +5,17 @@
  * Implements token bucket rate limiting with Redis support
  *
  * Staff Engineer Implementation - Enterprise-grade rate limiting
+ *
+ * Security: Uses validated IP extraction to prevent IP spoofing attacks
  */
 
 import { NextRequest } from 'next/server'
+import {
+  getClientIpString,
+  logSuspiciousPattern,
+  isPrivateIp,
+  sanitizeIpAddress,
+} from './security/ip-validator'
 
 interface RateLimitConfig {
   windowMs: number // Time window in milliseconds
@@ -127,24 +135,42 @@ export default function rateLimit(config: RateLimitConfig) {
 }
 
 /**
- * Get client IP address from request
+ * Get client IP address from request with validation
+ *
+ * Uses the secure IP validator to prevent IP spoofing attacks.
+ * Logs suspicious patterns for security monitoring.
  */
 function getClientIP(req: NextRequest): string {
-  // Check for forwarded IP (behind proxy/load balancer)
-  const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) {
-    return forwarded.split(',')[0].trim()
+  // Use the secure IP validator
+  const ip = getClientIpString(req)
+
+  // Log suspicious patterns (e.g., private IPs claiming to be public)
+  const xForwardedFor = req.headers.get('x-forwarded-for')
+  if (xForwardedFor) {
+    const claimedIps = xForwardedFor.split(',').map(s => s.trim())
+    const validatedIp = sanitizeIpAddress(claimedIps[0])
+
+    // Check for potential spoofing: private IP in XFF but different resolved IP
+    if (validatedIp && isPrivateIp(validatedIp) && ip !== validatedIp && ip !== 'unknown') {
+      logSuspiciousPattern('xff_private_mismatch', ip, {
+        claimedIp: validatedIp,
+        resolvedIp: ip,
+        xForwardedFor,
+        reason: 'Private IP in XFF does not match resolved IP',
+      })
+    }
+
+    // Check for multiple IPs in XFF (potential proxy chain manipulation)
+    if (claimedIps.length > 5) {
+      logSuspiciousPattern('excessive_xff_chain', ip, {
+        chainLength: claimedIps.length,
+        xForwardedFor: xForwardedFor.substring(0, 200), // Truncate for logging
+        reason: 'Unusually long X-Forwarded-For chain',
+      })
+    }
   }
 
-  const realIP =
-    req.headers.get('x-real-ip') ||
-    req.headers.get('cf-connecting-ip') ||
-    req.headers.get('true-client-ip') ||
-    ''
-  if (realIP) return realIP
-
-  // Safe fallback when no proxy headers present
-  return 'unknown'
+  return ip
 }
 
 /**

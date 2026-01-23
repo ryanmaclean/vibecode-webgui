@@ -4,6 +4,7 @@
 import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Upload, Code, Settings } from 'lucide-react'
 import { Button, Textarea, Card, CardContent, Badge, ScrollArea } from '@/components/ui';
+import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 // import { logger } from '@/lib/logger';
 // import PromptTemplates from './PromptTemplates'
 // import PromptEnhancer from './PromptEnhancer'
@@ -28,7 +29,7 @@ interface AIChatInterfaceProps {
   className?: string
 }
 
-export const AIChatInterface = ({
+const AIChatInterfaceContent = ({
   workspaceId = 'default',
   initialContext = [],
   onFileUpload,
@@ -462,6 +463,23 @@ export const AIChatInterface = ({
         )}
       </div>
     </div>
+  )
+}
+
+/**
+ * AI Chat Interface with Error Boundary
+ * Wraps the interface with AI-specific error handling
+ */
+export const AIChatInterface = (props: AIChatInterfaceProps) => {
+  return (
+    <AIErrorBoundary
+      componentName="AIChatInterface"
+      onError={(error, errorInfo) => {
+        console.error('AIChatInterface error:', error, errorInfo)
+      }}
+    >
+      <AIChatInterfaceContent {...props} />
+    </AIErrorBoundary>
   )
 }
 

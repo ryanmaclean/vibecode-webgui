@@ -26,6 +26,19 @@ function createMockRequest(url: string = 'http://localhost:3000/api/auth/csrf'):
   });
 }
 
+// Helper function to create a mock OPTIONS request with Origin header
+function createMockOptionsRequest(
+  origin: string = 'http://localhost:3000',
+  url: string = 'http://localhost:3000/api/auth/csrf'
+): NextRequest {
+  return new NextRequest(url, {
+    method: 'OPTIONS',
+    headers: {
+      'origin': origin,
+    },
+  });
+}
+
 describe('/api/auth/csrf', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -162,21 +175,32 @@ describe('/api/auth/csrf', () => {
 
   describe('OPTIONS /api/auth/csrf', () => {
     it('should handle CORS preflight', async () => {
-      const response = await OPTIONS();
+      const request = createMockOptionsRequest();
+      const response = await OPTIONS(request);
 
       expect(response.status).toBe(200);
     });
 
-    it('should set CORS headers', async () => {
-      const response = await OPTIONS();
+    it('should set CORS headers for allowed origin', async () => {
+      const request = createMockOptionsRequest('http://localhost:3000');
+      const response = await OPTIONS(request);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, OPTIONS');
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
     });
 
+    it('should not set Access-Control-Allow-Origin for disallowed origin', async () => {
+      const request = createMockOptionsRequest('http://malicious-site.com');
+      const response = await OPTIONS(request);
+
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, OPTIONS');
+    });
+
     it('should return null body for OPTIONS', async () => {
-      const response = await OPTIONS();
+      const request = createMockOptionsRequest();
+      const response = await OPTIONS(request);
       const body = await response.text();
 
       // NextResponse with null body returns string "null" when calling .text()

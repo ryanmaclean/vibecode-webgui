@@ -10,6 +10,15 @@
  */
 
 // Mock all dependencies BEFORE imports
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 30,
+    remaining: 29,
+    reset: Date.now() + 60000
+  }))
+}));
+
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn().mockResolvedValue({
     user: {
@@ -579,10 +588,17 @@ describe('Integration: /api/ai/chat/stream', () => {
 
   describe('OPTIONS /api/ai/chat/stream - CORS', () => {
     it('should handle CORS preflight requests', async () => {
-      const response = await OPTIONS();
+      const mockRequest = new NextRequest('http://localhost:3000/api/ai/chat/stream', {
+        method: 'OPTIONS',
+        headers: {
+          'origin': 'http://localhost:3000',
+        },
+      });
+
+      const response = await OPTIONS(mockRequest);
 
       expect(response.status).toBe(200);
-      expect(response.headers.get('access-control-allow-origin')).toBe('*');
+      expect(response.headers.get('access-control-allow-origin')).toBe('http://localhost:3000');
       expect(response.headers.get('access-control-allow-methods')).toContain('POST');
       expect(response.headers.get('access-control-allow-headers')).toContain('Content-Type');
     });

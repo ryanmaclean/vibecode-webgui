@@ -1,14 +1,11 @@
 /**
  * Integration tests for pgvector cache with real database
- * 
+ *
  * @jest-environment node
  */
 
 // Override Jest setup for Node.js environment
 jest.mock('../../../tests/jest.setup.js', () => {});
-
-import { CachedVectorSearchService } from '../../../src/lib/cache/pgvector-cache-integration';
-import { VectorCacheManager } from '../../../src/lib/cache/vector-cache-strategy';
 
 // Mock Redis client for testing
 const mockRedisClient = {
@@ -19,10 +16,11 @@ const mockRedisClient = {
   clear: jest.fn()
 };
 
+// Mock getRedisClient to return our mock client
 jest.mock('../../../src/lib/cache/redis-client', () => ({
-  cache: mockRedisClient,
+  getRedisClient: jest.fn(async () => mockRedisClient),
   CacheKeys: {
-    vectorSearch: (query: string, workspace?: string) => 
+    vectorSearch: (query: string, workspace?: string) =>
       `vector:search:${Buffer.from(query + (workspace || '')).toString('base64')}`
   },
   CacheTTL: {
@@ -35,6 +33,9 @@ jest.mock('../../../src/lib/cache/redis-client', () => ({
     EMBEDDINGS: 2592000
   }
 }));
+
+import { CachedVectorSearchService } from '../../../src/lib/cache/pgvector-cache-integration';
+import { VectorCacheManager } from '../../../src/lib/cache/vector-cache-strategy';
 
 jest.mock('../../../src/lib/server-monitoring', () => ({
   metrics: {
@@ -58,7 +59,10 @@ describe('pgvector Cache Integration', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    mockRedisClient.clear();
+    mockRedisClient.get.mockReset();
+    mockRedisClient.set.mockReset();
+    mockRedisClient.del.mockReset();
+    mockRedisClient.keys.mockReset();
     VectorCacheManager.resetStats();
     
     // Mock the parent class methods

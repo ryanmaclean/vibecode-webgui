@@ -3,7 +3,7 @@
  * Tests NextAuth configuration and providers
  */
 
-import { authOptions } from '@/lib/auth'
+import { authOptions, hashPassword } from '@/lib/auth'
 
 // Type definitions for NextAuth providers and callbacks
 type CredentialsProvider = {
@@ -40,7 +40,25 @@ type EventCallback = (params: Record<string, unknown>) => Promise<void>;
 // Mock environment variables
 const originalEnv = process.env
 
+// Store hashed passwords for test users (computed once)
+let developerPasswordHash: string;
+let testUsersJson: string;
+
 describe('auth.ts Configuration', () => {
+  beforeAll(async () => {
+    // Pre-compute the password hash for the test user
+    developerPasswordHash = await hashPassword('dev123');
+    testUsersJson = JSON.stringify([
+      {
+        id: 'legacy-developer',
+        name: 'Developer User',
+        email: 'developer@vibecode.dev',
+        role: 'developer',
+        passwordHash: developerPasswordHash,
+      },
+    ]);
+  });
+
   beforeEach(() => {
     jest.resetModules()
     process.env = {
@@ -129,6 +147,10 @@ describe('auth.ts Configuration', () => {
 
   describe('Credentials Provider Authorization', () => {
     it('should authorize valid credentials', async () => {
+      // Set up development environment with test users for this test
+      process.env.NODE_ENV = 'development';
+      process.env.AUTH_TEST_USERS = testUsersJson;
+
       const credentialsProvider = authOptions.providers?.find(
         provider => provider.id === 'credentials'
       ) as any

@@ -4,7 +4,7 @@ on:
   push:
     branches: [ main, develop ]
     paths:
-      - 'VibeCodeSwift/**'
+      - 'platforms/macos/VibeCodeSwift/**'
       - 'scripts/**'
   pull_request:
     branches: [ main ]
@@ -21,15 +21,15 @@ jobs:
       run: swift --version
     
     - name: Build VibeCode
-      working-directory: VibeCodeSwift
+      working-directory: platforms/macos/VibeCodeSwift
       run: swift build -c release
     
     - name: Run Swift tests
-      working-directory: VibeCodeSwift
+      working-directory: platforms/macos/VibeCodeSwift
       run: swift test --enable-code-coverage
     
     - name: Generate code coverage
-      working-directory: VibeCodeSwift
+      working-directory: platforms/macos/VibeCodeSwift
       run: |
         xcrun llvm-cov export -format="lcov" \
           .build/debug/VibeCodePackageTests.xctest/Contents/MacOS/VibeCodePackageTests \
@@ -38,7 +38,7 @@ jobs:
     - name: Upload coverage
       uses: codecov/codecov-action@v3
       with:
-        files: ./VibeCodeSwift/coverage.lcov
+        files: ./platforms/macos/VibeCodeSwift/coverage.lcov
         flags: swift-tests
 
   integration-tests:
@@ -77,7 +77,7 @@ jobs:
       if: always()
       run: |
         ls -la logs/ || echo "No logs directory"
-        ls -la VibeCodeSwift/.build/ || echo "No build artifacts"
+        ls -la platforms/macos/VibeCodeSwift/.build/ || echo "No build artifacts"
 
   lint:
     name: Code Quality
@@ -93,12 +93,12 @@ jobs:
         else
           echo "SwiftLint not installed, skipping"
         fi
-      working-directory: VibeCodeSwift
+      working-directory: platforms/macos/VibeCodeSwift
       continue-on-error: true
     
     - name: Check for TODO/FIXME
       run: |
-        if grep -r "TODO\|FIXME" VibeCodeSwift/Sources/ --exclude-dir=.build; then
+        if grep -r "TODO\|FIXME" platforms/macos/VibeCodeSwift/Sources/ --exclude-dir=.build; then
           echo "Found TODO/FIXME comments"
           exit 1
         fi

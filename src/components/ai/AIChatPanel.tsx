@@ -13,6 +13,7 @@ import React, { useState, useRef, useEffect } from 'react'
 import { Send, Bot, User, Code, FileText, AlertCircle, Loader } from 'lucide-react'
 import { claudeCodeSDK } from '@/lib/claude-code-sdk'
 import type { ChatRequest, ChatResponse, CodeContext } from '@/lib/claude-code-sdk'
+import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 // import { logger } from '@/lib/logger';
 interface Message {
   id: string
@@ -38,7 +39,7 @@ interface AIChatPanelProps {
   onActionRequest?: (action: string, target: string) => void
 }
 
-export default function AIChatPanel({
+function AIChatPanelContent({
   className = '',
   codeContext,
   onCodeInsert,
@@ -278,5 +279,22 @@ function MessageComponent({ message, onCodeInsert, onActionClick }: MessageCompo
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * AI Chat Panel with Error Boundary
+ * Wraps the chat panel with AI-specific error handling
+ */
+export default function AIChatPanel(props: AIChatPanelProps) {
+  return (
+    <AIErrorBoundary
+      componentName="AIChatPanel"
+      onError={(error, errorInfo) => {
+        console.error('AIChatPanel error:', error, errorInfo)
+      }}
+    >
+      <AIChatPanelContent {...props} />
+    </AIErrorBoundary>
   )
 }
