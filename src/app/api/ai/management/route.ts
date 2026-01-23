@@ -4,8 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
-import { getToken } from 'next-auth/jwt';
-import { litellmClient } from '../../../../lib/ai/litellm-client';
+import { getToken, JWT } from 'next-auth/jwt';
+import { litellmClient, ModelInfo } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
@@ -71,6 +71,13 @@ interface FieldAggregation {
   cost: number;
 }
 
+// Usage stats model type from LiteLLM
+interface UsageModelStats {
+  requests: number;
+  tokens: number;
+  cost: number;
+}
+
 interface UserAnalysisData {
   userId: number;
   userName: string | null | undefined;
@@ -100,6 +107,36 @@ interface PerformanceRequest {
   status: string;
 }
 
+// Database record types for queries
+interface AIRequestRecord {
+  model: string;
+  provider: string;
+  request_type: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  cost: number | null;
+  duration_ms: number | null;
+  status: string;
+  created_at: Date;
+  user_id?: number;
+}
+
+interface CostRecord {
+  model: string;
+  provider: string;
+  cost: number | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  created_at: Date;
+  user_id: number;
+}
+
+// Extended JWT type for test mode
+interface ExtendedJWT extends Omit<JWT, 'role'> {
+  role?: string;
+  id?: string;
+}
+
 export async function GET(request: NextRequest) {
   try {
     // Rate limiting check
@@ -124,10 +161,10 @@ export async function GET(request: NextRequest) {
 
     const { action, timeframe } = queryValidation.data;
 
-    let token = await getToken({
+    let token: ExtendedJWT | null = await getToken({
       req: request,
       secret: process.env.NEXTAUTH_SECRET
-    });
+    }) as ExtendedJWT | null;
 
     // Development testing bypass
     const isTestMode = request.headers.get('x-test-mode') === 'true';
@@ -141,7 +178,7 @@ export async function GET(request: NextRequest) {
         role: testRole,
         email: `${testUserId}@test.com`,
         name: `Test User ${testUserId}`
-      } as any;
+      };
     }
 
     if (!token) {
@@ -243,7 +280,7 @@ async function handleOverview(userId?: string, timeframe = '24h') {
     timeframe,
     summary: {
       totalModels: models.length,
-      healthyModels: Object.values(health.models).filter((status: string) => status === 'healthy').length,
+      healthyModels: Object.values(health.models).filter((status) => status === 'healthy').length,
       totalRequests: usage.requests,
       totalTokens: usage.tokens.total,
       totalCost: usage.cost,
@@ -260,9 +297,9 @@ async function handleOverview(userId?: string, timeframe = '24h') {
       tokens: usage.tokens,
       cost: usage.cost,
       topModels: Object.entries(usage.models)
-        .sort(([,a], [,b]) => (b as unknown as FieldAggregation).requests - (a as unknown as FieldAggregation).requests)
+        .sort(([,a], [,b]) => (b as UsageModelStats).requests - (a as UsageModelStats).requests)
         .slice(0, 5)
-        .map(([model, stats]) => ({ model, ...(stats as unknown as FieldAggregation) }))
+        .map(([model, stats]) => ({ model, ...(stats as UsageModelStats) }))
     },
     recentActivity: recentRequests.map((req: AIRequestData) => ({
       id: req.id,
@@ -300,7 +337,7 @@ async function handleModels() {
     litellmClient.healthCheck()
   ]);
 
-  const modelsWithHealth = models.map((model: ModelData) => ({
+  const modelsWithHealth = models.map((model: ModelInfo) => ({
     ...model,
     status: health.models[model.name] || 'unknown',
     lastChecked: new Date().toISOString()
@@ -314,7 +351,7 @@ async function handleModels() {
       byProvider: groupModelsByProvider(modelsWithHealth),
       byCategory: groupModelsByCategory(modelsWithHealth),
       byStatus: groupModelsByStatus(modelsWithHealth),
-      healthyCount: modelsWithHealth.filter((m: ModelData & { status: string }) => m.status === 'healthy').length,
+      healthyCount: modelsWithHealth.filter((m) => m.status === 'healthy').length,
       averageCostPerToken: calculateAverageCost(modelsWithHealth)
     }
   };
@@ -336,7 +373,7 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
 
   // Get detailed usage from database (with pagination limit to prevent resource exhaustion)
   const usageQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
-  const dbRequests = await prisma.aIRequest.findMany({
+  const dbRequests: AIRequestRecord[] = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
       created_at: {
@@ -361,15 +398,15 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
   // Aggregate database statistics
   const dbStats = {
     totalRequests: dbRequests.length,
-    successfulRequests: (dbRequests as any[]).filter((r) => r.status === 'completed').length,
-    failedRequests: (dbRequests as any[]).filter((r) => r.status === 'failed').length,
+    successfulRequests: dbRequests.filter((r) => r.status === 'completed').length,
+    failedRequests: dbRequests.filter((r) => r.status === 'failed').length,
     totalTokens: {
-      input: (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0), 0),
-      output: (dbRequests as any[]).reduce((sum, r) => sum + (r.output_tokens || 0), 0)
+      input: dbRequests.reduce((sum, r) => sum + (r.input_tokens || 0), 0),
+      output: dbRequests.reduce((sum, r) => sum + (r.output_tokens || 0), 0)
     },
-    totalCost: (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0),
+    totalCost: dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0),
     averageLatency: dbRequests.length > 0
-      ? (dbRequests as any[]).reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
+      ? dbRequests.reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
       : 0,
     byModel: aggregateByField(dbRequests, 'model'),
     byProvider: aggregateByField(dbRequests, 'provider'),
@@ -402,7 +439,7 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
 async function handleCostAnalysis(requestUserId?: string, filterUserId?: string, timeframe = '24h') {
   // Apply pagination limit to prevent resource exhaustion
   const costQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
-  const dbRequests = await prisma.aIRequest.findMany({
+  const dbRequests: CostRecord[] = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
       created_at: {
@@ -425,30 +462,32 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
     orderBy: { created_at: 'desc' }
   });
 
-  const costAnalysis = {
+  const totalCost = dbRequests.reduce((sum, r) => sum + (r.cost || 0), 0);
+  const totalTokens = dbRequests.reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0);
+
+  const costAnalysis: Record<string, unknown> = {
     timestamp: new Date().toISOString(),
     timeframe,
     total: {
-      cost: (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0),
+      cost: totalCost,
       requests: dbRequests.length,
-      tokens: (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      tokens: totalTokens
     },
     byModel: aggregateCostByField(dbRequests, 'model'),
     byProvider: aggregateCostByField(dbRequests, 'provider'),
     timeline: generateCostTimeline(dbRequests, timeframe),
     efficiency: {
-      costPerToken: dbRequests.length > 0
-        ? (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0) /
-          (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      costPerToken: dbRequests.length > 0 && totalTokens > 0
+        ? totalCost / totalTokens
         : 0,
       costPerRequest: dbRequests.length > 0
-        ? (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0) / dbRequests.length
+        ? totalCost / dbRequests.length
         : 0
     }
   };
 
   if (requestUserId && requestUserId === 'admin') {
-    (costAnalysis as any).byUser = aggregateCostByField(dbRequests, 'user_id');
+    costAnalysis.byUser = aggregateCostByField(dbRequests, 'user_id');
   }
 
   return NextResponse.json(costAnalysis);
@@ -460,14 +499,14 @@ async function handleHealthCheck() {
   const response = {
     timestamp: new Date().toISOString(),
     proxy: health,
-    models: Object.entries(health.models).map(([model, status]: [string, string]) => ({
+    models: Object.entries(health.models).map(([model, status]) => ({
       model,
       status,
       lastChecked: new Date().toISOString()
     })),
     summary: {
       overallStatus: health.status,
-      healthyModels: Object.values(health.models).filter((s: string) => s === 'healthy').length,
+      healthyModels: Object.values(health.models).filter((s) => s === 'healthy').length,
       totalModels: Object.keys(health.models).length,
       latency: health.latency
     }
@@ -479,7 +518,7 @@ async function handleHealthCheck() {
 async function handlePerformanceMetrics(timeframe = '24h') {
   // Apply pagination limit to prevent resource exhaustion
   const performanceQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
-  const requests = await prisma.aIRequest.findMany({
+  const requests: PerformanceRequest[] = await prisma.aIRequest.findMany({
     where: {
       created_at: {
         gte: getTimeframeStart(timeframe)
@@ -505,23 +544,23 @@ async function handlePerformanceMetrics(timeframe = '24h') {
     timeframe,
     latency: {
       average: requests.length > 0
-        ? requests.reduce((sum: number, r: any) => sum + (r.duration_ms || 0), 0) / requests.length
+        ? requests.reduce((sum, r) => sum + (r.duration_ms || 0), 0) / requests.length
         : 0,
-      p95: calculatePercentile(requests.map((r: any) => r.duration_ms || 0), 95),
-      p99: calculatePercentile(requests.map((r: any) => r.duration_ms || 0), 99),
+      p95: calculatePercentile(requests.map((r) => r.duration_ms || 0), 95),
+      p99: calculatePercentile(requests.map((r) => r.duration_ms || 0), 99),
       byModel: aggregateLatencyByField(requests, 'model'),
       byProvider: aggregateLatencyByField(requests, 'provider')
     },
     throughput: {
       requestsPerSecond: requests.length / getTimeframeSeconds(timeframe),
-      tokensPerSecond: requests.reduce((sum: number, r: any) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0) / getTimeframeSeconds(timeframe)
+      tokensPerSecond: requests.reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0) / getTimeframeSeconds(timeframe)
     },
     reliability: {
       successRate: requests.length > 0
-        ? (requests.filter((r: any) => r.status === 'completed').length / requests.length) * 100
+        ? (requests.filter((r) => r.status === 'completed').length / requests.length) * 100
         : 100,
       errorRate: requests.length > 0
-        ? (requests.filter((r: any) => r.status === 'failed').length / requests.length) * 100
+        ? (requests.filter((r) => r.status === 'failed').length / requests.length) * 100
         : 0
     }
   };
@@ -548,10 +587,11 @@ async function handleUserAnalysis(timeframe = '24h') {
     }
   });
 
+  const userIds = userStats.map((s) => s.user_id);
   const userDetails = await prisma.user.findMany({
     where: {
       id: {
-        in: userStats.map((s: any) => s.user_id)
+        in: userIds
       }
     },
     select: {
@@ -561,8 +601,8 @@ async function handleUserAnalysis(timeframe = '24h') {
     }
   });
 
-  const analysis = userStats.map((stats: any) => {
-    const user = userDetails.find((u: any) => u.id === stats.user_id);
+  const analysis: UserAnalysisData[] = userStats.map((stats) => {
+    const user = userDetails.find((u) => u.id === stats.user_id);
     return {
       userId: stats.user_id,
       userName: user?.name,
@@ -576,7 +616,7 @@ async function handleUserAnalysis(timeframe = '24h') {
       cost: stats._sum.cost || 0,
       averageLatency: stats._count.id > 0 ? (stats._sum.duration_ms || 0) / stats._count.id : 0
     };
-  }).sort((a: any, b: any) => b.cost - a.cost);
+  }).sort((a, b) => b.cost - a.cost);
 
   return NextResponse.json({
     timestamp: new Date().toISOString(),
@@ -584,9 +624,9 @@ async function handleUserAnalysis(timeframe = '24h') {
     totalUsers: analysis.length,
     users: analysis,
     aggregates: {
-      totalRequests: analysis.reduce((sum: number, u: any) => sum + u.requests, 0),
-      totalTokens: analysis.reduce((sum: number, u: any) => sum + u.tokens.total, 0),
-      totalCost: analysis.reduce((sum: number, u: any) => sum + u.cost, 0),
+      totalRequests: analysis.reduce((sum, u) => sum + u.requests, 0),
+      totalTokens: analysis.reduce((sum, u) => sum + u.tokens.total, 0),
+      totalCost: analysis.reduce((sum, u) => sum + u.cost, 0),
       topUsers: analysis.slice(0, 10)
     }
   });
@@ -605,43 +645,43 @@ function getTimeframeSeconds(timeframe: string): number {
   return hours * 60 * 60;
 }
 
-function groupModelsByProvider(models: any[]) {
-  return models.reduce((acc: Record<string, number>, model: any) => {
+function groupModelsByProvider(models: ModelInfo[]): Record<string, number> {
+  return models.reduce((acc: Record<string, number>, model) => {
     acc[model.provider] = (acc[model.provider] || 0) + 1;
     return acc;
   }, {});
 }
 
-function groupModelsByCategory(models: any[]) {
-  return models.reduce((acc: Record<string, number>, model: any) => {
+function groupModelsByCategory(models: ModelInfo[]): Record<string, number> {
+  return models.reduce((acc: Record<string, number>, model) => {
     acc[model.category] = (acc[model.category] || 0) + 1;
     return acc;
   }, {});
 }
 
-function groupModelsByQuality(models: any[]) {
-  return models.reduce((acc: Record<string, number>, model: any) => {
+function groupModelsByQuality(models: ModelInfo[]): Record<string, number> {
+  return models.reduce((acc: Record<string, number>, model) => {
     acc[model.quality] = (acc[model.quality] || 0) + 1;
     return acc;
   }, {});
 }
 
-function groupModelsByStatus(models: any[]) {
-  return models.reduce((acc: Record<string, number>, model: any) => {
+function groupModelsByStatus(models: (ModelInfo & { status: string })[]): Record<string, number> {
+  return models.reduce((acc: Record<string, number>, model) => {
     acc[model.status] = (acc[model.status] || 0) + 1;
     return acc;
   }, {});
 }
 
-function calculateAverageCost(models: any[]) {
+function calculateAverageCost(models: ModelInfo[]): number {
   if (models.length === 0) return 0;
-  const totalCost = models.reduce((sum: number, m: any) => sum + m.costPerInputToken + m.costPerOutputToken, 0);
+  const totalCost = models.reduce((sum, m) => sum + m.costPerInputToken + m.costPerOutputToken, 0);
   return totalCost / models.length;
 }
 
-function aggregateByField(requests: any[], field: string) {
-  return requests.reduce((acc: Record<string, any>, req: any) => {
-    const key = req[field] || 'unknown';
+function aggregateByField(requests: AIRequestRecord[], field: keyof AIRequestRecord): Record<string, FieldAggregation> {
+  return requests.reduce((acc: Record<string, FieldAggregation>, req) => {
+    const key = String(req[field] || 'unknown');
     if (!acc[key]) {
       acc[key] = { requests: 0, tokens: { input: 0, output: 0 }, cost: 0 };
     }
@@ -653,25 +693,25 @@ function aggregateByField(requests: any[], field: string) {
   }, {});
 }
 
-function aggregateCostByField(requests: any[], field: string) {
-  return requests.reduce((acc: Record<string, number>, req: any) => {
-    const key = req[field]?.toString() || 'unknown';
+function aggregateCostByField(requests: CostRecord[], field: keyof CostRecord): Record<string, number> {
+  return requests.reduce((acc: Record<string, number>, req) => {
+    const key = String(req[field] || 'unknown');
     acc[key] = (acc[key] || 0) + (req.cost || 0);
     return acc;
   }, {});
 }
 
-function aggregateLatencyByField(requests: any[], field: string) {
-  const grouped = requests.reduce((acc: Record<string, number[]>, req: any) => {
-    const key = req[field] || 'unknown';
+function aggregateLatencyByField(requests: PerformanceRequest[], field: keyof PerformanceRequest): Record<string, LatencyStats> {
+  const grouped = requests.reduce((acc: Record<string, number[]>, req) => {
+    const key = String(req[field] || 'unknown');
     if (!acc[key]) acc[key] = [];
     acc[key].push(req.duration_ms || 0);
     return acc;
   }, {});
 
-  return Object.entries(grouped).reduce((acc: Record<string, any>, [key, latencies]: [string, number[]]) => {
+  return Object.entries(grouped).reduce((acc: Record<string, LatencyStats>, [key, latencies]) => {
     acc[key] = {
-      average: latencies.reduce((sum: number, l: number) => sum + l, 0) / latencies.length,
+      average: latencies.reduce((sum, l) => sum + l, 0) / latencies.length,
       p95: calculatePercentile(latencies, 95),
       count: latencies.length
     };
@@ -681,18 +721,18 @@ function aggregateLatencyByField(requests: any[], field: string) {
 
 function calculatePercentile(values: number[], percentile: number): number {
   if (values.length === 0) return 0;
-  const sorted = [...values].sort((a: number, b: number) => a - b);
+  const sorted = [...values].sort((a, b) => a - b);
   const index = Math.ceil((percentile / 100) * sorted.length) - 1;
   return sorted[index] || 0;
 }
 
-function generateTimeline(_requests: any[], _timeframe: string) {
+function generateTimeline(_requests: AIRequestRecord[], _timeframe: string): unknown[] {
   // Implementation for generating timeline data
   // This would create hourly/daily buckets based on timeframe
   return [];
 }
 
-function generateCostTimeline(_requests: any[], _timeframe: string) {
+function generateCostTimeline(_requests: CostRecord[], _timeframe: string): unknown[] {
   // Implementation for generating cost timeline
   return [];
 }

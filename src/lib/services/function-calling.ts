@@ -19,12 +19,12 @@ export interface FunctionDefinition {
 
 export interface FunctionCall {
   name: string;
-  arguments: Record<string, any>;
+  arguments: Record<string, unknown>;
 }
 
 export interface FunctionExecutionResult {
   success: boolean;
-  result?: any;
+  result?: unknown;
   error?: string;
   executionTime: number;
   functionName: string;
@@ -37,12 +37,184 @@ export interface FunctionCallingOptions {
   enableMetrics?: boolean;
 }
 
+// Function argument types
+interface ReadFileArgs {
+  path: string;
+  encoding?: string;
+}
+
+interface WriteFileArgs {
+  path: string;
+  content?: string;
+  encoding?: string;
+}
+
+interface RunCommandArgs {
+  command: string;
+  cwd?: string;
+  timeout?: number;
+}
+
+interface SearchCodeArgs {
+  query: string;
+  language?: string;
+  filePattern?: string;
+  maxResults?: number;
+}
+
+interface AnalyzeCodeArgs {
+  code: string;
+  language: string;
+  includeMetrics?: boolean;
+}
+
+interface GenerateTestArgs {
+  code: string;
+  language: string;
+  framework?: string;
+  coverage?: string;
+}
+
+interface DeployProjectArgs {
+  projectPath: string;
+  platform: string;
+  buildCommand?: string;
+  environment?: string;
+}
+
+interface GetWorkspaceInfoArgs {
+  workspaceId?: string;
+  includeFiles?: boolean;
+  includeCollaborators?: boolean;
+}
+
+interface WebSearchArgs {
+  query: string;
+  maxResults?: number;
+}
+
+interface CreateFileArgs {
+  filename: string;
+  content?: string;
+  workspaceId?: string;
+}
+
+interface ExecuteCodeArgs {
+  code: string;
+  language: string;
+}
+
+interface ListFilesArgs {
+  directory?: string;
+}
+
+// Function result types
+interface ReadFileResult {
+  content: string;
+  path: string;
+  size: number;
+  lastModified: string;
+}
+
+interface WriteFileResult {
+  success: boolean;
+  path: string;
+  bytesWritten: number;
+}
+
+interface RunCommandResult {
+  success: boolean;
+  stdout: string;
+  stderr: string;
+  exitCode: number;
+  executionTime: number;
+}
+
+interface SearchCodeResult {
+  results: Array<{
+    file: string;
+    line: number;
+    content: string;
+    relevance: number;
+  }>;
+  totalMatches: number;
+  executionTime: number;
+}
+
+interface AnalyzeCodeResult {
+  complexity: number;
+  linesOfCode: number;
+  functions: number;
+  classes: number;
+  dependencies: string[];
+  issues: string[];
+  suggestions: string[];
+}
+
+interface GenerateTestResult {
+  testFile: string;
+  content: string;
+  framework: string;
+  coverage: string;
+}
+
+interface DeployProjectResult {
+  success: boolean;
+  deploymentUrl: string;
+  buildTime: number;
+  status: string;
+}
+
+interface GetWorkspaceInfoResult {
+  workspaceId: string;
+  files: number;
+  lastModified: string;
+  collaborators: number;
+  status: string;
+}
+
+interface WebSearchResult {
+  title: string;
+  url: string;
+  snippet: string;
+  relevance: number;
+}
+
+interface CreateFileResult {
+  success: boolean;
+  path: string;
+  content?: string;
+  workspaceId?: string;
+}
+
+interface ExecuteCodeResult {
+  success: boolean;
+  output: string;
+  exitCode: number;
+  language: string;
+  executionTime: number;
+}
+
+// JSON Schema types
+interface JSONSchemaProperty {
+  type: string;
+  description?: string;
+  items?: JSONSchemaProperty;
+  properties?: Record<string, JSONSchemaProperty>;
+}
+
+interface JSONSchema {
+  type: string;
+  properties?: Record<string, JSONSchemaProperty>;
+  items?: JSONSchemaProperty;
+}
+
 /**
  * Function Calling Service for AI-powered function execution
  */
 export class FunctionCallingService {
   private functions: Map<string, FunctionDefinition> = new Map();
-  private implementations: Map<string, (args: Record<string, any>) => Promise<any>> = new Map();
+  private implementations: Map<string, (args: Record<string, unknown>) => Promise<unknown>> = new Map();
   private executionHistory: Array<{
     call: FunctionCall;
     result: FunctionExecutionResult;
@@ -58,7 +230,7 @@ export class FunctionCallingService {
   /**
    * Register a function for AI calling
    */
-  registerFunction(definition: FunctionDefinition, implementation?: (args: Record<string, any>) => Promise<any>): void {
+  registerFunction(definition: FunctionDefinition, implementation?: (args: Record<string, unknown>) => Promise<unknown>): void {
     this.functions.set(definition.name, definition);
     if (implementation) {
       this.implementations.set(definition.name, implementation);
@@ -200,7 +372,7 @@ export class FunctionCallingService {
   /**
    * Perform the actual function execution
    */
-  private async performFunctionExecution(call: FunctionCall): Promise<any> {
+  private async performFunctionExecution(call: FunctionCall): Promise<unknown> {
     // Check if we have a custom implementation registered
     const implementation = this.implementations.get(call.name);
     if (implementation) {
@@ -208,31 +380,32 @@ export class FunctionCallingService {
     }
 
     // Otherwise use built-in implementations
+    const args = call.arguments;
     switch (call.name) {
       case 'read_file':
-        return this.simulateReadFile(call.arguments);
+        return this.simulateReadFile(args as unknown as ReadFileArgs);
       case 'write_file':
-        return this.simulateWriteFile(call.arguments);
+        return this.simulateWriteFile(args as unknown as WriteFileArgs);
       case 'run_command':
-        return this.simulateRunCommand(call.arguments);
+        return this.simulateRunCommand(args as unknown as RunCommandArgs);
       case 'search_code':
-        return this.simulateSearchCode(call.arguments);
+        return this.simulateSearchCode(args as unknown as SearchCodeArgs);
       case 'analyze_code':
-        return this.simulateAnalyzeCode(call.arguments);
+        return this.simulateAnalyzeCode(args as unknown as AnalyzeCodeArgs);
       case 'generate_test':
-        return this.simulateGenerateTest(call.arguments);
+        return this.simulateGenerateTest(args as unknown as GenerateTestArgs);
       case 'deploy_project':
-        return this.simulateDeployProject(call.arguments);
+        return this.simulateDeployProject(args as unknown as DeployProjectArgs);
       case 'get_workspace_info':
-        return this.simulateGetWorkspaceInfo(call.arguments);
+        return this.simulateGetWorkspaceInfo(args as unknown as GetWorkspaceInfoArgs);
       case 'web_search':
-        return this.simulateWebSearch(call.arguments);
+        return this.simulateWebSearch(args as unknown as WebSearchArgs);
       case 'create_file':
-        return this.simulateCreateFile(call.arguments);
+        return this.simulateCreateFile(args as unknown as CreateFileArgs);
       case 'execute_code':
-        return this.simulateExecuteCode(call.arguments);
+        return this.simulateExecuteCode(args as unknown as ExecuteCodeArgs);
       case 'list_files':
-        return this.simulateListFiles(call.arguments);
+        return this.simulateListFiles(args as unknown as ListFilesArgs);
       default:
         throw new Error(`Unknown function: ${call.name}`);
     }
@@ -241,7 +414,7 @@ export class FunctionCallingService {
   /**
    * Simulate read file function
    */
-  private simulateReadFile(args: Record<string, any>): any {
+  private simulateReadFile(args: ReadFileArgs): ReadFileResult {
     return {
       content: '// Simulated file content',
       path: args.path,
@@ -253,7 +426,7 @@ export class FunctionCallingService {
   /**
    * Simulate write file function
    */
-  private simulateWriteFile(args: Record<string, any>): any {
+  private simulateWriteFile(args: WriteFileArgs): WriteFileResult {
     return {
       success: true,
       path: args.path,
@@ -264,7 +437,7 @@ export class FunctionCallingService {
   /**
    * Simulate run command function
    */
-  private simulateRunCommand(args: Record<string, any>): any {
+  private simulateRunCommand(_args: RunCommandArgs): RunCommandResult {
     return {
       success: true,
       stdout: 'Command executed successfully',
@@ -277,7 +450,7 @@ export class FunctionCallingService {
   /**
    * Simulate search code function
    */
-  private simulateSearchCode(args: Record<string, any>): any {
+  private simulateSearchCode(_args: SearchCodeArgs): SearchCodeResult {
     return {
       results: [
         {
@@ -295,7 +468,7 @@ export class FunctionCallingService {
   /**
    * Simulate analyze code function
    */
-  private simulateAnalyzeCode(args: Record<string, any>): any {
+  private simulateAnalyzeCode(_args: AnalyzeCodeArgs): AnalyzeCodeResult {
     return {
       complexity: 5,
       linesOfCode: 150,
@@ -310,7 +483,7 @@ export class FunctionCallingService {
   /**
    * Simulate generate test function
    */
-  private simulateGenerateTest(args: Record<string, any>): any {
+  private simulateGenerateTest(_args: GenerateTestArgs): GenerateTestResult {
     return {
       testFile: 'example.test.ts',
       content: `describe('Example', () => {
@@ -326,7 +499,7 @@ export class FunctionCallingService {
   /**
    * Simulate deploy project function
    */
-  private simulateDeployProject(args: Record<string, any>): any {
+  private simulateDeployProject(_args: DeployProjectArgs): DeployProjectResult {
     return {
       success: true,
       deploymentUrl: 'https://example.vercel.app',
@@ -338,7 +511,7 @@ export class FunctionCallingService {
   /**
    * Simulate get workspace info function
    */
-  private simulateGetWorkspaceInfo(args: Record<string, any>): any {
+  private simulateGetWorkspaceInfo(args: GetWorkspaceInfoArgs): GetWorkspaceInfoResult {
     return {
       workspaceId: args.workspaceId || 'default',
       files: 25,
@@ -351,7 +524,7 @@ export class FunctionCallingService {
   /**
    * Simulate web search function
    */
-  private async simulateWebSearch(args: Record<string, any>): Promise<any> {
+  private async simulateWebSearch(args: WebSearchArgs): Promise<WebSearchResult[]> {
     return [
       {
         title: 'Search Result 1',
@@ -371,7 +544,7 @@ export class FunctionCallingService {
   /**
    * Simulate create file function
    */
-  private simulateCreateFile(args: Record<string, any>): any {
+  private simulateCreateFile(args: CreateFileArgs): CreateFileResult {
     if (!args.filename || args.filename === '') {
       throw new Error('Filename is required');
     }
@@ -386,7 +559,7 @@ export class FunctionCallingService {
   /**
    * Simulate execute code function
    */
-  private simulateExecuteCode(args: Record<string, any>): any {
+  private simulateExecuteCode(args: ExecuteCodeArgs): ExecuteCodeResult {
     return {
       success: true,
       output: 'Hello World\n',
@@ -399,7 +572,7 @@ export class FunctionCallingService {
   /**
    * Simulate list files function
    */
-  private simulateListFiles(args: Record<string, any>): any {
+  private simulateListFiles(_args: ListFilesArgs): string[] {
     return [
       'file1.txt',
       'file2.js',
@@ -641,13 +814,13 @@ export class FunctionCallingService {
     availableFunctions?: string[]
   ): {
     prompt: string;
-    schema: any;
+    schema: JSONSchema;
   } {
     const functionsToInclude = availableFunctions
       ? this.getRegisteredFunctions().filter(fn => availableFunctions.includes(fn.name))
       : this.getRegisteredFunctions();
 
-    const schema = {
+    const schema: JSONSchema = {
       type: 'object',
       properties: {
         function_calls: {
