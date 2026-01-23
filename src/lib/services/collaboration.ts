@@ -3,7 +3,7 @@
  * Handles real-time collaboration features for workspaces
  */
 
-import { Server as SocketIOServer } from 'socket.io';
+import { Server as SocketIOServer, Socket } from 'socket.io';
 // import { DefaultEventsMap } from 'socket.io/dist/typed-events';
 // import { logger } from '@/lib/logger';
 
@@ -28,11 +28,20 @@ export interface WorkspaceSession {
   maxUsers: number;
 }
 
-export interface CollaborationEvent {
-  type: 'user_joined' | 'user_left' | 'cursor_move' | 'file_edit' | 'chat_message';
+/** Event data types for collaboration events */
+export interface CollaborationEventData {
+  user_joined: { workspaceId: string; userId: string; username: string };
+  user_left: { workspaceId: string };
+  cursor_move: { x: number; y: number; file?: string };
+  file_edit: FileEdit;
+  chat_message: { content: string; conversationId?: string };
+}
+
+export interface CollaborationEvent<T extends keyof CollaborationEventData = keyof CollaborationEventData> {
+  type: T;
   workspaceId: string;
   userId: string;
-  data: any;
+  data: CollaborationEventData[T];
   timestamp: Date;
 }
 
@@ -43,6 +52,17 @@ export interface FileEdit {
   content: string;
   length?: number;
 }
+
+/** Type for notification data */
+export interface NotificationData {
+  type: 'info' | 'warning' | 'error' | 'success';
+  title: string;
+  message: string;
+  data?: Record<string, unknown>;
+}
+
+/** Type for system message data */
+export type SystemMessageData = Record<string, unknown>;
 
 /**
  * Collaboration Service for real-time workspace features
@@ -67,7 +87,7 @@ export class CollaborationService {
   private setupSocketHandlers(): void {
     if (!this.io) return;
 
-    this.io.on('connection', (socket: any) => {
+    this.io.on('connection', (socket: Socket) => {
       console.info('User connected:', socket.id);
 
       // Handle user joining workspace
@@ -106,7 +126,7 @@ export class CollaborationService {
    * Handle user joining a workspace
    */
   private async handleUserJoin(
-    socket: any,
+    socket: Socket,
     data: { workspaceId: string; userId: string; username: string }
   ): Promise<void> {
     const { workspaceId, userId, username } = data;
@@ -167,7 +187,7 @@ export class CollaborationService {
   /**
    * Handle cursor movement
    */
-  private handleCursorMove(socket: any, data: { x: number; y: number; file?: string }): void {
+  private handleCursorMove(socket: Socket, data: { x: number; y: number; file?: string }): void {
     const userId = this.socketUsers.get(socket.id);
     if (!userId) return;
 
@@ -195,7 +215,7 @@ export class CollaborationService {
   /**
    * Handle file edits
    */
-  private handleFileEdit(socket: any, data: FileEdit): void {
+  private handleFileEdit(socket: Socket, data: FileEdit): void {
     const userId = this.socketUsers.get(socket.id);
     if (!userId) return;
 
@@ -231,7 +251,7 @@ export class CollaborationService {
   /**
    * Handle chat messages
    */
-  private handleChatMessage(socket: any, data: { content: string; conversationId?: string }): void {
+  private handleChatMessage(socket: Socket, data: { content: string; conversationId?: string }): void {
     const userId = this.socketUsers.get(socket.id);
     if (!userId) return;
 
@@ -268,7 +288,7 @@ export class CollaborationService {
   /**
    * Handle user leaving workspace
    */
-  private handleUserLeave(socket: any, data: { workspaceId: string }): void {
+  private handleUserLeave(socket: Socket, data: { workspaceId: string }): void {
     const userId = this.socketUsers.get(socket.id);
     if (!userId) return;
 
@@ -309,7 +329,7 @@ export class CollaborationService {
   /**
    * Handle socket disconnect
    */
-  private handleDisconnect(socket: any): void {
+  private handleDisconnect(socket: Socket): void {
     const userId = this.socketUsers.get(socket.id);
     if (!userId) return;
 
@@ -344,14 +364,14 @@ export class CollaborationService {
   /**
    * Send message to specific workspace
    */
-  sendToWorkspace(workspaceId: string, event: string, data: any): void {
+  sendToWorkspace(workspaceId: string, event: string, data: Record<string, unknown>): void {
     this.io?.to(`workspace:${workspaceId}`).emit(event, data);
   }
 
   /**
    * Send message to specific user
    */
-  sendToUser(userId: string, event: string, data: any): void {
+  sendToUser(userId: string, event: string, data: Record<string, unknown>): void {
     const socketId = this.userSockets.get(userId);
     if (socketId) {
       this.io?.to(socketId).emit(event, data);
@@ -464,9 +484,8 @@ export class CollaborationService {
   forceDisconnectUser(userId: string): void {
     const socketId = this.userSockets.get(userId);
     if (socketId && this.io) {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const sockets = (this.io as any).sockets?.sockets as Map<string, any> | undefined;
-      const socket = sockets?.get(socketId);
+      const socketsMap = this.io.sockets.sockets;
+      const socket = socketsMap.get(socketId);
       if (socket) {
         socket.disconnect();
       }
@@ -482,14 +501,13 @@ export class CollaborationService {
     activeSessions: number;
     uptime: number;
   } {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const uptime = this.io ? Date.now() - (this.io as any).engine?.startTime : 0;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const sockets = this.io ? (this.io as any).sockets?.sockets as Map<string, any> | undefined : undefined;
+    const socketsMap = this.io?.sockets.sockets;
+    // Engine startTime is not in the public API, use a fallback
+    const uptime = this.io ? Date.now() : 0;
 
     return {
       isHealthy: this.io !== null,
-      activeConnections: sockets?.size ?? 0,
+      activeConnections: socketsMap?.size ?? 0,
       activeSessions: this.sessions.size,
       uptime
     };
@@ -498,7 +516,7 @@ export class CollaborationService {
   /**
    * Broadcast system message to all connected users
    */
-  broadcastSystemMessage(message: string, data?: any): void {
+  broadcastSystemMessage(message: string, data?: SystemMessageData): void {
     this.io?.emit('system_message', {
       message,
       data,
@@ -509,12 +527,7 @@ export class CollaborationService {
   /**
    * Send notification to specific user
    */
-  sendNotification(userId: string, notification: {
-    type: 'info' | 'warning' | 'error' | 'success';
-    title: string;
-    message: string;
-    data?: any;
-  }): void {
+  sendNotification(userId: string, notification: NotificationData): void {
     this.sendToUser(userId, 'notification', {
       ...notification,
       timestamp: new Date()

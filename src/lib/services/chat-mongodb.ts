@@ -3,9 +3,26 @@
  * Handles chat message storage, retrieval, and conversation management
  */
 
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, ObjectId, Filter } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 // import { logger } from '@/lib/logger';
+/** Function call structure in message metadata */
+export interface FunctionCall {
+  name: string;
+  arguments: string;
+  result?: string;
+}
+
+/** Assistant tool definition */
+export interface AssistantTool {
+  type: "function" | "retrieval" | "code_interpreter";
+  function?: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+}
+
 export interface ChatMessage {
   _id?: ObjectId;
   id?: string;
@@ -18,8 +35,8 @@ export interface ChatMessage {
     model?: string;
     tokens?: number;
     confidence?: number;
-    functionCalls?: any[];
-    [key: string]: any;
+    functionCalls?: FunctionCall[];
+    [key: string]: string | number | boolean | FunctionCall[] | string[] | undefined;
   };
 }
 
@@ -55,7 +72,7 @@ export interface ChatAssistant {
   instructions?: string;
   model: string;
   userId: string;
-  tools?: any[];
+  tools?: AssistantTool[];
   files?: string[];
   createdAt: Date;
   updatedAt: Date;
@@ -148,7 +165,7 @@ export class ChatMongoDBService {
 
     const { limit = 50, offset = 0, before, after } = options;
 
-    const query: any = { workspaceId };
+    const query: Filter<ChatMessage> = { workspaceId };
 
     if (before || after) {
       query.timestamp = {};
@@ -188,7 +205,7 @@ export class ChatMongoDBService {
       searchTerm
     } = options;
 
-    const searchCriteria: any = {};
+    const searchCriteria: Filter<ChatMessage> = {};
 
     if (workspaceId) searchCriteria.workspaceId = workspaceId;
     if (userId) searchCriteria.userId = userId;
@@ -306,7 +323,7 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      } as ChatConversation;
     } else {
       // Old signature: (workspaceId, userId, title?)
       conversationData = {
@@ -318,7 +335,7 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      } as ChatConversation;
     }
 
     const result = await this.conversationsCollection.insertOne(conversationData);
@@ -372,7 +389,7 @@ export class ChatMongoDBService {
       throw new Error('Chat service not initialized');
     }
 
-    const matchCriteria: any = {};
+    const matchCriteria: Filter<ChatMessage> = {};
     if (workspaceId) matchCriteria.workspaceId = workspaceId;
 
     // Get message statistics
@@ -447,7 +464,7 @@ export class ChatMongoDBService {
         ].join(','))
       ];
 
-      return csvRows.join('\n');
+      return csvRows.join("\n");
     }
   }
 
@@ -741,9 +758,9 @@ export class ChatMongoDBService {
       content: message.content,
       timestamp: new Date(),
       metadata: message.files ? { files: message.files } : undefined
-    } as any;
+    } as ChatConversation;
 
-    const result = await this.messagesCollection.insertOne(messageDoc as any);
+    const result = await this.messagesCollection.insertOne(messageDoc as ChatMessage);
 
     // Add message reference to conversation
     await this.conversationsCollection.updateOne(
@@ -822,7 +839,7 @@ export class ChatMongoDBService {
     }
 
     // Search in messages first
-    const searchCriteria: any = {
+    const searchCriteria: Filter<ChatMessage> = {
       userId,
       content: { $regex: query, $options: 'i' }
     };
@@ -875,7 +892,7 @@ export class ChatMongoDBService {
       throw new Error('Chat service not initialized');
     }
 
-    const matchCriteria: any = { userId };
+    const matchCriteria: Filter<ChatMessage> = { userId };
     if (workspaceId) matchCriteria.workspaceId = workspaceId;
 
     const totalConversations = await this.conversationsCollection.countDocuments(matchCriteria);
@@ -903,7 +920,7 @@ export class ChatMongoDBService {
     instructions: string,
     model: string,
     createdBy: string,
-    tools?: any[],
+    tools?: AssistantTool[],
     files?: string[]
   ): Promise<ChatAssistant & { id: string; createdBy: string }> {
     if (!this.assistantsCollection) {
@@ -926,7 +943,7 @@ export class ChatMongoDBService {
       updatedAt: new Date()
     };
 
-    const result = await this.assistantsCollection.insertOne(assistant as any);
+    const result = await this.assistantsCollection.insertOne(assistant as ChatAssistant);
     return {
       ...assistant,
       _id: result.insertedId,

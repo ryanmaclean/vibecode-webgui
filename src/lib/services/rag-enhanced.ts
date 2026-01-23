@@ -1,5 +1,14 @@
-import { webSearchService, WebSearchResult } from './web-search'
+import { webSearchService, WebSearchResult as BaseWebSearchResult } from './web-search'
 // import { logger } from '@/lib/logger';
+
+/** Extended web search result that may include scraped content */
+interface WebSearchResultWithContent extends BaseWebSearchResult {
+  content?: string;
+}
+
+// Re-export for compatibility
+export type WebSearchResult = BaseWebSearchResult;
+
 export interface RAGContext {
   sources: RAGSource[]
   webResults?: WebSearchResult[]
@@ -163,8 +172,8 @@ export class EnhancedRAGService {
       })
 
       // If we have scraped content, add it as an additional source
-      if ((result as any).content && (result as any).content.length > 100) {
-        const scrapedContent = (result as any).content
+      if ((result as WebSearchResultWithContent).content && (result as WebSearchResultWithContent).content.length > 100) {
+        const scrapedContent = (result as WebSearchResultWithContent).content
         const chunks = this.chunkContent(scrapedContent, 500)
         
         chunks.slice(0, 2).forEach((chunk, index) => {
