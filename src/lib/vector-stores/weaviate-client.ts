@@ -33,12 +33,42 @@ export interface WeaviateClass {
   }>;
 }
 
+// Weaviate result types
+interface WeaviateVectorChunkResult {
+  id: string;
+  content: string;
+  metadata: string;
+  _additional: {
+    distance?: number;
+    certainty?: number;
+    vector?: number[];
+  };
+}
+
+interface WeaviateError extends Error {
+  statusCode?: number;
+}
+
+interface IndexOptions {
+  type?: string;
+  distance?: string;
+}
+
+interface WeaviateWhereFilter {
+  path?: string[];
+  operator?: string;
+  valueString?: string;
+  valueNumber?: number;
+  operands?: WeaviateWhereFilter[];
+}
+
 /**
  * Weaviate Vector Database Client
  */
 export class WeaviateClient {
   private config: WeaviateConfig;
-  private client: any = null;
+  // Using unknown since Weaviate library provides its own types
+  private client: unknown = null;
   private isConnected = false;
 
   constructor(config: WeaviateConfig) {
@@ -49,6 +79,55 @@ export class WeaviateClient {
       retries: 3,
       ...config
     };
+  }
+
+  // Type-safe accessor for the client
+  private getTypedClient(): {
+    misc: { readyChecker: () => { do: () => Promise<void> } };
+    schema: { 
+      getter: () => { do: () => Promise<{ classes: Array<{ class: string }> }> };
+      classCreator: () => { withClass: (def: WeaviateClass) => { do: () => Promise<void> } };
+    };
+    data: {
+      creator: () => {
+        withClassName: (name: string) => {
+          withProperties: (props: Record<string, unknown>) => { do: () => Promise<void> };
+          withVector: (vector: number[]) => {
+            withProperties: (props: Record<string, unknown>) => { do: () => Promise<void> };
+          };
+        };
+      };
+      getter: () => {
+        withClassName: (name: string) => {
+          withId: (id: string) => {
+            do: () => Promise<{ id: string; properties: { content: string; metadata: string }; vector?: number[] } | null>;
+          };
+        };
+      };
+      deleter: () => {
+        withClassName: (name: string) => {
+          withId: (id: string) => { do: () => Promise<void> };
+        };
+      };
+      updater: () => {
+        withClassName: (name: string) => {
+          withId: (id: string) => {
+            withProperties: (props: Record<string, unknown>) => {
+              withVector: (vector: number[]) => { do: () => Promise<void> };
+            };
+          };
+        };
+      };
+    };
+    graphql: {
+      get: () => GraphQLQuery;
+      aggregate: () => AggregateQuery;
+    };
+  } {
+    if (!this.client) {
+      throw new Error('Weaviate client not initialized');
+    }
+    return this.client as ReturnType<typeof this.getTypedClient>;
   }
 
   /**
@@ -68,7 +147,7 @@ export class WeaviateClient {
       });
 
       // Test connection
-      await this.client.misc.readyChecker().do();
+      await this.getTypedClient().misc.readyChecker().do();
 
       this.isConnected = true;
       console.log('Weaviate client initialized successfully');
@@ -97,7 +176,7 @@ export class WeaviateClient {
     try {
       if (!this.client) return false;
 
-      await this.client.misc.readyChecker().do();
+      await this.getTypedClient().misc.readyChecker().do();
       return true;
     } catch (error) {
       console.error('Weaviate ping failed:', error);
@@ -116,16 +195,14 @@ export class WeaviateClient {
    * Create a class (collection) in Weaviate
    */
   async createClass(classDefinition: WeaviateClass): Promise<void> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
-      const schema = await this.client.schema.getter().do();
-      const existingClass = schema.classes.find((c: any) => c.class === classDefinition.class);
+      const schema = await client.schema.getter().do();
+      const existingClass = schema.classes.find((c) => c.class === classDefinition.class);
 
       if (!existingClass) {
-        await this.client.schema.classCreator().withClass(classDefinition).do();
+        await client.schema.classCreator().withClass(classDefinition).do();
         console.log(`Created Weaviate class: ${classDefinition.class}`);
       }
     } catch (error) {
@@ -138,9 +215,7 @@ export class WeaviateClient {
    * Store vector chunks in Weaviate
    */
   async store(chunks: VectorChunk[]): Promise<number> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       let storedCount = 0;
@@ -162,9 +237,9 @@ export class WeaviateClient {
 
         // Store with automatic vectorization if OpenAI key is provided
         if (this.config.openaiApiKey) {
-          await this.client.data.creator().withClassName('VectorChunk').withProperties(dataObject.properties).do();
+          await client.data.creator().withClassName('VectorChunk').withProperties(dataObject.properties).do();
         } else {
-          await this.client.data.creator().withClassName('VectorChunk').withVector(dataObject.vector).withProperties(dataObject.properties).do();
+          await client.data.creator().withClassName('VectorChunk').withVector(dataObject.vector).withProperties(dataObject.properties).do();
         }
 
         storedCount++;
@@ -184,15 +259,13 @@ export class WeaviateClient {
     queryEmbedding: number[],
     options: SearchOptions
   ): Promise<SearchResult[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
       const threshold = options.threshold || 0.1;
 
-      const query = this.client.graphql
+      const query = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
@@ -208,7 +281,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         chunk: {
           id: item.id,
           content: item.content,
@@ -230,15 +303,13 @@ export class WeaviateClient {
     searchQuery: string,
     options: SearchOptions
   ): Promise<SearchResult[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
 
       // Use Weaviate's text-based search (nearText)
-      const textQuery = this.client.graphql
+      const textQuery = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
@@ -254,7 +325,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         chunk: {
           id: item.id,
           content: item.content,
@@ -273,20 +344,18 @@ export class WeaviateClient {
    * Delete vectors by their IDs
    */
   async delete(ids: string[]): Promise<number> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       let deletedCount = 0;
 
       for (const id of ids) {
         try {
-          await this.client.data.deleter().withClassName('VectorChunk').withId(id).do();
+          await client.data.deleter().withClassName('VectorChunk').withId(id).do();
           deletedCount++;
         } catch (error: unknown) {
           // Item might not exist, which is fine
-          if ((error as any)?.statusCode !== 404) {
+          if ((error as WeaviateError)?.statusCode !== 404) {
             throw error;
           }
         }
@@ -307,13 +376,11 @@ export class WeaviateClient {
     indexSize: number;
     lastUpdated: Date;
   }> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       // Get object count from Weaviate
-      const result = await this.client.graphql
+      const result = await client.graphql
         .aggregate()
         .withClassName('VectorChunk')
         .withFields('meta { count }')
@@ -335,7 +402,7 @@ export class WeaviateClient {
   /**
    * Generate embeddings for the given text (placeholder implementation)
    */
-  async generateEmbedding(text: string): Promise<number[]> {
+  async generateEmbedding(_text: string): Promise<number[]> {
     // This would integrate with an embedding service (OpenAI, etc.)
     // For now, return a placeholder embedding
     const dimensions = 1536; // OpenAI text-embedding-ada-002 dimensions
@@ -353,13 +420,11 @@ export class WeaviateClient {
    * Clear all vectors from the database
    */
   async clear(): Promise<void> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       // Delete all objects in the VectorChunk class
-      const query = this.client.graphql
+      const query = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id')
@@ -368,14 +433,14 @@ export class WeaviateClient {
       const result = await query.do();
 
       if (result.data?.Get?.VectorChunk) {
-        const ids = result.data.Get.VectorChunk.map((item: any) => item.id);
+        const ids = result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => item.id);
 
         // Delete in batches
         const batchSize = 100;
         for (let i = 0; i < ids.length; i += batchSize) {
           const batch = ids.slice(i, i + batchSize);
           await Promise.all(
-            batch.map((id: string) => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
+            batch.map((id) => client.data.deleter().withClassName('VectorChunk').withId(id).do())
           );
         }
       }
@@ -388,7 +453,7 @@ export class WeaviateClient {
   /**
    * Create an index for the given field if it doesn't exist
    */
-  async createIndex(field: string, options?: any): Promise<void> {
+  async createIndex(field: string, _options?: IndexOptions): Promise<void> {
     // Weaviate handles indexing automatically through schema configuration
     console.log(`Index for ${field} is handled by Weaviate schema configuration`);
   }
@@ -412,7 +477,7 @@ export class WeaviateClient {
   /**
    * Invalidate cache for specific table and content type
    */
-  async invalidateCache(table: string, contentType?: string): Promise<number> {
+  async invalidateCache(_table: string, _contentType?: string): Promise<number> {
     // Weaviate doesn't have traditional cache invalidation
     // This would integrate with your caching layer
     return 0;
@@ -422,12 +487,10 @@ export class WeaviateClient {
    * Get vector by ID
    */
   async getById(id: string): Promise<VectorChunk | null> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
-      const result = await this.client.data.getter().withClassName('VectorChunk').withId(id).do();
+      const result = await client.data.getter().withClassName('VectorChunk').withId(id).do();
 
       if (!result || !result.properties) {
         return null;
@@ -440,7 +503,7 @@ export class WeaviateClient {
         metadata: JSON.parse(result.properties.metadata || '{}')
       };
     } catch (error: unknown) {
-      if ((error as any)?.statusCode === 404) {
+      if ((error as WeaviateError)?.statusCode === 404) {
         return null; // Item not found
       }
 
@@ -453,9 +516,7 @@ export class WeaviateClient {
    * Update vector by ID
    */
   async update(id: string, chunk: Partial<VectorChunk>): Promise<boolean> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const existing = await this.getById(id);
@@ -466,7 +527,7 @@ export class WeaviateClient {
         ...chunk
       };
 
-      await this.client.data.updater()
+      await client.data.updater()
         .withClassName('VectorChunk')
         .withId(id)
         .withProperties({
@@ -538,15 +599,13 @@ export class WeaviateClient {
     queryEmbedding: number[],
     options: SearchOptions
   ): Promise<SearchResult[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
       const threshold = options.threshold || 0.1;
 
-      const query = this.client.graphql
+      const query = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
@@ -567,7 +626,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         chunk: {
           id: item.id,
           content: item.content,
@@ -586,15 +645,13 @@ export class WeaviateClient {
    * Get vectors by file IDs
    */
   async getByFileIds(fileIds: number[]): Promise<VectorChunk[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const chunks: VectorChunk[] = [];
 
       for (const fileId of fileIds) {
-        const query = this.client.graphql
+        const query = client.graphql
           .get()
           .withClassName('VectorChunk')
           .withFields('id content metadata _additional { vector }')
@@ -608,7 +665,7 @@ export class WeaviateClient {
         const result = await query.do();
 
         if (result.data?.Get?.VectorChunk) {
-          chunks.push(...result.data.Get.VectorChunk.map((item: any) => ({
+          chunks.push(...result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
             id: item.id,
             content: item.content,
             embedding: item._additional.vector || [],
@@ -635,17 +692,14 @@ export class WeaviateClient {
       semanticWeight?: number;
     }
   ): Promise<SearchResult[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
-      const keywordWeight = options.keywordWeight || 0.3;
       const semanticWeight = options.semanticWeight || 0.7;
 
       // Weaviate supports hybrid search through nearText with vector
-      const hybridQuery = this.client.graphql
+      const hybridQuery = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
@@ -662,7 +716,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         chunk: {
           id: item.id,
           content: item.content,
@@ -681,9 +735,9 @@ export class WeaviateClient {
    * Get recommendations based on user behavior
    */
   async getRecommendations(
-    userId: string,
-    currentFileId: number,
-    options: {
+    _userId: string,
+    _currentFileId: number,
+    _options: {
       limit?: number;
       excludeCurrentFile?: boolean;
     }
@@ -702,14 +756,12 @@ export class WeaviateClient {
       timeWindow?: number;
     }
   ): Promise<VectorChunk[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
 
-      const query = this.client.graphql
+      const query = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { vector }')
@@ -727,7 +779,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         id: item.id,
         content: item.content,
         embedding: item._additional.vector || [],
@@ -753,16 +805,14 @@ export class WeaviateClient {
     },
     options: SearchOptions
   ): Promise<SearchResult[]> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       const limit = options.limit || 10;
       const threshold = options.threshold || 0.1;
 
       // Build where clause from filters
-      const whereConditions: any[] = [];
+      const whereConditions: WeaviateWhereFilter[] = [];
 
       if (filters.language) {
         whereConditions.push({
@@ -788,7 +838,7 @@ export class WeaviateClient {
         });
       }
 
-      let whereClause: any = {};
+      let whereClause: WeaviateWhereFilter = {};
       if (whereConditions.length > 0) {
         whereClause = {
           operator: 'And',
@@ -796,7 +846,7 @@ export class WeaviateClient {
         };
       }
 
-      const query = this.client.graphql
+      const query = client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
@@ -813,7 +863,7 @@ export class WeaviateClient {
         return [];
       }
 
-      return result.data.Get.VectorChunk.map((item: any) => ({
+      return result.data.Get.VectorChunk.map((item: WeaviateVectorChunkResult) => ({
         chunk: {
           id: item.id,
           content: item.content,
@@ -841,13 +891,11 @@ export class WeaviateClient {
       searchesPerformed: number;
     }>;
   }> {
-    if (!this.client) {
-      throw new Error('Weaviate client not initialized');
-    }
+    const client = this.getTypedClient();
 
     try {
       // Get total counts
-      const countQuery = this.client.graphql
+      const countQuery = client.graphql
         .aggregate()
         .withClassName('VectorChunk')
         .withWhere({
@@ -861,7 +909,7 @@ export class WeaviateClient {
       const totalChunks = countResult.data.Aggregate.VectorChunk[0]?.meta?.count || 0;
 
       // Get unique file count
-      const fileQuery = this.client.graphql
+      const fileQuery = client.graphql
         .aggregate()
         .withClassName('VectorChunk')
         .withWhere({
@@ -877,7 +925,7 @@ export class WeaviateClient {
       const totalFiles = fileResult.data.Aggregate.VectorChunk.length || 0;
 
       // Get language breakdown
-      const languageQuery = this.client.graphql
+      const languageQuery = client.graphql
         .aggregate()
         .withClassName('VectorChunk')
         .withWhere({
@@ -891,9 +939,9 @@ export class WeaviateClient {
       const languageResult = await languageQuery.do();
 
       const languageBreakdown: Record<string, number> = {};
-      languageResult.data.Aggregate.VectorChunk.forEach((group: any) => {
-        if (group.groupedBy.value) {
-          languageBreakdown[group.groupedBy.value] = group.meta.count;
+      languageResult.data.Aggregate.VectorChunk.forEach((group: { groupedBy?: { value: string }; meta?: { count: number } }) => {
+        if (group.groupedBy?.value) {
+          languageBreakdown[group.groupedBy.value] = group.meta?.count || 0;
         }
       });
 
@@ -918,7 +966,7 @@ export class WeaviateClient {
   /**
    * Get the underlying Weaviate client
    */
-  getClient(): any {
+  getClient(): unknown {
     return this.client;
   }
 
@@ -928,6 +976,43 @@ export class WeaviateClient {
   getConfig(): WeaviateConfig {
     return { ...this.config };
   }
+}
+
+// GraphQL query interface
+interface GraphQLQuery {
+  withClassName: (name: string) => GraphQLQuery;
+  withFields: (fields: string) => GraphQLQuery;
+  withNearVector: (config: { vector: number[]; distance?: number }) => GraphQLQuery;
+  withNearText: (config: { concepts: string[]; distance?: number }) => GraphQLQuery;
+  withHybrid: (config: { query: string; vector: number[]; alpha?: number }) => GraphQLQuery;
+  withWhere: (where: WeaviateWhereFilter) => GraphQLQuery;
+  withLimit: (limit: number) => GraphQLQuery;
+  withSort: (sort: Array<{ path: string[]; order: string }>) => GraphQLQuery;
+  do: () => Promise<{
+    data?: {
+      Get?: {
+        VectorChunk?: WeaviateVectorChunkResult[];
+      };
+    };
+  }>;
+}
+
+// Aggregate query interface
+interface AggregateQuery {
+  withClassName: (name: string) => AggregateQuery;
+  withFields: (fields: string) => AggregateQuery;
+  withWhere: (where: WeaviateWhereFilter) => AggregateQuery;
+  withGroupBy: (fields: string[]) => AggregateQuery;
+  do: () => Promise<{
+    data: {
+      Aggregate: {
+        VectorChunk: Array<{
+          meta?: { count: number };
+          groupedBy?: { value: string };
+        }>;
+      };
+    };
+  }>;
 }
 
 // Export singleton instance for global use

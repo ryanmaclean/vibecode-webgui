@@ -1,4 +1,4 @@
-import { PrismaClient, ExperimentStatus } from '@prisma/client';
+import { PrismaClient, ExperimentStatus, Prisma } from '@prisma/client';
 import { logger } from '@/lib/server-monitoring';
 
 const prisma = new PrismaClient();
@@ -7,7 +7,7 @@ interface AssignmentBuffer {
   experimentKey: string;
   userId: string;
   variantKey: string;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
 }
 
 interface MetricBuffer {
@@ -15,7 +15,61 @@ interface MetricBuffer {
   userId: string;
   metricName: string;
   value: number;
-  metadata?: any;
+  metadata?: Prisma.InputJsonValue;
+}
+
+interface LogAssignmentParams {
+  experimentId: string;
+  userId: string;
+  variantKey: string;
+  metadata?: Prisma.InputJsonValue;
+}
+
+interface AssignmentResult {
+  id: string;
+  variantKey: string;
+  userId: string;
+}
+
+interface MetricResult {
+  id: string;
+  experiment_id: string;
+  user_id: string | null;
+  variant_key: string | null;
+  metric_name: string;
+  value: number;
+  timestamp: Date;
+  metadata: Prisma.JsonValue | null;
+}
+
+interface AssignmentRecord {
+  id: string;
+  experiment_id: string;
+  experimentId: string;
+  user_id: string;
+  userId: string;
+  variant_key: string;
+  variantKey: string;
+  timestamp: Date;
+  assignedAt: Date;
+  metadata: Prisma.JsonValue | null;
+}
+
+interface VariantMetricStats {
+  count: number;
+  sum: number;
+  min: number;
+  max: number;
+  values: number[];
+  mean?: number;
+}
+
+interface ExperimentResultsResponse {
+  experiment: unknown;
+  totalAssignments: number;
+  totalMetricEvents: number;
+  variantDistribution: Record<string, number>;
+  metrics: Record<string, VariantMetricStats>;
 }
 
 export class ExperimentWarehouse {
@@ -38,29 +92,24 @@ export class ExperimentWarehouse {
    * Log experiment assignment - buffered for batch processing
    * Returns assignment object for compatibility with tests
    */
-  async logAssignment(params: {
-    experimentId: string;
-    userId: string;
-    variantKey: string;
-    metadata?: any;
-  }): Promise<{ id: string; variantKey: string; userId: string }>;
+  async logAssignment(params: LogAssignmentParams): Promise<AssignmentResult>;
   async logAssignment(
     experimentKey: string,
     userId: string,
     variantKey: string,
-    metadata?: any
+    metadata?: Prisma.InputJsonValue
   ): Promise<void>;
   async logAssignment(
-    experimentKeyOrParams: string | { experimentId: string; userId: string; variantKey: string; metadata?: any },
+    experimentKeyOrParams: string | LogAssignmentParams,
     userId?: string,
     variantKey?: string,
-    metadata?: any
-  ): Promise<{ id: string; variantKey: string; userId: string } | void> {
+    metadata?: Prisma.InputJsonValue
+  ): Promise<AssignmentResult | void> {
     // Handle both call signatures
     let experimentKey: string;
     let user: string;
     let variant: string;
-    let meta: any;
+    let meta: Prisma.InputJsonValue | undefined;
     let shouldReturn = false;
 
     if (typeof experimentKeyOrParams === 'object') {
@@ -120,13 +169,13 @@ export class ExperimentWarehouse {
         },
         update: {
           variantKey: variant,
-          metadata: meta
+          metadata: meta ?? Prisma.JsonNull
         },
         create: {
           experimentId: experiment.id,
           userId: user,
           variantKey: variant,
-          metadata: meta
+          metadata: meta ?? Prisma.JsonNull
         }
       });
 
@@ -142,12 +191,7 @@ export class ExperimentWarehouse {
    * Log multiple assignments in batch
    */
   async logAssignmentsBatch(
-    assignments: Array<{
-      experimentId: string;
-      userId: string;
-      variantKey: string;
-      metadata?: any;
-    }>
+    assignments: Array<LogAssignmentParams>
   ): Promise<void> {
     if (assignments.length === 0) return;
 
@@ -183,13 +227,13 @@ export class ExperimentWarehouse {
             },
             update: {
               variantKey: assignment.variantKey,
-              metadata: assignment.metadata
+              metadata: assignment.metadata ?? Prisma.JsonNull
             },
             create: {
               experimentId: experiment.id,
               userId: assignment.userId,
               variantKey: assignment.variantKey,
-              metadata: assignment.metadata
+              metadata: assignment.metadata ?? Prisma.JsonNull
             }
           })
         )
@@ -205,7 +249,7 @@ export class ExperimentWarehouse {
     userId: string,
     metricName: string,
     value: number,
-    metadata?: any
+    metadata?: Prisma.InputJsonValue
   ): Promise<void> {
     this.metricBuffer.push({
       experimentKey,
@@ -224,7 +268,7 @@ export class ExperimentWarehouse {
   /**
    * Get assignments for an experiment
    */
-  async getAssignments(experimentKey: string): Promise<any[]> {
+  async getAssignments(experimentKey: string): Promise<AssignmentRecord[]> {
     const experiment = await prisma.experiment.findUnique({
       where: { key: experimentKey },
       include: {
@@ -257,16 +301,12 @@ export class ExperimentWarehouse {
   /**
    * Get metrics for an experiment
    */
-  async getMetrics(experimentKey: string, metricName?: string): Promise<any[]> {
-    const whereClause: any = { key: experimentKey };
-    // Build the where clause for metrics - use metric_name for test compatibility
-    const metricsWhere: any = metricName ? { metric_name: metricName } : {};
-
+  async getMetrics(experimentKey: string, metricName?: string): Promise<MetricResult[]> {
     const experiment = await prisma.experiment.findUnique({
-      where: whereClause,
+      where: { key: experimentKey },
       include: {
         metrics: {
-          where: Object.keys(metricsWhere).length > 0 ? metricsWhere : undefined,
+          where: metricName ? { metricName } : undefined,
           include: {
             assignment: true  // Include assignment to get variant_key
           },
@@ -278,17 +318,17 @@ export class ExperimentWarehouse {
     if (!experiment) return [];
 
     // Map metrics to include variant_key and other fields for backward compatibility
-    return experiment.metrics.map((metric: any) => {
+    return experiment.metrics.map((metric) => {
       // Handle both naming conventions - prioritize snake_case if present (for tests)
       const assignment = metric.assignment;
       return {
         id: metric.id,
-        experiment_id: metric.experiment_id || metric.experimentId,
-        user_id: metric.user_id || assignment?.user_id || assignment?.userId,
-        variant_key: metric.variant_key || assignment?.variant_key || assignment?.variantKey,
-        metric_name: metric.metric_name || metric.metricName,
-        value: metric.value ?? metric.metricValue,
-        timestamp: metric.timestamp || metric.createdAt,
+        experiment_id: metric.experimentId,
+        user_id: assignment?.userId ?? null,
+        variant_key: assignment?.variantKey ?? null,
+        metric_name: metric.metricName,
+        value: metric.metricValue,
+        timestamp: metric.timestamp,
         metadata: metric.metadata
       };
     });
@@ -297,12 +337,16 @@ export class ExperimentWarehouse {
   /**
    * Get aggregated experiment results
    */
-  async getExperimentResults(experimentKey: string): Promise<any> {
+  async getExperimentResults(experimentKey: string): Promise<ExperimentResultsResponse> {
     const experiment = await prisma.experiment.findUnique({
       where: { key: experimentKey },
       include: {
         assignments: true,
-        metrics: true
+        metrics: {
+          include: {
+            assignment: true
+          }
+        }
       }
     });
 
@@ -319,18 +363,17 @@ export class ExperimentWarehouse {
     // Calculate variant distribution
     const variantDistribution: Record<string, number> = {};
     for (const assignment of experiment.assignments) {
-      const variant = (assignment as any).variantKey || (assignment as any).variant_key;
+      const variant = assignment.variantKey;
       variantDistribution[variant] = (variantDistribution[variant] || 0) + 1;
     }
 
     // Calculate metric statistics per variant
-    const metrics: Record<string, any> = {};
+    const metrics: Record<string, VariantMetricStats> = {};
     for (const metric of experiment.metrics) {
-      const m = metric as any;
       // Get variant_key from the metric's assignment relationship
-      const variantKey = m.assignment?.variantKey || m.assignment?.variant_key || m.variant_key || 'control';
-      const metricName = m.metricName || m.metric_name;
-      const metricValue = m.metricValue ?? m.value;
+      const variantKey = metric.assignment?.variantKey || 'control';
+      const metricName = metric.metricName;
+      const metricValue = metric.metricValue;
       const key = `${variantKey}_${metricName}`;
 
       if (!metrics[key]) {
@@ -350,11 +393,11 @@ export class ExperimentWarehouse {
       metrics[key].values.push(metricValue);
     }
 
-    // Calculate means
+    // Calculate means and clean up
     for (const key in metrics) {
       metrics[key].mean = metrics[key].sum / metrics[key].count;
-      delete metrics[key].values;
-      delete metrics[key].sum;
+      delete (metrics[key] as Partial<VariantMetricStats>).values;
+      delete (metrics[key] as Partial<VariantMetricStats>).sum;
     }
 
     return {
@@ -372,13 +415,13 @@ export class ExperimentWarehouse {
   async upsertExperiment(
     key: string,
     name: string,
-    config: any,
+    config: Prisma.InputJsonValue,
     hypothesis?: string,
     status?: ExperimentStatus
-  ): Promise<any> {
+  ): Promise<unknown> {
     // Hypothesis is stored within config JSON since it's not a separate field in schema
-    const configWithHypothesis = hypothesis
-      ? { ...config, hypothesis }
+    const configWithHypothesis = hypothesis && typeof config === 'object' && config !== null && !Array.isArray(config)
+      ? { ...(config as Record<string, unknown>), hypothesis }
       : config;
     return await prisma.experiment.upsert({
       where: { key },
@@ -447,13 +490,13 @@ export class ExperimentWarehouse {
             },
             update: {
               variantKey: assignment.variantKey,
-              metadata: assignment.metadata
+              metadata: assignment.metadata ?? Prisma.JsonNull
             },
             create: {
               experimentId: experiment.id,
               userId: assignment.userId,
               variantKey: assignment.variantKey,
-              metadata: assignment.metadata
+              metadata: assignment.metadata ?? Prisma.JsonNull
             }
           });
         }
@@ -496,10 +539,10 @@ export class ExperimentWarehouse {
         }
 
         // Create metrics
-        const metricData = metrics.map(m => {
-          // Find assignment for this user (check both userId and user_id for compatibility)
+        const metricData: Prisma.ExperimentMetricCreateManyInput[] = metrics.map(m => {
+          // Find assignment for this user
           const assignment = experiment.assignments.find(
-            (a: any) => a.userId === m.userId || a.user_id === m.userId
+            (a) => a.userId === m.userId
           );
 
           return {
@@ -507,7 +550,7 @@ export class ExperimentWarehouse {
             assignmentId: assignment?.id || '',
             metricName: m.metricName,
             metricValue: m.value,
-            metadata: m.metadata
+            metadata: m.metadata ?? Prisma.JsonNull
           };
         });
 
@@ -545,29 +588,26 @@ export class ExperimentWarehouse {
     key: string;
     name: string;
     description?: string;
-    config: any;
+    config: Prisma.InputJsonValue;
     status?: string;
   }) {
-    const createData: any = {
+    const createData: Prisma.ExperimentCreateInput = {
       key: data.key,
       name: data.name,
-      config: data.config
+      config: data.config,
+      description: data.description
     };
-
-    if (data.description) {
-      createData.description = data.description;
-    }
 
     // Map status strings to enum values
     if (data.status) {
-      const statusMap: Record<string, string> = {
-        'draft': 'DRAFT',
-        'review': 'REVIEW',
-        'running': 'RUNNING',
-        'completed': 'COMPLETED',
-        'archived': 'ARCHIVED'
+      const statusMap: Record<string, ExperimentStatus> = {
+        'draft': ExperimentStatus.DRAFT,
+        'review': ExperimentStatus.REVIEW,
+        'running': ExperimentStatus.RUNNING,
+        'completed': ExperimentStatus.COMPLETED,
+        'archived': ExperimentStatus.ARCHIVED
       };
-      createData.status = statusMap[data.status.toLowerCase()] || data.status;
+      createData.status = statusMap[data.status.toLowerCase()] || (data.status as ExperimentStatus);
     }
 
     return await prisma.experiment.create({ data: createData });
@@ -577,7 +617,7 @@ export class ExperimentWarehouse {
     experimentId: string,
     status: 'DRAFT' | 'REVIEW' | 'RUNNING' | 'COMPLETED' | 'ARCHIVED'
   ) {
-    const updateData: any = { status };
+    const updateData: Prisma.ExperimentUpdateInput = { status };
     if (status === 'RUNNING') updateData.startedAt = new Date();
     if (status === 'COMPLETED') updateData.completedAt = new Date();
 
@@ -612,12 +652,12 @@ export class ExperimentWarehouse {
       include: { assignment: true }
     });
 
-    const byVariant = metrics.reduce((acc, m) => {
-      const variant = (m.assignment as any).variantKey;
+    const byVariant = metrics.reduce((acc: Record<string, number[]>, m) => {
+      const variant = m.assignment.variantKey;
       if (!acc[variant]) acc[variant] = [];
       acc[variant].push(m.metricValue);
       return acc;
-    }, {} as Record<string, number[]>);
+    }, {});
 
     return byVariant;
   }
