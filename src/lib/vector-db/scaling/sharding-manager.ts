@@ -374,10 +374,16 @@ export class VectorShardingManager {
       });
       
       // Race query vs timeout
-      const results = await Promise.race([resultPromise, timeoutPromise]) as any[];
-      
-      // Process results
-      const matches = results.map(row => ({
+      const results = await Promise.race([resultPromise, timeoutPromise]);
+
+      // Process results - assert as array of query results
+      const queryResults = results as Array<{
+        id: string;
+        similarity: number;
+        metadata?: Record<string, unknown>;
+        document?: string;
+      }>;
+      const matches = queryResults.map(row => ({
         id: row.id,
         similarity: row.similarity,
         metadata: row.metadata || {},
