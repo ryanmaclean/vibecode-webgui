@@ -39,10 +39,10 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         assignments: [
-          { variant_key: 'control' },
-          { variant_key: 'control' },
-          { variant_key: 'control' },
-          { variant_key: 'treatment' }
+          { variantKey: 'control' },
+          { variantKey: 'control' },
+          { variantKey: 'control' },
+          { variantKey: 'treatment' }
         ]
       }
 
@@ -75,7 +75,7 @@ describe('ExperimentQueries', () => {
       mockPrisma.experiment.findUnique.mockResolvedValue({
         id: 'exp1',
         key: 'test_experiment',
-        assignments: []
+        assignments: [] as { variantKey: string }[]
       })
 
       const distribution = await queries.getVariantDistribution('test_experiment')
@@ -90,11 +90,11 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         metrics: [
-          { variant_key: 'control', value: 10 },
-          { variant_key: 'control', value: 20 },
-          { variant_key: 'control', value: 30 },
-          { variant_key: 'treatment', value: 15 },
-          { variant_key: 'treatment', value: 25 }
+          { metricName: 'revenue', metricValue: 10, assignment: { variantKey: 'control' } },
+          { metricName: 'revenue', metricValue: 20, assignment: { variantKey: 'control' } },
+          { metricName: 'revenue', metricValue: 30, assignment: { variantKey: 'control' } },
+          { metricName: 'revenue', metricValue: 15, assignment: { variantKey: 'treatment' } },
+          { metricName: 'revenue', metricValue: 25, assignment: { variantKey: 'treatment' } }
         ]
       }
 
@@ -126,7 +126,7 @@ describe('ExperimentQueries', () => {
       const mockExperiment = {
         id: 'exp1',
         key: 'test_experiment',
-        metrics: values.map(v => ({ variant_key: 'control', value: v }))
+        metrics: values.map(v => ({ metricName: 'metric', metricValue: v, assignment: { variantKey: 'control' } }))
       }
 
       mockPrisma.experiment.findUnique.mockResolvedValue(mockExperiment)
@@ -147,7 +147,7 @@ describe('ExperimentQueries', () => {
       mockPrisma.experiment.findUnique.mockResolvedValue({
         id: 'exp1',
         key: 'test_experiment',
-        metrics: []
+        metrics: [] as { metricName: string; metricValue: number; assignment: { variantKey: string } }[]
       })
 
       const aggregation = await queries.getMetricAggregation(
@@ -161,25 +161,27 @@ describe('ExperimentQueries', () => {
 
   describe('getTimeSeriesData', () => {
     it('should aggregate metrics by day', async () => {
-      const baseDate = new Date('2024-01-01T00:00:00Z')
       const mockExperiment = {
         id: 'exp1',
         key: 'test_experiment',
         metrics: [
           {
-            variant_key: 'control',
-            value: 10,
-            timestamp: new Date('2024-01-01T08:00:00Z')
+            metricName: 'metric',
+            metricValue: 10,
+            timestamp: new Date('2024-01-01T08:00:00Z'),
+            assignment: { variantKey: 'control' }
           },
           {
-            variant_key: 'control',
-            value: 20,
-            timestamp: new Date('2024-01-01T14:00:00Z')
+            metricName: 'metric',
+            metricValue: 20,
+            timestamp: new Date('2024-01-01T14:00:00Z'),
+            assignment: { variantKey: 'control' }
           },
           {
-            variant_key: 'treatment',
-            value: 15,
-            timestamp: new Date('2024-01-02T10:00:00Z')
+            metricName: 'metric',
+            metricValue: 15,
+            timestamp: new Date('2024-01-02T10:00:00Z'),
+            assignment: { variantKey: 'treatment' }
           }
         ]
       }
@@ -204,19 +206,22 @@ describe('ExperimentQueries', () => {
         key: 'test_experiment',
         metrics: [
           {
-            variant_key: 'control',
-            value: 10,
-            timestamp: new Date('2024-01-01T08:15:00Z')
+            metricName: 'metric',
+            metricValue: 10,
+            timestamp: new Date('2024-01-01T08:15:00Z'),
+            assignment: { variantKey: 'control' }
           },
           {
-            variant_key: 'control',
-            value: 20,
-            timestamp: new Date('2024-01-01T08:45:00Z')
+            metricName: 'metric',
+            metricValue: 20,
+            timestamp: new Date('2024-01-01T08:45:00Z'),
+            assignment: { variantKey: 'control' }
           },
           {
-            variant_key: 'control',
-            value: 30,
-            timestamp: new Date('2024-01-01T09:15:00Z')
+            metricName: 'metric',
+            metricValue: 30,
+            timestamp: new Date('2024-01-01T09:15:00Z'),
+            assignment: { variantKey: 'control' }
           }
         ]
       }
@@ -237,7 +242,7 @@ describe('ExperimentQueries', () => {
       mockPrisma.experiment.findUnique.mockResolvedValue({
         id: 'exp1',
         key: 'test_experiment',
-        metrics: []
+        metrics: [] as { metricName: string; metricValue: number; timestamp: Date; assignment: { variantKey: string } }[]
       })
 
       const startDate = new Date('2024-01-01')
@@ -273,28 +278,31 @@ describe('ExperimentQueries', () => {
         key: 'test_experiment',
         assignments: [
           {
-            user_id: 'user1',
-            variant_key: 'control',
-            timestamp: baseDate
+            userId: 'user1',
+            variantKey: 'control',
+            assignedAt: baseDate
           },
           {
-            user_id: 'user2',
-            variant_key: 'treatment',
-            timestamp: baseDate
+            userId: 'user2',
+            variantKey: 'treatment',
+            assignedAt: baseDate
           }
         ],
         metrics: [
           {
-            user_id: 'user1',
-            timestamp: new Date('2024-01-02T00:00:00Z') // day 1
+            assignmentId: 'a1',
+            timestamp: new Date('2024-01-02T00:00:00Z'), // day 1
+            assignment: { userId: 'user1' }
           },
           {
-            user_id: 'user1',
-            timestamp: new Date('2024-01-08T00:00:00Z') // day 7
+            assignmentId: 'a1',
+            timestamp: new Date('2024-01-08T00:00:00Z'), // day 7
+            assignment: { userId: 'user1' }
           },
           {
-            user_id: 'user2',
-            timestamp: new Date('2024-01-02T00:00:00Z') // day 1
+            assignmentId: 'a2',
+            timestamp: new Date('2024-01-02T00:00:00Z'), // day 1
+            assignment: { userId: 'user2' }
           }
         ]
       }
@@ -317,10 +325,10 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         assignments: [
-          { variant_key: 'control' },
-          { variant_key: 'control' },
-          { variant_key: 'treatment' },
-          { variant_key: 'treatment' }
+          { variantKey: 'control' },
+          { variantKey: 'control' },
+          { variantKey: 'treatment' },
+          { variantKey: 'treatment' }
         ]
       }
 
@@ -341,10 +349,10 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         assignments: [
-          { variant_key: 'control' },
-          { variant_key: 'control' },
-          { variant_key: 'control' },
-          { variant_key: 'treatment' }
+          { variantKey: 'control' },
+          { variantKey: 'control' },
+          { variantKey: 'control' },
+          { variantKey: 'treatment' }
         ]
       }
 
@@ -364,7 +372,7 @@ describe('ExperimentQueries', () => {
       mockPrisma.experiment.findUnique.mockResolvedValue({
         id: 'exp1',
         key: 'test_experiment',
-        assignments: []
+        assignments: [] as { variantKey: string }[]
       })
 
       const result = await queries.calculateSampleRatio('test_experiment', {
@@ -384,27 +392,27 @@ describe('ExperimentQueries', () => {
         key: 'test_experiment',
         name: 'Test Experiment',
         status: 'running',
-        hypothesis: 'Treatment increases engagement',
+        description: 'Treatment increases engagement',
         config: { variants: ['control', 'treatment'] },
-        created_at: new Date('2024-01-01'),
-        updated_at: new Date('2024-01-02'),
+        createdAt: new Date('2024-01-01'),
+        updatedAt: new Date('2024-01-02'),
         assignments: [
           {
-            variant_key: 'control',
-            timestamp: new Date('2024-01-01T10:00:00Z')
+            variantKey: 'control',
+            assignedAt: new Date('2024-01-01T10:00:00Z')
           },
           {
-            variant_key: 'treatment',
-            timestamp: new Date('2024-01-01T11:00:00Z')
+            variantKey: 'treatment',
+            assignedAt: new Date('2024-01-01T11:00:00Z')
           }
         ],
         metrics: [
           {
-            metric_name: 'conversion',
+            metricName: 'conversion',
             timestamp: new Date('2024-01-01T12:00:00Z')
           },
           {
-            metric_name: 'revenue',
+            metricName: 'revenue',
             timestamp: new Date('2024-01-01T13:00:00Z')
           }
         ]
@@ -439,7 +447,7 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         assignments: Array.from({ length: 1000 }, (_, i) => ({
-          variant_key: i % 2 === 0 ? 'control' : 'treatment'
+          variantKey: i % 2 === 0 ? 'control' : 'treatment'
         }))
       }
 
@@ -461,7 +469,7 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         assignments: Array.from({ length: 10000 }, (_, i) => ({
-          variant_key: i % 2 === 0 ? 'control' : 'treatment'
+          variantKey: i % 2 === 0 ? 'control' : 'treatment'
         }))
       }
 
@@ -480,8 +488,9 @@ describe('ExperimentQueries', () => {
         id: 'exp1',
         key: 'test_experiment',
         metrics: Array.from({ length: 5000 }, (_, i) => ({
-          variant_key: i % 3 === 0 ? 'control' : i % 3 === 1 ? 'treatment_a' : 'treatment_b',
-          value: Math.random() * 100
+          metricName: 'revenue',
+          metricValue: Math.random() * 100,
+          assignment: { variantKey: i % 3 === 0 ? 'control' : i % 3 === 1 ? 'treatment_a' : 'treatment_b' }
         }))
       }
 

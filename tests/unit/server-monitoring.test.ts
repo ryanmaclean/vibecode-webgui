@@ -3,13 +3,34 @@
  * Tests dd-trace integration and server monitoring utilities
  */
 
-import { jest } from '@jest/globals'
+import { jest, describe, test, expect, beforeEach } from '@jest/globals'
 
-// eslint-disable-next-line no-var
-var mockTracer: any;
+// Mock modules - using inline mock objects to avoid hoisting issues
+jest.mock('winston', () => ({
+  createLogger: jest.fn(() => ({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn(),
+  })),
+  format: {
+    combine: jest.fn(() => jest.fn()),
+    timestamp: jest.fn(() => jest.fn()),
+    errors: jest.fn(() => jest.fn()),
+    json: jest.fn(() => jest.fn()),
+    printf: jest.fn(() => jest.fn()),
+    colorize: jest.fn(() => jest.fn()),
+    simple: jest.fn(() => jest.fn()),
+  },
+  transports: {
+    Console: jest.fn(),
+    File: jest.fn(),
+  },
+}));
 
-jest.mock('../../src/instrument', () => {
-  mockTracer = {
+jest.mock('../../src/instrument', () => ({
+  __esModule: true,
+  default: {
     init: jest.fn(),
     startSpan: jest.fn(() => ({ setTag: jest.fn(), finish: jest.fn() })),
     scope: () => ({ activate: (_: unknown, fn: () => unknown) => fn(), active: () => null }),
@@ -20,13 +41,8 @@ jest.mock('../../src/instrument', () => {
       event: jest.fn(),
     },
     addTags: jest.fn(),
-  };
-
-  return {
-    __esModule: true,
-    default: mockTracer,
-  };
-});
+  },
+}));
 
 // Mock dd-trace
 jest.mock('dd-trace', () => ({
@@ -38,51 +54,10 @@ jest.mock('dd-trace', () => ({
   wrap: jest.fn(),
 }));
 
-// Mock winston with factory pattern
-// Create a shared object to hold mock logger (survives hoisting)
-const mockLoggerHolder = {
-  instance: {
-    info: jest.fn(),
-    warn: jest.fn(),
-    error: jest.fn(),
-    debug: jest.fn(),
-  }
-};
-
-jest.mock('winston', () => {
-  return {
-    createLogger: jest.fn(() => mockLoggerHolder.instance),
-    format: {
-      combine: jest.fn(() => jest.fn()),
-      timestamp: jest.fn(() => jest.fn()),
-      errors: jest.fn(() => jest.fn()),
-      json: jest.fn(() => jest.fn()),
-      printf: jest.fn(() => jest.fn()),
-      colorize: jest.fn(() => jest.fn()),
-      simple: jest.fn(() => jest.fn()),
-    },
-    transports: {
-      Console: jest.fn(),
-      File: jest.fn(),
-    },
-  };
-});
-
-// eslint-disable-next-line no-var
-var mockLogger: any = mockLoggerHolder.instance;
-
 import tracer from '../../src/instrument'
 import { ApplicationLogger, MetricsCollector, getHealthCheck } from '../../src/lib/server-monitoring'
 
 describe('Server Monitoring', () => {
-  beforeEach(() => {
-    // Clear mock call history
-    mockLogger.info.mockClear()
-    mockLogger.warn.mockClear()
-    mockLogger.error.mockClear()
-    mockLogger.debug.mockClear()
-  })
-
   describe('ApplicationLogger', () => {
     let logger: ApplicationLogger;
 
@@ -145,26 +120,30 @@ describe('Server Monitoring', () => {
     let metricsCollector: MetricsCollector;
 
     beforeEach(() => {
-      metricsCollector = new MetricsCollector()})
+      metricsCollector = new MetricsCollector()
+    })
 
     test('should record response time', () => {
       metricsCollector.recordResponseTime('/api/test', 150);
 
       const metrics = metricsCollector.getMetrics()
-      expect(metrics.responseTimes['/api/test']).toEqual([150])})
+      expect(metrics.responseTimes['/api/test']).toEqual([150])
+    })
 
     test('should record error', () => {
       metricsCollector.recordError('/api/test', 'DatabaseError');
 
       const metrics = metricsCollector.getMetrics()
-      expect(metrics.errors['/api/test']).toEqual(['DatabaseError'])})
+      expect(metrics.errors['/api/test']).toEqual(['DatabaseError'])
+    })
 
     test('should increment request count', () => {
       metricsCollector.incrementRequestCount('/api/test')
       metricsCollector.incrementRequestCount('/api/test');
 
       const metrics = metricsCollector.getMetrics()
-      expect(metrics.requestCounts['/api/test']).toBe(2)})
+      expect(metrics.requestCounts['/api/test']).toBe(2)
+    })
 
     test('should record custom metric (gauge)', () => {
       metricsCollector.recordCustomMetric('database_connections', 5)
@@ -172,7 +151,8 @@ describe('Server Monitoring', () => {
 
       const metrics = metricsCollector.getMetrics();
       expect(metrics['database_connections']).toBeDefined()
-      expect(metrics['database_connections'].lastValue).toBe(7)})
+      expect(metrics['database_connections'].lastValue).toBe(7)
+    })
 
     test('should calculate average response time', () => {
       metricsCollector.recordResponseTime('/api/test', 100)
@@ -180,7 +160,8 @@ describe('Server Monitoring', () => {
       metricsCollector.recordResponseTime('/api/test', 300)
 
       const avgResponseTime = metricsCollector.getAverageResponseTime('/api/test');
-      expect(avgResponseTime).toBe(200)})
+      expect(avgResponseTime).toBe(200)
+    })
 
     test('should calculate error rate', () => {
       metricsCollector.incrementRequestCount('/api/test')
@@ -189,7 +170,8 @@ describe('Server Monitoring', () => {
       metricsCollector.recordError('/api/test', 'Error1')
 
       const errorRate = metricsCollector.getErrorRate('/api/test');
-      expect(errorRate).toBeCloseTo(33.33, 1)})
+      expect(errorRate).toBeCloseTo(33.33, 1)
+    })
 
     test('should reset metrics', () => {
       metricsCollector.recordResponseTime('/api/test', 150)
@@ -235,7 +217,8 @@ describe('Server Monitoring', () => {
       expect(health.memory).toHaveProperty('percentage')
       expect(typeof health.memory.used).toBe('number')
       expect(typeof health.memory.total).toBe('number')
-      expect(typeof health.memory.percentage).toBe('number')})
+      expect(typeof health.memory.percentage).toBe('number')
+    })
 
     test('should include CPU information', async () => {
       const health = await getHealthCheck()
@@ -243,12 +226,15 @@ describe('Server Monitoring', () => {
       expect(health.cpu).toHaveProperty('usage')
       expect(typeof health.cpu.usage).toBe('number');
       expect(health.cpu.usage).toBeGreaterThanOrEqual(0);
-      expect(health.cpu.usage).toBeLessThanOrEqual(100)})})
+      expect(health.cpu.usage).toBeLessThanOrEqual(100)
+    })
+  })
 
   describe('Datadog Tracer Integration', () => {
     test('should expose tracer instance', () => {
       expect(tracer).toBeDefined()
-    })})
+    })
+  })
 
   describe('Error Handling', () => {
     test('should handle logger operations gracefully', () => {
@@ -264,4 +250,6 @@ describe('Server Monitoring', () => {
       (metricsCollector as any).responseTimes = null
 
       expect(() => metricsCollector.recordResponseTime('/api/test', 150)).not.toThrow();
-    })})});
+    })
+  })
+});

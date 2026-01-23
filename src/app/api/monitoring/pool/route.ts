@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { VectorConnectionPoolFactory } from '@/lib/db/vector-connection-pool';
 import { ConnectionPoolMonitor, AlertLevel } from '@/lib/db/connection-pool-monitor';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 // import { logger } from '@/lib/logger';
 // Create a singleton monitor instance
 let monitor: ConnectionPoolMonitor | null = null;
@@ -42,6 +45,23 @@ function getMonitor(): ConnectionPoolMonitor {
  * - Pool status
  */
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const monitor = getMonitor();
     const format = request.nextUrl.searchParams.get('format') || 'json';
@@ -153,6 +173,23 @@ Implemented: ${rec.implemented ? 'Yes' : 'No'}
  * Acknowledges an alert
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const monitor = getMonitor();
     const { searchParams } = new URL(request.url);

@@ -1,7 +1,7 @@
 // Unified AI Chat API - Next generation multi-provider chat with LiteLLM-inspired architecture
 // Supports OpenRouter, direct providers, local models, and fallback chains
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
@@ -9,8 +9,47 @@ import { prisma } from '@/lib/prisma'
 import { UnifiedAIClient, type UnifiedChatMessage } from '@/lib/unified-ai-client'
 import { logger } from '@/lib/logger'
 import type { AuthenticatedRequest } from '@/lib/auth/middleware'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
+
+// Rate limiter for AI endpoints (30 requests per minute - more restrictive)
+const apiRateLimit = createAPIRateLimit(30)
+
+/**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  // Default allowed origins for AI chat
+  return [
+    'https://vibecode.dev',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ]
+}
+
+/**
+ * Validate and return CORS origin if allowed
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+
+  const allowedOrigins = getAllowedOrigins()
+
+  // Check if the request origin is in the allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return null
+}
 
 interface UnifiedChatRequest {
   message: string
@@ -109,8 +148,25 @@ ${availableProviders.map(p => `- ${p}: Available`).join('\n')}
 When you need specific capabilities, I'll automatically use the most appropriate tools and providers.`
 }
 
-export async function POST(request: AuthenticatedRequest) {
+export async function POST(request: NextRequest & AuthenticatedRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authentication check
     const session = (await getServerSession(authOptions)) as {
       user?: {
@@ -300,20 +356,31 @@ ${generateToolCapabilities(enableTools, availableProviders)}
 
     const { Response: GlobalResponse } = globalThis
 
+    // Validate and set CORS origin
+    const requestOrigin = request.headers.get('origin')
+    const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+    const responseHeaders: Record<string, string> = {
+      'Content-Type': 'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection': 'keep-alive',
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'X-Model-Used': model,
+      'X-Providers-Available': availableProviders.join(','),
+      'X-RAG-Status': ragResult ? 'active' : 'inactive',
+      'X-Tools-Enabled': enableTools.toString(),
+      'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains'
+    }
+
+    // Only set Access-Control-Allow-Origin if the origin is validated
+    if (validatedOrigin) {
+      responseHeaders['Access-Control-Allow-Origin'] = validatedOrigin
+      responseHeaders['Vary'] = 'Origin'
+    }
+
     return new GlobalResponse(customReadable, {
-      headers: {
-        'Content-Type': 'text/event-stream',
-        'Cache-Control': 'no-cache',
-        'Connection': 'keep-alive',
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-        'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-        'X-Model-Used': model,
-        'X-Providers-Available': availableProviders.join(','),
-        'X-RAG-Status': ragResult ? 'active' : 'inactive',
-        'X-Tools-Enabled': enableTools.toString(),
-        'X-Enhanced-Features': 'unified-ai,multi-provider,advanced-rag,fallback-chains'
-      }
+      headers: responseHeaders
     })
 
   } catch (error) {
@@ -337,15 +404,25 @@ ${generateToolCapabilities(enableTools, availableProviders)}
   }
 }
 
-// Enhanced CORS support
-export async function OPTIONS() {
+// Enhanced CORS support with origin validation
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+  }
+
+  // Only set Access-Control-Allow-Origin if the origin is validated
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+
   const { Response: GlobalResponse } = globalThis
   return new GlobalResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers,
   })
 }

@@ -38,6 +38,19 @@ jest.mock('@/lib/user-preferences', () => ({
   }
 }));
 
+// Mock cache-utils
+jest.mock('@/lib/cache/cache-utils', () => ({
+  cacheGet: jest.fn().mockResolvedValue(null),
+  cacheSet: jest.fn().mockResolvedValue(true),
+  cacheDelete: jest.fn().mockResolvedValue(true),
+  CacheKeyGenerators: {
+    userPreferences: jest.fn((userId: number) => `user:preferences:${userId}`)
+  },
+  TTLPresets: {
+    USER_PREFERENCES: 900
+  }
+}));
+
 // Import after mocking to get the mocked versions
 import { prisma } from '@/lib/prisma';
 import { loadUserPreferences, saveUserPreferences } from '@/lib/server/user-preferences';

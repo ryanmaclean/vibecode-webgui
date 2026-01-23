@@ -75,7 +75,6 @@ fn main() {
             ai::agent_create_task,
             ai::agent_get_status,
             ai::agent_cancel_task,
-<<<<<<< HEAD
             // VM commands
             vm::vm_list,
             vm::vm_start_openvscode,
@@ -83,11 +82,9 @@ fn main() {
             vm::vm_stop,
             vm::vm_status,
             vm::vm_setup_first_run,
-=======
-            // Tailscale commands (if implemented)
+            // Tailscale commands (not yet implemented)
             // tailscale::commands::tailscale_status,
             // tailscale::commands::tailscale_get_ip,
->>>>>>> feat/unified-launcher-openvscode-vm
         ])
         .setup(|app| {
             // Check if running in service mode (for Electron)

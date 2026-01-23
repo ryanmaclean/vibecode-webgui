@@ -93,25 +93,21 @@ try {
     }
 
     valkeyClient.on('connect', () => {
-      console.log('Valkey connected successfully');
       metrics.increment('valkey.connection.success');
     });
 
-    valkeyClient.on('error', (error) => {
-      console.error('Valkey connection error', { error });
+    valkeyClient.on('error', () => {
       metrics.increment('valkey.connection.error');
     });
 
     valkeyClient.on('ready', () => {
-      console.log('Valkey client ready');
       metrics.increment('valkey.ready');
     });
   } else if (connectionConfig.type === 'upstash') {
     // Upstash exposes an HTTP API; callers should use dedicated clients.
-    console.warn('Upstash Valkey configuration detected but HTTP client is not yet implemented.');
+    // Not yet implemented
   }
-} catch (error) {
-  console.warn('Valkey client initialization failed', { error });
+} catch {
   valkeyClient = null;
 }
 
@@ -161,9 +157,8 @@ export class ValkeyManager {
 
       metrics.increment('cache.hit');
       return JSON.parse(value) as T;
-    } catch (error) {
+    } catch {
       metrics.increment('cache.error');
-      console.error('Valkey get error', { key, error });
       return null;
     }
   }
@@ -177,9 +172,8 @@ export class ValkeyManager {
       metrics.histogram('cache.set.duration', Date.now() - start);
       metrics.increment('cache.set.success');
       return true;
-    } catch (error) {
+    } catch {
       metrics.increment('cache.set.error');
-      console.error('Valkey set error', { key, error });
       return false;
     }
   }
@@ -192,9 +186,8 @@ export class ValkeyManager {
       await (this.client as EnhancedRedis).del(...keys);
       metrics.increment('cache.delete', { count: keys.length.toString() });
       return true;
-    } catch (error) {
+    } catch {
       metrics.increment('cache.delete.error');
-      console.error('Valkey delete error', { keys, error });
       return false;
     }
   }
@@ -204,8 +197,7 @@ export class ValkeyManager {
 
     try {
       return (await (this.client as EnhancedRedis).exists(key)) === 1;
-    } catch (error) {
-      console.error('Valkey exists error', { key, error });
+    } catch {
       return false;
     }
   }
@@ -216,8 +208,7 @@ export class ValkeyManager {
     try {
       const values = await (this.client as EnhancedRedis).mget(...keys);
       return values.map((value: string | null) => (value ? (JSON.parse(value) as T) : null));
-    } catch (error) {
-      console.error('Valkey mget error', { keys, error });
+    } catch {
       return keys.map(() => null);
     }
   }
@@ -233,9 +224,8 @@ export class ValkeyManager {
       await pipeline.exec();
       metrics.increment('cache.mset.success', { count: pairs.length.toString() });
       return true;
-    } catch (error) {
+    } catch {
       metrics.increment('cache.mset.error');
-      console.error('Valkey mset error', { pairsCount: pairs.length, error });
       return false;
     }
   }
@@ -249,8 +239,7 @@ export class ValkeyManager {
         await (this.client as EnhancedRedis).expire(key, ttl);
       }
       return value;
-    } catch (error) {
-      console.error('Valkey incr error', { key, error });
+    } catch {
       return 0;
     }
   }
@@ -260,8 +249,7 @@ export class ValkeyManager {
 
     try {
       return await (this.client as EnhancedRedis).keys(pattern);
-    } catch (error) {
-      console.error('Valkey keys error', { pattern, error });
+    } catch {
       return [];
     }
   }
@@ -287,8 +275,7 @@ export class ValkeyManager {
         memoryUsage: memoryMatch ? memoryMatch[1].trim() : '0B',
         hitRate: 0.85, // Placeholder until real metrics are wired
       };
-    } catch (error) {
-      console.error('Valkey stats error', { error });
+    } catch {
       return { connected: false, keyCount: 0, memoryUsage: '0B', hitRate: 0 };
     }
   }
@@ -300,8 +287,7 @@ export class ValkeyManager {
       await (this.client as EnhancedRedis).flushdb();
       metrics.increment('cache.clear');
       return true;
-    } catch (error) {
-      console.error('Valkey clear error', { error });
+    } catch {
       return false;
     }
   }
@@ -312,8 +298,7 @@ export class ValkeyManager {
     try {
       await (this.client as EnhancedRedis).ping();
       return true;
-    } catch (error) {
-      console.warn('Valkey health check failed', { error });
+    } catch {
       return false;
     }
   }

@@ -373,10 +373,17 @@ describe('/api/ai/chat/stream', () => {
     it('handles OPTIONS request for CORS', async () => {
       const { OPTIONS } = await import('@/app/api/ai/chat/stream/route')
 
-      const response = await OPTIONS()
+      const request = new NextRequest('http://localhost:3000/api/ai/chat/stream', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': 'http://localhost:3000'
+        }
+      })
+
+      const response = await OPTIONS(request)
 
       expect(response.status).toBe(200)
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000')
       expect(response.headers.get('Access-Control-Allow-Methods')).toContain('POST')
       expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Content-Type')
     })
