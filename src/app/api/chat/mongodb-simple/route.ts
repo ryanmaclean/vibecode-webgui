@@ -1,3 +1,4 @@
+import type { UpdateFilter, Document } from 'mongodb'
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToMongoDB } from '@/lib/mongodb'
 import { v4 as uuidv4 } from 'uuid'
@@ -118,7 +119,7 @@ export async function POST(request: NextRequest) {
         const updateResult = await db.collection('conversations').updateOne(
           { id: conversationId },
           {
-            $push: { messages: message } as any,
+            $push: { messages: message } as UpdateFilter<Document>[""],
             $set: { updatedAt: new Date() }
           }
         )

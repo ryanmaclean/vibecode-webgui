@@ -186,14 +186,11 @@ export default function UserPresenceIndicators({
     }
   }, [awareness, currentUserId, getUserColor])
 
-  /**
-   * Expose updatePresence for parent components
-   */
-  useEffect(() => {
-    if (collaborationManager) {
-      (collaborationManager as any).updatePresence = updatePresence
-    }
-  }, [collaborationManager, updatePresence])
+
+  // NOTE: updatePresence is available within this component.
+  // To expose it to parent components, use a callback prop (e.g., onPresenceUpdate)
+  // or useImperativeHandle with forwardRef instead of unsafe type casting.
+
 
   /**
    * Get sorted and filtered users

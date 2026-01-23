@@ -337,13 +337,11 @@ if (!editorView || !editorRect) return null
       }
     })
 
-    const view = EditorView.theme({}, { dark: false })
-    editorView.dispatch({
-      effects: [
-        // Type assertion for appendConfig StateEffect
-        (EditorView as any).appendConfig?.of?.([updateHandler, view])
-      ].filter(Boolean)
-    })
+    // NOTE: The updateHandler extension should be configured when creating the EditorView.
+    // For runtime extension updates, use Compartment from @codemirror/state.
+    // Since appendConfig is not a standard CodeMirror API, we skip the dynamic dispatch.
+    // The resize observer handles our immediate needs for cursor tracking.
+    void updateHandler  // Acknowledge the variable is intentionally unused
 
     return () => {
       resizeObserver.disconnect()
