@@ -34,11 +34,14 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          # macOS builds
+          # macOS builds - use both targets for universal binary
           - platform: macos
             arch: universal
             os: macos-14
-            target: universal-apple-darwin
+            # Note: universal-apple-darwin is a Cargo virtual target, not a rustup target
+            # We install both targets and Tauri handles the universal binary creation
+            target: aarch64-apple-darwin
+            extra_target: x86_64-apple-darwin
             bundle: dmg,app
 
           # Linux builds
@@ -77,7 +80,7 @@ jobs:
       - name: Setup Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          targets: ${{ matrix.target }}
+          targets: ${{ matrix.target }}${{ matrix.extra_target && format(',{0}', matrix.extra_target) || '' }}
 
       - name: Install Rust cache
         uses: Swatinem/rust-cache@v2
@@ -163,7 +166,13 @@ jobs:
         run: |
           echo "Building Tauri app for ${{ matrix.platform }} (${{ matrix.arch }})..."
           echo "Target: ${{ matrix.target }}"
-          npm run tauri build -- --target ${{ matrix.target }} --verbose
+          if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
+            # For macOS universal builds, use --target universal-apple-darwin
+            # Tauri CLI handles building both architectures and combining with lipo
+            npm run tauri build -- --target universal-apple-darwin --verbose
+          else
+            npm run tauri build -- --target ${{ matrix.target }} --verbose
+          fi
         shell: bash
 
       # macOS Code Signing
