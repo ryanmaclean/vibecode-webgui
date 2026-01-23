@@ -43,6 +43,8 @@ jobs:
             target: aarch64-apple-darwin
             extra_target: x86_64-apple-darwin
             bundle: dmg,app
+            # Universal builds output to universal-apple-darwin, not the primary target
+            bundle_target: universal-apple-darwin
 
           # Linux builds
           - platform: linux
@@ -50,6 +52,7 @@ jobs:
             os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundle: deb,appimage,rpm
+            bundle_target: x86_64-unknown-linux-gnu
 
           - platform: linux
             arch: arm64
@@ -57,6 +60,7 @@ jobs:
             target: aarch64-unknown-linux-gnu
             # Skip AppImage for ARM64 cross-compilation - linuxdeploy requires native arch
             bundle: deb
+            bundle_target: aarch64-unknown-linux-gnu
             cross_compile: true
 
           # Windows builds
@@ -65,6 +69,7 @@ jobs:
             os: windows-2022
             target: x86_64-pc-windows-msvc
             bundle: msi,nsis
+            bundle_target: x86_64-pc-windows-msvc
 
     steps:
       - name: Checkout repository
@@ -280,10 +285,15 @@ jobs:
         run: |
           echo "Building Tauri app for ${{ matrix.platform }} (${{ matrix.arch }})..."
           echo "Target: ${{ matrix.target }}"
+          echo "Bundle types: ${{ matrix.bundle }}"
           if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
             # For macOS universal builds, use --target universal-apple-darwin
             # Tauri CLI handles building both architectures and combining with lipo
             npx tauri build --target universal-apple-darwin --verbose
+          elif [ -n "${{ matrix.bundle }}" ]; then
+            # Use explicit bundle types from matrix to avoid unsupported formats
+            # e.g., ARM64 Linux cannot build AppImage when cross-compiling
+            npx tauri build --target ${{ matrix.target }} --bundles ${{ matrix.bundle }} --verbose
           else
             npx tauri build --target ${{ matrix.target }} --verbose
           fi
@@ -325,7 +335,7 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          APP_PATH="platforms/tauri/target/${{ matrix.target }}/release/bundle/macos/VibeCode.app"
+          APP_PATH="platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/macos/VibeCode.app"
 
           echo "Signing VibeCode.app..."
           codesign --force --deep --sign "$APPLE_SIGNING_IDENTITY" \
@@ -347,7 +357,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          DMG_PATH="platforms/tauri/target/${{ matrix.target }}/release/bundle/dmg/VibeCode_*.dmg"
+          DMG_PATH="platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/dmg/VibeCode_*.dmg"
 
           echo "Submitting DMG for notarization..."
           xcrun notarytool submit $DMG_PATH \
@@ -376,13 +386,13 @@ jobs:
           [IO.File]::WriteAllBytes("certificate.pfx", $cert)
 
           # Sign MSI
-          $msiPath = Get-ChildItem "platforms/tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi" | Select-Object -First 1
+          $msiPath = Get-ChildItem "platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/msi/*.msi" | Select-Object -First 1
           if ($msiPath) {
             & signtool sign /f certificate.pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 $msiPath.FullName
           }
 
           # Sign NSIS installer
-          $nsisPath = Get-ChildItem "platforms/tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe" | Select-Object -First 1
+          $nsisPath = Get-ChildItem "platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/nsis/*.exe" | Select-Object -First 1
           if ($nsisPath) {
             & signtool sign /f certificate.pfx /p $env:WINDOWS_CERTIFICATE_PASSWORD /tr http://timestamp.digicert.com /td sha256 /fd sha256 $nsisPath.FullName
           }
@@ -393,7 +403,7 @@ jobs:
 
       - name: Generate checksums
         run: |
-          cd platforms/tauri/target/${{ matrix.target }}/release/bundle
+          cd platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle
 
           # Find all installer files
           if [ "${{ matrix.platform }}" = "macos" ]; then
@@ -421,7 +431,7 @@ jobs:
       - name: List build artifacts
         run: |
           echo "Build artifacts for ${{ matrix.platform }} (${{ matrix.arch }}):"
-          ls -lhR platforms/tauri/target/${{ matrix.target }}/release/bundle/ || true
+          ls -lhR platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/ || true
         shell: bash
 
       - name: Upload build artifacts
@@ -429,19 +439,19 @@ jobs:
         with:
           name: VibeCode-${{ matrix.platform }}-${{ matrix.arch }}
           path: |
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/dmg/*.dmg
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/dmg/*.sha256
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/macos/*.app.tar.gz
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/deb/*.deb
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/deb/*.sha256
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/appimage/*.AppImage
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/appimage/*.sha256
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/rpm/*.rpm
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/rpm/*.sha256
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/msi/*.msi
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/msi/*.sha256
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/nsis/*.exe
-            platforms/tauri/target/${{ matrix.target }}/release/bundle/nsis/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/dmg/*.dmg
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/dmg/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/macos/*.app.tar.gz
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/deb/*.deb
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/deb/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/appimage/*.AppImage
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/appimage/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/rpm/*.rpm
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/rpm/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/msi/*.msi
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/msi/*.sha256
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/nsis/*.exe
+            platforms/tauri/target/${{ matrix.bundle_target }}/release/bundle/nsis/*.sha256
           retention-days: 30
           if-no-files-found: warn
 
