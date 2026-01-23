@@ -62,7 +62,7 @@ jobs:
         working-directory: platforms/tauri
         run: |
           echo "Testing Tauri build in debug mode..."
-          npx tauri build --target aarch64-apple-darwin --debug
+          cargo tauri build --target aarch64-apple-darwin --debug
 
       - name: Verify build artifacts
         run: |
