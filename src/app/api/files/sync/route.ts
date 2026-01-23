@@ -21,16 +21,40 @@ import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
 import { dogstatsd } from 'dd-trace'
 import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import type { SecureFileSystemOperations } from '@/lib/file-system-operations'
 // import { logger } from '@/lib/logger';
+
+/**
+ * Type declaration for globalThis with WebSocket server
+ */
+declare global {
+  // eslint-disable-next-line no-var
+  var wss: WebSocketServer | undefined
+}
+
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
+/**
+ * WebSocket message payload types for file sync operations
+ */
+interface FileUpdatePayload {
+  path: string;
+  content?: string;
+  operation?: 'create' | 'update' | 'delete';
+}
+
+interface SubscriptionPayload {
+  path: string;
+}
+
+type WebSocketPayload = FileUpdatePayload | SubscriptionPayload | undefined;
+
 interface WebSocketMessage {
   type: string;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  payload?: any; // To be refined in future implementations
+  payload?: WebSocketPayload;
 }
 
 // WebSocket connections per workspace
@@ -254,11 +278,11 @@ async function createFilesInWorkspace(
 }
 
 // Initialize WebSocket server if it doesn't exist
-if (!(globalThis as any).wss) {
-  (globalThis as any).wss = new WebSocketServer({ noServer: true })
+if (!globalThis.wss) {
+  globalThis.wss = new WebSocketServer({ noServer: true })
   console.log('WebSocket server initialized');
 
-  (globalThis as any).wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
+  globalThis.wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
     const workspaceId = searchParams.get('workspaceId') || ''
     const userId = searchParams.get('userId') || ''
@@ -346,7 +370,11 @@ if (!(globalThis as any).wss) {
 
           switch (message.type) {
             case 'file-update':
-              (fileSystem as any).handleFileUpdate?.(message.payload)
+              // File updates are handled through the SecureFileSystemOperations event system
+              // The fileSystem instance emits events that are caught by handleFileSyncEvent
+              if (message.payload && 'path' in message.payload && message.payload.path) {
+                fileSystem.emit('file-update', message.payload)
+              }
               break
 
             case 'ping':
@@ -545,7 +573,7 @@ function sanitizeTagValue(value: string): string {
     .replace(/[^a-z0-9_.-]/g, '_')
 }
 
-function handleSubscription(socket: any, workspaceId: string, path: string): void {
+function handleSubscription(socket: WebSocket, workspaceId: string, path: string): void {
   const outcome = subscriptionManager.subscribe(workspaceId, path, socket)
 
   if (outcome.ok) {
