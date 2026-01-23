@@ -141,7 +141,7 @@ export async function GET(request: NextRequest) {
         role: testRole,
         email: `${testUserId}@test.com`,
         name: `Test User ${testUserId}`
-      } as any;
+      } as typeof token;
     }
 
     if (!token) {
@@ -361,15 +361,15 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
   // Aggregate database statistics
   const dbStats = {
     totalRequests: dbRequests.length,
-    successfulRequests: (dbRequests as any[]).filter((r) => r.status === 'completed').length,
-    failedRequests: (dbRequests as any[]).filter((r) => r.status === 'failed').length,
+    successfulRequests: (dbRequests as AIRequestData[]).filter((r) => r.status === 'completed').length,
+    failedRequests: (dbRequests as AIRequestData[]).filter((r) => r.status === 'failed').length,
     totalTokens: {
-      input: (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0), 0),
-      output: (dbRequests as any[]).reduce((sum, r) => sum + (r.output_tokens || 0), 0)
+      input: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0), 0),
+      output: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.output_tokens || 0), 0)
     },
-    totalCost: (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0),
+    totalCost: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0),
     averageLatency: dbRequests.length > 0
-      ? (dbRequests as any[]).reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
+      ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
       : 0,
     byModel: aggregateByField(dbRequests, 'model'),
     byProvider: aggregateByField(dbRequests, 'provider'),
@@ -429,26 +429,26 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
     timestamp: new Date().toISOString(),
     timeframe,
     total: {
-      cost: (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0),
+      cost: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0),
       requests: dbRequests.length,
-      tokens: (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      tokens: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
     },
     byModel: aggregateCostByField(dbRequests, 'model'),
     byProvider: aggregateCostByField(dbRequests, 'provider'),
     timeline: generateCostTimeline(dbRequests, timeframe),
     efficiency: {
       costPerToken: dbRequests.length > 0
-        ? (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0) /
-          (dbRequests as any[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+        ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0) /
+          (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
         : 0,
       costPerRequest: dbRequests.length > 0
-        ? (dbRequests as any[]).reduce((sum, r) => sum + (r.cost || 0), 0) / dbRequests.length
+        ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0) / dbRequests.length
         : 0
     }
   };
 
   if (requestUserId && requestUserId === 'admin') {
-    (costAnalysis as any).byUser = aggregateCostByField(dbRequests, 'user_id');
+    (costAnalysis as { byUser?: ReturnType<typeof aggregateCostByField> }).byUser = aggregateCostByField(dbRequests, 'user_id');
   }
 
   return NextResponse.json(costAnalysis);
