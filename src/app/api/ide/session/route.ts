@@ -5,11 +5,42 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { IDEFactory, IDEConfig, IDEType } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
+    // Authentication check
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to create IDE sessions' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const { workspaceId, userId, type, projectPath, extensions, auth, port } = body;
 
@@ -18,6 +49,14 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { error: 'workspaceId and userId are required' },
         { status: 400 }
+      );
+    }
+
+    // Verify the userId matches the authenticated user to prevent session hijacking
+    if (userId !== authSession.user.id) {
+      return NextResponse.json(
+        { error: 'Forbidden', message: 'Cannot create IDE session for another user' },
+        { status: 403 }
       );
     }
 
@@ -37,21 +76,21 @@ export async function POST(request: NextRequest) {
 
     // Get IDE instance and start session
     const ide = IDEFactory.getIDE(ideType);
-    const session = await ide.start(config);
+    const ideSession = await ide.start(config);
 
     // Store session
     const sessionStore = getSessionStore();
-    sessionStore.set(session.id, session);
+    sessionStore.set(ideSession.id, ideSession);
 
     return NextResponse.json({
       success: true,
       session: {
-        id: session.id,
-        type: session.type,
-        url: session.url,
-        status: session.status,
-        workspaceId: session.workspaceId,
-        createdAt: session.createdAt,
+        id: ideSession.id,
+        type: ideSession.type,
+        url: ideSession.url,
+        status: ideSession.status,
+        workspaceId: ideSession.workspaceId,
+        createdAt: ideSession.createdAt,
       },
     });
   } catch (error) {
@@ -64,7 +103,33 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
+    // Authentication check
+    const authSession = await getServerSession(authOptions);
+    if (!authSession?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to list IDE sessions' },
+        { status: 401 }
+      );
+    }
+
     const { searchParams } = new URL(request.url);
     const workspaceId = searchParams.get('workspaceId');
     const userId = searchParams.get('userId');
@@ -72,6 +137,11 @@ export async function GET(request: NextRequest) {
 
     const sessionStore = getSessionStore();
     let filteredSessions = sessionStore.list();
+
+    // Only allow users to see their own sessions unless they are admin
+    if (authSession.user.role !== 'admin') {
+      filteredSessions = filteredSessions.filter((s) => s.userId === authSession.user!.id);
+    }
 
     // Filter by workspaceId if provided
     if (workspaceId) {

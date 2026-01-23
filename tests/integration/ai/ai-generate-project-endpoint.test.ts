@@ -12,6 +12,47 @@
 import { NextRequest } from 'next/server';
 import { POST, generateProjectWithAI } from '@/app/api/ai/generate-project/route';
 
+// Mock rate limiting to prevent rate limiting during tests
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 30,
+    remaining: 29,
+    reset: Date.now() + 60000
+  }))
+}));
+
+/**
+ * Helper to create a mock NextRequest with proper headers
+ */
+function createMockRequest(jsonData: Record<string, unknown>): NextRequest {
+  const mockHeaders = new Map<string, string>();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+  mockHeaders.set('content-type', 'application/json');
+
+  return {
+    json: async () => jsonData,
+    headers: {
+      get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+    },
+  } as unknown as NextRequest;
+}
+
+/**
+ * Helper to create a mock NextRequest that throws on json()
+ */
+function createErrorMockRequest(error: Error): NextRequest {
+  const mockHeaders = new Map<string, string>();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
+  return {
+    json: async () => { throw error; },
+    headers: {
+      get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+    },
+  } as unknown as NextRequest;
+}
+
 describe('Integration: /api/ai/generate-project', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -19,11 +60,9 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Happy Path - Project Generation', () => {
     it('should generate project with valid prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Create a simple React app',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Create a simple React app',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -36,11 +75,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return project structure', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Create a Next.js application',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Create a Next.js application',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -55,12 +92,10 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should accept detailed project prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt:
-            'Create a full-stack e-commerce application with React frontend, Node.js backend, and PostgreSQL database',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt:
+          'Create a full-stack e-commerce application with React frontend, Node.js backend, and PostgreSQL database',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -70,11 +105,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle short prompts', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'React app',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'React app',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -84,11 +117,9 @@ describe('Integration: /api/ai/generate-project', () => {
       const longPrompt =
         'Create a comprehensive application with ' + 'x'.repeat(1000);
 
-      const mockRequest = {
-        json: async () => ({
-          prompt: longPrompt,
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: longPrompt,
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -97,9 +128,7 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Request Validation', () => {
     it('should reject missing prompt', async () => {
-      const mockRequest = {
-        json: async () => ({}),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({});
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -110,11 +139,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should reject empty prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -125,33 +152,27 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should reject null prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: null,
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: null,
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
     });
 
     it('should reject non-string prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 123,
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 123,
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
     });
 
     it('should validate prompt field is present', async () => {
-      const mockRequest = {
-        json: async () => ({
-          projectName: 'test',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        projectName: 'test',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -160,11 +181,9 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Response Structure Validation', () => {
     it('should return consistent response shape', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -178,11 +197,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return valid ISO timestamp', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -192,11 +209,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return project with all required fields', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -217,11 +232,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return files as array', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -230,11 +243,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return scripts as object', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -244,11 +255,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return dependencies as object', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -258,11 +267,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return envVars as array', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -329,11 +336,7 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Error Handling', () => {
     it('should handle JSON parse errors', async () => {
-      const mockRequest = {
-        json: async () => {
-          throw new SyntaxError('Unexpected token');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new SyntaxError('Unexpected token'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
@@ -343,33 +346,21 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle network errors', async () => {
-      const mockRequest = {
-        json: async () => {
-          throw new Error('Network error');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Network error'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
     });
 
     it('should handle unexpected errors', async () => {
-      const mockRequest = {
-        json: async () => {
-          throw new Error('Unexpected error');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Unexpected error'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
     });
 
     it('should handle timeout errors', async () => {
-      const mockRequest = {
-        json: async () => {
-          throw new Error('Request timeout');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Request timeout'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
@@ -378,11 +369,9 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Edge Cases', () => {
     it('should handle whitespace-only prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '   ',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '   ',
+      });
 
       const response = await POST(mockRequest);
       // Zod may not trim by default, so whitespace may pass validation
@@ -391,11 +380,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle prompt with only newlines', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '\n\n\n',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '\n\n\n',
+      });
 
       const response = await POST(mockRequest);
       // Similar to whitespace, newlines may pass validation
@@ -403,33 +390,27 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle prompt with tabs', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Create\tapp\twith\ttabs',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Create\tapp\twith\ttabs',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
     });
 
     it('should handle multiline prompts', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Create an app\nwith multiple\nlines',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Create an app\nwith multiple\nlines',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
     });
 
     it('should handle SQL injection attempts in prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: "'; DROP TABLE users; --",
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: "'; DROP TABLE users; --",
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -437,22 +418,18 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle XSS attempts in prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '<script>alert("xss")</script>',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '<script>alert("xss")</script>',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
     });
 
     it('should handle extremely long prompts', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'x'.repeat(10000),
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'x'.repeat(10000),
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -461,11 +438,9 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Content Type', () => {
     it('should return JSON response', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test',
+      });
 
       const response = await POST(mockRequest);
       const contentType = response.headers.get('content-type');
@@ -474,11 +449,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should return JSON on error', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '',
+      });
 
       const response = await POST(mockRequest);
       const contentType = response.headers.get('content-type');
@@ -503,11 +476,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle rapid sequential requests', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const promises = Array.from({ length: 10 }, () => POST(mockRequest));
       const responses = await Promise.all(promises);
@@ -518,11 +489,9 @@ describe('Integration: /api/ai/generate-project', () => {
     });
 
     it('should handle concurrent requests', async () => {
-      const requests = Array.from({ length: 20 }, (_, i) => ({
-        json: async () => ({
-          prompt: `Test project ${i}`,
-        }),
-      })) as unknown as NextRequest[];
+      const requests = Array.from({ length: 20 }, (_, i) =>
+        createMockRequest({ prompt: `Test project ${i}` })
+      );
 
       const promises = requests.map((req) => POST(req));
       const responses = await Promise.all(promises);
@@ -547,11 +516,9 @@ describe('Integration: /api/ai/generate-project', () => {
         - Real-time features with WebSockets
       `;
 
-      const mockRequest = {
-        json: async () => ({
-          prompt: complexPrompt,
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: complexPrompt,
+      });
 
       const start = Date.now();
       await POST(mockRequest);
@@ -563,11 +530,9 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('Idempotency', () => {
     it('should return consistent structure for same prompt', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test project',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test project',
+      });
 
       const response1 = await POST(mockRequest);
       const data1 = await response1.json();
@@ -584,9 +549,7 @@ describe('Integration: /api/ai/generate-project', () => {
 
     it('should preserve prompt in description', async () => {
       const prompt = 'Unique test prompt';
-      const mockRequest = {
-        json: async () => ({ prompt }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({ prompt });
 
       const response1 = await POST(mockRequest);
       const data1 = await response1.json();
@@ -601,42 +564,32 @@ describe('Integration: /api/ai/generate-project', () => {
 
   describe('HTTP Standards', () => {
     it('should return 200 for successful requests', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: 'Test',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: 'Test',
+      });
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
     });
 
     it('should return 400 for validation errors', async () => {
-      const mockRequest = {
-        json: async () => ({}),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({});
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
     });
 
     it('should return 500 for server errors', async () => {
-      const mockRequest = {
-        json: async () => {
-          throw new Error('Server error');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Server error'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
     });
 
     it('should include error details in response', async () => {
-      const mockRequest = {
-        json: async () => ({
-          prompt: '',
-        }),
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest({
+        prompt: '',
+      });
 
       const response = await POST(mockRequest);
       const data = await response.json();

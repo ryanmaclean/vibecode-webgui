@@ -37,6 +37,7 @@ jest.mock('@/lib/cache/unified-cache-client', () => ({
 
 jest.mock('@/lib/utils/api-response', () => ({
   createErrorResponseFromError: jest.fn((error, status, message, requestId) => {
+    const headers = new Map<string, string>();
     return {
       json: async () => ({
         error: message,
@@ -44,6 +45,10 @@ jest.mock('@/lib/utils/api-response', () => ({
         requestId,
       }),
       status,
+      headers: {
+        set: (key: string, value: string) => headers.set(key, value),
+        get: (key: string) => headers.get(key),
+      },
     };
   }),
 }));
@@ -78,7 +83,7 @@ import {
   mockAIFetchServerError,
   mockAIFetchTimeout,
   resetAIMocks,
-} from '../../__mocks__/ai-providers';
+} from '../../mocks/ai-providers';
 
 // Set environment variables
 process.env.OPENAI_API_KEY = 'test-key';

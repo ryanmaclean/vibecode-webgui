@@ -43,7 +43,7 @@ jobs:
         run: npm test -- --testPathPatterns="(auth|security|utils)" --passWithNoTests
         timeout-minutes: 5
         env:
-          DD_CI_VISIBILITY_ENABLED: true
+          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_ENV: ci
           DD_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}

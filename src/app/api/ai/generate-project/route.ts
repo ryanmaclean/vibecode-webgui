@@ -1,9 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 
 const generateProjectSchema = z.object({
   prompt: z.string().min(1, 'Project prompt is required'),
 });
+
+const apiRateLimit = createAPIRateLimit(10); // 10 req/min for project generation (expensive)
 
 /**
  * Core project generation logic (exported for testing)
@@ -24,6 +27,22 @@ export async function generateProjectWithAI(prompt: string, options?: Record<str
 
 export async function POST(request: NextRequest) {
   try {
+    const rateLimitResult = await apiRateLimit(request);
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      );
+    }
+
     const body = await request.json();
     const validation = generateProjectSchema.safeParse(body);
 

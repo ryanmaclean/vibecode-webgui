@@ -1,13 +1,51 @@
 /**
  * Tests for ValKey vector caching implementation
- * 
+ *
  * @jest-environment node
  */
 
-import { PrismaClient } from '@prisma/client';
-import { VectorCacheManager } from '../../../src/lib/cache/vector-cache-strategy';
-import { mockRedisClient } from '../../../tests/__mocks__/redis-mock';
-import { mockMetrics } from '../../../tests/__mocks__/metrics-mock';
+// In-memory store for mock Redis data
+const mockStore = new Map<string, string>();
+
+// Mock Redis client for testing
+const mockRedisClient = {
+  get: jest.fn(async (key: string) => {
+    const value = mockStore.get(key);
+    return value ?? null;
+  }),
+  set: jest.fn(async (key: string, value: string, _ttl?: number) => {
+    mockStore.set(key, value);
+    return 'OK';
+  }),
+  del: jest.fn(async (keys: string | string[]) => {
+    const keysArray = Array.isArray(keys) ? keys : [keys];
+    let deletedCount = 0;
+    for (const key of keysArray) {
+      if (mockStore.has(key)) {
+        mockStore.delete(key);
+        deletedCount++;
+      }
+    }
+    return deletedCount;
+  }),
+  keys: jest.fn(async (_pattern: string) => {
+    return Array.from(mockStore.keys());
+  }),
+  clear: jest.fn(() => {
+    mockStore.clear();
+    mockRedisClient.get.mockClear();
+    mockRedisClient.set.mockClear();
+    mockRedisClient.del.mockClear();
+    mockRedisClient.keys.mockClear();
+  })
+};
+
+const mockMetrics = {
+  increment: jest.fn(),
+  histogram: jest.fn(),
+  gauge: jest.fn(),
+  timing: jest.fn()
+};
 
 // Mock dependencies
 jest.mock('../../../src/lib/server-monitoring', () => ({
@@ -21,9 +59,9 @@ jest.mock('../../../src/lib/server-monitoring', () => ({
 }));
 
 jest.mock('../../../src/lib/cache/redis-client', () => ({
-  cache: mockRedisClient,
+  getRedisClient: jest.fn(async () => mockRedisClient),
   CacheKeys: {
-    vectorSearch: (query: string, workspace?: string) => 
+    vectorSearch: (query: string, workspace?: string) =>
       `vector:search:${Buffer.from(query + (workspace || '')).toString('base64')}`
   },
   CacheTTL: {
@@ -39,6 +77,8 @@ jest.mock('../../../src/lib/cache/redis-client', () => ({
 
 // Mock Prisma - use the comprehensive mock
 jest.mock('@prisma/client');
+
+import { VectorCacheManager } from '../../../src/lib/cache/vector-cache-strategy';
 
 describe('ValKey Vector Cache Strategy', () => {
   // Sample test data
@@ -263,8 +303,8 @@ describe('ValKey Vector Cache Strategy', () => {
       expect(mockRedisClient.set).toHaveBeenCalled();
       const setCall = mockRedisClient.set.mock.calls[0];
 
-      // Third argument should be TTL
-      expect(setCall[2]).toBe(2592000); // EMBEDDINGS TTL
+      // Third argument should be TTL - VERY_LONG (86400 seconds / 24 hours)
+      expect(setCall[2]).toBe(86400);
     });
     
     test('should use shorter TTL for small result sets', async () => {
@@ -277,8 +317,8 @@ describe('ValKey Vector Cache Strategy', () => {
       expect(mockRedisClient.set).toHaveBeenCalled();
       const setCall = mockRedisClient.set.mock.calls[0];
       
-      // Third argument should be TTL
-      expect(setCall[2]).toBe(150); // Half of MEDIUM TTL
+      // Third argument should be TTL - MEDIUM / 2 = 1800 / 2 = 900 seconds
+      expect(setCall[2]).toBe(900);
     });
   });
   

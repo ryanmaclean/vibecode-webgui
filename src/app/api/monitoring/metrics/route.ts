@@ -10,6 +10,9 @@ import * as os from 'os';
 import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth';
 // import { logger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 
 // In-memory metrics storage
 const metricsStore = {
@@ -42,6 +45,23 @@ const historicalMetricsSchema = z.object({
 
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication - only admins can view metrics
     const auth = await checkMonitoringAuth(request);
@@ -155,6 +175,23 @@ async function performHealthChecks(): Promise<boolean> {
  * Record metrics from clients
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication - any authenticated user can post metrics (not just admins)
     const auth = await checkMonitoringAuth(request, false);
@@ -221,6 +258,23 @@ export async function POST(request: NextRequest) {
  * Get historical metrics for a time range
  */
 export async function PUT(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     

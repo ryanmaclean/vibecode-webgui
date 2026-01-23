@@ -1,6 +1,4 @@
 /// <reference types="jest" />
-import axios from 'axios';
-import nock from 'nock';
 
 // Mock the OpenRouter client to avoid external API dependencies
 jest.mock('../services/openrouter-client', () => {
@@ -126,42 +124,18 @@ jest.mock('../services/datadog-metrics', () => ({
   }
 }));
 
-import express from 'express';
-import request from 'supertest';
-
-// Use test API key if OPENROUTER_API_KEY is not set in environment
-const TEST_API_KEY = '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';
-
-async function buildApp() {
-  let createApp: (() => express.Express) | undefined;
-  await new Promise<void>((resolve) => {
-    jest.isolateModules(() => {
-      // Ensure env is set before import
-      createApp = require('../app').createApp as () => express.Express;
-      resolve();
-    });
-  });
-  if (!createApp) throw new Error('Failed to load createApp');
-  return createApp();
-}
-
 describe('AI Gateway OpenRouter E2E', () => {
-  let app: express.Express;
-
-  beforeAll(async () => {
+  beforeAll(() => {
     jest.resetModules();
     process.env.NODE_ENV = 'test';
     process.env.JWT_SECRET = process.env.JWT_SECRET || 'test_jwt_secret';
     process.env.API_KEYS = process.env.API_KEYS || 'vbai_test_key';
     process.env.RATE_LIMIT_REQUESTS = process.env.RATE_LIMIT_REQUESTS || '1000';
     process.env.ENABLE_TRACING = process.env.ENABLE_TRACING || 'false';
-    // Use test API key if not set in environment
-    process.env.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || TEST_API_KEY;
-    app = await buildApp();
-  }, 15000);
+  });
 
   afterAll(() => {
-    nock.cleanAll();
+    jest.restoreAllMocks();
   });
 
   test('OpenRouter client mock returns valid chat completion', async () => {

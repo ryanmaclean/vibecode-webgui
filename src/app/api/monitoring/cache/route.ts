@@ -7,11 +7,32 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkMonitoringAuth, getUnauthorizedResponse } from '../../../../lib/monitoring/auth'
 import { queryCache } from '../../../../lib/cache/query-cache'
 import { vectorCacheAdapter } from '../../../../lib/cache/vector-cache-adapter'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger';
+
+const apiRateLimit = createAPIRateLimit(120) // 120 requests per minute - monitoring data
+
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // Check authentication
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {
@@ -125,6 +146,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   // Check authentication
   const authResult = await checkMonitoringAuth(request)
   if (!authResult.isAuthorized) {

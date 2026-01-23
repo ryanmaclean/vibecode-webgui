@@ -1,7 +1,7 @@
 // Database connection pool predictive scaling
 // Provides advanced algorithms for dynamically managing connection pool size
 
-import { connectionPool, poolConfig } from './db-pool';
+import { connectionPool, poolConfig, getWaitingAcquires } from './db-pool';
 import { getDatabaseLogger } from './database-logger';
 import { LogCategory } from './db-types';
 
@@ -107,7 +107,7 @@ class PredictiveScaler {
       connectionCount: connectionPool.clients.size,
       activeConnections: connectionPool.inUse,
       acquireTime: connectionPool.usage.acquireTimeAvg,
-      waitingAcquires: 0 // TODO: Track waiting acquires
+      waitingAcquires: getWaitingAcquires()
     };
 
     // Add to metric history

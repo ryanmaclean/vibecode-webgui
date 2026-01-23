@@ -42,15 +42,17 @@ jest.mock('@/lib/logger', () => ({
   })),
 }))
 
-// Mock fetch
-const mockFetch = jest.fn()
-global.fetch = mockFetch as any
+// Mock fetch - use a variable that gets assigned in beforeEach to avoid being overwritten by jest.setup.js
+let mockFetch: jest.Mock
 
 describe('OpenAIAgentsClient', () => {
   let client: OpenAIAgentsClient
 
   beforeEach(() => {
     jest.clearAllMocks()
+    // Set up mock fetch AFTER clearAllMocks and AFTER jest.setup.js restores its default
+    mockFetch = jest.fn()
+    global.fetch = mockFetch as unknown as typeof fetch
 
     client = new OpenAIAgentsClient({
       apiKey: 'test-api-key',
