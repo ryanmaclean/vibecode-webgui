@@ -12,6 +12,7 @@
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react'
 import { CollaborationUser } from '@/lib/collaboration'
+import { CollaborationErrorBoundary, InlineErrorBoundary } from '@/components/error/ErrorBoundary'
 
 interface UserPresenceProps {
   users: CollaborationUser[]
@@ -95,7 +96,7 @@ const UserAvatar = React.memo(({
 });
 UserAvatar.displayName = 'UserAvatar';
 
-export const UserPresence: React.FC<UserPresenceProps> = React.memo(({
+const UserPresenceContent: React.FC<UserPresenceProps> = React.memo(({
   users,
   currentUserId,
   maxVisible = 5,
@@ -292,6 +293,26 @@ export const UserPresence: React.FC<UserPresenceProps> = React.memo(({
     </div>
   )
 })
+
+UserPresenceContent.displayName = 'UserPresenceContent';
+
+/**
+ * UserPresence with Error Boundary
+ * Wraps the component with collaboration-specific error handling
+ * Uses InlineErrorBoundary for minimal space usage in presence indicators
+ */
+export const UserPresence: React.FC<UserPresenceProps> = (props) => {
+  return (
+    <InlineErrorBoundary
+      componentName="UserPresence"
+      onError={(error, errorInfo) => {
+        console.error('UserPresence error:', error, errorInfo)
+      }}
+    >
+      <UserPresenceContent {...props} />
+    </InlineErrorBoundary>
+  )
+}
 
 UserPresence.displayName = 'UserPresence';
 

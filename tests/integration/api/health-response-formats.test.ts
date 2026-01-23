@@ -113,24 +113,25 @@ describe('API Health Response Format Validation', () => {
       const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
-      // Should only have these fields
-      expect(data).toHaveProperty('status');
-      expect(data).toHaveProperty('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data).toHaveProperty('success');
+      expect(data).toHaveProperty('data');
+      expect(data).toHaveProperty('meta');
+
+      // Data payload should have status
+      expect(data.data).toHaveProperty('status');
 
       // Type validation
-      expect(typeof data.status).toBe('string');
-      expect(typeof data.timestamp).toBe('string');
-
-      // Should not have extra fields
-      const keys = Object.keys(data);
-      expect(keys.length).toBe(2);
+      expect(typeof data.data.status).toBe('string');
+      expect(typeof data.meta.timestamp).toBe('string');
     });
 
     it('should have valid status value', async () => {
       const response = await healthzHandler(createMockRequest('http://localhost:3000/api/healthz'));
       const data = await response.json();
 
-      expect(data.status).toBe('healthy');
+      // Response is wrapped in success envelope
+      expect(data.data.status).toBe('healthy');
     });
 
     it('should have ISO 8601 timestamp', async () => {
@@ -138,7 +139,7 @@ describe('API Health Response Format Validation', () => {
       const data = await response.json();
 
       const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-      expect(data.timestamp).toMatch(isoRegex);
+      expect(data.meta.timestamp).toMatch(isoRegex);
     });
   });
 
@@ -147,24 +148,25 @@ describe('API Health Response Format Validation', () => {
       const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
-      // Should only have these fields
-      expect(data).toHaveProperty('status');
-      expect(data).toHaveProperty('timestamp');
+      // Response is wrapped in success envelope: { success, data, meta }
+      expect(data).toHaveProperty('success');
+      expect(data).toHaveProperty('data');
+      expect(data).toHaveProperty('meta');
+
+      // Data payload should have status
+      expect(data.data).toHaveProperty('status');
 
       // Type validation
-      expect(typeof data.status).toBe('string');
-      expect(typeof data.timestamp).toBe('string');
-
-      // Should not have extra fields
-      const keys = Object.keys(data);
-      expect(keys.length).toBe(2);
+      expect(typeof data.data.status).toBe('string');
+      expect(typeof data.meta.timestamp).toBe('string');
     });
 
     it('should have valid status value', async () => {
       const response = await readyzHandler(createMockRequest('http://localhost:3000/api/readyz'));
       const data = await response.json();
 
-      expect(data.status).toBe('ready');
+      // Response is wrapped in success envelope
+      expect(data.data.status).toBe('ready');
     });
 
     it('should have ISO 8601 timestamp', async () => {
@@ -172,7 +174,7 @@ describe('API Health Response Format Validation', () => {
       const data = await response.json();
 
       const isoRegex = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/;
-      expect(data.timestamp).toMatch(isoRegex);
+      expect(data.meta.timestamp).toMatch(isoRegex);
     });
   });
 
@@ -187,7 +189,8 @@ describe('API Health Response Format Validation', () => {
       const timestamps = await Promise.all(
         responses.map(async r => {
           const data = await r.json();
-          return data.timestamp;
+          // /api/health returns timestamp at top level, /api/healthz and /api/readyz use meta.timestamp
+          return data.timestamp || data.meta?.timestamp;
         })
       );
 
@@ -363,19 +366,28 @@ describe('API Health Response Format Validation', () => {
 
     it('should all include status and timestamp fields', async () => {
       const endpoints = [
-        { handler: healthHandler, url: 'http://localhost:3000/api/health' },
-        { handler: healthzHandler, url: 'http://localhost:3000/api/healthz' },
-        { handler: readyzHandler, url: 'http://localhost:3000/api/readyz' }
+        { handler: healthHandler, url: 'http://localhost:3000/api/health', useDirectAccess: true },
+        { handler: healthzHandler, url: 'http://localhost:3000/api/healthz', useDirectAccess: false },
+        { handler: readyzHandler, url: 'http://localhost:3000/api/readyz', useDirectAccess: false }
       ];
 
       for (const endpoint of endpoints) {
         const response = await endpoint.handler(createMockRequest(endpoint.url));
         const data = await response.json();
 
-        expect(data).toHaveProperty('status');
-        expect(data).toHaveProperty('timestamp');
-        expect(typeof data.status).toBe('string');
-        expect(typeof data.timestamp).toBe('string');
+        // /api/health returns status/timestamp at top level
+        // /api/healthz and /api/readyz use success envelope with data.status and meta.timestamp
+        if (endpoint.useDirectAccess) {
+          expect(data).toHaveProperty('status');
+          expect(data).toHaveProperty('timestamp');
+          expect(typeof data.status).toBe('string');
+          expect(typeof data.timestamp).toBe('string');
+        } else {
+          expect(data.data).toHaveProperty('status');
+          expect(data.meta).toHaveProperty('timestamp');
+          expect(typeof data.data.status).toBe('string');
+          expect(typeof data.meta.timestamp).toBe('string');
+        }
       }
     });
 
@@ -389,7 +401,8 @@ describe('API Health Response Format Validation', () => {
       const timestamps = await Promise.all(
         responses.map(async r => {
           const data = await r.json();
-          return data.timestamp;
+          // /api/health returns timestamp at top level, /api/healthz and /api/readyz use meta.timestamp
+          return data.timestamp || data.meta?.timestamp;
         })
       );
 

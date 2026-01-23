@@ -7,6 +7,7 @@
 
 'use client'
 
+import { memo, useMemo, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   LineChart,
@@ -37,7 +38,39 @@ interface MetricsChartProps {
   showConfidenceInterval?: boolean
 }
 
-export function MetricsChart({
+// Memoized date formatter to avoid recreation
+const formatDate = (dateStr: string) => {
+  const date = new Date(dateStr)
+  return new Intl.DateTimeFormat('en-US', {
+    month: 'short',
+    day: 'numeric'
+  }).format(date)
+}
+
+// Memoized CustomTooltip component
+const CustomTooltip = memo(function CustomTooltip({ active, payload, label }: any) {
+  if (!active || !payload) return null
+
+  return (
+    <div className="bg-white p-3 border rounded shadow-lg">
+      <p className="text-sm font-medium mb-2">
+        {typeof label === 'string' && label.includes('-') ? formatDate(label) : label}
+      </p>
+      {payload.map((entry: any) => (
+        <div key={entry.name} className="flex items-center gap-2 text-sm">
+          <div
+            className="w-3 h-3 rounded-full"
+            style={{ backgroundColor: entry.color }}
+          />
+          <span className="text-muted-foreground">{entry.name}:</span>
+          <span className="font-medium">{entry.value.toFixed(2)}</span>
+        </div>
+      ))}
+    </div>
+  )
+})
+
+function MetricsChartInner({
   title,
   description,
   data,
@@ -46,37 +79,15 @@ export function MetricsChart({
   yKeys,
   showConfidenceInterval = false
 }: MetricsChartProps) {
-  const formatDate = (dateStr: string) => {
-    const date = new Date(dateStr)
-    return new Intl.DateTimeFormat('en-US', {
-      month: 'short',
-      day: 'numeric'
-    }).format(date)
-  }
+  // Memoize the tick formatter callback
+  const tickFormatter = useCallback((value: string | number) =>
+    typeof value === 'string' && value.includes('-')
+      ? formatDate(value)
+      : String(value)
+  , [])
 
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (!active || !payload) return null
-
-    return (
-      <div className="bg-white p-3 border rounded shadow-lg">
-        <p className="text-sm font-medium mb-2">
-          {typeof label === 'string' && label.includes('-') ? formatDate(label) : label}
-        </p>
-        {payload.map((entry: any) => (
-          <div key={entry.name} className="flex items-center gap-2 text-sm">
-            <div
-              className="w-3 h-3 rounded-full"
-              style={{ backgroundColor: entry.color }}
-            />
-            <span className="text-muted-foreground">{entry.name}:</span>
-            <span className="font-medium">{entry.value.toFixed(2)}</span>
-          </div>
-        ))}
-      </div>
-    )
-  }
-
-  const renderChart = () => {
+  // Memoize the chart rendering to prevent recalculation
+  const chartElement = useMemo(() => {
     const commonProps = {
       data,
       margin: { top: 5, right: 30, left: 20, bottom: 5 }
@@ -90,11 +101,7 @@ export function MetricsChart({
             <XAxis
               dataKey={xKey}
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) =>
-                typeof value === 'string' && value.includes('-')
-                  ? formatDate(value)
-                  : value
-              }
+              tickFormatter={tickFormatter}
             />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
@@ -121,11 +128,7 @@ export function MetricsChart({
             <XAxis
               dataKey={xKey}
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) =>
-                typeof value === 'string' && value.includes('-')
-                  ? formatDate(value)
-                  : value
-              }
+              tickFormatter={tickFormatter}
             />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
@@ -152,11 +155,7 @@ export function MetricsChart({
             <XAxis
               dataKey={xKey}
               tick={{ fontSize: 12 }}
-              tickFormatter={(value) =>
-                typeof value === 'string' && value.includes('-')
-                  ? formatDate(value)
-                  : value
-              }
+              tickFormatter={tickFormatter}
             />
             <YAxis tick={{ fontSize: 12 }} />
             <Tooltip content={<CustomTooltip />} />
@@ -170,7 +169,7 @@ export function MetricsChart({
       default:
         return null
     }
-  }
+  }, [data, type, xKey, yKeys, tickFormatter])
 
   return (
     <Card>
@@ -180,12 +179,14 @@ export function MetricsChart({
       </CardHeader>
       <CardContent>
         <ResponsiveContainer width="100%" height={300}>
-          {renderChart()}
+          {chartElement}
         </ResponsiveContainer>
       </CardContent>
     </Card>
   )
 }
+
+export const MetricsChart = memo(MetricsChartInner)
 
 /**
  * Funnel Chart Component
@@ -202,7 +203,72 @@ interface FunnelChartProps {
   }>
 }
 
-export function FunnelChart({ title, description, data }: FunnelChartProps) {
+// Memoized FunnelStage component to avoid re-rendering unchanged stages
+const FunnelStage = memo(function FunnelStage({
+  stage,
+  index,
+  prevControl
+}: {
+  stage: { stage: string; control: number; treatment: number }
+  index: number
+  prevControl: number | null
+}) {
+  const maxValue = Math.max(stage.control, stage.treatment)
+  const controlWidth = (stage.control / maxValue) * 100
+  const treatmentWidth = (stage.treatment / maxValue) * 100
+  const dropoff = index > 0 && prevControl !== null
+    ? ((prevControl - stage.control) / prevControl) * 100
+    : 0
+
+  return (
+    <div className="space-y-2">
+      <div className="flex items-center justify-between text-sm">
+        <span className="font-medium">{stage.stage}</span>
+        {index > 0 && (
+          <span className="text-xs text-muted-foreground">
+            {dropoff.toFixed(1)}% dropoff
+          </span>
+        )}
+      </div>
+      <div className="space-y-1">
+        <div className="flex items-center gap-2">
+          <div className="w-20 text-xs text-muted-foreground">Control</div>
+          <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+            <div
+              className="bg-blue-500 h-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+              style={{ width: `${controlWidth}%` }}
+            >
+              {controlWidth > 20 && stage.control.toLocaleString()}
+            </div>
+          </div>
+          {controlWidth <= 20 && (
+            <div className="text-xs text-muted-foreground">
+              {stage.control.toLocaleString()}
+            </div>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-20 text-xs text-muted-foreground">Treatment</div>
+          <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
+            <div
+              className="bg-green-500 h-full flex items-center justify-end pr-2 text-xs text-white font-medium"
+              style={{ width: `${treatmentWidth}%` }}
+            >
+              {treatmentWidth > 20 && stage.treatment.toLocaleString()}
+            </div>
+          </div>
+          {treatmentWidth <= 20 && (
+            <div className="text-xs text-muted-foreground">
+              {stage.treatment.toLocaleString()}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+})
+
+function FunnelChartInner({ title, description, data }: FunnelChartProps) {
   return (
     <Card>
       <CardHeader>
@@ -211,63 +277,18 @@ export function FunnelChart({ title, description, data }: FunnelChartProps) {
       </CardHeader>
       <CardContent>
         <div className="space-y-4">
-          {data.map((stage, index) => {
-            const maxValue = Math.max(stage.control, stage.treatment)
-            const controlWidth = (stage.control / maxValue) * 100
-            const treatmentWidth = (stage.treatment / maxValue) * 100
-            const dropoff = index > 0
-              ? ((data[index - 1].control - stage.control) / data[index - 1].control) * 100
-              : 0
-
-            return (
-              <div key={stage.stage} className="space-y-2">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium">{stage.stage}</span>
-                  {index > 0 && (
-                    <span className="text-xs text-muted-foreground">
-                      {dropoff.toFixed(1)}% dropoff
-                    </span>
-                  )}
-                </div>
-                <div className="space-y-1">
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 text-xs text-muted-foreground">Control</div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
-                      <div
-                        className="bg-blue-500 h-full flex items-center justify-end pr-2 text-xs text-white font-medium"
-                        style={{ width: `${controlWidth}%` }}
-                      >
-                        {controlWidth > 20 && stage.control.toLocaleString()}
-                      </div>
-                    </div>
-                    {controlWidth <= 20 && (
-                      <div className="text-xs text-muted-foreground">
-                        {stage.control.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-20 text-xs text-muted-foreground">Treatment</div>
-                    <div className="flex-1 bg-gray-100 rounded-full h-6 overflow-hidden">
-                      <div
-                        className="bg-green-500 h-full flex items-center justify-end pr-2 text-xs text-white font-medium"
-                        style={{ width: `${treatmentWidth}%` }}
-                      >
-                        {treatmentWidth > 20 && stage.treatment.toLocaleString()}
-                      </div>
-                    </div>
-                    {treatmentWidth <= 20 && (
-                      <div className="text-xs text-muted-foreground">
-                        {stage.treatment.toLocaleString()}
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+          {data.map((stage, index) => (
+            <FunnelStage
+              key={stage.stage}
+              stage={stage}
+              index={index}
+              prevControl={index > 0 ? data[index - 1].control : null}
+            />
+          ))}
         </div>
       </CardContent>
     </Card>
   )
 }
+
+export const FunnelChart = memo(FunnelChartInner)

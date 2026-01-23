@@ -13,12 +13,19 @@
 
 import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
 
+// Create a mock fetch factory that can be configured per test
+const createMockFetch = () => jest.fn();
+
 let mockFetch: jest.Mock;
 
 beforeAll(() => {
-  mockFetch = jest.fn();
-  global.fetch = mockFetch;
   console.log('🔧 Experiments API integration tests - using mocked APIs');
+});
+
+// Set up fetch mock before each test to override the global jest.setup.js mock
+beforeEach(() => {
+  mockFetch = createMockFetch();
+  global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterAll(() => {
@@ -31,10 +38,6 @@ describe('Experiments API Integration (Mocked)', () => {
   beforeAll(async () => {
     console.log('Setting up experiments integration test environment...')
   }, 10000)
-
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
 
   afterAll(async () => {
     console.log('Cleaning up experiments integration test environment...')

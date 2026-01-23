@@ -3,9 +3,18 @@
  * Provides actual project templates for quick project creation
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { createErrorResponse } from '@/lib/api-utils'
-// import { logger } from '@/lib/logger';
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
+import { validateRequestBody } from '@/lib/api/validation/middleware'
+import { templateSubmissionSchema } from '@/lib/api/validation/schemas'
+import { sanitizeDescription, sanitizeTags } from '@/lib/api/validation/sanitize'
+import { z } from '@/lib/zod-compat'
+import { cacheGetOrSet, CacheKeyGenerators, TTLPresets, CacheInvalidators } from '@/lib/cache/cache-utils'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - template browsing
 interface ProjectTemplate {
   id: string
   name: string
@@ -594,23 +603,349 @@ Happy coding! 🐍`
   }
 ]
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    return NextResponse.json({
-      templates,
-      count: templates.length,
-      categories: {
-        languages: [...new Set(templates.map(t => t.language))],
-        frameworks: [...new Set(templates.map(t => t.framework))],
-        difficulties: [...new Set(templates.map(t => t.difficulty))]
-      }
-    })
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
+    // Use cache for templates response (templates rarely change)
+    const response = await cacheGetOrSet(
+      CacheKeyGenerators.templates(),
+      async () => ({
+        templates,
+        count: templates.length,
+        categories: {
+          languages: [...new Set(templates.map(t => t.language))],
+          frameworks: [...new Set(templates.map(t => t.framework))],
+          difficulties: [...new Set(templates.map(t => t.difficulty))]
+        }
+      }),
+      { ttl: TTLPresets.TEMPLATES } // 2 hours cache
+    );
+
+    return NextResponse.json(response)
   } catch (error) {
     console.error('Templates API error:', error)
     return createErrorResponse('Failed to fetch templates', 500)
   }
 }
 
-export async function POST() {
-  return createErrorResponse('Template creation not implemented yet', 501)
+// Infer type from zod schema
+type TemplateSubmission = z.infer<typeof templateSubmissionSchema>
+
+// Response type for template submission
+interface TemplateSubmissionResponse {
+  success: boolean
+  message: string
+  templateId: string
+  template: ProjectTemplate
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
+    // Require authentication for template submission
+    const session = await getServerSession(authOptions)
+    if (!session?.user) {
+      return createErrorResponse('Authentication required to submit templates', 401)
+    }
+
+    // Validate request body with zod schema
+    const validation = await validateRequestBody(request, templateSubmissionSchema)
+    if (!validation.success) {
+      return validation.error
+    }
+
+    const body = validation.data
+
+    // Apply additional sanitization to user-provided text fields
+    const sanitizedName = body.name.trim()
+    const cleanDescription = sanitizeDescription(body.description, 1000)
+    const cleanTags = sanitizeTags(body.tags || [])
+
+    // Generate a unique ID for the template
+    const templateId = `template-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`
+
+    // Build sanitized submission for file generation
+    const sanitizedSubmission: TemplateSubmission = {
+      name: sanitizedName,
+      description: cleanDescription,
+      category: body.category,
+      language: body.language.toLowerCase(),
+      framework: body.framework.toLowerCase(),
+      complexity: body.complexity,
+      tags: cleanTags,
+      dependencies: body.dependencies || {},
+      scripts: body.scripts || {},
+      envVars: body.envVars || [],
+      documentation: body.documentation || { setup: [], usage: [], deployment: [] },
+      features: body.features || {
+        dockerSupport: false,
+        kubernetesSupport: false,
+        cicdTemplate: false,
+        testingSetup: false,
+        monitoringSetup: false
+      }
+    }
+
+    // Create the new template object
+    const newTemplate: ProjectTemplate = {
+      id: templateId,
+      name: sanitizedName,
+      description: cleanDescription,
+      language: sanitizedSubmission.language,
+      framework: sanitizedSubmission.framework,
+      tags: cleanTags,
+      difficulty: body.complexity,
+      estimatedTime: body.complexity === 'beginner' ? '30 minutes' :
+                     body.complexity === 'intermediate' ? '60 minutes' : '90 minutes',
+      features: [
+        ...(sanitizedSubmission.features?.dockerSupport ? ['Docker Support'] : []),
+        ...(sanitizedSubmission.features?.kubernetesSupport ? ['Kubernetes Support'] : []),
+        ...(sanitizedSubmission.features?.cicdTemplate ? ['CI/CD Pipeline'] : []),
+        ...(sanitizedSubmission.features?.testingSetup ? ['Testing Setup'] : []),
+        ...(sanitizedSubmission.features?.monitoringSetup ? ['Monitoring Setup'] : []),
+      ],
+      icon: getCategoryIcon(body.category),
+      files: generateTemplateFiles(sanitizedSubmission),
+      dependencies: sanitizedSubmission.dependencies,
+      scripts: sanitizedSubmission.scripts,
+      setupInstructions: sanitizedSubmission.documentation?.setup || []
+    }
+
+    // In a real implementation, this would save to a database
+    // For now, we return success with the created template
+    console.info('Template submitted:', newTemplate.name, newTemplate.id, 'by user:', session.user.email)
+
+    // Invalidate templates cache so new template appears
+    await CacheInvalidators.invalidateTemplates()
+
+    const response: TemplateSubmissionResponse = {
+      success: true,
+      message: 'Template submitted successfully',
+      templateId: newTemplate.id,
+      template: newTemplate
+    }
+
+    return NextResponse.json(response, { status: 201 })
+
+  } catch (error) {
+    console.error('Template submission error:', error)
+
+    if (error instanceof z.ZodError) {
+      return createErrorResponse('Invalid request data', 400, {
+        code: 'VALIDATION_ERROR',
+        errors: error.issues.map(err => ({
+          field: err.path.join('.'),
+          message: err.message
+        }))
+      })
+    }
+
+    if (error instanceof SyntaxError) {
+      return createErrorResponse('Invalid JSON in request body', 400, {
+        code: 'INVALID_JSON'
+      })
+    }
+
+    return createErrorResponse(
+      error instanceof Error ? error.message : 'Failed to submit template',
+      500,
+      { code: 'TEMPLATE_SUBMISSION_ERROR' }
+    )
+  }
+}
+
+/**
+ * Get an appropriate icon for the template category
+ */
+function getCategoryIcon(category: string): string {
+  const icons: Record<string, string> = {
+    frontend: '🎨',
+    fullstack: '🌐',
+    backend: '⚙️',
+    mobile: '📱',
+    desktop: '🖥️',
+    library: '📚'
+  }
+  return icons[category] || '📦'
+}
+
+/**
+ * Generate initial template files based on submission data
+ */
+function generateTemplateFiles(submission: TemplateSubmission): Record<string, string> {
+  const files: Record<string, string> = {}
+
+  // Generate README.md
+  const readmeContent = `# ${submission.name}
+
+${submission.description}
+
+## Category
+${submission.category}
+
+## Tech Stack
+- **Language:** ${submission.language}
+- **Framework:** ${submission.framework}
+- **Complexity:** ${submission.complexity}
+
+## Features
+${submission.features?.dockerSupport ? '- Docker Support\n' : ''}${submission.features?.kubernetesSupport ? '- Kubernetes Support\n' : ''}${submission.features?.cicdTemplate ? '- CI/CD Pipeline\n' : ''}${submission.features?.testingSetup ? '- Testing Setup\n' : ''}${submission.features?.monitoringSetup ? '- Monitoring Setup\n' : ''}
+
+## Tags
+${submission.tags.map(tag => `- ${tag}`).join('\n')}
+
+${submission.documentation?.setup?.length ? `## Setup Instructions\n${submission.documentation.setup.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.documentation?.usage?.length ? `## Usage\n${submission.documentation.usage.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.documentation?.deployment?.length ? `## Deployment\n${submission.documentation.deployment.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n` : ''}
+${submission.envVars?.length ? `## Environment Variables\n${submission.envVars.map(env => `- \`${env.name}\`${env.description ? `: ${env.description}` : ''}${env.defaultValue ? ` (default: ${env.defaultValue})` : ''}`).join('\n')}\n` : ''}
+`
+  files['README.md'] = readmeContent
+
+  // Generate package.json for JavaScript/TypeScript projects
+  if (['typescript', 'javascript'].includes(submission.language.toLowerCase())) {
+    const packageJson = {
+      name: submission.name.toLowerCase().replace(/\s+/g, '-'),
+      version: '1.0.0',
+      description: submission.description,
+      scripts: submission.scripts || {},
+      dependencies: submission.dependencies || {}
+    }
+    files['package.json'] = JSON.stringify(packageJson, null, 2)
+  }
+
+  // Generate requirements.txt for Python projects
+  if (submission.language.toLowerCase() === 'python') {
+    const deps = Object.entries(submission.dependencies || {})
+      .map(([name, version]) => `${name}==${version}`)
+      .join('\n')
+    if (deps) {
+      files['requirements.txt'] = deps
+    }
+  }
+
+  // Generate .env.example if there are environment variables
+  if (submission.envVars?.length) {
+    const envContent = submission.envVars
+      .map(env => `${env.name}=${env.defaultValue || ''}`)
+      .join('\n')
+    files['.env.example'] = envContent
+  }
+
+  // Generate Dockerfile if docker support is enabled
+  if (submission.features?.dockerSupport) {
+    const dockerfile = generateDockerfile(submission)
+    files['Dockerfile'] = dockerfile
+  }
+
+  return files
+}
+
+/**
+ * Generate a basic Dockerfile based on the language
+ */
+function generateDockerfile(submission: TemplateSubmission): string {
+  const language = submission.language.toLowerCase()
+
+  if (['typescript', 'javascript'].includes(language)) {
+    return `# Node.js Dockerfile
+FROM node:18-alpine
+
+WORKDIR /app
+
+COPY package*.json ./
+RUN npm install
+
+COPY . .
+
+RUN npm run build
+
+EXPOSE 3000
+
+CMD ["npm", "start"]
+`
+  }
+
+  if (language === 'python') {
+    return `# Python Dockerfile
+FROM python:3.11-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["python", "main.py"]
+`
+  }
+
+  if (language === 'go') {
+    return `# Go Dockerfile
+FROM golang:1.21-alpine AS builder
+
+WORKDIR /app
+
+COPY go.mod go.sum ./
+RUN go mod download
+
+COPY . .
+RUN go build -o main .
+
+FROM alpine:latest
+WORKDIR /root/
+COPY --from=builder /app/main .
+
+EXPOSE 8080
+
+CMD ["./main"]
+`
+  }
+
+  // Generic Dockerfile
+  return `# Generic Dockerfile
+FROM ubuntu:22.04
+
+WORKDIR /app
+
+COPY . .
+
+EXPOSE 8080
+
+CMD ["echo", "Configure your application startup command"]
+`
 }

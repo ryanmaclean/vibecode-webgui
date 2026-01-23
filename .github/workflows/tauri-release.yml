@@ -8,7 +8,7 @@ on:
       - 'feature/dmg-packaging'  # Allow testing on the DMG packaging branch
   pull_request:
     paths:
-      - 'src-tauri/**'
+      - 'platforms/tauri/**'
       - '.github/workflows/tauri-release.yml'
   workflow_dispatch:  # Manual trigger for testing
     inputs:
@@ -50,14 +50,14 @@ jobs:
       - name: Install Rust cache
         uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri -> target
+          workspaces: platforms/tauri -> target
 
       - name: Validate Tauri configuration
         run: |
           echo "Validating Tauri setup..."
-          test -f src-tauri/tauri.conf.json || { echo "Error: tauri.conf.json not found"; exit 1; }
-          test -f src-tauri/entitlements.plist || { echo "Error: entitlements.plist not found"; exit 1; }
-          test -f src-tauri/icons/icon.icns || { echo "Error: icon.icns not found"; exit 1; }
+          test -f platforms/tauri/tauri.conf.json || { echo "Error: tauri.conf.json not found"; exit 1; }
+          test -f platforms/tauri/entitlements.plist || { echo "Error: entitlements.plist not found"; exit 1; }
+          test -f platforms/tauri/icons/icon.icns || { echo "Error: icon.icns not found"; exit 1; }
           echo "Tauri configuration validated successfully"
 
       - name: Install frontend dependencies
@@ -69,7 +69,7 @@ jobs:
           npm run tauri -- --version || { echo "Error: Tauri CLI not available"; exit 1; }
 
       - name: Install Tauri dependencies
-        working-directory: src-tauri
+        working-directory: platforms/tauri
         run: |
           # Install system dependencies if needed
           brew install --quiet --no-auto-update \
@@ -87,15 +87,15 @@ jobs:
           echo "Using Next.js config: $NEXT_CONFIG_FILE"
           npm run tauri build -- --target universal-apple-darwin --verbose || {
             echo "Build failed. Checking logs..."
-            test -f src-tauri/target/universal-apple-darwin/release/build.log && cat src-tauri/target/universal-apple-darwin/release/build.log
+            test -f platforms/tauri/target/universal-apple-darwin/release/build.log && cat platforms/tauri/target/universal-apple-darwin/release/build.log
             exit 1
           }
 
       - name: Verify build artifacts
         run: |
           echo "Checking for build artifacts..."
-          ls -lh src-tauri/target/universal-apple-darwin/release/bundle/macos/
-          ls -lh src-tauri/target/universal-apple-darwin/release/bundle/dmg/ || echo "No DMG found yet"
+          ls -lh platforms/tauri/target/universal-apple-darwin/release/bundle/macos/
+          ls -lh platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/ || echo "No DMG found yet"
 
       - name: Import Apple Developer Certificate
         if: |
@@ -133,12 +133,12 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
+          APP_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
 
           echo "Signing VibeCode.app with identity: $APPLE_SIGNING_IDENTITY"
           codesign --force --deep --sign "$APPLE_SIGNING_IDENTITY" \
             --options runtime \
-            --entitlements src-tauri/entitlements.plist \
+            --entitlements platforms/tauri/entitlements.plist \
             --timestamp \
             "$APP_PATH"
 
@@ -153,14 +153,14 @@ jobs:
           # Install create-dmg if not available
           npm install -g create-dmg || true
 
-          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
-          DMG_OUTPUT="src-tauri/target/universal-apple-darwin/release/bundle/dmg"
+          APP_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
+          DMG_OUTPUT="platforms/tauri/target/universal-apple-darwin/release/bundle/dmg"
           mkdir -p "$DMG_OUTPUT"
 
           # Create DMG with custom styling
           create-dmg \
             --volname "VibeCode" \
-            --volicon "src-tauri/icons/icon.icns" \
+            --volicon "platforms/tauri/icons/icon.icns" \
             --window-pos 200 120 \
             --window-size 800 400 \
             --icon-size 100 \
@@ -187,7 +187,7 @@ jobs:
         env:
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
         run: |
-          DMG_PATH="src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
+          DMG_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
 
           echo "Signing DMG package..."
           codesign --force --sign "$APPLE_SIGNING_IDENTITY" \
@@ -206,7 +206,7 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         run: |
-          DMG_PATH="src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
+          DMG_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
 
           echo "Submitting DMG for notarization..."
           xcrun notarytool submit "$DMG_PATH" \
@@ -226,7 +226,7 @@ jobs:
 
       - name: Generate checksums
         run: |
-          DMG_PATH="src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
+          DMG_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg"
 
           echo "Generating checksums..."
           cd "$(dirname "$DMG_PATH")"
@@ -240,8 +240,8 @@ jobs:
 
       - name: Create release archive
         run: |
-          APP_PATH="src-tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
-          ARCHIVE_OUTPUT="src-tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app.tar.gz"
+          APP_PATH="platforms/tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app"
+          ARCHIVE_OUTPUT="platforms/tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app.tar.gz"
 
           echo "Creating app bundle archive..."
           tar -czf "$ARCHIVE_OUTPUT" -C "$(dirname "$APP_PATH")" "$(basename "$APP_PATH")"
@@ -255,10 +255,10 @@ jobs:
         with:
           name: VibeCode-macOS-Universal
           path: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.sha256
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/*.sha512
-            src-tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/*.dmg
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/*.sha256
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/*.sha512
+            platforms/tauri/target/universal-apple-darwin/release/bundle/macos/*.tar.gz
           retention-days: 30
           if-no-files-found: error
 
@@ -267,10 +267,10 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg.sha256
-            src-tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg.sha512
-            src-tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app.tar.gz
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg.sha256
+            platforms/tauri/target/universal-apple-darwin/release/bundle/dmg/VibeCode.dmg.sha512
+            platforms/tauri/target/universal-apple-darwin/release/bundle/macos/VibeCode.app.tar.gz
           draft: false
           prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
           generate_release_notes: true

@@ -179,8 +179,7 @@ export class MetaplaneDataObservability {
         suggestedAction: anomaly.suggested_action || 'Review data pipeline configuration'
       }))
     } catch (error) {
-      // @ts-expect-error - error is unknown type in strict mode
-      const errorMessage = error?.message || String(error);
+      const errorMessage = (error as Error)?.message || String(error);
       datadogLogs.logger.error('AI anomaly detection failed', {
         error: errorMessage,
         pipeline: pipelineName,
@@ -462,8 +461,7 @@ export class MetaplaneDataObservability {
         service: 'metaplane-integration'
       })
     } catch (error) {
-      // @ts-expect-error - error is unknown type in strict mode
-      const errorMessage = error?.message || String(error);
+      const errorMessage = (error as Error)?.message || String(error);
       datadogLogs.logger.error('Failed to send metrics to Datadog', {
         error: errorMessage,
         pipeline: metrics.pipeline,

@@ -117,8 +117,20 @@ function getPodmanSocket(os: string, home: string): string {
   switch (os) {
     case 'darwin':
       return join(home, '.local', 'share', 'containers', 'podman', 'machine', 'podman.sock');
-    case 'linux':
-      return `/run/user/${process.getuid?.() ?? 1000}/podman/podman.sock`;
+    case 'linux': {
+      // On Linux, use XDG_RUNTIME_DIR if available, otherwise construct from UID
+      const runtimeDir = process.env.XDG_RUNTIME_DIR;
+      if (runtimeDir) {
+        return `${runtimeDir}/podman/podman.sock`;
+      }
+      // Only use getuid if it exists (not on Windows)
+      const uid = typeof process.getuid === 'function' ? process.getuid() : null;
+      if (uid !== null) {
+        return `/run/user/${uid}/podman/podman.sock`;
+      }
+      // Fallback to default location if UID not available
+      return join(home, '.local', 'share', 'containers', 'podman', 'podman.sock');
+    }
     case 'win32':
       return '//./pipe/podman-machine-default';
     default:

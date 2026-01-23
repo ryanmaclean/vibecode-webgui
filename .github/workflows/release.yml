@@ -130,7 +130,7 @@ jobs:
 
       - name: Prepare artifacts
         run: |
-          cd src-tauri/target/${{ matrix.arch }}/release/bundle/dmg
+          cd platforms/tauri/target/${{ matrix.arch }}/release/bundle/dmg
 
           # Rename DMG with version and arch
           for dmg in *.dmg; do
@@ -154,8 +154,8 @@ jobs:
         with:
           tag_name: ${{ env.VERSION }}
           files: |
-            src-tauri/target/${{ matrix.arch }}/release/bundle/dmg/*.dmg
-            src-tauri/target/${{ matrix.arch }}/release/bundle/dmg/SHA256SUMS.txt
+            platforms/tauri/target/${{ matrix.arch }}/release/bundle/dmg/*.dmg
+            platforms/tauri/target/${{ matrix.arch }}/release/bundle/dmg/SHA256SUMS.txt
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
