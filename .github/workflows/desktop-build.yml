@@ -204,44 +204,29 @@ jobs:
       - name: Setup sidecar binaries
         run: |
           mkdir -p platforms/tauri/binaries
-
-          # Determine the expected sidecar name based on target
           TARGET="${{ matrix.target }}"
 
           # For macOS universal builds, we need both architectures
           if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
-            # Check if real binary exists for ARM64
             if [ -f "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin" ]; then
               echo "Using existing ARM64 binary"
             else
               echo "Creating stub ARM64 binary"
-              echo '#!/bin/sh\necho "VM not available"' > "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
+              printf '#!/bin/sh\necho "VM not available"\nexit 1\n' > "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
               chmod +x "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
             fi
-            # Create x86_64 stub (VM only works on ARM64 with Virtualization.framework)
-            echo '#!/bin/sh
-echo "VM not available on Intel Macs"
-exit 1' > "platforms/tauri/binaries/vibecode-vm-x86_64-apple-darwin"
+            printf '#!/bin/sh\necho "VM not available on Intel Macs"\nexit 1\n' > "platforms/tauri/binaries/vibecode-vm-x86_64-apple-darwin"
             chmod +x "platforms/tauri/binaries/vibecode-vm-x86_64-apple-darwin"
           else
-            # For other platforms, create a stub with the correct target name
             SIDECAR_NAME="vibecode-vm-${TARGET}"
             echo "Creating stub sidecar: ${SIDECAR_NAME}"
-
             if [ "${{ matrix.platform }}" = "windows" ]; then
-              # Windows needs .exe extension and batch file
-              echo '@echo off
-echo VM not available on Windows
-exit /b 1' > "platforms/tauri/binaries/${SIDECAR_NAME}.exe"
+              printf '@echo off\r\necho VM not available on Windows\r\nexit /b 1\r\n' > "platforms/tauri/binaries/${SIDECAR_NAME}.exe"
             else
-              # Linux/Unix stub script
-              echo '#!/bin/sh
-echo "VM not available on this platform"
-exit 1' > "platforms/tauri/binaries/${SIDECAR_NAME}"
+              printf '#!/bin/sh\necho "VM not available on this platform"\nexit 1\n' > "platforms/tauri/binaries/${SIDECAR_NAME}"
               chmod +x "platforms/tauri/binaries/${SIDECAR_NAME}"
             fi
           fi
-
           echo "Sidecar binaries prepared:"
           ls -la platforms/tauri/binaries/
         shell: bash
