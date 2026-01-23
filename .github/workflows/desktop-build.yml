@@ -201,6 +201,29 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Build frontend for Tauri
+        env:
+          NEXT_CONFIG_FILE: next.config.tauri.js
+        run: |
+          echo "Building Next.js frontend for Tauri..."
+          npm run build:tauri || npm run build
+
+          # Ensure the public directory exists for Tauri
+          mkdir -p platforms/public
+
+          # Copy built assets to where Tauri expects them
+          if [ -d "out" ]; then
+            cp -r out/* platforms/public/
+          elif [ -d ".next/static" ]; then
+            # For standalone builds, create a minimal index.html
+            cp -r .next/static platforms/public/
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"><meta http-equiv="refresh" content="0;url=http://localhost:8080"></head><body>Redirecting to OpenVSCode...</body></html>' > platforms/public/index.html
+          fi
+
+          echo "Frontend build complete. Contents of platforms/public:"
+          ls -la platforms/public/ || echo "Warning: platforms/public is empty"
+        shell: bash
+
       - name: Verify Tauri CLI installation
         run: |
           echo "Verifying Tauri CLI..."
