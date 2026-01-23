@@ -1,8 +1,11 @@
 #!/bin/sh
 . "$(dirname -- "$0")/_/husky.sh"
 
-# Pre-commit checks for VibeCode
-echo "🚀 Running pre-commit checks..."
+# Pre-commit checks for VibeCode - LIGHT MODE
+# Fast local checks only. Full validation runs in CI.
+# Set PRECOMMIT_FULL=1 to run all checks locally.
+
+echo "🚀 Running pre-commit checks (light mode)..."
 
 # Block committing JUnit reports and other test artifacts
 BLOCKED_FILES=$(git diff --cached --name-only | grep -E '(^|/)test-results/.*\.xml$|(^|/)\.test-results/.*\.xml$|(^|/)junit\.xml$' || true)
@@ -13,42 +16,12 @@ if [ ! -z "$BLOCKED_FILES" ]; then
   exit 1
 fi
 
-# Documentation validation and auto-fixing
-echo "🔍 Validating documentation..."
-
-# Check if documentation files have been modified
-DOC_FILES=$(git diff --cached --name-only | grep -E '\.(md|mdx)$' || true)
-
-if [ ! -z "$DOC_FILES" ]; then
-  echo "📚 Documentation files modified, running validation..."
-
-  # Auto-update README if package.json or source files changed
-  PACKAGE_CHANGED=$(git diff --cached --name-only | grep 'package.json' || true)
-  SRC_CHANGED=$(git diff --cached --name-only | grep '^src/' || true)
-  
-  if [ ! -z "$PACKAGE_CHANGED" ] || [ ! -z "$SRC_CHANGED" ]; then
-    echo "📝 Auto-updating README and API docs..."
-    npm run docs:generate --silent 2>/dev/null || echo "⚠️ API doc generation skipped"
-    npm run docs:update --silent 2>/dev/null || echo "⚠️ README update skipped"
-    
-    # Stage the updated files if they exist
-    [ -f README.md ] && git add README.md
-    [ -f docs/API.md ] && git add docs/API.md
-  fi
-  
-  # Quick validation (skip full validation in pre-commit for speed)
-  npm run docs:stats --silent 2>/dev/null || echo "⚠️ Doc stats skipped"
-  
-  echo "✅ Documentation validation complete"
-fi
-
-# Security scan for API keys and sensitive data (always run)
+# Security scan for API keys and sensitive data (always run - fast and critical)
 echo "🔒 Scanning for API keys and sensitive data..."
 
-# Enhanced API key detection patterns
 for file in $(git diff --cached --name-only); do
   # Skip .env files, node_modules, and non-existent files
-  if [[ -f "$file" && "$file" != *.env && "$file" != *.env.local && "$file" != *.env.* && "$file" != *node_modules* ]]; then
+  if [ -f "$file" ] && echo "$file" | grep -vE '\.(env|env\.local|env\..*)$' > /dev/null && echo "$file" | grep -v 'node_modules' > /dev/null; then
     # Check for OpenAI/OpenRouter API keys (sk-...)
     if grep -E "sk-[a-zA-Z0-9]{40,}" "$file" > /dev/null 2>&1; then
       echo "❌ ERROR: Potential OpenAI/OpenRouter API key found in $file"
@@ -76,59 +49,44 @@ for file in $(git diff --cached --name-only); do
       echo "   Please remove the key and use AWS credentials properly"
       exit 1
     fi
-
-    # Check for Datadog API keys (32 hex characters in context)
-    if grep -E "(api.key|datadog|dd_api_key|DD_API_KEY).*[a-f0-9]{32}" "$file" > /dev/null 2>&1; then
-      echo "⚠️  WARNING: Potential Datadog API key found in $file"
-      echo "   Verify this is not a real API key"
-    fi
   fi
 done
 
 echo "✅ Security scan passed"
 
-# Lint and type-check staged files
-echo "🔍 Running lint checks on staged files..."
+# Full mode: run additional checks if PRECOMMIT_FULL=1
+if [ "${PRECOMMIT_FULL:-0}" = "1" ]; then
+  echo "🔍 Running full pre-commit checks..."
 
-STAGED_JS_TS=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' || true)
+  STAGED_JS_TS=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' || true)
 
-if [ ! -z "$STAGED_JS_TS" ]; then
-  echo "📝 Linting JavaScript/TypeScript files..."
+  if [ ! -z "$STAGED_JS_TS" ]; then
+    # Run ESLint on staged files
+    echo "📝 Linting JavaScript/TypeScript files..."
+    echo "$STAGED_JS_TS" | xargs -r npx eslint --fix --quiet || {
+      echo "⚠️ ESLint found issues. Please fix them before committing."
+    }
 
-  # Run ESLint on staged files only
-  echo "$STAGED_JS_TS" | grep -E '^(src/app/api/agents|src/app/api/ai/chat)' | xargs -r npx eslint --fix || {
-    echo "⚠️ ESLint found issues. Please fix them before committing."
-  }
+    # Run TypeScript type check
+    npm run type-check 2>/dev/null || {
+      echo "⚠️ TypeScript type check failed. Please fix type errors before committing."
+    }
+  fi
 
-  # Run TypeScript type check
-  npm run type-check 2>/dev/null || {
-    echo "⚠️ TypeScript type check failed. Please fix type errors before committing."
-    echo "💡 Tip: Run 'npm run type-check' to see details"
-  }
+  # Run quick tests
+  STAGED_SRC_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | grep -E '^src/' | grep -v '__tests__' | grep -v '\.test\.' | grep -v '\.spec\.' || true)
 
-  echo "✅ Lint checks completed"
-fi
+  if [ ! -z "$STAGED_SRC_FILES" ]; then
+    echo "🧪 Running tests..."
+    SKIP_DOCKER_TESTS=1 SKIP_K8S_TESTS=1 npm run quick-test 2>/dev/null || {
+      echo "❌ Tests failed. Run 'npm test' to see details."
+      exit 1
+    }
+  fi
 
-# Run quick tests on staged files
-echo "🧪 Running pre-commit tests..."
-
-# Only run tests if JS/TS files changed (excluding test files)
-STAGED_SRC_FILES=$(git diff --cached --name-only | grep -E '\.(js|jsx|ts|tsx)$' | grep -E '^src/' | grep -v '__tests__' | grep -v '\.test\.' | grep -v '\.spec\.' || true)
-
-if [ ! -z "$STAGED_SRC_FILES" ]; then
-  echo "📝 Testing changed files..."
-
-  # Run quick unit tests (skip infrastructure tests, use maxWorkers=2 for speed)
-  SKIP_DOCKER_TESTS=1 SKIP_K8S_TESTS=1 npm run quick-test 2>/dev/null || {
-    echo "❌ Tests failed. Run 'npm test' to see details."
-    echo "💡 Tip: Use 'git commit --no-verify' to skip tests (not recommended)"
-    exit 1
-  }
-
-  echo "✅ Tests passed"
-else
-  echo "⏭️  No source files changed, skipping tests"
+  echo "✅ Full checks completed"
 fi
 
 echo ""
-echo "✅ All pre-commit checks passed! Ready to commit."
+echo "✅ Pre-commit checks passed! Ready to commit."
+echo "💡 Tip: Set PRECOMMIT_FULL=1 for full local validation, or rely on CI."
