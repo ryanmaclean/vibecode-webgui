@@ -17,6 +17,23 @@ jest.mock('@/lib/server-monitoring', () => ({
   appLogger: {
     logBusiness: jest.fn(),
     logPerformance: jest.fn()
+  },
+  metrics: {
+    increment: jest.fn(),
+    histogram: jest.fn(),
+    gauge: jest.fn()
+  }
+}))
+
+// Mock the cache utilities to avoid Redis/Valkey connection issues
+jest.mock('@/lib/cache/cache-utils', () => ({
+  cacheGet: jest.fn().mockResolvedValue(null),
+  cacheSet: jest.fn().mockResolvedValue(true),
+  CacheKeyGenerators: {
+    featureFlag: (flagKey: string, userId: string) => `feature:${flagKey}:${userId}`
+  },
+  TTLPresets: {
+    FEATURE_FLAGS: 600
   }
 }))
 

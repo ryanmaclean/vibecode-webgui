@@ -8,7 +8,9 @@ import { describe, it, expect, beforeEach, jest } from '@jest/globals';
 
 // Mock next-auth before importing anything that uses it
 jest.mock('next-auth', () => ({
-  getServerSession: jest.fn()
+  getServerSession: jest.fn().mockResolvedValue({
+    user: { id: 'test-user', email: 'test@example.com' }
+  })
 }));
 
 // Mock monitoring module

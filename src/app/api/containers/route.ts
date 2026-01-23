@@ -11,13 +11,38 @@ import { appleContainer } from '@/lib/container/apple-container'
 import type { ContainerOptions } from '@/lib/container/types'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { createContainerSchema } from '@/lib/api/validation/schemas'
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60)
+
+const log = createServiceLogger({
+  service: 'vibecode-webgui',
+  component: 'api-containers'
+})
 /**
  * GET /api/containers
  * List all containers
  */
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(req)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session) {
@@ -48,7 +73,7 @@ export async function GET() {
       count: result.containers.length,
     })
   } catch (error) {
-    console.error('Error listing containers:', error)
+    log.error('Failed to list containers', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -62,6 +87,23 @@ export async function GET() {
  */
 export async function POST(req: NextRequest) {
   try {
+    // Check rate limit
+    const rateLimitResult = await apiRateLimit(req)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session) {
@@ -76,12 +118,11 @@ export async function POST(req: NextRequest) {
 
     const { image, options } = validation.data
 
-    // Additional security check: log container creation attempts
-    console.log('Container creation attempt', {
+    // Security audit: log container creation attempts
+    log.info('Container creation attempt', {
       userId: session.user?.id,
       image,
-      hasOptions: !!options,
-      timestamp: new Date().toISOString()
+      hasOptions: !!options
     })
 
     // Check if Apple Container is available
@@ -112,7 +153,7 @@ export async function POST(req: NextRequest) {
       info: containerInfo,
     })
   } catch (error) {
-    console.error('Error starting container:', error)
+    log.error('Failed to start container', { error: error instanceof Error ? error.message : String(error) })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

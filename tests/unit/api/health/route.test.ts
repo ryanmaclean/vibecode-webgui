@@ -250,13 +250,34 @@ describe('/api/health', () => {
   })
 
   describe('OPTIONS', () => {
-    it('should return CORS headers for OPTIONS request', async () => {
-      const response = await OPTIONS()
+    it('should return CORS headers for allowed origin', async () => {
+      const mockRequest = new NextRequest('http://localhost:3000/api/health', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': 'http://localhost:3000'
+        }
+      })
+      const response = await OPTIONS(mockRequest)
 
       expect(response.status).toBe(200)
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*')
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000')
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, OPTIONS')
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type')
+      expect(response.headers.get('Vary')).toBe('Origin')
+    })
+
+    it('should not return CORS origin header for disallowed origin', async () => {
+      const mockRequest = new NextRequest('http://localhost:3000/api/health', {
+        method: 'OPTIONS',
+        headers: {
+          'Origin': 'http://malicious-site.com'
+        }
+      })
+      const response = await OPTIONS(mockRequest)
+
+      expect(response.status).toBe(200)
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull()
+      expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, OPTIONS')
     })
   })
 })

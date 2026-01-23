@@ -11,14 +11,21 @@
  * 4. Mocked persistence and storage
  */
 
-import { describe, test, expect, beforeAll, afterAll } from '@jest/globals'
+import { describe, test, expect, beforeAll, afterAll, beforeEach } from '@jest/globals'
+
+// Create a mock fetch factory that can be configured per test
+const createMockFetch = () => jest.fn();
 
 let mockFetch: jest.Mock;
 
 beforeAll(() => {
-  mockFetch = jest.fn();
-  global.fetch = mockFetch;
   console.log('🔧 Collaboration integration tests - using mocked APIs');
+});
+
+// Set up fetch mock before each test to override the global jest.setup.js mock
+beforeEach(() => {
+  mockFetch = createMockFetch();
+  global.fetch = mockFetch as unknown as typeof fetch;
 });
 
 afterAll(() => {

@@ -890,6 +890,94 @@ export const aiManagementQuerySchema = z.object({
   timeframe: z.enum(['1h', '24h', '7d', '30d']).optional()
 })
 
+// ============================================================================
+// Documentation Search Schemas
+// ============================================================================
+
+/** Documentation search query parameters */
+export const docsSearchQuerySchema = z.object({
+  q: z.string()
+    .min(1, 'Search query is required')
+    .max(500, 'Search query is too long')
+    .transform(val => val.trim()),
+  category: z.string().max(50).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10)
+})
+
+/** Documentation search POST body */
+export const docsSearchBodySchema = z.object({
+  query: z.string()
+    .min(1, 'Search query is required')
+    .max(500, 'Search query is too long'),
+  filters: z.object({
+    category: z.string().max(50).optional(),
+    tags: z.array(z.string().max(50)).max(10).optional(),
+    dateRange: z.object({
+      start: z.string().datetime().optional(),
+      end: z.string().datetime().optional()
+    }).optional()
+  }).optional(),
+  options: z.object({
+    limit: z.number().int().min(1).max(100).optional().default(10),
+    includeContent: z.boolean().optional().default(false),
+    highlightMatches: z.boolean().optional().default(true)
+  }).optional()
+})
+
+// ============================================================================
+// Template Submission Schemas
+// ============================================================================
+
+/** Template submission feature flags */
+const templateFeaturesSchema = z.object({
+  dockerSupport: z.boolean().optional().default(false),
+  kubernetesSupport: z.boolean().optional().default(false),
+  cicdTemplate: z.boolean().optional().default(false),
+  testingSetup: z.boolean().optional().default(false),
+  monitoringSetup: z.boolean().optional().default(false)
+}).optional()
+
+/** Template submission documentation */
+const templateDocumentationSchema = z.object({
+  setup: z.array(z.string().max(500)).max(20).optional().default([]),
+  usage: z.array(z.string().max(500)).max(20).optional().default([]),
+  deployment: z.array(z.string().max(500)).max(20).optional().default([])
+}).optional()
+
+/** Template environment variable schema */
+const templateEnvVarSchema = z.object({
+  name: z.string().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/, 'Environment variable name must be uppercase with underscores'),
+  defaultValue: z.string().max(200).optional(),
+  description: z.string().max(200).optional()
+})
+
+/** Template submission body schema */
+export const templateSubmissionSchema = z.object({
+  name: z.string()
+    .min(3, 'Template name must be at least 3 characters')
+    .max(100, 'Template name must not exceed 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Template name contains invalid characters'),
+  description: z.string()
+    .min(20, 'Template description must be at least 20 characters')
+    .max(1000, 'Template description must not exceed 1000 characters'),
+  category: z.enum(['frontend', 'fullstack', 'backend', 'mobile', 'desktop', 'library']),
+  language: z.string().min(1).max(50).default('typescript'),
+  framework: z.string().min(1).max(50).default('react'),
+  complexity: z.enum(['beginner', 'intermediate', 'advanced']),
+  tags: z.array(z.string().min(1).max(50)).max(20).optional().default([]),
+  dependencies: z.record(
+    z.string().regex(/^[@a-zA-Z0-9_\-/]+$/, 'Invalid dependency name'),
+    z.string().max(50)
+  ).optional().default({}),
+  scripts: z.record(
+    z.string().regex(/^[a-zA-Z0-9:_-]+$/, 'Invalid script name'),
+    z.string().max(500)
+  ).optional().default({}),
+  envVars: z.array(templateEnvVarSchema).max(50).optional().default([]),
+  documentation: templateDocumentationSchema,
+  features: templateFeaturesSchema
+})
+
 /** AI model selection */
 export const aiModelSelectionSchema = z.object({
   prompt: z.string().min(1).max(10_000), // 10KB limit

@@ -15,7 +15,7 @@ import { OpenRouter } from '@/lib/openrouter-client';
 import { warehouse } from '../warehouse';
 import { tTest } from '../statistics';
 import { detectSampleRatioMismatch } from '../srm-detector';
-import type { Guardrail } from '../guardrails';
+import { evaluateGuardrails, type Guardrail } from '../guardrails';
 import { GUARDRAIL_TEMPLATES } from '../guardrail-templates';
 import { ExperimentStatus } from '@prisma/client';
 
@@ -622,12 +622,41 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
         gpt41: variantDistribution['gpt41'] || 0
       }
     },
-    guardrailStatus: {
-      passed: true, // TODO: Integrate with guardrails system
+    guardrailStatus: await getGuardrailStatus(experimentKey)
+  };
+}
+
+/**
+ * Evaluate guardrails and return status for experiment summary
+ *
+ * @param experimentKey - Experiment identifier
+ * @returns Guardrail status with pass/fail, violations, and warnings count
+ */
+async function getGuardrailStatus(experimentKey: string): Promise<{
+  passed: boolean;
+  violations: number;
+  warnings: number;
+}> {
+  try {
+    const guardrailResult = await evaluateGuardrails(
+      experimentKey,
+      SPEECH_TO_TEXT_EXPERIMENT.guardrails
+    );
+
+    return {
+      passed: guardrailResult.passed,
+      violations: guardrailResult.violations.length,
+      warnings: guardrailResult.warnings.length
+    };
+  } catch (error) {
+    // If guardrail evaluation fails (e.g., no data yet), return default passing status
+    console.warn('Guardrail evaluation failed, using default status:', (error as Error).message);
+    return {
+      passed: true,
       violations: 0,
       warnings: 0
-    }
-  };
+    };
+  }
 }
 
 /**

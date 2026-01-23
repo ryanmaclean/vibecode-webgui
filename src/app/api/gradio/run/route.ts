@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { spawn } from 'child_process';
 import { promises as fs } from 'fs';
 import path from 'path';
 import crypto from 'crypto';
 import { z } from '@/lib/zod-compat';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 // import { logger } from '@/lib/logger';
+
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - expensive operations
 
 // Validation schema for security
 const gradioRunSchema = z.object({
@@ -16,7 +19,24 @@ const gradioRunSchema = z.object({
 // A simple in-memory store to keep track of running Gradio processes
 const runningProcesses: Map<string, any> = new Map();
 
-export async function POST(request: Request) {
+export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     // Validate request body
     let validatedData;
