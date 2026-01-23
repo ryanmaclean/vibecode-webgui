@@ -306,7 +306,7 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      };
     } else {
       // Old signature: (workspaceId, userId, title?)
       conversationData = {
@@ -318,7 +318,7 @@ export class ChatMongoDBService {
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      };
     }
 
     const result = await this.conversationsCollection.insertOne(conversationData);
@@ -741,9 +741,9 @@ export class ChatMongoDBService {
       content: message.content,
       timestamp: new Date(),
       metadata: message.files ? { files: message.files } : undefined
-    } as any;
+    };
 
-    const result = await this.messagesCollection.insertOne(messageDoc as any);
+    const result = await this.messagesCollection.insertOne(messageDoc);
 
     // Add message reference to conversation
     await this.conversationsCollection.updateOne(
@@ -926,7 +926,7 @@ export class ChatMongoDBService {
       updatedAt: new Date()
     };
 
-    const result = await this.assistantsCollection.insertOne(assistant as any);
+    const result = await this.assistantsCollection.insertOne(assistant);
     return {
       ...assistant,
       _id: result.insertedId,
