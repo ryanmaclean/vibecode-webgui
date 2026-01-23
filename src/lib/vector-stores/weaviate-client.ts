@@ -284,9 +284,9 @@ export class WeaviateClient {
         try {
           await this.client.data.deleter().withClassName('VectorChunk').withId(id).do();
           deletedCount++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Item might not exist, which is fine
-          if (error.statusCode !== 404) {
+          if ((error as any)?.statusCode !== 404) {
             throw error;
           }
         }
@@ -439,8 +439,8 @@ export class WeaviateClient {
         embedding: result.vector || [],
         metadata: JSON.parse(result.properties.metadata || '{}')
       };
-    } catch (error: any) {
-      if (error.statusCode === 404) {
+    } catch (error: unknown) {
+      if ((error as any)?.statusCode === 404) {
         return null; // Item not found
       }
 

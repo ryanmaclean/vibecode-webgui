@@ -102,11 +102,11 @@ export class LimaProvider implements VMProvider {
         stderr,
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
-        exitCode: error.code || 1,
-        stdout: error.stdout || '',
-        stderr: error.stderr || error.message,
+        exitCode: (error as any)?.code || 1,
+        stdout: (error as any)?.stdout || '',
+        stderr: (error as any)?.stderr || (error instanceof Error ? error.message : 'Unknown error'),
         duration: Date.now() - startTime
       };
     }

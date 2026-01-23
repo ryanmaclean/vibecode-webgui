@@ -108,15 +108,15 @@ export class LLMTracer {
       span.finish();
       return result;
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       const endTime = Date.now();
       const latency = endTime - startTime;
       
       span.setTag('llm.response.latency_ms', latency);
       span.setTag('llm.status', 'error');
       span.setTag('error', true);
-      span.setTag('error.message', error.message);
-      span.setTag('error.type', error.constructor.name);
+      span.setTag('error.message', error instanceof Error ? error.message : 'Unknown error');
+      span.setTag('error.type', error instanceof Error ? error.constructor.name : 'Unknown');
       
       span.finish();
       throw error;

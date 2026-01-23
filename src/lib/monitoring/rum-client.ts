@@ -166,7 +166,7 @@ class RUMMonitoring {
 
     try {
       datadogRum.addError(error, context);
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('[RUM] Failed to add error:', error);
     }
   }
