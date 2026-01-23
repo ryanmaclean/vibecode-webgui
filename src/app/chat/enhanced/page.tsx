@@ -13,6 +13,15 @@ export default function EnhancedChatPage() {
   const [workspaceId] = useState('enhanced-workspace-' + Math.random().toString(36).substr(2, 9))
   const [demoMode, setDemoMode] = useState<'chat' | 'functions' | 'rag' | 'web'>('chat')
 
+  // Type guard for demo mode values
+  type DemoMode = "chat" | "functions" | "rag" | "web";
+  const isValidDemoMode = (value: string): value is DemoMode => {
+    return ["chat", "functions", "rag", "web"].includes(value);
+  };
+  const handleDemoModeChange = (value: string) => {
+    if (isValidDemoMode(value)) setDemoMode(value);
+  };
+
   const createNewConversation = async () => {
     try {
       const response = await fetch('/api/chat/mongodb-simple', {
@@ -122,7 +131,7 @@ export default function EnhancedChatPage() {
             </div>
 
             {/* Demo Mode Selector */}
-            <Tabs value={demoMode} onValueChange={(value: string) => setDemoMode(value as "chat" | "functions" | "rag" | "web")} className="mb-4">
+            <Tabs value={demoMode} onValueChange={handleDemoModeChange} className="mb-4">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="chat" className="flex items-center space-x-1">
                   <MessageSquare className="w-4 h-4" />
