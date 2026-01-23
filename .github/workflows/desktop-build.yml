@@ -212,15 +212,16 @@ jobs:
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
           TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
           NEXT_CONFIG_FILE: next.config.tauri.js
+        working-directory: platforms/tauri
         run: |
           echo "Building Tauri app for ${{ matrix.platform }} (${{ matrix.arch }})..."
           echo "Target: ${{ matrix.target }}"
           if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
             # For macOS universal builds, use --target universal-apple-darwin
             # Tauri CLI handles building both architectures and combining with lipo
-            npm run tauri build -- --target universal-apple-darwin --verbose
+            npx tauri build --target universal-apple-darwin --verbose
           else
-            npm run tauri build -- --target ${{ matrix.target }} --verbose
+            npx tauri build --target ${{ matrix.target }} --verbose
           fi
         shell: bash
 
