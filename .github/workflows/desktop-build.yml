@@ -411,16 +411,23 @@ jobs:
               [ -f "$file" ] && shasum -a 256 "$file" > "$file.sha256"
             done
           elif [ "${{ matrix.platform }}" = "linux" ]; then
-            # Generate checksums for each package type separately to avoid glob errors
-            for file in deb/*.deb; do
-              [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
-            done
-            for file in appimage/*.AppImage; do
-              [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
-            done
-            for file in rpm/*.rpm; do
-              [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
-            done
+            # Generate checksums for each package type separately
+            # Only process directories that exist (ARM64 cross-compile only builds deb)
+            if [ -d "deb" ]; then
+              for file in deb/*.deb; do
+                [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
+              done
+            fi
+            if [ -d "appimage" ]; then
+              for file in appimage/*.AppImage; do
+                [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
+              done
+            fi
+            if [ -d "rpm" ]; then
+              for file in rpm/*.rpm; do
+                [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
+              done
+            fi
           elif [ "${{ matrix.platform }}" = "windows" ]; then
             for file in msi/*.msi nsis/*.exe; do
               [ -f "$file" ] && certutil -hashfile "$file" SHA256 > "$file.sha256"
