@@ -128,8 +128,10 @@ jobs:
       # macOS-specific dependencies
       - name: Install macOS dependencies
         if: matrix.platform == 'macos'
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
-          brew install --quiet --no-auto-update \
+          brew install --quiet \
             pkg-config \
             openssl@3
 
