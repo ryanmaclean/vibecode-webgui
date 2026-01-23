@@ -58,6 +58,9 @@ jobs:
         working-directory: platforms/tauri
         run: cargo test --verbose
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0.0"
+
       - name: Test Tauri build (debug mode)
         working-directory: platforms/tauri
         run: |
