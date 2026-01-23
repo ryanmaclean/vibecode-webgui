@@ -1,6 +1,30 @@
 import { datadogRum } from '@datadog/browser-rum';
 import { getRUMPublicConfig } from './datadog-env'
 // import { logger } from '@/lib/logger';
+
+// Web Vitals performance entry interfaces
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  element?: Element;
+}
+
+interface PerformanceEventTimingEntry extends PerformanceEntry {
+  processingStart: number;
+}
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+}
+
+// Extended Performance interface for memory info (Chrome-specific)
+interface PerformanceWithMemory extends Performance {
+  memory?: {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  };
+}
+
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
 interface RUMConfig {
@@ -117,7 +141,7 @@ class RUMMonitoring {
   /**
    * Set user information for RUM tracking
    */
-  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: any }) {
+  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: unknown }) {
     if (!this.initialized) return;
 
     try {
@@ -135,7 +159,7 @@ class RUMMonitoring {
   /**
    * Add custom attribute to RUM
    */
-  static addAttribute(key: string, value: any) {
+  static addAttribute(key: string, value: unknown) {
     if (!this.initialized) return;
 
     try {
@@ -148,7 +172,7 @@ class RUMMonitoring {
   /**
    * Track custom action
    */
-  static addAction(name: string, context?: Record<string, any>) {
+  static addAction(name: string, context?: Record<string, unknown>) {
     if (!this.initialized) return;
 
     try {
@@ -161,20 +185,20 @@ class RUMMonitoring {
   /**
    * Track custom error
    */
-  static addError(error: Error | string, context?: Record<string, any>) {
+  static addError(error: Error | string, context?: Record<string, unknown>) {
     if (!this.initialized) return;
 
     try {
       datadogRum.addError(error, context);
-    } catch (error: any) {
-      console.error('[RUM] Failed to add error:', error);
+    } catch (catchError: unknown) {
+      console.error('[RUM] Failed to add error:', catchError);
     }
   }
 
   /**
    * Track feature flag usage
    */
-  static addFeatureFlag(key: string, value: any) {
+  static addFeatureFlag(key: string, value: unknown) {
     if (!this.initialized) return;
 
     try {
@@ -224,7 +248,7 @@ class RUMMonitoring {
   /**
    * Track business metrics and conversions
    */
-  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, any>) {
+  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, unknown>) {
     this.addAction(`business.${metric}`, {
       value,
       ...attributes,
@@ -236,7 +260,7 @@ class RUMMonitoring {
   /**
    * Track workspace interactions
    */
-  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, any>) {
+  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, unknown>) {
     this.addAction(`workspace.${action}`, {
       workspaceId,
       ...metadata,
@@ -248,7 +272,7 @@ class RUMMonitoring {
   /**
    * Track authentication events
    */
-  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) {
+  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, unknown>) {
     this.addAction(`auth.${event}`, {
       ...context,
       timestamp: Date.now(),
@@ -298,7 +322,7 @@ class RUMMonitoring {
   /**
    * Track user journey and flows
    */
-  static trackUserJourney(step: string, flow: string, metadata?: Record<string, any>) {
+  static trackUserJourney(step: string, flow: string, metadata?: Record<string, unknown>) {
     this.addAction(`journey.${flow}.${step}`, {
       flow,
       step,
@@ -336,7 +360,7 @@ class RUMMonitoring {
     userId?: string;
     workspaceId?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
-    metadata?: Record<string, any>;
+    metadata?: Record<string, unknown>;
   }) {
     const errorContext = {
       ...context,
@@ -374,7 +398,8 @@ class RUMMonitoring {
           this.trackPerformance({ largestContentfulPaint: lcpValue });
 
           // Add context
-          this.addAttribute('performance.lcp.element', (lastEntry as any).element?.tagName || 'unknown');
+          const lcpEntry = lastEntry as LargestContentfulPaintEntry;
+          this.addAttribute('performance.lcp.element', lcpEntry.element?.tagName || 'unknown');
         }
       });
 
@@ -388,7 +413,8 @@ class RUMMonitoring {
     try {
       const fidObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
-          const fidValue = (entry as any).processingStart - entry.startTime;
+          const fidEntry = entry as PerformanceEventTimingEntry;
+          const fidValue = fidEntry.processingStart - entry.startTime;
           console.info('[RUM] FID measured:', fidValue.toFixed(2), 'ms');
 
           // Send to Datadog using addTiming
@@ -410,9 +436,10 @@ class RUMMonitoring {
     try {
       const clsObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
+          const layoutShiftEntry = entry as LayoutShiftEntry;
           // Only count layout shifts without recent user input
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          if (!layoutShiftEntry.hadRecentInput) {
+            clsValue += layoutShiftEntry.value;
           }
         });
       });

@@ -39,8 +39,8 @@ interface ValKeyLogContext {
   connectionId?: string;
   operationType?: ValKeyOperationType;
   cacheHit?: boolean;
-  serverInfo?: Record<string, any>;
-  metadata?: Record<string, any>;
+  serverInfo?: Record<string, unknown>;
+  metadata?: Record<string, unknown>;
   environment?: string;
   service?: string;
   component?: string;
@@ -96,31 +96,31 @@ export class ValKeyLogger {
    */
   debug(message: string, context?: ValKeyLogContext): void {
     if (!this.detailedLogging) return;
-    
-    this.log(ValKeyLogLevel.DEBUG, message, context as any);
+
+    this.log(ValKeyLogLevel.DEBUG, message, context);
   }
-  
+
   /**
    * Log at INFO level
    */
   info(message: string, context?: ValKeyLogContext): void {
-    this.log(ValKeyLogLevel.INFO, message, context as any);
+    this.log(ValKeyLogLevel.INFO, message, context);
   }
-  
+
   /**
    * Log at WARN level
    */
   warn(message: string, context?: ValKeyLogContext): void {
-    this.log(ValKeyLogLevel.WARN, message, context as any);
+    this.log(ValKeyLogLevel.WARN, message, context);
   }
-  
+
   /**
    * Log at ERROR level
    */
   error(message: string, context?: ValKeyLogContext): void {
     if (!this.logErrors) return;
-    
-    this.log(ValKeyLogLevel.ERROR, message, context as any);
+
+    this.log(ValKeyLogLevel.ERROR, message, context);
   }
   
   /**
@@ -206,20 +206,21 @@ export class ValKeyLogger {
    * Base log method
    */
   private log(level: ValKeyLogLevel, message: string, context?: ValKeyLogContext): void {
-    // Create log context
-    const logContext = {
+    // Create log context with proper typing
+    const logContext: ValKeyLogContext & { cache_type: string } = {
       cache_type: 'valkey',
       component: this.component,
       service: this.serviceName,
       environment: this.environment,
+      command: context?.command ?? '',
       ...(context || {})
-    } as any;
-    
+    };
+
     // Add default operation type if not specified
     if (context?.command && !context?.operationType) {
       logContext.operationType = this.determineOperationType(context.command);
     }
-    
+
     // Sanitize keys for logging if present
     if (logContext.key && typeof logContext.key === 'string' && logContext.key.length > 100) {
       logContext.key = `${logContext.key.substring(0, 97)}...`;

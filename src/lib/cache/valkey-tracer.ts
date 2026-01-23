@@ -6,10 +6,16 @@
 import tracer from 'dd-trace';
 // import { logger } from '../server-monitoring';
 
+// Interface for dd-trace Span (simplified for our usage)
+interface TracerSpan {
+  setTag(key: string, value: string | number | boolean | undefined): void;
+  finish(): void;
+}
+
 // Interface for the ValKey operation details
 interface ValKeyOperation {
   command: string;
-  args?: any[];
+  args?: unknown[];
   key?: string;
   keys?: string[];
   startTime: number;
@@ -20,12 +26,17 @@ interface ValKeyOperation {
   source: string;
 }
 
+// Extended operation with optional span for tracing
+interface TracedValKeyOperation extends ValKeyOperation {
+  span?: TracerSpan;
+}
+
 /**
  * ValKey/Redis operation tracer
  * Wraps Redis/ValKey commands in Datadog APM traces
  */
 class ValKeyTracer {
-  private operations: Map<string, ValKeyOperation> = new Map();
+  private operations: Map<string, TracedValKeyOperation> = new Map();
   private readonly enabled: boolean;
   private readonly tracingEnabled: boolean;
 
@@ -41,7 +52,7 @@ class ValKeyTracer {
   /**
    * Start tracking an operation
    */
-  startOperation(command: string, args: any[] = [], source: string): string {
+  startOperation(command: string, args: unknown[] = [], source: string): string {
     if (!this.enabled) return '';
     
     const operationId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
@@ -56,12 +67,12 @@ class ValKeyTracer {
     } else if (['mget', 'mset'].includes(command.toLowerCase())) {
       if (Array.isArray(args[0])) {
         keys.push(...args[0].map(String));
-      } else if (typeof args[0] === 'object') {
-        keys.push(...Object.keys(args[0]));
+      } else if (typeof args[0] === 'object' && args[0] !== null) {
+        keys.push(...Object.keys(args[0] as Record<string, unknown>));
       }
     }
     
-    this.operations.set(operationId, {
+    const operation: TracedValKeyOperation = {
       command,
       args,
       key,
@@ -69,11 +80,13 @@ class ValKeyTracer {
       startTime: Date.now(),
       status: 'pending',
       source
-    });
+    };
+    
+    this.operations.set(operationId, operation);
     
     // Start Datadog span if tracing is enabled
     if (this.tracingEnabled) {
-      const span = tracer.startSpan('valkey.operation');
+      const span = tracer.startSpan('valkey.operation') as TracerSpan;
       span.setTag('valkey.command', command);
       span.setTag('valkey.source', source);
       
@@ -86,7 +99,7 @@ class ValKeyTracer {
       }
       
       // Store span in operation
-      (this.operations.get(operationId) as any).span = span;
+      operation.span = span;
     }
     
     return operationId;
@@ -95,7 +108,7 @@ class ValKeyTracer {
   /**
    * Complete an operation with success
    */
-  endOperation(operationId: string, result?: any): void {
+  endOperation(operationId: string, result?: unknown): void {
     if (!this.enabled || !operationId) return;
     
     const operation = this.operations.get(operationId);
@@ -118,8 +131,8 @@ class ValKeyTracer {
     }
     
     // Finish Datadog span if tracing is enabled
-    if (this.tracingEnabled && (operation as any).span) {
-      const span = (operation as any).span;
+    if (this.tracingEnabled && operation.span) {
+      const span = operation.span;
       span.setTag('valkey.duration', operation.duration);
       span.setTag('valkey.status', 'success');
       
@@ -161,8 +174,8 @@ class ValKeyTracer {
     });
     
     // Finish Datadog span if tracing is enabled
-    if (this.tracingEnabled && (operation as any).span) {
-      const span = (operation as any).span;
+    if (this.tracingEnabled && operation.span) {
+      const span = operation.span;
       span.setTag('valkey.duration', operation.duration);
       span.setTag('valkey.status', 'error');
       span.setTag('error', true);
@@ -187,7 +200,7 @@ class ValKeyTracer {
    */
   async traceCommand<T>(
     command: string, 
-    args: any[] = [], 
+    args: unknown[] = [], 
     source: string,
     executor: () => Promise<T>
   ): Promise<T> {
