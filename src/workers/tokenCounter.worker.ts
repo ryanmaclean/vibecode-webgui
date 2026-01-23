@@ -40,7 +40,7 @@ self.onmessage = (e: globalThis.MessageEvent<TokenCountRequest>) => {
         cachedEncoding.free()
       }
 
-      cachedEncoding = encoding_for_model(model as any)
+      cachedEncoding = encoding_for_model(model as Parameters<typeof encoding_for_model>[0])
       cachedModel = model
     }
 

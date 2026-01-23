@@ -472,7 +472,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       return { content, metadata }
 
     } catch (error) {
-      if ((error as any).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error('File not found')
       }
       throw new Error('Failed to read file')
@@ -621,7 +621,7 @@ export class SecureFileSystemOperations extends EventEmitter {
       return files.sort((a, b) => a.path.localeCompare(b.path))
 
     } catch (error) {
-      if ((error as any).code === 'ENOENT') {
+      if ((error as NodeJS.ErrnoException).code === 'ENOENT') {
         throw new Error('Directory not found')
       }
       throw new Error('Failed to list directory')
@@ -762,7 +762,7 @@ export class SecureFileSystemOperations extends EventEmitter {
   /**
    * Check for file conflicts
    */
-  async checkForConflicts(filePath: string, expectedMetadata: FileMetadata): Promise<{ hasConflict: boolean; details?: any }> {
+  async checkForConflicts(filePath: string, expectedMetadata: FileMetadata): Promise<{ hasConflict: boolean; details?: Record<string, unknown> }> {
     const currentMetadata = await this.getFileMetadata(filePath)
     
     if (!currentMetadata) {
