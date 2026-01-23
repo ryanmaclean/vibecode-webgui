@@ -106,10 +106,10 @@ export async function GET(request: NextRequest) {
     import('@/lib/db/pool-adapter'),
     import('@/lib/api/validation/middleware'),
   ]);
-  const { createRobustConnection, getConnectionPoolStatus } = dbMod as any;
-  const { getDatabaseMetricsCollector } = metricsMod as any;
-  const { adaptPoolStatus } = poolMod as any;
-  const { validateQueryParams } = validationMod as any;
+  const { createRobustConnection, getConnectionPoolStatus } = dbMod;
+  const { getDatabaseMetricsCollector } = metricsMod;
+  const { adaptPoolStatus } = poolMod;
+  const { validateQueryParams } = validationMod;
 
   // Validate query parameters
   const { healthCheckQuerySchema } = await import('@/lib/api/validation/schemas');
@@ -201,7 +201,7 @@ export async function GET(request: NextRequest) {
           WHERE datname = current_database()
         `;
         
-        const rawStats = (statsResult as any[])[0];
+        const rawStats = (statsResult as Record<string, unknown>[])[0];
         dbStats = {
           active_connections: Number(rawStats.active_connections),
           transactions_committed: Number(rawStats.transactions_committed),
@@ -231,11 +231,11 @@ export async function GET(request: NextRequest) {
           FROM document_embeddings
         `;
         
-        const rawStats = (embedResult as any[])[0];
+        const rawStats = (embedResult as Record<string, unknown>[])[0];
         embeddingsStats = {
           total_embeddings: Number(rawStats.total_embeddings),
           avg_content_size: rawStats.avg_content_size != null ? Number(rawStats.avg_content_size) : undefined,
-          latest_embedding: rawStats.latest_embedding
+          latest_embedding: rawStats.latest_embedding as Date | undefined
         };
       } catch (embedError) {
         // This could happen if table doesn't exist yet, which is ok

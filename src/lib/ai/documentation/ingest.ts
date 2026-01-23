@@ -1,6 +1,7 @@
-import { ChromaClient } from 'chromadb';
+import { ChromaClient, type Collection, type Metadata } from 'chromadb';
 import { Document } from '@langchain/core/documents';
 import { OpenAIEmbeddings } from '@langchain/openai';
+
 // Simple text splitter implementation
 class SimpleTextSplitter {
   private chunkSize: number;
@@ -39,7 +40,11 @@ export class DocumentationIngester {
     this.splitter = textSplitter;
   }
 
-  async ingestDocumentation(source: string, content: string, metadata: Record<string, any> = {}) {
+  async ingestDocumentation(
+    source: string, 
+    content: string, 
+    metadata: Record<string, string | number | boolean> = {}
+  ): Promise<void> {
     // Split document into chunks
     const chunks = this.splitter.splitText(content);
     const docs = chunks.map((chunk, i) => new Document({
@@ -58,17 +63,40 @@ export class DocumentationIngester {
     );
 
     // Store in vector database via collection
-    const collection = await this.chroma.getOrCreateCollection({ name: 'documentation' } as any);
+    const collection: Collection = await this.chroma.getOrCreateCollection({ 
+      name: 'documentation' 
+    });
+    
+    // Prepare payload with properly typed metadata
+    const metadatas: Metadata[] = docs.map(doc => {
+      const meta: Metadata = {
+        source: String(doc.metadata.source),
+        chunkIndex: Number(doc.metadata.chunkIndex),
+        timestamp: String(doc.metadata.timestamp),
+      };
+      // Copy additional metadata fields (only primitive types)
+      for (const [key, value] of Object.entries(doc.metadata)) {
+        if (![source, 'chunkIndex', 'timestamp'].includes(key)) {
+          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+            meta[key] = value;
+          }
+        }
+      }
+      return meta;
+    });
+
     const payload = {
       ids: docs.map((_, i) => `${source}-${i}`),
       embeddings,
-      metadatas: docs.map(doc => doc.metadata as any),
+      metadatas,
       documents: docs.map(doc => doc.pageContent),
-    } as any;
-    if (typeof (collection as any).upsert === 'function') {
-      await (collection as any).upsert(payload);
+    };
+
+    // Use upsert if available, otherwise fall back to add
+    if (typeof collection.upsert === 'function') {
+      await collection.upsert(payload);
     } else {
-      await (collection as any).add(payload);
+      await collection.add(payload);
     }
   }
 }

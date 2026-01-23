@@ -186,6 +186,31 @@ export const SPEECH_TO_TEXT_EXPERIMENT: SpeechToTextExperiment = {
   ]
 };
 
+
+/**
+ * Interface for warehouse metric records
+ */
+interface WarehouseMetric {
+  id: string;
+  experiment_id: string;
+  user_id: string;
+  variant_key: string;
+  metric_name: string;
+  value: number;
+  timestamp: Date;
+}
+
+/**
+ * Interface for warehouse assignment records
+ */
+interface WarehouseAssignment {
+  id: string;
+  experiment_id: string;
+  user_id: string;
+  variant_key: string;
+  timestamp: Date;
+}
+
 // ==================== CORE EXPERIMENT FUNCTIONS ====================
 
 /**
@@ -491,10 +516,10 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   // Calculate statistical significance for latency
   const latencyMetrics = await warehouse.getMetrics(experimentKey, 'latency_ms');
   const gpt4LatencyValues = latencyMetrics
-    .filter(m => (m as any).variant_key === 'gpt4')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41LatencyValues = latencyMetrics
-    .filter(m => (m as any).variant_key === 'gpt41')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
     .map(m => m.value);
 
   const latencyTest = tTest(gpt4LatencyValues, gpt41LatencyValues);
@@ -505,10 +530,10 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   // Calculate statistical significance for cost
   const costMetrics = await warehouse.getMetrics(experimentKey, 'cost_per_request');
   const gpt4CostValues = costMetrics
-    .filter(m => (m as any).variant_key === 'gpt4')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41CostValues = costMetrics
-    .filter(m => (m as any).variant_key === 'gpt41')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
     .map(m => m.value);
 
   const costTest = tTest(gpt4CostValues, gpt41CostValues);
@@ -519,10 +544,10 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   // Calculate statistical significance for accuracy
   const accuracyMetrics = await warehouse.getMetrics(experimentKey, 'word_error_rate');
   const gpt4AccuracyValues = accuracyMetrics
-    .filter(m => (m as any).variant_key === 'gpt4')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41AccuracyValues = accuracyMetrics
-    .filter(m => (m as any).variant_key === 'gpt41')
+    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
     .map(m => m.value);
 
   const accuracyTest = tTest(gpt4AccuracyValues, gpt41AccuracyValues);
@@ -533,7 +558,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   // Check for Sample Ratio Mismatch
   // Convert assignments array to counts object
   const assignmentCounts = assignments.reduce((acc, a) => {
-    const variantKey = (a as any).variant_key;
+    const variantKey = (a as WarehouseAssignment).variant_key;
     acc[variantKey] = (acc[variantKey] || 0) + 1;
     return acc;
   }, {} as Record<string, number>);

@@ -3,13 +3,92 @@
  * Parse and validate YAML workflow definitions
  */
 
-import type { WorkflowDefinition, WorkflowNode, WorkflowEdge, NodeConfig } from './types';
+import type { 
+  WorkflowDefinition, 
+  WorkflowNode, 
+  WorkflowEdge, 
+  NodeConfig, 
+  NodeType,
+  SchemaDefinition,
+  RetryPolicy
+} from './types';
+
+/**
+ * Interface for parsed YAML workflow data
+ */
+interface ParsedWorkflowData {
+  name?: string;
+  version?: string;
+  description?: string;
+  author?: string;
+  tags?: string[];
+  nodes?: ParsedNode[];
+  edges?: ParsedEdge[];
+  config?: Record<string, unknown>;
+  inputs?: Record<string, SchemaDefinition>;
+  outputs?: Record<string, SchemaDefinition>;
+}
+
+/**
+ * Interface for parsed node from YAML
+ */
+interface ParsedNode {
+  id?: string;
+  type?: string;
+  name?: string;
+  description?: string;
+  config?: NodeConfig;
+  retry?: RetryPolicy;
+  timeout?: number;
+  continueOnError?: boolean;
+  position?: { x: number; y: number };
+}
+
+/**
+ * Interface for parsed edge from YAML
+ */
+interface ParsedEdge {
+  id?: string;
+  source?: string;
+  target?: string;
+  condition?: string;
+  label?: string;
+}
+
+/**
+ * Valid node types for validation
+ */
+const VALID_NODE_TYPES: NodeType[] = [
+  'agent-task', 'condition', 'parallel', 'merge', 
+  'loop', 'transform', 'delay', 'webhook'
+];
+
+/**
+ * Type guard to check if a string is a valid NodeType
+ */
+function isValidNodeType(type: string): type is NodeType {
+  return VALID_NODE_TYPES.includes(type as NodeType);
+}
+
+/**
+ * Type guard to check if parsed data is a valid workflow structure
+ */
+function isValidWorkflowData(data: unknown): data is ParsedWorkflowData {
+  return typeof data === 'object' && data !== null;
+}
+
+/**
+ * Type-safe accessor for node config properties
+ */
+function getConfigProperty<T>(config: NodeConfig, key: string): T | undefined {
+  return (config as Record<string, unknown>)[key] as T | undefined;
+}
 
 /**
  * Parse YAML workflow definition
  */
 export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDefinition> {
-  let parsed: any;
+  let parsed: unknown;
 
   try {
     // Dynamic import for YAML parsing (Next.js compatible)
@@ -17,6 +96,11 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
     parsed = yaml.load(yamlContent);
   } catch (error) {
     throw new Error(`Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`);
+  }
+
+  // Validate that parsed data is an object
+  if (!isValidWorkflowData(parsed)) {
+    throw new Error('Invalid YAML: expected an object');
   }
 
   // Validate required fields
@@ -33,13 +117,17 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
   }
 
   // Parse nodes
-  const nodes: WorkflowNode[] = parsed.nodes.map((node: any, index: number) => {
+  const nodes: WorkflowNode[] = parsed.nodes.map((node: ParsedNode, index: number) => {
     if (!node.id) {
       throw new Error(`Node at index ${index} missing id`);
     }
 
     if (!node.type) {
       throw new Error(`Node ${node.id} missing type`);
+    }
+
+    if (!isValidNodeType(node.type)) {
+      throw new Error(`Node ${node.id} has invalid type: ${node.type}`);
     }
 
     if (!node.config) {
@@ -51,7 +139,7 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
       type: node.type,
       name: node.name || node.id,
       description: node.description,
-      config: node.config as NodeConfig,
+      config: node.config,
       retry: node.retry,
       timeout: node.timeout,
       continueOnError: node.continueOnError || false,
@@ -60,7 +148,7 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
   });
 
   // Parse edges
-  const edges: WorkflowEdge[] = (parsed.edges || []).map((edge: any, index: number) => {
+  const edges: WorkflowEdge[] = (parsed.edges || []).map((edge: ParsedEdge, index: number) => {
     if (!edge.source) {
       throw new Error(`Edge at index ${index} missing source`);
     }
@@ -125,46 +213,46 @@ export function validateWorkflowDefinition(definition: WorkflowDefinition): stri
     // Validate node config based on type
     switch (node.type) {
       case 'agent-task':
-        if (!(node.config as any).agentType) {
+        if (!getConfigProperty<string>(node.config, 'agentType')) {
           errors.push(`Node ${node.id}: agent-task requires agentType`);
         }
-        if (!(node.config as any).task) {
+        if (!getConfigProperty<string>(node.config, 'task')) {
           errors.push(`Node ${node.id}: agent-task requires task`);
         }
-        if (!(node.config as any).model) {
+        if (!getConfigProperty<string>(node.config, 'model')) {
           errors.push(`Node ${node.id}: agent-task requires model`);
         }
         break;
 
       case 'condition':
-        if (!(node.config as any).expression) {
+        if (!getConfigProperty<string>(node.config, 'expression')) {
           errors.push(`Node ${node.id}: condition requires expression`);
         }
         break;
 
       case 'loop':
-        if (!(node.config as any).items) {
+        if (!getConfigProperty<unknown>(node.config, 'items')) {
           errors.push(`Node ${node.id}: loop requires items`);
         }
         break;
 
       case 'transform':
-        if (!(node.config as any).transform) {
+        if (!getConfigProperty<string>(node.config, 'transform')) {
           errors.push(`Node ${node.id}: transform requires transform function`);
         }
         break;
 
       case 'delay':
-        if (!(node.config as any).duration && !(node.config as any).durationExpression) {
+        if (!getConfigProperty<number>(node.config, 'duration') && !getConfigProperty<string>(node.config, 'durationExpression')) {
           errors.push(`Node ${node.id}: delay requires duration or durationExpression`);
         }
         break;
 
       case 'webhook':
-        if (!(node.config as any).url) {
+        if (!getConfigProperty<string>(node.config, 'url')) {
           errors.push(`Node ${node.id}: webhook requires url`);
         }
-        if (!(node.config as any).method) {
+        if (!getConfigProperty<string>(node.config, 'method')) {
           errors.push(`Node ${node.id}: webhook requires method`);
         }
         break;
