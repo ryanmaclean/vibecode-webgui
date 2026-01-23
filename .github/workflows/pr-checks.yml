@@ -168,7 +168,7 @@ jobs:
           npm test 2>&1 | tee test-output.txt
           echo "status=$?" >> $GITHUB_OUTPUT
         env:
-          DD_CI_VISIBILITY_ENABLED: true
+          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
           DD_ENV: ${{ env.DD_ENV }}
@@ -180,7 +180,7 @@ jobs:
           DD_VERSION: ${{ github.sha }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
-          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+          DD_CI_VISIBILITY_AGENTLESS_ENABLED: true
           NODE_OPTIONS: -r dd-trace/ci/init
           REDIS_URL: redis://localhost:6379
           CI: true
