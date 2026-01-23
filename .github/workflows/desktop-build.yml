@@ -198,6 +198,54 @@ jobs:
           echo "Tauri configuration validated successfully"
         shell: bash
 
+      # Create sidecar binaries for Tauri bundler
+      # The vibecode-vm binary uses macOS Virtualization.framework and is optional
+      # For non-macOS platforms, we create stubs. The actual binary is only for macOS ARM64.
+      - name: Setup sidecar binaries
+        run: |
+          mkdir -p platforms/tauri/binaries
+
+          # Determine the expected sidecar name based on target
+          TARGET="${{ matrix.target }}"
+
+          # For macOS universal builds, we need both architectures
+          if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
+            # Check if real binary exists for ARM64
+            if [ -f "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin" ]; then
+              echo "Using existing ARM64 binary"
+            else
+              echo "Creating stub ARM64 binary"
+              echo '#!/bin/sh\necho "VM not available"' > "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
+              chmod +x "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
+            fi
+            # Create x86_64 stub (VM only works on ARM64 with Virtualization.framework)
+            echo '#!/bin/sh
+echo "VM not available on Intel Macs"
+exit 1' > "platforms/tauri/binaries/vibecode-vm-x86_64-apple-darwin"
+            chmod +x "platforms/tauri/binaries/vibecode-vm-x86_64-apple-darwin"
+          else
+            # For other platforms, create a stub with the correct target name
+            SIDECAR_NAME="vibecode-vm-${TARGET}"
+            echo "Creating stub sidecar: ${SIDECAR_NAME}"
+
+            if [ "${{ matrix.platform }}" = "windows" ]; then
+              # Windows needs .exe extension and batch file
+              echo '@echo off
+echo VM not available on Windows
+exit /b 1' > "platforms/tauri/binaries/${SIDECAR_NAME}.exe"
+            else
+              # Linux/Unix stub script
+              echo '#!/bin/sh
+echo "VM not available on this platform"
+exit 1' > "platforms/tauri/binaries/${SIDECAR_NAME}"
+              chmod +x "platforms/tauri/binaries/${SIDECAR_NAME}"
+            fi
+          fi
+
+          echo "Sidecar binaries prepared:"
+          ls -la platforms/tauri/binaries/
+        shell: bash
+
       - name: Install frontend dependencies
         run: npm ci --legacy-peer-deps
 
@@ -205,6 +253,9 @@ jobs:
         env:
           NEXT_CONFIG_FILE: next.config.tauri.js
         run: |
+          echo "Generating Prisma client..."
+          npx prisma generate
+
           echo "Building Next.js frontend for Tauri..."
           npm run build:tauri || npm run build
 
