@@ -138,20 +138,23 @@ describe('ExperimentWarehouse', () => {
 
   describe('getAssignments', () => {
     it('should retrieve assignments for an experiment', async () => {
+      const timestamp = new Date()
       const mockAssignments = [
         {
           id: 'a1',
-          experiment_id: 'exp1',
-          user_id: 'user1',
-          variant_key: 'control',
-          timestamp: new Date()
+          experimentId: 'exp1',
+          userId: 'user1',
+          variantKey: 'control',
+          assignedAt: timestamp,
+          metadata: null
         },
         {
           id: 'a2',
-          experiment_id: 'exp1',
-          user_id: 'user2',
-          variant_key: 'treatment',
-          timestamp: new Date()
+          experimentId: 'exp1',
+          userId: 'user2',
+          variantKey: 'treatment',
+          assignedAt: timestamp,
+          metadata: null
         }
       ]
 
@@ -163,12 +166,16 @@ describe('ExperimentWarehouse', () => {
 
       const assignments = await warehouse.getAssignments('test_experiment')
 
-      expect(assignments).toEqual(mockAssignments)
+      // The warehouse maps assignments to include both camelCase and snake_case
+      expect(assignments).toHaveLength(2)
+      expect(assignments[0].id).toBe('a1')
+      expect(assignments[0].userId).toBe('user1')
+      expect(assignments[0].variantKey).toBe('control')
       expect(mockPrisma.experiment.findUnique).toHaveBeenCalledWith({
         where: { key: 'test_experiment' },
         include: {
           assignments: {
-            orderBy: { timestamp: 'desc' }
+            orderBy: { assignedAt: 'desc' }
           }
         }
       })

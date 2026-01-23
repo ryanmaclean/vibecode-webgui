@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 import {
   LineChart,
   Line,
@@ -44,7 +44,7 @@ interface PerformanceGraphWidgetProps {
   className?: string
 }
 
-export function PerformanceGraphWidget({
+function PerformanceGraphWidgetInner({
   timeRange = '1h',
   refreshInterval = 60000,
   className = ''
@@ -54,30 +54,44 @@ export function PerformanceGraphWidget({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    async function fetchData() {
-      try {
-        const res = await fetch(`/api/dashboard/performance?range=${timeRange}`)
+  // Memoized fetch function
+  const fetchData = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/dashboard/performance?range=${timeRange}`)
 
-        if (!res.ok) {
-          throw new Error(`API returned ${res.status}: ${res.statusText}`)
-        }
-
-        const json = await res.json()
-        setData(json)
-        setLastUpdate(new Date())
-        setError(null)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch performance data')
-      } finally {
-        setLoading(false)
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`)
       }
-    }
 
+      const json = await res.json()
+      setData(json)
+      setLastUpdate(new Date())
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch performance data')
+    } finally {
+      setLoading(false)
+    }
+  }, [timeRange])
+
+  useEffect(() => {
     fetchData()
     const interval = setInterval(fetchData, refreshInterval)
     return () => clearInterval(interval)
-  }, [timeRange, refreshInterval])
+  }, [fetchData, refreshInterval])
+
+  // Memoize chart data transformation - must be before early returns to follow React hooks rules
+  const chartData = useMemo(() => {
+    if (!data) return []
+    return data.dataPoints.map(point => ({
+      time: new Date(point.timestamp).toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit'
+      }),
+      latency: point.latency,
+      requests: point.requests
+    }))
+  }, [data])
 
   if (loading) {
     return (
@@ -107,16 +121,6 @@ export function PerformanceGraphWidget({
   if (!data) {
     return null
   }
-
-  // Format data points for chart
-  const chartData = data.dataPoints.map(point => ({
-    time: new Date(point.timestamp).toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit'
-    }),
-    latency: point.latency,
-    requests: point.requests
-  }))
 
   return (
     <div className={`bg-white rounded-lg shadow border ${className}`}>
@@ -214,3 +218,5 @@ export function PerformanceGraphWidget({
     </div>
   )
 }
+
+export const PerformanceGraphWidget = memo(PerformanceGraphWidgetInner)

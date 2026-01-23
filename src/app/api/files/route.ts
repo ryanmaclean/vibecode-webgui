@@ -11,7 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig } from '@/lib/file-system-operations'
-import { createFileRateLimit } from '@/lib/rate-limiting'
+import { createFileRateLimit, createAPIRateLimit } from '@/lib/rate-limiting'
 import {
   validateQueryParams,
   validateRequestBody
@@ -22,11 +22,13 @@ import {
   fileUpdateSchema,
   fileDeleteSchema
 } from '@/lib/api/validation/schemas'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 const fileRateLimiter = createFileRateLimit()
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute
 type FileRateLimitResult = Awaited<ReturnType<typeof fileRateLimiter>>
 
 function applyFileRateLimitHeaders(response: NextResponse, info: FileRateLimitResult): NextResponse {
@@ -71,6 +73,23 @@ function withFileRateLimit(
 
 async function handleGET(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {
@@ -180,6 +199,23 @@ async function handleGET(request: NextRequest) {
 
 async function handlePOST(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {
@@ -438,30 +474,47 @@ export const POST = withFileRateLimit(handlePOST)
 export const PUT = withFileRateLimit(handlePUT)
 export const DELETE = withFileRateLimit(handleDELETE)
 
-export async function OPTIONS(_request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  return ['https://vibecode.dev', 'http://localhost:3000', 'http://localhost:8080']
+}
+
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null
+  const allowedOrigins = getAllowedOrigins()
+  if (allowedOrigins.includes(requestOrigin)) return requestOrigin
+  return null
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+  return new NextResponse(null, { status: 200, headers })
 }
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation
-  // This should check database for user permissions to workspace
-
-  // For now, basic validation
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
-  // Validate format
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -470,13 +523,24 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  // TODO: Add database query to check user_workspaces table
-  // Example:
-  // const access = await db.query(
-  //   'SELECT 1 FROM user_workspaces WHERE user_id = $1 AND workspace_id = $2',
-  //   [userId, workspaceId]
-  // )
-  // return access.rows.length > 0
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
 
-  return true // Temporary - allow all access for development
+    // If userId is not a valid number or is non-positive, deny access
+    // This prevents security issues with invalid user IDs
+    if (isNaN(userIdNum) || userIdNum <= 0) {
+      console.warn('Invalid numeric userId for workspace access check:', userId)
+      return false
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }

@@ -84,30 +84,34 @@ const statsdClient = new StatsD({
 const statsd = {
   increment: (stat: string, value?: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
     if (Array.isArray(tagsOrSampleRate)) {
-      (statsdClient.increment as Function)(stat, value, 1, tagsOrSampleRate);
+      statsdClient.increment(stat, value, 1, tagsOrSampleRate);
     } else {
-      (statsdClient.increment as Function)(stat, value, tagsOrSampleRate, tags);
+      const sampleRate = tagsOrSampleRate as number | undefined;
+      statsdClient.increment(stat, value, sampleRate, tags);
     }
   },
   gauge: (stat: string, value: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
     if (Array.isArray(tagsOrSampleRate)) {
-      (statsdClient.gauge as Function)(stat, value, 1, tagsOrSampleRate);
+      statsdClient.gauge(stat, value, 1, tagsOrSampleRate);
     } else {
-      (statsdClient.gauge as Function)(stat, value, tagsOrSampleRate, tags);
+      const sampleRate = tagsOrSampleRate as number | undefined;
+      statsdClient.gauge(stat, value, sampleRate, tags);
     }
   },
   histogram: (stat: string, value: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
     if (Array.isArray(tagsOrSampleRate)) {
-      (statsdClient.histogram as Function)(stat, value, 1, tagsOrSampleRate);
+      statsdClient.histogram(stat, value, 1, tagsOrSampleRate);
     } else {
-      (statsdClient.histogram as Function)(stat, value, tagsOrSampleRate, tags);
+      const sampleRate = tagsOrSampleRate as number | undefined;
+      statsdClient.histogram(stat, value, sampleRate, tags);
     }
   },
   timing: (stat: string, time: number, tagsOrSampleRate?: string[] | number, tags?: string[]) => {
     if (Array.isArray(tagsOrSampleRate)) {
-      (statsdClient.timing as Function)(stat, time, 1, tagsOrSampleRate);
+      statsdClient.timing(stat, time, 1, tagsOrSampleRate);
     } else {
-      (statsdClient.timing as Function)(stat, time, tagsOrSampleRate, tags);
+      const sampleRate = tagsOrSampleRate as number | undefined;
+      statsdClient.timing(stat, time, sampleRate, tags);
     }
   }
 };
