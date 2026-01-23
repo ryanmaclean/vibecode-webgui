@@ -55,7 +55,8 @@ jobs:
             arch: arm64
             os: ubuntu-22.04
             target: aarch64-unknown-linux-gnu
-            bundle: deb,appimage
+            # Skip AppImage for ARM64 cross-compilation - linuxdeploy requires native arch
+            bundle: deb
             cross_compile: true
 
           # Windows builds
@@ -206,12 +207,16 @@ jobs:
           mkdir -p platforms/tauri/binaries
           TARGET="${{ matrix.target }}"
 
-          # For macOS universal builds, we need both architectures
+          # For macOS universal builds, we need the universal target name plus both architectures
           if [ "${{ matrix.arch }}" = "universal" ] && [ "${{ matrix.platform }}" = "macos" ]; then
+            # Tauri expects vibecode-vm-universal-apple-darwin for universal builds
             if [ -f "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin" ]; then
-              echo "Using existing ARM64 binary"
+              echo "Using existing ARM64 binary for universal"
+              cp "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin" "platforms/tauri/binaries/vibecode-vm-universal-apple-darwin"
             else
-              echo "Creating stub ARM64 binary"
+              echo "Creating stub universal binary"
+              printf '#!/bin/sh\necho "VM not available"\nexit 1\n' > "platforms/tauri/binaries/vibecode-vm-universal-apple-darwin"
+              chmod +x "platforms/tauri/binaries/vibecode-vm-universal-apple-darwin"
               printf '#!/bin/sh\necho "VM not available"\nexit 1\n' > "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
               chmod +x "platforms/tauri/binaries/vibecode-vm-aarch64-apple-darwin"
             fi
@@ -396,7 +401,14 @@ jobs:
               [ -f "$file" ] && shasum -a 256 "$file" > "$file.sha256"
             done
           elif [ "${{ matrix.platform }}" = "linux" ]; then
-            for file in deb/*.deb appimage/*.AppImage rpm/*.rpm 2>/dev/null; do
+            # Generate checksums for each package type separately to avoid glob errors
+            for file in deb/*.deb; do
+              [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
+            done
+            for file in appimage/*.AppImage; do
+              [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
+            done
+            for file in rpm/*.rpm; do
               [ -f "$file" ] && sha256sum "$file" > "$file.sha256"
             done
           elif [ "${{ matrix.platform }}" = "windows" ]; then
