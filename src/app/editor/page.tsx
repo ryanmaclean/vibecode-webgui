@@ -165,6 +165,15 @@ export default function EditorPage() {
     codeActions: 0,
   })
 
+
+  // Type guard for theme values
+  const isValidTheme = (value: string): value is "vs-dark" | "vs-light" => {
+    return value === "vs-dark" || value === "vs-light";
+  }
+
+  const handleThemeChange = (value: string) => {
+    if (isValidTheme(value)) setTheme(value);
+  }
   const handleLanguageChange = (newLanguage: 'typescript' | 'python' | 'javascript') => {
     setLanguage(newLanguage)
     setCode(SAMPLE_CODE[newLanguage])
@@ -254,7 +263,7 @@ export default function EditorPage() {
 
               <div className="flex items-center gap-2">
                 <label className="text-sm font-medium">Theme:</label>
-                <Select value={theme} onValueChange={(v) => setTheme(v as any)}>
+                <Select value={theme} onValueChange={handleThemeChange}>
                   <SelectTrigger className="w-[180px]">
                     <SelectValue />
                   </SelectTrigger>
