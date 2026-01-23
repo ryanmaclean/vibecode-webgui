@@ -5,7 +5,7 @@
 
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback, useMemo, memo } from 'react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { AlertCircle, Database, Activity, TrendingUp, Clock, Users } from 'lucide-react'
@@ -81,21 +81,178 @@ interface DashboardData {
   timestamp: string
 }
 
-export default function ConnectionPoolDashboard() {
+// Memoized helper functions to avoid recreating on each render
+const getHealthStatusColor = (status: string) => {
+  switch (status) {
+    case 'healthy': return 'bg-green-500'
+    case 'warning': return 'bg-yellow-500'
+    case 'critical': return 'bg-red-500'
+    default: return 'bg-gray-500'
+  }
+}
+
+const getUtilizationColor = (utilization: number) => {
+  if (utilization >= 85) return 'text-red-600'
+  if (utilization >= 70) return 'text-yellow-600'
+  return 'text-green-600'
+}
+
+const getPriorityColor = (priority: string) => {
+  switch (priority) {
+    case 'high': return 'border-red-500 bg-red-50'
+    case 'medium': return 'border-yellow-500 bg-yellow-50'
+    case 'low': return 'border-blue-500 bg-blue-50'
+    default: return 'border-gray-500 bg-gray-50'
+  }
+}
+
+// Memoized Pool Card component to prevent unnecessary re-renders
+const PoolCard = memo(function PoolCard({ pool }: { pool: PoolMetrics & { alerts: Alert[] } }) {
+  return (
+    <Card>
+      <CardHeader>
+        <div className="flex justify-between items-center">
+          <CardTitle className="flex items-center">
+            <div className={`w-3 h-3 rounded-full mr-2 ${getHealthStatusColor(pool.health_status)}`} />
+            {pool.pool_name}
+          </CardTitle>
+          <Badge variant={pool.health_status === 'healthy' ? 'secondary' : 'destructive'}>
+            {pool.health_status}
+          </Badge>
+        </div>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {/* Connection Status */}
+        <div className="grid grid-cols-2 gap-4">
+          <div>
+            <p className="text-sm text-gray-600">Active/Total</p>
+            <p className="font-semibold">
+              {pool.active_connections}/{pool.total_connections}
+            </p>
+          </div>
+          <div>
+            <p className="text-sm text-gray-600">Utilization</p>
+            <p className={`font-semibold ${getUtilizationColor(pool.utilization_percent)}`}>
+              {pool.utilization_percent}%
+            </p>
+          </div>
+        </div>
+
+        {/* Progress Bar */}
+        <div className="w-full bg-gray-200 rounded-full h-2">
+          <div
+            className={`h-2 rounded-full ${
+              pool.utilization_percent >= 85 ? 'bg-red-500' :
+              pool.utilization_percent >= 70 ? 'bg-yellow-500' : 'bg-green-500'
+            }`}
+            style={{ width: `${Math.min(pool.utilization_percent, 100)}%` }}
+          />
+        </div>
+
+        {/* Additional Metrics */}
+        <div className="grid grid-cols-3 gap-3 text-sm">
+          <div>
+            <p className="text-gray-600">Idle</p>
+            <p className="font-medium">{pool.idle_connections}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Waiting</p>
+            <p className="font-medium">{pool.waiting_count}</p>
+          </div>
+          <div>
+            <p className="text-gray-600">Peak</p>
+            <p className="font-medium">{pool.peak_connections}</p>
+          </div>
+        </div>
+
+        {/* Wait Time */}
+        {pool.average_wait_time_ms > 0 && (
+          <div className="flex items-center text-sm">
+            <Clock className="h-4 w-4 mr-1 text-gray-500" />
+            <span className="text-gray-600">Avg wait time:</span>
+            <span className={`ml-1 font-medium ${pool.average_wait_time_ms > 1000 ? 'text-red-600' : 'text-green-600'}`}>
+              {pool.average_wait_time_ms}ms
+            </span>
+          </div>
+        )}
+
+        {/* Pool Alerts */}
+        {pool.alerts.length > 0 && (
+          <div className="mt-3 space-y-1">
+            {pool.alerts.map((alert) => (
+              <div key={alert.id} className="text-sm text-red-600 flex items-center">
+                <AlertCircle className="h-3 w-3 mr-1" />
+                {alert.message}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  )
+})
+
+// Memoized Alert Item component
+const AlertItem = memo(function AlertItem({ alert }: { alert: Alert }) {
+  return (
+    <div
+      className={`p-3 rounded-lg border-l-4 ${alert.severity === 'critical' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'}`}
+    >
+      <div className="flex justify-between items-start">
+        <div>
+          <div className="flex items-center gap-2">
+            <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
+              {alert.severity.toUpperCase()}
+            </Badge>
+            <span className="font-medium">{alert.pool_name}</span>
+          </div>
+          <p className="text-sm mt-1">{alert.message}</p>
+          <p className="text-xs text-gray-500 mt-1">
+            Threshold: {alert.threshold} | Current: {alert.current_value}
+          </p>
+        </div>
+        <span className="text-xs text-gray-500">
+          {new Date(alert.timestamp).toLocaleTimeString()}
+        </span>
+      </div>
+    </div>
+  )
+})
+
+// Memoized Recommendation Item component
+const RecommendationItem = memo(function RecommendationItem({ rec }: { rec: Recommendation }) {
+  return (
+    <div className={`p-3 rounded-lg border ${getPriorityColor(rec.priority)}`}>
+      <div className="flex justify-between items-start">
+        <div className="flex-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Badge variant="outline">{rec.priority.toUpperCase()}</Badge>
+            <Badge variant="secondary">{rec.type}</Badge>
+            {rec.pool_name && <span className="text-sm font-medium">{rec.pool_name}</span>}
+          </div>
+          <p className="text-sm mb-1">{rec.message}</p>
+          <p className="text-xs text-gray-600">Action: {rec.action}</p>
+        </div>
+      </div>
+    </div>
+  )
+})
+
+function ConnectionPoolDashboard() {
   const [data, setData] = useState<DashboardData | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [autoRefresh, setAutoRefresh] = useState(true)
 
-  // Fetch dashboard data
-  const fetchDashboardData = async () => {
+  // Memoized fetch function to prevent recreation
+  const fetchDashboardData = useCallback(async () => {
     try {
       const response = await fetch('/api/monitoring/connection-pool/dashboard?history=true')
-      
+
       if (!response.ok) {
         throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
-      
+
       const dashboardData = await response.json()
       setData(dashboardData)
       setError(null)
@@ -105,9 +262,9 @@ export default function ConnectionPoolDashboard() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  // Auto-refresh effect
+  // Auto-refresh effect with proper dependency
   useEffect(() => {
     fetchDashboardData()
 
@@ -117,31 +274,12 @@ export default function ConnectionPoolDashboard() {
     }
     // No cleanup needed if autoRefresh is false
     return undefined
-  }, [autoRefresh])
+  }, [autoRefresh, fetchDashboardData])
 
-  const getHealthStatusColor = (status: string) => {
-    switch (status) {
-      case 'healthy': return 'bg-green-500'
-      case 'warning': return 'bg-yellow-500'
-      case 'critical': return 'bg-red-500'
-      default: return 'bg-gray-500'
-    }
-  }
-
-  const getUtilizationColor = (utilization: number) => {
-    if (utilization >= 85) return 'text-red-600'
-    if (utilization >= 70) return 'text-yellow-600'
-    return 'text-green-600'
-  }
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'high': return 'border-red-500 bg-red-50'
-      case 'medium': return 'border-yellow-500 bg-yellow-50'
-      case 'low': return 'border-blue-500 bg-blue-50'
-      default: return 'border-gray-500 bg-gray-50'
-    }
-  }
+  // Memoize auto-refresh handler
+  const handleAutoRefreshChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setAutoRefresh(e.target.checked)
+  }, [])
 
   if (loading) {
     return (
@@ -188,7 +326,7 @@ export default function ConnectionPoolDashboard() {
             <input
               type="checkbox"
               checked={autoRefresh}
-              onChange={(e) => setAutoRefresh(e.target.checked)}
+              onChange={handleAutoRefreshChange}
               className="mr-2"
             />
             Auto-refresh (30s)
@@ -273,28 +411,7 @@ export default function ConnectionPoolDashboard() {
           <CardContent>
             <div className="space-y-3">
               {data.alerts.active.map((alert) => (
-                <div
-                  key={alert.id}
-                  className={`p-3 rounded-lg border-l-4 ${alert.severity === 'critical' ? 'border-red-500 bg-red-50' : 'border-yellow-500 bg-yellow-50'}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <Badge variant={alert.severity === 'critical' ? 'destructive' : 'secondary'}>
-                          {alert.severity.toUpperCase()}
-                        </Badge>
-                        <span className="font-medium">{alert.pool_name}</span>
-                      </div>
-                      <p className="text-sm mt-1">{alert.message}</p>
-                      <p className="text-xs text-gray-500 mt-1">
-                        Threshold: {alert.threshold} | Current: {alert.current_value}
-                      </p>
-                    </div>
-                    <span className="text-xs text-gray-500">
-                      {new Date(alert.timestamp).toLocaleTimeString()}
-                    </span>
-                  </div>
-                </div>
+                <AlertItem key={alert.id} alert={alert} />
               ))}
             </div>
           </CardContent>
@@ -304,86 +421,7 @@ export default function ConnectionPoolDashboard() {
       {/* Pool Details */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {data.pools.map((pool) => (
-          <Card key={pool.pool_name}>
-            <CardHeader>
-              <div className="flex justify-between items-center">
-                <CardTitle className="flex items-center">
-                  <div className={`w-3 h-3 rounded-full mr-2 ${getHealthStatusColor(pool.health_status)}`} />
-                  {pool.pool_name}
-                </CardTitle>
-                <Badge variant={pool.health_status === 'healthy' ? 'secondary' : 'destructive'}>
-                  {pool.health_status}
-                </Badge>
-              </div>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Connection Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <p className="text-sm text-gray-600">Active/Total</p>
-                  <p className="font-semibold">
-                    {pool.active_connections}/{pool.total_connections}
-                  </p>
-                </div>
-                <div>
-                  <p className="text-sm text-gray-600">Utilization</p>
-                  <p className={`font-semibold ${getUtilizationColor(pool.utilization_percent)}`}>
-                    {pool.utilization_percent}%
-                  </p>
-                </div>
-              </div>
-
-              {/* Progress Bar */}
-              <div className="w-full bg-gray-200 rounded-full h-2">
-                <div
-                  className={`h-2 rounded-full ${
-                    pool.utilization_percent >= 85 ? 'bg-red-500' : 
-                    pool.utilization_percent >= 70 ? 'bg-yellow-500' : 'bg-green-500'
-                  }`}
-                  style={{ width: `${Math.min(pool.utilization_percent, 100)}%` }}
-                />
-              </div>
-
-              {/* Additional Metrics */}
-              <div className="grid grid-cols-3 gap-3 text-sm">
-                <div>
-                  <p className="text-gray-600">Idle</p>
-                  <p className="font-medium">{pool.idle_connections}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Waiting</p>
-                  <p className="font-medium">{pool.waiting_count}</p>
-                </div>
-                <div>
-                  <p className="text-gray-600">Peak</p>
-                  <p className="font-medium">{pool.peak_connections}</p>
-                </div>
-              </div>
-
-              {/* Wait Time */}
-              {pool.average_wait_time_ms > 0 && (
-                <div className="flex items-center text-sm">
-                  <Clock className="h-4 w-4 mr-1 text-gray-500" />
-                  <span className="text-gray-600">Avg wait time:</span>
-                  <span className={`ml-1 font-medium ${pool.average_wait_time_ms > 1000 ? 'text-red-600' : 'text-green-600'}`}>
-                    {pool.average_wait_time_ms}ms
-                  </span>
-                </div>
-              )}
-
-              {/* Pool Alerts */}
-              {pool.alerts.length > 0 && (
-                <div className="mt-3 space-y-1">
-                  {pool.alerts.map((alert) => (
-                    <div key={alert.id} className="text-sm text-red-600 flex items-center">
-                      <AlertCircle className="h-3 w-3 mr-1" />
-                      {alert.message}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <PoolCard key={pool.pool_name} pool={pool} />
         ))}
       </div>
 
@@ -399,22 +437,7 @@ export default function ConnectionPoolDashboard() {
           <CardContent>
             <div className="space-y-3">
               {data.recommendations.map((rec, index) => (
-                <div
-                  key={index}
-                  className={`p-3 rounded-lg border ${getPriorityColor(rec.priority)}`}
-                >
-                  <div className="flex justify-between items-start">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <Badge variant="outline">{rec.priority.toUpperCase()}</Badge>
-                        <Badge variant="secondary">{rec.type}</Badge>
-                        {rec.pool_name && <span className="text-sm font-medium">{rec.pool_name}</span>}
-                      </div>
-                      <p className="text-sm mb-1">{rec.message}</p>
-                      <p className="text-xs text-gray-600">Action: {rec.action}</p>
-                    </div>
-                  </div>
-                </div>
+                <RecommendationItem key={index} rec={rec} />
               ))}
             </div>
           </CardContent>
@@ -428,3 +451,5 @@ export default function ConnectionPoolDashboard() {
     </div>
   )
 }
+
+export default memo(ConnectionPoolDashboard)

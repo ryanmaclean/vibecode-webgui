@@ -7,7 +7,7 @@
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback, useMemo, memo } from 'react'
 
 interface HealthStatus {
   database: 'healthy' | 'warning' | 'error'
@@ -39,7 +39,32 @@ interface SystemHealthWidgetProps {
   className?: string
 }
 
-export function SystemHealthWidget({
+// Memoized icon components to prevent re-renders
+const DatabaseIcon = memo(function DatabaseIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+    </svg>
+  )
+})
+
+const CacheIcon = memo(function CacheIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+    </svg>
+  )
+})
+
+const AIIcon = memo(function AIIcon() {
+  return (
+    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+    </svg>
+  )
+})
+
+function SystemHealthWidgetInner({
   refreshInterval = 30000,
   className = ''
 }: SystemHealthWidgetProps) {
@@ -48,26 +73,27 @@ export function SystemHealthWidget({
   const [error, setError] = useState<string | null>(null)
   const [lastUpdate, setLastUpdate] = useState<Date | null>(null)
 
-  useEffect(() => {
-    async function fetchHealth() {
-      try {
-        const res = await fetch('/api/dashboard/overview')
+  // Memoized fetch function to prevent recreation on every render
+  const fetchHealth = useCallback(async () => {
+    try {
+      const res = await fetch('/api/dashboard/overview')
 
-        if (!res.ok) {
-          throw new Error(`API returned ${res.status}: ${res.statusText}`)
-        }
-
-        const data = await res.json()
-        setData(data)
-        setLastUpdate(new Date())
-        setError(null)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to fetch health data')
-      } finally {
-        setLoading(false)
+      if (!res.ok) {
+        throw new Error(`API returned ${res.status}: ${res.statusText}`)
       }
-    }
 
+      const responseData = await res.json()
+      setData(responseData)
+      setLastUpdate(new Date())
+      setError(null)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch health data')
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => {
     // Initial fetch
     fetchHealth()
 
@@ -75,7 +101,7 @@ export function SystemHealthWidget({
     const interval = setInterval(fetchHealth, refreshInterval)
 
     return () => clearInterval(interval)
-  }, [refreshInterval])
+  }, [fetchHealth, refreshInterval])
 
   if (loading) {
     return (
@@ -135,29 +161,17 @@ export function SystemHealthWidget({
           <HealthItem
             label="Database"
             status={data.health.database}
-            icon={
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
-              </svg>
-            }
+            icon={<DatabaseIcon />}
           />
           <HealthItem
             label="Cache (Valkey)"
             status={data.health.cache}
-            icon={
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            }
+            icon={<CacheIcon />}
           />
           <HealthItem
             label="AI Services"
             status={data.health.ai}
-            icon={
-              <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
-              </svg>
-            }
+            icon={<AIIcon />}
           />
         </div>
 
@@ -192,38 +206,51 @@ export function SystemHealthWidget({
   )
 }
 
+// Export the memoized widget component
+export const SystemHealthWidget = memo(SystemHealthWidgetInner)
+
 interface HealthItemProps {
   label: string
   status: 'healthy' | 'warning' | 'error'
   icon: React.ReactNode
 }
 
-function HealthItem({ label, status, icon }: HealthItemProps) {
-  const isHealthy = status === 'healthy'
-  const isWarning = status === 'warning'
+// Memoized HealthItem to prevent unnecessary re-renders when parent updates
+const HealthItem = memo(function HealthItem({ label, status, icon }: HealthItemProps) {
+  // Memoize computed style classes based on status
+  const { containerClass, iconContainerClass, textClass } = useMemo(() => {
+    const isHealthy = status === 'healthy'
+    const isWarning = status === 'warning'
+
+    return {
+      containerClass: `flex items-center justify-between p-3 rounded-lg border ${
+        isHealthy ? 'bg-green-50 border-green-200' :
+        isWarning ? 'bg-yellow-50 border-yellow-200' :
+        'bg-red-50 border-red-200'
+      }`,
+      iconContainerClass: `p-2 rounded-lg mr-3 ${
+        isHealthy ? 'bg-green-100 text-green-600' :
+        isWarning ? 'bg-yellow-100 text-yellow-600' :
+        'bg-red-100 text-red-600'
+      }`,
+      textClass: `text-sm font-semibold ${
+        isHealthy ? 'text-green-700' :
+        isWarning ? 'text-yellow-700' :
+        'text-red-700'
+      }`
+    }
+  }, [status])
 
   return (
-    <div className={`flex items-center justify-between p-3 rounded-lg border ${
-      isHealthy ? 'bg-green-50 border-green-200' :
-      isWarning ? 'bg-yellow-50 border-yellow-200' :
-      'bg-red-50 border-red-200'
-    }`}>
+    <div className={containerClass}>
       <div className="flex items-center">
-        <div className={`p-2 rounded-lg mr-3 ${
-          isHealthy ? 'bg-green-100 text-green-600' :
-          isWarning ? 'bg-yellow-100 text-yellow-600' :
-          'bg-red-100 text-red-600'
-        }`}>
+        <div className={iconContainerClass}>
           {icon}
         </div>
         <span className="font-medium text-gray-900">{label}</span>
       </div>
       <div className="flex items-center">
-        <span className={`text-sm font-semibold ${
-          isHealthy ? 'text-green-700' :
-          isWarning ? 'text-yellow-700' :
-          'text-red-700'
-        }`}>
+        <span className={textClass}>
           {status === 'healthy' && (
             <span className="flex items-center">
               <svg className="h-4 w-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
@@ -252,4 +279,4 @@ function HealthItem({ label, status, icon }: HealthItemProps) {
       </div>
     </div>
   )
-}
+})

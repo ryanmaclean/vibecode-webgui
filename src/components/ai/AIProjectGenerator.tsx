@@ -5,14 +5,16 @@
 
 'use client'
 
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Textarea } from '@/components/ui/textarea'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { Badge } from '@/components/ui/badge'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Loader, Sparkles, Code, Rocket, Download, ExternalLink } from 'lucide-react'
 import { toast } from 'sonner'
+import JSZip from 'jszip'
 // import { logger } from '@/lib/logger';
 interface ProjectTemplate {
   id: string
@@ -37,13 +39,54 @@ interface GenerationResult {
   }
 }
 
+// Available features for project generation
+const AVAILABLE_FEATURES = [
+  { id: 'authentication', label: 'User Authentication', description: 'Login, registration, and session management' },
+  { id: 'database', label: 'Database Integration', description: 'Data persistence with ORM setup' },
+  { id: 'api', label: 'REST API', description: 'RESTful API endpoints with validation' },
+  { id: 'testing', label: 'Testing Setup', description: 'Unit and integration test configuration' },
+  { id: 'docker', label: 'Docker Support', description: 'Dockerfile and docker-compose configuration' },
+  { id: 'ci-cd', label: 'CI/CD Pipeline', description: 'GitHub Actions or similar automation' },
+  { id: 'typescript', label: 'TypeScript', description: 'Type-safe development with TypeScript' },
+  { id: 'linting', label: 'Linting & Formatting', description: 'ESLint, Prettier configuration' },
+  { id: 'logging', label: 'Logging', description: 'Structured logging setup' },
+  { id: 'monitoring', label: 'Monitoring', description: 'Health checks and metrics' },
+] as const
+
 export default function AIProjectGenerator() {
   const [prompt, setPrompt] = useState('')
   const [framework, setFramework] = useState<string>('')
   const [complexity, setComplexity] = useState<'simple' | 'moderate' | 'complex'>('moderate')
+  const [selectedFeatures, setSelectedFeatures] = useState<string[]>([])
   const [isGenerating, setIsGenerating] = useState(false)
   const [generatedProject, setGeneratedProject] = useState<ProjectTemplate | null>(null)
   const [generationMetadata, setGenerationMetadata] = useState<GenerationResult['metadata'] | null>(null)
+
+  // Toggle feature selection
+  const toggleFeature = (featureId: string) => {
+    setSelectedFeatures(prev =>
+      prev.includes(featureId)
+        ? prev.filter(f => f !== featureId)
+        : [...prev, featureId]
+    )
+  }
+
+  // Select all features based on complexity
+  const selectFeaturesByComplexity = useMemo(() => {
+    return () => {
+      switch (complexity) {
+        case 'simple':
+          setSelectedFeatures(['typescript', 'linting'])
+          break
+        case 'moderate':
+          setSelectedFeatures(['authentication', 'database', 'api', 'typescript', 'linting', 'testing'])
+          break
+        case 'complex':
+          setSelectedFeatures(AVAILABLE_FEATURES.map(f => f.id))
+          break
+      }
+    }
+  }, [complexity])
 
   const handleGenerate = async () => {
     if (!prompt.trim()) {
@@ -67,7 +110,7 @@ export default function AIProjectGenerator() {
           prompt: prompt.trim(),
           framework: framework || undefined,
           complexity,
-          features: [] // TODO: Add feature selection UI
+          features: selectedFeatures
         })
       })
 
@@ -98,33 +141,114 @@ export default function AIProjectGenerator() {
     }
   }
 
-  const downloadProject = () => {
+  const downloadProject = async () => {
     if (!generatedProject) return
 
-    // Create a zip-like structure as JSON for now
-    // TODO: Implement actual zip file generation
-    const projectData = {
-      name: generatedProject.name,
-      structure: generatedProject.structure,
-      dockerfile: generatedProject.dockerfile,
-      readme: generatedProject.readme,
-      dependencies: generatedProject.dependencies
+    try {
+      const zip = new JSZip()
+      const projectName = generatedProject.name.toLowerCase().replace(/\s+/g, '-')
+
+      // Add all project files from the structure
+      Object.entries(generatedProject.structure).forEach(([filePath, content]) => {
+        zip.file(filePath, content)
+      })
+
+      // Add README.md
+      if (generatedProject.readme) {
+        zip.file('README.md', generatedProject.readme)
+      }
+
+      // Add Dockerfile if present
+      if (generatedProject.dockerfile) {
+        zip.file('Dockerfile', generatedProject.dockerfile)
+      }
+
+      // Create package.json with dependencies if it doesn't exist in structure
+      if (!generatedProject.structure['package.json'] && generatedProject.dependencies.length > 0) {
+        const packageJson = {
+          name: projectName,
+          version: '1.0.0',
+          description: generatedProject.description,
+          scripts: {
+            start: 'node index.js',
+            dev: 'node --watch index.js',
+            build: 'echo "Build script placeholder"',
+            test: 'echo "Test script placeholder"'
+          },
+          dependencies: generatedProject.dependencies.reduce((acc, dep) => {
+            // Parse dependency string (e.g., "express@4.18.0" or "express")
+            const match = dep.match(/^(@?[^@]+)(?:@(.+))?$/)
+            if (match) {
+              acc[match[1]] = match[2] || 'latest'
+            }
+            return acc
+          }, {} as Record<string, string>)
+        }
+        zip.file('package.json', JSON.stringify(packageJson, null, 2))
+      }
+
+      // Add .gitignore
+      const gitignore = `# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Build outputs
+dist/
+build/
+.next/
+out/
+
+# Environment files
+.env
+.env.local
+.env.*.local
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Testing
+coverage/
+`
+      zip.file('.gitignore', gitignore)
+
+      // Generate the zip file
+      const blob = await zip.generateAsync({
+        type: 'blob',
+        compression: 'DEFLATE',
+        compressionOptions: { level: 9 }
+      })
+
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = `${projectName}.zip`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+
+      toast.success('Project downloaded successfully!', {
+        description: `Downloaded ${projectName}.zip`
+      })
+    } catch (error) {
+      console.error('Failed to generate zip file:', error)
+      toast.error('Failed to download project', {
+        description: error instanceof Error ? error.message : 'Unknown error occurred'
+      })
     }
-
-    const blob = new Blob([JSON.stringify(projectData, null, 2)], { 
-      type: 'application/json' 
-    })
-    
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement('a')
-    a.href = url
-    a.download = `${generatedProject.name.toLowerCase().replace(/\s+/g, '-')}-project.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
-
-    toast.success('Project downloaded successfully!')
   }
 
   const createWorkspace = async () => {
@@ -272,8 +396,8 @@ export default function AIProjectGenerator() {
               <label className="block text-sm font-medium mb-2">
                 Complexity Level
               </label>
-              <Select 
-                value={complexity} 
+              <Select
+                value={complexity}
                 onValueChange={(value: 'simple' | 'moderate' | 'complex') => setComplexity(value)}
                 disabled={isGenerating}
               >
@@ -287,6 +411,70 @@ export default function AIProjectGenerator() {
                 </SelectContent>
               </Select>
             </div>
+          </div>
+
+          {/* Feature Selection */}
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-medium">
+                Features (Optional)
+              </label>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={selectFeaturesByComplexity}
+                disabled={isGenerating}
+                className="text-xs"
+              >
+                Auto-select based on complexity
+              </Button>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3">
+              {AVAILABLE_FEATURES.map((feature) => (
+                <div
+                  key={feature.id}
+                  className={`
+                    relative flex items-start p-3 rounded-lg border cursor-pointer transition-all
+                    ${selectedFeatures.includes(feature.id)
+                      ? 'border-purple-500 bg-purple-50'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                    }
+                    ${isGenerating ? 'opacity-50 cursor-not-allowed' : ''}
+                  `}
+                  onClick={() => !isGenerating && toggleFeature(feature.id)}
+                >
+                  <Checkbox
+                    id={feature.id}
+                    checked={selectedFeatures.includes(feature.id)}
+                    disabled={isGenerating}
+                    className="mt-0.5"
+                    onCheckedChange={() => toggleFeature(feature.id)}
+                  />
+                  <div className="ml-2">
+                    <label
+                      htmlFor={feature.id}
+                      className="text-sm font-medium text-gray-900 cursor-pointer"
+                    >
+                      {feature.label}
+                    </label>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      {feature.description}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            {selectedFeatures.length > 0 && (
+              <div className="mt-2 flex flex-wrap gap-1">
+                <span className="text-xs text-gray-500">Selected:</span>
+                {selectedFeatures.map((featureId) => (
+                  <Badge key={featureId} variant="secondary" className="text-xs">
+                    {AVAILABLE_FEATURES.find(f => f.id === featureId)?.label}
+                  </Badge>
+                ))}
+              </div>
+            )}
           </div>
 
           <Button

@@ -5,6 +5,7 @@
  */
 
 import { logger, appLogger } from './server-monitoring'
+import { cacheGet, cacheSet, CacheKeyGenerators, TTLPresets } from './cache/cache-utils'
 
 interface FeatureFlag {
   key: string
@@ -85,6 +86,7 @@ class FeatureFlagEngine {
 
   /**
    * Evaluate a feature flag for a given context
+   * Uses caching to improve performance for repeated evaluations
    */
   async evaluateFlag(
     flagKey: string,
@@ -109,19 +111,36 @@ class FeatureFlagEngine {
         }
       }
 
+      // Try to get cached evaluation result first
+      const cacheKey = CacheKeyGenerators.featureFlag(flagKey, context.userId)
+      const cachedResult = await cacheGet<ExperimentResult>(cacheKey)
+      if (cachedResult) {
+        appLogger.logBusiness('flag_evaluation_cached', {
+          feature: 'feature_flags',
+          userId: context.userId,
+          metadata: { flagKey, variant: cachedResult.variant, cached: true }
+        })
+        return cachedResult
+      }
+
       // Check if user already has an allocation
       const userAllocations = this.allocations.get(context.userId)
       if (userAllocations?.has(flagKey)) {
         const variant = userAllocations.get(flagKey)!
         const flagVariant = flag.variants.find(v => v.key === variant)
 
-        return {
+        const result: ExperimentResult = {
           flagKey,
           variant,
           payload: flagVariant?.payload,
           isExperiment: true,
           allocationKey: this.getAllocationKey(context.userId, flagKey)
         }
+
+        // Cache the allocation result
+        await cacheSet(cacheKey, result, { ttl: TTLPresets.FEATURE_FLAGS })
+
+        return result
       }
 
       // Evaluate targeting rules
@@ -137,13 +156,18 @@ class FeatureFlagEngine {
           metadata: { flagKey, variant: targetedVariant, targeted: true }
         })
 
-        return {
+        const result: ExperimentResult = {
           flagKey,
           variant: targetedVariant,
           payload: flagVariant?.payload,
           isExperiment: true,
           allocationKey: this.getAllocationKey(context.userId, flagKey)
         }
+
+        // Cache the targeted result
+        await cacheSet(cacheKey, result, { ttl: TTLPresets.FEATURE_FLAGS })
+
+        return result
       }
 
       // Random allocation based on variant weights
@@ -158,13 +182,18 @@ class FeatureFlagEngine {
         metadata: { flagKey, variant: allocatedVariant, randomAllocation: true }
       })
 
-      return {
+      const result: ExperimentResult = {
         flagKey,
         variant: allocatedVariant,
         payload: flagVariant?.payload,
         isExperiment: true,
         allocationKey: this.getAllocationKey(context.userId, flagKey)
       }
+
+      // Cache the allocation result
+      await cacheSet(cacheKey, result, { ttl: TTLPresets.FEATURE_FLAGS })
+
+      return result
 
     } catch (error) {
       logger.error('Feature flag evaluation failed', {
