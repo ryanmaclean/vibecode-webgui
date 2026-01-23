@@ -144,7 +144,7 @@ export function MarketplacePage({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <TemplateMarketplace
-          onTemplateSelect={handleSelectTemplate as any}
+          onTemplateSelect={(template) => handleSelectTemplate(template as unknown as MarketplaceTemplate)}
           selectedTemplateId={selectedTemplate?.id}
           selectedCategory={selectedCategory}
         />

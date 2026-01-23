@@ -191,7 +191,7 @@ export default function UserPresenceIndicators({
    */
   useEffect(() => {
     if (collaborationManager) {
-      (collaborationManager as any).updatePresence = updatePresence
+      Object.assign(collaborationManager, { updatePresence })
     }
   }, [collaborationManager, updatePresence])
 

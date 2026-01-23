@@ -83,7 +83,7 @@ export const HuggingFaceChatInterface = ({
   const [enableRAG, setEnableRAG] = useState(true)
   const [enableFunctionCalling, setEnableFunctionCalling] = useState(false)
   const [enableAutoModelSelection, setEnableAutoModelSelection] = useState(false)
-  const [hfClient, setHfClient] = useState<HfInference | null>(null)
+  const [hfClient, setHfClient] = useState<HfInference | { initialized: true } | null>(null)
   const [lastModelSuggestion, setLastModelSuggestion] = useState<{
     suggested: string
     current: string
@@ -138,7 +138,7 @@ export const HuggingFaceChatInterface = ({
         const data = await response.json()
         if (data.initialized) {
           // Client will use server-side proxy for HF calls
-          setHfClient({ initialized: true } as any)
+          setHfClient({ initialized: true })
         }
       } catch (error) {
         console.error('Failed to initialize Hugging Face client:', error)

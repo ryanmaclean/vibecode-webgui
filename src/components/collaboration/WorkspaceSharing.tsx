@@ -685,7 +685,7 @@ export default function WorkspaceSharing({
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => setActiveTab(key as 'members' | 'teams' | 'settings')}
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === key
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'

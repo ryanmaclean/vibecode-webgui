@@ -12,7 +12,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EditorView } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorState, StateEffect } from '@codemirror/state'
 import { useCollaboration } from '../../hooks/useCollaboration'
 // import { logger } from '@/lib/logger';
 export interface CursorPosition {
@@ -338,12 +338,12 @@ if (!editorView || !editorRect) return null
     })
 
     const view = EditorView.theme({}, { dark: false })
-    editorView.dispatch({
-      effects: [
-        // Type assertion for appendConfig StateEffect
-        (EditorView as any).appendConfig?.of?.([updateHandler, view])
-      ].filter(Boolean)
-    })
+    const appendConfigEffect = (EditorView as unknown as { appendConfig?: { of: (args: unknown[]) => StateEffect<unknown> } }).appendConfig?.of?.([updateHandler, view])
+    if (appendConfigEffect) {
+      editorView.dispatch({
+        effects: [appendConfigEffect]
+      })
+    }
 
     return () => {
       resizeObserver.disconnect()
