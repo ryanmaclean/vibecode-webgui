@@ -147,7 +147,7 @@ const handler = async (req: Request, _res: unknown): Promise<NextResponse> => {
   const wss = ensureWebSocketServer();
 
   // @ts-expect-error - Next.js specific handling for WebSocket upgrade
-  wss.handleUpgrade(req, (req as any).socket, Buffer.alloc(0), (ws) => {
+  wss.handleUpgrade(req, (req as unknown as { socket: import('net').Socket }).socket, Buffer.alloc(0), (ws) => {
     wss.emit('connection', ws, req);
   });
 
