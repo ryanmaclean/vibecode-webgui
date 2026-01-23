@@ -169,7 +169,7 @@
     "@opentelemetry/sdk-node": "0.210.0",
     "@opentelemetry/sdk-trace-base": "2.5.0",
     "@opentelemetry/semantic-conventions": "1.39.0",
-    "@prisma/client": "6.19.2",
+    "@prisma/client": "7.3.0",
     "@radix-ui/react-label": "2.1.8",
     "@radix-ui/react-progress": "1.1.7",
     "@radix-ui/react-scroll-area": "1.2.9",
