@@ -238,7 +238,9 @@ describe('Error Tracking Middleware', () => {
 
       expect(response.status).toBe(500);
       const json = await response.json();
-      expect(json.error).toBe('Internal Server Error');
+      // RFC 7807 Problem Details format
+      expect(json.code).toBe('INTERNAL_SERVER_ERROR');
+      expect(json.title).toBe('Internal Server Error');
     });
 
     it('should show error message in development mode', async () => {
@@ -252,7 +254,8 @@ describe('Error Tracking Middleware', () => {
       const response = await wrappedHandler(mockRequest);
       const json = await response.json();
 
-      expect(json.message).toBe('Detailed error');
+      // RFC 7807 Problem Details format - detail contains the error message in dev mode
+      expect(json.detail).toBe('Detailed error');
 
       process.env.NODE_ENV = originalEnv;
     });
@@ -268,7 +271,8 @@ describe('Error Tracking Middleware', () => {
       const response = await wrappedHandler(mockRequest);
       const json = await response.json();
 
-      expect(json.message).toBe('Something went wrong');
+      // RFC 7807 Problem Details format - detail contains generic message in production
+      expect(json.detail).toBe('Something went wrong');
 
       process.env.NODE_ENV = originalEnv;
     });
@@ -296,7 +300,9 @@ describe('Error Tracking Middleware', () => {
       expect(handler).not.toHaveBeenCalled();
       expect(response.status).toBe(405);
       const json = await response.json();
-      expect(json.error).toBe('Method Not Allowed');
+      // RFC 7807 Problem Details format
+      expect(json.code).toBe('METHOD_NOT_ALLOWED');
+      expect(json.title).toBe('Method Not Allowed');
     });
 
     it('should track method not allowed errors', async () => {

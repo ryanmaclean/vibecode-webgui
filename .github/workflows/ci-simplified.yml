@@ -85,7 +85,7 @@ jobs:
       REDIS_URL: redis://localhost:6379
       NEXTAUTH_SECRET: test-secret-key-for-ci
       NODE_ENV: test
-      DD_CI_VISIBILITY_ENABLED: true
+      DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
       DD_API_KEY: ${{ secrets.DD_API_KEY }}
       DD_ENV: ci
       DD_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}

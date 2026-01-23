@@ -398,7 +398,8 @@ describe('CSRF Protection', () => {
       const json = await response.json();
 
       expect(response.status).toBe(403);
-      expect(json.error).toBe('CSRF token validation failed');
+      expect(json.title).toBe('CSRF token validation failed');
+      expect(json.code).toBe('CSRF_VALIDATION_FAILED');
     });
   });
 
@@ -435,7 +436,8 @@ describe('CSRF Protection', () => {
       expect(result.errorResponse!.status).toBe(403);
 
       const json = await result.errorResponse!.json();
-      expect(json.error).toBe('CSRF token validation failed');
+      expect(json.title).toBe('CSRF token validation failed');
+      expect(json.code).toBe('CSRF_VALIDATION_FAILED');
     });
   });
 });

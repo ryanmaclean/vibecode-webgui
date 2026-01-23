@@ -258,7 +258,10 @@ export default function MonitoringDashboard() {
                   <BarChart data={metrics.network.history}>
                     <XAxis dataKey="time" fontSize={12} />
                     <YAxis fontSize={12} tickFormatter={formatBytes} />
-                    <Tooltip formatter={((value: number) => formatBytes(value)) as any} />
+                    <Tooltip 
+                      formatter={(value: number) => formatBytes(value)}
+                      labelFormatter={(label) => String(label)}
+                    />
                     <Legend />
                     <Bar dataKey="in" name="Incoming" fill="#8884d8" />
                     <Bar dataKey="out" name="Outgoing" fill="#82ca9d" />

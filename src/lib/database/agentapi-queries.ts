@@ -6,11 +6,15 @@
  * - Query performance <50ms P95
  * - Proper indexing utilization
  * - Batch operations for efficiency
+ * - Query caching with automatic invalidation
+ * - N+1 query prevention via batch loaders
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { agentSessionCache, agentHealthCache, conversationContextCache } from '../cache/agentapi-redis-strategy';
 import { metrics as serverMetrics } from '../server-monitoring';
+import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '../cache/cache-utils';
+import { QueryCacheManager } from './query-cache-strategy';
 // import { logger } from '@/lib/logger';
 
 // Type definitions for models not yet in Prisma schema
@@ -194,12 +198,23 @@ export class AgentSessionQueries {
   }
 
   /**
-   * List agents for workspace
+   * List agents for workspace (with caching)
    */
   static async listWorkspaceAgents(workspaceId: number, includeDeleted = false): Promise<AgentModel[]> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_session', 'list', `ws:${workspaceId}:del:${includeDeleted}`);
 
     try {
+      // Try cache first (only for non-deleted queries which are more common)
+      if (!includeDeleted) {
+        const cached = await cacheGet<AgentModel[]>(cacheKey);
+        if (cached) {
+          const latency = Date.now() - startTime;
+          serverMetrics.histogram('agent.session.list_workspace.cached', latency);
+          return cached;
+        }
+      }
+
       const agents = await prisma.agentSession.findMany({
         where: {
           workspaceId,
@@ -210,6 +225,11 @@ export class AgentSessionQueries {
           user: { select: { id: true, email: true, name: true } },
         },
       });
+
+      // Cache the result for non-deleted queries (2 minute TTL as agent status changes frequently)
+      if (!includeDeleted && agents.length > 0) {
+        await cacheSet(cacheKey, agents, { ttl: 120 }); // 2 minutes
+      }
 
       const latency = Date.now() - startTime;
       serverMetrics.histogram('agent.session.list_workspace', latency);
@@ -423,12 +443,21 @@ export class AgentConversationQueries {
   }
 
   /**
-   * Get conversation statistics
+   * Get conversation statistics (with caching)
    */
   static async getConversationStats(agentSessionId: string): Promise<AgentModel | null> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_conversation', 'stats', agentSessionId);
 
     try {
+      // Try cache first (stats change less frequently)
+      const cached = await cacheGet<AgentModel>(cacheKey);
+      if (cached) {
+        const latency = Date.now() - startTime;
+        serverMetrics.histogram('agent.conversation.stats.cached', latency);
+        return cached;
+      }
+
       const stats = await prisma.agentConversation.groupBy({
         by: ['agentSessionId'],
         where: { agentSessionId },
@@ -441,10 +470,17 @@ export class AgentConversationQueries {
         _avg: { latencyMs: true },
       });
 
+      const result = stats[0] ?? null;
+
+      // Cache stats for 5 minutes
+      if (result) {
+        await cacheSet(cacheKey, result, { ttl: TTLPresets.SHORT });
+      }
+
       const latency = Date.now() - startTime;
       serverMetrics.histogram('agent.conversation.stats', latency);
 
-      return stats[0] ?? null;
+      return result;
     } catch (error) {
       serverMetrics.increment('agent.conversation.stats.error');
       throw error;
@@ -532,12 +568,21 @@ export class AgentHealthQueries {
   }
 
   /**
-   * Get aggregated health statistics
+   * Get aggregated health statistics (with caching)
    */
   static async getHealthStats(agentSessionId: string): Promise<HealthStatsResult | undefined> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_health', 'stats', agentSessionId);
 
     try {
+      // Try cache first (health stats aggregates can be cached for a short period)
+      const cached = await cacheGet<HealthStatsResult>(cacheKey);
+      if (cached) {
+        const latency = Date.now() - startTime;
+        serverMetrics.histogram('agent.health.stats.cached', latency);
+        return cached;
+      }
+
       const stats = await prisma.$queryRaw<HealthStatsResult[]>`
         SELECT
           AVG(cpu_usage_percent) as avg_cpu,
@@ -552,10 +597,17 @@ export class AgentHealthQueries {
           AND metric_timestamp > NOW() - INTERVAL '24 hours'
       `;
 
+      const result = stats[0];
+
+      // Cache health stats for 1 minute (they're computationally expensive)
+      if (result) {
+        await cacheSet(cacheKey, result, { ttl: 60 });
+      }
+
       const latency = Date.now() - startTime;
       serverMetrics.histogram('agent.health.stats', latency);
 
-      return stats[0];
+      return result;
     } catch (error) {
       serverMetrics.increment('agent.health.stats.error');
       throw error;
@@ -755,6 +807,7 @@ export class AgentBatchQueries {
 
   /**
    * Batch update workspace metadata
+   * Optimized: Uses transaction for atomicity and single round trip
    */
   static async batchUpdateWorkspaces(updates: Array<{
     id: number;
@@ -765,8 +818,13 @@ export class AgentBatchQueries {
   }>): Promise<AgentModel[]> {
     const startTime = Date.now();
 
+    if (updates.length === 0) {
+      return [];
+    }
+
     try {
-      const results = await Promise.all(
+      // Use transaction for atomicity
+      const results = await prisma.$transaction(
         updates.map(update =>
           prisma.workspace.update({
             where: { id: update.id },
@@ -785,6 +843,15 @@ export class AgentBatchQueries {
       serverMetrics.histogram('agent.batch.update_workspaces', latency, {
         batch_size: updates.length.toString(),
       });
+
+      // Invalidate workspace caches
+      await Promise.all(
+        updates.map(update =>
+          QueryCacheManager.invalidateByKey(
+            QueryCacheManager.generateCacheKey('workspace', 'getById', { id: update.id })
+          )
+        )
+      );
 
       return results;
     } catch (error) {

@@ -19,6 +19,7 @@ import {
   EyeIcon,
   PencilIcon
 } from '@heroicons/react/24/outline';
+import { CollaborationErrorBoundary } from '@/components/error/ErrorBoundary';
 
 interface User {
   id: string;
@@ -71,7 +72,7 @@ interface CollaborativeWorkspaceProps {
   className?: string;
 }
 
-export function CollaborativeWorkspace({
+function CollaborativeWorkspaceContent({
   workspaceId = 'default-workspace',
   userId = 'current-user',
   userName = 'Current User',
@@ -570,5 +571,28 @@ export function CollaborativeWorkspace({
         </div>
       ))}
     </div>
+  );
+}
+
+/**
+ * CollaborativeWorkspace with Error Boundary
+ * Wraps the workspace with collaboration-specific error handling
+ */
+export function CollaborativeWorkspace(props: CollaborativeWorkspaceProps) {
+  const handleReconnect = useCallback(() => {
+    // Trigger workspace re-initialization
+    window.location.reload();
+  }, []);
+
+  return (
+    <CollaborationErrorBoundary
+      componentName="CollaborativeWorkspace"
+      onReconnect={handleReconnect}
+      onError={(error, errorInfo) => {
+        console.error('CollaborativeWorkspace error:', error, errorInfo);
+      }}
+    >
+      <CollaborativeWorkspaceContent {...props} />
+    </CollaborationErrorBoundary>
   );
 }

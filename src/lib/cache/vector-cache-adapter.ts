@@ -52,7 +52,6 @@ export class VectorCacheAdapter {
       const cachedResult = await queryCache.get<CachedVectorResult>(cacheKey)
       
       if (cachedResult) {
-        console.log(`📦 Vector search cache HIT for query: "${query.substring(0, 50)}..."`)
         return {
           ...cachedResult,
           cached: true
@@ -60,7 +59,6 @@ export class VectorCacheAdapter {
       }
 
       // Cache miss - execute search
-      console.log(`🔍 Vector search cache MISS for query: "${query.substring(0, 50)}..."`)
       const searchResults = await searchFunction()
       
       const result: CachedVectorResult = {
@@ -80,9 +78,7 @@ export class VectorCacheAdapter {
 
       return result
 
-    } catch (error) {
-      console.error('Vector search cache error:', error)
-      
+    } catch {
       // Fallback to direct search if cache fails
       const searchResults = await searchFunction()
       return {
@@ -112,7 +108,6 @@ export class VectorCacheAdapter {
       const cachedEmbedding = await queryCache.get<CachedEmbedding>(cacheKey)
       
       if (cachedEmbedding) {
-        console.log(`📦 Embedding cache HIT for text: "${text.substring(0, 30)}..."`)
         return {
           ...cachedEmbedding,
           cached: true
@@ -120,7 +115,6 @@ export class VectorCacheAdapter {
       }
 
       // Cache miss - generate embedding
-      console.log(`🔥 Embedding cache MISS for text: "${text.substring(0, 30)}..."`)
       const embedding = await embeddingFunction()
       
       const result: CachedEmbedding = {
@@ -141,9 +135,7 @@ export class VectorCacheAdapter {
 
       return result
 
-    } catch (error) {
-      console.error('Embedding cache error:', error)
-      
+    } catch {
       // Fallback to direct generation if cache fails
       const embedding = await embeddingFunction()
       return {
@@ -175,7 +167,6 @@ export class VectorCacheAdapter {
       const cachedData = await queryCache.get<T>(cacheKey)
       
       if (cachedData) {
-        console.log(`📦 Database query cache HIT`)
         return {
           data: cachedData,
           cached: true,
@@ -184,7 +175,6 @@ export class VectorCacheAdapter {
       }
 
       // Cache miss - execute query
-      console.log(`🗄️ Database query cache MISS`)
       const queryResult = await queryFunction()
       
       // Cache the results
@@ -201,9 +191,7 @@ export class VectorCacheAdapter {
         cacheKey
       }
 
-    } catch (error) {
-      console.error('Database query cache error:', error)
-      
+    } catch {
       // Fallback to direct query if cache fails
       const queryResult = await queryFunction()
       return {
@@ -232,15 +220,12 @@ export class VectorCacheAdapter {
       const cachedData = await queryCache.get<T>(cacheKey)
       
       if (cachedData) {
-        console.log(`📦 API cache HIT for ${endpoint}`)
         return {
           data: cachedData,
           cached: true,
           cacheKey
         }
       }
-
-      console.log(`🌐 API cache MISS for ${endpoint}`)
       const apiResult = await apiFunction()
       
       await queryCache.set(cacheKey, apiResult, {
@@ -256,9 +241,7 @@ export class VectorCacheAdapter {
         cacheKey
       }
 
-    } catch (error) {
-      console.error('API cache error:', error)
-      
+    } catch {
       const apiResult = await apiFunction()
       return {
         data: apiResult,
@@ -272,7 +255,6 @@ export class VectorCacheAdapter {
    * Invalidate cache by tags
    */
   async invalidateByTag(tag: string): Promise<number> {
-    console.log(`🗑️ Invalidating cache entries with tag: ${tag}`)
     return queryCache.deleteByTag(tag)
   }
 
@@ -292,8 +274,6 @@ export class VectorCacheAdapter {
     data: any
     ttl?: number
   }>): Promise<void> {
-    console.log(`🔥 Warming up cache with ${commonQueries.length} common queries...`)
-    
     for (const query of commonQueries) {
       try {
         await queryCache.set(query.key, query.data, {
@@ -302,12 +282,10 @@ export class VectorCacheAdapter {
           queryType: query.type,
           cost: this.getCostForType(query.type)
         })
-      } catch (error) {
-        console.warn(`Failed to warm up cache for key ${query.key}:`, error)
+      } catch {
+        // Silently continue - cache warm-up failures are non-critical
       }
     }
-    
-    console.log(`✅ Cache warm-up completed`)
   }
 
   /**
