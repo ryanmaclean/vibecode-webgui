@@ -7,7 +7,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { LiteLLMClient } from '@/lib/ai-clients/litellm-client';
-import rateLimit from '@/lib/rate-limiting';
+import rateLimit, { createAPIRateLimit } from '@/lib/rate-limiting';
 import { z } from '@/lib/zod-compat';
 import { liteLLMSchema } from '@/lib/api/validation/schemas';
 // import { logger } from '@/lib/logger';
@@ -17,6 +17,8 @@ const aiRateLimit = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // limit each user to 100 requests per windowMs
 });
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
@@ -39,6 +41,23 @@ const _ratelimit = rateLimit({
 // GET: Health check and system status
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
@@ -99,18 +118,35 @@ export async function GET(request: NextRequest) {
 // POST: Chat completions and embeddings
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions);
     if (!session) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rate limiting
-    const rateLimitResult = await aiRateLimit(request);
-    
-    if (!rateLimitResult.success) {
+    // Legacy rate limiting (kept for additional protection)
+    const legacyRateLimitResult = await aiRateLimit(request);
+
+    if (!legacyRateLimitResult.success) {
       return NextResponse.json({
         error: 'Rate limit exceeded',
-        resetTime: rateLimitResult.reset
+        resetTime: legacyRateLimitResult.reset
       }, { status: 429 });
     }
 
