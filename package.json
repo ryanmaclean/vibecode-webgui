@@ -274,7 +274,7 @@
     "dotenv": "17.2.3",
     "esbuild-loader": "4.4.0",
     "eslint": "^9",
-    "eslint-config-next": "16.0.1",
+    "eslint-config-next": "16.1.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
     "globals": "16.4.0",
     "hi-base32": "0.5.1",
