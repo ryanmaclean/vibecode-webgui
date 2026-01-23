@@ -1,10 +1,21 @@
 /**
  * Server-side monitoring and logging for VibeCode WebGUI
  * Integrates Datadog APM tracing, Winston logging, and custom metrics
+ *
+ * This module now supports dependency injection for better testability:
+ * - Use `setMetricsProvider()` to inject a custom metrics provider
+ * - Use `createMockProvider()` from metrics-provider.ts for testing
+ * - Default behavior remains unchanged for backward compatibility
  */
 
-
 import { createLogger, format, transports } from 'winston';
+import {
+  IMetricsProvider,
+  MetricTags,
+  metricsRegistry,
+  MockMetricsProvider,
+  createMockProvider
+} from './monitoring/metrics-provider';
 
 // Safe import and initialization of dd-trace
 let tracer: any = { init: () => {}, scope: () => ({ active: () => null }), use: () => {} };
@@ -25,15 +36,15 @@ if (!isTracingDisabled) {
         appsec: false, // Disable ASM to reduce conflicts
       });
       tracer = ddTrace;
-      console.info('🔍 Datadog APM tracer initialized');
+      console.info('Datadog APM tracer initialized');
     } else if (!process.env.DD_API_KEY) {
-      console.warn('⚠️ Datadog APM not configured (DD_API_KEY missing)');
+      console.warn('Datadog APM not configured (DD_API_KEY missing)');
     }
   } catch (error) {
-    console.warn('⚠️ Failed to initialize Datadog tracer:', error instanceof Error ? error.message : String(error));
+    console.warn('Failed to initialize Datadog tracer:', error instanceof Error ? error.message : String(error));
   }
 } else {
-  console.info('🛑 Datadog APM tracing disabled via DD_ENABLED=false');
+  console.info('Datadog APM tracing disabled via DD_ENABLED=false');
 }
 
 // Custom Winston formatter for structured logging
@@ -94,21 +105,90 @@ const logger = createLogger({
   exitOnError: false
 })
 
-// Custom metrics tracking
+// =============================================================================
+// MetricsCollector with Dependency Injection Support
+// =============================================================================
+
+/**
+ * Custom metrics tracking with pluggable backend support
+ *
+ * This class maintains backward compatibility with the original API while
+ * supporting dependency injection for different metrics providers.
+ *
+ * Usage:
+ *   // Default usage (unchanged from before)
+ *   metrics.increment('api.requests');
+ *
+ *   // For testing, inject a mock provider
+ *   const mockProvider = createMockProvider();
+ *   metrics.setProvider(mockProvider);
+ *   // ... run tests ...
+ *   mockProvider.getCalls(); // Inspect recorded metrics
+ */
 class MetricsCollector {
-  private metrics: Map<string, { count: number; lastValue?: number; sum?: number }> = new Map()
+  private metricsData: Map<string, { count: number; lastValue?: number; sum?: number }> = new Map()
   private responseTimes: Record<string, number[]> = {}
   private errors: Record<string, string[]> = {}
   private requestCounts: Record<string, number> = {}
+
+  // Injected metrics provider for external backends (DataDog, StatsD, etc.)
+  private _provider: IMetricsProvider | null = null;
+
+  /**
+   * Set the metrics provider for external metric submission
+   *
+   * @param provider - The metrics provider to use (DataDog, StatsD, Mock, etc.)
+   *
+   * Example:
+   *   // In production
+   *   metrics.setProvider(createDataDogProvider({ apiKey: '...' }));
+   *
+   *   // In tests
+   *   const mockProvider = createMockProvider();
+   *   metrics.setProvider(mockProvider);
+   */
+  setProvider(provider: IMetricsProvider): void {
+    this._provider = provider;
+  }
+
+  /**
+   * Get the current metrics provider
+   *
+   * Returns the injected provider, or falls back to the global registry provider
+   */
+  getProvider(): IMetricsProvider {
+    return this._provider || metricsRegistry.getProvider();
+  }
+
+  /**
+   * Reset the provider to default (useful for test cleanup)
+   */
+  resetProvider(): void {
+    this._provider = null;
+  }
+
+  /**
+   * Create a mock provider and inject it (convenience method for testing)
+   *
+   * @returns The created mock provider for assertions
+   */
+  injectMockProvider(): MockMetricsProvider {
+    const mockProvider = createMockProvider();
+    this.setProvider(mockProvider);
+    return mockProvider;
+  }
 
   /**
    * Increment a counter metric
    */
   increment(metricName: string, tags?: Record<string, string>): void {
     const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0 }
+    const current = this.metricsData.get(key) || { count: 0 }
     current.count += 1
-    this.metrics.set(key, current)
+    this.metricsData.set(key, current)
+
+    // Send to external provider
+    this.getProvider().increment(metricName, 1, { tags: tags as MetricTags });
 
     logger.info('Metric incremented', {
       metric: metricName,
@@ -122,9 +202,12 @@ class MetricsCollector {
    */
   gauge(metricName: string, value: number, tags?: Record<string, string>): void {
     const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0 }
+    const current = this.metricsData.get(key) || { count: 0 }
     current.lastValue = value
-    this.metrics.set(key, current)
+    this.metricsData.set(key, current)
+
+    // Send to external provider
+    this.getProvider().gauge(metricName, value, { tags: tags as MetricTags });
 
     logger.info('Gauge metric set', {
       metric: metricName,
@@ -138,11 +221,14 @@ class MetricsCollector {
    */
   histogram(metricName: string, value: number, tags?: Record<string, string>): void {
     const key = this.getMetricKey(metricName, tags)
-    const current = this.metrics.get(key) || { count: 0, sum: 0 }
+    const current = this.metricsData.get(key) || { count: 0, sum: 0 }
     current.count += 1
     current.sum = (current.sum || 0) + value
     current.lastValue = value
-    this.metrics.set(key, current)
+    this.metricsData.set(key, current)
+
+    // Send to external provider
+    this.getProvider().histogram(metricName, value, { tags: tags as MetricTags });
 
     logger.info('Histogram metric recorded', {
       metric: metricName,
@@ -151,6 +237,15 @@ class MetricsCollector {
       count: current.count,
       tags
     })
+  }
+
+  /**
+   * Record a timing metric (alias for histogram with timing semantics)
+   */
+  timing(metricName: string, duration: number, tags?: Record<string, string>): void {
+    this.histogram(metricName, duration, tags);
+    // Also send specifically as timing to provider
+    this.getProvider().timing(metricName, duration, { tags: tags as MetricTags });
   }
 
   /**
@@ -169,6 +264,11 @@ class MetricsCollector {
     if (this.responseTimes[endpoint].length > 1000) {
       this.responseTimes[endpoint] = this.responseTimes[endpoint].slice(-1000)
     }
+
+    // Send to provider
+    this.getProvider().timing('endpoint.response_time', responseTime, {
+      tags: { endpoint }
+    });
   }
 
   /**
@@ -179,6 +279,11 @@ class MetricsCollector {
       this.errors[endpoint] = []
     }
     this.errors[endpoint].push(error)
+
+    // Send to provider
+    this.getProvider().increment('endpoint.errors', 1, {
+      tags: { endpoint, error_type: error }
+    });
   }
 
   /**
@@ -189,16 +294,24 @@ class MetricsCollector {
       this.requestCounts[endpoint] = 0
     }
     this.requestCounts[endpoint]++
+
+    // Send to provider
+    this.getProvider().increment('endpoint.requests', 1, {
+      tags: { endpoint }
+    });
   }
 
   /**
    * Record custom metric (gauge-like behavior)
    */
   recordCustomMetric(metricName: string, value: number): void {
-    const existing = this.metrics.get(metricName) || { count: 0 }
+    const existing = this.metricsData.get(metricName) || { count: 0 }
     existing.lastValue = value
     existing.count++
-    this.metrics.set(metricName, existing)
+    this.metricsData.set(metricName, existing)
+
+    // Send to provider
+    this.getProvider().gauge(metricName, value);
   }
 
   /**
@@ -241,10 +354,24 @@ class MetricsCollector {
       errors: this.errors,
       requestCounts: this.requestCounts
     }
-    this.metrics.forEach((value, key) => {
+    this.metricsData.forEach((value, key) => {
       result[key] = value
     })
     return result
+  }
+
+  /**
+   * Flush any buffered metrics to the provider
+   */
+  async flush(): Promise<void> {
+    await this.getProvider().flush();
+  }
+
+  /**
+   * Shutdown the metrics collector and provider
+   */
+  async shutdown(): Promise<void> {
+    await this.getProvider().shutdown();
   }
 
   private getMetricKey(metricName: string, tags?: Record<string, string>): string {
@@ -259,8 +386,31 @@ class MetricsCollector {
 
 const metrics = new MetricsCollector()
 
-// Application-specific logging helpers
+// =============================================================================
+// ApplicationLogger with Dependency Injection Support
+// =============================================================================
+
+/**
+ * Application-specific logging helpers with metrics integration
+ *
+ * This class supports dependency injection through the metrics collector,
+ * allowing for full testability of logging operations.
+ */
 class ApplicationLogger {
+  // Allow injection of custom metrics collector for testing
+  private _metrics: MetricsCollector;
+
+  constructor(metricsCollector?: MetricsCollector) {
+    this._metrics = metricsCollector || metrics;
+  }
+
+  /**
+   * Get the metrics collector used by this logger
+   */
+  getMetrics(): MetricsCollector {
+    return this._metrics;
+  }
+
   /**
    * Log authentication events
    */
@@ -280,9 +430,9 @@ class ApplicationLogger {
     })
 
     if (context.success === false) {
-      metrics.increment('auth.failure', { event, provider: context.provider || 'unknown' })
+      this._metrics.increment('auth.failure', { event, provider: context.provider || 'unknown' })
     } else {
-      metrics.increment('auth.success', { event, provider: context.provider || 'unknown' })
+      this._metrics.increment('auth.success', { event, provider: context.provider || 'unknown' })
     }
   }
 
@@ -305,13 +455,13 @@ class ApplicationLogger {
     })
 
     if (context.duration) {
-      metrics.histogram('workspace.operation.duration', context.duration, {
+      this._metrics.histogram('workspace.operation.duration', context.duration, {
         event,
         action: context.action || 'unknown'
       })
     }
 
-    metrics.increment('workspace.events', { event, action: context.action || 'unknown' })
+    this._metrics.increment('workspace.events', { event, action: context.action || 'unknown' })
   }
 
   /**
@@ -333,18 +483,18 @@ class ApplicationLogger {
     })
 
     if (context.responseTime) {
-      metrics.histogram('ai.response_time', context.responseTime, {
+      this._metrics.histogram('ai.response_time', context.responseTime, {
         model: context.model || 'unknown'
       })
     }
 
     if (context.tokensUsed) {
-      metrics.histogram('ai.tokens_used', context.tokensUsed, {
+      this._metrics.histogram('ai.tokens_used', context.tokensUsed, {
         model: context.model || 'unknown'
       })
     }
 
-    metrics.increment('ai.interactions', {
+    this._metrics.increment('ai.interactions', {
       event,
       model: context.model || 'unknown',
       hasContext: context.codeContext ? 'true' : 'false'
@@ -370,7 +520,7 @@ class ApplicationLogger {
     })
 
     if (context.responseTime) {
-      metrics.histogram('http.response_time', context.responseTime, {
+      this._metrics.histogram('http.response_time', context.responseTime, {
         endpoint: context.endpoint || 'unknown',
         method: context.method || 'unknown',
         status: context.statusCode?.toString() || 'unknown'
@@ -378,15 +528,15 @@ class ApplicationLogger {
     }
 
     if (context.memoryUsage) {
-      metrics.gauge('system.memory_usage', context.memoryUsage)
+      this._metrics.gauge('system.memory_usage', context.memoryUsage)
     }
 
     if (context.cpuUsage) {
-      metrics.gauge('system.cpu_usage', context.cpuUsage)
+      this._metrics.gauge('system.cpu_usage', context.cpuUsage)
     }
 
     if (context.activeConnections) {
-      metrics.gauge('system.active_connections', context.activeConnections)
+      this._metrics.gauge('system.active_connections', context.activeConnections)
     }
   }
 
@@ -411,7 +561,7 @@ class ApplicationLogger {
       ...context
     })
 
-    metrics.increment('security.events', {
+    this._metrics.increment('security.events', {
       event,
       severity: context.severity,
       blocked: context.blocked ? 'true' : 'false'
@@ -431,7 +581,7 @@ class ApplicationLogger {
       userId
     })
 
-    metrics.histogram('api.response_time', responseTime, {
+    this._metrics.histogram('api.response_time', responseTime, {
       method,
       endpoint,
       status: statusCode.toString()
@@ -449,7 +599,7 @@ class ApplicationLogger {
       ...context
     })
 
-    metrics.increment('errors', {
+    this._metrics.increment('errors', {
       message,
       ...(context || {})
     })
@@ -470,13 +620,13 @@ class ApplicationLogger {
       ...context
     })
 
-    metrics.increment('business.events', {
+    this._metrics.increment('business.events', {
       event,
       feature: context.feature || 'unknown'
     })
 
     if (context.value) {
-      metrics.histogram('business.value', context.value, {
+      this._metrics.histogram('business.value', context.value, {
         event,
         feature: context.feature || 'unknown'
       })
@@ -558,13 +708,88 @@ async function getHealthCheck(): Promise<{
   }
 }
 
+// =============================================================================
+// Helper Functions for Dependency Injection
+// =============================================================================
+
+/**
+ * Set the global metrics provider
+ *
+ * @param provider - The metrics provider to use globally
+ */
+function setMetricsProvider(provider: IMetricsProvider): void {
+  metrics.setProvider(provider);
+}
+
+/**
+ * Reset the global metrics provider to default
+ */
+function resetMetricsProvider(): void {
+  metrics.resetProvider();
+}
+
+/**
+ * Create a new metrics collector with optional custom provider
+ *
+ * @param provider - Optional custom metrics provider
+ * @returns A new MetricsCollector instance
+ */
+function createMetricsCollector(provider?: IMetricsProvider): MetricsCollector {
+  const collector = new MetricsCollector();
+  if (provider) {
+    collector.setProvider(provider);
+  }
+  return collector;
+}
+
+/**
+ * Create a new ApplicationLogger with optional custom metrics
+ *
+ * @param metricsCollector - Optional custom metrics collector
+ * @returns A new ApplicationLogger instance
+ */
+function createApplicationLogger(metricsCollector?: MetricsCollector): ApplicationLogger {
+  return new ApplicationLogger(metricsCollector);
+}
+
+// =============================================================================
+// Exports
+// =============================================================================
+
 export {
+  // Core instances (backward compatible)
   logger,
   tracer,
   metrics,
   appLogger,
   performanceMiddleware,
   getHealthCheck,
+
+  // Classes for custom instantiation
   MetricsCollector,
-  ApplicationLogger
+  ApplicationLogger,
+
+  // Dependency injection helpers
+  setMetricsProvider,
+  resetMetricsProvider,
+  createMetricsCollector,
+  createApplicationLogger,
 }
+
+// Re-export types and utilities from metrics-provider for convenience
+export type { IMetricsProvider, MetricTags, MetricOptions } from './monitoring/metrics-provider';
+export {
+  createMockProvider,
+  createNoOpProvider,
+  createConsoleProvider,
+  createDataDogProvider,
+  createStatsDProvider,
+  createCompositeProvider,
+  MockMetricsProvider,
+  NoOpMetricsProvider,
+  ConsoleMetricsProvider,
+  DataDogMetricsProvider,
+  StatsDMetricsProvider,
+  CompositeMetricsProvider,
+  metricsRegistry
+} from './monitoring/metrics-provider';

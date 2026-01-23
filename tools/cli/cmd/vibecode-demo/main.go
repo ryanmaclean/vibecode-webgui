@@ -371,7 +371,7 @@ func main() {
 	tracer.Start(
 		tracer.WithService("vibecode-demo"),
 		tracer.WithEnv(getEnv("DD_ENV", "development")),
-		tracer.WithVersion(getEnv("DD_VERSION", "0.1.0-dev")),
+		tracer.WithServiceVersion(getEnv("DD_VERSION", "0.1.0-dev")),
 		tracer.WithGlobalTag("deployment.environment", getEnv("DD_ENV", "development")),
 		tracer.WithGlobalTag("service.name", "vibecode-demo"),
 		tracer.WithGlobalTag("service.version", getEnv("DD_VERSION", "0.1.0-dev")),

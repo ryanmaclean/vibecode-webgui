@@ -10,6 +10,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getClaudeCliInstance } from '@/lib/claude-cli-integration'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 import { z } from '@/lib/zod-compat'
 
 // Security: Input validation schema
@@ -23,8 +24,28 @@ const ClaudeAnalyzeRequestSchema = z.object({
   analysisType: z.enum(['analyze', 'explain', 'optimize', 'debug', 'test']).default('analyze')
 })
 
+// Rate limiting: 30 requests per minute for AI endpoints
+const apiRateLimit = createAPIRateLimit(30)
+
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user) {
@@ -107,13 +128,58 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function OPTIONS(_request: NextRequest) {
+/**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  // Default allowed origins for Claude analyze endpoint
+  return [
+    'https://vibecode.dev',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ]
+}
+
+/**
+ * Validate and return CORS origin if allowed
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+
+  const allowedOrigins = getAllowedOrigins()
+
+  // Check if the request origin is in the allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return null
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+
+  // Only set Access-Control-Allow-Origin if the origin is validated
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
+    headers,
   })
 }

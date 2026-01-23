@@ -30,6 +30,37 @@ jest.mock('@/lib/logger', () => ({
   }
 }));
 
+// Mock the logging module
+jest.mock('@/lib/logging', () => ({
+  createServiceLogger: jest.fn(() => ({
+    info: jest.fn(),
+    error: jest.fn(),
+    warn: jest.fn(),
+    debug: jest.fn()
+  })),
+  createPerformanceTimer: jest.fn(() => ({
+    stop: jest.fn(() => 100)
+  })),
+  logError: jest.fn(),
+  apiLogger: {
+    logRequest: jest.fn(() => ({ requestId: 'test-request-id' })),
+    logResponse: jest.fn()
+  }
+}));
+
+// Mock cache-utils
+jest.mock('@/lib/cache/cache-utils', () => ({
+  cacheGet: jest.fn().mockResolvedValue(null),
+  cacheSet: jest.fn().mockResolvedValue(true),
+  cacheDelete: jest.fn().mockResolvedValue(true),
+  CacheKeyGenerators: {
+    workspace: jest.fn((id: string) => `workspace:${id}`)
+  },
+  TTLPresets: {
+    SHORT: 300
+  }
+}));
+
 // Mock API utilities
 jest.mock('@/lib/api-utils', () => ({
   createErrorResponse: jest.fn((title: string, status: number, details: any) => {
@@ -44,7 +75,33 @@ jest.mock('@/lib/api-utils', () => ({
       status,
       headers: { 'Content-Type': 'application/json' }
     });
-  })
+  }),
+  ApiErrors: {
+    badRequest: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    forbidden: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 403,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    serviceUnavailable: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 503,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }),
+    notFound: jest.fn((message: string, requestId: string) => {
+      return new Response(JSON.stringify({ error: message, requestId }), {
+        status: 404,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    })
+  }
 }));
 
 // Mock ErrorResponses utility (appears to be a global or separate module)

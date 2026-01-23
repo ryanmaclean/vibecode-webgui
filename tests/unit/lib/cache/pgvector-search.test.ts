@@ -176,7 +176,10 @@ describe('PgVectorSearch', () => {
 
         expect(VectorCacheManager.getCachedResults).toHaveBeenCalledWith(
           expect.objectContaining({
-            options
+            embedding: embedding,
+            limit: 10,
+            minSimilarity: 0.7,
+            table: 'code_chunks'
           }),
           undefined
         )

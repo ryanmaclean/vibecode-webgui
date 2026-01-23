@@ -81,7 +81,7 @@ jobs:
           retry_on: error
           command: npm run test:coverage
         env:
-          DD_CI_VISIBILITY_ENABLED: true
+          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
           DD_ENV: ci
