@@ -22,6 +22,8 @@ const config = {
   testTimeout: 30000,
 
   moduleNameMapper: {
+    '^y-leveldb$': '<rootDir>/tests/__mocks__/y-leveldb.js',
+    '^y-websocket/bin/utils$': '<rootDir>/tests/__mocks__/y-websocket/bin/utils.js',
     '^lucide-react$': '<rootDir>/__mocks__/lucide-react.js',
     '^@/components/ui$': '<rootDir>/src/components/ui',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
@@ -30,6 +32,7 @@ const config = {
     '^@/hooks/(.*)$': '<rootDir>/src/hooks/$1',
     '^@/samples/(.*)$': '<rootDir>/src/samples/$1',
     '^@/types/(.*)$': '<rootDir>/src/types/$1',
+    '^@/middleware$': '<rootDir>/src/middleware.ts',
     '^@/middleware/(.*)$': '<rootDir>/src/middleware/$1',
     '^@/providers/(.*)$': '<rootDir>/src/providers/$1',
     '^@/instrument$': '<rootDir>/src/instrument.ts',

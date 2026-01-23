@@ -32,6 +32,13 @@ import {
   ToolOutput,
 } from '@/types/openai-agents'
 import { createChildLogger } from '@/lib/logger'
+import {
+  retryWithBackoff,
+  CircuitBreaker,
+  CircuitState,
+  isRetryableError,
+  TimeoutError as RetryTimeoutError,
+} from '@/lib/utils/retry'
 
 const logger = createChildLogger({ module: 'agents', scope: 'openai-client' })
 
@@ -42,6 +49,7 @@ export class OpenAIAgentsClient {
   private timeout: number
   private maxRetries: number
   private defaultHeaders: Record<string, string>
+  private circuitBreaker: CircuitBreaker
 
   constructor(config: OpenAIAgentsConfig) {
     this.apiKey = config.apiKey
@@ -56,6 +64,21 @@ export class OpenAIAgentsClient {
       ...(this.organization && { 'OpenAI-Organization': this.organization }),
       ...config.defaultHeaders,
     }
+
+    // Initialize circuit breaker for OpenAI API
+    this.circuitBreaker = new CircuitBreaker('openai-agents-api', {
+      failureThreshold: 5,
+      cooldownPeriod: 30000,
+      successThreshold: 2,
+      timeout: this.timeout,
+      onStateChange: (from, to) => {
+        logger.warn('Circuit breaker state changed', {
+          service: 'openai-agents-api',
+          from,
+          to,
+        })
+      },
+    })
 
     logger.info('OpenAI Agents client initialized', {
       baseURL: this.baseURL,
@@ -488,7 +511,7 @@ export class OpenAIAgentsClient {
   }
 
   /**
-   * Make a raw HTTP request with retry and timeout
+   * Make a raw HTTP request with retry, timeout, and circuit breaker
    */
   private async requestRaw(
     endpoint: string,
@@ -497,58 +520,60 @@ export class OpenAIAgentsClient {
     const url = `${this.baseURL}${endpoint}`
     const headers = { ...this.defaultHeaders, ...options.headers }
 
-    let lastError: Error | null = null
+    // Use circuit breaker to protect against cascade failures
+    return this.circuitBreaker.execute(
+      () =>
+        retryWithBackoff(
+          async () => {
+            const controller = new AbortController()
+            const timeoutId = setTimeout(() => controller.abort(), this.timeout)
 
-    for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
-      try {
-        const controller = new AbortController()
-        const timeoutId = setTimeout(() => controller.abort(), this.timeout)
+            try {
+              const response = await fetch(url, {
+                ...options,
+                headers,
+                signal: controller.signal,
+              })
 
-        const response = await fetch(url, {
-          ...options,
-          headers,
-          signal: controller.signal,
-        })
+              clearTimeout(timeoutId)
 
-        clearTimeout(timeoutId)
+              // Throw error for retryable status codes to trigger retry logic
+              if (
+                response.status >= 500 ||
+                response.status === 429 ||
+                response.status === 408
+              ) {
+                throw new Error(`HTTP error! status: ${response.status}`)
+              }
 
-        // Retry on 5xx errors or rate limits
-        if (
-          response.status >= 500 ||
-          response.status === 429 ||
-          response.status === 408
-        ) {
-          if (attempt < this.maxRetries) {
-            const delay = this.calculateBackoff(attempt)
-            logger.warn('Request failed, retrying', {
-              endpoint,
-              status: response.status,
-              attempt: attempt + 1,
-              delay,
-            })
-            await this.sleep(delay)
-            continue
+              return response
+            } catch (error) {
+              clearTimeout(timeoutId)
+              throw error
+            }
+          },
+          {
+            maxRetries: this.maxRetries,
+            baseDelay: 1000,
+            maxDelay: 10000,
+            jitter: 0.2,
+            timeout: this.timeout,
+            onRetry: (attempt, error, delay) => {
+              logger.warn('Request failed, retrying', {
+                endpoint,
+                error: error.message,
+                attempt,
+                delay,
+              })
+            },
           }
-        }
-
-        return response
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error))
-
-        if (attempt < this.maxRetries) {
-          const delay = this.calculateBackoff(attempt)
-          logger.warn('Request error, retrying', {
-            endpoint,
-            error: lastError.message,
-            attempt: attempt + 1,
-            delay,
-          })
-          await this.sleep(delay)
-        }
+        ),
+      // Fallback when circuit is open
+      async () => {
+        logger.error('Circuit breaker open, request rejected', { endpoint })
+        throw new Error(`Service unavailable: circuit breaker open for ${endpoint}`)
       }
-    }
-
-    throw lastError || new Error('Request failed after retries')
+    )
   }
 
   /**
@@ -601,17 +626,25 @@ export class OpenAIAgentsClient {
   }
 
   /**
-   * Calculate exponential backoff delay
+   * Get circuit breaker metrics for monitoring
    */
-  private calculateBackoff(attempt: number): number {
-    return Math.min(1000 * Math.pow(2, attempt), 10000)
+  getCircuitBreakerMetrics() {
+    return this.circuitBreaker.getMetrics()
   }
 
   /**
-   * Sleep for specified milliseconds
+   * Check if the client is healthy (circuit breaker is closed)
    */
-  private sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms))
+  isHealthy(): boolean {
+    return this.circuitBreaker.isHealthy()
+  }
+
+  /**
+   * Reset the circuit breaker (for testing/emergency)
+   */
+  resetCircuitBreaker(): void {
+    this.circuitBreaker.reset()
+    logger.info('Circuit breaker reset for OpenAI Agents client')
   }
 }
 

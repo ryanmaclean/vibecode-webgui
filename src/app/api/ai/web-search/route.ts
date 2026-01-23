@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { webSearchService } from '@/lib/services/web-search'
 import { z } from '@/lib/zod-compat'
 import { webSearchSchema } from '@/lib/api/validation/schemas'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger'
 
 // Extended schema with additional fields
@@ -20,7 +21,22 @@ interface WebSearchRequest {
   includeContent?: boolean
 }
 
+const apiRateLimit = createAPIRateLimit(20) // 20 req/min for web search
+
 export async function POST(request: NextRequest) {
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+      },
+    })
+  }
+
   try {
     // Validate request body
     let validatedData;

@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '../../../../lib/logger';
 
 // import { prismaPoolOptimizer } from '@/lib/db/prisma-pool-optimizer'
 
-export async function GET(_request: NextRequest) {
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - health checks
+
+export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     // Mock response for missing module
     return NextResponse.json({
@@ -23,7 +43,24 @@ export async function GET(_request: NextRequest) {
   }
 }
 
-export async function POST(_request: NextRequest) {
+export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     // Optimizer not available in this build; return a clear message
     return NextResponse.json(

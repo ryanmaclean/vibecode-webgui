@@ -7,6 +7,26 @@
 
 import { NextRequest } from 'next/server';
 
+// Mock rate limiter to prevent rate limiting during tests
+jest.mock('@/lib/rate-limiter', () => ({
+  checkRateLimit: jest.fn().mockResolvedValue({
+    allowed: true,
+    limit: 5,
+    remaining: 4,
+    reset: Math.floor(Date.now() / 1000) + 300,
+    current: 1,
+  }),
+  createRateLimitedResponse: jest.fn(),
+  applyRateLimitHeaders: jest.fn((response) => response),
+  RateLimitPresets: {
+    MFA_VERIFY: {
+      maxRequests: 5,
+      windowSeconds: 300,
+      message: 'Too many MFA verification attempts. Please wait before trying again.',
+    },
+  },
+}));
+
 // Mock next-auth
 jest.mock('next-auth', () => ({
   getServerSession: jest.fn(),

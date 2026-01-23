@@ -32,6 +32,7 @@ import type {
   CodeAnalysisResponse,
   CodeContext
 } from '@/lib/claude-code-sdk'
+import { AIErrorBoundary } from '@/components/error/ErrorBoundary'
 // import { logger } from '@/lib/logger';
 
 interface AICodeAssistantProps {
@@ -44,7 +45,7 @@ interface AICodeAssistantProps {
 
 type AssistantMode = 'generate' | 'analyze' | 'optimize' | 'debug' | 'test' | 'explain'
 
-export default function AICodeAssistant({
+function AICodeAssistantContent({
   className = '',
   codeContext,
   selectedText,
@@ -550,5 +551,22 @@ function AnalysisResult({
         </div>
       )}
     </div>
+  )
+}
+
+/**
+ * AI Code Assistant with Error Boundary
+ * Wraps the assistant with AI-specific error handling
+ */
+export default function AICodeAssistant(props: AICodeAssistantProps) {
+  return (
+    <AIErrorBoundary
+      componentName="AICodeAssistant"
+      onError={(error, errorInfo) => {
+        console.error('AICodeAssistant error:', error, errorInfo)
+      }}
+    >
+      <AICodeAssistantContent {...props} />
+    </AIErrorBoundary>
   )
 }

@@ -98,7 +98,7 @@ jobs:
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
         env:
-          DD_CI_VISIBILITY_ENABLED: true
+          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_ENV: ${{ env.DD_ENV }}
           DD_GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
@@ -107,7 +107,7 @@ jobs:
           DD_SERVICE: ${{ env.DD_SERVICE }}
           DD_SITE: datadoghq.com
           DD_VERSION: ${{ github.sha }}
-          DD_CIVISIBILITY_AGENTLESS_ENABLED: true
+          DD_CI_VISIBILITY_AGENTLESS_ENABLED: true
           NODE_OPTIONS: -r dd-trace/ci/init
           CI: true
         continue-on-error: true

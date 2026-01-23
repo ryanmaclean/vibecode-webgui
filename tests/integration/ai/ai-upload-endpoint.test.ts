@@ -14,6 +14,53 @@
 import { NextRequest } from 'next/server';
 import { POST, OPTIONS } from '@/app/api/ai/upload/route';
 
+// Mock rate limiting to prevent rate limiting during tests
+jest.mock('@/lib/rate-limiting', () => ({
+  createAPIRateLimit: jest.fn(() => jest.fn().mockResolvedValue({
+    success: true,
+    limit: 30,
+    remaining: 29,
+    reset: Date.now() + 60000
+  }))
+}));
+
+// Mock next-auth to bypass authentication during tests
+jest.mock('next-auth', () => ({
+  getServerSession: jest.fn().mockResolvedValue({
+    user: { id: 'test-user-id', email: 'test@example.com' }
+  })
+}));
+
+/**
+ * Helper to create a mock NextRequest with proper headers
+ */
+function createMockRequest(formData: FormData): NextRequest {
+  const mockHeaders = new Map<string, string>();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
+  return {
+    formData: async () => formData,
+    headers: {
+      get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+    },
+  } as unknown as NextRequest;
+}
+
+/**
+ * Helper to create a mock NextRequest that throws on formData()
+ */
+function createErrorMockRequest(error: Error): NextRequest {
+  const mockHeaders = new Map<string, string>();
+  mockHeaders.set('x-forwarded-for', '127.0.0.1');
+
+  return {
+    formData: async () => { throw error; },
+    headers: {
+      get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+    },
+  } as unknown as NextRequest;
+}
+
 describe('Integration: /api/ai/upload', () => {
   beforeEach(() => {
     jest.clearAllMocks();
@@ -29,9 +76,7 @@ describe('Integration: /api/ai/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -54,9 +99,7 @@ describe('Integration: /api/ai/upload', () => {
         'data.json'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -75,9 +118,7 @@ describe('Integration: /api/ai/upload', () => {
         'script.js'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -92,9 +133,7 @@ describe('Integration: /api/ai/upload', () => {
         'script.ts'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -109,9 +148,7 @@ describe('Integration: /api/ai/upload', () => {
         'index.html'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -126,9 +163,7 @@ describe('Integration: /api/ai/upload', () => {
         'styles.css'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -143,9 +178,7 @@ describe('Integration: /api/ai/upload', () => {
         'README.md'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -160,9 +193,7 @@ describe('Integration: /api/ai/upload', () => {
         'data.xml'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -177,9 +208,7 @@ describe('Integration: /api/ai/upload', () => {
         'config.yaml'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -206,9 +235,7 @@ describe('Integration: /api/ai/upload', () => {
         'file3.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -230,9 +257,7 @@ describe('Integration: /api/ai/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -253,9 +278,7 @@ describe('Integration: /api/ai/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -283,9 +306,7 @@ describe('Integration: /api/ai/upload', () => {
         'index.html'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -304,9 +325,7 @@ describe('Integration: /api/ai/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -324,9 +343,7 @@ describe('Integration: /api/ai/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -372,9 +389,7 @@ describe('Integration: /api/ai/upload', () => {
         '../../../etc/passwd'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -392,9 +407,7 @@ describe('Integration: /api/ai/upload', () => {
         'test\0.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -412,9 +425,7 @@ describe('Integration: /api/ai/upload', () => {
         'folder/file.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -433,9 +444,7 @@ describe('Integration: /api/ai/upload', () => {
         longName
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -454,9 +463,7 @@ describe('Integration: /api/ai/upload', () => {
         boundaryName
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -476,9 +483,7 @@ describe('Integration: /api/ai/upload', () => {
         'large.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(413);
@@ -501,9 +506,7 @@ describe('Integration: /api/ai/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(413);
@@ -524,9 +527,7 @@ describe('Integration: /api/ai/upload', () => {
         'limit.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -546,9 +547,7 @@ describe('Integration: /api/ai/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(200);
@@ -565,9 +564,7 @@ describe('Integration: /api/ai/upload', () => {
         'virus.exe'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -585,9 +582,7 @@ describe('Integration: /api/ai/upload', () => {
         'document.pdf'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -602,9 +597,7 @@ describe('Integration: /api/ai/upload', () => {
         'image.png'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -619,9 +612,7 @@ describe('Integration: /api/ai/upload', () => {
         'video.mp4'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(415);
@@ -636,9 +627,7 @@ describe('Integration: /api/ai/upload', () => {
         'file.bin'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -653,9 +642,7 @@ describe('Integration: /api/ai/upload', () => {
       const formData = new FormData();
       formData.append('workspaceId', 'test-workspace');
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(400);
@@ -665,11 +652,7 @@ describe('Integration: /api/ai/upload', () => {
     });
 
     it('should handle malformed form data', async () => {
-      const mockRequest = {
-        formData: async () => {
-          throw new Error('Failed to parse form data');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Failed to parse form data'));
 
       const response = await POST(mockRequest);
       expect(response.status).toBe(500);
@@ -679,11 +662,7 @@ describe('Integration: /api/ai/upload', () => {
     });
 
     it('should provide detailed error messages', async () => {
-      const mockRequest = {
-        formData: async () => {
-          throw new Error('Network timeout');
-        },
-      } as unknown as NextRequest;
+      const mockRequest = createErrorMockRequest(new Error('Network timeout'));
 
       const response = await POST(mockRequest);
       const data = await response.json();
@@ -695,13 +674,40 @@ describe('Integration: /api/ai/upload', () => {
   });
 
   describe('CORS Support', () => {
-    it('should handle OPTIONS preflight request', async () => {
-      const response = await OPTIONS();
+    it('should handle OPTIONS preflight request with valid origin', async () => {
+      const mockHeaders = new Map<string, string>();
+      mockHeaders.set('origin', 'http://localhost:3000');
+
+      const mockRequest = {
+        headers: {
+          get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+        },
+      } as unknown as NextRequest;
+
+      const response = await OPTIONS(mockRequest);
       expect(response.status).toBe(200);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('http://localhost:3000');
       expect(response.headers.get('Access-Control-Allow-Methods')).toContain('POST');
       expect(response.headers.get('Access-Control-Allow-Headers')).toContain('Content-Type');
+    });
+
+    it('should not set CORS origin header for invalid origins', async () => {
+      const mockHeaders = new Map<string, string>();
+      mockHeaders.set('origin', 'http://malicious-site.com');
+
+      const mockRequest = {
+        headers: {
+          get: (key: string) => mockHeaders.get(key.toLowerCase()) || null,
+        },
+      } as unknown as NextRequest;
+
+      const response = await OPTIONS(mockRequest);
+      expect(response.status).toBe(200);
+
+      // Should not include CORS origin for invalid origins
+      expect(response.headers.get('Access-Control-Allow-Origin')).toBeNull();
+      expect(response.headers.get('Access-Control-Allow-Methods')).toContain('POST');
     });
   });
 
@@ -715,9 +721,7 @@ describe('Integration: /api/ai/upload', () => {
         'test.txt'
       );
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const start = Date.now();
       await POST(mockRequest);
@@ -738,9 +742,7 @@ describe('Integration: /api/ai/upload', () => {
         );
       }
 
-      const mockRequest = {
-        formData: async () => formData,
-      } as unknown as NextRequest;
+      const mockRequest = createMockRequest(formData);
 
       const start = Date.now();
       await POST(mockRequest);

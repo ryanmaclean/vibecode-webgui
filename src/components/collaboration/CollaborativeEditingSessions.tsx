@@ -26,6 +26,7 @@ Users,
   RefreshCw
 } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
+import { CollaborationErrorBoundary } from '@/components/error/ErrorBoundary'
 // import { logger } from '@/lib/logger';
 
 export interface CollaborativeSession {
@@ -104,7 +105,7 @@ export interface CollaborativeEditingSessionsProps {
   className?: string
 }
 
-export default function CollaborativeEditingSessions({
+function CollaborativeEditingSessionsContent({
   currentSession,
   availableSessions,
   currentUserId,
@@ -707,5 +708,28 @@ export default function CollaborativeEditingSessions({
       {renderCreateModal()}
       {renderInviteModal()}
     </div>
+  )
+}
+
+/**
+ * CollaborativeEditingSessions with Error Boundary
+ * Wraps the component with collaboration-specific error handling
+ */
+export default function CollaborativeEditingSessions(props: CollaborativeEditingSessionsProps) {
+  const handleReconnect = useCallback(() => {
+    // Attempt to reconnect by refreshing the component
+    window.location.reload()
+  }, [])
+
+  return (
+    <CollaborationErrorBoundary
+      componentName="CollaborativeEditingSessions"
+      onReconnect={handleReconnect}
+      onError={(error, errorInfo) => {
+        console.error('CollaborativeEditingSessions error:', error, errorInfo)
+      }}
+    >
+      <CollaborativeEditingSessionsContent {...props} />
+    </CollaborationErrorBoundary>
   )
 }

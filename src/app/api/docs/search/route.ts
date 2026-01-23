@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server';
 import docsIndex from '@/data/docs-index.json';
-// import { logger } from '@/lib/logger';
+import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware';
+import { docsSearchQuerySchema, docsSearchBodySchema } from '@/lib/api/validation/schemas';
+import { sanitizeSearchQuery } from '@/lib/api/validation/sanitize';
+import { createErrorResponse } from '@/lib/utils/api-response';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
+
+// Response type definitions
 interface SearchResult {
   id: string;
   title: string;
@@ -16,18 +24,52 @@ interface SearchResult {
   }>;
 }
 
-export async function GET(request: NextRequest) {
-  try {
-    const { searchParams } = new URL(request.url);
-    const query = searchParams.get('q')?.trim();
-    const category = searchParams.get('category');
-    const limit = parseInt(searchParams.get('limit') || '10', 10);
+interface DocsSearchResponse {
+  query: string;
+  total: number;
+  results: SearchResult[];
+  categories: string[];
+  metadata: {
+    searchTime: number;
+    totalDocuments: number;
+  };
+}
 
-    if (!query) {
-      return NextResponse.json(
-        { error: 'Query parameter "q" is required' },
-        { status: 400 }
-      );
+export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
+  try {
+    // Validate query parameters with zod schema
+    const validation = validateQueryParams(request, docsSearchQuerySchema);
+    if (!validation.success) {
+      return validation.error;
+    }
+
+    const { q, category, limit } = validation.data;
+
+    // Sanitize the search query
+    const query = sanitizeSearchQuery(q);
+
+    if (!query || query.length === 0) {
+      return createErrorResponse('Query parameter "q" is required', 400, {
+        code: 'INVALID_QUERY',
+        detail: 'Search query cannot be empty after sanitization'
+      });
     }
 
     const queryTerms = query.toLowerCase().split(/\s+/).filter(term => term.length > 2);
@@ -95,7 +137,7 @@ export async function GET(request: NextRequest) {
     results.sort((a, b) => b.score - a.score);
     const limitedResults = results.slice(0, limit);
 
-    return NextResponse.json({
+    const response: DocsSearchResponse = {
       query,
       total: results.length,
       results: limitedResults,
@@ -104,36 +146,62 @@ export async function GET(request: NextRequest) {
         searchTime: Date.now(),
         totalDocuments: docsIndex.metadata.totalDocuments
       }
-    });
+    };
+
+    return NextResponse.json(response);
 
   } catch (error) {
     console.error('Documentation search error:', error);
-    return NextResponse.json(
-      { error: 'Internal server error' },
-      { status: 500 }
-    );
+    return createErrorResponse('Failed to perform search', 500, {
+      code: 'SEARCH_ERROR',
+      detail: error instanceof Error ? error.message : 'Unknown error occurred'
+    });
   }
 }
 
-// Optional: Add POST support for more complex search queries
+// POST support for more complex search queries with structured body
 export async function POST(request: NextRequest) {
-  try {
-    const body = await request.json();
-    const { query, filters = {}, options = {} } = body;
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
 
-    if (!query) {
-      return NextResponse.json(
-        { error: 'Query is required' },
-        { status: 400 }
-      );
+  try {
+    // Validate request body with zod schema
+    const validation = await validateRequestBody(request, docsSearchBodySchema);
+    if (!validation.success) {
+      return validation.error;
     }
 
-    // More complex search logic can be implemented here
-    // For now, redirect to GET with query params
+    const { query: rawQuery, filters, options } = validation.data;
+
+    // Sanitize the search query
+    const query = sanitizeSearchQuery(rawQuery);
+
+    if (!query || query.length === 0) {
+      return createErrorResponse('Query is required', 400, {
+        code: 'INVALID_QUERY',
+        detail: 'Search query cannot be empty after sanitization'
+      });
+    }
+
+    // Build search params and delegate to GET handler
     const searchParams = new URLSearchParams({
       q: query,
-      ...filters,
-      limit: options.limit?.toString() || '10'
+      ...(filters?.category && { category: filters.category }),
+      limit: (options?.limit || 10).toString()
     });
 
     const url = new URL(`/api/docs/search?${searchParams}`, request.url);
@@ -141,9 +209,9 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Documentation search POST error:', error);
-    return NextResponse.json(
-      { error: 'Invalid request body' },
-      { status: 400 }
-    );
+    return createErrorResponse('Failed to process search request', 400, {
+      code: 'INVALID_REQUEST',
+      detail: error instanceof Error ? error.message : 'Invalid request body'
+    });
   }
 }
