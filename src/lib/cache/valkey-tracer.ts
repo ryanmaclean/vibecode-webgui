@@ -3,13 +3,13 @@
  * Integrates with Datadog APM for detailed monitoring
  */
 
-import tracer from 'dd-trace';
+import tracer, { Span } from 'dd-trace';
 // import { logger } from '../server-monitoring';
 
 // Interface for the ValKey operation details
 interface ValKeyOperation {
   command: string;
-  args?: any[];
+  args?: unknown[];
   key?: string;
   keys?: string[];
   startTime: number;
@@ -18,6 +18,7 @@ interface ValKeyOperation {
   duration?: number;
   status: 'pending' | 'success' | 'error';
   source: string;
+  span?: Span;
 }
 
 /**
@@ -41,7 +42,7 @@ class ValKeyTracer {
   /**
    * Start tracking an operation
    */
-  startOperation(command: string, args: any[] = [], source: string): string {
+  startOperation(command: string, args: unknown[] = [], source: string): string {
     if (!this.enabled) return '';
     
     const operationId = `${Date.now()}-${Math.random().toString(36).substring(2, 10)}`;
@@ -56,8 +57,8 @@ class ValKeyTracer {
     } else if (['mget', 'mset'].includes(command.toLowerCase())) {
       if (Array.isArray(args[0])) {
         keys.push(...args[0].map(String));
-      } else if (typeof args[0] === 'object') {
-        keys.push(...Object.keys(args[0]));
+      } else if (args[0] !== null && typeof args[0] === 'object') {
+        keys.push(...Object.keys(args[0] as Record<string, unknown>));
       }
     }
     
@@ -86,7 +87,10 @@ class ValKeyTracer {
       }
       
       // Store span in operation
-      (this.operations.get(operationId) as any).span = span;
+      const op = this.operations.get(operationId);
+      if (op) {
+        op.span = span;
+      }
     }
     
     return operationId;
@@ -95,7 +99,7 @@ class ValKeyTracer {
   /**
    * Complete an operation with success
    */
-  endOperation(operationId: string, result?: any): void {
+  endOperation(operationId: string, result?: unknown): void {
     if (!this.enabled || !operationId) return;
     
     const operation = this.operations.get(operationId);
@@ -118,17 +122,17 @@ class ValKeyTracer {
     }
     
     // Finish Datadog span if tracing is enabled
-    if (this.tracingEnabled && (operation as any).span) {
-      const span = (operation as any).span;
+    if (this.tracingEnabled && operation.span) {
+      const span = operation.span;
       span.setTag('valkey.duration', operation.duration);
       span.setTag('valkey.status', 'success');
-      
+
       // For get operations, track hit/miss
       if (operation.command.toLowerCase() === 'get') {
         const hit = result !== null && result !== undefined;
         span.setTag('valkey.hit', hit);
       }
-      
+
       span.finish();
     }
     
@@ -161,8 +165,8 @@ class ValKeyTracer {
     });
     
     // Finish Datadog span if tracing is enabled
-    if (this.tracingEnabled && (operation as any).span) {
-      const span = (operation as any).span;
+    if (this.tracingEnabled && operation.span) {
+      const span = operation.span;
       span.setTag('valkey.duration', operation.duration);
       span.setTag('valkey.status', 'error');
       span.setTag('error', true);
@@ -186,8 +190,8 @@ class ValKeyTracer {
    * Helper to wrap a ValKey/Redis command with tracing
    */
   async traceCommand<T>(
-    command: string, 
-    args: any[] = [], 
+    command: string,
+    args: unknown[] = [],
     source: string,
     executor: () => Promise<T>
   ): Promise<T> {

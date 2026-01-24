@@ -678,14 +678,14 @@ export default function WorkspaceSharing({
       {/* Tabs */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <nav className="flex space-x-8">
-          {[
+          {([
             { key: 'members', label: 'Members', icon: Users },
             { key: 'teams', label: 'Teams', icon: Shield },
             { key: 'settings', label: 'Settings', icon: Settings }
-          ].map(({ key, label, icon: Icon }) => (
+          ] as const).map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => setActiveTab(key)}
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === key
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'
