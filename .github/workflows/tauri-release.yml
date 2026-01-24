@@ -70,9 +70,11 @@ jobs:
 
       - name: Install Tauri dependencies
         working-directory: platforms/tauri
+        env:
+          HOMEBREW_NO_AUTO_UPDATE: 1
         run: |
           # Install system dependencies if needed
-          brew install --quiet --no-auto-update \
+          brew install --quiet \
             pkg-config \
             openssl@3
 

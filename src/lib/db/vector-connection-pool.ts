@@ -5,10 +5,10 @@ import { getGlobalCoordinator } from './connection-pool-coordinator';
 import { PoolConnectionBudget, ManagedConnectionPool, PoolMetrics, PoolState, PoolStatusInfo } from './connection-pool-types';
 // Use console for logging
 const createLogger = (name: string) => ({
-  info: (message: string, ...args: any[]) => console.log(`[${name}] INFO: ${message}`, ...args),
-  error: (message: string, ...args: any[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
-  warn: (message: string, ...args: any[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
-  debug: (message: string, ...args: any[]) => console.debug(`[${name}] DEBUG: ${message}`, ...args),
+  info: (message: string, ...args: unknown[]) => console.log(`[${name}] INFO: ${message}`, ...args),
+  error: (message: string, ...args: unknown[]) => console.error(`[${name}] ERROR: ${message}`, ...args),
+  warn: (message: string, ...args: unknown[]) => console.warn(`[${name}] WARN: ${message}`, ...args),
+  debug: (message: string, ...args: unknown[]) => console.debug(`[${name}] DEBUG: ${message}`, ...args),
 });
 
 /**
@@ -54,7 +54,7 @@ export enum PoolEvent {
 export class VectorConnectionPool extends EventEmitter implements ManagedConnectionPool {
   private pool: Pool;
   private readonly logger = createLogger('VectorConnectionPool');
-  private readonly options: any;
+  private readonly options: typeof DEFAULT_POOL_CONFIG;
   public readonly name: string;
   public status: PoolState = PoolState.ACTIVE;
 
@@ -109,8 +109,8 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
     if (budget) {
       try {
         const coordinator = getGlobalCoordinator();
-        // Cast to any to handle type compatibility between PoolConnectionBudget and internal PoolBudget
-        coordinator.registerPool(this, budget as any);
+        // PoolConnectionBudget is compatible with internal PoolBudget interface
+        coordinator.registerPool(this, budget as PoolConnectionBudget);
         this.logger.info(`Registered with global coordinator`);
       } catch (error) {
         this.logger.warn('Failed to register with coordinator, operating independently');
@@ -259,7 +259,7 @@ export class VectorConnectionPool extends EventEmitter implements ManagedConnect
    * @param params Query parameters
    * @returns Query result
    */
-  public async query(text: string, params: any[] = []): Promise<QueryResult> {
+  public async query(text: string, params: unknown[] = []): Promise<QueryResult> {
     const client = await this.acquire();
     
     try {
