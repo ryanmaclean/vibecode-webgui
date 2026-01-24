@@ -45,8 +45,8 @@ interface WebSearchResult {
 
 interface FunctionCallResult {
   name: string
-  arguments: Record<string, any>
-  result: any
+  arguments: Record<string, unknown>
+  result: unknown
   success: boolean
   error?: string
 }
@@ -138,7 +138,8 @@ export const HuggingFaceChatInterface = ({
         const data = await response.json()
         if (data.initialized) {
           // Client will use server-side proxy for HF calls
-          setHfClient({ initialized: true } as any)
+          // Using type assertion since we're creating a stub object for state tracking
+          setHfClient({ initialized: true } as unknown as HfInference)
         }
       } catch (error) {
         console.error('Failed to initialize Hugging Face client:', error)
@@ -169,7 +170,7 @@ export const HuggingFaceChatInterface = ({
 
       const data = await response.json()
       if (data.success && data.conversation) {
-        setMessages(data.conversation.messages.map((msg: any) => ({
+        setMessages(data.conversation.messages.map((msg: { createdAt: string | Date } & Omit<Message, 'createdAt'>) => ({
           ...msg,
           createdAt: new Date(msg.createdAt)
         })))
@@ -326,7 +327,7 @@ export const HuggingFaceChatInterface = ({
       }
 
       let assistantResponse = ''
-      let responseMetadata: any = {}
+      let responseMetadata: Message['metadata'] = {}
 
       if (useHuggingFace && hfClient) {
         // Use Hugging Face for response

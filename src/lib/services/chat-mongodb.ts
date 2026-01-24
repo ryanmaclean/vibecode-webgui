@@ -3,9 +3,26 @@
  * Handles chat message storage, retrieval, and conversation management
  */
 
-import { Collection, ObjectId } from 'mongodb';
+import { Collection, ObjectId, Filter, Document } from 'mongodb';
 import { v4 as uuidv4 } from 'uuid';
 // import { logger } from '@/lib/logger';
+
+// Type definitions for dynamic metadata and tools
+export interface FunctionCall {
+  name: string;
+  arguments?: Record<string, unknown>;
+  result?: unknown;
+}
+
+export interface AssistantTool {
+  type: string;
+  function?: {
+    name: string;
+    description?: string;
+    parameters?: Record<string, unknown>;
+  };
+}
+
 export interface ChatMessage {
   _id?: ObjectId;
   id?: string;
@@ -18,8 +35,9 @@ export interface ChatMessage {
     model?: string;
     tokens?: number;
     confidence?: number;
-    functionCalls?: any[];
-    [key: string]: any;
+    functionCalls?: FunctionCall[];
+    files?: string[];
+    [key: string]: unknown;
   };
 }
 
@@ -55,10 +73,11 @@ export interface ChatAssistant {
   instructions?: string;
   model: string;
   userId: string;
-  tools?: any[];
+  tools?: AssistantTool[];
   files?: string[];
   createdAt: Date;
   updatedAt: Date;
+  createdBy?: string;
 }
 
 export interface ChatStats {
@@ -148,12 +167,12 @@ export class ChatMongoDBService {
 
     const { limit = 50, offset = 0, before, after } = options;
 
-    const query: any = { workspaceId };
+    const query: Filter<ChatMessage> = { workspaceId };
 
     if (before || after) {
       query.timestamp = {};
-      if (after) query.timestamp.$gte = after;
-      if (before) query.timestamp.$lte = before;
+      if (after) (query.timestamp as Document).$gte = after;
+      if (before) (query.timestamp as Document).$lte = before;
     }
 
     const messages = await this.messagesCollection
@@ -188,7 +207,7 @@ export class ChatMongoDBService {
       searchTerm
     } = options;
 
-    const searchCriteria: any = {};
+    const searchCriteria: Filter<ChatMessage> = {};
 
     if (workspaceId) searchCriteria.workspaceId = workspaceId;
     if (userId) searchCriteria.userId = userId;
@@ -196,13 +215,13 @@ export class ChatMongoDBService {
 
     if (startDate || endDate) {
       searchCriteria.timestamp = {};
-      if (startDate) searchCriteria.timestamp.$gte = startDate;
-      if (endDate) searchCriteria.timestamp.$lte = endDate;
+      if (startDate) (searchCriteria.timestamp as Document).$gte = startDate;
+      if (endDate) (searchCriteria.timestamp as Document).$lte = endDate;
     }
 
     // Text search in message content
     if (searchTerm) {
-      searchCriteria.$text = { $search: searchTerm };
+      (searchCriteria as Document).$text = { $search: searchTerm };
     }
 
     const total = await this.messagesCollection.countDocuments(searchCriteria);
@@ -302,11 +321,11 @@ export class ChatMongoDBService {
         model: modelOrTitle,
         userId,
         workspaceId,
-        messages: [],
+        messages: [] as ObjectId[],
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      };
     } else {
       // Old signature: (workspaceId, userId, title?)
       conversationData = {
@@ -314,11 +333,11 @@ export class ChatMongoDBService {
         workspaceId: titleOrWorkspaceId,
         userId: sessionIdOrUserId,
         title: modelOrTitle,
-        messages: [],
+        messages: [] as ObjectId[],
         createdAt: new Date(),
         updatedAt: new Date(),
         isActive: true
-      } as any;
+      };
     }
 
     const result = await this.conversationsCollection.insertOne(conversationData);
@@ -372,7 +391,7 @@ export class ChatMongoDBService {
       throw new Error('Chat service not initialized');
     }
 
-    const matchCriteria: any = {};
+    const matchCriteria: Filter<ChatMessage> = {};
     if (workspaceId) matchCriteria.workspaceId = workspaceId;
 
     // Get message statistics
@@ -733,7 +752,7 @@ export class ChatMongoDBService {
     const messageId = uuidv4();
 
     // Create the message document
-    const messageDoc: Omit<ChatMessage, '_id'> & { id: string } = {
+    const messageDoc: ChatMessage = {
       id: messageId,
       workspaceId: conversation.workspaceId,
       userId: conversation.userId,
@@ -741,9 +760,9 @@ export class ChatMongoDBService {
       content: message.content,
       timestamp: new Date(),
       metadata: message.files ? { files: message.files } : undefined
-    } as any;
+    };
 
-    const result = await this.messagesCollection.insertOne(messageDoc as any);
+    const result = await this.messagesCollection.insertOne(messageDoc);
 
     // Add message reference to conversation
     await this.conversationsCollection.updateOne(
@@ -822,7 +841,7 @@ export class ChatMongoDBService {
     }
 
     // Search in messages first
-    const searchCriteria: any = {
+    const searchCriteria: Filter<ChatMessage> = {
       userId,
       content: { $regex: query, $options: 'i' }
     };
@@ -875,16 +894,19 @@ export class ChatMongoDBService {
       throw new Error('Chat service not initialized');
     }
 
-    const matchCriteria: any = { userId };
-    if (workspaceId) matchCriteria.workspaceId = workspaceId;
+    const conversationCriteria: Filter<ChatConversation> = { userId };
+    if (workspaceId) conversationCriteria.workspaceId = workspaceId;
 
-    const totalConversations = await this.conversationsCollection.countDocuments(matchCriteria);
+    const messageCriteria: Filter<ChatMessage> = { userId };
+    if (workspaceId) messageCriteria.workspaceId = workspaceId;
+
+    const totalConversations = await this.conversationsCollection.countDocuments(conversationCriteria);
     const activeConversations = await this.conversationsCollection.countDocuments({
-      ...matchCriteria,
+      ...conversationCriteria,
       isActive: true
     });
 
-    const totalMessages = await this.messagesCollection.countDocuments(matchCriteria);
+    const totalMessages = await this.messagesCollection.countDocuments(messageCriteria);
 
     return {
       totalConversations,
@@ -903,7 +925,7 @@ export class ChatMongoDBService {
     instructions: string,
     model: string,
     createdBy: string,
-    tools?: any[],
+    tools?: AssistantTool[],
     files?: string[]
   ): Promise<ChatAssistant & { id: string; createdBy: string }> {
     if (!this.assistantsCollection) {
@@ -912,7 +934,7 @@ export class ChatMongoDBService {
 
     const id = uuidv4();
 
-    const assistant: Omit<ChatAssistant, '_id'> & { createdBy: string } = {
+    const assistant: ChatAssistant & { createdBy: string } = {
       id,
       name,
       description,
@@ -926,7 +948,7 @@ export class ChatMongoDBService {
       updatedAt: new Date()
     };
 
-    const result = await this.assistantsCollection.insertOne(assistant as any);
+    const result = await this.assistantsCollection.insertOne(assistant);
     return {
       ...assistant,
       _id: result.insertedId,

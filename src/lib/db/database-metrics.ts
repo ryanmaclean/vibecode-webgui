@@ -1,3 +1,10 @@
+/**
+ * Global state interface for tracking application start time
+ */
+interface GlobalWithStartTime {
+    __startTime?: number;
+}
+
 export interface DatabaseMetrics {
     connectionPool: {
         totalConnections: number;
@@ -158,7 +165,7 @@ class MetricsCollector {
                 diskUsage: 65.4, // Would need OS integration for real values
                 memoryUsage: 72.1,
                 cpuUsage: 45.2,
-                uptime: Date.now() - (global as any).__startTime || 86400
+                uptime: Date.now() - ((global as GlobalWithStartTime).__startTime ?? (Date.now() - 86400))
             }
         };
     }

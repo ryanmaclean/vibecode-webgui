@@ -25,9 +25,12 @@ import {
 // Add global Window interface declaration for gtag
 declare global {
   interface Window {
-    gtag?: (...args: any[]) => void;
+    gtag?: (command: string, eventName: string, eventParams?: Record<string, unknown>) => void;
   }
 }
+
+/** Platform configuration type for deployment targets */
+type DeploymentPlatform = typeof DEPLOYMENT_PLATFORMS[number]
 
 // Deployment platform configurations
 const DEPLOYMENT_PLATFORMS = [
@@ -133,10 +136,10 @@ export default function OneClickDeploy({ className = '' }: OneClickDeployProps) 
   const [copiedEnv, setCopiedEnv] = useState<string | null>(null)
   const [showEnvTemplate, setShowEnvTemplate] = useState(false)
 
-  const handleDeploy = (platform: any) => {
+  const handleDeploy = (platform: DeploymentPlatform) => {
     // Track deployment initiation
     if (typeof window !== 'undefined') {
-      (window as any).gtag?.('event', 'deploy_initiated', {
+      window.gtag?.('event', 'deploy_initiated', {
         platform: platform.id,
         complexity: platform.complexity
       })

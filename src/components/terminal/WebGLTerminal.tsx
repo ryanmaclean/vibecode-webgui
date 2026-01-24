@@ -320,9 +320,16 @@ export default function WebGLTerminal({
   /**
    * Get memory usage (approximation)
    */
+  interface PerformanceMemory {
+    usedJSHeapSize: number;
+    totalJSHeapSize: number;
+    jsHeapSizeLimit: number;
+  }
+
   const getMemoryUsage = useCallback((): number => {
     if ('memory' in performance) {
-      return Math.round((performance as any).memory.usedJSHeapSize / 1024 / 1024)
+      const perfWithMemory = performance as Performance & { memory: PerformanceMemory };
+      return Math.round(perfWithMemory.memory.usedJSHeapSize / 1024 / 1024)
     }
     return 0
   }, [])
@@ -361,7 +368,13 @@ export default function WebGLTerminal({
   /**
    * Search in terminal
    */
-  const searchInTerminal = useCallback((term: string, options?: any) => {
+  interface SearchOptions {
+    caseSensitive?: boolean;
+    wholeWord?: boolean;
+    regex?: boolean;
+  }
+
+  const searchInTerminal = useCallback((_term: string, _options?: SearchOptions) => {
     return false
   }, [])
 
@@ -392,13 +405,21 @@ export default function WebGLTerminal({
     return () => window.removeEventListener('resize', handleResize)
   }, [handleResize])
 
+  // Extended terminal interface for external access
+  interface ExtendedTerminal extends Terminal {
+    clearTerminal?: () => void;
+    writeToTerminal?: (data: string) => void;
+    searchInTerminal?: (term: string, options?: SearchOptions) => boolean;
+  }
+
   // Expose methods for parent components
   useEffect(() => {
     if (isReady && terminal.current) {
       // Attach methods to terminal instance for external access
-      ;(terminal.current as any).clearTerminal = clearTerminal
-      ;(terminal.current as any).writeToTerminal = writeToTerminal
-      ;(terminal.current as any).searchInTerminal = searchInTerminal
+      const extendedTerminal = terminal.current as ExtendedTerminal;
+      extendedTerminal.clearTerminal = clearTerminal
+      extendedTerminal.writeToTerminal = writeToTerminal
+      extendedTerminal.searchInTerminal = searchInTerminal
     }
   }, [isReady, clearTerminal, writeToTerminal, searchInTerminal])
 

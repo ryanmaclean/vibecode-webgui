@@ -327,7 +327,7 @@ ${getToolCapabilities(enableTools)}
     const { Response: GlobalResponse } = globalThis
 
     // Validate CORS origin
-    const requestOrigin = (request as any).headers?.get('origin')
+    const requestOrigin = request.headers.get('origin')
     const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
     const responseHeaders: Record<string, string> = {
       'Content-Type': 'text/event-stream',
