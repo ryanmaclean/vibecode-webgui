@@ -276,7 +276,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.4",
     "eslint-plugin-jsx-a11y": "6.10.2",
-    "globals": "16.4.0",
+    "globals": "17.2.0",
     "hi-base32": "0.5.1",
     "husky": "9.1.7",
     "jest": "^30.0.4",
