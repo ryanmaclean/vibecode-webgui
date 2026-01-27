@@ -122,8 +122,8 @@ I've created automated fix scripts:
 
 ### **Quick Fix Script:**
 ```bash
-chmod +x scripts/util/fix-database-connections.sh
-./scripts/util/fix-database-connections.sh
+chmod +x scripts/util/fix-database-connections.py
+./scripts/util/fix-database-connections.py
 ```
 
 ### **Comprehensive Troubleshooting:**
