@@ -6,16 +6,16 @@ Easy VM orchestration for VibeCode's vfkit-based infrastructure.
 
 ```bash
 # Start all VMs
-./vm-manager.sh start-all
+python scripts/vfkit/vm-manager.py start-all
 
 # Check status
-./vm-manager.sh list
+python scripts/vfkit/vm-manager.py list
 
 # Run tests
 ./test-all-vms.sh
 
 # Stop all VMs
-./vm-manager.sh stop-all
+python scripts/vfkit/vm-manager.py stop-all
 ```
 
 ## VMs
@@ -30,23 +30,23 @@ Easy VM orchestration for VibeCode's vfkit-based infrastructure.
 
 ```bash
 # Individual VMs
-./vm-manager.sh start valkey
-./vm-manager.sh stop postgresql
-./vm-manager.sh restart nodejs-dev
-./vm-manager.sh status valkey
+python scripts/vfkit/vm-manager.py start valkey
+python scripts/vfkit/vm-manager.py stop postgresql
+python scripts/vfkit/vm-manager.py restart nodejs-dev
+python scripts/vfkit/vm-manager.py status valkey
 
 # All VMs
-./vm-manager.sh start-all
-./vm-manager.sh stop-all
-./vm-manager.sh list
+python scripts/vfkit/vm-manager.py start-all
+python scripts/vfkit/vm-manager.py stop-all
+python scripts/vfkit/vm-manager.py list
 
 # Logs
-./vm-manager.sh logs valkey 100
-./vm-manager.sh follow nodejs-dev
+python scripts/vfkit/vm-manager.py logs valkey 100
+python scripts/vfkit/vm-manager.py follow nodejs-dev
 
 # Health & Monitoring
-./vm-manager.sh health
-./vm-manager.sh monitor
+python scripts/vfkit/vm-manager.py health
+python scripts/vfkit/vm-manager.py monitor
 
 # Testing
 ./test-valkey.sh
@@ -54,6 +54,16 @@ Easy VM orchestration for VibeCode's vfkit-based infrastructure.
 ./test-nodejs-dev.sh
 ./test-all-vms.sh
 ```
+
+## Python CLI replacements
+
+The vfkit tooling is migrating from bash to Python. The following entrypoints are available today:
+
+- `scripts/vfkit/vm-manager.py` – complete orchestration CLI covering `start`, `stop`, `logs`, `health`, etc.
+- `scripts/vfkit/start-*.py` – thin wrappers that call `vm-manager.py start <vm>` for each VM.
+- `scripts/vfkit/start-all-vms.py`, `scripts/vfkit/stop-all-vms.py`, `scripts/vfkit/vm-health-check.py` – wrappers for the respective bulk/health commands.
+
+Run them either via `./scripts/vfkit/<name>.py` (after `chmod +x`) or explicitly with `python scripts/vfkit/<name>.py`. Their behaviour is covered by unit tests in `tests/vfkit/`.
 
 ## Connecting to Services
 
@@ -81,18 +91,18 @@ curl http://localhost:3000/health
 
 ```bash
 # Check status
-./vm-manager.sh list
+python scripts/vfkit/vm-manager.py list
 
 # View logs
-./vm-manager.sh logs valkey 100
+python scripts/vfkit/vm-manager.py logs valkey 100
 
 # Restart if stuck
-./vm-manager.sh restart valkey
+python scripts/vfkit/vm-manager.py restart valkey
 
 # Full reset
-./vm-manager.sh stop-all
+python scripts/vfkit/vm-manager.py stop-all
 rm ~/.vibecode/vm-pids/*.pid
-./vm-manager.sh start-all
+python scripts/vfkit/vm-manager.py start-all
 ```
 
 ## Directory Structure
