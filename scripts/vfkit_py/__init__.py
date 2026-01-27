@@ -9,6 +9,7 @@ script can remain a thin wrapper around the real orchestration logic.
 from .paths import VFKitPaths
 from .log import log_error, log_info, log_section, log_success, log_warn
 from .runner import run_command
+from .valkey_tester import ValkeyCLI, ValkeyConfig, ValkeyTestSuite, ValkeyTester
 
 __all__ = [
     "VFKitPaths",
@@ -18,4 +19,8 @@ __all__ = [
     "log_success",
     "log_warn",
     "run_command",
+    "ValkeyCLI",
+    "ValkeyConfig",
+    "ValkeyTestSuite",
+    "ValkeyTester",
 ]

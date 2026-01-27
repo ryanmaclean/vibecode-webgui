@@ -49,7 +49,7 @@ python scripts/vfkit/vm-manager.py health
 python scripts/vfkit/vm-manager.py monitor
 
 # Testing
-./test-valkey.sh
+python scripts/vfkit/test-valkey.py  # Python replacement for test-valkey.sh
 ./test-postgresql.sh
 ./test-nodejs-dev.sh
 ./test-all-vms.sh
@@ -62,6 +62,7 @@ The vfkit tooling is migrating from bash to Python. The following entrypoints ar
 - `scripts/vfkit/vm-manager.py` – complete orchestration CLI covering `start`, `stop`, `logs`, `health`, etc.
 - `scripts/vfkit/start-*.py` – thin wrappers that call `vm-manager.py start <vm>` for each VM.
 - `scripts/vfkit/start-all-vms.py`, `scripts/vfkit/stop-all-vms.py`, `scripts/vfkit/vm-health-check.py` – wrappers for the respective bulk/health commands.
+- `scripts/vfkit/test-valkey.py` – Python translation of the Valkey integration test suite.
 
 Run them either via `./scripts/vfkit/<name>.py` (after `chmod +x`) or explicitly with `python scripts/vfkit/<name>.py`. Their behaviour is covered by unit tests in `tests/vfkit/`.
 

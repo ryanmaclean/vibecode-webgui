@@ -44,3 +44,12 @@ def log_section(title: str, stream: TextIO = sys.stdout) -> None:
     stream.write(f"\n{COLORS.cyan}==={COLORS.reset} {title} {COLORS.cyan}==={COLORS.reset}\n")
     stream.flush()
 
+
+__all__ = [
+    "COLORS",
+    "log_error",
+    "log_info",
+    "log_section",
+    "log_success",
+    "log_warn",
+]

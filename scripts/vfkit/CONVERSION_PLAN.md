@@ -66,6 +66,7 @@ All future conversions import from `scripts.vfkit_py` rather than duplicating sh
 
 - ✅ Converted `vm-manager.sh` → `scripts/vfkit/vm-manager.py` backed by `vfkit_py.vm_manager` + unit tests (`tests/vfkit/test_vm_manager.py`).
 - ✅ Added Python wrappers for `start-nodejs-dev`, `start-postgresql`, `start-valkey`, `start-all-vms`, `stop-all-vms`, and `vm-health-check` (`tests/vfkit/test_vm_wrappers.py`).
+- ✅ Ported `test-valkey.sh` to `scripts/vfkit/test-valkey.py` with reusable `ValkeyTester`/suite modules plus coverage in `tests/vfkit/test_valkey_suite.py`.
 - ✅ Generated `scripts/vfkit/sh_manifest.json` for tracking and `runner_helper.py` bootstrap to keep wrappers thin.
 - ⏭️ Remaining workload: 90 shell scripts (builders, installers, test harnesses). Group them into:
   - *VM builders* (01–14, build-*, create-*) – need reusable download/build helpers.
