@@ -795,7 +795,7 @@ Track and compare system performance over time:
 | `check-datadog-dbmon-metrics.sh` | Check DBM metrics | Datadog Setup |
 | `verify-datadog-metrics.js` | Verify metrics | Datadog Setup |
 | `continuous-performance-monitor.sh` | Performance monitoring | Performance |
-| `test-datadog-logging.sh` | Test logging | Logs |
+| `test_datadog_logging.py` | Test logging | Logs |
 | `test-health-endpoints.sh` | Test health checks | Health |
 | `validate-healthchecks.sh` | Validate endpoints | Health |
 | `test-k8s-health-probes.sh` | K8s health probes | Health |
@@ -821,7 +821,7 @@ Complete mapping from standalone scripts to menu options:
 | `check-datadog-dbmon-metrics.sh` | Monitoring > 5 | Check Datadog DBM metrics |
 | `verify-datadog-metrics.js` | Monitoring > 6 | Verify Datadog metrics |
 | `continuous-performance-monitor.sh` | Monitoring > 10 | Continuous performance monitoring |
-| `test-datadog-logging.sh` | Monitoring > 14 | Test Datadog logging |
+| `test_datadog_logging.py` | Monitoring > 14 | Test Datadog logging |
 | `validate-monitoring.js` | Monitoring > 18 | Validate monitoring setup |
 | `test-monitoring.sh` | Monitoring > 18 | Test monitoring integration |
 | `test-health-endpoints.sh` | Monitoring > 20 | Check services health |

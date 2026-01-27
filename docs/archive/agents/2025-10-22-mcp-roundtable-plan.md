@@ -63,7 +63,7 @@ Generated via Sequential Thinking MCP (`http://localhost:3004/v1/tools/think_seq
    - Patch init scripts and validate on both stable + insiders tarballs.
    - Provide troubleshooting section in `fast-openvscode-vm/README.md`.
    - Deliverable: working handshake fix and tests linked to #552.
-   - Links: `fast-openvscode-vm/rootfs/init`, `scripts/tests/fast-openvscode-handshake.sh`.
+   - Links: `fast-openvscode-vm/rootfs/init`, `scripts/tests/test_fast_openvscode_handshake.py`.
    - Verification: smoke script passes; handshake issue reproducible before fix.
 7. **Codex-Benchmarks**
    - Finish DogStatsD integration for microVM boot latency and handshake success metrics.

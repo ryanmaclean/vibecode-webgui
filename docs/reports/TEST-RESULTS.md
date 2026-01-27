@@ -37,7 +37,7 @@
 - ✅ **Service Tagging**: Proper service and environment tags applied
 
 ### Environment Configuration Tests
-- ✅ **Multi-file Support**: Supports .env.local, .env.azure, test-env.sh
+- ✅ **Multi-file Support**: Supports .env.local, .env.azure, test_env_example.py
 - ✅ **Variable Loading**: All required variables loaded correctly
 - ✅ **Default Fallbacks**: Proper defaults when environment files missing
 - ✅ **Security**: API keys properly masked in logs
@@ -46,7 +46,7 @@
 
 ### Test 1: AKS Bootstrap Script Validation
 ```bash
-./test-aks-bootstrap.sh
+pytest scripts/tests/bootstrap/test_aks_bootstrap.py
 ```
 
 **Results:**
@@ -63,7 +63,7 @@
 
 ### Test 2: Datadog Logging Integration
 ```bash
-./test-datadog-logging.sh
+pytest scripts/tests/datadog/test_datadog_logging.py
 ```
 
 **Results:**
@@ -99,7 +99,7 @@
 
 ### Test 3: Azure Infrastructure Deployment
 ```bash
-./test-azure-deployment.sh
+pytest scripts/tests/azure/test_azure_deployment.py
 ```
 
 **Results:**

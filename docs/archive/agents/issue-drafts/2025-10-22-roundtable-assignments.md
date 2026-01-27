@@ -5,7 +5,7 @@
 >
 > • Goal: Deliver reproducible failure log and patch `fast-openvscode-vm/rootfs/init` so `/` responds without reset.
 > • Dependencies: Orchestrator coordination, Codex-Benchmarks for post-fix telemetry.
-> • First Deliverable (Day 0): Attach curl trace showing current handshake failure and outline smoke test script (`scripts/tests/fast-openvscode-handshake.sh`).
+> • First Deliverable (Day 0): Attach curl trace showing current handshake failure and outline smoke test script (`scripts/tests/test_fast_openvscode_handshake.py`).
 
 ## Issue #553 – Automated Benchmark Pipeline
 > Assigned to: Codex-Benchmarks (blocked by #552)
