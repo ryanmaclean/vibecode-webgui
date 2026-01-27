@@ -119,7 +119,7 @@
     "security:test": "./scripts/security-test.sh",
     "security:audit": "npm audit --audit-level=moderate",
     "security:fix": "npm audit fix",
-    "security:migrate-keychain": "bash scripts/security/migrate-secrets-to-keychain.sh",
+    "security:migrate-keychain": "python3 scripts/security/migrate_secrets_to_keychain.py",
     "security:validate-keychain": "npx tsx scripts/security/validate-keychain.ts",
     "deps:check": "node scripts/check-dependency-compatibility.mjs",
     "deps:check:ci": "node scripts/check-dependency-compatibility.mjs --skip-phantom",
