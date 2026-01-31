@@ -1,3 +1,15 @@
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Datadog LLM Observability setup for Python scripts.
 Import this at the top of Python files that use LLM libraries.
@@ -62,4 +74,3 @@ if __name__ != '__main__':
 if __name__ == '__main__':
     # Allow manual testing
     setup_datadog_llmobs()
-

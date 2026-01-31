@@ -219,6 +219,7 @@ platforms/kubernetes/*
 platforms/docker/*
 !platforms/docker/scripts/
 !platforms/tauri/
+!platforms/macos/
 
 # Build directories
 initramfs-rebuild/
@@ -387,3 +388,12 @@ PROMISE_VERIFICATION_REPORT.md
 .beads/
 .runtime/
 .venv/
+
+# Tauri build artifacts (large)
+src-tauri/target/
+
+# Separate workspace (should not be committed)
+vibecode_webgui/
+
+# Event logs
+.events.jsonl
