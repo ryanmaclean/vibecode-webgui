@@ -45,9 +45,16 @@ interface DatabaseMetrics {
   p99QueryTime: number;
   errorRate: number;
   slowQueries: number;
-  queriesByType: Record<string, any>;
-  queriesByTable: Record<string, any>;
-  [key: string]: any;
+  queriesByType: Record<string, number>;
+  queriesByTable: Record<string, number>;
+  [key: string]: unknown;
+}
+
+interface PoolStatus {
+  size: number;
+  inUse: number;
+  maxSize: number;
+  available: number;
 }
 
 /**
@@ -106,10 +113,19 @@ export async function GET(request: NextRequest) {
     import('@/lib/db/pool-adapter'),
     import('@/lib/api/validation/middleware'),
   ]);
-  const { createRobustConnection, getConnectionPoolStatus } = dbMod;
-  const { getDatabaseMetricsCollector } = metricsMod;
-  const { adaptPoolStatus } = poolMod;
-  const { validateQueryParams } = validationMod;
+  const { createRobustConnection, getConnectionPoolStatus } = dbMod as unknown as {
+    createRobustConnection: (options: { debug: boolean; poolKey: string; enableLogging: boolean }) => Promise<{ success: boolean; prisma?: { $queryRaw: <T>(strings: TemplateStringsArray, ...values: unknown[]) => Promise<T> }; error?: { message: string }; release?: () => void }>;
+    getConnectionPoolStatus: () => unknown;
+  };
+  const { getDatabaseMetricsCollector } = metricsMod as unknown as {
+    getDatabaseMetricsCollector: () => { getMetrics: () => Partial<DatabaseMetrics> };
+  };
+  const { adaptPoolStatus } = poolMod as unknown as {
+    adaptPoolStatus: (status: unknown) => PoolStatus;
+  };
+  const { validateQueryParams } = validationMod as unknown as {
+    validateQueryParams: (request: NextRequest, schema: unknown) => { success: boolean; data: { format?: string; verbose?: boolean }; error?: NextResponse };
+  };
 
   // Validate query parameters
   const { healthCheckQuerySchema } = await import('@/lib/api/validation/schemas');
@@ -155,8 +171,8 @@ export async function GET(request: NextRequest) {
     const poolStatus = adaptPoolStatus(rawPoolStatus);
     
     // Get database metrics
-    let metricsData: DatabaseMetrics | undefined = undefined;
-    
+    let metricsData: Partial<DatabaseMetrics> | undefined = undefined;
+
     if (includeMetrics) {
       const metricsCollector = getDatabaseMetricsCollector();
       metricsData = metricsCollector.getMetrics();
@@ -316,13 +332,13 @@ ${verbose && response.stats ? `Database Statistics:
       if (metricsData) {
         textResponse += `
 Database Metrics:
-- Total Queries: ${metricsData.totalQueries}
-- Queries Per Second: ${metricsData.totalQueriesPerSecond.toFixed(2)}
-- Average Query Time: ${metricsData.avgQueryTime.toFixed(2)}ms
-- P95 Query Time: ${metricsData.p95QueryTime.toFixed(2)}ms
-- P99 Query Time: ${metricsData.p99QueryTime.toFixed(2)}ms
-- Error Rate: ${(metricsData.errorRate * 100).toFixed(2)}%
-- Slow Queries: ${metricsData.slowQueries}
+- Total Queries: ${metricsData.totalQueries ?? 0}
+- Queries Per Second: ${(metricsData.totalQueriesPerSecond ?? 0).toFixed(2)}
+- Average Query Time: ${(metricsData.avgQueryTime ?? 0).toFixed(2)}ms
+- P95 Query Time: ${(metricsData.p95QueryTime ?? 0).toFixed(2)}ms
+- P99 Query Time: ${(metricsData.p99QueryTime ?? 0).toFixed(2)}ms
+- Error Rate: ${((metricsData.errorRate ?? 0) * 100).toFixed(2)}%
+- Slow Queries: ${metricsData.slowQueries ?? 0}
 `;
       }
       

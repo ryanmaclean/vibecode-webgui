@@ -122,8 +122,8 @@ I've created automated fix scripts:
 
 ### **Quick Fix Script:**
 ```bash
-chmod +x fix-database-connections.sh
-./fix-database-connections.sh
+chmod +x scripts/fix-database-connections.py
+./scripts/fix-database-connections.py
 ```
 
 ### **Comprehensive Troubleshooting:**
@@ -188,4 +188,3 @@ az postgres flexible-server logs list \
 **🎉 Once database connections are fixed, the DBM-APM connection will be fully functional!**
 
 The DBM-APM configuration is already deployed and ready - we just need to resolve these database connectivity issues to complete the testing.
-

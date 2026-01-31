@@ -107,6 +107,34 @@ export interface ExperimentSummary {
   };
 }
 
+/**
+ * Metric record with variant information from warehouse
+ */
+interface MetricRecord {
+  id?: string;
+  experiment_id?: string;
+  user_id?: string;
+  variant_key?: string;
+  metric_name?: string;
+  value: number;
+  timestamp?: Date;
+  metadata?: Record<string, unknown>;
+}
+
+/**
+ * Assignment record from warehouse
+ */
+interface AssignmentRecord {
+  id?: string;
+  experiment_id?: string;
+  user_id?: string;
+  variant_key?: string;
+  timestamp?: Date;
+  metadata?: Record<string, unknown>;
+}
+
+
+
 // ==================== EXPERIMENT CONFIGURATION ====================
 
 export const SPEECH_TO_TEXT_EXPERIMENT: SpeechToTextExperiment = {
@@ -185,31 +213,6 @@ export const SPEECH_TO_TEXT_EXPERIMENT: SpeechToTextExperiment = {
     }
   ]
 };
-
-
-/**
- * Interface for warehouse metric records
- */
-interface WarehouseMetric {
-  id: string;
-  experiment_id: string;
-  user_id: string;
-  variant_key: string;
-  metric_name: string;
-  value: number;
-  timestamp: Date;
-}
-
-/**
- * Interface for warehouse assignment records
- */
-interface WarehouseAssignment {
-  id: string;
-  experiment_id: string;
-  user_id: string;
-  variant_key: string;
-  timestamp: Date;
-}
 
 // ==================== CORE EXPERIMENT FUNCTIONS ====================
 
@@ -494,7 +497,7 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   const results = await warehouse.getExperimentResults(experimentKey);
 
   // Get assignments for SRM check
-  const assignments = await warehouse.getAssignments(experimentKey);
+  const assignments = await warehouse.getAssignments(experimentKey) as AssignmentRecord[];
 
   // Calculate variant distribution
   const variantDistribution = results.variantDistribution;
@@ -514,12 +517,12 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   const gpt41Accuracy = results.metrics['gpt41_word_error_rate'];
 
   // Calculate statistical significance for latency
-  const latencyMetrics = await warehouse.getMetrics(experimentKey, 'latency_ms');
+  const latencyMetrics = await warehouse.getMetrics(experimentKey, 'latency_ms') as MetricRecord[];
   const gpt4LatencyValues = latencyMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41LatencyValues = latencyMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt41')
     .map(m => m.value);
 
   const latencyTest = tTest(gpt4LatencyValues, gpt41LatencyValues);
@@ -528,12 +531,12 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     : 0;
 
   // Calculate statistical significance for cost
-  const costMetrics = await warehouse.getMetrics(experimentKey, 'cost_per_request');
+  const costMetrics = await warehouse.getMetrics(experimentKey, 'cost_per_request') as MetricRecord[];
   const gpt4CostValues = costMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41CostValues = costMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt41')
     .map(m => m.value);
 
   const costTest = tTest(gpt4CostValues, gpt41CostValues);
@@ -542,12 +545,12 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     : 0;
 
   // Calculate statistical significance for accuracy
-  const accuracyMetrics = await warehouse.getMetrics(experimentKey, 'word_error_rate');
+  const accuracyMetrics = await warehouse.getMetrics(experimentKey, 'word_error_rate') as MetricRecord[];
   const gpt4AccuracyValues = accuracyMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt4')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt4')
     .map(m => m.value);
   const gpt41AccuracyValues = accuracyMetrics
-    .filter(m => (m as WarehouseMetric).variant_key === 'gpt41')
+    .filter((m: MetricRecord) => m.variant_key === 'gpt41')
     .map(m => m.value);
 
   const accuracyTest = tTest(gpt4AccuracyValues, gpt41AccuracyValues);
@@ -558,8 +561,10 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
   // Check for Sample Ratio Mismatch
   // Convert assignments array to counts object
   const assignmentCounts = assignments.reduce((acc, a) => {
-    const variantKey = (a as WarehouseAssignment).variant_key;
-    acc[variantKey] = (acc[variantKey] || 0) + 1;
+    const variantKey = a.variant_key;
+    if (variantKey) {
+      acc[variantKey] = (acc[variantKey] || 0) + 1;
+    }
     return acc;
   }, {} as Record<string, number>);
 

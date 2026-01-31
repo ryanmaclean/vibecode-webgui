@@ -7,12 +7,9 @@
 import { VectorDbErrorType, VectorDBErrorType } from './vector-db-error-handler-new';
 
 /**
- * Interface for database-specific error patterns
+ * Generic error object interface for type-safe error handling
  */
-/**
- * Interface for error objects with common database error properties
- */
-interface DatabaseError {
+interface GenericError {
   message?: string;
   code?: string | number;
   name?: string;
@@ -25,22 +22,8 @@ interface DatabaseError {
 }
 
 /**
- * Type guard to check if value is a DatabaseError-like object
+ * Interface for database-specific error patterns
  */
-function isDatabaseError(error: unknown): error is DatabaseError {
-  return typeof error === 'object' && error !== null;
-}
-
-/**
- * Safely extract error message from unknown error
- */
-function getErrorMessage(error: unknown): string {
-  if (isDatabaseError(error) && typeof error.message === 'string') {
-    return error.message;
-  }
-  return '';
-}
-
 export interface DbErrorPattern {
   // Error code patterns (string or number)
   codes?: (string | number)[];
@@ -92,12 +75,13 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
         'type "vector" does not exist'
       ],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
+        const err = error as GenericError | null;
+        const message = (err?.message || '').toLowerCase();
         return (
-          message.includes('vector') && 
+          message.includes('vector') &&
           (
             message.includes('shared_preload_libraries') ||
-            message.includes('extension') || 
+            message.includes('extension') ||
             message.includes('serverparametertocmsunallowedparametervalue')
           )
         );
@@ -190,9 +174,10 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     vectorExtension: {
       messages: ['vector', 'extension not installed', 'pgvector'],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') && 
+          message.includes('vector') &&
           (message.includes('extension') || message.includes('type') || message.includes('operator'))
         );
       },
@@ -244,11 +229,12 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     vectorSearch: {
       messages: ['vector', 'index', 'similarity', 'cannot find vector'],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') || 
-          message.includes('index') || 
-          message.includes('search') || 
+          message.includes('vector') ||
+          message.includes('index') ||
+          message.includes('search') ||
           message.includes('distance')
         );
       },
@@ -343,11 +329,12 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
       statusCodes: [400],
       messages: ['query', 'syntax', 'invalid', 'bad request', 'malformed'],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
-        const bodyCode = (isDatabaseError(error) && error.body?.code?.toLowerCase()) || '';
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
+        const bodyCode = err?.body?.code?.toLowerCase() || '';
         return (
-          message.includes('query') || 
-          bodyCode.includes('badrequest') || 
+          message.includes('query') ||
+          bodyCode.includes('badrequest') ||
           bodyCode.includes('invalidsyntax')
         );
       },
@@ -367,12 +354,13 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
       statusCodes: [429],
       messages: ['too many requests', 'rate limit', 'throttled', 'throughput'],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
-        const bodyCode = (isDatabaseError(error) && error.body?.code?.toLowerCase()) || '';
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
+        const bodyCode = err?.body?.code?.toLowerCase() || '';
         return (
-          message.includes('rate') || 
-          message.includes('throughput') || 
-          bodyCode.includes('throttling') || 
+          message.includes('rate') ||
+          message.includes('throughput') ||
+          bodyCode.includes('throttling') ||
           bodyCode.includes('requestratetoolarge')
         );
       },
@@ -493,11 +481,12 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
         'semantic configuration', 'similarity'
       ],
       condition: (error: unknown) => {
-        const message = getErrorMessage(error).toLowerCase();
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') || 
-          message.includes('embedding') || 
-          message.includes('dimension') || 
+          message.includes('vector') ||
+          message.includes('embedding') ||
+          message.includes('dimension') ||
           message.includes('semantic')
         );
       },
@@ -532,22 +521,17 @@ export function categorizeErrorWithProvider(error: unknown, provider: string): V
     return VectorDBErrorType.UNKNOWN_ERROR;
   }
 
-  // Use type guard for safe property access
-  if (!isDatabaseError(error)) {
-    return VectorDBErrorType.UNKNOWN_ERROR;
-  }
-
-  const rawMessage = error.message;
+  const err = error as GenericError;
+  const rawMessage = err?.message;
   const message = String(rawMessage ?? '').toLowerCase();
-  const code = String(error.code ?? '');
-  const name = String(error.name ?? '').toLowerCase();
-  const status = error.status ?? error.statusCode ?? 0;
-  const errorCode = error.code;
-  const numericCode = typeof errorCode === 'number' && Number.isFinite(errorCode)
-    ? errorCode
-    : (typeof error.statusCode === 'number' && Number.isFinite(error.statusCode) ? error.statusCode : NaN);
-  const sqlState = error.sqlState ?? '';
-  const bodyCode = String(error.body?.code ?? '').toLowerCase();
+  const code = String(err?.code ?? '');
+  const name = String(err?.name ?? '').toLowerCase();
+  const status = err?.status ?? err?.statusCode ?? 0;
+  const numericCode = Number.isFinite(err?.code) ? Number(err?.code) : (
+    Number.isFinite(err?.statusCode) ? Number(err?.statusCode) : NaN
+  );
+  const sqlState = err?.sqlState ?? '';
+  const bodyCode = String(err?.body?.code ?? '').toLowerCase();
 
   // Simple provider heuristics before pattern matching
   if (provider === 'cosmosdb') {
@@ -630,12 +614,14 @@ export function isRetryableWithProvider(error: unknown, provider: string): boole
     return true;
   }
 
+  const err = error as GenericError;
+
   // Provider-specific retry logic
   if (provider === 'postgres' || provider === 'sqlserver') {
     // Check for deadlock errors which are retryable
-    const message = getErrorMessage(error).toLowerCase();
-    const code = (isDatabaseError(error) && error.code != null ? String(error.code) : '');
-    
+    const message = (err?.message || '').toLowerCase();
+    const code = (err?.code || '').toString();
+
     if (
       message.includes('deadlock') ||
       code === '1205' || // SQL Server deadlock
@@ -648,7 +634,7 @@ export function isRetryableWithProvider(error: unknown, provider: string): boole
 
   if (provider === 'cosmosdb' || provider === 'cognitive-search') {
     // Rate limiting errors are retryable
-    const status = (isDatabaseError(error) ? (error.status ?? error.statusCode ?? 0) : 0);
+    const status = err?.status || err?.statusCode || 0;
     if (status === 429) {
       return true;
     }

@@ -3,51 +3,38 @@
  * Parse and validate YAML workflow definitions
  */
 
-import type { 
-  WorkflowDefinition, 
-  WorkflowNode, 
-  WorkflowEdge, 
-  NodeConfig, 
-  NodeType,
-  SchemaDefinition,
-  RetryPolicy
+import type {
+  WorkflowDefinition,
+  WorkflowNode,
+  WorkflowEdge,
+  NodeConfig,
+  AgentTaskConfig,
+  ConditionConfig,
+  LoopConfig,
+  TransformConfig,
+  DelayConfig,
+  WebhookConfig
 } from './types';
 
 /**
- * Interface for parsed YAML workflow data
+ * Raw parsed node from YAML (before validation)
  */
-interface ParsedWorkflowData {
-  name?: string;
-  version?: string;
-  description?: string;
-  author?: string;
-  tags?: string[];
-  nodes?: ParsedNode[];
-  edges?: ParsedEdge[];
-  config?: Record<string, unknown>;
-  inputs?: Record<string, SchemaDefinition>;
-  outputs?: Record<string, SchemaDefinition>;
-}
-
-/**
- * Interface for parsed node from YAML
- */
-interface ParsedNode {
+interface RawYAMLNode {
   id?: string;
   type?: string;
   name?: string;
   description?: string;
   config?: NodeConfig;
-  retry?: RetryPolicy;
+  retry?: WorkflowNode['retry'];
   timeout?: number;
   continueOnError?: boolean;
   position?: { x: number; y: number };
 }
 
 /**
- * Interface for parsed edge from YAML
+ * Raw parsed edge from YAML (before validation)
  */
-interface ParsedEdge {
+interface RawYAMLEdge {
   id?: string;
   source?: string;
   target?: string;
@@ -56,51 +43,33 @@ interface ParsedEdge {
 }
 
 /**
- * Valid node types for validation
+ * Raw parsed YAML workflow structure (before validation)
  */
-const VALID_NODE_TYPES: NodeType[] = [
-  'agent-task', 'condition', 'parallel', 'merge', 
-  'loop', 'transform', 'delay', 'webhook'
-];
-
-/**
- * Type guard to check if a string is a valid NodeType
- */
-function isValidNodeType(type: string): type is NodeType {
-  return VALID_NODE_TYPES.includes(type as NodeType);
-}
-
-/**
- * Type guard to check if parsed data is a valid workflow structure
- */
-function isValidWorkflowData(data: unknown): data is ParsedWorkflowData {
-  return typeof data === 'object' && data !== null;
-}
-
-/**
- * Type-safe accessor for node config properties
- */
-function getConfigProperty<T>(config: NodeConfig, key: string): T | undefined {
-  return (config as Record<string, unknown>)[key] as T | undefined;
+interface RawYAMLWorkflow {
+  name?: string;
+  version?: string;
+  description?: string;
+  author?: string;
+  tags?: string[];
+  nodes?: RawYAMLNode[];
+  edges?: RawYAMLEdge[];
+  config?: WorkflowDefinition['config'];
+  inputs?: WorkflowDefinition['inputs'];
+  outputs?: WorkflowDefinition['outputs'];
 }
 
 /**
  * Parse YAML workflow definition
  */
 export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDefinition> {
-  let parsed: unknown;
+  let parsed: RawYAMLWorkflow;
 
   try {
     // Dynamic import for YAML parsing (Next.js compatible)
     const yaml = await import('js-yaml');
-    parsed = yaml.load(yamlContent);
+    parsed = yaml.load(yamlContent) as RawYAMLWorkflow;
   } catch (error) {
     throw new Error(`Failed to parse YAML: ${error instanceof Error ? error.message : 'Unknown error'}`);
-  }
-
-  // Validate that parsed data is an object
-  if (!isValidWorkflowData(parsed)) {
-    throw new Error('Invalid YAML: expected an object');
   }
 
   // Validate required fields
@@ -117,17 +86,13 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
   }
 
   // Parse nodes
-  const nodes: WorkflowNode[] = parsed.nodes.map((node: ParsedNode, index: number) => {
+  const nodes: WorkflowNode[] = parsed.nodes.map((node: RawYAMLNode, index: number) => {
     if (!node.id) {
       throw new Error(`Node at index ${index} missing id`);
     }
 
     if (!node.type) {
       throw new Error(`Node ${node.id} missing type`);
-    }
-
-    if (!isValidNodeType(node.type)) {
-      throw new Error(`Node ${node.id} has invalid type: ${node.type}`);
     }
 
     if (!node.config) {
@@ -144,11 +109,11 @@ export async function parseWorkflowYAML(yamlContent: string): Promise<WorkflowDe
       timeout: node.timeout,
       continueOnError: node.continueOnError || false,
       position: node.position,
-    };
+    } as WorkflowNode;
   });
 
   // Parse edges
-  const edges: WorkflowEdge[] = (parsed.edges || []).map((edge: ParsedEdge, index: number) => {
+  const edges: WorkflowEdge[] = (parsed.edges || []).map((edge: RawYAMLEdge, index: number) => {
     if (!edge.source) {
       throw new Error(`Edge at index ${index} missing source`);
     }
@@ -197,6 +162,48 @@ export async function serializeWorkflowYAML(definition: WorkflowDefinition): Pro
 }
 
 /**
+ * Type guard to check if config is an AgentTaskConfig
+ */
+function isAgentTaskConfig(config: NodeConfig): config is AgentTaskConfig {
+  return 'agentType' in config || 'task' in config || 'model' in config;
+}
+
+/**
+ * Type guard to check if config is a ConditionConfig
+ */
+function isConditionConfig(config: NodeConfig): config is ConditionConfig {
+  return 'expression' in config || 'branches' in config;
+}
+
+/**
+ * Type guard to check if config is a LoopConfig
+ */
+function isLoopConfig(config: NodeConfig): config is LoopConfig {
+  return 'items' in config;
+}
+
+/**
+ * Type guard to check if config is a TransformConfig
+ */
+function isTransformConfig(config: NodeConfig): config is TransformConfig {
+  return 'transform' in config;
+}
+
+/**
+ * Type guard to check if config is a DelayConfig
+ */
+function isDelayConfig(config: NodeConfig): config is DelayConfig {
+  return 'duration' in config || 'durationExpression' in config;
+}
+
+/**
+ * Type guard to check if config is a WebhookConfig
+ */
+function isWebhookConfig(config: NodeConfig): config is WebhookConfig {
+  return 'url' in config || 'method' in config;
+}
+
+/**
  * Validate workflow definition structure
  */
 export function validateWorkflowDefinition(definition: WorkflowDefinition): string[] {
@@ -212,50 +219,62 @@ export function validateWorkflowDefinition(definition: WorkflowDefinition): stri
 
     // Validate node config based on type
     switch (node.type) {
-      case 'agent-task':
-        if (!getConfigProperty<string>(node.config, 'agentType')) {
+      case 'agent-task': {
+        const config = node.config;
+        if (!isAgentTaskConfig(config) || !config.agentType) {
           errors.push(`Node ${node.id}: agent-task requires agentType`);
         }
-        if (!getConfigProperty<string>(node.config, 'task')) {
+        if (!isAgentTaskConfig(config) || !config.task) {
           errors.push(`Node ${node.id}: agent-task requires task`);
         }
-        if (!getConfigProperty<string>(node.config, 'model')) {
+        if (!isAgentTaskConfig(config) || !config.model) {
           errors.push(`Node ${node.id}: agent-task requires model`);
         }
         break;
+      }
 
-      case 'condition':
-        if (!getConfigProperty<string>(node.config, 'expression')) {
+      case 'condition': {
+        const config = node.config;
+        if (!isConditionConfig(config) || !config.expression) {
           errors.push(`Node ${node.id}: condition requires expression`);
         }
         break;
+      }
 
-      case 'loop':
-        if (!getConfigProperty<unknown>(node.config, 'items')) {
+      case 'loop': {
+        const config = node.config;
+        if (!isLoopConfig(config) || !config.items) {
           errors.push(`Node ${node.id}: loop requires items`);
         }
         break;
+      }
 
-      case 'transform':
-        if (!getConfigProperty<string>(node.config, 'transform')) {
+      case 'transform': {
+        const config = node.config;
+        if (!isTransformConfig(config) || !config.transform) {
           errors.push(`Node ${node.id}: transform requires transform function`);
         }
         break;
+      }
 
-      case 'delay':
-        if (!getConfigProperty<number>(node.config, 'duration') && !getConfigProperty<string>(node.config, 'durationExpression')) {
+      case 'delay': {
+        const config = node.config;
+        if (!isDelayConfig(config) || (!config.duration && !config.durationExpression)) {
           errors.push(`Node ${node.id}: delay requires duration or durationExpression`);
         }
         break;
+      }
 
-      case 'webhook':
-        if (!getConfigProperty<string>(node.config, 'url')) {
+      case 'webhook': {
+        const config = node.config;
+        if (!isWebhookConfig(config) || !config.url) {
           errors.push(`Node ${node.id}: webhook requires url`);
         }
-        if (!getConfigProperty<string>(node.config, 'method')) {
+        if (!isWebhookConfig(config) || !config.method) {
           errors.push(`Node ${node.id}: webhook requires method`);
         }
         break;
+      }
     }
   }
 

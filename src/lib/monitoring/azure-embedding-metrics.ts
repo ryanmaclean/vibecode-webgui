@@ -100,7 +100,7 @@ export class AzureEmbeddingMetrics {
         value: 1,
         tags
       }
-    ] as any[]);
+    ]);
     
        // Send API metrics if available
        if (metrics.tokenCount || metrics.apiLatencyMs) {

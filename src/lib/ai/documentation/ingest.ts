@@ -1,7 +1,6 @@
-import { ChromaClient, type Collection, type Metadata } from 'chromadb';
+import { ChromaClient, type Metadata } from 'chromadb';
 import { Document } from '@langchain/core/documents';
 import { OpenAIEmbeddings } from '@langchain/openai';
-
 // Simple text splitter implementation
 class SimpleTextSplitter {
   private chunkSize: number;
@@ -15,14 +14,14 @@ class SimpleTextSplitter {
   splitText(text: string): string[] {
     const chunks: string[] = [];
     let start = 0;
-    
+
     while (start < text.length) {
       const end = Math.min(start + this.chunkSize, text.length);
       const chunk = text.slice(start, end);
       chunks.push(chunk);
       start = end - this.chunkOverlap;
     }
-    
+
     return chunks;
   }
 }
@@ -40,11 +39,7 @@ export class DocumentationIngester {
     this.splitter = textSplitter;
   }
 
-  async ingestDocumentation(
-    source: string, 
-    content: string, 
-    metadata: Record<string, string | number | boolean> = {}
-  ): Promise<void> {
+  async ingestDocumentation(source: string, content: string, metadata: Record<string, unknown> = {}) {
     // Split document into chunks
     const chunks = this.splitter.splitText(content);
     const docs = chunks.map((chunk, i) => new Document({
@@ -63,40 +58,27 @@ export class DocumentationIngester {
     );
 
     // Store in vector database via collection
-    const collection: Collection = await this.chroma.getOrCreateCollection({ 
-      name: 'documentation' 
-    });
-    
-    // Prepare payload with properly typed metadata
+    const collection = await this.chroma.getOrCreateCollection({ name: 'documentation' });
+
+    // Convert Document metadata to chromadb Metadata type
+    const ids = docs.map((_, i) => `${source}-${i}`);
     const metadatas: Metadata[] = docs.map(doc => {
-      const meta: Metadata = {
-        source: String(doc.metadata.source),
-        chunkIndex: Number(doc.metadata.chunkIndex),
-        timestamp: String(doc.metadata.timestamp),
-      };
-      // Copy additional metadata fields (only primitive types)
+      const meta: Metadata = {};
       for (const [key, value] of Object.entries(doc.metadata)) {
-        if (![source, 'chunkIndex', 'timestamp'].includes(key)) {
-          if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-            meta[key] = value;
-          }
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+          meta[key] = value;
         }
       }
       return meta;
     });
+    const documents = docs.map(doc => doc.pageContent);
 
-    const payload = {
-      ids: docs.map((_, i) => `${source}-${i}`),
+    // Use upsert to insert or update documents
+    await collection.upsert({
+      ids,
       embeddings,
       metadatas,
-      documents: docs.map(doc => doc.pageContent),
-    };
-
-    // Use upsert if available, otherwise fall back to add
-    if (typeof collection.upsert === 'function') {
-      await collection.upsert(payload);
-    } else {
-      await collection.add(payload);
-    }
+      documents,
+    });
   }
 }

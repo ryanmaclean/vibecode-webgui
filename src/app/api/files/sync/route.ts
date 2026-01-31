@@ -254,11 +254,11 @@ async function createFilesInWorkspace(
 }
 
 // Initialize WebSocket server if it doesn't exist
-if (!(globalThis as any).wss) {
-  (globalThis as any).wss = new WebSocketServer({ noServer: true })
+if (!(globalThis as { wss?: WebSocketServer }).wss) {
+  (globalThis as { wss?: WebSocketServer }).wss = new WebSocketServer({ noServer: true })
   console.log('WebSocket server initialized');
 
-  (globalThis as any).wss.on('connection', async (ws: WebSocket, request: NextRequest) => {
+  (globalThis as { wss?: WebSocketServer }).wss!.on('connection', async (ws: WebSocket, request: NextRequest) => {
     const { searchParams } = new URL(request.url || '', `http://${request.headers.get('host') || 'localhost'}`)
     const workspaceId = searchParams.get('workspaceId') || ''
     const userId = searchParams.get('userId') || ''
@@ -346,7 +346,7 @@ if (!(globalThis as any).wss) {
 
           switch (message.type) {
             case 'file-update':
-              (fileSystem as any).handleFileUpdate?.(message.payload)
+              (fileSystem as { handleFileUpdate?: (payload: unknown) => void }).handleFileUpdate?.(message.payload)
               break
 
             case 'ping':

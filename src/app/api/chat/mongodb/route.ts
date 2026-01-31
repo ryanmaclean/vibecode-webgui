@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as any
+        } as unknown as typeof token
       }
     }
     
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as any
+        } as unknown as typeof token
       }
     }
     

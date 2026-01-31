@@ -29,9 +29,15 @@ interface SystemMetrics {
   uptime: string;
 }
 
+interface HealthStatusDetails {
+  latency?: string;
+  models_available?: number;
+  [key: string]: unknown;
+}
+
 interface HealthStatus {
   status: 'healthy' | 'warning' | 'error'
-  details?: any
+  details?: HealthStatusDetails
   error?: string
 }
 
@@ -74,7 +80,7 @@ interface LogEntry {
   level: 'info' | 'warn' | 'error'
   message: string
   source: string
-  metadata?: Record<string, any>
+  metadata?: Record<string, unknown>
 }
 
 interface AlertItem {
@@ -92,7 +98,17 @@ export default function MonitoringDashboard() {
   const [enhancedData, setEnhancedData] = useState<EnhancedMonitoringData | null>(null);
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [alerts, setAlerts] = useState<AlertItem[]>([]);
-  const [rumData, setRumData] = useState<any>(null);
+  interface RumHealthData {
+    healthy: boolean;
+    status: string;
+    configuration: {
+      hasApplicationId: boolean;
+      hasClientToken: boolean;
+      site: string;
+    };
+    features: Record<string, boolean>;
+  }
+  const [rumData, setRumData] = useState<RumHealthData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedTab, setSelectedTab] = useState<TabType>('health');
@@ -259,7 +275,7 @@ export default function MonitoringDashboard() {
                     <XAxis dataKey="time" fontSize={12} />
                     <YAxis fontSize={12} tickFormatter={formatBytes} />
                     <Tooltip 
-                      formatter={(value: number) => formatBytes(value)}
+                      formatter={(value: number | undefined) => value === undefined ? '' : formatBytes(value)}
                       labelFormatter={(label) => String(label)}
                     />
                     <Legend />
@@ -288,7 +304,7 @@ export default function MonitoringDashboard() {
                       <Cell fill="#8884d8" />
                       <Cell fill="#eeeeee" />
                     </Pie>
-                    <Tooltip formatter={((value: number) => `${value.toFixed(1)}%`) as any} />
+                    <Tooltip formatter={(value: number | string | Array<number | string>) => `${Number(value).toFixed(1)}%`} />
                     <Legend />
                   </PieChart>
                 </ResponsiveContainer>
