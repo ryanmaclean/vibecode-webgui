@@ -17,18 +17,10 @@ import sys
 from pathlib import Path
 from typing import NamedTuple
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer
-except ImportError:
-    tracer = None
-
 # Local imports
 try:
     from lib.vibecode_common import (
         init_vibecode_script,
-        with_error_handling,
-        retry_on_failure,
         get_project_root,
         get_script_dir,
     )
@@ -94,11 +86,15 @@ def print_error(message: str) -> None:
 def run(
     cmd: list[str],
     *,
+    dry_run: bool = False,
     capture_output: bool = True,
     check: bool = True,
     cwd: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a shell command with proper error handling."""
+    if dry_run:
+        print_status(f"[DRY-RUN] {' '.join(cmd)}")
+        return subprocess.CompletedProcess(cmd, 0, "", "")
     try:
         return subprocess.run(
             cmd,
@@ -113,7 +109,7 @@ def run(
         ) from exc
 
 
-def run_script(script_path: Path, *args: str) -> bool:
+def run_script(script_path: Path, *args: str, dry_run: bool = False) -> bool:
     """Run an executable script if it exists."""
     if not script_path.exists():
         print_warning(f"Script not found: {script_path}")
@@ -127,7 +123,7 @@ def run_script(script_path: Path, *args: str) -> bool:
         cmd = [str(script_path)] + list(args)
 
     try:
-        run(cmd, capture_output=False)
+        run(cmd, capture_output=False, dry_run=dry_run)
         return True
     except CommandError as e:
         print_warning(str(e))
@@ -156,14 +152,14 @@ def check_prerequisites(config: DeploymentConfig) -> bool:
 
     # Check Docker is running
     try:
-        run(["docker", "info"], capture_output=True)
+        run(["docker", "info"], capture_output=True, dry_run=config.dry_run)
     except CommandError:
         print_error("Docker is not running. Please start Docker and try again.")
         return False
 
     # Check Node.js version
     try:
-        result = run(["node", "--version"])
+        result = run(["node", "--version"], dry_run=config.dry_run)
         node_version = result.stdout.strip().lstrip("v")
         print_status(f"Node.js version: {node_version}")
     except CommandError:
@@ -209,6 +205,16 @@ def load_environment(project_root: Path, config: DeploymentConfig) -> dict[str, 
         if key not in env_vars:
             env_vars[key] = default_value
 
+    if config.mode != "development":
+        used_defaults = [
+            key for key, value in defaults.items() if env_vars.get(key) == value
+        ]
+        if used_defaults:
+            print_warning(
+                "Using default credentials in non-development mode: "
+                + ", ".join(used_defaults)
+            )
+
     print_success(f"Environment configuration loaded for {config.mode} mode")
     return env_vars
 
@@ -226,14 +232,17 @@ def deploy_cluster(
 
         if kind_script_py.exists():
             print_status("Deploying KIND cluster with PostgreSQL monitoring (Python)...")
-            return run_script(kind_script_py)
+            return run_script(kind_script_py, dry_run=config.dry_run)
         elif kind_script.exists():
             print_status("Deploying KIND cluster with PostgreSQL monitoring...")
-            return run_script(kind_script)
+            return run_script(kind_script, dry_run=config.dry_run)
         else:
             print_warning("KIND deployment script not found, using basic setup")
             try:
-                run(["kind", "create", "cluster", "--name", "vibecode-dev"])
+                run(
+                    ["kind", "create", "cluster", "--name", "vibecode-dev"],
+                    dry_run=config.dry_run,
+                )
                 return True
             except CommandError as e:
                 print_error(str(e))
@@ -242,7 +251,11 @@ def deploy_cluster(
         print_status(f"For {config.mode}, please ensure your Kubernetes cluster is already configured")
         print_status("Verifying cluster connectivity...")
         try:
-            run(["kubectl", "cluster-info"], capture_output=False)
+            run(
+                ["kubectl", "cluster-info"],
+                capture_output=False,
+                dry_run=config.dry_run,
+            )
             print_success("Kubernetes cluster ready")
             return True
         except CommandError as e:
@@ -263,20 +276,20 @@ def deploy_database(script_dir: Path, config: DeploymentConfig) -> bool:
     migrations_script_py = script_dir / "deploy_database_migrations.py"
     if migrations_script_py.exists():
         print_status("Running database migrations (Python)...")
-        run_script(migrations_script_py)
+        run_script(migrations_script_py, dry_run=config.dry_run)
     elif migrations_script.exists():
         print_status("Running database migrations...")
-        run_script(migrations_script)
+        run_script(migrations_script, dry_run=config.dry_run)
 
     # Setup RAG database
     rag_script = script_dir / "setup-rag-db.sh"
     rag_script_py = script_dir / "setup_rag_db.py"
     if rag_script_py.exists():
         print_status("Setting up RAG database (Python)...")
-        run_script(rag_script_py)
+        run_script(rag_script_py, dry_run=config.dry_run)
     elif rag_script.exists():
         print_status("Setting up RAG database...")
-        run_script(rag_script)
+        run_script(rag_script, dry_run=config.dry_run)
 
     print_success("Database components deployed")
     return True
@@ -295,20 +308,20 @@ def deploy_monitoring(script_dir: Path, config: DeploymentConfig) -> bool:
     monitoring_script_py = script_dir / "deploy_monitoring.py"
     if monitoring_script_py.exists():
         print_status("Deploying monitoring stack (Python)...")
-        run_script(monitoring_script_py)
+        run_script(monitoring_script_py, dry_run=config.dry_run)
     elif monitoring_script.exists():
         print_status("Deploying monitoring stack...")
-        run_script(monitoring_script)
+        run_script(monitoring_script, dry_run=config.dry_run)
 
     # Deploy Datadog DBM
     dbm_script = script_dir / "deploy-datadog-dbm.sh"
     dbm_script_py = script_dir / "deploy_datadog_dbm.py"
     if dbm_script_py.exists():
         print_status("Deploying database monitoring (Python)...")
-        run_script(dbm_script_py)
+        run_script(dbm_script_py, dry_run=config.dry_run)
     elif dbm_script.exists():
         print_status("Deploying database monitoring...")
-        run_script(dbm_script)
+        run_script(dbm_script, dry_run=config.dry_run)
 
     print_success("Monitoring stack deployed")
     return True
@@ -327,8 +340,18 @@ def deploy_application(
     # Build application
     print_status("Building application...")
     try:
-        run(["npm", "ci"], cwd=project_root, capture_output=False)
-        run(["npm", "run", "build"], cwd=project_root, capture_output=False)
+        run(
+            ["npm", "ci"],
+            cwd=project_root,
+            capture_output=False,
+            dry_run=config.dry_run,
+        )
+        run(
+            ["npm", "run", "build"],
+            cwd=project_root,
+            capture_output=False,
+            dry_run=config.dry_run,
+        )
     except CommandError as e:
         print_error(f"Build failed: {e}")
         return False
@@ -341,6 +364,7 @@ def deploy_application(
             run(
                 ["kubectl", "apply", "-f", str(k8s_dir), "--recursive"],
                 capture_output=False,
+                dry_run=config.dry_run,
             )
         except CommandError:
             print_warning("Some Kubernetes manifests may have failed")
@@ -357,6 +381,7 @@ def deploy_application(
                 "-n", namespace,
             ],
             capture_output=False,
+            dry_run=config.dry_run,
         )
     except CommandError:
         print_warning("Some deployments may not be ready")
@@ -365,7 +390,7 @@ def deploy_application(
     return True
 
 
-def deploy_ai_gateway(project_root: Path) -> bool:
+def deploy_ai_gateway(project_root: Path, config: DeploymentConfig) -> bool:
     """Deploy AI Gateway service."""
     print_header("DEPLOYING AI GATEWAY")
 
@@ -377,8 +402,18 @@ def deploy_ai_gateway(project_root: Path) -> bool:
 
     print_status("Building AI Gateway...")
     try:
-        run(["npm", "ci"], cwd=ai_gateway_dir, capture_output=False)
-        run(["npm", "run", "build"], cwd=ai_gateway_dir, capture_output=False)
+        run(
+            ["npm", "ci"],
+            cwd=ai_gateway_dir,
+            capture_output=False,
+            dry_run=config.dry_run,
+        )
+        run(
+            ["npm", "run", "build"],
+            cwd=ai_gateway_dir,
+            capture_output=False,
+            dry_run=config.dry_run,
+        )
     except CommandError as e:
         print_error(f"AI Gateway build failed: {e}")
         return False
@@ -388,7 +423,11 @@ def deploy_ai_gateway(project_root: Path) -> bool:
     if monitoring_script.exists():
         print_status("Applying AI Gateway monitoring...")
         try:
-            run(["npx", "ts-node", str(monitoring_script)], cwd=project_root)
+            run(
+                ["npx", "ts-node", str(monitoring_script)],
+                cwd=project_root,
+                dry_run=config.dry_run,
+            )
         except CommandError as e:
             print_warning(f"AI Gateway monitoring failed: {e}")
 
@@ -396,23 +435,36 @@ def deploy_ai_gateway(project_root: Path) -> bool:
     return True
 
 
-def validate_deployment(env_vars: dict[str, str]) -> bool:
+def validate_deployment(
+    env_vars: dict[str, str],
+    dry_run: bool = False,
+) -> bool:
     """Validate the deployment status."""
     print_header("VALIDATING DEPLOYMENT")
+
+    if dry_run:
+        print_warning("Skipping deployment validation due to dry-run mode")
+        return True
 
     namespace = env_vars.get("NAMESPACE", "vibecode-platform")
 
     # Check pod status
     print_status("Checking pod status...")
     try:
-        run(["kubectl", "get", "pods", "-n", namespace], capture_output=False)
+        run(
+            ["kubectl", "get", "pods", "-n", namespace],
+            capture_output=False,
+        )
     except CommandError:
         pass
 
     # Check services
     print_status("Checking services...")
     try:
-        run(["kubectl", "get", "services", "-n", namespace], capture_output=False)
+        run(
+            ["kubectl", "get", "services", "-n", namespace],
+            capture_output=False,
+        )
     except CommandError:
         pass
 
@@ -567,6 +619,7 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     # Initialize logging and tracing
+    shutdown = None
     if USE_COMMON:
         logger, config_mgr, metrics, shutdown = init_vibecode_script(
             "deploy_complete_platform",
@@ -618,21 +671,27 @@ def main(argv: list[str] | None = None) -> int:
             return 1
 
         # Deploy AI Gateway
-        if not deploy_ai_gateway(project_root):
+        if not deploy_ai_gateway(project_root, config):
             return 1
 
         # Validate deployment
-        validate_deployment(env_vars)
+        validate_deployment(env_vars, dry_run=config.dry_run)
 
         # Display info
         display_deployment_info(config, env_vars)
 
+    except CommandError as e:
+        print_error(f"Deployment failed: {e}")
+        return 1
     except KeyboardInterrupt:
         print_status("\nDeployment cancelled by user")
         return 130
-    except Exception as e:
-        print_error(f"Deployment failed: {e}")
-        return 1
+    except Exception:
+        print_error("Unexpected error encountered; re-raising.")
+        raise
+    finally:
+        if shutdown:
+            shutdown()
 
     return 0
 

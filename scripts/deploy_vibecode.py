@@ -18,18 +18,10 @@ import textwrap
 from pathlib import Path
 from typing import NamedTuple
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer
-except ImportError:
-    tracer = None
-
 # Local imports
 try:
     from lib.vibecode_common import (
         init_vibecode_script,
-        with_error_handling,
-        retry_on_failure,
     )
     USE_COMMON = True
 except ImportError:
@@ -55,6 +47,7 @@ class DeployConfig(NamedTuple):
     image_tag: str
     fullname_override: str
     domain: str
+    acme_email: str
     dry_run: bool
 
 
@@ -70,6 +63,7 @@ DEFAULTS = {
     "image_tag": "latest",
     "fullname_override": "vibecode-app",
     "domain": "vibecode.eastus2.cloudapp.azure.com",
+    "acme_email": "admin@example.com",
 }
 
 
@@ -396,7 +390,7 @@ def setup_ssl_certificates(config: DeployConfig) -> None:
         spec:
           acme:
             server: https://acme-v02.api.letsencrypt.org/directory
-            email: admin@example.com
+            email: {config.acme_email}
             privateKeySecretRef:
               name: letsencrypt-prod
             solvers:
@@ -408,7 +402,7 @@ def setup_ssl_certificates(config: DeployConfig) -> None:
     if config.dry_run:
         print(f"[DRY-RUN] Would apply ClusterIssuer:\n{cluster_issuer_yaml}")
     else:
-        proc = subprocess.run(
+        subprocess.run(
             ["kubectl", "apply", "-f", "-"],
             input=cluster_issuer_yaml,
             text=True,
@@ -553,6 +547,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help=f"Domain for the application (default: {DEFAULTS['domain']})",
     )
     parser.add_argument(
+        "--acme-email",
+        default=os.environ.get("ACME_EMAIL", DEFAULTS["acme_email"]),
+        help="Email address for Let's Encrypt notifications",
+    )
+    parser.add_argument(
         "--dry-run",
         action="store_true",
         help="Print commands without executing them",
@@ -566,8 +565,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     # Initialize logging and tracing
+    shutdown = None
     if USE_COMMON:
-        logger, config_mgr, metrics, shutdown = init_vibecode_script(
+        logger, _config_mgr, _metrics, shutdown = init_vibecode_script(
             "deploy_vibecode",
             service_name="vibecode-deployment",
         )
@@ -591,6 +591,7 @@ def main(argv: list[str] | None = None) -> int:
         image_tag=args.image_tag,
         fullname_override=DEFAULTS["fullname_override"],
         domain=args.domain,
+        acme_email=args.acme_email,
         dry_run=args.dry_run,
     )
 
@@ -662,6 +663,9 @@ def main(argv: list[str] | None = None) -> int:
     except KeyboardInterrupt:
         print_status("\nDeployment cancelled by user")
         return 130
+    finally:
+        if shutdown:
+            shutdown()
 
     return 0
 

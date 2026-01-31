@@ -15,13 +15,6 @@ import subprocess
 import sys
 from dataclasses import dataclass, field
 from pathlib import Path
-from typing import Callable
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer
-except ImportError:
-    tracer = None
 
 
 class Colors:
@@ -226,15 +219,14 @@ def validate_opentofu(result: ValidationResult, project_root: Path) -> None:
     if tofu_dir.exists():
         success("OpenTofu directory: Found")
 
-        try:
-            run(["tofu", "validate"], cwd=tofu_dir)
+        validation = run(["tofu", "validate"], cwd=tofu_dir, check=False)
+        if validation.returncode == 0:
             success("OpenTofu validation: PASSED")
-        except subprocess.CalledProcessError:
+        else:
             error("OpenTofu validation: FAILED")
-            try:
-                run(["tofu", "validate"], cwd=tofu_dir, check=False)
-            except Exception:
-                pass
+            output = (validation.stdout or "") + (validation.stderr or "")
+            if output.strip():
+                info(output.strip())
             result.errors += 1
     else:
         error("OpenTofu directory: NOT FOUND")

@@ -10,22 +10,14 @@ from __future__ import annotations
 
 import argparse
 import os
-import shutil
 import subprocess
 import sys
 from pathlib import Path
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer
-except ImportError:
-    tracer = None
 
 # Local imports
 try:
     from lib.vibecode_common import (
         init_vibecode_script,
-        with_error_handling,
     )
     USE_COMMON = True
 except ImportError:
@@ -38,19 +30,29 @@ class CommandError(RuntimeError):
     """Raised when an underlying command fails."""
 
 
+class Colors:
+    """ANSI color codes for terminal output."""
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"
+
+
 def print_status(message: str, prefix: str = "") -> None:
     """Print a status message."""
-    print(f"{prefix} {message}")
+    indicator = f"{prefix} " if prefix else ""
+    print(f"{Colors.BLUE}{indicator}{message}{Colors.NC}")
 
 
 def print_success(message: str) -> None:
     """Print a success message."""
-    print(message)
+    print(f"{Colors.GREEN}{message}{Colors.NC}")
 
 
 def print_error(message: str) -> None:
     """Print an error message."""
-    print(message, file=sys.stderr)
+    print(f"{Colors.RED}{message}{Colors.NC}", file=sys.stderr)
 
 
 def run(
@@ -199,8 +201,9 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
 
     # Initialize logging and tracing
+    shutdown = None
     if USE_COMMON:
-        logger, config_mgr, metrics, shutdown = init_vibecode_script(
+        logger, _config_mgr, _metrics, shutdown = init_vibecode_script(
             "deploy_production",
             service_name="vibecode-production-deployment",
         )
@@ -237,12 +240,18 @@ def main(argv: list[str] | None = None) -> int:
         print_success("All checks passed - ready for production deployment")
         print_deployment_checklist()
 
+    except CommandError as e:
+        print_error(f"Deployment failed: {e}")
+        return 1
     except KeyboardInterrupt:
         print_status("\nDeployment cancelled by user", "")
         return 130
-    except Exception as e:
-        print_error(f"Deployment failed: {e}")
-        return 1
+    except Exception:
+        print_error("Unexpected error encountered; re-raising.")
+        raise
+    finally:
+        if shutdown:
+            shutdown()
 
     return 0
 

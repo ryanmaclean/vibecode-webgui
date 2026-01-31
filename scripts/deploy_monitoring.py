@@ -17,12 +17,6 @@ from datetime import datetime
 from pathlib import Path
 from typing import NamedTuple
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer
-except ImportError:
-    tracer = None
-
 # Local imports
 try:
     from lib.vibecode_common import (
@@ -89,6 +83,7 @@ def run(
     capture_output: bool = False,
     check: bool = True,
     cwd: Path | None = None,
+    input_data: str | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Run a shell command with proper error handling."""
     try:
@@ -98,6 +93,7 @@ def run(
             capture_output=capture_output,
             check=check,
             cwd=cwd,
+            input=input_data,
         )
     except subprocess.CalledProcessError as exc:
         raise CommandError(
@@ -158,6 +154,24 @@ DATADOG_API_KEY={config.dd_api_key}
 
     log("Environment validation passed")
 
+def ensure_datadog_secret(namespace: str, api_key: str) -> None:
+    """Ensure a Kubernetes secret exists for the Datadog API key."""
+    secret_manifest = run(
+        [
+            "kubectl", "create", "secret", "generic", "datadog-api-key",
+            "--from-literal=api-key=" + api_key,
+            "--namespace", namespace,
+            "--dry-run=client",
+            "-o", "yaml",
+        ],
+        capture_output=True,
+    ).stdout
+
+    run(
+        ["kubectl", "apply", "-f", "-"],
+        input_data=secret_manifest,
+    )
+
 
 def deploy_kubernetes(config: DeployConfig) -> None:
     """Deploy monitoring stack to Kubernetes."""
@@ -170,8 +184,14 @@ def deploy_kubernetes(config: DeployConfig) -> None:
         run(["kubectl", "create", "namespace", config.namespace])
 
     log("Updating Helm repositories...")
-    run(["helm", "repo", "add", "prometheus-community", "https://prometheus-community.github.io/helm-charts"])
-    run(["helm", "repo", "add", "datadog", "https://helm.datadoghq.com"])
+    run([
+        "helm", "repo", "add", "--force-update",
+        "prometheus-community", "https://prometheus-community.github.io/helm-charts",
+    ])
+    run([
+        "helm", "repo", "add", "--force-update",
+        "datadog", "https://helm.datadoghq.com",
+    ])
     run(["helm", "repo", "update"])
 
     log("Deploying Prometheus...")
@@ -192,11 +212,13 @@ def deploy_kubernetes(config: DeployConfig) -> None:
     run(helm_cmd)
 
     log("Deploying Datadog agent with log collection enabled...")
+    ensure_datadog_secret(config.namespace, config.dd_api_key)
     run([
         "helm", "upgrade", "--install", "datadog-agent",
         "datadog/datadog",
         "--namespace", config.namespace,
-        "--set", f"datadog.apiKey={config.dd_api_key}",
+        "--set", "datadog.apiKeyExistingSecret=datadog-api-key",
+        "--set", "datadog.apiKeyExistingSecretKey=api-key",
         "--set", "datadog.site=datadoghq.com",
         "--set", "datadog.logs.enabled=true",
         "--set", "datadog.logs.containerCollectAll=true",
