@@ -59,9 +59,10 @@ jobs:
         run: cargo test --verbose
 
       - name: Test Tauri build (debug mode)
+        working-directory: platforms/tauri
         run: |
           echo "Testing Tauri build in debug mode..."
-          npm run tauri build -- --target aarch64-apple-darwin --debug
+          npx tauri build --target aarch64-apple-darwin --debug
 
       - name: Verify build artifacts
         run: |
