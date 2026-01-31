@@ -1,107 +1,77 @@
 #!/usr/bin/env python3
-"""Shared bootstrap helpers for Python scripts.
+"""Shared bootstrap helpers for scripts living under scripts/ops and scripts/tests.
 
-The historic Bash ``bootstrap.sh`` helper surfaced ``SCRIPTS_ROOT`` and
-``LIB_DIR`` environment variables so that downstream scripts could find the
-shared library directory.  Many Python rewrites still expect the same
-contract, so this module mirrors that behaviour with a small Python friendly
-API.
+Provides a consistent way to derive SCRIPTS_ROOT and LIB_DIR.
 """
 
-from __future__ import annotations
-
 import os
-from dataclasses import dataclass
+import sys
 from pathlib import Path
-from typing import Tuple, Union
+from typing import Tuple, Optional
+
+# Global state
+SCRIPTS_ROOT: Optional[Path] = None
+LIB_DIR: Optional[Path] = None
 
 
-PathLike = Union[str, Path]
+def bootstrap_init(caller_dir: str) -> Tuple[Path, Path]:
+    """Initialize bootstrap directories.
+
+    Args:
+        caller_dir: The directory of the calling script.
+
+    Returns:
+        Tuple of (SCRIPTS_ROOT, LIB_DIR).
+
+    Raises:
+        ValueError: If caller_dir is not provided or doesn't exist.
+        FileNotFoundError: If the lib directory cannot be found.
+    """
+    global SCRIPTS_ROOT, LIB_DIR
+
+    if not caller_dir:
+        raise ValueError("bootstrap_init requires the calling script directory")
+
+    caller_path = Path(caller_dir)
+
+    if not caller_path.is_dir():
+        raise ValueError(f"bootstrap_init: directory not found: {caller_dir}")
+
+    # Derive SCRIPTS_ROOT if not already set
+    if SCRIPTS_ROOT is None:
+        if caller_path.name == "scripts":
+            SCRIPTS_ROOT = caller_path
+        else:
+            SCRIPTS_ROOT = caller_path.parent.resolve()
+
+    # Derive LIB_DIR if not already set
+    if LIB_DIR is None:
+        LIB_DIR = SCRIPTS_ROOT / "lib"
+
+    if not LIB_DIR.is_dir():
+        raise FileNotFoundError(
+            f"Unable to locate scripts/lib directory (expected at {LIB_DIR})"
+        )
+
+    # Export as environment variables for child processes
+    os.environ["SCRIPTS_ROOT"] = str(SCRIPTS_ROOT)
+    os.environ["LIB_DIR"] = str(LIB_DIR)
+
+    return SCRIPTS_ROOT, LIB_DIR
 
 
-class BootstrapError(RuntimeError):
-    """Raised when the bootstrap process cannot determine directories."""
+def get_scripts_root() -> Optional[Path]:
+    """Get the current SCRIPTS_ROOT path."""
+    return SCRIPTS_ROOT
 
 
-@dataclass(frozen=True)
-class BootstrapContext:
-    """Resolved bootstrap paths returned by :func:`bootstrap_init`."""
-
-    scripts_root: Path
-    lib_dir: Path
+def get_lib_dir() -> Optional[Path]:
+    """Get the current LIB_DIR path."""
+    return LIB_DIR
 
 
-def _resolve_directory(path_like: PathLike) -> Path:
-    """Resolve ``path_like`` into an existing directory path."""
-
-    path = Path(path_like).expanduser()
-    if not path.is_absolute():
-        path = path.resolve()
-
-    if not path.exists() or not path.is_dir():
-        raise BootstrapError(f"bootstrap_init requires an existing directory (got {path_like!r})")
-
-    return path
-
-
-def bootstrap_init(caller_dir: PathLike) -> BootstrapContext:
-    """Initialise ``SCRIPTS_ROOT`` and ``LIB_DIR`` just like the Bash helper."""
-
-    caller_path = _resolve_directory(caller_dir)
-
-    scripts_root_env = os.environ.get("SCRIPTS_ROOT")
-    if scripts_root_env:
-        scripts_root = Path(scripts_root_env).resolve()
-    else:
-        scripts_root = caller_path if caller_path.name == "scripts" else caller_path.parent.resolve()
-        os.environ["SCRIPTS_ROOT"] = str(scripts_root)
-
-    lib_dir_env = os.environ.get("LIB_DIR")
-    if lib_dir_env:
-        lib_dir = Path(lib_dir_env).resolve()
-    else:
-        lib_dir = (scripts_root / "lib").resolve()
-        os.environ["LIB_DIR"] = str(lib_dir)
-
-    if not lib_dir.exists() or not lib_dir.is_dir():
-        raise BootstrapError(f"Unable to locate scripts/lib directory (expected at {lib_dir})")
-
-    return BootstrapContext(scripts_root=scripts_root, lib_dir=lib_dir)
-
-
-def get_scripts_root() -> Path:
-    """Return the cached ``SCRIPTS_ROOT`` value or raise ``BootstrapError``."""
-
-    scripts_root = os.environ.get("SCRIPTS_ROOT")
-    if not scripts_root:
-        raise BootstrapError("SCRIPTS_ROOT is not defined. Call bootstrap_init first.")
-
-    path = Path(scripts_root)
-    if not path.exists():
-        raise BootstrapError(f"SCRIPTS_ROOT points to a missing directory: {scripts_root}")
-
-    return path
-
-
-def get_lib_dir() -> Path:
-    """Return the cached ``LIB_DIR`` value or raise ``BootstrapError``."""
-
-    lib_dir = os.environ.get("LIB_DIR")
-    if not lib_dir:
-        raise BootstrapError("LIB_DIR is not defined. Call bootstrap_init first.")
-
-    path = Path(lib_dir)
-    if not path.exists():
-        raise BootstrapError(f"LIB_DIR points to a missing directory: {lib_dir}")
-
-    return path
-
-
-__all__ = [
-    "BootstrapContext",
-    "BootstrapError",
-    "bootstrap_init",
-    "get_scripts_root",
-    "get_lib_dir",
-]
-
+def reset() -> None:
+    """Reset the bootstrap state. Useful for testing."""
+    global SCRIPTS_ROOT, LIB_DIR
+    SCRIPTS_ROOT = None
+    LIB_DIR = None

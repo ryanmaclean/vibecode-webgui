@@ -10,6 +10,12 @@ from .paths import VFKitPaths
 from .log import log_error, log_info, log_section, log_success, log_warn
 from .runner import run_command
 from .valkey_tester import ValkeyCLI, ValkeyConfig, ValkeyTestSuite, ValkeyTester
+from .postgresql_tester import (
+    PostgreSQLCLI,
+    PostgreSQLConfig,
+    PostgreSQLTestSuite,
+    PostgreSQLTester,
+)
 
 __all__ = [
     "VFKitPaths",
@@ -23,4 +29,8 @@ __all__ = [
     "ValkeyConfig",
     "ValkeyTestSuite",
     "ValkeyTester",
+    "PostgreSQLCLI",
+    "PostgreSQLConfig",
+    "PostgreSQLTestSuite",
+    "PostgreSQLTester",
 ]
