@@ -1,6 +1,36 @@
 import { datadogRum } from '@datadog/browser-rum';
 import { getRUMPublicConfig } from './datadog-env'
 // import { logger } from '@/lib/logger';
+
+// Web Vitals PerformanceEntry interfaces
+interface LargestContentfulPaintEntry extends PerformanceEntry {
+  element?: Element;
+  renderTime: number;
+  loadTime: number;
+  size: number;
+  id: string;
+  url: string;
+}
+
+interface PerformanceEventTimingEntry extends PerformanceEntry {
+  processingStart: number;
+  processingEnd: number;
+  cancelable: boolean;
+  target?: Node;
+}
+
+interface LayoutShiftEntry extends PerformanceEntry {
+  hadRecentInput: boolean;
+  value: number;
+  sources: LayoutShiftAttribution[];
+}
+
+interface LayoutShiftAttribution {
+  node?: Node;
+  previousRect: DOMRectReadOnly;
+  currentRect: DOMRectReadOnly;
+}
+
 // Define allowed site values according to Datadog RUM documentation
 type DatadogSite = 'datadoghq.com' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'datadoghq.eu' | 'ddog-gov.com' | 'ap1.datadoghq.com';
 interface RUMConfig {
@@ -117,7 +147,7 @@ class RUMMonitoring {
   /**
    * Set user information for RUM tracking
    */
-  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: any }) {
+  static setUser(user: { id?: string; name?: string; email?: string; [key: string]: unknown }) {
     if (!this.initialized) return;
 
     try {
@@ -135,7 +165,7 @@ class RUMMonitoring {
   /**
    * Add custom attribute to RUM
    */
-  static addAttribute(key: string, value: any) {
+  static addAttribute(key: string, value: unknown) {
     if (!this.initialized) return;
 
     try {
@@ -166,15 +196,15 @@ class RUMMonitoring {
 
     try {
       datadogRum.addError(error, context);
-    } catch (error: unknown) {
-      console.error('[RUM] Failed to add error:', error);
+    } catch (err) {
+      console.error('[RUM] Failed to add error:', err);
     }
   }
 
   /**
    * Track feature flag usage
    */
-  static addFeatureFlag(key: string, value: any) {
+  static addFeatureFlag(key: string, value: unknown) {
     if (!this.initialized) return;
 
     try {
@@ -361,7 +391,7 @@ class RUMMonitoring {
     try {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as PerformanceEntry;
+        const lastEntry = entries[entries.length - 1] as LargestContentfulPaintEntry | undefined;
 
         if (lastEntry) {
           const lcpValue = lastEntry.startTime;
@@ -374,7 +404,7 @@ class RUMMonitoring {
           this.trackPerformance({ largestContentfulPaint: lcpValue });
 
           // Add context
-          this.addAttribute('performance.lcp.element', (lastEntry as any).element?.tagName || 'unknown');
+          this.addAttribute('performance.lcp.element', lastEntry.element?.tagName || 'unknown');
         }
       });
 
@@ -388,7 +418,8 @@ class RUMMonitoring {
     try {
       const fidObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
-          const fidValue = (entry as any).processingStart - entry.startTime;
+          const fidEntry = entry as PerformanceEventTimingEntry;
+          const fidValue = fidEntry.processingStart - fidEntry.startTime;
           console.info('[RUM] FID measured:', fidValue.toFixed(2), 'ms');
 
           // Send to Datadog using addTiming
@@ -410,9 +441,10 @@ class RUMMonitoring {
     try {
       const clsObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
+          const clsEntry = entry as LayoutShiftEntry;
           // Only count layout shifts without recent user input
-          if (!(entry as any).hadRecentInput) {
-            clsValue += (entry as any).value;
+          if (!clsEntry.hadRecentInput) {
+            clsValue += clsEntry.value;
           }
         });
       });

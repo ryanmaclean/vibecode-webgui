@@ -253,11 +253,11 @@ export const DeploymentHistory = React.memo(() => {
   }, [history, sortBy, filterBy])
 
   const handleFilterChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setFilterBy(e.target.value as any)
+    setFilterBy(e.target.value as 'all' | 'success' | 'failed')
   }, [])
 
   const handleSortChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSortBy(e.target.value as any)
+    setSortBy(e.target.value as 'date' | 'provider' | 'status')
   }, [])
 
   return (

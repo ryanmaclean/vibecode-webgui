@@ -41,13 +41,20 @@ class MonitoringSetupService {
   private result: MonitoringSetupResult
 
   constructor(config: Partial<MonitoringSetupConfig> = {}) {
+    const envToEnvironment = (env: string | undefined): 'development' | 'staging' | 'production' => {
+      if (env === 'production' || env === 'staging' || env === 'development') {
+        return env;
+      }
+      return 'development';
+    };
+
     this.config = {
       enableDatadog: process.env.NODE_ENV === 'production',
       enableOpenTelemetry: process.env.NODE_ENV === 'production',
       enableAlerting: process.env.NODE_ENV === 'production',
       enableDashboards: process.env.NODE_ENV === 'production',
       enableBaselines: true,
-      environment: (process.env.NODE_ENV as any) || 'development',
+      environment: envToEnvironment(process.env.NODE_ENV),
       skipHealthChecks: false,
       ...config
     }
