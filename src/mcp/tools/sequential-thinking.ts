@@ -70,11 +70,15 @@ export async function sequentialThinking(args: SequentialThinkingArgs) {
     }
     // Handle branching from a previous thought
     else if (branchFromThought !== undefined) {
-      // Create branch if no branchId provided
-      const targetBranchId = branchId || `auto-branch-${branchFromThought}-${Date.now()}`;
+      let targetBranchId = branchId;
       
-      if (!process.getBranch(targetBranchId)) {
-        process.createBranch(branchFromThought, `Branch from thought ${branchFromThought}`);
+      // If branchId is provided, use it; otherwise create a new branch
+      if (targetBranchId && process.getBranch(targetBranchId)) {
+        // Use existing branch
+      } else {
+        // Create a new branch and use its generated ID
+        const newBranch = process.createBranch(branchFromThought, `Branch from thought ${branchFromThought}`);
+        targetBranchId = newBranch.id;
       }
       
       result = process.addThoughtToBranch(
@@ -85,7 +89,7 @@ export async function sequentialThinking(args: SequentialThinkingArgs) {
       );
       thoughtType = 'branch';
       
-      console.error(`🌿 Thought ${thoughtNumber}: Added to branch from thought #${branchFromThought}`);
+      console.error(`🌿 Thought ${thoughtNumber}: Added to branch ${targetBranchId} from thought #${branchFromThought}`);
     }
     // Standard thought addition
     else {
