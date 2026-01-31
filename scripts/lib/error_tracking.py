@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
-"""Datadog error tracking helpers for Python automation scripts."""
+"""Datadog Error Tracking Automation for Scripts.
 
-from __future__ import annotations
+This module provides automatic error tracking for all Python scripts.
+"""
 
 import json
 import os
@@ -9,230 +10,409 @@ import socket
 import subprocess
 import sys
 import time
-from contextlib import contextmanager
 from dataclasses import dataclass, field
+from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
-from urllib import error, request
+from typing import Any, Callable, Dict, Optional
+
+# Error tracking configuration
+DD_ERROR_TRACKING_ENABLED = os.environ.get("DD_ERROR_TRACKING_ENABLED", "true").lower() == "true"
+DD_SERVICE = os.environ.get("DD_SERVICE", "vibecode-webgui")
+DD_ENV = os.environ.get("DD_ENV", os.environ.get("NODE_ENV", "development"))
+DD_VERSION = os.environ.get("DD_VERSION", "1.0.0")
+DD_API_KEY = os.environ.get("DD_API_KEY", "")
+
+# Script metadata
+SCRIPT_NAME = Path(sys.argv[0]).name if sys.argv else "unknown"
+SCRIPT_DIR = str(Path(sys.argv[0]).parent) if sys.argv else ""
+SCRIPT_PATH = sys.argv[0] if sys.argv else ""
+SCRIPT_ARGS = " ".join(sys.argv[1:]) if len(sys.argv) > 1 else ""
 
 
-class HTTPTransport:
-    def post(self, url: str, payload: Dict[str, Any], headers: Dict[str, str], timeout: int = 5) -> None:
-        data = json.dumps(payload).encode("utf-8")
-        req = request.Request(url, data=data, headers=headers, method="POST")
-        try:
-            with request.urlopen(req, timeout=timeout):  # nosec B310 - Datadog endpoint
-                pass
-        except error.URLError:
-            # Error tracking should never crash the main workflow.
-            pass
+def _get_timestamp() -> str:
+    """Get current UTC timestamp in ISO format."""
+    return datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%S.%f")[:-3] + "Z"
+
+
+def _get_hostname() -> str:
+    """Get the hostname."""
+    return socket.gethostname()
+
+
+def _get_username() -> str:
+    """Get the current username."""
+    return os.environ.get("USER", os.environ.get("USERNAME", "unknown"))
+
+
+def _send_to_datadog(payload: Dict[str, Any]) -> bool:
+    """Send payload to Datadog.
+
+    Args:
+        payload: The JSON payload to send.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    try:
+        subprocess.run(
+            [
+                "curl", "-s", "-X", "POST",
+                f"https://http-intake.logs.datadoghq.com/v1/input/{DD_API_KEY}",
+                "-H", "Content-Type: application/json",
+                "-d", json.dumps(payload),
+                "--max-time", "5",
+                "--retry", "2",
+                "--retry-delay", "1"
+            ],
+            capture_output=True,
+            timeout=10
+        )
+        return True
+    except (subprocess.TimeoutExpired, subprocess.SubprocessError, FileNotFoundError):
+        return False
+
+
+def log_error_to_datadog(
+    error_message: str,
+    error_code: int = 1,
+    component: str = "script",
+    action: str = "execution",
+    additional_context: str = ""
+) -> bool:
+    """Log an error to Datadog.
+
+    Args:
+        error_message: The error message.
+        error_code: The error exit code.
+        component: The component name.
+        action: The action being performed.
+        additional_context: Additional context information.
+
+    Returns:
+        True if successfully sent to Datadog.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    payload = {
+        "timestamp": _get_timestamp(),
+        "service": DD_SERVICE,
+        "env": DD_ENV,
+        "version": DD_VERSION,
+        "error": {
+            "message": error_message,
+            "type": "ScriptError",
+            "stack": f"Script: {SCRIPT_NAME}\nArgs: {SCRIPT_ARGS}\nExit Code: {error_code}"
+        },
+        "context": {
+            "component": component,
+            "action": action,
+            "script_name": SCRIPT_NAME,
+            "script_path": SCRIPT_PATH,
+            "script_args": SCRIPT_ARGS,
+            "exit_code": str(error_code),
+            "hostname": _get_hostname(),
+            "user": _get_username(),
+            "working_directory": os.getcwd(),
+            "additional_context": additional_context
+        },
+        "tags": [
+            f"service:{DD_SERVICE}",
+            f"env:{DD_ENV}",
+            f"component:{component}",
+            f"script:{SCRIPT_NAME}",
+            "error_type:script_execution"
+        ]
+    }
+
+    return _send_to_datadog(payload)
+
+
+def handle_script_error(exit_code: int, line_number: str = "unknown") -> None:
+    """Handle a script error with automatic tracking.
+
+    Args:
+        exit_code: The exit code.
+        line_number: The line number where the error occurred.
+    """
+    error_message = f"Script '{SCRIPT_NAME}' failed at line {line_number} with exit code {exit_code}"
+
+    # Log to console
+    print(f"ERROR: {error_message}", file=sys.stderr)
+    print(f"   Script: {SCRIPT_PATH}", file=sys.stderr)
+    print(f"   Args: {SCRIPT_ARGS}", file=sys.stderr)
+    print(f"   Working Directory: {os.getcwd()}", file=sys.stderr)
+
+    # Track error in Datadog
+    log_error_to_datadog(error_message, exit_code, "script", "execution", f"line:{line_number}")
+
+
+def track_script_start(component: str = "script", action: str = "start") -> bool:
+    """Track script start event.
+
+    Args:
+        component: The component name.
+        action: The action being performed.
+
+    Returns:
+        True if successfully sent to Datadog.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    payload = {
+        "timestamp": _get_timestamp(),
+        "service": DD_SERVICE,
+        "env": DD_ENV,
+        "version": DD_VERSION,
+        "message": f"Script started: {SCRIPT_NAME}",
+        "context": {
+            "component": component,
+            "action": action,
+            "script_name": SCRIPT_NAME,
+            "script_path": SCRIPT_PATH,
+            "script_args": SCRIPT_ARGS,
+            "hostname": _get_hostname(),
+            "user": _get_username(),
+            "working_directory": os.getcwd()
+        },
+        "tags": [
+            f"service:{DD_SERVICE}",
+            f"env:{DD_ENV}",
+            f"component:{component}",
+            f"script:{SCRIPT_NAME}",
+            "event_type:script_start"
+        ]
+    }
+
+    return _send_to_datadog(payload)
+
+
+def track_script_completion(
+    exit_code: int = 0,
+    component: str = "script",
+    action: str = "completion",
+    duration: str = "unknown"
+) -> bool:
+    """Track script completion event.
+
+    Args:
+        exit_code: The exit code.
+        component: The component name.
+        action: The action being performed.
+        duration: The duration of execution.
+
+    Returns:
+        True if successfully sent to Datadog.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    payload = {
+        "timestamp": _get_timestamp(),
+        "service": DD_SERVICE,
+        "env": DD_ENV,
+        "version": DD_VERSION,
+        "message": f"Script completed: {SCRIPT_NAME}",
+        "context": {
+            "component": component,
+            "action": action,
+            "script_name": SCRIPT_NAME,
+            "script_path": SCRIPT_PATH,
+            "script_args": SCRIPT_ARGS,
+            "exit_code": str(exit_code),
+            "duration": duration,
+            "hostname": _get_hostname(),
+            "user": _get_username(),
+            "working_directory": os.getcwd()
+        },
+        "tags": [
+            f"service:{DD_SERVICE}",
+            f"env:{DD_ENV}",
+            f"component:{component}",
+            f"script:{SCRIPT_NAME}",
+            "event_type:script_completion",
+            f"exit_code:{exit_code}"
+        ]
+    }
+
+    return _send_to_datadog(payload)
+
+
+def track_command_execution(
+    command: str,
+    exit_code: int = 0,
+    component: str = "script",
+    action: str = "command_execution",
+    output: str = ""
+) -> bool:
+    """Track command execution event.
+
+    Args:
+        command: The command that was executed.
+        exit_code: The exit code.
+        component: The component name.
+        action: The action being performed.
+        output: The command output.
+
+    Returns:
+        True if successfully sent to Datadog.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    payload = {
+        "timestamp": _get_timestamp(),
+        "service": DD_SERVICE,
+        "env": DD_ENV,
+        "version": DD_VERSION,
+        "message": f"Command executed: {command}",
+        "context": {
+            "component": component,
+            "action": action,
+            "command": command,
+            "exit_code": str(exit_code),
+            "output": output,
+            "script_name": SCRIPT_NAME,
+            "hostname": _get_hostname(),
+            "user": _get_username(),
+            "working_directory": os.getcwd()
+        },
+        "tags": [
+            f"service:{DD_SERVICE}",
+            f"env:{DD_ENV}",
+            f"component:{component}",
+            f"script:{SCRIPT_NAME}",
+            "event_type:command_execution",
+            f"exit_code:{exit_code}"
+        ]
+    }
+
+    return _send_to_datadog(payload)
+
+
+def safe_execute(command: str, component: str = "script", action: str = "command_execution") -> int:
+    """Safely execute a command with error tracking.
+
+    Args:
+        command: The command to execute.
+        component: The component name.
+        action: The action being performed.
+
+    Returns:
+        The exit code of the command.
+    """
+    print(f"Executing: {command}")
+
+    result = subprocess.run(command, shell=True, capture_output=True, text=True)
+    track_command_execution(command, result.returncode, component, action, result.stdout)
+
+    return result.returncode
+
+
+def track_performance_metric(
+    metric_name: str,
+    metric_value: float,
+    component: str = "script",
+    unit: str = "ms"
+) -> bool:
+    """Track a performance metric.
+
+    Args:
+        metric_name: The metric name.
+        metric_value: The metric value.
+        component: The component name.
+        unit: The unit of measurement.
+
+    Returns:
+        True if successfully sent to Datadog.
+    """
+    if not DD_ERROR_TRACKING_ENABLED or not DD_API_KEY:
+        return False
+
+    payload = {
+        "timestamp": _get_timestamp(),
+        "service": DD_SERVICE,
+        "env": DD_ENV,
+        "version": DD_VERSION,
+        "message": f"Performance metric: {metric_name} = {metric_value} {unit}",
+        "context": {
+            "component": component,
+            "metric_name": metric_name,
+            "metric_value": str(metric_value),
+            "metric_unit": unit,
+            "script_name": SCRIPT_NAME,
+            "hostname": _get_hostname(),
+            "user": _get_username(),
+            "working_directory": os.getcwd()
+        },
+        "tags": [
+            f"service:{DD_SERVICE}",
+            f"env:{DD_ENV}",
+            f"component:{component}",
+            f"script:{SCRIPT_NAME}",
+            f"metric_name:{metric_name}",
+            "event_type:performance_metric"
+        ]
+    }
+
+    return _send_to_datadog(payload)
 
 
 @dataclass
 class ErrorTracker:
-    api_key: Optional[str] = None
-    service: str = os.getenv("DD_SERVICE", "vibecode-webgui")
-    env: str = os.getenv("DD_ENV", os.getenv("NODE_ENV", "development"))
-    version: str = os.getenv("DD_VERSION", "1.0.0")
-    enabled: bool = os.getenv("DD_ERROR_TRACKING_ENABLED", "true").lower() == "true"
-    site: str = os.getenv("DD_SITE", "datadoghq.com")
-    timeout: int = 5
-    transport: HTTPTransport = field(default_factory=HTTPTransport)
+    """Context manager for error tracking."""
 
-    def __post_init__(self) -> None:
-        self.api_key = self.api_key or os.getenv("DD_API_KEY")
-        self.enabled = self.enabled and bool(self.api_key)
-        self.script_name = Path(sys.argv[0]).name
-        self.script_path = str(Path(sys.argv[0]).resolve())
-        self.script_args = sys.argv[1:]
+    component: str = "script"
+    start_time: float = field(default_factory=time.time, init=False)
 
-    # ------------------------------------------------------------------
-    @property
-    def _endpoint(self) -> str:
-        return f"https://http-intake.logs.{self.site}/v1/input/{self.api_key}"
+    def __enter__(self) -> "ErrorTracker":
+        """Start error tracking."""
+        track_script_start(self.component, "start")
+        return self
 
-    def _base_payload(self) -> Dict[str, Any]:
-        return {
-            "timestamp": datetime_utc_iso(),
-            "service": self.service,
-            "env": self.env,
-            "version": self.version,
-        }
+    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+        """End error tracking and log any errors."""
+        duration = time.time() - self.start_time
+        exit_code = 0 if exc_type is None else 1
 
-    def _metadata(self) -> Dict[str, Any]:
-        return {
-            "script_name": self.script_name,
-            "script_path": self.script_path,
-            "script_args": " ".join(self.script_args),
-            "hostname": socket.gethostname(),
-            "user": os.getenv("USER", "unknown"),
-            "working_directory": str(Path.cwd()),
-        }
-
-    def _post_event(self, payload: Dict[str, Any]) -> None:
-        if not self.enabled:
-            return
-        headers = {"Content-Type": "application/json"}
-        self.transport.post(self._endpoint, payload, headers, timeout=self.timeout)
-
-    def _tags(self, additional: Iterable[str]) -> List[str]:
-        tags = [
-            f"service:{self.service}",
-            f"env:{self.env}",
-            f"script:{self.script_name}",
-        ]
-        tags.extend(additional)
-        return tags
-
-    # ------------------------------------------------------------------
-    def track_script_start(self, component: str = "script", action: str = "start") -> None:
-        payload = self._base_payload()
-        payload["message"] = f"Script started: {self.script_name}"
-        payload["context"] = {**self._metadata(), "component": component, "action": action}
-        payload["tags"] = self._tags([f"component:{component}", "event_type:script_start"])
-        self._post_event(payload)
-
-    def track_script_completion(
-        self,
-        exit_code: int = 0,
-        component: str = "script",
-        action: str = "completion",
-        duration_seconds: Optional[float] = None,
-    ) -> None:
-        payload = self._base_payload()
-        payload["message"] = f"Script completed: {self.script_name}"
-        payload["context"] = {
-            **self._metadata(),
-            "component": component,
-            "action": action,
-            "exit_code": exit_code,
-            "duration": duration_seconds,
-        }
-        payload["tags"] = self._tags(
-            [f"component:{component}", "event_type:script_completion", f"exit_code:{exit_code}"]
-        )
-        self._post_event(payload)
-
-    def log_error(
-        self,
-        error_message: str,
-        error_code: int = 1,
-        component: str = "script",
-        action: str = "execution",
-        additional_context: Optional[str] = None,
-    ) -> None:
-        payload = self._base_payload()
-        payload["error"] = {
-            "message": error_message,
-            "type": "ScriptError",
-            "stack": f"Script: {self.script_name}\nArgs: {' '.join(self.script_args)}\nExit Code: {error_code}",
-        }
-        payload["context"] = {
-            **self._metadata(),
-            "component": component,
-            "action": action,
-            "exit_code": error_code,
-            "additional_context": additional_context,
-        }
-        payload["tags"] = self._tags(
-            [f"component:{component}", "event_type:script_error", f"exit_code:{error_code}"]
-        )
-        self._post_event(payload)
-
-    def track_command_execution(
-        self,
-        command: Union[Sequence[str], str],
-        exit_code: int,
-        component: str = "script",
-        action: str = "command_execution",
-        output: Optional[str] = None,
-    ) -> None:
-        command_list = _normalize_command(command)
-        payload = self._base_payload()
-        payload["message"] = f"Command executed: {' '.join(command_list)}"
-        payload["context"] = {
-            **self._metadata(),
-            "component": component,
-            "action": action,
-            "command": " ".join(command_list),
-            "exit_code": exit_code,
-            "output": output,
-        }
-        payload["tags"] = self._tags(
-            [f"component:{component}", "event_type:command_execution", f"exit_code:{exit_code}"]
-        )
-        self._post_event(payload)
-
-    def track_performance_metric(
-        self,
-        metric_name: str,
-        metric_value: float,
-        component: str = "script",
-        unit: str = "ms",
-    ) -> None:
-        payload = self._base_payload()
-        payload["message"] = f"Performance metric: {metric_name} = {metric_value} {unit}"
-        payload["context"] = {
-            **self._metadata(),
-            "component": component,
-            "metric_name": metric_name,
-            "metric_value": metric_value,
-            "metric_unit": unit,
-        }
-        payload["tags"] = self._tags(
-            [f"component:{component}", "event_type:performance_metric", f"metric_name:{metric_name}"]
-        )
-        self._post_event(payload)
-
-    def safe_execute(
-        self,
-        command: Union[Sequence[str], str],
-        component: str = "script",
-        action: str = "command_execution",
-        check: bool = True,
-    ) -> subprocess.CompletedProcess:
-        command_list = _normalize_command(command)
-        print(f"🔧 Executing: {' '.join(command_list)}")
-        completed = subprocess.run(command_list, capture_output=True, text=True)  # nosec B603
-        self.track_command_execution(command_list, completed.returncode, component, action, completed.stdout)
-        if check and completed.returncode != 0:
-            self.log_error(
-                f"Command failed: {' '.join(command)}",
-                error_code=completed.returncode,
-                component=component,
-                action=action,
-                additional_context=completed.stderr,
+        if exc_type is not None:
+            log_error_to_datadog(
+                str(exc_val),
+                exit_code,
+                self.component,
+                "execution",
+                f"exception:{exc_type.__name__}"
             )
-            completed.check_returncode()
-        return completed
 
-    def check_availability(self) -> bool:
-        if not self.enabled:
-            print("⚠️  Datadog Error Tracking is disabled or not configured")
-        return self.enabled
-
-    @contextmanager
-    def track_execution(self, component: str = "script"):
-        start = time.time()
-        self.track_script_start(component)
-        try:
-            yield
-        except Exception as exc:
-            self.log_error(str(exc), component=component)
-            self.track_script_completion(1, component, duration_seconds=time.time() - start)
-            raise
-        else:
-            self.track_script_completion(0, component, duration_seconds=time.time() - start)
+        track_script_completion(exit_code, self.component, "completion", f"{duration:.2f}s")
+        return False  # Don't suppress exceptions
 
 
-def datetime_utc_iso() -> str:
-    return time.strftime("%Y-%m-%dT%H:%M:%S.000Z", time.gmtime())
+def init_error_tracking(component: str = "script") -> ErrorTracker:
+    """Initialize error tracking for a script.
+
+    Args:
+        component: The component name.
+
+    Returns:
+        An ErrorTracker context manager.
+    """
+    return ErrorTracker(component)
 
 
-def _normalize_command(command: Union[Sequence[str], str]) -> List[str]:
-    if isinstance(command, str):
-        return command.split()
-    return list(command)
+def check_error_tracking_availability() -> bool:
+    """Check if error tracking is available.
 
-
-__all__ = ["ErrorTracker", "HTTPTransport"]
+    Returns:
+        True if error tracking is configured and enabled.
+    """
+    if DD_ERROR_TRACKING_ENABLED and DD_API_KEY:
+        return True
+    else:
+        print("Warning: Datadog Error Tracking is disabled or not configured")
+        print("   Set DD_ERROR_TRACKING_ENABLED=true and DD_API_KEY to enable")
+        return False
