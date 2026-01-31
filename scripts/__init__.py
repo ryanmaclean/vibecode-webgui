@@ -1,1 +1,1 @@
-"""Utilities and orchestration helpers for the VibeCode repo."""
+"""Utility scripts for the VibeCode workspace."""

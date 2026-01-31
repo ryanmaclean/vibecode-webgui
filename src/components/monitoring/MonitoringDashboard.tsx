@@ -275,7 +275,7 @@ export default function MonitoringDashboard() {
                     <XAxis dataKey="time" fontSize={12} />
                     <YAxis fontSize={12} tickFormatter={formatBytes} />
                     <Tooltip 
-                      formatter={(value: number) => formatBytes(value)}
+                      formatter={(value: number | undefined) => value === undefined ? '' : formatBytes(value)}
                       labelFormatter={(label) => String(label)}
                     />
                     <Legend />

@@ -1,25 +1,35 @@
-"""Changelog helper implemented in Python with type hints."""
+#!/usr/bin/env python3
+"""
+Changelog Helper Script
 
-from __future__ import annotations
+Generates formatted changelog entries from git commits.
+Converts changelog-helper.sh to Python with proper error handling.
+
+Usage: python changelog_helper.py [previous_tag] [current_tag]
+"""
 
 import argparse
-import os
 import re
 import subprocess
 import sys
+from collections import defaultdict
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
-from typing import Dict, Iterable, List, Sequence
+from typing import Optional
 
 
-COLOR_BLUE = "\033[0;34m"
-COLOR_GREEN = "\033[0;32m"
-COLOR_YELLOW = "\033[1;33m"
-COLOR_RED = "\033[0;31m"
-COLOR_RESET = "\033[0m"
+# ANSI colors
+class Colors:
+    RED = "\033[0;31m"
+    GREEN = "\033[0;32m"
+    YELLOW = "\033[1;33m"
+    BLUE = "\033[0;34m"
+    NC = "\033[0m"  # No Color
 
-CATEGORY_HEADERS: Dict[str, str] = {
+
+# Category headers
+CATEGORY_HEADERS = {
     "feat": "### Added",
     "fix": "### Fixed",
     "security": "### Security",
@@ -37,312 +47,348 @@ CATEGORY_HEADERS: Dict[str, str] = {
 }
 
 CATEGORY_ORDER = [
-    "feat",
-    "fix",
-    "security",
-    "perf",
-    "refactor",
-    "docs",
-    "deprecate",
-    "remove",
-    "test",
-    "ci",
-    "workflow",
-    "chore",
-    "style",
-    "other",
+    "feat", "fix", "security", "perf", "refactor", "docs",
+    "deprecate", "remove", "test", "ci", "workflow", "chore",
+    "style", "other"
 ]
-
-CONVENTIONAL_PATTERN = re.compile(r"^([a-z]+)(\(.+\))?(!)?:\s(.+)$")
 
 
 @dataclass
-class CommitSummary:
-    """Representation of a git commit extracted from git log."""
-
+class CommitInfo:
+    """Parsed commit information."""
     hash: str
     subject: str
     body: str
     author: str
+    commit_type: Optional[str] = None
+    scope: Optional[str] = None
+    description: Optional[str] = None
+    is_breaking: bool = False
 
 
-@dataclass
-class ChangelogAnalysis:
-    categories: Dict[str, List[str]]
-    total_commits: int
-    conventional_commits: int
-    breaking_changes: int
+def print_header(text: str) -> None:
+    """Print a colored header."""
+    print(f"{Colors.BLUE}================================{Colors.NC}")
+    print(f"{Colors.BLUE}{text}{Colors.NC}")
+    print(f"{Colors.BLUE}================================{Colors.NC}")
 
 
-def colorize(text: str, color: str) -> str:
-    return f"{color}{text}{COLOR_RESET}"
+def print_success(text: str) -> None:
+    """Print success message."""
+    print(f"{Colors.GREEN}{text}{Colors.NC}")
 
 
-def print_header(message: str) -> None:
-    border = "=" * 32
-    print(colorize(border, COLOR_BLUE))
-    print(colorize(message, COLOR_BLUE))
-    print(colorize(border, COLOR_BLUE))
+def print_warning(text: str) -> None:
+    """Print warning message."""
+    print(f"{Colors.YELLOW}{text}{Colors.NC}")
 
 
-def print_success(message: str) -> None:
-    print(colorize(f"✓ {message}", COLOR_GREEN))
+def print_error(text: str) -> None:
+    """Print error message."""
+    print(f"{Colors.RED}{text}{Colors.NC}")
 
 
-def print_warning(message: str) -> None:
-    print(colorize(f"⚠ {message}", COLOR_YELLOW))
-
-
-def print_error(message: str) -> None:
-    print(colorize(f"✗ {message}", COLOR_RED))
-
-
-def run_git_command(args: Sequence[str]) -> str:
-    return subprocess.check_output(["git", *args], text=True).strip()
-
-
-def ensure_git_repository() -> None:
+def is_git_repo() -> bool:
+    """Check if current directory is a git repository."""
     try:
-        run_git_command(["rev-parse", "--git-dir"])
-    except subprocess.CalledProcessError as exc:  # pragma: no cover - simple failure
-        print_error("Not a git repository")
-        raise SystemExit(exc.returncode)
+        result = subprocess.run(
+            ["git", "rev-parse", "--git-dir"],
+            capture_output=True,
+        )
+        return result.returncode == 0
+    except Exception:
+        return False
 
 
-def detect_previous_tag(provided: str | None) -> str:
-    if provided:
-        return provided
-
-    tags_output = run_git_command(["tag", "--sort=-version:refname"])
-    for tag in tags_output.splitlines():
-        candidate = tag.strip()
-        if candidate:
-            print_success(f"Auto-detected previous tag: {candidate}")
-            return candidate
-
-    print_warning("No previous tag found, using initial commit")
-    return run_git_command(["rev-list", "--max-parents=0", "HEAD"])
-
-
-def parse_git_log(output: str) -> List[CommitSummary]:
-    commits: List[CommitSummary] = []
-    for line in output.splitlines():
-        if not line:
-            continue
-        parts = line.split("|||")
-        if len(parts) != 4:
-            continue
-        commits.append(CommitSummary(*parts))
-    return commits
-
-
-def load_commits(previous: str, current: str) -> List[CommitSummary]:
-    args = [
-        "log",
-        f"{previous}..{current}",
-        "--pretty=format:%H|||%s|||%b|||%an",
-        "--no-merges",
-    ]
+def get_latest_tag() -> Optional[str]:
+    """Get the most recent tag."""
     try:
-        output = run_git_command(args)
-    except subprocess.CalledProcessError:
-        output = ""
-    return parse_git_log(output)
+        result = subprocess.run(
+            ["git", "tag", "--sort=-version:refname"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0 and result.stdout.strip():
+            return result.stdout.strip().split("\n")[0]
+    except Exception:
+        pass
+    return None
 
 
-def analyze_commits(commits: Sequence[CommitSummary]) -> ChangelogAnalysis:
-    categories: Dict[str, List[str]] = {key: [] for key in CATEGORY_HEADERS}
-    total = conventional = breaking = 0
+def get_initial_commit() -> Optional[str]:
+    """Get the initial commit hash."""
+    try:
+        result = subprocess.run(
+            ["git", "rev-list", "--max-parents=0", "HEAD"],
+            capture_output=True,
+            text=True,
+        )
+        if result.returncode == 0:
+            return result.stdout.strip()
+    except Exception:
+        pass
+    return None
+
+
+def get_commits(from_ref: str, to_ref: str) -> list[CommitInfo]:
+    """Get commits between two refs."""
+    try:
+        result = subprocess.run(
+            [
+                "git", "log", f"{from_ref}..{to_ref}",
+                "--pretty=format:%H|||%s|||%b|||%an",
+                "--no-merges",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode != 0 or not result.stdout.strip():
+            return []
+
+        commits = []
+        for line in result.stdout.strip().split("\n"):
+            if not line:
+                continue
+
+            parts = line.split("|||")
+            if len(parts) >= 4:
+                commits.append(CommitInfo(
+                    hash=parts[0],
+                    subject=parts[1],
+                    body=parts[2],
+                    author=parts[3],
+                ))
+
+        return commits
+    except Exception:
+        return []
+
+
+def parse_conventional_commit(commit: CommitInfo) -> CommitInfo:
+    """Parse conventional commit format."""
+    # Check for breaking change
+    if "!" in commit.subject or "BREAKING CHANGE" in commit.body:
+        commit.is_breaking = True
+
+    # Parse conventional commit: type(scope)!: description
+    pattern = r"^([a-z]+)(\(.+\))?(!)?:\s+(.+)$"
+    match = re.match(pattern, commit.subject)
+
+    if match:
+        commit.commit_type = match.group(1)
+        scope = match.group(2)
+        if scope:
+            commit.scope = scope.strip("()")
+        commit.description = match.group(4)
+    else:
+        commit.commit_type = "other"
+        commit.description = commit.subject
+
+    return commit
+
+
+def get_contributors(from_ref: str, to_ref: str) -> list[str]:
+    """Get unique contributors between refs."""
+    try:
+        result = subprocess.run(
+            [
+                "git", "log", f"{from_ref}..{to_ref}",
+                "--format=%an",
+                "--no-merges",
+            ],
+            capture_output=True,
+            text=True,
+        )
+
+        if result.returncode == 0:
+            names = set(result.stdout.strip().split("\n"))
+            return sorted(names)
+    except Exception:
+        pass
+    return []
+
+
+def format_commit_entry(commit: CommitInfo) -> str:
+    """Format a commit as a changelog entry."""
+    short_hash = commit.hash[:7]
+
+    if commit.is_breaking:
+        prefix = "- **BREAKING**: "
+    else:
+        prefix = "- "
+
+    if commit.scope:
+        return f"{prefix}**{commit.scope}**: {commit.description} (`{short_hash}`)"
+    else:
+        return f"{prefix}{commit.description} (`{short_hash}`)"
+
+
+def generate_changelog(
+    commits: list[CommitInfo],
+    version: str,
+    date_str: str,
+) -> str:
+    """Generate the changelog markdown."""
+    # Categorize commits
+    categories: dict[str, list[str]] = defaultdict(list)
 
     for commit in commits:
-        if not commit.hash:
-            continue
-        total += 1
-        short_hash = commit.hash[:7]
+        commit = parse_conventional_commit(commit)
+        entry = format_commit_entry(commit)
 
-        match = CONVENTIONAL_PATTERN.match(commit.subject)
-        body_breaking = "BREAKING CHANGE" in commit.body
-        breaking_change = body_breaking
-
-        if match:
-            ctype, scope, bang, description = match.groups()
-            conventional += 1
-            if bang:
-                breaking_change = True
-            entry = "- "
-            if breaking_change:
-                entry += "**BREAKING**: "
-            if scope:
-                entry += f"**{scope.strip('()')}**: {description} (`{short_hash}`)"
-            else:
-                entry += f"{description} (`{short_hash}`)"
-
-            category = ctype if ctype in CATEGORY_HEADERS else "other"
-            categories[category].append(entry)
+        if commit.commit_type in CATEGORY_HEADERS:
+            categories[commit.commit_type].append(entry)
         else:
-            entry = f"- {commit.subject} (`{short_hash}`)"
             categories["other"].append(entry)
 
-        if breaking_change:
-            breaking += 1
+    # Build output
+    lines = [f"## [{version}]{date_str}", ""]
 
-    return ChangelogAnalysis(categories, total, conventional, breaking)
+    for cat in CATEGORY_ORDER:
+        if categories[cat]:
+            lines.append(CATEGORY_HEADERS[cat])
+            lines.append("")
+            lines.extend(categories[cat])
+            lines.append("")
 
-
-def count_contributors(previous: str, current: str) -> int:
-    output = run_git_command([
-        "log",
-        f"{previous}..{current}",
-        "--format=%an",
-        "--no-merges",
-    ])
-    contributors = {line.strip() for line in output.splitlines() if line.strip()}
-    return len(contributors)
+    return "\n".join(lines)
 
 
-def format_categories(categories: Dict[str, List[str]]) -> str:
-    lines: List[str] = []
-    for key in CATEGORY_ORDER:
-        entries = categories.get(key) or []
-        if not entries:
-            continue
-        lines.append(CATEGORY_HEADERS[key])
-        lines.append("")
-        lines.extend(entries)
-        lines.append("")
-    return "\n".join(lines).rstrip() + "\n"
+def main() -> int:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Generate changelog entries from git commits"
+    )
+    parser.add_argument(
+        "previous_tag",
+        nargs="?",
+        help="Previous tag (auto-detected if not provided)",
+    )
+    parser.add_argument(
+        "current_tag",
+        nargs="?",
+        default="HEAD",
+        help="Current tag (default: HEAD)",
+    )
+    parser.add_argument(
+        "-o", "--output",
+        help="Output file (optional)",
+    )
 
+    args = parser.parse_args()
 
-def prompt_save_file(version: str, date_str: str, categories: Dict[str, List[str]]) -> None:
-    if not (sys.stdout.isatty() and sys.stdin.isatty()):
-        return
+    # Check git repo
+    if not is_git_repo():
+        print_error("Not a git repository")
+        return 1
 
-    try:
-        response = input("Save to file? (y/N) ").strip().lower()
-    except EOFError:
-        return
-    if response not in {"y", "yes"}:
-        return
-
-    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
-    sanitized_version = version.replace("/", "-") or "unreleased"
-    output_file = Path(f"changelog-{sanitized_version}-{timestamp}.md")
-    with output_file.open("w", encoding="utf-8") as handle:
-        handle.write(f"## [{version}]{date_str}\n\n")
-        handle.write(format_categories(categories))
-
-    print_success(f"Saved to: {output_file}")
-
-
-def build_stats_block(analysis: ChangelogAnalysis, contributors: int) -> None:
-    print_header("Statistics")
-    print("")
-    print(f"Total commits:         {analysis.total_commits}")
-    print(f"Conventional commits:  {analysis.conventional_commits}")
-    print(f"Breaking changes:      {analysis.breaking_changes}")
-    print(f"Contributors:          {contributors}")
-    print("")
-
-    if analysis.total_commits:
-        percent = analysis.conventional_commits * 100 // analysis.total_commits
-        if percent < 50:
-            print_warning(
-                f"Only {percent}% of commits follow conventional format;"
-                " consider adopting it more broadly"
-            )
-        elif percent < 80:
-            print_success(f"{percent}% conventional commits (good progress!)")
+    # Determine previous tag
+    previous_tag = args.previous_tag
+    if not previous_tag:
+        previous_tag = get_latest_tag()
+        if previous_tag:
+            print_success(f"Auto-detected previous tag: {previous_tag}")
         else:
-            print_success(f"{percent}% conventional commits (excellent!)")
+            print_warning("No previous tag found, using initial commit")
+            previous_tag = get_initial_commit()
+            if not previous_tag:
+                print_error("Could not determine starting point")
+                return 1
 
+    current_tag = args.current_tag
+    if current_tag == "HEAD":
+        print_warning("Using HEAD as current version (unreleased)")
 
-def print_contributors(previous: str, current: str) -> None:
+    print_header("Generating Changelog")
+    print(f"From: {previous_tag}")
+    print(f"To:   {current_tag}")
+    print()
+
+    # Get commits
+    commits = get_commits(previous_tag, current_tag)
+    if not commits:
+        print_error(f"No commits found between {previous_tag} and {current_tag}")
+        return 1
+
+    # Calculate statistics
+    total_commits = len(commits)
+    conventional_commits = 0
+    breaking_changes = 0
+
+    for commit in commits:
+        commit = parse_conventional_commit(commit)
+        if commit.commit_type != "other":
+            conventional_commits += 1
+        if commit.is_breaking:
+            breaking_changes += 1
+
+    # Determine version string
+    if current_tag == "HEAD":
+        version = "Unreleased"
+        date_str = ""
+    else:
+        version = current_tag.lstrip("v")
+        date_str = f" - {datetime.now().strftime('%Y-%m-%d')}"
+
+    # Generate changelog
+    changelog = generate_changelog(commits, version, date_str)
+
+    print_header("Changelog Entry")
+    print()
+    print(changelog)
+
+    # Statistics
+    print_header("Statistics")
+    print()
+    print(f"Total commits:         {total_commits}")
+    print(f"Conventional commits:  {conventional_commits}")
+    print(f"Breaking changes:      {breaking_changes}")
+
+    contributors = get_contributors(previous_tag, current_tag)
+    print(f"Contributors:          {len(contributors)}")
+    print()
+
+    # Conventional commit percentage
+    if total_commits > 0:
+        pct = (conventional_commits * 100) // total_commits
+        if pct < 50:
+            print_warning(f"Only {pct}% of commits follow conventional format")
+            print("   Consider adopting conventional commits for better automation")
+        elif pct < 80:
+            print_success(f"{pct}% conventional commits (good progress!)")
+        else:
+            print_success(f"{pct}% conventional commits (excellent!)")
+
+    # Contributors
     print_header("Contributors")
-    print("")
-    output = run_git_command([
-        "log",
-        f"{previous}..{current}",
-        "--format=%an",
-        "--no-merges",
-    ])
-    names = sorted({line.strip() for line in output.splitlines() if line.strip()})
-    for name in names:
+    print()
+    for name in contributors:
         print(f"  - {name}")
-    print("")
+    print()
 
+    # Breaking changes warning
+    if breaking_changes > 0:
+        print_warning(f"This release contains {breaking_changes} breaking change(s)")
+        print("   Ensure migration guide is included in changelog")
+        print()
 
-def print_next_steps(version: str) -> None:
+    # Save to file
+    if args.output:
+        Path(args.output).write_text(changelog)
+        print_success(f"Saved to: {args.output}")
+
     print_header("Next Steps")
-    print("")
+    print()
     print("1. Copy the changelog entry above")
-    print("2. Open CHANGELOG.md and add it under the appropriate version")
+    print("2. Open CHANGELOG.md and add it under appropriate version")
     print("3. Review and refine descriptions for clarity")
     print("4. Add any additional context or migration notes")
     print(f"5. Commit with: git commit -m 'docs: update CHANGELOG.md for {version}'")
-    print("")
+    print()
 
-
-def render_changelog(previous: str, current: str) -> int:
-    commits = load_commits(previous, current)
-    if not commits:
-        print_error(f"No commits found between {previous} and {current}")
-        return 1
-
-    analysis = analyze_commits(commits)
-    contributors = count_contributors(previous, current)
-
-    if current == "HEAD":
-        version = "Unreleased"
-        date_str = ""
-        print_warning("Using HEAD as current version (unreleased)")
-    else:
-        version = current.lstrip("v") or current
-        date_str = f" - {datetime.now():%Y-%m-%d}"
-
-    print_header("Generating Changelog")
-    print(f"From: {previous}")
-    print(f"To:   {current}")
-    print("")
-
-    print_header("Changelog Entry")
-    print("")
-    print(f"## [{version}]{date_str}\n")
-    print(format_categories(analysis.categories))
-
-    build_stats_block(analysis, contributors)
-    print_contributors(previous, current)
-
-    if analysis.breaking_changes:
-        print_warning(
-            f"This release contains {analysis.breaking_changes} breaking change(s)."
-        )
-        print("   Ensure migration guide is included in changelog\n")
-
-    print_next_steps(version)
-    prompt_save_file(version, date_str, analysis.categories)
     print_success("Changelog generation complete!")
     return 0
-
-
-def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Generate changelog entries from git commits")
-    parser.add_argument("previous", nargs="?", help="Previous tag")
-    parser.add_argument("current", nargs="?", default="HEAD", help="Current tag")
-    return parser.parse_args(argv)
-
-
-def main(argv: Sequence[str] | None = None) -> int:
-    ensure_git_repository()
-    args = parse_args(argv)
-
-    previous = detect_previous_tag(args.previous)
-    current = args.current or "HEAD"
-
-    try:
-        return render_changelog(previous, current)
-    except subprocess.CalledProcessError as exc:  # pragma: no cover - passthrough
-        print_error(f"Git command failed: {exc}")
-        return exc.returncode
 
 
 if __name__ == "__main__":
