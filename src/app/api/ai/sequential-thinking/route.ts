@@ -117,7 +117,7 @@ async function handlePOST(request: NextRequest) {
         response_length: JSON.stringify(mcpData).length,
         processing_time_ms: processingTime,
         num_steps: numSteps,
-        userId: 'test-user',
+        userId: request.user?.id || 'anonymous',
         userRole: request.user?.role,
       });
 
@@ -132,7 +132,7 @@ async function handlePOST(request: NextRequest) {
       logSequentialThinking(request, 'thinking_error', {
         error: 'MCP server error',
         details: mcpError instanceof Error ? mcpError.message : 'Unknown MCP error',
-        userId: 'test-user',
+        userId: request.user?.id || 'anonymous',
       });
 
       // For demo/development fallback - create mock thoughts if MCP server is not available
