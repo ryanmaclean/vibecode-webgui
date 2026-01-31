@@ -1,77 +1,128 @@
 #!/usr/bin/env python3
-"""Helpers for working with pgvector containers in tests."""
-
-from __future__ import annotations
+"""Helpers for working with temporary pgvector containers in tests."""
 
 import subprocess
 import time
+from typing import Optional
 
 
-class PgVectorError(RuntimeError):
-    pass
-
-
-def start_container(
+def pgvector_start_container(
     container_name: str,
     host_port: int,
     database: str,
     user: str,
     password: str,
-    image: str = "ankane/pgvector",
-    docker_bin: str = "docker",
-) -> None:
-    subprocess.run([docker_bin, "rm", "-f", container_name], check=False, stdout=subprocess.DEVNULL)
-    cmd = [
-        docker_bin,
-        "run",
-        "--name",
-        container_name,
-        "-e",
-        f"POSTGRES_DB={database}",
-        "-e",
-        f"POSTGRES_USER={user}",
-        "-e",
-        f"POSTGRES_PASSWORD={password}",
-        "-p",
-        f"{host_port}:5432",
-        "-d",
-        image,
-    ]
-    subprocess.run(cmd, check=True)
+    image: str = "ankane/pgvector"
+) -> bool:
+    """Start a pgvector container.
+
+    Args:
+        container_name: The name for the container.
+        host_port: The host port to map to container port 5432.
+        database: The PostgreSQL database name.
+        user: The PostgreSQL username.
+        password: The PostgreSQL password.
+        image: The Docker image to use.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    # Remove any existing container with the same name
+    subprocess.run(
+        ["docker", "rm", "-f", container_name],
+        capture_output=True
+    )
+
+    # Start the new container
+    result = subprocess.run(
+        [
+            "docker", "run", "--name", container_name,
+            "-e", f"POSTGRES_DB={database}",
+            "-e", f"POSTGRES_USER={user}",
+            "-e", f"POSTGRES_PASSWORD={password}",
+            "-p", f"{host_port}:5432",
+            "-d", image
+        ],
+        capture_output=True
+    )
+
+    return result.returncode == 0
 
 
-def wait_for_start(
+def pgvector_wait_for_start(
     container_name: str,
     user: str,
     database: str,
     retries: int = 10,
-    delay_seconds: int = 2,
-    docker_bin: str = "docker",
+    delay_seconds: int = 2
 ) -> bool:
-    for _ in range(retries):
+    """Wait for the pgvector container to be ready.
+
+    Args:
+        container_name: The container name.
+        user: The PostgreSQL username.
+        database: The PostgreSQL database name.
+        retries: Number of retry attempts.
+        delay_seconds: Delay between retries in seconds.
+
+    Returns:
+        True if container is ready, False if timeout.
+    """
+    for attempt in range(1, retries + 1):
         result = subprocess.run(
-            [docker_bin, "exec", container_name, "psql", "-U", user, "-d", database, "-c", "SELECT 1"],
-            check=False,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
+            [
+                "docker", "exec", container_name,
+                "psql", "-U", user, "-d", database, "-c", "SELECT 1"
+            ],
+            capture_output=True
         )
+
         if result.returncode == 0:
             return True
+
         time.sleep(delay_seconds)
-    raise PgVectorError(f"Timed out waiting for container {container_name} to start")
+
+    return False
 
 
-def exec_sql(
+def pgvector_exec_sql(
     container_name: str,
     user: str,
     database: str,
-    sql: str,
-    docker_bin: str = "docker",
+    sql: str
 ) -> subprocess.CompletedProcess:
+    """Execute SQL in the pgvector container.
+
+    Args:
+        container_name: The container name.
+        user: The PostgreSQL username.
+        database: The PostgreSQL database name.
+        sql: The SQL command to execute.
+
+    Returns:
+        The completed process result.
+    """
     return subprocess.run(
-        [docker_bin, "exec", container_name, "psql", "-U", user, "-d", database, "-c", sql],
-        check=True,
+        [
+            "docker", "exec", container_name,
+            "psql", "-U", user, "-d", database, "-c", sql
+        ],
+        capture_output=True,
+        text=True
     )
 
 
-__all__ = ["PgVectorError", "start_container", "wait_for_start", "exec_sql"]
+def pgvector_stop_container(container_name: str) -> bool:
+    """Stop and remove a pgvector container.
+
+    Args:
+        container_name: The container name.
+
+    Returns:
+        True if successful, False otherwise.
+    """
+    result = subprocess.run(
+        ["docker", "rm", "-f", container_name],
+        capture_output=True
+    )
+    return result.returncode == 0
