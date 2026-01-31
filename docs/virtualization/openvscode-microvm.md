@@ -38,13 +38,11 @@ npm run microvm:https   # -> proxies https://127.0.0.1:3443 to the microVM
 
 ### arm64 guest
 ```bash
-# Build or copy the Apple VF artifacts into bench-images/apple-vf/
-# (run these from the `kernel-builder` Lima VM or a Debian container)
-lima kernel-builder -- ./scripts/benchmarks/build-minivim-kernel.sh arm64 6.12.10
-lima kernel-builder -- ./scripts/benchmarks/build-busybox-musl.sh arm64
-# (optional) assemble initramfs
-cd bench-images/apple-vf
-find rootfs -print0 | cpio --null -ov --format=newc | gzip -9 > openvscode-initramfs.cpio.gz
+# Build Apple VF fast-boot assets (run from the `kernel-builder` Lima VM or a Debian container)
+./scripts/benchmarks/build-applevf-fastboot-assets.sh arm64 6.12.10
+
+# (Optional) rebuild an OpenVSCode initramfs for arm64
+./scripts/build-fast-openvscode-vm-with-ai-tools.sh
 
 # Launch via QEMU
 MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh start
@@ -62,7 +60,7 @@ MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh sto
 # 2. Ensure the launcher keeps running until the VM exits and writes its PID to
 #    MICROVM_PID_FILE (optional, but enables `stop` / `measure`).
 MICROVM_ARCH=arm64 MICROVM_RUNTIME=applevf \
-  MICROVM_APPLEVF_CMD=./path/to/applevf-launcher.sh \
+  MICROVM_APPLEVF_CMD=./scripts/benchmarks/applevf-vfkit-launcher.sh \
   scripts/benchmarks/vscode_microvm.sh start
 ```
 
@@ -77,7 +75,7 @@ captures console output in `${TARGET_DIR}/qemu-console.log` for debugging.
 ## Benchmarks
 ```
 $ scripts/benchmarks/vscode_microvm.sh measure 5
-{"port_ready_ms": [6212, 6002, 6103, 6057, 6177]}
+{"port_ready_ms": [6212, 6002, 6103, 6057, 6177], "healthz_ready_ms": [6212, 6002, 6103, 6057, 6177]}
 
 $ MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh measure 3
 {"port_ready_ms": [19745, 19525, 19217]}
@@ -89,6 +87,20 @@ we still trail containers for cold launches; keep a warm VM running for demos to
 avoid repeated cold boots. Once we validate on Apple Silicon with Virtualization
 Framework passthrough we expect the arm64 numbers to drop substantially.
 
+### Apple VF fast-boot (arm64)
+
+Run the dedicated benchmark (EFI-stub kernel + minimal BusyBox initramfs):
+```bash
+APPLEVF_KERNEL=bench-images/apple-vf-fastboot/vmlinux-efi-stub \
+APPLEVF_INITRD=bench-images/apple-vf-fastboot/initramfs-minimal.cpio.gz \
+scripts/benchmarks/applevf_fastboot_bench.sh bench 5
+```
+
+| Runtime | Kernel | Initramfs | Avg /healthz (ms) | Notes |
+| --- | --- | --- | --- | --- |
+| Apple VF (vfkit) | vmlinux-efi-stub | initramfs-minimal | TBD | Run on M-series + record results |
+| QEMU (arm64 virt) | vmlinux-fast | openvscode-initramfs | ~19,500 | Intel host, TCG |
+
 ## Packaging
 ```bash
 # x86_64 bundle
@@ -96,6 +108,9 @@ scripts/release/package-fast-openvscode-vm.sh fast-openvscode-vm
 
 # arm64 bundle
 scripts/release/package-fast-openvscode-vm.sh fast-openvscode-vm-arm64
+
+# Apple VF fast-boot assets bundle
+scripts/release/package-fast-openvscode-vm.sh bench-images/apple-vf-fastboot
 ```
 Artifacts land in `dist/` with matching `.sha256` files. The script excludes
 cached tarballs, QEMU logs, and pid files so uploads stay lean. To refresh the
