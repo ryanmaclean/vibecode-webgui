@@ -24,3 +24,10 @@ python3 scripts/release_manager.py
 ## Next Steps
 - Boot the Ubuntu VM: `python3 scripts/launch_ubuntu_vm.py`
 - Connect VibeCode: Open App -> Settings -> Gateway: `localhost:18789`
+
+## ⚠️ Known Regressions (Tracked)
+The "Ruthless" pivot to Ubuntu/vfkit temporarily dropped some features from v4.x/v3.x. These are now tracked as issues:
+- [Issue #1129] Restore Native macOS Menubar App
+- [Issue #1130] Restore `vibecode-vm` CLI Tool
+- [Issue #1131] Restore 9p Persistent Storage
+- [Issue #1132] Expose Docker Socket (Port 2375)
