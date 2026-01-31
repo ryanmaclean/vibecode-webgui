@@ -1,3 +1,15 @@
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 from __future__ import annotations
 
 import subprocess
@@ -57,4 +69,3 @@ def test_exec_sql_calls_docker_exec(monkeypatch):
 
     pgvector.exec_sql("pg", "user", "db", "SELECT 1")
     assert called["cmd"][0:3] == ["docker", "exec", "pg"]
-

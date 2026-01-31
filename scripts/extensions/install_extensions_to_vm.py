@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
+
 """
 Install Extensions to OpenVSCode Server VM
 Configures extensions to be pre-installed in VM images with Datadog tracing
@@ -362,4 +374,3 @@ def _execute_action(action: str, project_root: Path, span: Any) -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

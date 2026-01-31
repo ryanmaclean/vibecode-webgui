@@ -1,3 +1,15 @@
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 from __future__ import annotations
 
 from pathlib import Path
@@ -18,4 +30,3 @@ def run(args: Sequence[str]) -> None:
     from scripts.vfkit_py.vm_manager import cli
 
     cli(list(args))
-
