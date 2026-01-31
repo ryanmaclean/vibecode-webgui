@@ -3,7 +3,7 @@ import time
 import sys
 import logging
 import subprocess
-import requests
+# requests imported lazily to allow script to run (with failures) even if deps missing
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [RALPH-LOOP] %(message)s')
 logger = logging.getLogger()
@@ -14,15 +14,18 @@ GATEWAY_URL = "http://localhost:18789/health"
 
 def check_local_gateway():
     try:
+        import requests
         resp = requests.get(GATEWAY_URL, timeout=2)
         if resp.status_code == 200:
             return True
         logger.warning(f"⚠️  Gateway returned status: {resp.status_code}")
         return False
-    except requests.exceptions.ConnectionError:
-        logger.error("❌ Gateway Connection Refused (Is the VM/Container running?)")
+    except ImportError:
+        logger.error("❌ Gateway Check Skipped: 'requests' module not found. Run 'pip install requests'.")
         return False
     except Exception as e:
+        # Check if it's a connection error (requests might not be imported if ImportError was raised, 
+        # but here we are in the generic catch, so we need to be careful not to reference requests if not imported)
         logger.error(f"❌ Gateway Check Failed: {e}")
         return False
 

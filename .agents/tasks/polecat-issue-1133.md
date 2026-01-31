@@ -2,4 +2,5 @@
 
 Title: Fix Ralph Loop Test Isolation
 Source: GitHub Issue #1133
-Status: Pending
+Status: Completed
+Resolution: Modified `scripts/ralph_loop.py` to lazily import `requests`. Verified with `tests/vm/openclaw-vm.test.ts`.
