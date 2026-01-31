@@ -197,7 +197,7 @@
     "hot-shots": "13.0.0",
     "ioredis": "5.9.2",
     "jsonwebtoken": "^9.0.2",
-    "langchain": "1.2.3",
+    "langchain": "1.2.14",
     "lightningcss": "1.19.0",
     "lucide-react": "0.395.0",
     "marked": "17.0.1",
