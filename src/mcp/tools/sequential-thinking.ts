@@ -4,13 +4,24 @@
  * Provides structured, step-by-step thinking capabilities for AI agents.
  * Supports branching, revision, and context management.
  *
+ * NOTE: This implementation uses global state to maintain the thinking process
+ * across sequential tool calls, following the reference MCP sequential thinking
+ * server pattern. In production environments with concurrent users, each user
+ * should have their own MCP server instance, or session-based state management
+ * should be implemented.
+ *
+ * NOTE: console.error is used intentionally for logging because MCP servers
+ * use stdout for JSON-RPC protocol communication. stderr is the correct
+ * channel for diagnostic/informational messages.
+ *
  * @see https://github.com/modelcontextprotocol/servers/tree/main/src/sequentialthinking
  */
 
 import { SequentialThinkingProcess } from '../../lib/mcp/sequential/thinking-process.js';
 import type { SequentialThinkingArgs } from '../types.js';
 
-// Global thinking process instance for maintaining state across tool calls
+// Global thinking process instance for maintaining state across tool calls.
+// This follows the MCP server pattern where one instance serves one AI session.
 let thinkingProcess: SequentialThinkingProcess | null = null;
 
 /**
