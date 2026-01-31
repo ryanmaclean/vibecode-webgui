@@ -577,7 +577,7 @@ export function getUnifiedAI(): UnifiedAIClient {
 // Keep legacy export for backward compatibility (but lazy)
 export const unifiedAI: UnifiedAIClient = new Proxy({} as UnifiedAIClient, {
   get(target, prop) {
-    return (getUnifiedAI() as any)[prop];
+    return (getUnifiedAI() as unknown as Record<string | symbol, unknown>)[prop];
   }
 });
 
