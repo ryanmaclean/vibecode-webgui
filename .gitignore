@@ -386,3 +386,4 @@ PROMISE_VERIFICATION_REPORT.md
 # Gas Town local runtime
 .beads/
 .runtime/
+.venv/

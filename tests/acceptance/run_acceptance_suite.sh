@@ -80,12 +80,23 @@ test_req_06_security() {
     fi
 }
 
+test_req_ubuntu_pivot() {
+    echo "Running REQ-UBUNTU: Verify Ubuntu/vfkit Pivot Scripts"
+    if [ -f "scripts/launch_ubuntu_vm.py" ] && [ -f "scripts/ralph_loop.py" ]; then
+         echo "✅ REQ-UBUNTU PASS: Pivot scripts present"
+    else
+         echo "❌ REQ-UBUNTU FAIL: Scripts missing"
+         ((FAILURES++))
+    fi
+}
+
 # Execute Tests
 test_req_01_footprint
 test_req_02_networking
 test_req_03_functional
 test_req_04_tailscale
 test_req_06_security
+test_req_ubuntu_pivot
 
 echo ""
 if [ $FAILURES -eq 0 ]; then
