@@ -10,7 +10,7 @@
  * `CacheKeys`, `CacheTTL`) that the application expects.
  */
 
-import { Redis } from 'ioredis';
+import Redis, { RedisOptions } from 'ioredis'
 import { metrics } from '../server-monitoring';
 // import { logger } from '@/lib/logger';
 
@@ -89,7 +89,7 @@ try {
     if (connectionConfig.url) {
       valkeyClient = new Redis(connectionConfig.url);
     } else {
-      valkeyClient = new Redis(connectionConfig as any);
+      valkeyClient = new Redis(connectionConfig as RedisOptions);
     }
 
     valkeyClient.on('connect', () => {

@@ -76,7 +76,7 @@ export function handleApiError(error: unknown): Response {
 
   // Handle Prisma errors
   if (error && typeof error === 'object' && 'code' in error) {
-    const prismaError = error as any;
+    const prismaError = error as { code?: string; meta?: { target?: string[] }; message?: string };
     switch (prismaError.code) {
       case 'P2002':
         return new Response(
@@ -107,7 +107,7 @@ export function handleApiError(error: unknown): Response {
 
   // Handle NextAuth errors
   if (error && typeof error === 'object' && 'type' in error) {
-    const nextAuthError = error as any;
+    const nextAuthError = error as { type?: string; code?: string; message?: string };
     if (nextAuthError.type === 'CredentialsSignin') {
       return new Response(
         JSON.stringify({

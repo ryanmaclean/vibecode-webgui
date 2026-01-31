@@ -249,7 +249,7 @@
     "@babel/preset-react": "7.28.5",
     "@babel/preset-typescript": "7.28.5",
     "@datadog/browser-rum": "6.25.4",
-    "@datadog/datadog-ci": "5.2.1",
+    "@datadog/datadog-ci": "5.5.0",
     "@eslint/eslintrc": "3.3.1",
     "@opentelemetry/exporter-jaeger": "2.2.0",
     "@playwright/test": "1.58.0",

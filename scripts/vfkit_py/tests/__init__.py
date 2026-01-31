@@ -1,1 +1,1 @@
-"""Tests for vfkit_py package."""
+"""Tests for vfkit Python scripts."""
