@@ -15,6 +15,25 @@ interface PrometheusConfig {
   preventServerStart?: boolean;
 }
 
+// Extended config interface for PrometheusExporter constructor which accepts more options
+interface PrometheusExporterConfig {
+  port: number;
+  endpoint: string;
+  host?: string;
+  preventServerStart?: boolean;
+}
+
+// Interface for HTTP request/response handlers
+interface HttpRequest {
+  url?: string;
+  method?: string;
+}
+
+interface HttpResponse {
+  writeHead(statusCode: number, headers?: Record<string, string>): void;
+  end(data?: string): void;
+}
+
 interface MetricSnapshot {
   name: string;
   value: number;
@@ -46,14 +65,14 @@ class AgentAPIPrometheusExporter {
       });
 
       // Create Prometheus exporter
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const exporterConfig: PrometheusExporterConfig = {
+        port: config.port,
+        endpoint: config.endpoint,
+        host: config.host,
+        preventServerStart: config.preventServerStart
+      };
       this.exporter = new PrometheusExporter(
-        {
-          port: config.port,
-          endpoint: config.endpoint,
-          host: config.host,
-          preventServerStart: config.preventServerStart
-        } as any,
+        exporterConfig as ConstructorParameters<typeof PrometheusExporter>[0],
         () => {
           console.info(
             `Prometheus metrics available at http://${config.host || 'localhost'}:${config.port}${config.endpoint}`
@@ -65,7 +84,7 @@ class AgentAPIPrometheusExporter {
       // PrometheusExporter extends MetricReader, so it can be used directly
       this.meterProvider = new MeterProvider({
         resource,
-        readers: [this.exporter as any]
+        readers: [this.exporter as unknown as PeriodicExportingMetricReader]
       });
 
       console.info('AgentAPI Prometheus exporter initialized');
@@ -114,8 +133,10 @@ class AgentAPIPrometheusExporter {
     // Collect metrics from the exporter (triggers collection cycle)
     // Note: PrometheusExporter serves metrics via HTTP endpoint, not getMetrics()
     // We collect our custom metrics in Prometheus format
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    await (this.exporter as any).collect();
+    // The collect method exists at runtime but may not be in types
+    if (typeof (this.exporter as unknown as { collect?: () => Promise<void> }).collect === 'function') {
+      await (this.exporter as unknown as { collect: () => Promise<void> }).collect();
+    }
 
     // Custom metrics in Prometheus format
     const customMetrics = this.formatCustomMetrics();
@@ -248,8 +269,8 @@ export function startProcessMetricsCollection(intervalMs: number = 15000): NodeJ
 /**
  * Create metrics endpoint handler for Express/HTTP server
  */
-export async function createMetricsHandler(): Promise<(req: any, res: any) => Promise<void>> {
-  return async (req: any, res: any) => {
+export async function createMetricsHandler(): Promise<(req: HttpRequest, res: HttpResponse) => Promise<void>> {
+  return async (_req: HttpRequest, res: HttpResponse) => {
     try {
       const metrics = await prometheusExporter.getPrometheusMetrics();
 
