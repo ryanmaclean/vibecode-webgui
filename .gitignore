@@ -218,6 +218,7 @@ platforms/kubernetes/*
 !platforms/docker/
 platforms/docker/*
 !platforms/docker/scripts/
+!platforms/tauri/
 
 # Build directories
 initramfs-rebuild/
