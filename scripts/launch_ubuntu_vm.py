@@ -8,11 +8,30 @@ import shutil
 import time
 from pathlib import Path
 
+# Configure Logging
+VM_DIR = Path.home() / "VibeCode" / "UbuntuVM"
+VM_DIR.mkdir(parents=True, exist_ok=True)
+
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [UBUNTU-VM] %(message)s')
 logger = logging.getLogger()
 
+# File Logging (Audit #1530)
+log_file = VM_DIR / "console.log"
+file_handler = logging.FileHandler(log_file)
+file_handler.setFormatter(logging.Formatter('%(asctime)s [UBUNTU-VM] %(message)s'))
+logger.addHandler(file_handler)
+
+# Telemetry (Audit #1525)
+# Add scripts dir to path to find vibecode package
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+try:
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry("ubuntu-vm")
+    logger.info("✅ Telemetry initialized")
+except ImportError:
+    logger.warning("⚠️  Telemetry module not found. Tracing disabled.")
+
 # Configuration
-VM_DIR = Path.home() / "VibeCode" / "UbuntuVM"
 WORKSPACE_DIR = Path.home() / "VibeCode" / "Workspace"
 UBUNTU_RELEASE = "noble" # 24.04
 BASE_URL = f"https://cloud-images.ubuntu.com/minimal/releases/{UBUNTU_RELEASE}/release"
@@ -126,7 +145,6 @@ def launch():
     if not check_dependencies():
         return
 
-    VM_DIR.mkdir(parents=True, exist_ok=True)
     WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
     
     kernel = VM_DIR / "vmlinuz"
