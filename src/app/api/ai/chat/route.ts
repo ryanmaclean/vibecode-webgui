@@ -121,7 +121,7 @@ async function handlePOST(request: AuthenticatedRequest): Promise<NextResponse> 
         {
           error: 'Invalid request format',
           details: validation.error.issues.map((err) => ({
-            field: err.path.join('.'),
+            field: err.path.map(String).join('.'),
             message: err.message
           }))
         },

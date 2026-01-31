@@ -218,6 +218,7 @@ platforms/kubernetes/*
 !platforms/docker/
 platforms/docker/*
 !platforms/docker/scripts/
+!platforms/tauri/
 
 # Build directories
 initramfs-rebuild/
@@ -385,3 +386,4 @@ PROMISE_VERIFICATION_REPORT.md
 # Gas Town local runtime
 .beads/
 .runtime/
+.venv/

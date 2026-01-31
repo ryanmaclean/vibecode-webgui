@@ -1,0 +1,16 @@
+{
+  "nodes": [
+    {
+      "id": "local",
+      "role": "primary",
+      "type": "openclaw-vm",
+      "host": "localhost"
+    },
+    {
+      "id": "remote-legacy",
+      "role": "secondary",
+      "type": "legacy-gastown",
+      "host": "mbp-m1.local"
+    }
+  ]
+}
