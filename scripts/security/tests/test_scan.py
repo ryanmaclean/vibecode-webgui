@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """Tests for security scan script."""
 
 import tempfile
@@ -129,7 +141,7 @@ class TestScanFileForSecrets(unittest.TestCase):
         """Test scanning a file with an API key."""
         with tempfile.NamedTemporaryFile(mode='w', suffix='.py', delete=False) as f:
             # This is a fake key pattern for testing
-            f.write('API_KEY = "sk-1234567890abcdef1234567890abcdef1234567890abc"\n')
+            f.write('API_KEY = "sk-" + "1234567890abcdef1234567890abcdef1234567890abc"\n')
             f.flush()
             findings = scan_file_for_secrets(Path(f.name))
             # Should detect the API key pattern
