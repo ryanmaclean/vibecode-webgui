@@ -35,3 +35,10 @@ python3 scripts/ralph_loop.py
 
 ---
 *Powered by OpenClaw*
+
+## 🐳 Docker Option (Lightweight)
+If you prefer containers over a full VM:
+```bash
+docker compose up -d
+```
+This launches the OpenClaw Gateway on port `18789`.
