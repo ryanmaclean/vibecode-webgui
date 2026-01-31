@@ -8,5 +8,18 @@ webpack.config.js
 **/.eslintrc.json
 **/*.map
 **/*.ts
-node_modules
+
+# Dependencies - exclude all node_modules
+node_modules/**
+
+# Build/test artifacts
+*.log
+*.md
+!README.md
+!CHANGELOG.md
+!LICENSE.txt
+.github/**
+scripts/**
+.vscodeignore
+.github/**
 
