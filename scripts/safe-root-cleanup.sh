@@ -42,7 +42,7 @@ move_batch "Shell Scripts" "scripts" \
     create-release-branch.sh \
     DEMO.sh \
     fix-cognitive-search-adapter.sh \
-    fix-database-connections.sh \
+    fix-database-connections.py \
     move-md-files.sh \
     optimize-github-actions.sh \
     poll-traces.sh \

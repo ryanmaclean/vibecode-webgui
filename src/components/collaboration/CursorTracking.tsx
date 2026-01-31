@@ -12,9 +12,26 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
 import { EditorView } from '@codemirror/view'
-import { EditorState } from '@codemirror/state'
+import { EditorState, StateEffect } from '@codemirror/state'
 import { useCollaboration } from '../../hooks/useCollaboration'
 // import { logger } from '@/lib/logger';
+
+/** Awareness state shape for collaborative cursor tracking */
+interface AwarenessState {
+  cursor?: {
+    userId: string
+    position: CursorPosition
+    selection?: SelectionRange
+    timestamp: number
+    isActive?: boolean
+    isTyping?: boolean
+  }
+  user?: {
+    name?: string
+    color?: string
+  }
+}
+
 export interface CursorPosition {
   line: number
   column: number
@@ -283,7 +300,7 @@ if (!editorView || !editorRect) return null
       const states = awareness.getStates()
       const newCursors = new Map<string, UserCursor>()
 
-      states.forEach((state: any, clientId: number) => {
+      states.forEach((state: AwarenessState, clientId: number) => {
         if (state.cursor && state.cursor.userId !== currentUserId) {
           const user = state.user || {}
           const cursor: UserCursor = {
@@ -337,11 +354,18 @@ if (!editorView || !editorRect) return null
       }
     })
 
-    // NOTE: The updateHandler extension should be configured when creating the EditorView.
-    // For runtime extension updates, use Compartment from @codemirror/state.
-    // Since appendConfig is not a standard CodeMirror API, we skip the dynamic dispatch.
-    // The resize observer handles our immediate needs for cursor tracking.
-    void updateHandler  // Acknowledge the variable is intentionally unused
+    const view = EditorView.theme({}, { dark: false })
+    // EditorView.appendConfig is a StateEffect for dynamically adding extensions
+    // It's an internal API not exposed in the public types
+    interface AppendConfigEffect {
+      of: (exts: unknown[]) => StateEffect<unknown>
+    }
+    const appendConfig = (EditorView as unknown as { appendConfig?: AppendConfigEffect }).appendConfig
+    if (appendConfig?.of) {
+      editorView.dispatch({
+        effects: [appendConfig.of([updateHandler, view])]
+      })
+    }
 
     return () => {
       resizeObserver.disconnect()

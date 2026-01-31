@@ -1,10 +1,10 @@
-import type { UpdateFilter, Document } from 'mongodb'
 import { NextRequest, NextResponse } from 'next/server'
 import { connectToMongoDB } from '@/lib/mongodb'
 import { v4 as uuidv4 } from 'uuid'
 import { mongodbChatActionSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import type { PushOperator, Document } from 'mongodb'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
@@ -119,7 +119,7 @@ export async function POST(request: NextRequest) {
         const updateResult = await db.collection('conversations').updateOne(
           { id: conversationId },
           {
-            $push: { messages: message } as UpdateFilter<Document>[""],
+            $push: { messages: message } as unknown as PushOperator<Document>,
             $set: { updatedAt: new Date() }
           }
         )

@@ -5,9 +5,17 @@
 
 import tracer from 'dd-trace';
 
+// Type guard to check if tracer has internal _initialized property
+interface TracerWithInitialized {
+  _initialized?: boolean;
+}
+
+function isTracerInitialized(t: unknown): boolean {
+  return typeof t === 'object' && t !== null && '_initialized' in t && Boolean((t as TracerWithInitialized)._initialized);
+}
+
 // Initialize tracer if not already done
-// Use type assertion since isStarted may not be in types but exists at runtime
-if (!(tracer as any)._initialized) {
+if (!isTracerInitialized(tracer)) {
   tracer.init({
     service: 'vibecode-ai',
     env: process.env.DD_ENV || process.env.NODE_ENV || 'development',

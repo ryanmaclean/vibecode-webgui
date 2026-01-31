@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
-import { getToken, type JWT } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger'
 
@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as JWT
+        } as unknown as typeof token
       }
     }
     
@@ -190,7 +190,7 @@ export async function GET(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as JWT
+        } as unknown as typeof token
       }
     }
     

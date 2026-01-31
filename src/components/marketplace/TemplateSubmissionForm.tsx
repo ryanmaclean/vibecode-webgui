@@ -376,7 +376,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => updateFormData({ category: e.target.value as any })}
+                onChange={(e) => updateFormData({ category: e.target.value as TemplateFormData['category'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {categories.map(cat => (
@@ -427,7 +427,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.complexity}
-                onChange={(e) => updateFormData({ complexity: e.target.value as any })}
+                onChange={(e) => updateFormData({ complexity: e.target.value as TemplateFormData['complexity'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="beginner">Beginner</option>

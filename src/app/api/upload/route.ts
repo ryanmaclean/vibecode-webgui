@@ -136,7 +136,7 @@ function validateFilename(filename: string): { valid: boolean; error?: string } 
  * Validate MIME type
  */
 function validateMimeType(mimeType: string): { valid: boolean; error?: string } {
-  if (!ALLOWED_MIME_TYPES.includes(mimeType as any)) {
+  if (!ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
     return {
       valid: false,
       error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`,

@@ -1,0 +1,972 @@
+[
+  {
+    "name": "01-setup-vfkit.sh",
+    "lines": 124,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "02-download-alpine-kernel.sh",
+    "lines": 238,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "03-create-alpine-rootfs.sh",
+    "lines": 278,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "04-launch-alpine-vm.sh",
+    "lines": 180,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "05-launch-vibecode-vm.sh",
+    "lines": 204,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "06-create-vibecode-rootfs.sh",
+    "lines": 318,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "07-create-persistent-vm.sh",
+    "lines": 217,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "08-create-node24-rootfs.sh",
+    "lines": 386,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "09-launch-node24-vm.sh",
+    "lines": 181,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "10-upgrade-to-alpine-3.22.sh",
+    "lines": 221,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "11-build-minimal-kernel-docker.sh",
+    "lines": 182,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "11-build-minimal-kernel.sh",
+    "lines": 423,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "12-create-vscode-server-rootfs.sh",
+    "lines": 407,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "13-launch-vscode-server-vm.sh",
+    "lines": 143,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "14-create-fun-demo-rootfs.sh",
+    "lines": 234,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "BUILD_ALL_NOW.sh",
+    "lines": 72,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "BUILD_FOUR_VMS.sh",
+    "lines": 583,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "BUILD_WORKING_VMS.sh",
+    "lines": 308,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "DECOMPRESS_KERNEL.sh",
+    "lines": 54,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "FIX_VMS_NO_DOCKER.sh",
+    "lines": 129,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "actually-build-now.sh",
+    "lines": 151,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "analyze-kernel-optimization.sh",
+    "lines": 56,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "basic-performance-test.sh",
+    "lines": 145,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "benchmark-validation.sh",
+    "lines": 228,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-ai-tools-vm-complete.sh",
+    "lines": 235,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-ai-tools-vm.sh",
+    "lines": 235,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-all-tiny-services.sh",
+    "lines": 309,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-busybox-node-docker.sh",
+    "lines": 47,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-openvscode-musl.sh",
+    "lines": 169,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-openvscode.sh",
+    "lines": 266,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "build-services-arm64.sh",
+    "lines": 553,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "build-services-on-host.sh",
+    "lines": 250,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-tiny-node24.sh",
+    "lines": 95,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-tiny-openvscode-with-rag.sh",
+    "lines": 240,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "build-tiny-postgresql-pgvector.sh",
+    "lines": 177,
+    "category": "build",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "compare-boot-times.sh",
+    "lines": 150,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "compare-busybox-alpine.sh",
+    "lines": 226,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "compile-valkey-musl.sh",
+    "lines": 218,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "compile-valkey-uclibc.sh",
+    "lines": 81,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "comprehensive-performance-test.sh",
+    "lines": 349,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "continuous-performance-monitor.sh",
+    "lines": 186,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-busybox-vm.sh",
+    "lines": 189,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-disk-vms.sh",
+    "lines": 158,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-efi-variable-store.sh",
+    "lines": 61,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "create-minimal-alpine-vm.sh",
+    "lines": 146,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-multi-vm-setup.sh",
+    "lines": 353,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-optimized-alpine-vm.sh",
+    "lines": 151,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-practical-busybox-vm.sh",
+    "lines": 193,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-preinstalled-vm.sh",
+    "lines": 245,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-simple-alpine-vm.sh",
+    "lines": 138,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-simple-busybox-vm.sh",
+    "lines": 160,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-ultra-minimal-vm.sh",
+    "lines": 568,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-working-alpine-vm.sh",
+    "lines": 143,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-working-busybox-vm.sh",
+    "lines": 228,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "create-working-vm.sh",
+    "lines": 190,
+    "category": "create",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "detailed-performance-test.sh",
+    "lines": 73,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "execute-builds-in-vms.sh",
+    "lines": 128,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "fast-build-and-test.sh",
+    "lines": 394,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "final-performance-test.sh",
+    "lines": 134,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "install-ai-tools-vfkit.sh",
+    "lines": 83,
+    "category": "install",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "install-alpine-vm.sh",
+    "lines": 124,
+    "category": "install",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "install-grub-alpine.sh",
+    "lines": 354,
+    "category": "install",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "install-vscode-server.sh",
+    "lines": 54,
+    "category": "install",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "install.sh",
+    "lines": 272,
+    "category": "install",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "integrate-grub-into-vm-creation.sh",
+    "lines": 147,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "launch-nodejs-dev-vm.sh",
+    "lines": 157,
+    "category": "launch",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "launch-nodejs-dev.sh",
+    "lines": 144,
+    "category": "launch",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "launch-postgresql.sh",
+    "lines": 147,
+    "category": "launch",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "launch-valkey-vm-test.sh",
+    "lines": 66,
+    "category": "launch",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "launch-valkey.sh",
+    "lines": 112,
+    "category": "launch",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "manage-efi-boot-entries.sh",
+    "lines": 262,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "network-utils.sh",
+    "lines": 348,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "prepare-vm-with-grub.sh",
+    "lines": 260,
+    "category": "prepare",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "prove-ai-tools-work.sh",
+    "lines": 70,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "real-boot-time-test.sh",
+    "lines": 93,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "run-builds.sh",
+    "lines": 178,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "setup-alpine-services.sh",
+    "lines": 325,
+    "category": "setup",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "setup-demo-environment.sh",
+    "lines": 105,
+    "category": "setup",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "simple-automated-test.sh",
+    "lines": 161,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "start-all-vms-fixed.sh",
+    "lines": 27,
+    "category": "start",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "start-all-vms.sh",
+    "lines": 20,
+    "category": "start",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "start-nodejs-dev.sh",
+    "lines": 12,
+    "category": "start",
+    "uses_vm_manager": true,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "start-postgresql.sh",
+    "lines": 12,
+    "category": "start",
+    "uses_vm_manager": true,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "start-valkey.sh",
+    "lines": 12,
+    "category": "start",
+    "uses_vm_manager": true,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "stop-all-vms.sh",
+    "lines": 10,
+    "category": "stop",
+    "uses_vm_manager": true,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-all-vms.sh",
+    "lines": 270,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-busybox-node-docker.sh",
+    "lines": 79,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-nodejs-dev.sh",
+    "lines": 219,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-openvscode-in-vm.sh",
+    "lines": 172,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  },
+  {
+    "name": "test-postgresql.sh",
+    "lines": 313,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-valkey.sh",
+    "lines": 262,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "test-vm-performance.sh",
+    "lines": 102,
+    "category": "test",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": true
+  },
+  {
+    "name": "verify-services.sh",
+    "lines": 178,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "vibecode-init.sh",
+    "lines": 70,
+    "category": "misc",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": true,
+    "mentions_kernel": false
+  },
+  {
+    "name": "vm-health-check.sh",
+    "lines": 10,
+    "category": "vm",
+    "uses_vm_manager": true,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "vm-manager.sh",
+    "lines": 682,
+    "category": "vm",
+    "uses_vm_manager": false,
+    "has_function_defs": true,
+    "uses_vfkit_cli": true,
+    "mentions_rootfs": false,
+    "mentions_kernel": false
+  },
+  {
+    "name": "vm-setup-services.sh",
+    "lines": 230,
+    "category": "vm",
+    "uses_vm_manager": false,
+    "has_function_defs": false,
+    "uses_vfkit_cli": false,
+    "mentions_rootfs": true,
+    "mentions_kernel": true
+  }
+]

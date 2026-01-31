@@ -161,8 +161,9 @@ export function AgentMonacoEditor({
       await agentAPI.initialize()
 
       // Register Monaco providers
+      // Monaco type from @monaco-editor/react is compatible with monaco-editor module
       const providers = registerMonacoAgentProviders(
-        monaco as any,
+        monaco as unknown as typeof import('monaco-editor'),
         language,
         agentAPI
       )
@@ -318,8 +319,9 @@ export function AgentMonacoEditor({
             delay: 300,
           },
           // Enable lightbulb for code actions
+          // Monaco's lightbulb.enabled accepts ShowLightbulbIconMode enum ('on'|'onCode'|'off')
           lightbulb: {
-            enabled: true as any,
+            enabled: 'on' as monaco.editor.ShowLightbulbIconMode,
           },
           ...options,
         }}

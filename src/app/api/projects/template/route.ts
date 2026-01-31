@@ -266,7 +266,7 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (category && category !== 'all') {
-      filteredTemplates = getTemplatesByCategory(category as any)
+      filteredTemplates = getTemplatesByCategory(category as Parameters<typeof getTemplatesByCategory>[0])
     }
 
     if (complexity && complexity !== 'all') {
