@@ -13,6 +13,7 @@ logger = logging.getLogger()
 
 # Configuration
 VM_DIR = Path.home() / "VibeCode" / "UbuntuVM"
+WORKSPACE_DIR = Path.home() / "VibeCode" / "Workspace"
 UBUNTU_RELEASE = "noble" # 24.04
 BASE_URL = f"https://cloud-images.ubuntu.com/minimal/releases/{UBUNTU_RELEASE}/release"
 IMAGE_URL = f"{BASE_URL}/ubuntu-24.04-minimal-cloudimg-arm64.img"
@@ -93,6 +94,11 @@ write_files:
 runcmd:
   - systemctl daemon-reload
   - systemctl restart docker
+  # Mount virtiofs share
+  - mkdir -p /home/vibecode/workspace
+  - chown vibecode:vibecode /home/vibecode/workspace
+  - echo "vibecode /home/vibecode/workspace virtiofs defaults 0 0" >> /etc/fstab
+  - mount -a || echo "⚠️ Failed to mount workspace"
   - echo "✅ VibeCode Setup Complete"
 """
     (seed_dir / "user-data").write_text(user_data)
@@ -121,6 +127,7 @@ def launch():
         return
 
     VM_DIR.mkdir(parents=True, exist_ok=True)
+    WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
     
     kernel = VM_DIR / "vmlinuz"
     initrd = VM_DIR / "initrd"
@@ -148,10 +155,12 @@ def launch():
         "--initrd", str(initrd),
         "--disk", str(disk),
         "--device", f"file,path={seed_iso}", # Attach ISO as second disk
+        "--device", f"virtiofs,path={WORKSPACE_DIR},tag=vibecode", # Mount workspace
         "--net", "nat",
     ]
     
     logger.info("🚀 Launching Ubuntu VM...")
+    logger.info(f"   📂 Mounting {WORKSPACE_DIR} -> /home/vibecode/workspace")
     logger.info("   (Press Ctrl+C to stop)")
     
     try:
