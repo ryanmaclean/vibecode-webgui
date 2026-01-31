@@ -48,9 +48,21 @@ export class TracingManager {
             const sampleRate = config.get<number>('sampleRate', 0.1);
             const debugMode = config.get<boolean>('debug', false);
             const exporters = config.get<string[]>('exporters', ['console']);
-            const datadogApiKey = config.get<string>('datadogApiKey', '') || process.env.DD_API_KEY;
-            const datadogSite = config.get<string>('datadogSite', 'datadoghq.com');
-            const jaegerEndpoint = config.get<string>('jaegerEndpoint', 'http://localhost:14268/api/traces');
+            const datadogConfig = config.get<any>('datadog', {});
+            const jaegerConfig = config.get<any>('jaeger', {});
+            const datadogApiKey = (
+                datadogConfig?.apiKey ||
+                config.get<string>('datadogApiKey', '') ||
+                process.env.DD_API_KEY
+            );
+            const datadogSite = (
+                datadogConfig?.site ||
+                config.get<string>('datadogSite', 'datadoghq.com')
+            );
+            const jaegerEndpoint = (
+                jaegerConfig?.endpoint ||
+                config.get<string>('jaegerEndpoint', 'http://localhost:14268/api/traces')
+            );
 
             const tracerConfig: any = {
                 service: 'vscode-rag-extension',

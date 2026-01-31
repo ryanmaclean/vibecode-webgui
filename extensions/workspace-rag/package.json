@@ -176,10 +176,10 @@
     }
   },
   "scripts": {
-    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --format=cjs --platform=node --target=node18",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:dd-trace --format=cjs --platform=node --target=node18",
     "watch": "npm run build -- --watch",
     "lint": "eslint src --ext ts",
-    "package": "npm run build && vsce package",
+    "package": "npm run build && npx vsce package --baseContentUrl https://github.com/ryanmaclean/vibecode-webgui/blob/main/extensions/workspace-rag --baseImagesUrl https://github.com/ryanmaclean/vibecode-webgui/raw/main/extensions/workspace-rag",
     "compile": "tsc -p ./"
   },
   "dependencies": {
@@ -193,6 +193,15 @@
     "@types/vscode": "^1.85.0",
     "esbuild": "^0.25.0",
     "typescript": "^5.3.3"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/ryanmaclean/vibecode-webgui.git",
+    "directory": "extensions/workspace-rag"
+  },
+  "homepage": "https://github.com/ryanmaclean/vibecode-webgui/tree/main/extensions/workspace-rag",
+  "bugs": {
+    "url": "https://github.com/ryanmaclean/vibecode-webgui/issues"
   }
 }
 
