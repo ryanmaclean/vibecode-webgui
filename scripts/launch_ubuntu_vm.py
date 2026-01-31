@@ -6,30 +6,20 @@ import subprocess
 import urllib.request
 import shutil
 import time
+import argparse
 from pathlib import Path
+from textwrap import dedent
 
-# Configure Logging
-VM_DIR = Path.home() / "VibeCode" / "UbuntuVM"
-VM_DIR.mkdir(parents=True, exist_ok=True)
-
-logging.basicConfig(level=logging.INFO, format='%(asctime)s [UBUNTU-VM] %(message)s')
-logger = logging.getLogger()
-
-# File Logging (Audit #1530)
-log_file = VM_DIR / "console.log"
-file_handler = logging.FileHandler(log_file)
-file_handler.setFormatter(logging.Formatter('%(asctime)s [UBUNTU-VM] %(message)s'))
-logger.addHandler(file_handler)
-
-# Telemetry (Audit #1525)
-# Add scripts dir to path to find vibecode package
-sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+# -- VibeCode Telemetry --
+import sys
+import os
 try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
     from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry("ubuntu-vm")
-    logger.info("✅ Telemetry initialized")
+    tracer = init_telemetry(os.path.basename(__file__))
 except ImportError:
-    logger.warning("⚠️  Telemetry module not found. Tracing disabled.")
+    pass
+# ------------------------
 
 # Configuration
 WORKSPACE_DIR = Path.home() / "VibeCode" / "Workspace"
@@ -38,6 +28,27 @@ BASE_URL = f"https://cloud-images.ubuntu.com/minimal/releases/{UBUNTU_RELEASE}/r
 IMAGE_URL = f"{BASE_URL}/ubuntu-24.04-minimal-cloudimg-arm64.img"
 KERNEL_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-minimal-cloudimg-arm64-vmlinuz-generic"
 INITRD_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-minimal-cloudimg-arm64-initrd-generic"
+
+logger = logging.getLogger()
+
+def setup_logging(log_file):
+    # Reset handlers
+    logger = logging.getLogger()
+    logger.handlers = []
+    
+    # File Handler
+    log_file.parent.mkdir(parents=True, exist_ok=True)
+    file_handler = logging.FileHandler(log_file)
+    file_handler.setFormatter(logging.Formatter('%(asctime)s [UBUNTU-VM] %(message)s'))
+    logger.addHandler(file_handler)
+    
+    # Console Handler
+    console_handler = logging.StreamHandler(sys.stdout)
+    console_handler.setFormatter(logging.Formatter('%(asctime)s [UBUNTU-VM] %(message)s'))
+    logger.addHandler(console_handler)
+    
+    logger.setLevel(logging.INFO)
+    return logger
 
 def check_dependencies():
     """Check for required tools."""
@@ -63,13 +74,13 @@ def download_file(url, dest):
         logger.error(f"❌ Failed to download {url}: {e}")
         sys.exit(1)
 
-def create_seed_iso(vm_dir):
+def create_seed_iso(vm_dir, vm_name):
     """Create cloud-init seed ISO."""
     seed_dir = vm_dir / "seed"
     seed_dir.mkdir(parents=True, exist_ok=True)
     
     # 1. meta-data
-    (seed_dir / "meta-data").write_text("instance-id: vibecode-ubuntu\nlocal-hostname: vibecode-ubuntu\n")
+    (seed_dir / "meta-data").write_text(f"instance-id: {vm_name}\nlocal-hostname: {vm_name}\n")
     
     # 2. user-data
     ssh_key_path = Path.home() / ".ssh" / "id_rsa.pub"
@@ -79,47 +90,49 @@ def create_seed_iso(vm_dir):
     else:
         logger.warning("⚠️  No SSH key found at ~/.ssh/id_rsa.pub. SSH access might be limited.")
 
-    user_data = f"""#cloud-config
-hostname: vibecode-ubuntu
-fqdn: vibecode-ubuntu.local
-manage_etc_hosts: true
+    user_data = dedent(f"""\
+        #cloud-config
+        hostname: {vm_name}
+        fqdn: {vm_name}.local
+        manage_etc_hosts: true
 
-users:
-  - name: vibecode
-    gecos: VibeCode Developer
-    sudo: ALL=(ALL) NOPASSWD:ALL
-    shell: /bin/bash
-    lock_passwd: false
-    ssh_authorized_keys:
-      - {ssh_key}
+        users:
+          - name: vibecode
+            gecos: VibeCode Developer
+            sudo: ALL=(ALL) NOPASSWD:ALL
+            shell: /bin/bash
+            lock_passwd: false
+            ssh_authorized_keys:
+              - {ssh_key}
 
-packages:
-  - docker.io
-  - socat
-  - avahi-daemon
-  - curl
-  - git
+        packages:
+          - docker.io
+          - socat
+          - avahi-daemon
+          - curl
+          - git
+          - virtiofs-tools
 
-# Configure Docker to listen on TCP 2375
-write_files:
-  - path: /etc/systemd/system/docker.service.d/override.conf
-    content: |
-      [Service]
-      ExecStart=
-      ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2375
-    owner: root:root
-    permissions: '0644'
+        # Configure Docker to listen on TCP 2375
+        write_files:
+          - path: /etc/systemd/system/docker.service.d/override.conf
+            content: |
+              [Service]
+              ExecStart=
+              ExecStart=/usr/bin/dockerd -H fd:// -H tcp://0.0.0.0:2375
+            owner: root:root
+            permissions: '0644'
 
-runcmd:
-  - systemctl daemon-reload
-  - systemctl restart docker
-  # Mount virtiofs share
-  - mkdir -p /home/vibecode/workspace
-  - chown vibecode:vibecode /home/vibecode/workspace
-  - echo "vibecode /home/vibecode/workspace virtiofs defaults 0 0" >> /etc/fstab
-  - mount -a || echo "⚠️ Failed to mount workspace"
-  - echo "✅ VibeCode Setup Complete"
-"""
+        runcmd:
+          - systemctl daemon-reload
+          - systemctl restart docker
+          # Mount virtiofs share
+          - mkdir -p /home/vibecode/workspace
+          - chown vibecode:vibecode /home/vibecode/workspace
+          - echo "vibecode /home/vibecode/workspace virtiofs defaults 0 0" >> /etc/fstab
+          - mount -a || echo "⚠️ Failed to mount workspace"
+          - echo "✅ VibeCode Setup Complete"
+    """)
     (seed_dir / "user-data").write_text(user_data)
     
     # 3. Create ISO
@@ -142,14 +155,33 @@ runcmd:
     return iso_path
 
 def launch():
+    parser = argparse.ArgumentParser(description="Launch VibeCode Ubuntu VM")
+    parser.add_argument("--name", default="default", help="VM Instance Name")
+    args = parser.parse_args()
+
+    vm_name = args.name
+    vm_base_dir = Path.home() / "VibeCode" / "VMs"
+    vm_dir = vm_base_dir / vm_name
+    
+    # Migration Logic
+    old_vm_dir = Path.home() / "VibeCode" / "UbuntuVM"
+    if vm_name == "default" and old_vm_dir.exists() and not vm_dir.exists():
+        print("📦 Migrating legacy VM to new structure...")
+        vm_base_dir.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(old_vm_dir), str(vm_dir))
+
+    vm_dir.mkdir(parents=True, exist_ok=True)
+    log_file = vm_dir / "console.log"
+    setup_logging(log_file)
+
     if not check_dependencies():
         return
 
     WORKSPACE_DIR.mkdir(parents=True, exist_ok=True)
     
-    kernel = VM_DIR / "vmlinuz"
-    initrd = VM_DIR / "initrd"
-    disk = VM_DIR / "disk.img"
+    kernel = vm_dir / "vmlinuz"
+    initrd = vm_dir / "initrd"
+    disk = vm_dir / "disk.img"
     
     # Download assets
     download_file(KERNEL_URL, kernel)
@@ -161,7 +193,7 @@ def launch():
         subprocess.run(["truncate", "-s", "20G", str(disk)])
     
     # Create Seed ISO
-    seed_iso = create_seed_iso(VM_DIR)
+    seed_iso = create_seed_iso(vm_dir, vm_name)
     
     # Launch vfkit
     cmd = [
@@ -177,8 +209,9 @@ def launch():
         "--net", "nat",
     ]
     
-    logger.info("🚀 Launching Ubuntu VM...")
+    logger.info(f"🚀 Launching Ubuntu VM ({vm_name})...")
     logger.info(f"   📂 Mounting {WORKSPACE_DIR} -> /home/vibecode/workspace")
+    logger.info(f"   📄 Console logs to: {log_file}")
     logger.info("   (Press Ctrl+C to stop)")
     
     try:
