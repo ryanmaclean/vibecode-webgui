@@ -18,10 +18,8 @@ def init_telemetry(service_name):
     patch_all(logging=True, requests=True)
     
     # 2. Configure Datadog Tracer
-    tracer.configure(
-        hostname=os.getenv("DD_AGENT_HOST", "localhost"),
-        port=int(os.getenv("DD_AGENT_PORT", "8126")),
-    )
+    # hostname/port are picked up from env vars automatically
+    tracer.configure()
     
     # 3. Set Service Tags
     tracer.set_tags({

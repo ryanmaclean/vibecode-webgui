@@ -8,11 +8,14 @@ logger = get_logger("merge_safe")
 init_telemetry("vibecode-merge-safe")
 
 BRANCHES = [
-    "fix/typescript-ai-monitoring-any",
+    "polecat/vibecode-111/st-sh2py-security@ml2k1lcc",
+    "polecat/vibecode-108/st-sh2py-tests@ml2jzv7b",
+    "polecat/vibecode-110/st-sh2py-util@ml2k10le",
+    "polecat/amazonite/st-o7lr@mkq8vdvc",
     "fix/typescript-api-routes-any",
+    "fix/typescript-services-pages-types",
+    "fix/typescript-parser-error-types",
     "fix/typescript-collaboration-types",
-    "fix/typescript-components-any-batch2",
-    # Add others as needed
 ]
 
 @tracer.wrap()
