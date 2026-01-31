@@ -1,41 +1,28 @@
 #!/usr/bin/env python3
-
-
 """Create ultra-minimal initramfs for ASIF test VM.
 
 Size target: <5MB
 Contains: busybox + minimal init script
 """
-
 from __future__ import annotations
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
-    pass
-# ------------------------
 
+import argparse
 import gzip
 import os
 import shutil
-import stat
 import subprocess
 import sys
-import tarfile
 import tempfile
 from pathlib import Path
-from typing import Optional
 
 
-# Constants
+SCRIPT_DIR = Path(__file__).resolve().parent
 DEFAULT_TEST_DIR = Path("/tmp/asif-test")
+
 BUSYBOX_URL = "https://dl-cdn.alpinelinux.org/alpine/v3.20/main/aarch64/busybox-1.36.1-r29.apk"
 
-# Minimal init script
+BUSYBOX_SYMLINKS = ["sh", "mount", "umount", "poweroff", "reboot", "sleep", "echo", "cat", "ls"]
+
 INIT_SCRIPT = """\
 #!/bin/sh
 # Minimal init script for test VM
@@ -77,270 +64,262 @@ poweroff -f
 """
 
 
+def run_cmd(cmd: list[str], check: bool = True, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
+    """Run a command and return result."""
+    return subprocess.run(cmd, capture_output=True, text=True, check=check, cwd=cwd)
+
+
 def get_file_size_human(path: Path) -> str:
     """Get human-readable file size."""
     size = path.stat().st_size
-    for unit in ["B", "KB", "MB", "GB"]:
+    for unit in ["B", "K", "M", "G"]:
         if size < 1024:
             return f"{size:.1f}{unit}"
         size /= 1024
-    return f"{size:.1f}TB"
+    return f"{size:.1f}T"
 
 
-def check_existing_initramfs(test_dir: Path) -> Optional[Path]:
-    """Check if initramfs already exists.
+def download_busybox(dest_dir: Path) -> Path | None:
+    """Download and extract busybox from Alpine APK."""
+    print()
+    print("Getting busybox...")
 
-    Returns:
-        Path to initramfs if exists, None otherwise.
-    """
-    initramfs_path = test_dir / "initramfs"
-    if initramfs_path.exists():
-        return initramfs_path
-    return None
-
-
-def create_directory_structure(build_dir: Path) -> None:
-    """Create the initramfs directory structure."""
-    dirs = ["bin", "sbin", "etc", "proc", "sys", "dev", "tmp", "run"]
-    for d in dirs:
-        (build_dir / d).mkdir(parents=True, exist_ok=True)
-
-
-def create_init_script(build_dir: Path) -> None:
-    """Create the init script."""
-    init_path = build_dir / "init"
-    init_path.write_text(INIT_SCRIPT)
-    init_path.chmod(init_path.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-
-
-def download_and_extract_busybox(build_dir: Path) -> bool:
-    """Download busybox APK and extract binary.
-
-    Returns:
-        True if successful, False otherwise.
-    """
     if not shutil.which("curl"):
-        return False
+        print("  curl not available, skipping busybox download")
+        return None
 
-    try:
-        # Download APK
-        apk_path = build_dir / "busybox.apk"
-        result = subprocess.run(
-            ["curl", "-sL", BUSYBOX_URL, "-o", str(apk_path)],
-            timeout=60,
-        )
-        if result.returncode != 0:
-            return False
+    apk_path = dest_dir / "busybox.apk"
 
-        print("Downloaded busybox.apk")
+    # Download APK
+    result = run_cmd(["curl", "-sL", BUSYBOX_URL, "-o", str(apk_path)], check=False)
+    if result.returncode != 0:
+        print("  Failed to download busybox.apk")
+        return None
 
-        # Extract APK (it's a tar.gz)
-        with tarfile.open(apk_path, "r:gz") as tar:
-            tar.extractall(build_dir)
+    print("  Downloaded busybox.apk")
 
-        # Find and move busybox binary
-        busybox_bin = None
-        for path in [build_dir / "bin" / "busybox", build_dir / "sbin" / "busybox"]:
-            if path.exists():
-                busybox_bin = path
-                break
+    # Extract APK (it's just a tar.gz)
+    if not shutil.which("tar"):
+        print("  tar not available, cannot extract APK")
+        apk_path.unlink(missing_ok=True)
+        return None
 
-        if busybox_bin:
-            dest = build_dir / "busybox-bin"
-            shutil.copy(busybox_bin, dest)
-            dest.chmod(dest.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
-            print("Extracted busybox")
+    result = run_cmd(["tar", "-xzf", str(apk_path)], check=False, cwd=dest_dir)
 
-            # Cleanup extracted files
-            apk_path.unlink(missing_ok=True)
-            for subdir in ["bin", "sbin", "usr", "lib", "etc"]:
-                shutil.rmtree(build_dir / subdir, ignore_errors=True)
-            (build_dir / "bin").mkdir(exist_ok=True)
+    # Find busybox binary
+    busybox_bin = None
+    for candidate in [dest_dir / "bin" / "busybox", dest_dir / "sbin" / "busybox"]:
+        if candidate.exists():
+            busybox_bin = candidate
+            break
 
-            return True
+    if busybox_bin:
+        # Move to a temp location
+        final_path = dest_dir / "busybox-bin"
+        shutil.copy2(busybox_bin, final_path)
+        final_path.chmod(0o755)
+        print("  Extracted busybox")
+    else:
+        print("  Could not find busybox in APK")
 
-        return False
+    # Cleanup extracted files
+    apk_path.unlink(missing_ok=True)
+    for subdir in ["bin", "sbin", "usr", "lib", "etc"]:
+        subdir_path = dest_dir / subdir
+        if subdir_path.exists() and subdir_path.is_dir():
+            shutil.rmtree(subdir_path, ignore_errors=True)
 
-    except (subprocess.TimeoutExpired, subprocess.SubprocessError, tarfile.TarError):
-        return False
-
-
-def install_busybox(build_dir: Path) -> bool:
-    """Install busybox and create symlinks.
-
-    Returns:
-        True if successful, False otherwise.
-    """
-    busybox_bin = build_dir / "busybox-bin"
-    if not busybox_bin.exists():
-        return False
-
-    bin_dir = build_dir / "bin"
-    bin_dir.mkdir(exist_ok=True)
-
-    # Move busybox to bin
-    dest_busybox = bin_dir / "busybox"
-    shutil.move(busybox_bin, dest_busybox)
-
-    # Create symlinks for essential commands
-    commands = ["sh", "mount", "umount", "poweroff", "reboot", "sleep", "echo", "cat", "ls"]
-    for cmd in commands:
-        link = bin_dir / cmd
-        if link.exists() or link.is_symlink():
-            link.unlink()
-        link.symlink_to("busybox")
-
-    print("Installed busybox with symlinks")
-    return True
+    return dest_dir / "busybox-bin" if busybox_bin else None
 
 
-def create_stub_scripts(build_dir: Path) -> None:
-    """Create minimal shell stubs when busybox is not available."""
-    print("Could not download busybox")
-    print("   Creating minimal shell-only initramfs")
-
-    bin_dir = build_dir / "bin"
-    bin_dir.mkdir(exist_ok=True)
+def create_stub_commands(bin_dir: Path) -> None:
+    """Create minimal shell stubs when busybox is unavailable."""
+    print("  Could not download busybox")
+    print("  Creating minimal shell-only initramfs")
 
     stubs = {
-        "sh": "#!/bin/sh\necho \"Minimal shell stub\"\n",
+        "sh": '#!/bin/sh\necho "Minimal shell stub"\n',
         "mount": "#!/bin/sh\n# Stub mount command\n",
         "poweroff": "#!/bin/sh\n# Stub poweroff\n",
     }
 
     for name, content in stubs.items():
-        stub = bin_dir / name
-        stub.write_text(content)
-        stub.chmod(stub.stat().st_mode | stat.S_IXUSR | stat.S_IXGRP | stat.S_IXOTH)
+        stub_path = bin_dir / name
+        stub_path.write_text(content)
+        stub_path.chmod(0o755)
 
 
-def create_device_nodes(build_dir: Path) -> None:
+def create_device_nodes(dev_dir: Path) -> None:
     """Create device nodes if running as root."""
-    dev_dir = build_dir / "dev"
-    dev_dir.mkdir(exist_ok=True)
+    if os.getuid() != 0:
+        print("  Skipping device nodes (will use devtmpfs)")
+        return
 
-    if os.geteuid() == 0:
-        try:
-            os.mknod(dev_dir / "console", stat.S_IFCHR | 0o600, os.makedev(5, 1))
-            os.mknod(dev_dir / "null", stat.S_IFCHR | 0o666, os.makedev(1, 3))
-            os.mknod(dev_dir / "zero", stat.S_IFCHR | 0o666, os.makedev(1, 5))
-            print("Created device nodes")
-        except OSError:
-            print("Skipping device nodes (will use devtmpfs)")
-    else:
-        print("Skipping device nodes (will use devtmpfs)")
+    if not shutil.which("mknod"):
+        print("  mknod not available, skipping device nodes")
+        return
+
+    devices = [
+        ("console", "c", 5, 1),
+        ("null", "c", 1, 3),
+        ("zero", "c", 1, 5),
+    ]
+
+    for name, dtype, major, minor in devices:
+        dev_path = dev_dir / name
+        result = run_cmd(["mknod", str(dev_path), dtype, str(major), str(minor)], check=False)
+        if result.returncode != 0:
+            print(f"  Failed to create {name}")
+            return
+
+    print("  Created device nodes")
 
 
-def create_cpio_archive(build_dir: Path, output_path: Path) -> bool:
-    """Create gzip-compressed cpio archive.
+def create_cpio_archive(source_dir: Path, output_path: Path) -> bool:
+    """Create a gzipped cpio archive."""
+    print()
+    print("Creating initramfs archive...")
 
-    Returns:
-        True if successful, False otherwise.
-    """
-    try:
-        # Use cpio to create archive
-        find_proc = subprocess.Popen(
-            ["find", "."],
-            cwd=build_dir,
-            stdout=subprocess.PIPE,
-        )
-        cpio_proc = subprocess.Popen(
-            ["cpio", "-o", "-H", "newc"],
-            cwd=build_dir,
-            stdin=find_proc.stdout,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.DEVNULL,
-        )
-
-        # Compress with gzip
-        cpio_data, _ = cpio_proc.communicate()
-        compressed = gzip.compress(cpio_data, compresslevel=9)
-
-        output_path.write_bytes(compressed)
-        return True
-
-    except (subprocess.SubprocessError, OSError):
+    if not shutil.which("cpio"):
+        print("  cpio not available")
         return False
 
+    # Get list of all files
+    result = run_cmd(["find", "."], cwd=source_dir)
+    if result.returncode != 0:
+        print("  Failed to list files")
+        return False
 
-def create_minimal_initramfs(test_dir: Path = DEFAULT_TEST_DIR) -> int:
-    """Create ultra-minimal initramfs.
+    # Create cpio archive
+    find_proc = subprocess.Popen(
+        ["find", "."],
+        cwd=source_dir,
+        stdout=subprocess.PIPE,
+    )
 
-    Args:
-        test_dir: Directory to store initramfs
+    cpio_proc = subprocess.Popen(
+        ["cpio", "-o", "-H", "newc"],
+        cwd=source_dir,
+        stdin=find_proc.stdout,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.DEVNULL,
+    )
 
-    Returns:
-        Exit code (0 for success, 1 for failure)
-    """
+    find_proc.stdout.close()
+    cpio_output, _ = cpio_proc.communicate()
+
+    if cpio_proc.returncode != 0:
+        print("  cpio failed")
+        return False
+
+    # Compress with gzip
+    with gzip.open(output_path, "wb", compresslevel=9) as f:
+        f.write(cpio_output)
+
+    return True
+
+
+def main(argv: list[str] | None = None) -> int:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description=__doc__,
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    parser.add_argument(
+        "-o", "--output-dir",
+        type=Path,
+        default=DEFAULT_TEST_DIR,
+        help=f"Output directory (default: {DEFAULT_TEST_DIR})",
+    )
+    parser.add_argument(
+        "-f", "--force",
+        action="store_true",
+        help="Overwrite existing initramfs",
+    )
+
+    args = parser.parse_args(argv)
+
+    test_dir = args.output_dir
+    initramfs_path = test_dir / "initramfs"
+
     print("=== Creating Minimal Initramfs ===")
     print()
-    print(f"Target: {test_dir}/initramfs")
+    print(f"Target: {initramfs_path}")
     print()
 
-    test_dir.mkdir(parents=True, exist_ok=True)
-
     # Check if initramfs already exists
-    existing = check_existing_initramfs(test_dir)
-    if existing:
-        size = get_file_size_human(existing)
-        print(f"Initramfs already exists: {existing} ({size})")
+    if initramfs_path.exists() and not args.force:
+        size = get_file_size_human(initramfs_path)
+        print(f"Initramfs already exists: {initramfs_path} ({size})")
         print()
         return 0
 
     print("Building initramfs structure...")
 
-    # Create build directory
+    # Create temporary build directory
     build_dir = test_dir / "initramfs-build"
     build_dir.mkdir(parents=True, exist_ok=True)
 
-    # Create directory structure
-    create_directory_structure(build_dir)
+    try:
+        # Create directory structure
+        for subdir in ["bin", "sbin", "etc", "proc", "sys", "dev", "tmp", "run"]:
+            (build_dir / subdir).mkdir(exist_ok=True)
 
-    # Create init script
-    create_init_script(build_dir)
+        # Create init script
+        init_path = build_dir / "init"
+        init_path.write_text(INIT_SCRIPT)
+        init_path.chmod(0o755)
 
-    # Try to get busybox
-    print()
-    print("Getting busybox...")
+        # Get busybox
+        bin_dir = build_dir / "bin"
+        busybox_path = download_busybox(build_dir)
 
-    if download_and_extract_busybox(build_dir):
-        install_busybox(build_dir)
-    else:
-        create_stub_scripts(build_dir)
+        if busybox_path and busybox_path.exists():
+            # Install busybox and create symlinks
+            final_busybox = bin_dir / "busybox"
+            shutil.move(str(busybox_path), str(final_busybox))
+            final_busybox.chmod(0o755)
 
-    # Create device nodes
-    create_device_nodes(build_dir)
+            # Create symlinks
+            for cmd in BUSYBOX_SYMLINKS:
+                link_path = bin_dir / cmd
+                if link_path.exists():
+                    link_path.unlink()
+                link_path.symlink_to("busybox")
 
-    # Create the initramfs archive
-    print()
-    print("Creating initramfs archive...")
+            print("  Installed busybox with symlinks")
+        else:
+            create_stub_commands(bin_dir)
 
-    output_path = test_dir / "initramfs"
-    if not create_cpio_archive(build_dir, output_path):
-        print("Error: Failed to create initramfs archive")
-        shutil.rmtree(build_dir, ignore_errors=True)
-        return 1
+        # Create device nodes
+        create_device_nodes(build_dir / "dev")
 
-    # Cleanup build directory
-    shutil.rmtree(build_dir, ignore_errors=True)
+        # Create the initramfs archive
+        test_dir.mkdir(parents=True, exist_ok=True)
+        if not create_cpio_archive(build_dir, initramfs_path):
+            print("Failed to create initramfs archive")
+            return 1
 
-    size = get_file_size_human(output_path)
-    print()
-    print("=== Initramfs Complete ===")
-    print()
-    print(f"Initramfs: {output_path} ({size})")
-    print()
+        # Check size
+        size = get_file_size_human(initramfs_path)
+
+        print()
+        print("=== Initramfs Complete ===")
+        print()
+        print(f"Initramfs: {initramfs_path} ({size})")
+        print()
+
+    finally:
+        # Cleanup build directory
+        if build_dir.exists():
+            shutil.rmtree(build_dir, ignore_errors=True)
+
     print("Next steps:")
     print("  1. ./scripts/vz/create-asif-disk.sh")
     print("  2. ./scripts/vz/asif-test-vm.swift")
     print()
 
     return 0
-
-
-def main() -> int:
-    """Main entry point."""
-    return create_minimal_initramfs()
 
 
 if __name__ == "__main__":
