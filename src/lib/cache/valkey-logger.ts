@@ -26,7 +26,7 @@ export enum ValKeyOperationType {
 
 // Interface for ValKey operation context
 interface ValKeyLogContext {
-  command: string;
+  command?: string;
   duration?: number;
   key?: string;
   keys?: string[];
@@ -206,13 +206,12 @@ export class ValKeyLogger {
    * Base log method
    */
   private log(level: ValKeyLogLevel, message: string, context?: ValKeyLogContext): void {
-    // Create log context with proper typing
+    // Create log context with proper type
     const logContext: ValKeyLogContext & { cache_type: string } = {
       cache_type: 'valkey',
       component: this.component,
       service: this.serviceName,
       environment: this.environment,
-      command: context?.command ?? '',
       ...(context || {})
     };
 

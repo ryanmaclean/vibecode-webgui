@@ -8,4 +8,4 @@ apache-skywalking==1.1.0
 
 # Additional dependencies for SkyWalking
 grpcio==1.62.2
-protobuf==4.25.8
+protobuf==7.34.0rc1

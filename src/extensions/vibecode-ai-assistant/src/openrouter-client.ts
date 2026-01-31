@@ -124,17 +124,17 @@ export class OpenRouterClient {
         try {
             const response = await this.client.post('/chat/completions', requestData);
             return response.data;
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Chat completion failed:', error);
 
-            if (error.response?.status === 401) {
+            if (error instanceof Error && (error as any).response?.status === 401) {
                 throw new Error('Invalid API key. Please check your OpenRouter API key in settings.');
-            } else if (error.response?.status === 402) {
+            } else if (error instanceof Error && (error as any).response?.status === 402) {
                 throw new Error('Insufficient credits. Please check your OpenRouter account balance.');
-            } else if (error.response?.status === 429) {
+            } else if (error instanceof Error && (error as any).response?.status === 429) {
                 throw new Error('Rate limit exceeded. Please try again later.');
             } else {
-                throw new Error(`AI request failed: ${error.response?.data?.error?.message || error.message}`);
+                throw new Error(`AI request failed: ${error instanceof Error ? ((error as any).response?.data?.error?.message || error.message) : 'Unknown error'}`);
             }
         }
     }
@@ -205,9 +205,9 @@ export class OpenRouterClient {
                     reject(error);
                 });
             });
-        } catch (error: any) {
+        } catch (error: unknown) {
             console.error('Streaming chat completion failed:', error);
-            throw new Error(`Streaming AI request failed: ${error.response?.data?.error?.message || error.message}`);
+            throw new Error(`Streaming AI request failed: ${error instanceof Error ? ((error as any).response?.data?.error?.message || error.message) : 'Unknown error'}`);
         }
     }
 

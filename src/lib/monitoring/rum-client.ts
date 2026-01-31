@@ -2,27 +2,33 @@ import { datadogRum } from '@datadog/browser-rum';
 import { getRUMPublicConfig } from './datadog-env'
 // import { logger } from '@/lib/logger';
 
-// Web Vitals performance entry interfaces
+// Web Vitals PerformanceEntry interfaces
 interface LargestContentfulPaintEntry extends PerformanceEntry {
   element?: Element;
+  renderTime: number;
+  loadTime: number;
+  size: number;
+  id: string;
+  url: string;
 }
 
 interface PerformanceEventTimingEntry extends PerformanceEntry {
   processingStart: number;
+  processingEnd: number;
+  cancelable: boolean;
+  target?: Node;
 }
 
 interface LayoutShiftEntry extends PerformanceEntry {
   hadRecentInput: boolean;
   value: number;
+  sources: LayoutShiftAttribution[];
 }
 
-// Extended Performance interface for memory info (Chrome-specific)
-interface PerformanceWithMemory extends Performance {
-  memory?: {
-    usedJSHeapSize: number;
-    totalJSHeapSize: number;
-    jsHeapSizeLimit: number;
-  };
+interface LayoutShiftAttribution {
+  node?: Node;
+  previousRect: DOMRectReadOnly;
+  currentRect: DOMRectReadOnly;
 }
 
 // Define allowed site values according to Datadog RUM documentation
@@ -172,7 +178,7 @@ class RUMMonitoring {
   /**
    * Track custom action
    */
-  static addAction(name: string, context?: Record<string, unknown>) {
+  static addAction(name: string, context?: Record<string, any>) {
     if (!this.initialized) return;
 
     try {
@@ -185,13 +191,13 @@ class RUMMonitoring {
   /**
    * Track custom error
    */
-  static addError(error: Error | string, context?: Record<string, unknown>) {
+  static addError(error: Error | string, context?: Record<string, any>) {
     if (!this.initialized) return;
 
     try {
       datadogRum.addError(error, context);
-    } catch (catchError: unknown) {
-      console.error('[RUM] Failed to add error:', catchError);
+    } catch (err) {
+      console.error('[RUM] Failed to add error:', err);
     }
   }
 
@@ -248,7 +254,7 @@ class RUMMonitoring {
   /**
    * Track business metrics and conversions
    */
-  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, unknown>) {
+  static trackBusinessMetric(metric: string, value: number, attributes?: Record<string, any>) {
     this.addAction(`business.${metric}`, {
       value,
       ...attributes,
@@ -260,7 +266,7 @@ class RUMMonitoring {
   /**
    * Track workspace interactions
    */
-  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, unknown>) {
+  static trackWorkspaceAction(action: string, workspaceId: string, metadata?: Record<string, any>) {
     this.addAction(`workspace.${action}`, {
       workspaceId,
       ...metadata,
@@ -272,7 +278,7 @@ class RUMMonitoring {
   /**
    * Track authentication events
    */
-  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, unknown>) {
+  static trackAuth(event: 'login' | 'logout' | 'signup' | 'password_reset', context?: Record<string, any>) {
     this.addAction(`auth.${event}`, {
       ...context,
       timestamp: Date.now(),
@@ -322,7 +328,7 @@ class RUMMonitoring {
   /**
    * Track user journey and flows
    */
-  static trackUserJourney(step: string, flow: string, metadata?: Record<string, unknown>) {
+  static trackUserJourney(step: string, flow: string, metadata?: Record<string, any>) {
     this.addAction(`journey.${flow}.${step}`, {
       flow,
       step,
@@ -360,7 +366,7 @@ class RUMMonitoring {
     userId?: string;
     workspaceId?: string;
     severity?: 'low' | 'medium' | 'high' | 'critical';
-    metadata?: Record<string, unknown>;
+    metadata?: Record<string, any>;
   }) {
     const errorContext = {
       ...context,
@@ -385,7 +391,7 @@ class RUMMonitoring {
     try {
       const lcpObserver = new PerformanceObserver((list) => {
         const entries = list.getEntries();
-        const lastEntry = entries[entries.length - 1] as PerformanceEntry;
+        const lastEntry = entries[entries.length - 1] as LargestContentfulPaintEntry | undefined;
 
         if (lastEntry) {
           const lcpValue = lastEntry.startTime;
@@ -398,8 +404,7 @@ class RUMMonitoring {
           this.trackPerformance({ largestContentfulPaint: lcpValue });
 
           // Add context
-          const lcpEntry = lastEntry as LargestContentfulPaintEntry;
-          this.addAttribute('performance.lcp.element', lcpEntry.element?.tagName || 'unknown');
+          this.addAttribute('performance.lcp.element', lastEntry.element?.tagName || 'unknown');
         }
       });
 
@@ -414,7 +419,7 @@ class RUMMonitoring {
       const fidObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
           const fidEntry = entry as PerformanceEventTimingEntry;
-          const fidValue = fidEntry.processingStart - entry.startTime;
+          const fidValue = fidEntry.processingStart - fidEntry.startTime;
           console.info('[RUM] FID measured:', fidValue.toFixed(2), 'ms');
 
           // Send to Datadog using addTiming
@@ -436,10 +441,10 @@ class RUMMonitoring {
     try {
       const clsObserver = new PerformanceObserver((list) => {
         list.getEntries().forEach((entry) => {
-          const layoutShiftEntry = entry as LayoutShiftEntry;
+          const clsEntry = entry as LayoutShiftEntry;
           // Only count layout shifts without recent user input
-          if (!layoutShiftEntry.hadRecentInput) {
-            clsValue += layoutShiftEntry.value;
+          if (!clsEntry.hadRecentInput) {
+            clsValue += clsEntry.value;
           }
         });
       });

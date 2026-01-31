@@ -93,9 +93,8 @@ export interface EmbeddingResponse {
 export class AzureAIClient {
   private openaiClient!: OpenAI;
   // Optional Azure SDK clients, loaded lazily if dependencies are available
-  // These are typed as unknown since the Azure SDK packages are optional dependencies
-  private visionClient?: unknown;
-  private languageClient?: unknown;
+  private visionClient?: any;
+  private languageClient?: any;
   private config: AzureAIConfig;
 
   constructor(config: AzureAIConfig) {
@@ -128,7 +127,10 @@ export class AzureAIClient {
 
       const response = await this.openaiClient.chat.completions.create({
         model: deployment, // Use Azure deployment name
-        messages: request.messages as OpenAI.Chat.ChatCompletionMessageParam[],
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
         temperature: request.temperature ?? 0.7,
         max_tokens: request.max_tokens ?? 1000,
         top_p: request.top_p ?? 1,
@@ -173,7 +175,7 @@ export class AzureAIClient {
       
       const response = await this.openaiClient.embeddings.create({
         model: deployment,
-        input: request.input as OpenAI.Embeddings.EmbeddingCreateParams['input'],
+        input: request.input,
       });
 
       return {
