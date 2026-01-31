@@ -1,0 +1,23 @@
+{
+  "title": "OpenClaw Gateway Dashboard",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "requests": [{
+          "q": "avg:openclaw.gateway.requests{*}"
+        }],
+        "title": "Gateway Requests"
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "requests": [{
+          "q": "avg:openclaw.gateway.health{*}"
+        }],
+        "title": "Gateway Health"
+      }
+    }
+  ]
+}
