@@ -36,6 +36,7 @@ export class TracingManager {
         
         if (!enabled) {
             this.logger.debug('Tracing is disabled in configuration');
+            this.isInitialized = false;
             return;
         }
 
@@ -47,8 +48,21 @@ export class TracingManager {
             const sampleRate = config.get<number>('sampleRate', 0.1);
             const debugMode = config.get<boolean>('debug', false);
             const exporters = config.get<string[]>('exporters', ['console']);
-            const datadogApiKey = config.get<string>('datadogApiKey', '');
-            const datadogSite = config.get<string>('datadogSite', 'datadoghq.com');
+            const datadogConfig = config.get<any>('datadog', {});
+            const jaegerConfig = config.get<any>('jaeger', {});
+            const datadogApiKey = (
+                datadogConfig?.apiKey ||
+                config.get<string>('datadogApiKey', '') ||
+                process.env.DD_API_KEY
+            );
+            const datadogSite = (
+                datadogConfig?.site ||
+                config.get<string>('datadogSite', 'datadoghq.com')
+            );
+            const jaegerEndpoint = (
+                jaegerConfig?.endpoint ||
+                config.get<string>('jaegerEndpoint', 'http://localhost:14268/api/traces')
+            );
 
             const tracerConfig: any = {
                 service: 'vscode-rag-extension',
@@ -66,10 +80,21 @@ export class TracingManager {
             };
 
             // Configure DataDog exporter if enabled
-            if (exporters.includes('datadog') && datadogApiKey) {
-                tracerConfig.url = `https://trace.agent.${datadogSite}`;
-                tracerConfig.site = datadogSite;
-                process.env.DD_API_KEY = datadogApiKey;
+            if (exporters.includes('datadog')) {
+                if (!datadogApiKey) {
+                    this.logger.warn('Datadog exporter selected but no API key configured. Set workspaceRag.tracing.datadogApiKey or DD_API_KEY.');
+                } else {
+                    tracerConfig.site = datadogSite;
+                    process.env.DD_API_KEY = datadogApiKey;
+                    process.env.DD_SITE = datadogSite;
+                }
+            }
+
+            if (exporters.includes('jaeger')) {
+                process.env.DD_TRACE_AGENT_URL = jaegerEndpoint;
+                this.logger.info('Jaeger exporter enabled via DD_TRACE_AGENT_URL', {
+                    endpoint: jaegerEndpoint
+                });
             }
 
             if (!this.tracer) return;

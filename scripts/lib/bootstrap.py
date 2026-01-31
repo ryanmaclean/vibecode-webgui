@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """Shared bootstrap helpers for scripts living under scripts/ops and scripts/tests.
 
 Provides a consistent way to derive SCRIPTS_ROOT and LIB_DIR.
