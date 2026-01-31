@@ -14,6 +14,11 @@ pip install -r scripts/requirements.txt
 ```
 
 ### 2. Launch Backend (Ubuntu VM)
+You can use the restored CLI tool:
+```bash
+bin/vibecode-vm start
+```
+Or run the script directly:
 ```bash
 python3 scripts/launch_ubuntu_vm.py
 ```
@@ -22,6 +27,19 @@ python3 scripts/launch_ubuntu_vm.py
 ```bash
 npm run tauri:dev
 ```
+
+## 🛠️ CLI Tool
+Manage the VM environment with the unified CLI:
+```bash
+bin/vibecode-vm status  # Check health via Ralph Loop
+bin/vibecode-vm start   # Launch Ubuntu VM
+bin/vibecode-vm stop    # Stop VM
+```
+
+## 🖥️ Menubar App
+A native macOS status bar app is available to control the environment:
+1. **Build:** `cd platforms/macos/VibeCodeMenubar && swift build -c release`
+2. **Run:** `.build/release/VibeCodeMenubar`
 
 ## 🔄 Ralph Loop
 System health is monitored by the Ralph Loop daemon:
