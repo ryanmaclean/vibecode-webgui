@@ -73,12 +73,21 @@ const parseEnvBool = (value: string | undefined, defaultValue: boolean): boolean
   return value.toLowerCase() === 'true' || value === '1';
 };
 
+const resolvePoolMin = () =>
+  parseEnvInt(process.env.DB_POOL_MIN ?? process.env.DATABASE_POOL_MIN, DEFAULT_POOL_MIN);
+
+const resolvePoolMax = () =>
+  parseEnvInt(
+    process.env.DB_POOL_MAX ?? process.env.DATABASE_POOL_MAX ?? process.env.DATABASE_POOL_SIZE,
+    DEFAULT_POOL_MAX
+  );
+
 /**
  * Connection pool configuration loaded from environment variables.
  * All values have sensible defaults if environment variables are not set.
  *
- * @property minSize - Minimum number of connections (DB_POOL_MIN, default: 2)
- * @property maxSize - Maximum number of connections (DB_POOL_MAX, default: 10)
+ * @property minSize - Minimum number of connections (DB_POOL_MIN or DATABASE_POOL_MIN, default: 2)
+ * @property maxSize - Maximum number of connections (DB_POOL_MAX, DATABASE_POOL_MAX, or DATABASE_POOL_SIZE, default: 10)
  * @property idleTimeout - Time in ms before idle connections are closed (DB_POOL_IDLE_TIMEOUT, default: 30000)
  * @property connectionTimeout - Time in ms to wait for a connection (DB_POOL_CONNECTION_TIMEOUT, default: 10000)
  * @property acquireTimeout - Time in ms to wait when acquiring from pool (DB_POOL_ACQUIRE_TIMEOUT, default: 60000)
@@ -86,8 +95,8 @@ const parseEnvBool = (value: string | undefined, defaultValue: boolean): boolean
  * @property enableConnectionValidation - Whether to validate connections before use (DB_POOL_ENABLE_CONNECTION_VALIDATION, default: true)
  */
 export const poolConfig = {
-  minSize: parseEnvInt(process.env.DB_POOL_MIN, DEFAULT_POOL_MIN),
-  maxSize: parseEnvInt(process.env.DB_POOL_MAX, DEFAULT_POOL_MAX),
+  minSize: resolvePoolMin(),
+  maxSize: resolvePoolMax(),
   idleTimeout: parseEnvInt(process.env.DB_POOL_IDLE_TIMEOUT, DEFAULT_IDLE_TIMEOUT),
   connectionTimeout: parseEnvInt(process.env.DB_POOL_CONNECTION_TIMEOUT, DEFAULT_CONNECTION_TIMEOUT),
   acquireTimeout: parseEnvInt(process.env.DB_POOL_ACQUIRE_TIMEOUT, DEFAULT_ACQUIRE_TIMEOUT),
@@ -114,6 +123,7 @@ export const connectionPool: {
   maxSize: number;
   minSize: number;
   inUse: number;
+  inUseConnections: Map<string, number>; // Track usage count per connection
   waitingAcquires: number;
   lastValidated: Map<string, number>;
   lastUsed: Map<string, number>;
@@ -136,6 +146,7 @@ export const connectionPool: {
   maxSize: poolConfig.maxSize,
   minSize: poolConfig.minSize,
   inUse: 0,
+  inUseConnections: new Map(),
   waitingAcquires: 0,
   lastValidated: new Map(),
   lastUsed: new Map(),
@@ -215,9 +226,9 @@ export function getWaitingAcquires(): number {
 }
 
 /**
- * Finds the least recently used (LRU) connection in the pool.
- * Used for connection eviction when the pool needs to be reduced or
- * when idle connections should be cleaned up.
+ * Finds the least recently used (LRU) connection that is not currently in use.
+ * Used for connection eviction when the pool needs to be reduced or when idle
+ * connections should be cleaned up.
  *
  * @returns The key of the least recently used connection, or null if no eligible connection is found
  *
@@ -232,20 +243,59 @@ export function getWaitingAcquires(): number {
 export function findLeastRecentlyUsedConnection(): string | null {
   let oldestKey: string | null = null;
   let oldestTime = Infinity;
-  
+
   for (const [key, lastUsedTime] of connectionPool.lastUsed.entries()) {
-    // Skip connections that are currently in use
-    if (connectionPool.inUse > 0) {
+    // Skip connections that are currently in use (check per-connection state)
+    if ((connectionPool.inUseConnections.get(key) || 0) > 0) {
       continue;
     }
-    
+
     if (lastUsedTime < oldestTime) {
       oldestTime = lastUsedTime;
       oldestKey = key;
     }
   }
-  
+
   return oldestKey;
+}
+
+/**
+ * Mark a connection as in use.
+ */
+export function markConnectionInUse(key: string): void {
+  const currentCount = connectionPool.inUseConnections.get(key) || 0;
+  connectionPool.inUseConnections.set(key, currentCount + 1);
+  if (currentCount === 0) {
+    connectionPool.inUse += 1;
+  }
+  connectionPool.lastUsed.set(key, Date.now());
+
+  // Update peak connections
+  if (connectionPool.inUse > connectionPool.usage.peakConnections) {
+    connectionPool.usage.peakConnections = connectionPool.inUse;
+  }
+}
+
+/**
+ * Mark a connection as released/available.
+ */
+export function markConnectionReleased(key: string): void {
+  const currentCount = connectionPool.inUseConnections.get(key) || 0;
+  if (currentCount <= 1) {
+    connectionPool.inUseConnections.delete(key);
+    connectionPool.inUse = Math.max(0, connectionPool.inUse - 1);
+    connectionPool.lastUsed.set(key, Date.now());
+    return;
+  }
+
+  connectionPool.inUseConnections.set(key, currentCount - 1);
+}
+
+/**
+ * Check if a specific connection is currently in use.
+ */
+export function isConnectionInUse(key: string): boolean {
+  return (connectionPool.inUseConnections.get(key) || 0) > 0;
 }
 
 /**
@@ -337,25 +387,26 @@ export function getDetailedConnectionPoolInfo(): DetailedConnectionPoolInfo {
     timeSinceValidationMs: number;
     inUse: boolean;
   }[] = [];
-  
+
   // Collect details for each connection
   for (const key of connectionPool.clients.keys()) {
     const creationTime = connectionPool.creationTimes.get(key) || now;
     const lastUsedTime = connectionPool.lastUsed.get(key) || creationTime;
     const lastValidatedTime = connectionPool.lastValidated.get(key) || creationTime;
-    
+    const inUse = (connectionPool.inUseConnections.get(key) || 0) > 0;
+
     connections.push({
       key,
       ageMs: now - creationTime,
-      idleTimeMs: now - lastUsedTime,
+      idleTimeMs: inUse ? 0 : now - lastUsedTime,
       timeSinceValidationMs: now - lastValidatedTime,
-      inUse: false // We don't track per-connection usage, so this is always false currently
+      inUse
     });
   }
-  
+
   // Sort by age (oldest first)
   connections.sort((a, b) => b.ageMs - a.ageMs);
-  
+
   return {
     status,
     connections
