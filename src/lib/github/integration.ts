@@ -307,8 +307,8 @@ export class GitHubIntegration {
         repo: name,
       })
       return false // Repository exists
-    } catch (error: any) {
-      if (error.status === 404) {
+    } catch (error: unknown) {
+      if ((error as any)?.status === 404) {
         return true // Repository doesn't exist, name is available
       }
       throw error // Some other error occurred

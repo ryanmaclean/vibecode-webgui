@@ -14,6 +14,36 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { User, MousePointer2 as Cursor, Activity, Clock, Wifi, WifiOff } from 'lucide-react'
 import { useCollaboration } from '../../hooks/useCollaboration'
 
+/** Selection range for presence tracking */
+interface PresenceSelection {
+  start: { line: number; column: number }
+  end: { line: number; column: number }
+}
+
+/** Awareness state shape from y-websocket */
+interface PresenceAwarenessState {
+  presence?: {
+    userId: string
+    position?: { line: number; column: number }
+    selection?: PresenceSelection
+    isTyping?: boolean
+    isActive?: boolean
+    lastActivity?: number
+    connectionStatus?: 'connected' | 'connecting' | 'disconnected'
+    viewport?: { startLine: number; endLine: number }
+    metadata?: {
+      device: 'desktop' | 'mobile' | 'tablet'
+      browser: string
+      timezone: string
+    }
+  }
+  user?: {
+    name?: string
+    avatar?: string
+    color?: string
+  }
+}
+
 export interface UserPresence {
   userId: string
   userName: string
@@ -93,7 +123,7 @@ export default function UserPresenceIndicators({
   /**
    * Update user presence data
    */
-  const updatePresence = useCallback((position: { line: number; column: number }, selection?: any) => {
+  const updatePresence = useCallback((position: { line: number; column: number }, selection?: PresenceSelection) => {
     if (!awareness || !collaborationManager) return
 
     const presence: Partial<UserPresence> = {
@@ -154,7 +184,7 @@ export default function UserPresenceIndicators({
       const states = awareness.getStates()
       const newPresenceData = new Map<string, UserPresence>()
 
-      states.forEach((state: any, clientId: number) => {
+      states.forEach((state: PresenceAwarenessState, clientId: number) => {
         if (state.presence && state.presence.userId !== currentUserId) {
           const user = state.user || {}
           const presence: UserPresence = {
@@ -188,10 +218,13 @@ export default function UserPresenceIndicators({
 
   /**
    * Expose updatePresence for parent components
+   * Note: This dynamically adds a method to the collaboration manager for external access
    */
   useEffect(() => {
     if (collaborationManager) {
-      (collaborationManager as any).updatePresence = updatePresence
+      // Dynamically assign updatePresence method for parent component access
+      const manager = collaborationManager as unknown as Record<string, unknown>
+      manager.updatePresence = updatePresence
     }
   }, [collaborationManager, updatePresence])
 

@@ -70,11 +70,33 @@ export function MultimodalPromptInterface({
   const [transcript, setTranscript] = useState('');
   const [error, setError] = useState<string | null>(null);
 
+  // Web Speech API types
+  interface SpeechRecognitionEvent {
+    resultIndex: number;
+    results: SpeechRecognitionResultList;
+  }
+
+  interface SpeechRecognitionErrorEvent {
+    error: string;
+  }
+
+  interface SpeechRecognition extends EventTarget {
+    continuous: boolean;
+    interimResults: boolean;
+    lang: string;
+    onstart: (() => void) | null;
+    onresult: ((event: SpeechRecognitionEvent) => void) | null;
+    onerror: ((event: SpeechRecognitionErrorEvent) => void) | null;
+    onend: (() => void) | null;
+    start: () => void;
+    stop: () => void;
+  }
+
   // Refs
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imageInputRef = useRef<HTMLInputElement>(null);
-  const recognitionRef = useRef<any>(null);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const recordingIntervalRef = useRef<NodeJS.Timeout | undefined>(undefined);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
 
@@ -86,7 +108,8 @@ export function MultimodalPromptInterface({
   // Initialize speech recognition
   useEffect(() => {
     if (enableVoice && 'webkitSpeechRecognition' in window) {
-      const recognition = new (window as any).webkitSpeechRecognition();
+      const SpeechRecognitionConstructor = (window as unknown as { webkitSpeechRecognition: new () => SpeechRecognition }).webkitSpeechRecognition;
+      const recognition = new SpeechRecognitionConstructor();
       recognition.continuous = false;
       recognition.interimResults = true;
       recognition.lang = 'en-US';
@@ -97,7 +120,7 @@ export function MultimodalPromptInterface({
         onVoiceStart?.();
       };
 
-      recognition.onresult = (event: any) => {
+      recognition.onresult = (event: SpeechRecognitionEvent) => {
         let finalTranscript = '';
         let interimTranscript = '';
 
@@ -113,7 +136,7 @@ export function MultimodalPromptInterface({
         setTranscript(finalTranscript || interimTranscript);
       };
 
-      recognition.onerror = (event: any) => {
+      recognition.onerror = (event: SpeechRecognitionErrorEvent) => {
         console.error('Speech recognition error:', event.error);
         setError(`Speech recognition error: ${event.error}`);
         setIsListening(false);

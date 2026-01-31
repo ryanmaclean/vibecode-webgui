@@ -122,13 +122,13 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Server error logged
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Model selection failed',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error instanceof Error ? error.message : 'Model selection failed',
+      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }
@@ -192,10 +192,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to fetch models'
+      error: error instanceof Error ? error.message : 'Failed to fetch models'
     }, { status: 500 })
   }
 }

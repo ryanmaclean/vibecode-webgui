@@ -14,22 +14,60 @@ import {
   ArrowLeftIcon
 } from '@heroicons/react/24/outline'
 
+// Local template type matching TemplateMarketplace's internal Template
+interface LocalTemplate {
+  id: string;
+  name: string;
+  description: string;
+  author: string;
+  category: string;
+  language: string;
+  framework: string;
+  stars: number;
+  downloads: number;
+  tags: string[];
+  complexity: 'beginner' | 'intermediate' | 'advanced';
+  pricing: 'free' | 'paid';
+  previewImage?: string;
+  lastUpdated: string;
+  featured: boolean;
+}
+
 interface MarketplacePageProps {
   onSelectTemplate?: (template: MarketplaceTemplate) => void
   onStartProject?: (template: MarketplaceTemplate) => void
   selectedCategory?: string
 }
 
-export function MarketplacePage({ 
-  onSelectTemplate, 
+export function MarketplacePage({
+  onSelectTemplate,
   onStartProject,
-  selectedCategory 
+  selectedCategory
 }: MarketplacePageProps) {
   const [view, setView] = useState<'browse' | 'submit'>('browse')
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null)
 
-  const handleSelectTemplate = (template: MarketplaceTemplate | Record<string, unknown>) => {
-    const marketplaceTemplate = template as MarketplaceTemplate
+  const handleSelectTemplate = (template: LocalTemplate) => {
+    // Convert LocalTemplate to MarketplaceTemplate by adding required fields
+    const validCategories = ['frontend', 'backend', 'fullstack', 'mobile', 'desktop', 'library'] as const;
+    type ValidCategory = typeof validCategories[number];
+    const category: ValidCategory = validCategories.includes(template.category as ValidCategory)
+      ? (template.category as ValidCategory)
+      : 'frontend';
+
+    const marketplaceTemplate: MarketplaceTemplate = {
+      ...template,
+      category,
+      dependencies: {},
+      scripts: {},
+      envVars: [],
+      documentation: { setup: [], usage: [], deployment: [] },
+      dockerSupport: false,
+      kubernetesSupport: false,
+      cicdTemplate: false,
+      testingSetup: false,
+      monitoringSetup: false,
+    }
     setSelectedTemplate(marketplaceTemplate)
     onSelectTemplate?.(marketplaceTemplate)
 
@@ -49,10 +87,29 @@ export function MarketplacePage({
     setView('browse')
   }
 
+  interface TemplateSubmitData {
+    name: string;
+    description: string;
+    category: string;
+    language: string;
+    framework: string;
+    complexity: string;
+    tags: string[];
+    dependencies: Record<string, string>;
+    scripts: Record<string, string>;
+    envVars: Array<{ name: string; defaultValue?: string; description?: string }>;
+    documentation: { setup?: string[]; usage?: string[]; deployment?: string[] };
+    dockerSupport: boolean;
+    kubernetesSupport: boolean;
+    cicdTemplate: boolean;
+    testingSetup: boolean;
+    monitoringSetup: boolean;
+  }
+
   /**
    * Submit template to the backend API
    */
-  const submitTemplateToAPI = useCallback(async (data: Parameters<typeof handleSubmissionComplete>[0] extends string ? any : any) => {
+  const submitTemplateToAPI = useCallback(async (data: TemplateSubmitData) => {
     const response = await fetch('/api/templates', {
       method: 'POST',
       headers: {
@@ -144,7 +201,7 @@ export function MarketplacePage({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <TemplateMarketplace
-          onTemplateSelect={handleSelectTemplate as any}
+          onTemplateSelect={handleSelectTemplate}
           selectedTemplateId={selectedTemplate?.id}
           selectedCategory={selectedCategory}
         />

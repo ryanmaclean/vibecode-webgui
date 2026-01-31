@@ -8,13 +8,6 @@ import { Mic, MicOff, Radio, Volume, Play, Square } from 'lucide-react';
 import type { SpeechRecognition } from '@/components/PromptInterface/types/speech-recognition.types';
 import '@/components/PromptInterface/types/speech-recognition.types';
 
-// Extended Window interface for webkit prefixed audio context
-interface ExtendedWindow extends Window {
-  webkitAudioContext?: typeof AudioContext;
-}
-
-
-
 export default function VoiceTestPage() {
   const [isListening, setIsListening] = useState(false);
   const [isRecording, setIsRecording] = useState(false);
@@ -85,7 +78,7 @@ export default function VoiceTestPage() {
     }
 
     // Test AudioContext
-    if (typeof AudioContext !== 'undefined' || typeof (window as ExtendedWindow).webkitAudioContext !== 'undefined') {
+    if (typeof AudioContext !== 'undefined' || typeof (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext !== 'undefined') {
       results.push({
         test: 'AudioContext',
         result: 'Available',
@@ -195,7 +188,7 @@ export default function VoiceTestPage() {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
       
       // Set up audio context for visualization
-      audioContextRef.current = new (window.AudioContext || (window as ExtendedWindow).webkitAudioContext)();
+      audioContextRef.current = new (window.AudioContext || (window as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext!)();
       analyserRef.current = audioContextRef.current.createAnalyser();
       const source = audioContextRef.current.createMediaStreamSource(stream);
       source.connect(analyserRef.current);
