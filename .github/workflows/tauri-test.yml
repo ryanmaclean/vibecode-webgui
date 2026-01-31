@@ -58,11 +58,14 @@ jobs:
         working-directory: platforms/tauri
         run: cargo test --verbose
 
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli --version "^2.0.0"
+
       - name: Test Tauri build (debug mode)
         working-directory: platforms/tauri
         run: |
           echo "Testing Tauri build in debug mode..."
-          npx tauri build --target aarch64-apple-darwin --debug
+          cargo tauri build --target aarch64-apple-darwin --debug
 
       - name: Verify build artifacts
         run: |
