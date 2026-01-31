@@ -83,6 +83,7 @@ PID_FILE="$VM_DIR/.microvm.pid"
 SERIAL_LOG="$VM_DIR/qemu-console.log"
 COMMON_OPTS=("-kernel" "$KERNEL" "-initrd" "$INITRD" "-append" "$APPEND" "-display" "none")
 LAST_READY_MS=0
+LAST_HEALTHZ_MS=0
 READY_TIMEOUT=${MICROVM_READY_TIMEOUT:-60}
 READY_POLL_INTERVAL=${MICROVM_READY_POLL_SEC:-0.1}
 
@@ -178,6 +179,12 @@ start_vm() {
   fi
   require_vm_assets
   rm -f "$SERIAL_LOG"
+  if [[ "$ARCH" == "arm64" && ("$RUNTIME" == "applevf" || "$RUNTIME" == "vf") ]]; then
+    APPEND="console=hvc0 rdinit=/init quiet"
+    if [[ -n ${MICROVM_CMDLINE_EXTRA:-} ]]; then
+      APPEND+=" ${MICROVM_CMDLINE_EXTRA}"
+    fi
+  fi
   case "$RUNTIME" in
     qemu)
       start_qemu
@@ -197,6 +204,8 @@ start_vm() {
     exit 1
   }
   LAST_READY_MS=$elapsed
+  LAST_HEALTHZ_MS=$elapsed
+  echo "$elapsed" > "${VM_DIR}/healthz-ready-ms"
   echo "microVM started (pid $(cat "$PID_FILE"), ready ${elapsed}ms)"
 }
 
@@ -240,6 +249,7 @@ measure_latency() {
   for _ in $(seq 1 "$iterations"); do
     stop_vm >/dev/null 2>&1 || true
     LAST_READY_MS=0
+    LAST_HEALTHZ_MS=0
     start_vm >/dev/null
     if [[ ${LAST_READY_MS:-0} -eq 0 ]]; then
       echo "error: failed to capture readiness metric" >&2
@@ -249,6 +259,15 @@ measure_latency() {
   done
   printf '{"port_ready_ms": ['
   local first=1
+  for sample in "${samples[@]}"; do
+    if [[ $first -eq 0 ]]; then
+      printf ', '
+    fi
+    printf '%s' "$sample"
+    first=0
+  done
+  printf '], "healthz_ready_ms": ['
+  first=1
   for sample in "${samples[@]}"; do
     if [[ $first -eq 0 ]]; then
       printf ', '
