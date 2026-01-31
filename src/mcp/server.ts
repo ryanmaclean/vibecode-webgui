@@ -174,6 +174,7 @@ import { deployProject } from './tools/deployment.js';
 import { searchCode, analyzeCode } from './tools/code-analysis.js';
 import { generateCode } from './tools/code-generation.js';
 import { createVM, startVM, stopVM, listVMs, getVMStatus } from './tools/vm-management.js';
+import { sequentialThinking, getThinkingState, resetThinkingProcess } from './tools/sequential-thinking.js';
 
 // Type validation schemas
 import {
@@ -183,6 +184,7 @@ import {
   SearchCodeArgsSchema,
   AnalyzeCodeArgsSchema,
   GenerateCodeArgsSchema,
+  SequentialThinkingArgsSchema,
   validateToolArgs,
 } from './types.js';
 // Unused exports for future implementation
@@ -349,6 +351,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['prompt', 'language'],
         },
       },
+      {
+        name: 'sequential_thinking',
+        description: 'A tool for structured, step-by-step thinking. Break down complex problems into discrete thoughts, with support for revisions and branching. The thinking process maintains state across calls.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            thought: {
+              type: 'string',
+              description: 'The current thinking step content',
+            },
+            thoughtNumber: {
+              type: 'integer',
+              description: 'Current thought number in the sequence',
+              minimum: 1,
+            },
+            totalThoughts: {
+              type: 'integer',
+              description: 'Estimated total number of thoughts needed (can be adjusted)',
+              minimum: 1,
+            },
+            nextThoughtNeeded: {
+              type: 'boolean',
+              description: 'Whether another thought step is needed after this one',
+            },
+            isRevision: {
+              type: 'boolean',
+              description: 'Whether this thought revises a previous thought',
+            },
+            revisesThought: {
+              type: 'integer',
+              description: 'If isRevision is true, which thought number is being revised',
+              minimum: 1,
+            },
+            branchFromThought: {
+              type: 'integer',
+              description: 'If branching, the thought number to branch from',
+              minimum: 1,
+            },
+            branchId: {
+              type: 'string',
+              description: 'Branch identifier (auto-generated if not provided)',
+            },
+          },
+          required: ['thought', 'thoughtNumber', 'totalThoughts', 'nextThoughtNeeded'],
+        },
+      },
     ],
   };
 });
@@ -436,6 +484,12 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'generate-code': {
         const validatedArgs = validateToolArgs(GenerateCodeArgsSchema, argsRecord);
         result = await generateCode(validatedArgs);
+        break;
+      }
+
+      case 'sequential_thinking': {
+        const validatedArgs = validateToolArgs(SequentialThinkingArgsSchema, argsRecord);
+        result = await sequentialThinking(validatedArgs);
         break;
       }
 
