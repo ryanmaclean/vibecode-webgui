@@ -22,6 +22,40 @@ export interface LLMSpanResult {
   latency?: number;
 }
 
+// Interface for LLM response structure detection
+interface LLMResponseLike {
+  output?: unknown;
+  text?: unknown;
+  content?: unknown;
+  usage?: {
+    promptTokens?: number;
+    prompt_tokens?: number;
+    completionTokens?: number;
+    completion_tokens?: number;
+    totalTokens?: number;
+    total_tokens?: number;
+  };
+  tokenUsage?: {
+    promptTokens?: number;
+    prompt_tokens?: number;
+    completionTokens?: number;
+    completion_tokens?: number;
+    totalTokens?: number;
+    total_tokens?: number;
+  };
+  cost?: number;
+}
+
+// Type guard for LLM response
+function isLLMResponse(value: unknown): value is LLMResponseLike {
+  return typeof value === 'object' && value !== null;
+}
+
+// Interface for class decorator target
+interface ClassTarget {
+  constructor: { name: string };
+}
+
 /**
  * Traces LLM interactions with Datadog LLM observability
  */
@@ -80,26 +114,28 @@ export class LLMTracer {
       span.setTag('llm.status', 'success');
       
       // If result has standard structure, extract metrics
-      if (typeof result === 'object' && result !== null) {
-        const response = result as any;
-        
+      if (isLLMResponse(result)) {
+        const response = result;
+
         if (response.output || response.text || response.content) {
           const output = response.output || response.text || response.content;
           const trimmed = String(output).substring(0, 1000);
           span.setTag('llm.response.output', trimmed);
           span.setTag('ai.output', trimmed);
         }
-        
+
         if (response.usage || response.tokenUsage) {
           const usage = response.usage || response.tokenUsage;
-          span.setTag('llm.usage.prompt_tokens', usage.promptTokens || usage.prompt_tokens);
-          span.setTag('llm.usage.completion_tokens', usage.completionTokens || usage.completion_tokens);
-          span.setTag('llm.usage.total_tokens', usage.totalTokens || usage.total_tokens);
-          if (usage.total_tokens) {
-            span.setTag('ai.response.total_tokens', usage.total_tokens);
+          if (usage) {
+            span.setTag('llm.usage.prompt_tokens', usage.promptTokens || usage.prompt_tokens);
+            span.setTag('llm.usage.completion_tokens', usage.completionTokens || usage.completion_tokens);
+            span.setTag('llm.usage.total_tokens', usage.totalTokens || usage.total_tokens);
+            if (usage.total_tokens) {
+              span.setTag('ai.response.total_tokens', usage.total_tokens);
+            }
           }
         }
-        
+
         if (response.cost) {
           span.setTag('llm.cost.total', response.cost);
         }
@@ -108,16 +144,22 @@ export class LLMTracer {
       span.finish();
       return result;
       
-    } catch (error: any) {
+    } catch (error: unknown) {
       const endTime = Date.now();
       const latency = endTime - startTime;
-      
+
       span.setTag('llm.response.latency_ms', latency);
       span.setTag('llm.status', 'error');
       span.setTag('error', true);
-      span.setTag('error.message', error.message);
-      span.setTag('error.type', error.constructor.name);
-      
+
+      if (error instanceof Error) {
+        span.setTag('error.message', error.message);
+        span.setTag('error.type', error.constructor.name);
+      } else {
+        span.setTag('error.message', String(error));
+        span.setTag('error.type', 'Unknown');
+      }
+
       span.finish();
       throw error;
     }
@@ -169,7 +211,7 @@ export class LLMTracer {
   /**
    * Create a custom span for AI operations
    */
-  static createAISpan(operation: string, tags: Record<string, any> = {}) {
+  static createAISpan(operation: string, tags: Record<string, string | number | boolean | undefined> = {}) {
     return tracer.startSpan(`ai.${operation}`, {
       tags: {
         'service.name': 'vibecode-ai',
@@ -184,23 +226,23 @@ export class LLMTracer {
  * Decorator for automatic LLM tracing
  */
 export function TraceLLM(options: Partial<LLMSpanOptions> = {}) {
-  return function (target: any, propertyName: string, descriptor: PropertyDescriptor) {
-    const method = descriptor.value;
-    
-    descriptor.value = async function (...args: any[]) {
+  return function (target: ClassTarget, propertyName: string, descriptor: PropertyDescriptor) {
+    const method = descriptor.value as (...args: unknown[]) => Promise<unknown>;
+
+    descriptor.value = async function (this: unknown, ...args: unknown[]) {
       const spanOptions: LLMSpanOptions = {
         model: options.model || 'unknown',
         provider: options.provider || 'unknown',
         ...options
       };
-      
+
       return LLMTracer.traceLLMCall(
         `${target.constructor.name}.${propertyName}`,
         spanOptions,
         () => method.apply(this, args)
       );
     };
-    
+
     return descriptor;
   };
 }

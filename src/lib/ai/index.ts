@@ -27,13 +27,9 @@ import { VectorSearch } from './search/vector-search';
 import { PromptManager } from './prompts/manager';
 import { DocumentationSources } from './documentation/sources';
 import { aiAnalytics } from './analytics';
-// import { VectorStoreRetriever } from 'langchain/vectorstores/base';
-// import { Document } from 'langchain/document';
+import { VectorStoreRetriever } from 'langchain/vectorstores/base';
 import { validateAIQuery, validatePrompt, aiRateLimiter, AISecurityLogger } from '../security/input-validator';
-
-// Stub types for removed langchain dependencies
-type VectorStoreRetriever = any;
-type Document = { pageContent: string; metadata: Record<string, unknown> };
+import type { SearchResult } from './search/vector-search';
 // import { logger } from '@/lib/logger';
 interface AIConfig {
   openAIApiKey?: string;
@@ -52,7 +48,7 @@ export class AIIntegration {
   /**
    * Secure AI query method with input validation and rate limiting
    */
-  async secureQuery(rawInput: unknown, userId: string = 'anonymous'): Promise<any> {
+  async secureQuery(rawInput: unknown, userId: string = 'anonymous'): Promise<SearchResult[]> {
     try {
       // Rate limiting check
       if (!aiRateLimiter.checkRateLimit(userId)) {
@@ -89,7 +85,7 @@ export class AIIntegration {
   /**
    * Secure prompt processing with validation
    */
-  async securePromptProcessing(rawPrompt: unknown, userId: string = 'anonymous'): Promise<any> {
+  async securePromptProcessing(rawPrompt: unknown, userId: string = 'anonymous'): Promise<Record<string, unknown>[]> {
     try {
       const validatedPrompt = validatePrompt(rawPrompt);
       
@@ -127,19 +123,24 @@ export class AIIntegration {
     };
 
     this.search = new VectorSearch();
-    // Create a VectorStoreRetriever instance with proper typing
+    // Create a VectorStoreRetriever-compatible object
+    // The retriever adapts our VectorSearch to the langchain interface
     const retriever = {
-      getRelevantDocuments: async (query: string) => {
+      getRelevantDocuments: async (query: string, k?: number) => {
         const results = await this.search.semanticSearch(query, 'prompts');
-        return results.map(result => ({
+        const limitedResults = k ? results.slice(0, k) : results;
+        return limitedResults.map(result => ({
           pageContent: result.content,
           metadata: result.metadata || {}
-        })) as unknown as Awaited<ReturnType<VectorStoreRetriever['getRelevantDocuments']>>;
+        }));
       },
       addDocuments: async (documents: Array<{ pageContent: string; metadata?: Record<string, unknown> }>) => {
-        await this.search.addDocuments(documents as any, 'prompts');
+        await this.search.addDocuments(documents.map(doc => ({
+          pageContent: doc.pageContent,
+          metadata: doc.metadata || {}
+        })), 'prompts');
       }
-    } as unknown as VectorStoreRetriever; // Type assertion to match the expected interface
+    } as unknown as VectorStoreRetriever;
     this.prompts = new PromptManager(retriever);
     this.docs = new DocumentationSources();
     
