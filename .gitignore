@@ -211,7 +211,13 @@ operations/
 optimization/
 development/
 technical-debt/
-platforms/
+platforms/*
+!platforms/kubernetes/
+platforms/kubernetes/*
+!platforms/kubernetes/scripts/
+!platforms/docker/
+platforms/docker/*
+!platforms/docker/scripts/
 
 # Build directories
 initramfs-rebuild/

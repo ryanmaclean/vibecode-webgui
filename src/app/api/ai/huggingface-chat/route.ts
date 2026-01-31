@@ -147,11 +147,11 @@ export async function POST(request: NextRequest) {
         }
       })
 
-    } catch (modelError: any) {
+    } catch (modelError: unknown) {
       // Server error logged
       
       // Try fallback to a simpler approach for some models
-      if (modelError.message?.includes('loading') || modelError.message?.includes('unavailable')) {
+      if ((modelError instanceof Error && modelError.message.includes('loading')) || (modelError instanceof Error && modelError.message.includes('unavailable'))) {
         return NextResponse.json({
           success: false,
           error: `Model ${model} is currently loading. Please try again in a few seconds.`,
@@ -171,13 +171,13 @@ export async function POST(request: NextRequest) {
       })
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Server error logged
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to process chat request',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error instanceof Error ? error.message : 'Failed to process chat request',
+      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }

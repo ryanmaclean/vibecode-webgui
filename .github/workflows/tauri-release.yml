@@ -64,9 +64,10 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Verify Tauri CLI installation
+        working-directory: platforms/tauri
         run: |
           echo "Verifying Tauri CLI..."
-          npm run tauri -- --version || { echo "Error: Tauri CLI not available"; exit 1; }
+          npx tauri --version || { echo "Error: Tauri CLI not available"; exit 1; }
 
       - name: Install Tauri dependencies
         working-directory: platforms/tauri
@@ -79,6 +80,7 @@ jobs:
             openssl@3
 
       - name: Build Tauri app (Universal Binary)
+        working-directory: platforms/tauri
         env:
           # Build optimizations
           TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
@@ -87,9 +89,9 @@ jobs:
         run: |
           echo "Building Tauri app for universal macOS binary..."
           echo "Using Next.js config: $NEXT_CONFIG_FILE"
-          npm run tauri build -- --target universal-apple-darwin --verbose || {
+          npx tauri build --target universal-apple-darwin --verbose || {
             echo "Build failed. Checking logs..."
-            test -f platforms/tauri/target/universal-apple-darwin/release/build.log && cat platforms/tauri/target/universal-apple-darwin/release/build.log
+            test -f target/universal-apple-darwin/release/build.log && cat target/universal-apple-darwin/release/build.log
             exit 1
           }
 

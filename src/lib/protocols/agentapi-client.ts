@@ -18,13 +18,38 @@ AgentAPIConfig,
   AgentMessageRequest,
   SendMessageResponse,
   StreamEventsQuery,
-  SSEEvent,
   WSClientMessages,
   WSServerMessages,
   HealthResponse,
   DEFAULT_CONFIG,
+  ModelType,
+  AgentType,
 } from '@/types/agent-api';
 // import { logger } from '@/lib/logger';
+
+/**
+ * Type guard to check if a model string is a valid ModelType
+ */
+function isValidModelType(model: string): model is ModelType {
+  return [
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'deepseek-chat',
+  ].includes(model);
+}
+
+/**
+ * Get a valid model type, defaulting to claude-3-5-sonnet if invalid
+ */
+function getValidModel(model: string): ModelType {
+  if (isValidModelType(model)) {
+    return model;
+  }
+  return 'claude-3-5-sonnet-20241022';
+}
+
 // ============================================================================
 // AgentAPI Client
 // ============================================================================
@@ -286,13 +311,13 @@ export class AgentAPIClient {
   async executeCommand(
     workspace: string,
     command: string,
-    agentType: 'aider' | 'goose' | 'cline' = 'aider',
+    agentType: AgentType = 'aider',
     model: string = 'claude-3-5-sonnet-20241022'
   ): Promise<APIResponse<AgentResponse>> {
     return this.startAgent({
       agent_type: agentType,
       workspace,
-      model: model as any,
+      model: getValidModel(model),
       task: command,
     });
   }

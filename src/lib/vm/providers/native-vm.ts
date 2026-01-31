@@ -348,11 +348,11 @@ export class NativeVMProvider implements VMProvider {
         stderr: result.stderr || '',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         exitCode: 1,
         stdout: '',
-        stderr: error.message,
+        stderr: error instanceof Error ? error.message : 'Unknown error',
         duration: Date.now() - startTime
       };
     }
