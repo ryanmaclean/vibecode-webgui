@@ -127,7 +127,10 @@ export class AzureAIClient {
 
       const response = await this.openaiClient.chat.completions.create({
         model: deployment, // Use Azure deployment name
-        messages: request.messages as any,
+        messages: request.messages.map(msg => ({
+          role: msg.role,
+          content: msg.content,
+        })),
         temperature: request.temperature ?? 0.7,
         max_tokens: request.max_tokens ?? 1000,
         top_p: request.top_p ?? 1,
@@ -172,7 +175,7 @@ export class AzureAIClient {
       
       const response = await this.openaiClient.embeddings.create({
         model: deployment,
-        input: request.input as any,
+        input: request.input,
       });
 
       return {
@@ -184,8 +187,8 @@ export class AzureAIClient {
         })),
         model: request.model || deployment,
         usage: {
-          prompt_tokens: (response.usage as any)?.prompt_tokens ?? 0,
-          total_tokens: (response.usage as any)?.total_tokens ?? 0,
+          prompt_tokens: response.usage?.prompt_tokens ?? 0,
+          total_tokens: response.usage?.total_tokens ?? 0,
         },
       };
     } catch (error) {

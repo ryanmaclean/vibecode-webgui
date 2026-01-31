@@ -1,4 +1,4 @@
-import { ChromaClient } from 'chromadb';
+import { ChromaClient, type Metadata } from 'chromadb';
 import { Document } from '@langchain/core/documents';
 import { OpenAIEmbeddings } from '@langchain/openai';
 // Simple text splitter implementation
@@ -14,14 +14,14 @@ class SimpleTextSplitter {
   splitText(text: string): string[] {
     const chunks: string[] = [];
     let start = 0;
-    
+
     while (start < text.length) {
       const end = Math.min(start + this.chunkSize, text.length);
       const chunk = text.slice(start, end);
       chunks.push(chunk);
       start = end - this.chunkOverlap;
     }
-    
+
     return chunks;
   }
 }
@@ -39,7 +39,7 @@ export class DocumentationIngester {
     this.splitter = textSplitter;
   }
 
-  async ingestDocumentation(source: string, content: string, metadata: Record<string, any> = {}) {
+  async ingestDocumentation(source: string, content: string, metadata: Record<string, unknown> = {}) {
     // Split document into chunks
     const chunks = this.splitter.splitText(content);
     const docs = chunks.map((chunk, i) => new Document({
@@ -58,17 +58,27 @@ export class DocumentationIngester {
     );
 
     // Store in vector database via collection
-    const collection = await this.chroma.getOrCreateCollection({ name: 'documentation' } as any);
-    const payload = {
-      ids: docs.map((_, i) => `${source}-${i}`),
+    const collection = await this.chroma.getOrCreateCollection({ name: 'documentation' });
+
+    // Convert Document metadata to chromadb Metadata type
+    const ids = docs.map((_, i) => `${source}-${i}`);
+    const metadatas: Metadata[] = docs.map(doc => {
+      const meta: Metadata = {};
+      for (const [key, value] of Object.entries(doc.metadata)) {
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean' || value === null) {
+          meta[key] = value;
+        }
+      }
+      return meta;
+    });
+    const documents = docs.map(doc => doc.pageContent);
+
+    // Use upsert to insert or update documents
+    await collection.upsert({
+      ids,
       embeddings,
-      metadatas: docs.map(doc => doc.metadata as any),
-      documents: docs.map(doc => doc.pageContent),
-    } as any;
-    if (typeof (collection as any).upsert === 'function') {
-      await (collection as any).upsert(payload);
-    } else {
-      await (collection as any).add(payload);
-    }
+      metadatas,
+      documents,
+    });
   }
 }

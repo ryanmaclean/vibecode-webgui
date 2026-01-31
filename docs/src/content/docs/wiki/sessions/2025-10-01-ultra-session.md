@@ -241,8 +241,8 @@ This ultra-session represents the culmination of systematic GitHub issue resolut
 **Agent:** Security Engineer
 **Deliverables:**
 1. `/docs/security/BRANCH_PROTECTION.md` (417 lines, 12KB)
-2. `/scripts/security/check-branch-protection.sh` (368 lines, 11KB)
-3. `/scripts/security/enable-branch-protection.sh` (171 lines, 4.8KB)
+2. `/scripts/security/check_branch_protection.py` (368 lines, 11KB)
+3. `/scripts/security/enable_branch_protection.py` (171 lines, 4.8KB)
 
 **Documentation Contents:**
 - Threat model with risk assessment (CRITICAL risks identified)
@@ -274,8 +274,8 @@ This ultra-session represents the culmination of systematic GitHub issue resolut
 - **Attack Surface Reduction:** Prevents compromised credentials from deploying untested code
 
 **Scripts Created:**
-1. **check-branch-protection.sh** - Automated verification with scoring (0-10) and security level assessment (WEAK/MODERATE/STRONG)
-2. **enable-branch-protection.sh** - Programmatic configuration with 3 profiles (minimal, recommended, high-security)
+1. **check_branch_protection.py** - Automated verification with scoring (0-10) and security level assessment (WEAK/MODERATE/STRONG)
+2. **enable_branch_protection.py** - Programmatic configuration with 3 profiles (minimal, recommended, high-security)
 
 **Current Status:** Branch protection not yet enabled (requires repo admin access)
 
@@ -710,8 +710,8 @@ Project has 3 related workflows:
 
 **Scripts Created (5 automation tools):**
 1. `.github/workflows/changelog.yml` - 191 lines, automated changelog
-2. `scripts/security/check-branch-protection.sh` - 368 lines, validation script
-3. `scripts/security/enable-branch-protection.sh` - 171 lines, enablement script
+2. `scripts/security/check_branch_protection.py` - 368 lines, validation script
+3. `scripts/security/enable_branch_protection.py` - 171 lines, enablement script
 4. `scripts/migrate-console-to-logger.sh` - Migration automation
 5. Various verification and diagnostic scripts
 
@@ -818,7 +818,7 @@ This session builds on 7 previous major work phases:
 
 3. **Issue #455 - Enable Branch Protection** (30 minutes)
    - Requires admin access
-   - Run enable-branch-protection.sh script
+   - Run enable_branch_protection.py script
    - Validate configuration
 
 ### Medium Priority (3-5 days)

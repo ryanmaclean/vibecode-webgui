@@ -17,17 +17,11 @@ interface WebVitalMetric {
   rating: 'good' | 'needs-improvement' | 'poor';
   id: string;
   navigationType?: string;
-}
-
-/**
- * Stored metric with timestamp added at write time
- */
-interface StoredWebVitalMetric extends WebVitalMetric {
-  timestamp: number;
+  timestamp?: number;
 }
 
 // In-memory storage for metrics (replace with database in production)
-const metricsStore: StoredWebVitalMetric[] = [];
+const metricsStore: WebVitalMetric[] = [];
 const MAX_METRICS = 10000; // Keep last 10k metrics
 
 export async function POST(request: NextRequest) {
@@ -59,12 +53,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Store metric with timestamp
-    const storedMetric: StoredWebVitalMetric = {
+    // Store metric
+    metricsStore.push({
       ...metric,
       timestamp: Date.now()
-    };
-    metricsStore.push(storedMetric);
+    });
 
     // Keep only recent metrics
     if (metricsStore.length > MAX_METRICS) {
@@ -119,7 +112,7 @@ export async function GET(request: NextRequest) {
     // Filter by time
     if (since) {
       const sinceTime = parseInt(since);
-      filteredMetrics = filteredMetrics.filter((m) => m.timestamp >= sinceTime);
+      filteredMetrics = filteredMetrics.filter((m) => (m.timestamp ?? 0) >= sinceTime);
     }
 
     // Calculate aggregates
@@ -139,9 +132,6 @@ export async function GET(request: NextRequest) {
   }
 }
 
-/**
- * Aggregate statistics for a single metric
- */
 interface MetricAggregate {
   count: number;
   min: number;
@@ -154,7 +144,7 @@ interface MetricAggregate {
   p99: number;
 }
 
-function calculateAggregates(metrics: StoredWebVitalMetric[]): Record<string, MetricAggregate> | null {
+function calculateAggregates(metrics: WebVitalMetric[]): Record<string, MetricAggregate> | null {
   if (metrics.length === 0) return null;
 
   const byName: Record<string, number[]> = {};

@@ -179,15 +179,18 @@ impl ContextManager {
                                 .to_string();
                             imports.push(module);
                         }
-                    } else if trimmed.starts_with("require(") {
+                    } else if trimmed.contains("require(") {
                         // Extract from: const x = require('module')
-                        if let Some(start) = trimmed.find('(') {
-                            if let Some(end) = trimmed[start..].find(')') {
-                                let module = trimmed[start + 1..start + end]
+                        if let Some(req_pos) = trimmed.find("require(") {
+                            let after_require = &trimmed[req_pos + 8..];
+                            if let Some(end) = after_require.find(')') {
+                                let module = after_require[..end]
                                     .trim()
                                     .trim_matches(|c| c == '\'' || c == '"')
                                     .to_string();
-                                imports.push(module);
+                                if !module.is_empty() {
+                                    imports.push(module);
+                                }
                             }
                         }
                     }

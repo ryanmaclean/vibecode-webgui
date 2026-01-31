@@ -8,15 +8,6 @@ import { validateQueryParams } from '@/lib/api/validation/middleware';
 import { terminalWebSocketQuerySchema } from '@/lib/api/validation/schemas';
 // import { logger } from '@/lib/logger';
 import path from 'path';
-import type { Socket } from 'net';
-
-/**
- * Extended Request interface for WebSocket upgrade handling
- * Next.js internally attaches a socket property during WebSocket upgrades
- */
-interface WebSocketUpgradeRequest extends Request {
-  socket?: Socket;
-}
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic';
@@ -32,7 +23,7 @@ const getNodePty = async () => {
 
 // Store active PTY processes
 interface PtyProcess {
-  process: IPty;
+  process: any; // node-pty IPty interface
   ws: WebSocket;
 }
 const activeProcesses = new Map<string, PtyProcess>();
@@ -155,15 +146,10 @@ const handler = async (req: Request, _res: unknown): Promise<NextResponse> => {
 
   const wss = ensureWebSocketServer();
 
-  // Cast to extended request type for WebSocket upgrade handling
-  const upgradeReq = req as WebSocketUpgradeRequest;
-  if (upgradeReq.socket) {
-    // @ts-expect-error - Next.js Request type is not compatible with Node.js IncomingMessage
-    // but the underlying implementation handles this correctly during WebSocket upgrade
-    wss.handleUpgrade(req, upgradeReq.socket, Buffer.alloc(0), (ws) => {
-      wss.emit('connection', ws, req);
-    });
-  }
+  // @ts-expect-error - Next.js specific handling for WebSocket upgrade
+  wss.handleUpgrade(req, (req as unknown as { socket: import('net').Socket }).socket, Buffer.alloc(0), (ws) => {
+    wss.emit('connection', ws, req);
+  });
 
   return new NextResponse(null, { status: 101 });
 };

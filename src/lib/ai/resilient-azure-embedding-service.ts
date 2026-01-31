@@ -4,7 +4,7 @@
  */
 
 import { AzureEmbeddingService } from './azureEmbeddingService'
-import { circuitBreakerManager, CircuitBreakerError } from '../resilience/circuit-breaker'
+import { circuitBreakerManager, CircuitBreakerError, CircuitState } from '../resilience/circuit-breaker'
 
 interface ResilientEmbeddingOptions {
   dimensions?: number
@@ -135,7 +135,14 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
     circuitState: string
     lastError?: string
     responseTime?: number
-    metrics: any
+    metrics: {
+      state: string
+      isHealthy: boolean
+      failureRate: number
+      averageResponseTime: number
+      uptime: number
+      recentRequests: number
+    }
   }> {
     const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
     const healthStatus = circuitBreaker.getHealthStatus()
@@ -248,7 +255,7 @@ export class ResilientAzureEmbeddingService extends AzureEmbeddingService {
       console.info(`Circuit breaker disabled for ${this.serviceName}`)
       // Force circuit closed when disabled
       const circuitBreaker = circuitBreakerManager.getCircuitBreaker(this.serviceName)
-      circuitBreaker.forceState('CLOSED' as any)
+      circuitBreaker.forceState(CircuitState.CLOSED)
     }
   }
 }

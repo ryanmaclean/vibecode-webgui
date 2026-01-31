@@ -9,15 +9,9 @@ import { authOptions } from '@/lib/auth'
 import { z } from '@/lib/zod-compat'
 import { generateFromTemplate, GenerateFromTemplateOptions } from '@/lib/templates/generator'
 import { getTemplateById } from '@/lib/templates'
-import type { ProjectTemplate } from '@/lib/templates'
 import { llmObservability } from '@/lib/datadog-llm'
 import type { Span } from 'dd-trace'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
-
-/**
- * Valid template categories from ProjectTemplate interface
- */
-type TemplateCategory = ProjectTemplate['category'];
 
 const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - template creation
 
@@ -272,11 +266,7 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (category && category !== 'all') {
-      // Validate category is a valid TemplateCategory before filtering
-      const validCategories: TemplateCategory[] = ['frontend', 'backend', 'fullstack', 'mobile', 'data', 'infrastructure'];
-      if (validCategories.includes(category as TemplateCategory)) {
-        filteredTemplates = getTemplatesByCategory(category as TemplateCategory)
-      }
+      filteredTemplates = getTemplatesByCategory(category as Parameters<typeof getTemplatesByCategory>[0])
     }
 
     if (complexity && complexity !== 'all') {

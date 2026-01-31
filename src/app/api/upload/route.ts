@@ -47,8 +47,6 @@ const ALLOWED_MIME_TYPES = [
   'text/yaml',
 ] as const;
 
-type AllowedMimeType = typeof ALLOWED_MIME_TYPES[number];
-
 /**
  * Uploaded file metadata response
  */
@@ -135,17 +133,10 @@ function validateFilename(filename: string): { valid: boolean; error?: string } 
 }
 
 /**
- * Type guard for allowed MIME types
- */
-function isAllowedMimeType(mimeType: string): mimeType is AllowedMimeType {
-  return (ALLOWED_MIME_TYPES as readonly string[]).includes(mimeType);
-}
-
-/**
  * Validate MIME type
  */
 function validateMimeType(mimeType: string): { valid: boolean; error?: string } {
-  if (!isAllowedMimeType(mimeType)) {
+  if (!ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
     return {
       valid: false,
       error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`,

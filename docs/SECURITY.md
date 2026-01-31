@@ -71,10 +71,10 @@ All downloads must be verified prior to installation or baking into container im
 
 | Tool      | Required cosign identity / issuer                                                                 | Verification script path                           | Last verification date |
 |-----------|---------------------------------------------------------------------------------------------------|-----------------------------------------------------|------------------------|
-| kubectl   | `krel-trusted-builder@k8s-releng-prod.iam.gserviceaccount.com` / `https://accounts.google.com`   | `scripts/security/verify-kubectl.sh`               | Pending — first verification window closes 2025-10-08 |
-| helm      | `https://github.com/helm/helm/.github/workflows/release.yml@refs/tags/v<version>` / `https://token.actions.githubusercontent.com` | `scripts/security/verify-helm.sh`                 | Pending — first verification window closes 2025-10-10 |
-| kubectx   | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify-kubectx.sh`               | Pending — first verification window closes 2025-10-11 |
-| kubens    | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify-kubens.sh`                | Pending — first verification window closes 2025-10-11 |
+| kubectl   | `krel-trusted-builder@k8s-releng-prod.iam.gserviceaccount.com` / `https://accounts.google.com`   | `scripts/security/verify_kubectl.py`               | Pending — first verification window closes 2025-10-08 |
+| helm      | `https://github.com/helm/helm/.github/workflows/release.yml@refs/tags/v<version>` / `https://token.actions.githubusercontent.com` | `scripts/security/verify_helm.py`                 | Pending — first verification window closes 2025-10-10 |
+| kubectx   | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify_kubectx.py`               | Pending — first verification window closes 2025-10-11 |
+| kubens    | `supply-chain@vibecode.dev` (internal re-sign of upstream tarball) / `https://accounts.google.com` | `scripts/security/verify_kubens.py`                | Pending — first verification window closes 2025-10-11 |
 
 > **Note:** If upstream publishes an official cosign identity, update the table and runbooks immediately, then notify Maya for risk review.
 
