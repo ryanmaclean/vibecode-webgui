@@ -395,3 +395,11 @@ src-tauri/target/
 # Event logs
 .events.jsonl
 .specstory/
+
+# Local-only runtime artifacts
+.feed.jsonl
+daemon/
+
+# Legacy dispatch scripts (replaced by Python tooling)
+scripts/assign-issues-to-polecats.sh
+scripts/assign-all-to-polecats.sh
