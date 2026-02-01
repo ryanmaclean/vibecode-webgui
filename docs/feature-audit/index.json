@@ -10,7 +10,7 @@
   {
     "id": "vm-auto-start",
     "title": "VM Auto-Start - Configure VMs to start with application",
-    "issue": "https://github.com/ryanmaclean/vibecode-webgui/issues/[TBD]",
+    "note": "Feature Audit tracking for v1.5.0 Apple Virtualization Framework release",
     "status": "implemented",
     "doc": "docs/feature-audit/feature-vm-auto-start.md",
     "sourceRelease": "VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance (v1.5.0)"
