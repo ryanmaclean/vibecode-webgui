@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""VibeCode WebGUI deployment helper for AKS."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""VibeCode WebGUI deployment helper for AKS."""
-
-from __future__ import annotations
 
 import argparse
 import os

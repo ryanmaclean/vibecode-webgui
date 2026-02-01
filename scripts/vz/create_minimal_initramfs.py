@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+
+"""Create ultra-minimal initramfs for ASIF test VM.
+
+Size target: <5MB
+Contains: busybox + minimal init script
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,14 +18,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Create ultra-minimal initramfs for ASIF test VM.
-
-Size target: <5MB
-Contains: busybox + minimal init script
-"""
-
-from __future__ import annotations
 
 import gzip
 import os

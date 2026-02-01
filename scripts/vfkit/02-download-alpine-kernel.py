@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Download Alpine Linux ARM64 kernel and initramfs for vfkit.
+
+Uses Alpine virt variant optimized for virtualization.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Download Alpine Linux ARM64 kernel and initramfs for vfkit.
-
-Uses Alpine virt variant optimized for virtualization.
-"""
-
-from __future__ import annotations
 
 import gzip
 import os

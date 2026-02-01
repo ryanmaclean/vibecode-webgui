@@ -1,4 +1,8 @@
 
+
+"""Python translation of the Datadog API validation shell script."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Python translation of the Datadog API validation shell script."""
-
-from __future__ import annotations
 
 import os
 

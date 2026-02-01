@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Run vm-manager health checks."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Run vm-manager health checks."""
-
-from __future__ import annotations
 
 import sys
 from pathlib import Path

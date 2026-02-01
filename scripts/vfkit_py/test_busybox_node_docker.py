@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Test BusyBox + Node.js Docker image."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Test BusyBox + Node.js Docker image."""
-
-from __future__ import annotations
 
 import argparse
 import shutil

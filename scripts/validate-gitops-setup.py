@@ -1,5 +1,14 @@
 #!/usr/bin/env python3
 
+
+"""Validation utility for the VibeCode GitOps stack.
+
+This Python port replaces the legacy Bash script and offers the same
+observability while remaining testable. The module can be imported for unit
+testing or executed directly as a CLI tool.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,15 +19,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Validation utility for the VibeCode GitOps stack.
-
-This Python port replaces the legacy Bash script and offers the same
-observability while remaining testable. The module can be imported for unit
-testing or executed directly as a CLI tool.
-"""
-
-from __future__ import annotations
 
 import os
 import subprocess

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Test PostgreSQL VM - Comprehensive database connectivity and feature tests.
+
+Tests: Connection, Queries, pgvector (if available), Performance.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Test PostgreSQL VM - Comprehensive database connectivity and feature tests.
-
-Tests: Connection, Queries, pgvector (if available), Performance.
-"""
-
-from __future__ import annotations
 
 import argparse
 import os

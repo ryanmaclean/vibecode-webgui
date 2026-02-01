@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Verify Helm releases using the shared binary verification helper."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Verify Helm releases using the shared binary verification helper."""
-from __future__ import annotations
 
 import argparse
 import os

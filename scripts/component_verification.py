@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Component Verification Script.
+
+Verifies every component of the KIND/K8s install has a proper test.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Component Verification Script.
-
-Verifies every component of the KIND/K8s install has a proper test.
-"""
-
-from __future__ import annotations
 
 import os
 import subprocess

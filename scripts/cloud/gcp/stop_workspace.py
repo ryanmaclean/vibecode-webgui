@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Stop a running GCP code-server workspace VM.
+
+Optionally deletes the instance but keeps the persistent disk.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Stop a running GCP code-server workspace VM.
-
-Optionally deletes the instance but keeps the persistent disk.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

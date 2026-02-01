@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Launch Alpine Linux ARM64 VM with vfkit.
+
+Boots the VM with kernel, initramfs, and networking.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Launch Alpine Linux ARM64 VM with vfkit.
-
-Boots the VM with kernel, initramfs, and networking.
-"""
-
-from __future__ import annotations
 
 import atexit
 import os

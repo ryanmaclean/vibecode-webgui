@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Basic Performance Test.
+
+Simple test that proves performance improvements between VM configurations.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Basic Performance Test.
-
-Simple test that proves performance improvements between VM configurations.
-"""
-
-from __future__ import annotations
 
 import os
 import signal

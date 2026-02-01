@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Comprehensive VM Testing Script - Tests all VMs and creates a detailed report."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Comprehensive VM Testing Script - Tests all VMs and creates a detailed report."""
-
-from __future__ import annotations
 
 import argparse
 import os

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Create Alpine Linux ARM64 rootfs for VibeCode.
+
+Includes Node.js and custom init script for virtiofs mounting.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Create Alpine Linux ARM64 rootfs for VibeCode.
-
-Includes Node.js and custom init script for virtiofs mounting.
-"""
-
-from __future__ import annotations
 
 import shutil
 import subprocess

@@ -1,4 +1,8 @@
 
+
+"""Tests for uninstall.py."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for uninstall.py."""
-
-from __future__ import annotations
 
 from pathlib import Path
 from unittest import mock

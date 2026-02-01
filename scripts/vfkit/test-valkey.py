@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Python replacement for scripts/vfkit/test-valkey.sh."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Python replacement for scripts/vfkit/test-valkey.sh."""
-
-from __future__ import annotations
 
 import sys
 from pathlib import Path

@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Vibecode WebGUI - Cleanup helper.
+
+Removes local build artifacts and optionally environment files.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Vibecode WebGUI - Cleanup helper.
-
-Removes local build artifacts and optionally environment files.
-"""
-
-from __future__ import annotations
 
 import argparse
 import os

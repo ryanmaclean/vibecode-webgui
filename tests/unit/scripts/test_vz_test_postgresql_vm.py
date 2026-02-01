@@ -1,4 +1,8 @@
 
+
+"""Tests for scripts/vz/test_postgresql_vm.py"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for scripts/vz/test_postgresql_vm.py"""
-
-from __future__ import annotations
 
 import sys
 from pathlib import Path

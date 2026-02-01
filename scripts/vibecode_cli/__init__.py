@@ -1,4 +1,8 @@
 
+
+"""Vibecode CLI utilities for local development environment management."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Vibecode CLI utilities for local development environment management."""
-
-from __future__ import annotations
 
 import os
 import shutil

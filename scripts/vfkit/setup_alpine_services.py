@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+
+"""Setup script to run INSIDE the Alpine VM.
+
+This installs Valkey, PostgreSQL+pgvector, and tests Node 24.
+Usage: Run this script inside the Alpine VM after boot.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,14 +18,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Setup script to run INSIDE the Alpine VM.
-
-This installs Valkey, PostgreSQL+pgvector, and tests Node 24.
-Usage: Run this script inside the Alpine VM after boot.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

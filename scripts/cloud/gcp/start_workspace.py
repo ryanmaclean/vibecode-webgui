@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Start (or create) a preemptible GCP VM that runs code-server with a persistent PD.
+
+Prerequisites: gcloud CLI authenticated, project set, docker image pushed to Artifact Registry.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Start (or create) a preemptible GCP VM that runs code-server with a persistent PD.
-
-Prerequisites: gcloud CLI authenticated, project set, docker image pushed to Artifact Registry.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Unit tests for scripts/cloud/aws/stop_workspace.py."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Unit tests for scripts/cloud/aws/stop_workspace.py."""
-
-from __future__ import annotations
 
 import subprocess
 import sys

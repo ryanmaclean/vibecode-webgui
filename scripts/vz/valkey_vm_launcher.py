@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Valkey VM Launcher - Using Swift with proper entitlements.
+
+This compiles and runs the Swift code with virtualization entitlements.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Valkey VM Launcher - Using Swift with proper entitlements.
-
-This compiles and runs the Swift code with virtualization entitlements.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

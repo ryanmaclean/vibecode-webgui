@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Secure binary download helper with checksum and signature verification."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Secure binary download helper with checksum and signature verification."""
-from __future__ import annotations
 
 import argparse
 import hashlib

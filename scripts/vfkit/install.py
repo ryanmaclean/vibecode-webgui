@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+
+"""VibeCode Fun Demo VM - One-Liner Installer.
+
+Usage: python3 scripts/vfkit/install.py
+Or:    curl -fsSL URL | python3
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,14 +18,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""VibeCode Fun Demo VM - One-Liner Installer.
-
-Usage: python3 scripts/vfkit/install.py
-Or:    curl -fsSL URL | python3
-"""
-
-from __future__ import annotations
 
 import gzip
 import os

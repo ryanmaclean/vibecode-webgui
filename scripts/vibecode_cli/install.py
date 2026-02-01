@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Vibecode WebGUI - Local installation helper.
+
+Bootstraps development prerequisites, env files, and optional setup routines.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Vibecode WebGUI - Local installation helper.
-
-Bootstraps development prerequisites, env files, and optional setup routines.
-"""
-
-from __future__ import annotations
 
 import argparse
 import os

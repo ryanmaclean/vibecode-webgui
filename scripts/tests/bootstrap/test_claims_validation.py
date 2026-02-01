@@ -1,4 +1,8 @@
 
+
+"""pytest conversion of test-claims-validation.sh."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""pytest conversion of test-claims-validation.sh."""
-
-from __future__ import annotations
 
 from pathlib import Path
 from typing import Callable, Dict

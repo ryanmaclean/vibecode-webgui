@@ -1,4 +1,8 @@
 
+
+"""Converts test-bootstrap-final.sh into pytest checks."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Converts test-bootstrap-final.sh into pytest checks."""
-
-from __future__ import annotations
 
 import os
 from pathlib import Path

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Start all 4 VMs in sequence with proper delays."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Start all 4 VMs in sequence with proper delays."""
-
-from __future__ import annotations
 
 import subprocess
 import sys

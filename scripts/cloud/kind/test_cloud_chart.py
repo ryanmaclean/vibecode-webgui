@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Test the code-server Helm chart in a Kind cluster."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Test the code-server Helm chart in a Kind cluster."""
-
-from __future__ import annotations
 
 import os
 import shutil

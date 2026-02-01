@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Verify VM services are running and accessible."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Verify VM services are running and accessible."""
-
-from __future__ import annotations
 
 import socket
 import subprocess

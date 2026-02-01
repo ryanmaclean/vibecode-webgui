@@ -1,4 +1,8 @@
 
+
+"""Tests for 07-create-persistent-vm.py functionality."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for 07-create-persistent-vm.py functionality."""
-
-from __future__ import annotations
 
 import subprocess
 import sys

@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Migrate secrets from .env files into the macOS Keychain."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Migrate secrets from .env files into the macOS Keychain."""
-from __future__ import annotations
 
 import argparse
 import os

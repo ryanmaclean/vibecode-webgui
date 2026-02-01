@@ -1,4 +1,8 @@
 
+
+"""Shared helpers for Python-based system tests previously implemented as shell scripts."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Shared helpers for Python-based system tests previously implemented as shell scripts."""
-
-from __future__ import annotations
 
 import datetime as _dt
 import importlib.util

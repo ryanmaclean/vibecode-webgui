@@ -1,4 +1,8 @@
 
+
+"""Python equivalent of fast-openvscode-handshake.sh implemented as a pytest."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Python equivalent of fast-openvscode-handshake.sh implemented as a pytest."""
-
-from __future__ import annotations
 
 import datetime as dt
 import os

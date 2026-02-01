@@ -397,3 +397,4 @@ vibecode_webgui/
 
 # Event logs
 .events.jsonl
+.specstory/

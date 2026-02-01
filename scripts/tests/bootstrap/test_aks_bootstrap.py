@@ -1,4 +1,8 @@
 
+
+"""Pytest version of test-aks-bootstrap.sh."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Pytest version of test-aks-bootstrap.sh."""
-
-from __future__ import annotations
 
 import os
 

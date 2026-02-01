@@ -1,4 +1,8 @@
 
+
+"""Tests for 02-download-alpine-kernel.py functionality."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for 02-download-alpine-kernel.py functionality."""
-
-from __future__ import annotations
 
 import gzip
 import subprocess

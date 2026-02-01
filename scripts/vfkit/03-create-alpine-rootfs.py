@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Create Alpine Linux ARM64 rootfs with musl compatibility.
+
+Includes Node.js, AI tools, and code-server.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Create Alpine Linux ARM64 rootfs with musl compatibility.
-
-Includes Node.js, AI tools, and code-server.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

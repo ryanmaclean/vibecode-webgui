@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Verification script for PostgreSQL VM.
+
+Run this after the VM has started to verify PostgreSQL and pgvector.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Verification script for PostgreSQL VM.
-
-Run this after the VM has started to verify PostgreSQL and pgvector.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

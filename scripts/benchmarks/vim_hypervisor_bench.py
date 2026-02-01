@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Compare Vim launch latency across native and Lima-based hypervisors."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Compare Vim launch latency across native and Lima-based hypervisors."""
-from __future__ import annotations
 
 import argparse
 import json

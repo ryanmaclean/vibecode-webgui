@@ -1,4 +1,8 @@
 
+
+"""Pytest version of the DBM-APM API validation shell script."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Pytest version of the DBM-APM API validation shell script."""
-
-from __future__ import annotations
 
 from dataclasses import dataclass
 from typing import List, Mapping, Optional

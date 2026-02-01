@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Setup complete vfkit demo environment with Alpine ARM64 VMs.
+
+Components: code-server, PostgreSQL, Redis, nginx
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Setup complete vfkit demo environment with Alpine ARM64 VMs.
-
-Components: code-server, PostgreSQL, Redis, nginx
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

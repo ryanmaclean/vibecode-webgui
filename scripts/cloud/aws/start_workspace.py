@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Start (or create) an AWS EC2 Spot instance for code-server with an attached EBS volume.
+
+Requires aws CLI configured with appropriate IAM permissions.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Start (or create) an AWS EC2 Spot instance for code-server with an attached EBS volume.
-
-Requires aws CLI configured with appropriate IAM permissions.
-"""
-
-from __future__ import annotations
 
 import os
 import shutil

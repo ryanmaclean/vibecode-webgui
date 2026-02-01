@@ -1,4 +1,8 @@
 
+
+"""Tests for the Python replacement of scripts/start-dev.sh."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for the Python replacement of scripts/start-dev.sh."""
-
-from __future__ import annotations
 
 import os
 import subprocess

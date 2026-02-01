@@ -1,4 +1,8 @@
 
+
+"""Pytest port of the minimal Azure deployment validation script."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Pytest port of the minimal Azure deployment validation script."""
-
-from __future__ import annotations
 
 import os
 import uuid

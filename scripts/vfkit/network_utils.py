@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Network utilities for Alpine VM setup.
+
+Includes fast downloads with aria2c and DNS testing.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Network utilities for Alpine VM setup.
-
-Includes fast downloads with aria2c and DNS testing.
-"""
-
-from __future__ import annotations
 
 import shutil
 import subprocess

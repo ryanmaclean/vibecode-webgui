@@ -1,4 +1,7 @@
 
+
+"""Shared DogStatsD helpers for benchmark scripts."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,9 +12,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Shared DogStatsD helpers for benchmark scripts."""
-from __future__ import annotations
 
 import socket
 from typing import Iterable

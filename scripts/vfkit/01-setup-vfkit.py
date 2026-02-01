@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Setup and verify vfkit for Alpine ARM64 VMs.
+
+This script installs vfkit and prepares the environment.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Setup and verify vfkit for Alpine ARM64 VMs.
-
-This script installs vfkit and prepares the environment.
-"""
-
-from __future__ import annotations
 
 import os
 import platform

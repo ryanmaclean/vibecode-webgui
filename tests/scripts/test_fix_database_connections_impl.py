@@ -1,4 +1,8 @@
 
+
+"""Tests for the fix_database_connections_impl module."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for the fix_database_connections_impl module."""
-
-from __future__ import annotations
 
 import sys
 import types

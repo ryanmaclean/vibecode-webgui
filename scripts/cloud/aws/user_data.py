@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""EC2 user-data script for bootstrapping code-server instance.
+
+This script runs on EC2 instance startup to install Docker and launch code-server.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""EC2 user-data script for bootstrapping code-server instance.
-
-This script runs on EC2 instance startup to install Docker and launch code-server.
-"""
-
-from __future__ import annotations
 
 import os
 import subprocess

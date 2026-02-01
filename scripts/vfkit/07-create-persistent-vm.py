@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Create a persistent Alpine installation on disk for VibeCode.
+
+This allows full package installation and proper virtiofs support.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Create a persistent Alpine installation on disk for VibeCode.
-
-This allows full package installation and proper virtiofs support.
-"""
-
-from __future__ import annotations
 
 import shutil
 import subprocess

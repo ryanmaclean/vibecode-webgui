@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Vibecode WebGUI configuration validator.
+
+Ensures environment files and integrations are ready for local development.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Vibecode WebGUI configuration validator.
-
-Ensures environment files and integrations are ready for local development.
-"""
-
-from __future__ import annotations
 
 import os
 import subprocess

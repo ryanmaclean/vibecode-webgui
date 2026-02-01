@@ -1,4 +1,8 @@
 
+
+"""Pytest alternative to test-updated-bootstrap.sh."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Pytest alternative to test-updated-bootstrap.sh."""
-
-from __future__ import annotations
 
 import importlib.util
 

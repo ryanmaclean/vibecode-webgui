@@ -1,4 +1,8 @@
 
+
+"""Tests for 04-launch-alpine-vm.py functionality."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Tests for 04-launch-alpine-vm.py functionality."""
-
-from __future__ import annotations
 
 import os
 import subprocess

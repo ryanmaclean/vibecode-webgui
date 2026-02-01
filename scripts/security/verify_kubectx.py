@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Verify kubectx archives via the shared verification helper."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Verify kubectx archives via the shared verification helper."""
-from __future__ import annotations
 
 import argparse
 import os

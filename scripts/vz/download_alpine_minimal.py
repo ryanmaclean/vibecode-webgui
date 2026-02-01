@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+
+"""Download minimal Alpine Linux kernel for ASIF test VM.
+
+Downloads ONLY vmlinuz-virt (~8-10MB) - no ISO kept.
+For ultra-low disk space environments (<100MB free).
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,14 +18,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Download minimal Alpine Linux kernel for ASIF test VM.
-
-Downloads ONLY vmlinuz-virt (~8-10MB) - no ISO kept.
-For ultra-low disk space environments (<100MB free).
-"""
-
-from __future__ import annotations
 
 import re
 import shutil

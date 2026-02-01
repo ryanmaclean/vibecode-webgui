@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Migrate vector database adapters to standardized error handling.
+
+This script updates all vector database adapters to use the new VectorDbErrorHandler class.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Migrate vector database adapters to standardized error handling.
-
-This script updates all vector database adapters to use the new VectorDbErrorHandler class.
-"""
-
-from __future__ import annotations
 
 import re
 import shutil

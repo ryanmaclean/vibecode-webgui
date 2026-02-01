@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""Test Node.js Development VM - Verify dev environment and tooling.
+
+Tests: Node version, npm, package installation, TypeScript, debugging.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Test Node.js Development VM - Verify dev environment and tooling.
-
-Tests: Node version, npm, package installation, TypeScript, debugging.
-"""
-
-from __future__ import annotations
 
 import argparse
 import json

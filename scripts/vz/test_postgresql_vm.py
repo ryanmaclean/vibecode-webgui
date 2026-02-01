@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""Test script for PostgreSQL VM using Virtualization framework."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Test script for PostgreSQL VM using Virtualization framework."""
-
-from __future__ import annotations
 
 import os
 import shutil

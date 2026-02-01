@@ -1,4 +1,8 @@
 
+
+"""Python port of bootstrap-env.sh for pytest-based system tests."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,10 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Python port of bootstrap-env.sh for pytest-based system tests."""
-
-from __future__ import annotations
 
 import sys
 from pathlib import Path

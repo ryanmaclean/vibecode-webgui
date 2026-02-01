@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+
+"""CLI wrapper for the database connection fix utility."""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,10 +14,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""CLI wrapper for the database connection fix utility."""
-
-from __future__ import annotations
 
 import sys
 from pathlib import Path

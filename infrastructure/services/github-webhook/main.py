@@ -1,5 +1,12 @@
 #!/usr/bin/env python3
 
+
+"""GitHub Webhook Service for Gas Town.
+
+Receives GitHub webhooks and routes actions into bd/gt.
+"""
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,13 +17,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""GitHub Webhook Service for Gas Town.
-
-Receives GitHub webhooks and routes actions into bd/gt.
-"""
-
-from __future__ import annotations
 
 import hashlib
 import hmac

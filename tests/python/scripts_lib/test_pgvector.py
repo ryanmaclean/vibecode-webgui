@@ -1,4 +1,6 @@
 
+
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,8 +11,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-from __future__ import annotations
 
 import subprocess
 

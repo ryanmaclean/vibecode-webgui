@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+
+"""Validate GitHub branch protection rules via the gh CLI."""
+from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -10,9 +13,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-"""Validate GitHub branch protection rules via the gh CLI."""
-from __future__ import annotations
 
 import argparse
 import json
