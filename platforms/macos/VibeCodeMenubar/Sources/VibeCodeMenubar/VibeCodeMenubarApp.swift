@@ -29,6 +29,7 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Start VM", action: #selector(startVM), keyEquivalent: "s")
         menu.addItem(withTitle: "Stop VM", action: #selector(stopVM), keyEquivalent: ".")
+        menu.addItem(withTitle: "Open Console", action: #selector(openConsole), keyEquivalent: "c")
         menu.addItem(withTitle: "Open Dashboard", action: #selector(openDashboard), keyEquivalent: "o")
         menu.addItem(NSMenuItem.separator())
         menu.addItem(withTitle: "Quit", action: #selector(quit), keyEquivalent: "q")
@@ -88,6 +89,26 @@ class AppDelegate: NSObject, NSApplicationDelegate {
         runCommand(["stop"])
         if let button = statusItem.button {
             button.image = NSImage(systemSymbolName: "desktopcomputer", accessibilityDescription: "Stopped")
+        }
+    }
+    
+    @objc func openConsole() {
+        let logPath = FileManager.default.homeDirectoryForCurrentUser
+            .appendingPathComponent("VibeCode/VMs/default/console.log").path
+        
+        let scriptSource = """
+        tell application "Terminal"
+            activate
+            do script "tail -f \(logPath)"
+        end tell
+        """
+        
+        if let script = NSAppleScript(source: scriptSource) {
+            var error: NSDictionary?
+            script.executeAndReturnError(&error)
+            if let error = error {
+                print("AppleScript error: \(error)")
+            }
         }
     }
     
