@@ -8,14 +8,16 @@ Azure CLI so it can run from developer laptops or CI without extra SDKs.
 """
 
 
+from __future__ import annotations
+
 # Datadog APM tracing
 try:
-    import ddtrace
-    ddtrace.patch_all()
+    from ddtrace import tracer, patch_all
+    patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
+    pass  # ddtrace not installed
 
+<<<<<<< HEAD
 from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
@@ -27,6 +29,8 @@ try:
 except ImportError:
     pass
 # ------------------------
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import os
@@ -62,6 +66,7 @@ def run(cmd: list[str], *, dry_run: bool = False, env: Dict[str, str] | None = N
         print(f"[DRY-RUN] {printable}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
+<<<<<<< HEAD
     try:
         return subprocess.run(  # noqa: S603
             cmd,
@@ -269,3 +274,5 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

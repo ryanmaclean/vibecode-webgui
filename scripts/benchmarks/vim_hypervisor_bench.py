@@ -14,6 +14,13 @@ except ImportError:
     pass
 # ------------------------
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 import argparse
 import json
 import statistics
@@ -110,15 +117,6 @@ def run(cmd: List[str]) -> subprocess.CompletedProcess:
 
 def ensure_lima_instance(name: str) -> None:
   """Ensure the Lima instance is running."""
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
-
   status = run(["limactl", "list", "--json"])
   if status.returncode != 0:
     print(status.stderr, file=sys.stderr)

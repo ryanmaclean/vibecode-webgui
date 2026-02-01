@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 
+<<<<<<< HEAD
 
 
 # Datadog APM tracing
@@ -10,6 +11,8 @@ except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 """Measure vi launch latency inside qemu-based guests (OpenWrt, Yocto, etc.)."""
 from __future__ import annotations
 # -- VibeCode Telemetry --
@@ -22,6 +25,14 @@ try:
 except ImportError:
     pass
 # ------------------------
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 
 import argparse
 import json
@@ -65,6 +76,7 @@ def run_target(target: QemuTarget, runs: int) -> dict:
     child = pexpect.spawn(target.command[0], target.command[1:], encoding='utf-8', timeout=target.timeout)
     child.delaybeforesend = 0.05
     start_total = time.perf_counter()
+<<<<<<< HEAD
     try:
       if target.pre_login_prompt:
         child.expect(target.pre_login_prompt, timeout=target.timeout)
@@ -205,3 +217,5 @@ def main() -> int:
 
 if __name__ == '__main__':
   raise SystemExit(main())
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

@@ -39,6 +39,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
+    this.errorHandler = new VectorDbErrorHandler('postgres', this.config.enableLogging || false, this.config.enableMetrics || false);
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -148,7 +149,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
           { extensionName: 'vector' }
         );
       }
-      throw error;
+      throw this.errorHandler.handleError(error, 'verifyPgVectorExtension', undefined, this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error));
     }
   }
 
@@ -252,7 +253,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         );
       }
       
-      throw error;
+      throw this.errorHandler.handleError(error, 'unknown', undefined, this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error));
     }
   }
 
@@ -609,6 +610,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       },
       similarity: item.similarity
     }));
+  private errorHandler: VectorDbErrorHandler;
   }
 
   /**

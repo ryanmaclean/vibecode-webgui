@@ -1,3 +1,4 @@
+<<<<<<< HEAD
 
 # -- VibeCode Telemetry --
 import sys
@@ -39,3 +40,14 @@ __all__ = [
     "audit",
     "scan",
 ]
+=======
+"""Python implementations of VibeCode security scripts."""
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
