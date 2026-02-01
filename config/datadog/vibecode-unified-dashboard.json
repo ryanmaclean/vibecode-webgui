@@ -1,0 +1,546 @@
+{
+  "title": "VibeCode Unified Operations Dashboard",
+  "description": "Comprehensive monitoring dashboard with Logging, Tracing, Profiling, APM, and DEM integrations",
+  "layout_type": "ordered",
+  "template_variables": [
+    {"name": "env", "default": "*", "prefix": "env"},
+    {"name": "service", "default": "*", "prefix": "service"},
+    {"name": "host", "default": "*", "prefix": "host"},
+    {"name": "rig", "default": "*", "prefix": "rig"}
+  ],
+  "widgets": [
+    {
+      "id": "header-overview",
+      "definition": {
+        "type": "note",
+        "content": "## Infrastructure & System Health",
+        "background_color": "blue",
+        "font_size": "18",
+        "text_align": "left",
+        "vertical_align": "center"
+      }
+    },
+    {
+      "id": "cpu-usage",
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Usage",
+        "requests": [
+          {"q": "avg:system.cpu.user{$host} by {host}", "display_type": "line"},
+          {"q": "avg:system.cpu.system{$host} by {host}", "display_type": "line"}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "memory-usage",
+      "definition": {
+        "type": "timeseries",
+        "title": "Memory Usage",
+        "requests": [
+          {"q": "avg:system.mem.used{$host} by {host}", "display_type": "area"},
+          {"q": "avg:system.mem.total{$host} by {host}", "display_type": "line", "style": {"line_type": "dashed"}}
+        ]
+      }
+    },
+    {
+      "id": "disk-io",
+      "definition": {
+        "type": "timeseries",
+        "title": "Disk I/O",
+        "requests": [
+          {"q": "avg:system.disk.read_time{$host}", "display_type": "line"},
+          {"q": "avg:system.disk.write_time{$host}", "display_type": "line"}
+        ]
+      }
+    },
+    {
+      "id": "network-traffic",
+      "definition": {
+        "type": "timeseries",
+        "title": "Network Traffic",
+        "requests": [
+          {"q": "avg:system.net.bytes_rcvd{$host} by {host}", "display_type": "line"},
+          {"q": "avg:system.net.bytes_sent{$host} by {host}", "display_type": "line"}
+        ]
+      }
+    },
+    {
+      "id": "header-apm",
+      "definition": {
+        "type": "note",
+        "content": "## APM & Application Performance",
+        "background_color": "purple",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "apm-service-latency",
+      "definition": {
+        "type": "timeseries",
+        "title": "Service Latency (p50, p95, p99)",
+        "requests": [
+          {"q": "avg:trace.http.request.duration.by.service.50p{$service,$env}", "display_type": "line"},
+          {"q": "avg:trace.http.request.duration.by.service.95p{$service,$env}", "display_type": "line"},
+          {"q": "avg:trace.http.request.duration.by.service.99p{$service,$env}", "display_type": "line", "style": {"line_type": "dashed"}}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "apm-request-rate",
+      "definition": {
+        "type": "timeseries",
+        "title": "Request Rate (hits/sec)",
+        "requests": [
+          {"q": "sum:trace.http.request.hits{$service,$env} by {service}.as_rate()", "display_type": "bars"}
+        ]
+      }
+    },
+    {
+      "id": "apm-error-rate",
+      "definition": {
+        "type": "query_value",
+        "title": "Error Rate",
+        "requests": [
+          {"q": "(sum:trace.http.request.errors{$service,$env}.as_count() / sum:trace.http.request.hits{$service,$env}.as_count()) * 100", "aggregator": "avg"}
+        ],
+        "custom_unit": "%",
+        "precision": 2,
+        "conditional_formats": [
+          {"comparator": "<", "value": 1, "palette": "green_on_white"},
+          {"comparator": ">=", "value": 1, "palette": "yellow_on_white"},
+          {"comparator": ">=", "value": 5, "palette": "red_on_white"}
+        ]
+      }
+    },
+    {
+      "id": "apm-top-endpoints",
+      "definition": {
+        "type": "toplist",
+        "title": "Top Endpoints by Latency",
+        "requests": [
+          {"q": "top(avg:trace.http.request.duration.by.resource_service{$service,$env} by {resource_name}, 10, 'mean', 'desc')"}
+        ]
+      }
+    },
+    {
+      "id": "header-tracing",
+      "definition": {
+        "type": "note",
+        "content": "## Distributed Tracing",
+        "background_color": "orange",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "trace-span-count",
+      "definition": {
+        "type": "timeseries",
+        "title": "Span Count by Service",
+        "requests": [
+          {"q": "sum:trace.span.count{$service,$env} by {service}.as_rate()", "display_type": "area"}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "trace-error-spans",
+      "definition": {
+        "type": "timeseries",
+        "title": "Error Spans",
+        "requests": [
+          {"q": "sum:trace.http.request.errors{$service,$env} by {service}.as_count()", "display_type": "bars", "style": {"palette": "warm"}}
+        ]
+      }
+    },
+    {
+      "id": "trace-latency-distribution",
+      "definition": {
+        "type": "heatmap",
+        "title": "Trace Latency Distribution",
+        "requests": [
+          {"q": "avg:trace.http.request.duration{$service,$env}"}
+        ]
+      }
+    },
+    {
+      "id": "header-logging",
+      "definition": {
+        "type": "note",
+        "content": "## Logging & Log Analytics",
+        "background_color": "green",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "log-volume",
+      "definition": {
+        "type": "timeseries",
+        "title": "Log Volume by Status",
+        "requests": [
+          {"q": "sum:logs.ingested.count{$service,$env,status:error}.as_count()", "display_type": "bars", "style": {"palette": "warm"}},
+          {"q": "sum:logs.ingested.count{$service,$env,status:warn}.as_count()", "display_type": "bars", "style": {"palette": "orange"}},
+          {"q": "sum:logs.ingested.count{$service,$env,status:info}.as_count()", "display_type": "bars", "style": {"palette": "cool"}}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "log-error-rate",
+      "definition": {
+        "type": "query_value",
+        "title": "Error Log Rate",
+        "requests": [
+          {"q": "sum:logs.ingested.count{$service,$env,status:error}.as_count()", "aggregator": "sum"}
+        ],
+        "conditional_formats": [
+          {"comparator": "<", "value": 10, "palette": "green_on_white"},
+          {"comparator": ">=", "value": 10, "palette": "yellow_on_white"},
+          {"comparator": ">=", "value": 100, "palette": "red_on_white"}
+        ]
+      }
+    },
+    {
+      "id": "log-patterns",
+      "definition": {
+        "type": "toplist",
+        "title": "Top Error Patterns",
+        "requests": [
+          {"q": "top(sum:logs.ingested.count{$service,$env,status:error} by {pattern}, 10, 'sum', 'desc')"}
+        ]
+      }
+    },
+    {
+      "id": "log-stream",
+      "definition": {
+        "type": "log_stream",
+        "title": "Recent Error Logs",
+        "query": "status:error service:$service.value env:$env.value",
+        "columns": ["timestamp", "service", "message"],
+        "indexes": ["*"],
+        "message_display": "expanded-md"
+      }
+    },
+    {
+      "id": "header-profiling",
+      "definition": {
+        "type": "note",
+        "content": "## Continuous Profiling",
+        "background_color": "pink",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "profiling-cpu",
+      "definition": {
+        "type": "timeseries",
+        "title": "CPU Time by Function",
+        "requests": [
+          {"q": "avg:profiling.cpu.time{$service,$env} by {function}.as_rate()", "display_type": "area"}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "profiling-memory",
+      "definition": {
+        "type": "timeseries",
+        "title": "Memory Allocation by Function",
+        "requests": [
+          {"q": "avg:profiling.memory.alloc_space{$service,$env} by {function}.as_rate()", "display_type": "area"}
+        ]
+      }
+    },
+    {
+      "id": "profiling-top-functions",
+      "definition": {
+        "type": "toplist",
+        "title": "Top CPU-Consuming Functions",
+        "requests": [
+          {"q": "top(avg:profiling.cpu.time{$service,$env} by {function}, 10, 'mean', 'desc')"}
+        ]
+      }
+    },
+    {
+      "id": "header-rum",
+      "definition": {
+        "type": "note",
+        "content": "## Real User Monitoring (DEM)",
+        "background_color": "yellow",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "rum-page-load",
+      "definition": {
+        "type": "timeseries",
+        "title": "Page Load Time (LCP)",
+        "requests": [
+          {"q": "avg:rum.performance.largest_contentful_paint{$env} by {view.name}", "display_type": "line"},
+          {"q": "p95:rum.performance.largest_contentful_paint{$env} by {view.name}", "display_type": "line", "style": {"line_type": "dashed"}}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "rum-core-web-vitals",
+      "definition": {
+        "type": "group",
+        "title": "Core Web Vitals",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "LCP (p75)",
+              "requests": [{"q": "p75:rum.performance.largest_contentful_paint{$env}", "aggregator": "avg"}],
+              "custom_unit": "ms",
+              "conditional_formats": [
+                {"comparator": "<=", "value": 2500, "palette": "green_on_white"},
+                {"comparator": ">", "value": 2500, "palette": "yellow_on_white"},
+                {"comparator": ">", "value": 4000, "palette": "red_on_white"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "FID (p75)",
+              "requests": [{"q": "p75:rum.performance.first_input_delay{$env}", "aggregator": "avg"}],
+              "custom_unit": "ms",
+              "conditional_formats": [
+                {"comparator": "<=", "value": 100, "palette": "green_on_white"},
+                {"comparator": ">", "value": 100, "palette": "yellow_on_white"},
+                {"comparator": ">", "value": 300, "palette": "red_on_white"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "type": "query_value",
+              "title": "CLS (p75)",
+              "requests": [{"q": "p75:rum.performance.cumulative_layout_shift{$env}", "aggregator": "avg"}],
+              "conditional_formats": [
+                {"comparator": "<=", "value": 0.1, "palette": "green_on_white"},
+                {"comparator": ">", "value": 0.1, "palette": "yellow_on_white"},
+                {"comparator": ">", "value": 0.25, "palette": "red_on_white"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": "rum-sessions",
+      "definition": {
+        "type": "timeseries",
+        "title": "Active User Sessions",
+        "requests": [
+          {"q": "sum:rum.session.count{$env}.as_count()", "display_type": "area"}
+        ]
+      }
+    },
+    {
+      "id": "rum-errors",
+      "definition": {
+        "type": "timeseries",
+        "title": "Frontend Errors",
+        "requests": [
+          {"q": "sum:rum.error.count{$env} by {error.type}.as_count()", "display_type": "bars", "style": {"palette": "warm"}}
+        ]
+      }
+    },
+    {
+      "id": "rum-geo-distribution",
+      "definition": {
+        "type": "geomap",
+        "title": "Users by Geography",
+        "requests": [
+          {"q": "sum:rum.session.count{$env} by {geo.country}"}
+        ],
+        "style": {"palette": "dog_classic"}
+      }
+    },
+    {
+      "id": "header-synthetics",
+      "definition": {
+        "type": "note",
+        "content": "## Synthetic Monitoring",
+        "background_color": "gray",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "synthetics-uptime",
+      "definition": {
+        "type": "query_value",
+        "title": "Overall Uptime",
+        "requests": [
+          {"q": "avg:synthetics.http.response.success{$env} * 100", "aggregator": "avg"}
+        ],
+        "custom_unit": "%",
+        "precision": 2,
+        "conditional_formats": [
+          {"comparator": ">=", "value": 99.9, "palette": "green_on_white"},
+          {"comparator": ">=", "value": 99, "palette": "yellow_on_white"},
+          {"comparator": "<", "value": 99, "palette": "red_on_white"}
+        ]
+      }
+    },
+    {
+      "id": "synthetics-response-time",
+      "definition": {
+        "type": "timeseries",
+        "title": "Synthetic Test Response Times",
+        "requests": [
+          {"q": "avg:synthetics.http.response.time{$env} by {check_name}", "display_type": "line"}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "header-llm",
+      "definition": {
+        "type": "note",
+        "content": "## LLM & AI Observability",
+        "background_color": "vivid_purple",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "llm-latency",
+      "definition": {
+        "type": "timeseries",
+        "title": "LLM Request Latency",
+        "requests": [
+          {"q": "avg:llm.workflow.duration{$service,$env} by {llm.name}", "display_type": "line"},
+          {"q": "p95:llm.workflow.duration{$service,$env} by {llm.name}", "display_type": "line", "style": {"line_type": "dashed"}}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "llm-token-usage",
+      "definition": {
+        "type": "timeseries",
+        "title": "Token Usage",
+        "requests": [
+          {"q": "sum:llm.tokens.input{$service,$env}.as_rate()", "display_type": "bars"},
+          {"q": "sum:llm.tokens.output{$service,$env}.as_rate()", "display_type": "bars"}
+        ]
+      }
+    },
+    {
+      "id": "llm-cost",
+      "definition": {
+        "type": "query_value",
+        "title": "LLM Cost (Last Hour)",
+        "requests": [
+          {"q": "sum:llm.cost.usd{$service,$env}", "aggregator": "sum"}
+        ],
+        "custom_unit": "$",
+        "precision": 2
+      }
+    },
+    {
+      "id": "header-gastown",
+      "definition": {
+        "type": "note",
+        "content": "## Gas Town Orchestration",
+        "background_color": "vivid_blue",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "gastown-active-polecats",
+      "definition": {
+        "type": "query_value",
+        "title": "Active Polecats",
+        "requests": [
+          {"q": "sum:gastown.polecats.active{$rig}", "aggregator": "last"}
+        ],
+        "precision": 0
+      }
+    },
+    {
+      "id": "gastown-polecat-lifecycle",
+      "definition": {
+        "type": "timeseries",
+        "title": "Polecat Lifecycle",
+        "requests": [
+          {"q": "sum:gastown.polecats.spawned{$rig}.as_count()", "display_type": "bars", "style": {"palette": "purple"}},
+          {"q": "sum:gastown.polecats.completed{$rig}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+          {"q": "sum:gastown.polecats.failed{$rig}.as_count()", "display_type": "bars", "style": {"palette": "warm"}}
+        ],
+        "show_legend": true
+      }
+    },
+    {
+      "id": "gastown-work-queue",
+      "definition": {
+        "type": "timeseries",
+        "title": "Work Queue Depth",
+        "requests": [
+          {"q": "avg:gastown.beads.pending{$rig} by {priority}", "display_type": "area"}
+        ]
+      }
+    },
+    {
+      "id": "header-vm",
+      "definition": {
+        "type": "note",
+        "content": "## VM Operations",
+        "background_color": "vivid_green",
+        "font_size": "18",
+        "text_align": "left"
+      }
+    },
+    {
+      "id": "vm-success-rate",
+      "definition": {
+        "type": "query_value",
+        "title": "VM Start Success Rate",
+        "requests": [
+          {"q": "(sum:vibecode.vm.start.success{*}.as_count() / sum:vibecode.vm.start.attempt{*}.as_count()) * 100", "aggregator": "avg"}
+        ],
+        "custom_unit": "%",
+        "precision": 2,
+        "conditional_formats": [
+          {"comparator": ">=", "value": 99, "palette": "green_on_white"},
+          {"comparator": ">=", "value": 95, "palette": "yellow_on_white"},
+          {"comparator": "<", "value": 95, "palette": "red_on_white"}
+        ]
+      }
+    },
+    {
+      "id": "vm-boot-time",
+      "definition": {
+        "type": "timeseries",
+        "title": "VM Boot Duration",
+        "requests": [
+          {"q": "avg:vibecode.vm.start.duration{*}", "display_type": "line"},
+          {"q": "p95:vibecode.vm.start.duration{*}", "display_type": "line", "style": {"line_type": "dashed"}}
+        ]
+      }
+    },
+    {
+      "id": "vm-running-count",
+      "definition": {
+        "type": "timeseries",
+        "title": "Running VMs",
+        "requests": [
+          {"q": "max:vibecode.vm.running.count{*} by {vm_name}", "display_type": "area"}
+        ]
+      }
+    }
+  ]
+}
