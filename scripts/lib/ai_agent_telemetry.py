@@ -363,6 +363,307 @@ class AIAgentTelemetry:
         self._send_metric("routing.decision", 1, "count", tags)
 
 
+# ============================================================
+# GAS TOWN DISTRIBUTED TRACING
+# Bead lifecycle as parent trace with child spans for all operations
+# ============================================================
+
+class BeadTraceContext:
+    """Holds trace context for a bead's lifecycle"""
+    def __init__(self, bead_id: str, trace_id: Optional[str] = None,
+                 span_id: Optional[str] = None):
+        self.bead_id = bead_id
+        self.trace_id = trace_id
+        self.span_id = span_id
+        self.root_span = None
+
+
+class GasTownTracing:
+    """
+    Distributed tracing for Gas Town operations.
+
+    Trace hierarchy:
+      bead.lifecycle (root)
+        ├── bead.hook (work assigned to agent)
+        ├── crew.assign (crew assigns to polecat)
+        ├── polecat.work (polecat executes)
+        │     ├── claude.api.request (LLM calls)
+        │     └── tool_use (tool executions)
+        ├── nudge.sent (nudges to agent)
+        ├── nudge.received (nudge responses)
+        └── bead.complete / bead.fail
+
+    Usage:
+        tracing = GasTownTracing()
+
+        # Start bead lifecycle trace
+        with tracing.track_bead_lifecycle(bead_id="st-abc123", rig="vibecode") as ctx:
+            # Hook work
+            with tracing.track_hook(ctx, agent="vibecode/polecats/agate"):
+                # assign work
+                pass
+
+            # Track polecat work
+            with tracing.track_polecat_work(ctx, polecat="agate") as work:
+                # LLM calls automatically nest under this
+                with telemetry.track_claude_request(...):
+                    pass
+                work.set_outcome("success")
+    """
+
+    def __init__(self, service_name: str = "gastown"):
+        self.service_name = service_name
+        self.telemetry = AIAgentTelemetry(service_name)
+        self._active_contexts: Dict[str, BeadTraceContext] = {}
+
+    @contextmanager
+    def track_bead_lifecycle(self, bead_id: str, rig: str,
+                             priority: int = 2, title: str = "",
+                             **extra_tags) -> Generator[BeadTraceContext, None, None]:
+        """
+        Track the full lifecycle of a bead as the root span.
+        All child operations (hook, assign, work, nudge) nest under this.
+        """
+        ctx = BeadTraceContext(bead_id)
+        start_time = time.time()
+
+        span = None
+        if DD_ENABLED and tracer:
+            span = tracer.trace(
+                "bead.lifecycle",
+                service=self.service_name,
+                resource=bead_id
+            )
+            span.set_tag("bead.id", bead_id)
+            span.set_tag("bead.rig", rig)
+            span.set_tag("bead.priority", priority)
+            if title:
+                span.set_tag("bead.title", title[:100])
+            for k, v in extra_tags.items():
+                span.set_tag(f"bead.{k}", v)
+
+            ctx.root_span = span
+            ctx.trace_id = str(span.trace_id) if hasattr(span, 'trace_id') else None
+            ctx.span_id = str(span.span_id) if hasattr(span, 'span_id') else None
+
+        self._active_contexts[bead_id] = ctx
+        outcome = "unknown"
+
+        try:
+            yield ctx
+            outcome = "success"
+        except Exception as e:
+            outcome = "error"
+            if span:
+                span.set_tag("error", True)
+                span.set_tag("error.type", type(e).__name__)
+            raise
+        finally:
+            duration_s = time.time() - start_time
+
+            if span:
+                span.set_tag("bead.outcome", outcome)
+                span.set_tag("bead.duration_s", duration_s)
+                span.finish()
+
+            # Metrics
+            tags = [f"bead_id:{bead_id}", f"rig:{rig}", f"priority:P{priority}",
+                    f"outcome:{outcome}"]
+            self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
+            self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
+                                        duration_s, "histogram", tags)
+
+            del self._active_contexts[bead_id]
+
+    @contextmanager
+    def track_hook(self, ctx: BeadTraceContext, agent: str,
+                   hook_type: str = "work") -> Generator[None, None, None]:
+        """Track when work is hooked onto an agent"""
+        start_time = time.time()
+        span = None
+
+        if DD_ENABLED and tracer:
+            # Use current active span as parent (set by bead_lifecycle)
+            span = tracer.trace(
+                "bead.hook",
+                service=self.service_name,
+                resource=agent
+            )
+            span.set_tag("bead.id", ctx.bead_id)
+            span.set_tag("hook.agent", agent)
+            span.set_tag("hook.type", hook_type)
+
+        try:
+            yield
+        finally:
+            duration_ms = (time.time() - start_time) * 1000
+            if span:
+                span.set_tag("duration_ms", duration_ms)
+                span.finish()
+
+            tags = [f"bead_id:{ctx.bead_id}", f"agent:{agent}", f"hook_type:{hook_type}"]
+            self.telemetry._send_metric("gastown.bead.hook.count", 1, "count", tags)
+            self.telemetry._send_metric("gastown.bead.hook.duration_ms",
+                                        duration_ms, "histogram", tags)
+
+    @contextmanager
+    def track_crew_assign(self, ctx: BeadTraceContext, crew_member: str,
+                          target_polecat: str) -> Generator[None, None, None]:
+        """Track when crew assigns work to a polecat"""
+        start_time = time.time()
+        span = None
+
+        if DD_ENABLED and tracer:
+            span = tracer.trace(
+                "crew.assign",
+                service=self.service_name,
+                resource=target_polecat
+            )
+            span.set_tag("bead.id", ctx.bead_id)
+            span.set_tag("crew.member", crew_member)
+            span.set_tag("crew.target", target_polecat)
+
+        try:
+            yield
+        finally:
+            duration_ms = (time.time() - start_time) * 1000
+            if span:
+                span.finish()
+
+            tags = [f"bead_id:{ctx.bead_id}", f"crew_member:{crew_member}",
+                    f"target:{target_polecat}"]
+            self.telemetry._send_metric("gastown.crew.assign.count", 1, "count", tags)
+
+    @contextmanager
+    def track_polecat_work(self, ctx: BeadTraceContext, polecat: str,
+                           rig: str = "") -> Generator[RequestTracker, None, None]:
+        """
+        Track polecat work session. LLM calls made within this context
+        will automatically be child spans.
+        """
+        tracker = RequestTracker(provider="gastown", model="polecat")
+        tracker.extra_tags["polecat"] = polecat
+        tracker.extra_tags["rig"] = rig
+        tracker.extra_tags["bead_id"] = ctx.bead_id
+
+        span = None
+        if DD_ENABLED and tracer:
+            span = tracer.trace(
+                "polecat.work",
+                service=self.service_name,
+                resource=polecat
+            )
+            span.set_tag("bead.id", ctx.bead_id)
+            span.set_tag("polecat.name", polecat)
+            span.set_tag("polecat.rig", rig)
+
+        try:
+            yield tracker
+        except Exception as e:
+            tracker.set_error(type(e).__name__)
+            if span:
+                span.set_tag("error", True)
+                span.set_tag("error.type", type(e).__name__)
+            raise
+        finally:
+            if span:
+                span.set_tag("outcome", tracker.extra_tags.get("outcome", "unknown"))
+                span.set_tag("tokens.input", tracker.input_tokens)
+                span.set_tag("tokens.output", tracker.output_tokens)
+                span.set_tag("duration_ms", tracker.duration_ms)
+                span.finish()
+
+            tags = [f"bead_id:{ctx.bead_id}", f"polecat:{polecat}", f"rig:{rig}",
+                    f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}"]
+            self.telemetry._send_metric("gastown.polecat.work.count", 1, "count", tags)
+            self.telemetry._send_metric("gastown.polecat.work.duration_ms",
+                                        tracker.duration_ms, "histogram", tags)
+            if tracker.input_tokens > 0:
+                self.telemetry._send_metric("gastown.polecat.tokens.input",
+                                            tracker.input_tokens, "count", tags)
+            if tracker.output_tokens > 0:
+                self.telemetry._send_metric("gastown.polecat.tokens.output",
+                                            tracker.output_tokens, "count", tags)
+
+    @contextmanager
+    def track_nudge(self, ctx: BeadTraceContext, target: str,
+                    nudge_type: str = "status_check") -> Generator[None, None, None]:
+        """Track nudge sent to an agent"""
+        start_time = time.time()
+        span = None
+
+        if DD_ENABLED and tracer:
+            span = tracer.trace(
+                "nudge.sent",
+                service=self.service_name,
+                resource=target
+            )
+            span.set_tag("bead.id", ctx.bead_id)
+            span.set_tag("nudge.target", target)
+            span.set_tag("nudge.type", nudge_type)
+
+        try:
+            yield
+        finally:
+            duration_ms = (time.time() - start_time) * 1000
+            if span:
+                span.set_tag("duration_ms", duration_ms)
+                span.finish()
+
+            tags = [f"bead_id:{ctx.bead_id}", f"target:{target}", f"type:{nudge_type}"]
+            self.telemetry._send_metric("gastown.nudge.sent.count", 1, "count", tags)
+            self.telemetry._send_metric("gastown.nudge.duration_ms",
+                                        duration_ms, "histogram", tags)
+
+    def track_nudge_response(self, ctx: BeadTraceContext, target: str,
+                             response_time_ms: float, acknowledged: bool = True):
+        """Track nudge response received"""
+        tags = [f"bead_id:{ctx.bead_id}", f"target:{target}",
+                f"acknowledged:{str(acknowledged).lower()}"]
+        self.telemetry._send_metric("gastown.nudge.response.count", 1, "count", tags)
+        self.telemetry._send_metric("gastown.nudge.response_time_ms",
+                                    response_time_ms, "histogram", tags)
+
+    def track_mayor_task(self, task_type: str, priority: str = "normal",
+                         target_agent: str = ""):
+        """Track Mayor task assignment"""
+        span = None
+        if DD_ENABLED and tracer:
+            span = tracer.trace("mayor.task", service=self.service_name)
+            span.set_tag("task.type", task_type)
+            span.set_tag("task.priority", priority)
+            span.set_tag("task.target", target_agent)
+            span.finish()
+
+        tags = [f"task_type:{task_type}", f"priority:{priority}",
+                f"target:{target_agent}"]
+        self.telemetry._send_metric("gastown.mayor.task.count", 1, "count", tags)
+
+    def track_mail_sent(self, sender: str, recipient: str,
+                        mail_type: str = "message"):
+        """Track mail sent between agents"""
+        tags = [f"sender:{sender}", f"recipient:{recipient}", f"type:{mail_type}"]
+        self.telemetry._send_metric("gastown.mail.sent.count", 1, "count", tags)
+
+    def track_mail_read(self, recipient: str, mail_type: str = "message",
+                        read_delay_s: float = 0):
+        """Track mail read by agent"""
+        tags = [f"recipient:{recipient}", f"type:{mail_type}"]
+        self.telemetry._send_metric("gastown.mail.read.count", 1, "count", tags)
+        if read_delay_s > 0:
+            self.telemetry._send_metric("gastown.mail.read_delay_s",
+                                        read_delay_s, "histogram", tags)
+
+
+def get_gastown_tracing(service_name: str = "gastown") -> GasTownTracing:
+    """Get Gas Town tracing instance"""
+    return GasTownTracing(service_name)
+
+
+# ============================================================
+# DECORATORS
+# ============================================================
+
 # Decorator for easy function instrumentation
 def track_ai_call(provider: str = "anthropic", model: str = "claude-3-sonnet"):
     """Decorator to track AI API calls"""
@@ -404,6 +705,7 @@ def get_telemetry(service_name: str = "ai-agent") -> AIAgentTelemetry:
 if __name__ == "__main__":
     # Test the telemetry
     telemetry = AIAgentTelemetry(service_name="test-agent")
+    tracing = GasTownTracing(service_name="gastown-test")
 
     print("Testing AI Agent Telemetry...")
 
@@ -427,4 +729,67 @@ if __name__ == "__main__":
                                       duration_s=120, tokens_used=5000)
     print("Polecat metrics sent")
 
+    # Test Gas Town distributed tracing
+    print("\nTesting Gas Town Distributed Tracing...")
+
+    # Full bead lifecycle with nested spans
+    with tracing.track_bead_lifecycle(
+        bead_id="st-test123",
+        rig="vibecode",
+        priority=1,
+        title="Test feature implementation"
+    ) as ctx:
+        print(f"  Bead lifecycle started: {ctx.bead_id}")
+
+        # Hook work onto agent
+        with tracing.track_hook(ctx, agent="vibecode/polecats/agate"):
+            time.sleep(0.02)
+            print("  Work hooked to agent")
+
+        # Crew assigns to polecat
+        with tracing.track_crew_assign(ctx, crew_member="crew/alice", target_polecat="agate"):
+            time.sleep(0.01)
+            print("  Crew assigned work to polecat")
+
+        # Polecat works (LLM calls nest under this)
+        with tracing.track_polecat_work(ctx, polecat="agate", rig="vibecode") as work:
+            # Simulate LLM call within polecat work
+            with telemetry.track_claude_request(model="claude-3-sonnet") as llm:
+                time.sleep(0.05)
+                llm.set_tokens(input=500, output=200)
+            work.set_tokens(input=500, output=200)
+            work.set_outcome("success")
+            print(f"  Polecat work completed: {work.duration_ms:.2f}ms")
+
+        # Send nudge
+        with tracing.track_nudge(ctx, target="vibecode/polecats/agate", nudge_type="status_check"):
+            time.sleep(0.01)
+            print("  Nudge sent")
+
+        # Track nudge response
+        tracing.track_nudge_response(ctx, target="vibecode/polecats/agate",
+                                     response_time_ms=150, acknowledged=True)
+        print("  Nudge response received")
+
+    print("  Bead lifecycle completed")
+
+    # Test Mayor and Mail tracking
+    tracing.track_mayor_task(task_type="assign_work", priority="high",
+                             target_agent="vibecode/polecats/agate")
+    print("  Mayor task tracked")
+
+    tracing.track_mail_sent(sender="mayor/", recipient="vibecode/polecats/agate",
+                            mail_type="work_assignment")
+    tracing.track_mail_read(recipient="vibecode/polecats/agate",
+                            mail_type="work_assignment", read_delay_s=5.2)
+    print("  Mail sent and read tracked")
+
     print("\nTelemetry test complete!")
+    print("\nSpan hierarchy created:")
+    print("  bead.lifecycle (root)")
+    print("    ├── bead.hook")
+    print("    ├── crew.assign")
+    print("    ├── polecat.work")
+    print("    │     └── claude.api.request")
+    print("    ├── nudge.sent")
+    print("    └── nudge.response")
