@@ -253,6 +253,200 @@ metrics:
     tags:
       - rig_name
 
+  # Mayor metrics
+  - name: gastown.mayor.tasks_assigned
+    type: counter
+    description: "Tasks assigned by mayor"
+    tags:
+      - priority
+      - task_type
+      - target_agent
+
+  # Nudge metrics
+  - name: gastown.nudges.sent
+    type: counter
+    description: "Nudges sent to polecats"
+    tags:
+      - target_agent
+      - urgency
+      - rig_name
+
+  - name: gastown.nudges.responded
+    type: counter
+    description: "Nudges that got response"
+    tags:
+      - target_agent
+      - response_time_bucket
+
+  # Beads/Kanban metrics
+  - name: gastown.beads.created
+    type: counter
+    description: "New beads created"
+    tags:
+      - priority
+      - type
+      - rig_name
+
+  - name: gastown.beads.in_progress
+    type: gauge
+    description: "Beads currently in progress"
+    tags:
+      - priority
+
+  - name: gastown.beads.completed
+    type: counter
+    description: "Beads marked complete"
+    tags:
+      - priority
+      - assigned_agent
+
+  - name: gastown.beads.escalated
+    type: counter
+    description: "Beads escalated (Andon)"
+    tags:
+      - reason
+      - from_agent
+
+  # Task assignment metrics
+  - name: gastown.task.assigned
+    type: counter
+    description: "Tasks assigned to agents"
+    tags:
+      - agent_type
+      - priority
+
+  - name: gastown.task.accepted
+    type: counter
+    description: "Tasks accepted by agents"
+    tags:
+      - agent_type
+
+  # Witness metrics (per-rig polecat lifecycle manager)
+  - name: gastown.witness.checks
+    type: counter
+    description: "Witness patrol checks"
+    tags:
+      - check_type
+      - rig_name
+
+  - name: gastown.witness.lifecycle_events
+    type: counter
+    description: "Polecat lifecycle events managed by witness"
+    tags:
+      - event_type  # spawn, complete, fail, timeout
+      - rig_name
+
+  # Deacon metrics (background supervisor daemon)
+  - name: gastown.deacon.health_checks
+    type: counter
+    description: "Deacon health checks performed"
+    tags:
+      - check_type
+      - result
+
+  - name: gastown.deacon.dogs_active
+    type: gauge
+    description: "Active Dog helpers"
+    tags:
+      - dog_type  # boot, etc
+
+  - name: gastown.deacon.watchdog_events
+    type: counter
+    description: "Watchdog chain events"
+    tags:
+      - event_type
+
+  # Refinery metrics (merge queue processor)
+  - name: gastown.refinery.merges_queued
+    type: gauge
+    description: "PRs in merge queue"
+    tags:
+      - rig_name
+      - priority
+
+  - name: gastown.refinery.merges_processed
+    type: counter
+    description: "PRs processed by refinery"
+    tags:
+      - rig_name
+      - outcome  # merged, rejected, conflict
+
+  - name: gastown.refinery.integration_time_s
+    type: histogram
+    description: "Integration workflow duration"
+    tags:
+      - rig_name
+
+  # Crew metrics (persistent workers)
+  - name: gastown.crew.active
+    type: gauge
+    description: "Active crew members"
+    tags:
+      - rig_name
+
+  - name: gastown.crew.contributions
+    type: counter
+    description: "Crew contributions"
+    tags:
+      - crew_member
+      - contribution_type
+
+  # Worktree metrics
+  - name: gastown.worktree.created
+    type: counter
+    description: "Worktrees created"
+    tags:
+      - rig_name
+      - purpose
+
+  - name: gastown.worktree.active
+    type: gauge
+    description: "Active worktrees"
+    tags:
+      - rig_name
+
+  # Convoy metrics
+  - name: gastown.convoy.started
+    type: counter
+    description: "Convoys started"
+    tags:
+      - rig_name
+      - task_count
+
+  - name: gastown.convoy.completed
+    type: counter
+    description: "Convoys completed"
+    tags:
+      - rig_name
+      - success
+
+  # Polecat productivity metrics
+  - name: gastown.polecat.prs_created
+    type: counter
+    description: "PRs created by polecat"
+    tags:
+      - rig_name
+
+  - name: gastown.polecat.commits_pushed
+    type: counter
+    description: "Commits pushed by polecat"
+    tags:
+      - rig_name
+
+  - name: gastown.polecat.lines_added
+    type: counter
+    description: "Lines of code added"
+    tags:
+      - rig_name
+      - language
+
+  - name: gastown.polecat.lines_deleted
+    type: counter
+    description: "Lines of code deleted"
+    tags:
+      - rig_name
+      - language
+
   # ============================================================
   # UNIFIED AGENT METRICS
   # ============================================================

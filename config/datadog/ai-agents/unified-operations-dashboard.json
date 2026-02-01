@@ -1,0 +1,1318 @@
+{
+  "title": "AI Agents Unified Operations - Ralph/Claude/GasTown/Codex",
+  "description": "Single unified dashboard with APM, Logs, Traces, Profiling, Metrics, and DEM for all AI coding agents",
+  "layout_type": "ordered",
+  "reflow_type": "fixed",
+  "template_variables": [
+    {"name": "env", "prefix": "env", "default": "*", "available_values": ["prod", "staging", "dev"]},
+    {"name": "service", "prefix": "service", "default": "*", "available_values": ["ralph-loop", "claude-code", "gastown", "sequential-thinking", "vibecode"]},
+    {"name": "provider", "prefix": "provider", "default": "*", "available_values": ["anthropic", "openai", "ollama"]},
+    {"name": "model", "prefix": "model", "default": "*"},
+    {"name": "rig", "prefix": "rig_name", "default": "*"}
+  ],
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "🎯 Service Health & SLOs",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_green",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Service Availability",
+              "title_size": "16",
+              "type": "check_status",
+              "check": "datadog.agent.up",
+              "grouping": "cluster",
+              "group_by": ["service"],
+              "tags": ["$service"]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.polecats.active{$rig}"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Requests (1h)",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.request.count{$service,$provider}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "autoscale": true
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Rate %",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "(query1 / query2) * 100"}],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.error.count{$service}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:ai_agent.request.count{$service}.as_count()"}
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 2,
+              "custom_unit": "%",
+              "conditional_formats": [
+                {"comparator": ">", "value": 5, "palette": "white_on_red"},
+                {"comparator": ">", "value": 1, "palette": "white_on_yellow"},
+                {"comparator": "<=", "value": 1, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Cost (24h)",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / 1000000"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.cost.total_usd{$provider}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 2,
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "P95 Latency",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "p95:ai_agent.request.duration_ms{$service}"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 0,
+              "custom_unit": "ms"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "📊 APM - Distributed Traces",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_blue",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Request Latency by Service (p50/p95/p99)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "p50"},
+                    {"formula": "query2", "alias": "p95"},
+                    {"formula": "query3", "alias": "p99"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "p50:trace.web.request.duration{$service,$env}"},
+                    {"name": "query2", "data_source": "metrics", "query": "p95:trace.web.request.duration{$service,$env}"},
+                    {"name": "query3", "data_source": "metrics", "query": "p99:trace.web.request.duration{$service,$env}"}
+                  ],
+                  "response_format": "timeseries",
+                  "style": {"palette": "dog_classic", "line_type": "solid", "line_width": "normal"},
+                  "display_type": "line"
+                }
+              ],
+              "yaxis": {"include_zero": true, "scale": "linear"}
+            }
+          },
+          {
+            "definition": {
+              "title": "Trace Throughput by Service",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:trace.web.request.hits{$service,$env} by {service}.as_count()"}],
+                  "response_format": "timeseries",
+                  "style": {"palette": "semantic"},
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Trace Errors by Service",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:trace.web.request.errors{$service,$env} by {service}.as_count()"}],
+                  "response_format": "timeseries",
+                  "style": {"palette": "warm"},
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Slowest Endpoints",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 10, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:trace.web.request.duration{$service,$env} by {resource_name}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "APM Service Map",
+              "title_size": "16",
+              "type": "servicemap",
+              "service": "$service",
+              "filters": ["env:$env"]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "🤖 Claude Code / Anthropic API",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_purple",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Claude API Requests by Model",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:claude.api.request.count{$model} by {model}.as_count()"}],
+                  "response_format": "timeseries",
+                  "style": {"palette": "purple"},
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage (Input vs Output)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Input Tokens"},
+                    {"formula": "query2", "alias": "Output Tokens"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:claude.api.tokens.input{$model}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:claude.api.tokens.output{$model}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Latency Distribution",
+              "title_size": "16",
+              "type": "distribution",
+              "requests": [
+                {
+                  "query": {"data_source": "metrics", "name": "query1", "query": "avg:claude.api.request.duration_ms{$model} by {model}"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cache Performance",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Cache Read"},
+                    {"formula": "query2", "alias": "Cache Write"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:claude.api.tokens.cache_read{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:claude.api.tokens.cache_write{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Tool Use by Function",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 10, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:claude.tool_use.count{*} by {tool_name}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost by Model (USD)",
+              "title_size": "16",
+              "type": "treemap",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / 1000000"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:claude.api.cost_usd{*} by {model}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "🧠 Ralph Loop / Sequential Thinking",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_orange",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Ralph Iterations (Success vs Failure)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Success"},
+                    {"formula": "query2", "alias": "Failure"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:ralph.loop.iteration{outcome:success}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:ralph.loop.iteration{outcome:failure}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thoughts per Problem Distribution",
+              "title_size": "16",
+              "type": "distribution",
+              "requests": [
+                {
+                  "query": {"data_source": "metrics", "name": "query1", "query": "avg:ralph.thinking.thought_count{*}"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thinking Depth Over Time",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:ralph.thinking.depth{*}"}],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convergence Time (p50/p95)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "p50"},
+                    {"formula": "query2", "alias": "p95"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "p50:ralph.thinking.convergence_ms{*}"},
+                    {"name": "query2", "data_source": "metrics", "query": "p95:ralph.thinking.convergence_ms{*}"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Sequential Thinking Fallbacks",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:sequential_thinking.fallback.count{*} by {reason}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Branch Patterns",
+              "title_size": "16",
+              "type": "pie",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ralph.thinking.branch_count{*} by {branch_type}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "⛽ Gas Town / Polecats",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_yellow",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Polecat Lifecycle",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Spawned"},
+                    {"formula": "query2", "alias": "Completed"},
+                    {"formula": "query3", "alias": "Failed"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecats.spawned{$rig}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.polecats.completed{$rig}.as_count()"},
+                    {"name": "query3", "data_source": "metrics", "query": "sum:gastown.polecats.failed{$rig}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats by Rig",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 15, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.polecats.active{*} by {rig_name}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Work Duration Distribution",
+              "title_size": "16",
+              "type": "distribution",
+              "requests": [
+                {
+                  "query": {"data_source": "metrics", "name": "query1", "query": "avg:gastown.polecat.duration_s{$rig}"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage by Rig",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecat.tokens_used{*} by {rig_name}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Routing Decisions",
+              "title_size": "16",
+              "type": "sunburst",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.routing.decision{*} by {selected_provider,reason}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads/Tasks Status",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Created"},
+                    {"formula": "query2", "alias": "Completed"},
+                    {"formula": "query3", "alias": "Escalated"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.beads.created{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.beads.completed{*}.as_count()"},
+                    {"name": "query3", "data_source": "metrics", "query": "sum:gastown.beads.escalated{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "📝 Logs & Events",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "gray",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Log Volume by Service",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "logs", "compute": {"aggregation": "count"}, "group_by": [{"facet": "service", "limit": 10, "sort": {"aggregation": "count", "order": "desc"}}], "indexes": ["*"], "search": {"query": "$service"}}],
+                  "response_format": "timeseries",
+                  "style": {"palette": "semantic"},
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Logs by Status",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "logs", "compute": {"aggregation": "count"}, "group_by": [{"facet": "status", "limit": 5, "sort": {"aggregation": "count", "order": "desc"}}], "indexes": ["*"], "search": {"query": "status:(error OR critical OR warning) $service"}}],
+                  "response_format": "timeseries",
+                  "style": {"palette": "warm"},
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Recent Error Logs",
+              "title_size": "16",
+              "type": "log_stream",
+              "query": "status:error $service",
+              "columns": ["core_host", "core_service", "message"],
+              "indexes": ["*"],
+              "message_display": "inline",
+              "show_date_column": true,
+              "show_message_column": true,
+              "sort": {"column": "time", "order": "desc"}
+            }
+          },
+          {
+            "definition": {
+              "title": "Log Patterns",
+              "title_size": "16",
+              "type": "list_stream",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {"data_source": "logs_pattern_stream", "query_string": "$service", "indexes": ["*"]}
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "🔬 Profiling & Resources",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_pink",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "CPU Usage by Service",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:system.cpu.user{$service,$env} by {service}"}],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Memory Usage",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:system.mem.used{$service,$env} by {service}"}],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Process Count",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:system.processes.number{$service}"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "autoscale": true
+            }
+          },
+          {
+            "definition": {
+              "title": "Top CPU Functions (Profiling)",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 10, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:profiling.cpu.samples{$service} by {function}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Disk I/O",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Read"},
+                    {"formula": "query2", "alias": "Write"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "avg:system.io.r_s{$env}"},
+                    {"name": "query2", "data_source": "metrics", "query": "avg:system.io.w_s{$env}"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Network Traffic",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Bytes In"},
+                    {"formula": "query2", "alias": "Bytes Out"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:system.net.bytes_rcvd{$env}"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:system.net.bytes_sent{$env}"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "💰 Cost & Token Economics",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "white",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Cost by Provider (24h)",
+              "title_size": "16",
+              "type": "pie",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / 1000000"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.cost.total_usd{*} by {provider}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cumulative Cost Trend",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "cumsum(query1) / 1000000"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.cost.total_usd{$provider}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ],
+              "yaxis": {"include_zero": true}
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost per Request",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "(query1 / 1000000) / (query2 + 1)"}],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.cost.total_usd{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:ai_agent.request.count{*}.as_count()"}
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 4,
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Efficiency (Out/In Ratio)",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / (query2 + 1)"}],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.tokens.total{direction:output}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:ai_agent.tokens.total{direction:input}.as_count()"}
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 2,
+              "custom_unit": ":1"
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost by Model",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / 1000000", "limit": {"count": 10, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.cost.total_usd{*} by {model}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage Over Time",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Input"},
+                    {"formula": "query2", "alias": "Output"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:ai_agent.tokens.total{direction:input,$provider}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:ai_agent.tokens.total{direction:output,$provider}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 9,
+      "definition": {
+        "title": "🌐 OpenAI / Codex",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_green",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "OpenAI Requests by Model",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:openai.api.request.count{$model} by {model}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Token Usage",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Input"},
+                    {"formula": "query2", "alias": "Output"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:openai.api.tokens.input{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:openai.api.tokens.output{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Latency",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "p50"},
+                    {"formula": "query2", "alias": "p95"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "p50:openai.api.request.duration_ms{*}"},
+                    {"name": "query2", "data_source": "metrics", "query": "p95:openai.api.request.duration_ms{*}"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Embedding Requests",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:openai.embedding.count{*} by {model}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 10,
+      "definition": {
+        "title": "🏭 Gas Town Operations - Polecats/Beads/Mayor",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "orange",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Polecat Sessions Active",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecats.active{*}"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "autoscale": true,
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Polecats Spawned vs Completed vs Failed (1h)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Spawned"},
+                    {"formula": "query2", "alias": "Completed"},
+                    {"formula": "query3", "alias": "Failed"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecats.spawned{$rig} by {rig_name}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.polecats.completed{$rig} by {rig_name}.as_count()"},
+                    {"name": "query3", "data_source": "metrics", "query": "sum:gastown.polecats.failed{$rig} by {rig_name}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Mayor Task Assignments",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.mayor.tasks_assigned{*} by {priority}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Nudges Sent",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.nudges.sent{*} by {target_agent}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Nudge Response Rate",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "(query1 / (query2 + 1)) * 100"}],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.nudges.responded{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.nudges.sent{*}.as_count()"}
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 1,
+              "custom_unit": "%"
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads Lifecycle (Kanban)",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Created"},
+                    {"formula": "query2", "alias": "In Progress"},
+                    {"formula": "query3", "alias": "Completed"},
+                    {"formula": "query4", "alias": "Escalated (Andon)"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.beads.created{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.beads.in_progress{*}"},
+                    {"name": "query3", "data_source": "metrics", "query": "sum:gastown.beads.completed{*}.as_count()"},
+                    {"name": "query4", "data_source": "metrics", "query": "sum:gastown.beads.escalated{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads by Priority",
+              "title_size": "16",
+              "type": "pie",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.beads.created{*} by {priority}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Polecat Work Duration (Distribution)",
+              "title_size": "16",
+              "type": "distribution",
+              "requests": [
+                {
+                  "query": {"data_source": "metrics", "name": "query1", "query": "avg:gastown.polecat.duration_s{$rig}"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats by Rig",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 20, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.polecats.active{*} by {rig_name}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convoy Operations",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Started"},
+                    {"formula": "query2", "alias": "Completed"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.convoy.started{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.convoy.completed{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Witness Patrol (Gemba) Checks",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.witness.checks{*} by {check_type}.as_count()"}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Agent Task Acceptance Rate",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "(query1 / (query2 + 1)) * 100"}],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.task.accepted{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.task.assigned{*}.as_count()"}
+                  ],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 1,
+              "custom_unit": "%"
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage by Polecat",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 15, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecat.tokens_used{*} by {polecat_id}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost per Polecat Session",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1 / 1000000", "limit": {"count": 15, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecat.cost_usd{*} by {rig_name}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "PR/Commit Activity by Polecat",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "PRs Created"},
+                    {"formula": "query2", "alias": "Commits Pushed"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecat.prs_created{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.polecat.commits_pushed{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Lines of Code Changed",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Added"},
+                    {"formula": "query2", "alias": "Deleted"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.polecat.lines_added{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.polecat.lines_deleted{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "area"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 11,
+      "definition": {
+        "title": "📱 Digital Experience (RUM/DEM)",
+        "title_size": "16",
+        "title_align": "left",
+        "show_title": true,
+        "type": "group",
+        "background_color": "vivid_blue",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "RUM Page Views",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "rum", "compute": {"aggregation": "count"}, "group_by": [], "indexes": ["*"], "search": {"query": "@type:view"}}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Core Web Vitals - LCP",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "rum", "compute": {"aggregation": "avg", "metric": "@view.largest_contentful_paint"}, "group_by": [], "indexes": ["*"], "search": {"query": "@type:view"}}],
+                  "response_format": "timeseries",
+                  "display_type": "line"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "RUM Errors",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "rum", "compute": {"aggregation": "count"}, "group_by": [{"facet": "@error.source", "limit": 5, "sort": {"aggregation": "count", "order": "desc"}}], "indexes": ["*"], "search": {"query": "@type:error"}}],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "User Sessions",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "rum", "compute": {"aggregation": "cardinality", "metric": "@session.id"}, "group_by": [], "indexes": ["*"], "search": {"query": "*"}}],
+                  "response_format": "scalar"
+                }
+              ],
+              "autoscale": true
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "notify_list": []
+}
