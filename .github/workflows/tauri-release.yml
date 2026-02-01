@@ -64,8 +64,11 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Build frontend for Tauri
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
         run: |
           echo "Building Next.js frontend for Tauri static export..."
+          echo "Node memory limit: $NODE_OPTIONS"
 
           # Backup original config and use Tauri-specific config
           if [ -f next.config.js ]; then
