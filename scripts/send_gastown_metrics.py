@@ -6,12 +6,19 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import random
+import shutil
 import socket
 import subprocess
 import time
 from collections import Counter
 from datetime import datetime, timedelta, timezone
 from typing import Any, Dict, Iterable, Optional, Tuple
+
+try:
+    from scripts.lib.ai_agent_telemetry import GasTownTracing
+except Exception:
+    GasTownTracing = None
 
 STATSD_HOST = os.getenv("DD_AGENT_HOST", "127.0.0.1")
 STATSD_PORT = int(os.getenv("DD_DOGSTATSD_PORT", "8125"))
@@ -79,6 +86,16 @@ def run_cmd(cmd: Iterable[str], timeout: int = 10) -> str:
 
 
 def run_json(cmd: Iterable[str], timeout: int = 10) -> Optional[Dict[str, Any]]:
+    output = run_cmd(cmd, timeout=timeout)
+    if not output:
+        return None
+    try:
+        return json.loads(output)
+    except json.JSONDecodeError:
+        return None
+
+
+def run_json_any(cmd: Iterable[str], timeout: int = 10) -> Optional[Any]:
     output = run_cmd(cmd, timeout=timeout)
     if not output:
         return None
@@ -179,6 +196,25 @@ def get_tmux_sessions() -> int:
     return len([line for line in output.split("\n") if line.strip()])
 
 
+def get_tmux_oldest_hours() -> float:
+    output = run_cmd(["tmux", "list-sessions", "-F", "#{session_created}"])
+    if not output:
+        return 0.0
+    created = []
+    for line in output.split("\n"):
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            created.append(int(line))
+        except ValueError:
+            continue
+    if not created:
+        return 0.0
+    oldest = min(created)
+    return max(0.0, (time.time() - oldest) / 3600)
+
+
 def get_zellij_sessions() -> int:
     output = run_cmd(["zellij", "list-sessions"])
     if not output:
@@ -245,13 +281,20 @@ def get_gt_status() -> Dict[str, Any]:
         "crew_active": 0,
     }
 
+    if os.getenv("GASTOWN_SKIP_GT_STATUS", "").lower() in {"1", "true", "yes"}:
+        return status
+
     candidates = [
         ["gt", "status"],
         ["/Users/studio/go/bin/gt", "status"],
     ]
     output = ""
+    try:
+        timeout = int(os.getenv("GASTOWN_GT_STATUS_TIMEOUT", "6"))
+    except ValueError:
+        timeout = 6
     for cmd in candidates:
-        output = run_cmd(cmd, timeout=10)
+        output = run_cmd(cmd, timeout=timeout)
         if output:
             break
 
@@ -413,6 +456,156 @@ def get_git_stats(since: datetime) -> Dict[str, Any]:
     }
 
 
+def get_repo_slug() -> str:
+    url = run_cmd(["git", "remote", "get-url", "origin"])
+    if not url:
+        return ""
+    slug = ""
+    if url.startswith("git@github.com:"):
+        slug = url.split("git@github.com:")[1]
+    elif "github.com/" in url:
+        slug = url.split("github.com/")[1]
+    slug = slug.strip()
+    if slug.endswith(".git"):
+        slug = slug[: -len(".git")]
+    return slug
+
+
+def get_github_stats(since: datetime) -> Dict[str, int]:
+    stats = {
+        "prs_open": 0,
+        "prs_opened": 0,
+        "prs_merged": 0,
+        "prs_activity": 0,
+        "issues_open": 0,
+        "actions_success": 0,
+    }
+
+    if os.getenv("GASTOWN_SKIP_GH", "").lower() in {"1", "true", "yes"}:
+        return stats
+
+    if shutil.which("gh") is None:
+        return stats
+
+    repo = get_repo_slug()
+    repo_args = ["-R", repo] if repo else []
+    since_date = since.date().isoformat()
+
+    open_prs = run_json_any(
+        ["gh", "pr", "list", "--state", "open", "--limit", "200", "--json", "number", *repo_args],
+        timeout=15,
+    )
+    if isinstance(open_prs, list):
+        stats["prs_open"] = len(open_prs)
+
+    opened_since = run_json_any(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "all",
+            "--search",
+            f"created:>={since_date}",
+            "--limit",
+            "200",
+            "--json",
+            "number",
+            *repo_args,
+        ],
+        timeout=15,
+    )
+    if isinstance(opened_since, list):
+        stats["prs_opened"] = len(opened_since)
+
+    merged_since = run_json_any(
+        [
+            "gh",
+            "pr",
+            "list",
+            "--state",
+            "merged",
+            "--search",
+            f"merged:>={since_date}",
+            "--limit",
+            "200",
+            "--json",
+            "number",
+            *repo_args,
+        ],
+        timeout=15,
+    )
+    if isinstance(merged_since, list):
+        stats["prs_merged"] = len(merged_since)
+
+    issues_open = run_json_any(
+        ["gh", "issue", "list", "--state", "open", "--limit", "200", "--json", "number", *repo_args],
+        timeout=15,
+    )
+    if isinstance(issues_open, list):
+        stats["issues_open"] = len(issues_open)
+
+    actions_success = run_json_any(
+        [
+            "gh",
+            "run",
+            "list",
+            "--status",
+            "success",
+            "--created",
+            f">={since_date}",
+            "--limit",
+            "200",
+            "--json",
+            "databaseId",
+            *repo_args,
+        ],
+        timeout=15,
+    )
+    if isinstance(actions_success, list):
+        stats["actions_success"] = len(actions_success)
+
+    stats["prs_activity"] = stats["prs_opened"] + stats["prs_merged"] + stats["prs_open"]
+    return stats
+
+
+def emit_synthetic_bead_trace(
+    bead_id: str,
+    rig: str,
+    gt_status: Dict[str, Any],
+    crew_active: int,
+    openclaw_jobs: Dict[str, int],
+) -> None:
+    if GasTownTracing is None:
+        return
+
+    tracing = GasTownTracing(service_name="gastown")
+    with tracing.track_bead_lifecycle(
+        bead_id=bead_id,
+        rig=rig,
+        priority=2,
+        title="Unified ops heartbeat",
+    ) as ctx:
+        with tracing.track_hook(ctx, agent="mayor", hook_type="dispatch"):
+            time.sleep(0.01)
+
+        with tracing.track_crew_assign(ctx, crew_member="crew", target_polecat="polecat"):
+            time.sleep(0.01)
+
+        with tracing.track_polecat_work(ctx, polecat="polecat", rig=rig) as tracker:
+            tracker.set_outcome("success" if crew_active > 0 else "unknown")
+            tracker.set_tokens(input=0, output=0)
+
+        if gt_status.get("deacon"):
+            with tracing.track_deacon_review(ctx, deacon="deacon", review_type="health") as tracker:
+                tracker.set_outcome("success")
+
+        if openclaw_jobs.get("nudges_from_cron", 0) + openclaw_jobs.get("nudges_from_poll", 0) > 0:
+            with tracing.track_nudge(ctx, target="crew", nudge_type="status_check"):
+                time.sleep(0.01)
+            tracing.track_nudge_response(ctx, target="crew", acknowledged=True, response_time_ms=150)
+
+
 def count_lines(path: str) -> int:
     try:
         with open(path, "r", encoding="utf-8", errors="ignore") as handle:
@@ -437,6 +630,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     since_iso = since.isoformat()
 
     tmux_count = get_tmux_sessions()
+    tmux_oldest_hours = get_tmux_oldest_hours()
     polecat_count = get_polecat_sessions()
     sessions_by_type = get_sessions_by_type()
     multiplexers = get_all_multiplexer_sessions()
@@ -484,6 +678,8 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     lines_deleted = git_stats["lines_deleted"]
     pr_merges = git_stats["pr_merges"]
     commits_by_author = git_stats["commits_by_author"]
+    github_stats = get_github_stats(since)
+    repo_slug = get_repo_slug() or "unknown"
 
     logs_combined = count_lines("logs/combined.log")
     logs_error = count_lines("logs/error.log") + count_lines("logs/exceptions.log") + count_lines("logs/rejections.log")
@@ -507,9 +703,13 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
 
     # Terminal multiplexers
     emitter.send("gastown.tmux.sessions_active", multiplexers["tmux"], "g", common_tags)
+    emitter.send("gastown.tmux.total_sessions", tmux_count, "g", common_tags)
+    emitter.send("gastown.tmux.oldest_hours", tmux_oldest_hours, "g", common_tags)
     emitter.send("gastown.zellij.sessions_active", multiplexers["zellij"], "g", common_tags)
     emitter.send("gastown.screen.sessions_active", multiplexers["screen"], "g", common_tags)
     emitter.send("gastown.multiplexers.total", sum(multiplexers.values()), "g", common_tags)
+    emitter.send("gastown.pty.sessions_active", sum(multiplexers.values()), "g", common_tags)
+    emitter.send("gastown.pty.oldest_hours", tmux_oldest_hours, "g", common_tags)
 
     # Core services
     emitter.send("gastown.mayor.running", 1 if gt_status["mayor"] else 0, "g", common_tags)
@@ -532,7 +732,26 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     # Crew / agent state
     crew_active = gt_status["crew_active"] or len([v for v in in_progress_by_assignee.values() if v > 0])
     emitter.send("gastown.crew.active", crew_active, "g", common_tags)
+    crew_utilization_pct = (
+        (in_progress_issues / open_issues * 100) if open_issues else (100.0 if in_progress_issues else 0.0)
+    )
+    crew_memory_gb = (memory_stats["total_gb"] * memory_stats["used_pct"] / 100) if memory_stats["total_gb"] else 0.0
+    emitter.send("gastown.crew.utilization_pct", crew_utilization_pct, "g", common_tags)
+    emitter.send("gastown.crew.memory_gb", crew_memory_gb, "g", common_tags)
+    emitter.send("gastown.crew.tokens_used", 0, "c", common_tags)
     emitter.send("gastown.agent.stuck_count", blocked_issues, "g", common_tags)
+
+    role_counts = {
+        "mayor": 1 if gt_status["mayor"] else 0,
+        "deacon": 1 if gt_status["deacon"] else 0,
+        "witness": 1 if gt_status["witness"] else 0,
+        "refinery": 1 if gt_status["refinery"] else 0,
+        "crew": crew_active,
+        "polecat": active_polecats,
+    }
+    for role, count in role_counts.items():
+        emitter.send("gastown.roles.active", count, "g", common_tags + [f"role:{role}"])
+    emitter.send("gastown.roles.total_active", sum(role_counts.values()), "g", common_tags)
 
     # System resources
     emitter.send("gastown.memory.used_pct", memory_stats["used_pct"], "g", common_tags)
@@ -550,6 +769,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("gastown.bead.stage.assigned", acceptance_since, "c", common_tags)
     emitter.send("gastown.bead.stage.working", acceptance_since, "c", common_tags)
     emitter.send("gastown.bead.stage.completed", closed_since, "c", common_tags)
+    emitter.send("gastown.bead.hook_to_assign_ms", 0, "h", common_tags)
 
     # Hooks/assignments approximated by new work
     hook_total = created_since
@@ -576,6 +796,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("gastown.polecats.completed", closed_since, "c", common_tags)
     emitter.send("gastown.polecats.failed", blocked_since, "c", common_tags)
     emitter.send("gastown.polecat.tokens_used", 0, "c", common_tags)
+    emitter.send("gastown.polecat.context_pct", 0, "g", common_tags)
     emitter.send("gastown.polecat.prs_created", pr_merges, "c", common_tags)
     emitter.send("gastown.polecat.lines_added", lines_added, "c", common_tags)
     emitter.send("gastown.polecat.lines_deleted", lines_deleted, "c", common_tags)
@@ -654,12 +875,19 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("claude.api.tokens.cache_read", 0, "c", common_tags)
     emitter.send("claude.api.cost_usd", 0, "c", common_tags)
     emitter.send("claude.tool_use.count", 0, "c", common_tags)
+    emitter.send("claude.extended_thinking.enabled", 0, "g", common_tags)
+    emitter.send("claude.thinking.duration_ms", 0, "h", common_tags)
 
     emitter.send("openai.api.request.count", 0, "c", common_tags)
     emitter.send("openai.api.request.duration_ms", 0, "h", common_tags)
     emitter.send("openai.api.tokens.input", 0, "c", common_tags)
     emitter.send("openai.api.tokens.output", 0, "c", common_tags)
     emitter.send("openai.embedding.count", 0, "c", common_tags)
+    emitter.send("openai.o1.reasoning_tokens", 0, "c", common_tags)
+
+    emitter.send("tokens.input", 0, "c", common_tags)
+    emitter.send("tokens.output", 0, "c", common_tags)
+    emitter.send("tokens.total", 0, "c", common_tags)
 
     emitter.send("ralph.loop.iteration", 0, "c", common_tags + ["outcome:success"])
     emitter.send("ralph.loop.duration_ms", 0, "h", common_tags + ["outcome:success"])
@@ -673,6 +901,10 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("mcp.tool.calls", 0, "c", common_tags + ["tool:unknown", "status:success"])
     emitter.send("mcp.tool.duration", 0, "h", common_tags + ["tool:unknown", "status:success"])
     emitter.send("mcp.tool.errors", 0, "c", common_tags + ["tool:unknown", "status:error"])
+    emitter.send("mcp.request.count", 0, "c", common_tags)
+    emitter.send("mcp.request.duration_ms", 0, "h", common_tags)
+    emitter.send("mcp.errors", 0, "c", common_tags)
+    emitter.send("mcp.sequential_thinking.thought_count", 0, "g", common_tags)
     emitter.send("mcp.auth.attempts", 0, "c", common_tags + ["status:success"])
     emitter.send("mcp.auth.failures", 0, "c", common_tags)
     emitter.send("mcp.resource.access", 0, "c", common_tags + ["resource:unknown", "status:success"])
@@ -692,6 +924,10 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     gateway_health = 1 if openclaw_running or openclaw_jobs["cron_jobs"] + openclaw_jobs["poll_jobs"] > 0 else 0
     nudges_total = openclaw_jobs["nudges_from_cron"] + openclaw_jobs["nudges_from_poll"]
     emitter.send("openclaw.gateway.health", gateway_health, "g", common_tags)
+    emitter.send("openclaw.cron.jobs_active", openclaw_jobs["cron_jobs"], "g", common_tags)
+    emitter.send("openclaw.poll.jobs_active", openclaw_jobs["poll_jobs"], "g", common_tags)
+    emitter.send("openclaw.cron.nudges_sent", openclaw_jobs["nudges_from_cron"], "c", common_tags)
+    emitter.send("openclaw.poll.nudges_sent", openclaw_jobs["nudges_from_poll"], "c", common_tags)
     emitter.send("openclaw.requests.routed", nudges_total, "c", common_tags + ["provider:unknown"])
     emitter.send("openclaw.routing.latency_ms", 0, "h", common_tags)
     emitter.send("openclaw.provider.selected", active_polecats, "c", common_tags + ["provider:unknown"])
@@ -707,6 +943,23 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     # GitHub activity
     for author, count in commits_by_author.items():
         emitter.send("github.commits", count, "c", common_tags + [f"author:{author}"])
+    merged_prs = github_stats["prs_merged"] or pr_merges
+    emitter.send("github.prs.opened", github_stats["prs_opened"], "c", common_tags + [f"repo:{repo_slug}"])
+    emitter.send("github.prs.merged", merged_prs, "c", common_tags + [f"repo:{repo_slug}"])
+    emitter.send("github.prs.activity", github_stats["prs_activity"], "c", common_tags + [f"repo:{repo_slug}"])
+    emitter.send("github.issues.open", github_stats["issues_open"], "g", common_tags + [f"repo:{repo_slug}"])
+    emitter.send("github.actions.success", github_stats["actions_success"], "c", common_tags + [f"repo:{repo_slug}"])
+
+    emit_trace_flag = os.getenv("GASTOWN_EMIT_TRACE", "true").lower() not in {"0", "false", "no"}
+    if emit_trace_flag and GasTownTracing is not None:
+        try:
+            sample_rate = float(os.getenv("GASTOWN_TRACE_SAMPLE_RATE", "1.0"))
+        except ValueError:
+            sample_rate = 1.0
+        if random.random() <= max(0.0, min(1.0, sample_rate)):
+            rig_name = os.getenv("GASTOWN_RIG", "vibecode")
+            bead_id = f"metrics-{now.strftime('%Y%m%d%H%M%S')}"
+            emit_synthetic_bead_trace(bead_id, rig_name, gt_status, crew_active, openclaw_jobs)
 
     # Return state updates
     state_updates = {
