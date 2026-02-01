@@ -4,14 +4,14 @@ import { logger } from '../utils/logger';
 export interface APIError extends Error {
     statusCode?: number;
     code?: string;
-    details?: any;
+    details?: unknown;
 }
 
 export class ValidationError extends Error {
     statusCode = 400;
     code = 'VALIDATION_ERROR';
 
-    constructor(message: string, public details?: any) {
+    constructor(message: string, public details?: unknown) {
         super(message);
         this.name = 'ValidationError';
     }
@@ -90,7 +90,8 @@ export const errorHandler = (
 
     const statusCode = error.statusCode || 500;
     const errorCode = error.code || 'INTERNAL_SERVER_ERROR';
-    const requestId = (req as any).requestId || 'unknown';
+    const requestId = (req as { requestId?: string }).requestId || 'unknown';
+    const userId = (req as { user?: { id?: string } }).user?.id;
 
     // Log the error
     const logData = {
@@ -103,7 +104,7 @@ export const errorHandler = (
         stack: error.stack,
         userAgent: req.get('User-Agent'),
         ip: req.ip,
-        userId: (req as any).user?.id,
+        userId,
         details: error.details
     };
 
@@ -114,7 +115,7 @@ export const errorHandler = (
     }
 
     // Prepare error response
-    const errorResponse: any = {
+    const errorResponse: Record<string, unknown> = {
         error: error.message,
         code: errorCode,
         requestId,
@@ -145,7 +146,7 @@ export const errorHandler = (
     res.status(statusCode).json(errorResponse);
 };
 
-export const asyncHandler = (fn: Function) => {
+export const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<void> | void) => {
     return (req: Request, res: Response, next: NextFunction) => {
         Promise.resolve(fn(req, res, next)).catch(next);
     };
@@ -171,7 +172,7 @@ export const setupGlobalErrorHandlers = (): void => {
         }, 1000);
     });
 
-    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+    process.on('unhandledRejection', (reason: unknown, promise: Promise<unknown>) => {
         logger.error('Unhandled Rejection', {
             reason: reason instanceof Error ? reason.message : String(reason),
             stack: reason instanceof Error ? reason.stack : undefined,

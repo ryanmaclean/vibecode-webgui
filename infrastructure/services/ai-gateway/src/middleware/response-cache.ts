@@ -13,7 +13,7 @@ function buildCacheKey(req: Request, keyPrefix: string, varyByUser: boolean): st
     const identityParts = [req.method, req.originalUrl];
 
     if (varyByUser) {
-        const userId = (req as any).user?.id;
+        const userId = (req as { user?: { id?: string } }).user?.id;
         if (userId) {
             identityParts.push(String(userId));
         }
@@ -53,8 +53,8 @@ export function cacheResponse(options: CacheOptions = {}) {
 
         res.setHeader('X-Cache', 'MISS');
 
-        const originalJson = res.json.bind(res);
-        res.json = (body: any) => {
+        const originalJson: Response['json'] = res.json.bind(res);
+        res.json = (body: unknown) => {
             if (res.statusCode >= 200 && res.statusCode < 300) {
                 const payload = JSON.stringify(body);
                 responseCache.set(cacheKey, payload, ttlSeconds).catch(() => {});

@@ -98,31 +98,38 @@ export class AIController {
             }
 
             // Route: use provider router if provider is indicated via model prefix or req.provider
-            const providerHint = (req.body?.provider as string | undefined)?.toLowerCase();
+            const providerHintRaw = typeof req.body?.provider === 'string' ? req.body.provider.toLowerCase() : undefined;
+            const providerHint = (providerHintRaw && ['openrouter', 'openai', 'azure', 'hf', 'ollama'].includes(providerHintRaw))
+                ? (providerHintRaw as UnifiedChatRequest['provider'])
+                : undefined;
             const modelHasPrefix = typeof requestData.model === 'string' && requestData.model.includes(':');
             let response: UnifiedChatResponse;
 
             if (providerHint || modelHasPrefix) {
+                const messages: UnifiedChatRequest['messages'] = requestData.messages.map(message => ({
+                    role: message.role,
+                    content: message.content
+                }));
                 const unifiedReq: UnifiedChatRequest = {
                     model: requestData.model,
-                    messages: requestData.messages.map(m => ({ role: m.role as any, content: (m as any).content })),
+                    messages,
                     max_tokens: requestData.max_tokens,
                     temperature: requestData.temperature,
                     top_p: requestData.top_p,
                     stream: requestData.stream,
                     stop: requestData.stop,
                     user: userId,
-                    provider: providerHint as any
+                    provider: providerHint
                 };
                 response = await this.providerRouter.chatCompletion(unifiedReq, userId);
             } else {
                 // Fallback to existing OpenRouter path
                 const orResp = await this.openRouterClient.chatCompletion(requestData, userId);
                 response = {
-                    id: (orResp as any).id,
+                    id: orResp.id,
                     model: orResp.model,
-                    choices: orResp.choices as any,
-                    usage: orResp.usage as any
+                    choices: orResp.choices,
+                    usage: orResp.usage
                 };
             }
 
@@ -174,7 +181,7 @@ export class AIController {
                 `model:${response.model.replace(/[:/]/g, '_')}`
             ]).catch(() => {});
 
-            res.json(response as any);
+            res.json(response);
         } catch (error) {
             performanceLogger.logError('chat_completion', startTime, error, {
                 model: requestData.model,
@@ -269,7 +276,6 @@ export class AIController {
             });
 
             let totalTokens = 0;
-            let fullContent = '';
 
             // Stream response
             await this.openRouterClient.streamChatCompletion(
@@ -280,7 +286,6 @@ export class AIController {
                     // Estimate tokens and accumulate content
                     const content = chunk.choices[0]?.delta?.content;
                     if (content) {
-                        fullContent += content;
                         totalTokens += Math.ceil(content.length / 4);
                     }
                 },
