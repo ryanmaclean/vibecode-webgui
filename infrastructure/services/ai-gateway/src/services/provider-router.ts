@@ -51,16 +51,24 @@ function inferProvider(
   return { provider: 'openrouter' };
 }
 
+type ProviderError = {
+  message?: string;
+  response?: {
+    status?: number;
+    data?: {
+      error?: { message?: string } | string;
+      message?: string;
+    };
+  };
+};
+
 function isRateLimitError(error: unknown): boolean {
-  const err = error as { response?: { status?: number; data?: any }; message?: string };
+  const err = error as ProviderError;
   const status = err?.response?.status;
   if (status === 429) return true;
-  const message = [
-    err?.message,
-    err?.response?.data?.error?.message,
-    err?.response?.data?.error,
-    err?.response?.data?.message,
-  ]
+  const responseError = err?.response?.data?.error;
+  const responseErrorMessage = typeof responseError === 'string' ? responseError : responseError?.message;
+  const message = [err?.message, responseErrorMessage, err?.response?.data?.message]
     .filter(Boolean)
     .join(' ')
     .toLowerCase();
