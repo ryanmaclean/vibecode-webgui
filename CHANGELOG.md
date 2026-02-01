@@ -23,7 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Validation script validate-issue-790-fix.sh for automated testing of the fix
 - Documentation of GAS (Generate-Assess-Synthesize) methodology used to solve Issue #790
 
-## [1.4.0] - 2026-01-XX
+## [1.4.0] - 2026-01-15
 
 ### Added
 - Initial release of unified services VM

@@ -397,3 +397,6 @@ vibecode_webgui/
 
 # Event logs
 .events.jsonl
+
+# Gas Town (added by gt)
+.logs/
