@@ -81,12 +81,14 @@ jobs:
           # Use Tauri config for static export
           cp next.config.tauri.js next.config.js
 
-          # IMPORTANT: Move API routes out of the way for static export
+          # IMPORTANT: Move API routes COMPLETELY OUT of src/app for static export
+          # Next.js App Router compiles ANY directory inside src/app as routes
           # API routes use force-dynamic which is incompatible with output: export
           # They will be handled by Tauri's Rust backend instead
-          echo "Temporarily excluding API routes for static export..."
+          echo "Temporarily moving API routes outside of src/app..."
           if [ -d "src/app/api" ]; then
-            mv src/app/api src/app/api.excluded
+            mv src/app/api /tmp/api-routes-backup
+            echo "API routes moved to /tmp/api-routes-backup"
           fi
 
           # Clean Next.js cache to prevent stale route references
@@ -98,8 +100,9 @@ jobs:
           BUILD_STATUS=$?
 
           # Restore API routes immediately after build
-          if [ -d "src/app/api.excluded" ]; then
-            mv src/app/api.excluded src/app/api
+          if [ -d "/tmp/api-routes-backup" ]; then
+            mv /tmp/api-routes-backup src/app/api
+            echo "API routes restored from /tmp/api-routes-backup"
           fi
 
           # Check if build succeeded
