@@ -89,6 +89,10 @@ jobs:
             mv src/app/api src/app/api.excluded
           fi
 
+          # Clean Next.js cache to prevent stale route references
+          echo "Cleaning Next.js cache..."
+          rm -rf .next
+
           # Build with static export
           npm run build
           BUILD_STATUS=$?
