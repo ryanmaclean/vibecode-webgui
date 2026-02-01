@@ -1,0 +1,339 @@
+# Unified AI Agent Observability Metrics
+# Covers: Ralph Loop, Sequential Thinking, Gas Town, Claude Code, OpenAI/Codex, Anthropic
+# For Datadog dashboards and monitoring
+
+metrics:
+  # ============================================================
+  # RALPH LOOP / SEQUENTIAL THINKING
+  # ============================================================
+  - name: ralph.loop.iteration
+    type: counter
+    description: "Ralph loop iterations executed"
+    tags:
+      - session_id
+      - agent_type
+      - outcome  # success, failure, timeout
+
+  - name: ralph.loop.duration_ms
+    type: histogram
+    description: "Duration of each Ralph loop iteration"
+    tags:
+      - session_id
+      - complexity
+
+  - name: ralph.thinking.thought_count
+    type: histogram
+    description: "Number of thoughts per problem"
+    tags:
+      - session_id
+      - problem_type
+
+  - name: ralph.thinking.depth
+    type: gauge
+    description: "Current thinking depth (nested thoughts)"
+    tags:
+      - session_id
+
+  - name: ralph.thinking.branch_count
+    type: counter
+    description: "Thought branches created"
+    tags:
+      - session_id
+      - branch_type  # revision, question, alternative
+
+  - name: ralph.thinking.convergence_ms
+    type: histogram
+    description: "Time to converge on solution"
+    tags:
+      - session_id
+      - success
+
+  - name: sequential_thinking.request.count
+    type: counter
+    description: "Sequential thinking requests"
+    tags:
+      - model
+      - provider
+
+  - name: sequential_thinking.request.duration_ms
+    type: histogram
+    description: "Sequential thinking request latency"
+    tags:
+      - model
+      - thought_count
+
+  - name: sequential_thinking.fallback.count
+    type: counter
+    description: "Fallbacks triggered"
+    tags:
+      - reason
+      - from_model
+
+  # ============================================================
+  # CLAUDE CODE / ANTHROPIC API
+  # ============================================================
+  - name: claude.api.request.count
+    type: counter
+    description: "Claude API requests"
+    tags:
+      - model  # claude-3-opus, claude-3-sonnet, etc.
+      - endpoint  # messages, completions
+      - status  # success, error, rate_limited
+
+  - name: claude.api.request.duration_ms
+    type: histogram
+    description: "Claude API request latency"
+    tags:
+      - model
+      - streaming  # true, false
+
+  - name: claude.api.tokens.input
+    type: counter
+    description: "Input tokens sent to Claude"
+    tags:
+      - model
+      - session_id
+
+  - name: claude.api.tokens.output
+    type: counter
+    description: "Output tokens from Claude"
+    tags:
+      - model
+      - session_id
+
+  - name: claude.api.tokens.cache_read
+    type: counter
+    description: "Tokens read from prompt cache"
+    tags:
+      - model
+
+  - name: claude.api.tokens.cache_write
+    type: counter
+    description: "Tokens written to prompt cache"
+    tags:
+      - model
+
+  - name: claude.api.cost_usd
+    type: counter
+    description: "Estimated cost in USD (microcents)"
+    tags:
+      - model
+      - session_id
+
+  - name: claude.api.error.count
+    type: counter
+    description: "Claude API errors"
+    tags:
+      - model
+      - error_type  # rate_limit, timeout, invalid_request, server_error
+
+  - name: claude.tool_use.count
+    type: counter
+    description: "Tool use invocations"
+    tags:
+      - tool_name
+      - model
+      - success
+
+  - name: claude.tool_use.duration_ms
+    type: histogram
+    description: "Tool execution duration"
+    tags:
+      - tool_name
+
+  - name: claude.streaming.token_rate
+    type: gauge
+    description: "Tokens per second in streaming response"
+    tags:
+      - model
+
+  # ============================================================
+  # OPENAI / CODEX / GPT
+  # ============================================================
+  - name: openai.api.request.count
+    type: counter
+    description: "OpenAI API requests"
+    tags:
+      - model  # gpt-4, gpt-3.5-turbo, codex
+      - endpoint
+      - status
+
+  - name: openai.api.request.duration_ms
+    type: histogram
+    description: "OpenAI API request latency"
+    tags:
+      - model
+      - streaming
+
+  - name: openai.api.tokens.input
+    type: counter
+    description: "Input tokens to OpenAI"
+    tags:
+      - model
+
+  - name: openai.api.tokens.output
+    type: counter
+    description: "Output tokens from OpenAI"
+    tags:
+      - model
+
+  - name: openai.api.cost_usd
+    type: counter
+    description: "Estimated cost in USD (microcents)"
+    tags:
+      - model
+
+  - name: openai.api.error.count
+    type: counter
+    description: "OpenAI API errors"
+    tags:
+      - model
+      - error_type
+
+  - name: openai.embedding.count
+    type: counter
+    description: "Embedding requests"
+    tags:
+      - model  # text-embedding-3-small, text-embedding-3-large
+
+  - name: openai.embedding.dimensions
+    type: gauge
+    description: "Embedding dimensions used"
+    tags:
+      - model
+
+  # ============================================================
+  # GAS TOWN / POLECATS
+  # ============================================================
+  - name: gastown.polecats.spawned
+    type: counter
+    description: "Polecats spawned"
+    tags:
+      - rig_name
+      - agent_type
+      - priority
+
+  - name: gastown.polecats.completed
+    type: counter
+    description: "Polecats completed work"
+    tags:
+      - rig_name
+      - success
+
+  - name: gastown.polecats.failed
+    type: counter
+    description: "Polecats failed"
+    tags:
+      - rig_name
+      - failure_reason
+
+  - name: gastown.polecats.active
+    type: gauge
+    description: "Currently active polecats"
+    tags:
+      - rig_name
+
+  - name: gastown.polecat.duration_s
+    type: histogram
+    description: "Polecat work duration"
+    tags:
+      - rig_name
+      - task_type
+
+  - name: gastown.polecat.tokens_used
+    type: counter
+    description: "Tokens used by polecat"
+    tags:
+      - rig_name
+      - model
+
+  - name: gastown.polecat.cost_usd
+    type: counter
+    description: "Cost per polecat session"
+    tags:
+      - rig_name
+
+  # ============================================================
+  # UNIFIED AGENT METRICS
+  # ============================================================
+  - name: ai_agent.request.count
+    type: counter
+    description: "Unified AI agent requests"
+    tags:
+      - provider  # anthropic, openai, ollama, local
+      - model
+      - agent_type  # ralph, gastown, claude_code, codex
+
+  - name: ai_agent.request.duration_ms
+    type: histogram
+    description: "Unified request latency"
+    tags:
+      - provider
+      - model
+
+  - name: ai_agent.tokens.total
+    type: counter
+    description: "Total tokens across all providers"
+    tags:
+      - provider
+      - direction  # input, output
+
+  - name: ai_agent.cost.total_usd
+    type: counter
+    description: "Total cost across all providers"
+    tags:
+      - provider
+      - model
+
+  - name: ai_agent.error.count
+    type: counter
+    description: "Errors across all agents"
+    tags:
+      - provider
+      - agent_type
+      - error_category
+
+  - name: ai_agent.quality.score
+    type: gauge
+    description: "Quality score (0-100)"
+    tags:
+      - provider
+      - model
+      - task_type
+
+  - name: ai_agent.routing.decision
+    type: counter
+    description: "Routing decisions made"
+    tags:
+      - selected_provider
+      - selected_model
+      - reason  # cost, latency, capability, fallback
+
+# Log sources for correlation
+logs:
+  - source: ralph_loop
+    paths:
+      - /Users/studio/gt/*/ralph/*.log
+      - /Users/studio/.claude/logs/*.jsonl
+    tags:
+      - service:ralph-loop
+
+  - source: claude_code
+    paths:
+      - /Users/studio/.claude/projects/*/*.jsonl
+      - /Users/studio/.claude/*.log
+    tags:
+      - service:claude-code
+
+  - source: gastown
+    paths:
+      - /Users/studio/gt/*/.beads/*.log
+      - /Users/studio/gt/*/polecats/*/logs/*.log
+    tags:
+      - service:gastown
+
+  - source: sequential_thinking
+    paths:
+      - /Users/studio/.mcp/sequential-thinking/*.log
+    tags:
+      - service:sequential-thinking
