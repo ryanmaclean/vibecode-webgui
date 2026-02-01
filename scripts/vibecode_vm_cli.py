@@ -19,7 +19,7 @@ from pathlib import Path
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [VIBECODE-VM-CLI] %(message)s')
 logger = logging.getLogger()
 
-SCRIPTS_DIR = Path(__file__).parent.resolve()
+SCRIPTS_DIR = Path(__file__).resolve().parent
 LAUNCH_VM_SCRIPT = SCRIPTS_DIR / "launch_ubuntu_vm.py"
 RALPH_LOOP_SCRIPT = SCRIPTS_DIR / "ralph_loop.py"
 

@@ -24,10 +24,10 @@ except ImportError:
 # Configuration
 WORKSPACE_DIR = Path.home() / "VibeCode" / "Workspace"
 UBUNTU_RELEASE = "noble" # 24.04
-BASE_URL = f"https://cloud-images.ubuntu.com/minimal/releases/{UBUNTU_RELEASE}/release"
-IMAGE_URL = f"{BASE_URL}/ubuntu-24.04-minimal-cloudimg-arm64.img"
-KERNEL_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-minimal-cloudimg-arm64-vmlinuz-generic"
-INITRD_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-minimal-cloudimg-arm64-initrd-generic"
+BASE_URL = f"https://cloud-images.ubuntu.com/releases/{UBUNTU_RELEASE}/release"
+IMAGE_URL = f"{BASE_URL}/ubuntu-24.04-server-cloudimg-arm64.img"
+KERNEL_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-server-cloudimg-arm64-vmlinuz-generic"
+INITRD_URL = f"{BASE_URL}/unpacked/ubuntu-24.04-server-cloudimg-arm64-initrd-generic"
 
 logger = logging.getLogger()
 
@@ -187,10 +187,25 @@ def launch():
     download_file(KERNEL_URL, kernel)
     download_file(INITRD_URL, initrd)
     
-    if not disk.exists():
-        download_file(IMAGE_URL, disk)
+    # Decompress kernel if needed
+    kernel_uncompressed = vm_dir / "vmlinux"
+    if not kernel_uncompressed.exists():
+        logger.info("📦 Decompressing kernel...")
+        with open(kernel, 'rb') as f_in:
+            import gzip
+            with open(kernel_uncompressed, 'wb') as f_out:
+                shutil.copyfileobj(gzip.GzipFile(fileobj=f_in), f_out)
+    
+    disk_raw = vm_dir / "disk.raw"
+    if not disk_raw.exists():
+        if not disk.exists():
+            download_file(IMAGE_URL, disk)
+        
+        logger.info("💿 Converting QCOW2 to RAW...")
+        subprocess.run(["qemu-img", "convert", "-f", "qcow2", "-O", "raw", str(disk), str(disk_raw)], check=True)
+         
         logger.info("💿 Resizing disk to 20GB...")
-        subprocess.run(["truncate", "-s", "20G", str(disk)])
+        subprocess.run(["truncate", "-s", "20G", str(disk_raw)])
     
     # Create Seed ISO
     seed_iso = create_seed_iso(vm_dir, vm_name)
@@ -200,13 +215,13 @@ def launch():
         "vfkit",
         "--cpus", "2",
         "--memory", "2048",
-        "--bootline", "console=hvc0 root=/dev/vda1 rw",
-        "--kernel", str(kernel),
+        "--kernel-cmdline", "console=hvc0 root=/dev/vda1 rw",
+        "--kernel", str(kernel_uncompressed),
         "--initrd", str(initrd),
-        "--disk", str(disk),
-        "--device", f"file,path={seed_iso}", # Attach ISO as second disk
-        "--device", f"virtiofs,path={WORKSPACE_DIR},tag=vibecode", # Mount workspace
-        "--net", "nat",
+        "--device", f"virtio-blk,path={disk_raw}",
+        "--device", f"virtio-blk,path={seed_iso}", # Attach ISO as second disk
+        "--device", f"virtio-fs,sharedDir={WORKSPACE_DIR},mountTag=vibecode", # Mount workspace
+        "--device", "virtio-net,nat",
     ]
     
     logger.info(f"🚀 Launching Ubuntu VM ({vm_name})...")
