@@ -1,81 +1,102 @@
 #!/usr/bin/env python3
 """Configure LX-Branded Zone for VibeCode.
 
-Sets up Debian-compatible zone with ZFS datasets and networking.
+Sets up Debian-compatible zone with ZFS datasets and networking
+on OpenIndiana.
 """
 
-from __future__ import annotations
-
+import argparse
 import os
 import subprocess
 import sys
 import time
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
-# ANSI color codes
-RED = "\033[0;31m"
-GREEN = "\033[0;32m"
-YELLOW = "\033[1;33m"
-NC = "\033[0m"
+# ANSI colors for output
+GREEN = '\033[0;32m'
+YELLOW = '\033[1;33m'
+RED = '\033[0;31m'
+NC = '\033[0m'
 
 
 @dataclass
 class ZoneConfig:
-    """LX Zone configuration."""
+    """Configuration for the LX zone."""
 
-    zone_name: str = "vibecode-zone"
-    zone_path: str = field(default="")
-    zone_vnic: str = "vibecode0"
-    zone_cpus: int = 4
-    zone_memory: str = "8G"
-    zone_swap: str = "10G"
-    debian_image_url: str = "https://us-central.manta.mnx.io/Joyent_Dev/public/lx-debian-11/lx-debian-11-latest.zss.gz"
+    name: str = "vibecode-zone"
+    vnic: str = "vibecode0"
+    cpus: int = 4
+    memory: str = "8G"
+    swap: str = "10G"
+    debian_image_url: str = field(default_factory=lambda: (
+        "https://us-central.manta.mnx.io/Joyent_Dev/public/"
+        "lx-debian-11/lx-debian-11-latest.zss.gz"
+    ))
     debian_image: str = "lx-debian-11-latest.zss"
-    primary_nic: str = ""
+    resolvers: str = "8.8.8.8,8.8.4.4"
+    dns_domain: str = "local"
 
-    def __post_init__(self) -> None:
-        """Set derived values."""
-        if not self.zone_path:
-            self.zone_path = f"/zones/{self.zone_name}"
+    @property
+    def zone_path(self) -> str:
+        """Get the zone path."""
+        return f"/zones/{self.name}"
 
-
-def log_info(msg: str) -> None:
-    """Log info message."""
-    print(f"{GREEN}[INFO]{NC} {msg}")
-
-
-def log_warn(msg: str) -> None:
-    """Log warning message."""
-    print(f"{YELLOW}[WARN]{NC} {msg}")
+    @property
+    def zfs_base(self) -> str:
+        """Get the base ZFS dataset path."""
+        return f"rpool/zones/{self.name}"
 
 
-def log_error(msg: str) -> None:
-    """Log error message."""
-    print(f"{RED}[ERROR]{NC} {msg}")
+def log_info(message: str) -> None:
+    """Log an info message."""
+    print(f"{GREEN}[INFO]{NC} {message}")
+
+
+def log_warn(message: str) -> None:
+    """Log a warning message."""
+    print(f"{YELLOW}[WARN]{NC} {message}")
+
+
+def log_error(message: str) -> None:
+    """Log an error message."""
+    print(f"{RED}[ERROR]{NC} {message}")
 
 
 def run_command(
     cmd: list[str],
-    timeout: int = 300,
-    check: bool = False,
+    check: bool = True,
     capture: bool = True,
-    input_text: str | None = None,
-) -> subprocess.CompletedProcess:
-    """Run a command with error handling."""
+    input_text: Optional[str] = None
+) -> tuple[int, str, str]:
+    """Run a command and return the result.
+
+    Args:
+        cmd: Command to run.
+        check: If True, log errors on failure.
+        capture: If True, capture output.
+        input_text: Optional input to send to command.
+
+    Returns:
+        Tuple of (return_code, stdout, stderr).
+    """
     try:
-        return subprocess.run(
+        result = subprocess.run(
             cmd,
             capture_output=capture,
             text=True,
-            timeout=timeout,
-            check=check,
-            input=input_text,
+            input=input_text
         )
-    except subprocess.TimeoutExpired:
-        return subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr="Timeout")
-    except subprocess.SubprocessError as e:
-        return subprocess.CompletedProcess(cmd, returncode=1, stdout="", stderr=str(e))
+        if check and result.returncode != 0 and capture:
+            log_error(f"Command failed: {' '.join(cmd)}")
+            if result.stderr:
+                log_error(result.stderr)
+        stdout = result.stdout if capture else ""
+        stderr = result.stderr if capture else ""
+        return result.returncode, stdout, stderr
+    except FileNotFoundError:
+        return -1, "", f"Command not found: {cmd[0]}"
 
 
 def check_root() -> bool:
@@ -84,7 +105,7 @@ def check_root() -> bool:
     Returns:
         True if running as root.
     """
-    if os.getuid() != 0:
+    if os.geteuid() != 0:
         log_error("This script must be run as root")
         return False
     return True
@@ -94,11 +115,11 @@ def update_system() -> bool:
     """Update OpenIndiana packages.
 
     Returns:
-        True if successful or if update failed but we can continue.
+        True if update succeeded or was skipped.
     """
     log_info("Updating OpenIndiana base system...")
-    result = run_command(["pkg", "update", "-v"], timeout=600)
-    if result.returncode != 0:
+    rc, _, _ = run_command(["pkg", "update", "-v"], check=False)
+    if rc != 0:
         log_warn("Package update failed, continuing...")
     return True
 
@@ -107,25 +128,25 @@ def install_lx_brand() -> bool:
     """Install lx-branded zone support.
 
     Returns:
-        True if installation successful.
+        True if installation succeeded.
     """
     log_info("Installing lx-branded zone support...")
 
     # Check if already installed
-    result = run_command(["pkg", "list", "brand/lx"])
-    if result.returncode == 0:
+    rc, _, _ = run_command(["pkg", "list", "brand/lx"], check=False)
+    if rc == 0:
         log_info("lx-branded zone already installed")
         return True
 
-    # Install the package
-    result = run_command(["pkg", "install", "-v", "brand/lx"], timeout=600)
-    if result.returncode != 0:
+    # Install package
+    rc, _, _ = run_command(["pkg", "install", "-v", "brand/lx"])
+    if rc != 0:
         log_error("Failed to install lx-branded zone")
         return False
 
     # Verify installation
-    result = run_command(["pkg", "list", "brand/lx"])
-    if result.returncode != 0:
+    rc, _, _ = run_command(["pkg", "list", "brand/lx"], check=False)
+    if rc != 0:
         log_error("Failed to verify lx-branded zone installation")
         return False
 
@@ -133,8 +154,12 @@ def install_lx_brand() -> bool:
     return True
 
 
-def download_debian_image(config: ZoneConfig) -> bool:
+def download_debian_image(config: ZoneConfig, force: bool = False) -> bool:
     """Download Debian image for lx zone.
+
+    Args:
+        config: Zone configuration.
+        force: Force re-download if image exists.
 
     Returns:
         True if image is available.
@@ -142,77 +167,90 @@ def download_debian_image(config: ZoneConfig) -> bool:
     log_info("Downloading Debian 11 image for lx zone...")
 
     image_path = Path(config.debian_image)
-    compressed_path = Path(f"{config.debian_image}.gz")
+    gz_path = Path(f"{config.debian_image}.gz")
 
-    if image_path.exists():
+    if image_path.exists() and not force:
         log_info(f"Debian image already exists: {config.debian_image}")
         return True
 
     # Download compressed image if needed
-    if not compressed_path.exists():
+    if not gz_path.exists():
         log_info(f"Downloading from: {config.debian_image_url}")
-        result = run_command(
-            ["curl", "-L", "-o", str(compressed_path), config.debian_image_url],
-            timeout=1800,  # 30 minutes for large download
-        )
-        if result.returncode != 0:
+        rc, _, _ = run_command([
+            "curl", "-L", "-o", str(gz_path), config.debian_image_url
+        ])
+        if rc != 0:
             log_error("Failed to download Debian image")
             return False
 
     # Decompress
     log_info("Decompressing image...")
-    result = run_command(["gunzip", str(compressed_path)], timeout=300)
-    if result.returncode != 0:
-        log_error("Failed to decompress Debian image")
+    rc, _, _ = run_command(["gunzip", str(gz_path)])
+    if rc != 0:
+        log_error("Failed to decompress image")
         return False
 
     log_info(f"Debian image ready: {config.debian_image}")
     return True
 
 
-def detect_network(config: ZoneConfig) -> bool:
+def detect_network() -> Optional[str]:
     """Detect primary network interface.
 
     Returns:
-        True if network detected.
+        Primary NIC name or None.
     """
     log_info("Detecting primary network interface...")
 
-    result = run_command(["dladm", "show-phys", "-p", "-o", "LINK"])
-    if result.returncode != 0 or not result.stdout.strip():
+    rc, stdout, _ = run_command([
+        "dladm", "show-phys", "-p", "-o", "LINK"
+    ])
+
+    if rc != 0 or not stdout.strip():
         log_error("No network interface found")
-        return False
+        return None
 
-    config.primary_nic = result.stdout.strip().split("\n")[0]
-    log_info(f"Primary NIC: {config.primary_nic}")
-    return True
+    primary_nic = stdout.strip().split('\n')[0]
+    log_info(f"Primary NIC: {primary_nic}")
+    return primary_nic
 
 
-def create_vnic(config: ZoneConfig) -> bool:
+def create_vnic(config: ZoneConfig, primary_nic: str) -> bool:
     """Create VNIC for zone.
 
+    Args:
+        config: Zone configuration.
+        primary_nic: Primary network interface.
+
     Returns:
-        True if VNIC created successfully.
+        True if VNIC was created.
     """
-    log_info(f"Creating VNIC: {config.zone_vnic}")
+    log_info(f"Creating VNIC: {config.vnic}")
 
     # Check if VNIC already exists
-    result = run_command(["dladm", "show-vnic", config.zone_vnic])
-    if result.returncode == 0:
-        log_warn(f"VNIC {config.zone_vnic} already exists, removing...")
-        run_command(["dladm", "delete-vnic", config.zone_vnic])
+    rc, _, _ = run_command(
+        ["dladm", "show-vnic", config.vnic],
+        check=False
+    )
+    if rc == 0:
+        log_warn(f"VNIC {config.vnic} already exists, removing...")
+        run_command(["dladm", "delete-vnic", config.vnic])
 
     # Create VNIC with bandwidth limit
-    result = run_command([
-        "dladm", "create-vnic", "-l", config.primary_nic,
-        "-p", "maxbw=1000", config.zone_vnic,
+    rc, _, _ = run_command([
+        "dladm", "create-vnic",
+        "-l", primary_nic,
+        "-p", "maxbw=1000",
+        config.vnic
     ])
-    if result.returncode != 0:
+
+    if rc != 0:
         log_error("Failed to create VNIC")
         return False
 
     # Verify creation
-    result = run_command(["dladm", "show-vnic", config.zone_vnic], capture=False)
+    run_command(["dladm", "show-vnic", config.vnic], capture=False)
+
     log_info("VNIC created successfully")
     return True
 
@@ -220,116 +258,150 @@ def create_vnic(config: ZoneConfig) -> bool:
 def create_zfs_datasets(config: ZoneConfig) -> bool:
     """Create ZFS datasets for zone.
 
+    Args:
+        config: Zone configuration.
+
     Returns:
-        True if datasets created successfully.
+        True if datasets were created.
     """
     log_info("Creating ZFS datasets for zone...")
 
-    # Create base zones dataset if it doesn't exist
-    result = run_command(["zfs", "list", "rpool/zones"])
-    if result.returncode != 0:
-        run_command(["zfs", "create", "-o", "mountpoint=/zones", "rpool/zones"])
+    # Create base zones dataset if needed
+    rc, _, _ = run_command(["zfs", "list", "rpool/zones"], check=False)
+    if rc != 0:
+        run_command([
+            "zfs", "create",
+            "-o", "mountpoint=/zones",
+            "rpool/zones"
+        ])
 
     # Create zone dataset
-    zone_dataset = f"rpool/zones/{config.zone_name}"
-    result = run_command(["zfs", "list", zone_dataset])
-    if result.returncode == 0:
+    rc, _, _ = run_command(["zfs", "list", config.zfs_base], check=False)
+    if rc == 0:
         log_warn("Zone dataset already exists")
     else:
-        run_command(["zfs", "create", zone_dataset])
+        run_command(["zfs", "create", config.zfs_base])
 
-    # Create optimized datasets
     log_info("Creating optimized datasets...")
 
-    datasets = [
-        (f"{zone_dataset}/postgres", [
-            ("recordsize", "8K"),
-            ("logbias", "latency"),
-            ("primarycache", "metadata"),
-        ]),
-        (f"{zone_dataset}/redis", [
-            ("recordsize", "8K"),
-            ("compression", "lz4"),
-        ]),
-        (f"{zone_dataset}/app", [
-            ("compression", "lz4"),
-            ("atime", "off"),
-        ]),
-    ]
+    # PostgreSQL dataset (optimized for small random I/O)
+    postgres_ds = f"{config.zfs_base}/postgres"
+    rc, _, _ = run_command(["zfs", "list", postgres_ds], check=False)
+    if rc != 0:
+        run_command(["zfs", "create", postgres_ds])
+        run_command(["zfs", "set", "recordsize=8K", postgres_ds])
+        run_command(["zfs", "set", "logbias=latency", postgres_ds])
+        run_command(["zfs", "set", "primarycache=metadata", postgres_ds])
 
-    for dataset, properties in datasets:
-        result = run_command(["zfs", "list", dataset])
-        if result.returncode != 0:
-            run_command(["zfs", "create", dataset])
-            for prop, value in properties:
-                run_command(["zfs", "set", f"{prop}={value}", dataset])
+    # Redis dataset (optimized for fast access)
+    redis_ds = f"{config.zfs_base}/redis"
+    rc, _, _ = run_command(["zfs", "list", redis_ds], check=False)
+    if rc != 0:
+        run_command(["zfs", "create", redis_ds])
+        run_command(["zfs", "set", "recordsize=8K", redis_ds])
+        run_command(["zfs", "set", "compression=lz4", redis_ds])
+
+    # Application dataset (compressed, no atime)
+    app_ds = f"{config.zfs_base}/app"
+    rc, _, _ = run_command(["zfs", "list", app_ds], check=False)
+    if rc != 0:
+        run_command(["zfs", "create", app_ds])
+        run_command(["zfs", "set", "compression=lz4", app_ds])
+        run_command(["zfs", "set", "atime=off", app_ds])
 
     log_info("ZFS datasets created")
     run_command(["zfs", "list"], capture=False)
     return True
 
 
-def create_zone_config(config: ZoneConfig) -> bool:
-    """Create zone configuration.
+def generate_zone_config(config: ZoneConfig) -> str:
+    """Generate zone configuration commands.
+
+    Args:
+        config: Zone configuration.
 
     Returns:
-        True if configuration created successfully.
+        Zone configuration string.
     """
-    log_info("Creating zone configuration...")
-
-    # Check if zone already exists
-    result = run_command(["zoneadm", "list", "-cp"])
-    if result.returncode == 0 and f"{config.zone_name}:" in result.stdout:
-        log_warn(f"Zone {config.zone_name} already exists, removing...")
-        run_command(["zoneadm", "-z", config.zone_name, "halt"])
-        run_command(["zoneadm", "-z", config.zone_name, "uninstall", "-F"])
-        run_command(["zonecfg", "-z", config.zone_name, "delete", "-F"])
-
-    # Create zone configuration
-    zone_cfg = f"""create -t lx
+    return f"""create -t lx
 set zonepath={config.zone_path}
 set autoboot=true
 set ip-type=exclusive
 add net
-set physical={config.zone_vnic}
+set physical={config.vnic}
 end
 add attr
 set name=resolvers
 set type=string
-set value=8.8.8.8,8.8.4.4
+set value={config.resolvers}
 end
 add attr
 set name=dns-domain
 set type=string
-set value=local
+set value={config.dns_domain}
 end
 add capped-cpu
-set ncpus={config.zone_cpus}
+set ncpus={config.cpus}
 end
 add capped-memory
-set physical={config.zone_memory}
-set swap={config.zone_swap}
+set physical={config.memory}
+set swap={config.swap}
 end
 """
 
-    result = run_command(
-        ["zonecfg", "-z", config.zone_name],
-        input_text=zone_cfg,
+
+def create_zone_config(config: ZoneConfig) -> bool:
+    """Create zone configuration.
+
+    Args:
+        config: Zone configuration.
+
+    Returns:
+        True if configuration was created.
+    """
+    log_info("Creating zone configuration...")
+
+    # Check if zone already exists
+    rc, stdout, _ = run_command(["zoneadm", "list", "-cp"], check=False)
+    if rc == 0 and f"{config.name}:" in stdout:
+        log_warn(f"Zone {config.name} already exists, removing...")
+        run_command(
+            ["zoneadm", "-z", config.name, "halt"],
+            check=False
+        )
+        run_command(
+            ["zoneadm", "-z", config.name, "uninstall", "-F"],
+            check=False
+        )
+        run_command(
+            ["zonecfg", "-z", config.name, "delete", "-F"],
+            check=False
+        )
+
+    # Create zone configuration
+    zone_cfg = generate_zone_config(config)
+    rc, _, _ = run_command(
+        ["zonecfg", "-z", config.name],
+        input_text=zone_cfg
     )
-    if result.returncode != 0:
+
+    if rc != 0:
         log_error("Failed to create zone configuration")
         return False
 
     log_info("Zone configuration created")
-    run_command(["zonecfg", "-z", config.zone_name, "info"], capture=False)
+    run_command(["zonecfg", "-z", config.name, "info"], capture=False)
     return True
 
 
 def install_zone(config: ZoneConfig) -> bool:
     """Install zone from Debian image.
 
+    Args:
+        config: Zone configuration.
+
     Returns:
-        True if zone installed successfully.
+        True if installation succeeded.
     """
     log_info("Installing zone from Debian image...")
 
@@ -337,11 +409,12 @@ def install_zone(config: ZoneConfig) -> bool:
         log_error(f"Debian image not found: {config.debian_image}")
         return False
 
-    result = run_command(
-        ["zoneadm", "-z", config.zone_name, "install", "-s", config.debian_image],
-        timeout=600,
-    )
-    if result.returncode != 0:
+    rc, _, _ = run_command([
+        "zoneadm", "-z", config.name,
+        "install", "-s", config.debian_image
+    ])
+
+    if rc != 0:
         log_error("Failed to install zone")
         return False
 
@@ -352,40 +425,40 @@ def install_zone(config: ZoneConfig) -> bool:
 def boot_zone(config: ZoneConfig) -> bool:
     """Boot the zone.
 
-    Returns:
-        True if zone booted successfully.
-    """
-    log_info(f"Booting zone: {config.zone_name}")
+    Args:
+        config: Zone configuration.
 
-    result = run_command(["zoneadm", "-z", config.zone_name, "boot"])
-    if result.returncode != 0:
+    Returns:
+        True if zone is running.
+    """
+    log_info(f"Booting zone: {config.name}")
+
+    rc, _, _ = run_command(["zoneadm", "-z", config.name, "boot"])
+    if rc != 0:
         log_error("Failed to boot zone")
         return False
 
-    # Wait for zone to fully boot
     log_info("Waiting for zone to boot...")
     time.sleep(10)
 
     # Verify zone is running
-    result = run_command(["zoneadm", "list", "-v"])
-    if result.returncode == 0 and f"{config.zone_name}" in result.stdout and "running" in result.stdout:
+    rc, stdout, _ = run_command(["zoneadm", "list", "-v"])
+    if rc == 0 and config.name in stdout and "running" in stdout:
         log_info("Zone is running")
         return True
-    else:
-        log_error("Zone failed to boot")
-        run_command(["zoneadm", "list", "-v"], capture=False)
-        return False
+
+    log_error("Zone failed to boot")
+    run_command(["zoneadm", "list", "-v"], capture=False)
+    return False
 
 
-def configure_zone_network(config: ZoneConfig) -> bool:
-    """Configure zone networking.
+def generate_network_config() -> str:
+    """Generate network configuration script.
 
     Returns:
-        True if networking configured successfully.
+        Network configuration script content.
     """
-    log_info("Configuring zone networking...")
-
-    network_script = """
+    return """
 # Configure DHCP
 cat > /etc/network/interfaces <<NETCONF
 auto lo
@@ -408,13 +481,26 @@ apt update
 echo "Zone network configured"
 """
 
-    result = run_command(
-        ["zlogin", config.zone_name, "/bin/bash"],
-        input_text=network_script,
-        timeout=300,
+
+def configure_zone_network(config: ZoneConfig) -> bool:
+    """Configure zone networking.
+
+    Args:
+        config: Zone configuration.
+
+    Returns:
+        True if configuration succeeded.
+    """
+    log_info("Configuring zone networking...")
+
+    network_script = generate_network_config()
+    rc, _, _ = run_command(
+        ["zlogin", config.name, "/bin/bash"],
+        input_text=network_script
     )
-    if result.returncode != 0:
-        log_warn("Zone network configuration may have issues")
+
+    if rc != 0:
+        log_warn("Network configuration may have failed")
 
     log_info("Zone networking configured")
     return True
@@ -423,14 +509,18 @@ echo "Zone network configured"
 def create_snapshot(config: ZoneConfig) -> bool:
     """Create baseline ZFS snapshot.
 
+    Args:
+        config: Zone configuration.
+
     Returns:
-        True if snapshot created successfully.
+        True if snapshot was created.
     """
     log_info("Creating baseline ZFS snapshot...")
 
-    snapshot_name = f"rpool/zones/{config.zone_name}@baseline"
-    result = run_command(["zfs", "snapshot", snapshot_name])
-    if result.returncode != 0:
+    snapshot_name = f"{config.zfs_base}@baseline"
+    rc, _, _ = run_command(["zfs", "snapshot", snapshot_name])
+
+    if rc != 0:
         log_warn("Failed to create snapshot")
         return False
 
@@ -438,67 +528,89 @@ def create_snapshot(config: ZoneConfig) -> bool:
     return True
 
 
-def show_zone_info(config: ZoneConfig) -> None:
-    """Display zone information."""
-    log_info("Zone Configuration Summary")
-    print("================================")
+def get_zone_state(config: ZoneConfig) -> str:
+    """Get the current zone state.
 
-    print(f"Zone Name: {config.zone_name}")
-    print(f"Zone Path: {config.zone_path}")
+    Args:
+        config: Zone configuration.
 
-    # Get zone state
-    result = run_command(["zoneadm", "list", "-v"])
-    if result.returncode == 0:
-        for line in result.stdout.split("\n"):
-            if config.zone_name in line:
+    Returns:
+        Zone state string.
+    """
+    rc, stdout, _ = run_command(["zoneadm", "list", "-v"], check=False)
+    if rc == 0:
+        for line in stdout.strip().split('\n'):
+            if config.name in line:
                 parts = line.split()
                 if len(parts) >= 3:
-                    print(f"Zone State: {parts[2]}")
+                    return parts[2]
+    return "unknown"
 
-    print(f"VNIC: {config.zone_vnic}")
+
+def get_zone_ip(config: ZoneConfig) -> str:
+    """Get the zone IP address.
+
+    Args:
+        config: Zone configuration.
+
+    Returns:
+        IP address or 'Not available yet'.
+    """
+    rc, stdout, _ = run_command(
+        ["zlogin", config.name, "ip", "addr", "show", "net0"],
+        check=False
+    )
+    if rc == 0:
+        for line in stdout.split('\n'):
+            if "inet " in line:
+                parts = line.strip().split()
+                if len(parts) >= 2:
+                    return parts[1]
+    return "Not available yet"
+
+
+def show_zone_info(config: ZoneConfig) -> None:
+    """Display zone information.
+
+    Args:
+        config: Zone configuration.
+    """
+    log_info("Zone Configuration Summary")
+    print("================================")
+    print()
+    print(f"Zone Name: {config.name}")
+    print(f"Zone Path: {config.zone_path}")
+    print(f"Zone State: {get_zone_state(config)}")
+    print(f"VNIC: {config.vnic}")
     print()
     print("Resource Limits:")
-    print(f"  CPUs: {config.zone_cpus}")
-    print(f"  Memory: {config.zone_memory}")
-    print(f"  Swap: {config.zone_swap}")
-
+    print(f"  CPUs: {config.cpus}")
+    print(f"  Memory: {config.memory}")
+    print(f"  Swap: {config.swap}")
     print()
     print("ZFS Datasets:")
     run_command(["zfs", "list"], capture=False)
-
     print()
     print("Network Configuration:")
-    run_command(["dladm", "show-vnic", config.zone_vnic], capture=False)
-
+    run_command(["dladm", "show-vnic", config.vnic], capture=False)
     print()
-    print("Zone IP Address:")
-    result = run_command([
-        "zlogin", config.zone_name,
-        "ip", "addr", "show", "net0",
-    ])
-    if result.returncode == 0:
-        for line in result.stdout.split("\n"):
-            if "inet " in line:
-                parts = line.split()
-                for i, p in enumerate(parts):
-                    if p == "inet" and i + 1 < len(parts):
-                        print(parts[i + 1])
-                        break
-    else:
-        print("Not available yet")
-
+    print(f"Zone IP Address: {get_zone_ip(config)}")
     print()
     print("================================")
 
 
-def show_next_steps(config: ZoneConfig) -> None:
-    """Display next steps after zone setup."""
+def print_completion_message(config: ZoneConfig) -> None:
+    """Print completion message with next steps.
+
+    Args:
+        config: Zone configuration.
+    """
     print(f"""
 {GREEN}Zone setup complete!{NC}
 
 Next Steps:
   1. Login to zone:
-       zlogin {config.zone_name}
+       zlogin {config.name}
 
   2. Inside zone, continue setup:
        Run: ./03-install-node24.sh
@@ -506,10 +618,10 @@ Next Steps:
        Run: ./05-deploy-vibecode.sh
 
 Useful Commands:
-  - Zone console:  zlogin -C {config.zone_name}  (Ctrl+] to exit)
+  - Zone console:  zlogin -C {config.name}  (Ctrl+] to exit)
   - Zone status:   zoneadm list -v
-  - Zone reboot:   zoneadm -z {config.zone_name} reboot
-  - Zone halt:     zoneadm -z {config.zone_name} halt
+  - Zone reboot:   zoneadm -z {config.name} reboot
+  - Zone halt:     zoneadm -z {config.name} halt
   - Zone stats:    zonestat 5 5
 
 Resource Monitoring:
@@ -519,63 +631,128 @@ Resource Monitoring:
 """)
 
 
-def run_configure_zone(config: ZoneConfig | None = None) -> int:
-    """Run the zone configuration process.
+def main(
+    zone_name: Optional[str] = None,
+    cpus: Optional[int] = None,
+    memory: Optional[str] = None,
+    skip_update: bool = False,
+    skip_checks: bool = False
+) -> int:
+    """Main entry point.
 
     Args:
-        config: Zone configuration (uses defaults if None).
+        zone_name: Zone name.
+        cpus: Number of CPUs.
+        memory: Memory limit.
+        skip_update: Skip system update.
+        skip_checks: Skip root check.
 
     Returns:
-        Exit code (0 for success, 1 for failure).
+        Exit code (0 for success).
     """
-    if config is None:
-        config = ZoneConfig()
+    # Create configuration
+    config = ZoneConfig()
+    if zone_name:
+        config.name = zone_name
+        config.vnic = f"{zone_name}0"
+    if cpus:
+        config.cpus = cpus
+    if memory:
+        config.memory = memory
 
     log_info("VibeCode LX Zone Configuration")
     log_info("==============================")
 
-    if not check_root():
+    # Check root
+    if not skip_checks and not check_root():
         return 1
 
-    if not update_system():
-        return 1
+    # Update system
+    if not skip_update:
+        update_system()
 
+    # Install lx brand
     if not install_lx_brand():
         return 1
 
+    # Download Debian image
     if not download_debian_image(config):
         return 1
 
-    if not detect_network(config):
+    # Detect network
+    primary_nic = detect_network()
+    if not primary_nic:
         return 1
 
-    if not create_vnic(config):
+    # Create VNIC
+    if not create_vnic(config, primary_nic):
         return 1
 
+    # Create ZFS datasets
     if not create_zfs_datasets(config):
         return 1
 
+    # Create zone config
     if not create_zone_config(config):
         return 1
 
+    # Install zone
     if not install_zone(config):
         return 1
 
+    # Boot zone
     if not boot_zone(config):
         return 1
 
+    # Configure networking
     configure_zone_network(config)
+
+    # Create snapshot
     create_snapshot(config)
+
+    # Show info
     show_zone_info(config)
-    show_next_steps(config)
+
+    # Print completion message
+    print_completion_message(config)
 
     return 0
 
 
-def main() -> int:
-    """Main entry point."""
-    return run_configure_zone()
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(
+        description="Configure LX-Branded Zone for VibeCode"
+    )
+    parser.add_argument(
+        '--name',
+        dest='zone_name',
+        help="Zone name (default: vibecode-zone)"
+    )
+    parser.add_argument(
+        '--cpus',
+        type=int,
+        help="Number of CPUs (default: 4)"
+    )
+    parser.add_argument(
+        '--memory',
+        help="Memory limit (default: 8G)"
+    )
+    parser.add_argument(
+        '--skip-update',
+        action='store_true',
+        help="Skip system update"
+    )
+    parser.add_argument(
+        '--skip-checks',
+        action='store_true',
+        help="Skip root check (for testing)"
+    )
+
+    args = parser.parse_args()
+    sys.exit(main(
+        args.zone_name,
+        args.cpus,
+        args.memory,
+        args.skip_update,
+        args.skip_checks
+    ))

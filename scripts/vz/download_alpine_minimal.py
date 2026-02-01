@@ -1,18 +1,9 @@
 #!/usr/bin/env python3
 """Download minimal Alpine Linux kernel for ASIF test VM.
 
-Downloads ONLY vmlinuz-virt (~8-10MB) - no ISO needed permanently.
+Downloads ONLY vmlinuz-virt (~8-10MB) - no ISO needed.
 For ultra-low disk space environments (<100MB free).
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import re
@@ -20,219 +11,262 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import Optional
+from urllib.error import URLError
+from urllib.request import urlopen
 
+# Colors for output
+GREEN = '\033[0;32m'
+RED = '\033[0;31m'
+NC = '\033[0m'
 
-SCRIPT_DIR = Path(__file__).resolve().parent
+# Default configuration
+DEFAULT_ALPINE_VERSION = "3.20"
+DEFAULT_ALPINE_ARCH = "aarch64"
 DEFAULT_TEST_DIR = Path("/tmp/asif-test")
 
-# Alpine version - use latest stable
-ALPINE_VERSION = "3.20"
-ALPINE_ARCH = "aarch64"
-FALLBACK_RELEASE = "3.20.3"
 
-# Base URL for Alpine releases
-KERNEL_BASE_URL = f"https://dl-cdn.alpinelinux.org/alpine/v{ALPINE_VERSION}/releases/{ALPINE_ARCH}"
+def run_command(
+    cmd: list[str],
+    capture: bool = True,
+    check: bool = False
+) -> tuple[int, str, str]:
+    """Run a command and return (returncode, stdout, stderr).
+
+    Args:
+        cmd: Command and arguments.
+        capture: Whether to capture output.
+        check: Whether to raise on error.
+
+    Returns:
+        Tuple of (returncode, stdout, stderr).
+    """
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            check=check
+        )
+        return result.returncode, result.stdout, result.stderr
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout or "", e.stderr or ""
+    except FileNotFoundError:
+        return -1, "", "command not found"
 
 
-def run_cmd(cmd: list[str], check: bool = True, cwd: Path | None = None) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=True, text=True, check=check, cwd=cwd)
+def get_file_size(path: Path) -> str:
+    """Get human-readable file size.
 
+    Args:
+        path: Path to file.
 
-def get_file_size_human(path: Path) -> str:
-    """Get human-readable file size."""
+    Returns:
+        Human-readable size string.
+    """
     size = path.stat().st_size
-    for unit in ["B", "K", "M", "G"]:
+    for unit in ['B', 'KB', 'MB', 'GB']:
         if size < 1024:
             return f"{size:.1f}{unit}"
         size /= 1024
-    return f"{size:.1f}T"
+    return f"{size:.1f}TB"
 
 
-def find_latest_release() -> str:
-    """Find the latest Alpine release version."""
-    print("Finding latest Alpine release...")
+def fetch_url(url: str, timeout: int = 30) -> Optional[bytes]:
+    """Fetch content from URL.
 
-    if not shutil.which("curl"):
-        print(f"  curl not available, using fallback: {FALLBACK_RELEASE}")
-        return FALLBACK_RELEASE
+    Args:
+        url: URL to fetch.
+        timeout: Request timeout.
 
-    release_url = f"{KERNEL_BASE_URL}/"
-    result = run_cmd(["curl", "-sL", release_url], check=False)
+    Returns:
+        Response content or None on error.
+    """
+    try:
+        with urlopen(url, timeout=timeout) as response:
+            return response.read()
+    except (URLError, TimeoutError):
+        return None
 
-    if result.returncode != 0:
-        print(f"  Could not fetch releases, using fallback: {FALLBACK_RELEASE}")
-        return FALLBACK_RELEASE
 
-    # Parse for latest version from ISO filenames
-    pattern = rf"alpine-virt-([0-9.]+)-{ALPINE_ARCH}\.iso"
-    matches = re.findall(pattern, result.stdout)
+def download_file(url: str, dest: Path) -> bool:
+    """Download a file using curl.
+
+    Args:
+        url: URL to download.
+        dest: Destination path.
+
+    Returns:
+        True if successful.
+    """
+    rc, _, _ = run_command(["curl", "-L", "-o", str(dest), url])
+    return rc == 0
+
+
+def find_latest_release(version: str, arch: str) -> str:
+    """Find the latest Alpine release version.
+
+    Args:
+        version: Alpine major version (e.g., "3.20").
+        arch: Architecture.
+
+    Returns:
+        Latest release version string.
+    """
+    base_url = f"https://dl-cdn.alpinelinux.org/alpine/v{version}/releases/{arch}/"
+    fallback = f"{version}.3"
+
+    print(f"🔍 Finding latest Alpine {version} release...")
+
+    content = fetch_url(base_url)
+    if not content:
+        print(f"   Using fallback: {fallback}")
+        return fallback
+
+    # Parse for latest version
+    html = content.decode('utf-8', errors='ignore')
+    pattern = rf'alpine-virt-([0-9.]+)-{arch}\.iso'
+    matches = re.findall(pattern, html)
 
     if matches:
-        # Sort by version and get the latest
-        versions = sorted(matches, key=lambda v: [int(x) for x in v.split(".")])
-        latest = versions[-1]
-        print(f"  Latest version: {latest}")
+        # Sort versions and get latest
+        latest = sorted(matches, key=lambda v: [int(x) for x in v.split('.')])[-1]
+        print(f"   Latest version: {latest}")
         return latest
 
-    print(f"  Could not parse releases, using fallback: {FALLBACK_RELEASE}")
-    return FALLBACK_RELEASE
+    print(f"   Using fallback: {fallback}")
+    return fallback
 
 
-def download_iso(test_dir: Path, release: str) -> Path | None:
-    """Download the Alpine ISO."""
-    iso_name = f"alpine-virt-{release}-{ALPINE_ARCH}.iso"
-    iso_url = f"{KERNEL_BASE_URL}/{iso_name}"
-    iso_path = test_dir / iso_name
+def extract_kernel_from_iso(iso_path: Path, dest_dir: Path) -> bool:
+    """Extract kernel from Alpine ISO.
 
+    Args:
+        iso_path: Path to ISO file.
+        dest_dir: Destination directory.
+
+    Returns:
+        True if successful.
+    """
     print()
-    print(f"Downloading: {iso_name}")
-    print(f"  URL: {iso_url}")
-    print("  This is ~60MB but we'll delete it after extracting kernel")
-    print()
+    print("📦 Extracting kernel from ISO...")
 
-    result = run_cmd(["curl", "-L", "-o", str(iso_path), iso_url], check=False)
-
-    if result.returncode != 0 or not iso_path.exists():
-        print("Failed to download Alpine ISO")
-        return None
-
-    size = get_file_size_human(iso_path)
-    print(f"Downloaded: {iso_name} ({size})")
-
-    return iso_path
-
-
-def extract_kernel(iso_path: Path, test_dir: Path) -> Path | None:
-    """Extract the kernel from the ISO."""
-    print()
-    print("Extracting kernel from ISO...")
-
-    # Check for bsdtar (built into macOS) or tar
-    tar_cmd = None
-    if shutil.which("bsdtar"):
-        tar_cmd = "bsdtar"
-    elif shutil.which("tar"):
-        tar_cmd = "tar"
-    else:
-        print("Neither bsdtar nor tar found")
-        return None
+    if not shutil.which("bsdtar"):
+        print("❌ bsdtar not found (should be built into macOS)")
+        return False
 
     # Extract boot directory
-    result = run_cmd([tar_cmd, "-xf", str(iso_path), "boot/"], check=False, cwd=test_dir)
+    run_command(["bsdtar", "-xf", str(iso_path), "boot/"], check=False)
 
-    boot_dir = test_dir / "boot"
-    if not boot_dir.exists():
-        print("Failed to extract boot directory from ISO")
-        return None
+    boot_dir = dest_dir / "boot"
+    vmlinuz_dest = dest_dir / "vmlinuz"
 
-    # Find and copy kernel
-    kernel_path = test_dir / "vmlinuz"
-    kernel_candidates = [
-        boot_dir / "vmlinuz-virt",
-        boot_dir / "vmlinuz-lts",
-    ]
-
-    for candidate in kernel_candidates:
-        if candidate.exists():
-            shutil.copy2(candidate, kernel_path)
-            print(f"Extracted: {candidate.name}")
-            break
-    else:
-        # Try to find any vmlinuz file
-        vmlinuz_files = list(boot_dir.glob("vmlinuz-*"))
-        if vmlinuz_files:
-            shutil.copy2(vmlinuz_files[0], kernel_path)
-            print(f"Extracted: {vmlinuz_files[0].name}")
-        else:
-            print("Could not find kernel in ISO")
+    # Try different kernel names
+    kernel_names = ["vmlinuz-virt", "vmlinuz-lts"]
+    for name in kernel_names:
+        kernel_path = boot_dir / name
+        if kernel_path.exists():
+            shutil.copy(kernel_path, vmlinuz_dest)
+            print(f"✅ Extracted: {name}")
             shutil.rmtree(boot_dir, ignore_errors=True)
-            return None
+            return True
 
-    # Cleanup boot directory
+    # Try to find any kernel
+    if boot_dir.exists():
+        for kernel in boot_dir.glob("vmlinuz-*"):
+            shutil.copy(kernel, vmlinuz_dest)
+            print(f"✅ Extracted: {kernel.name}")
+            shutil.rmtree(boot_dir, ignore_errors=True)
+            return True
+
     shutil.rmtree(boot_dir, ignore_errors=True)
+    return False
 
-    return kernel_path if kernel_path.exists() else None
 
+def download_alpine_kernel(
+    version: str = DEFAULT_ALPINE_VERSION,
+    arch: str = DEFAULT_ALPINE_ARCH,
+    test_dir: Path = DEFAULT_TEST_DIR
+) -> int:
+    """Download minimal Alpine kernel.
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-o", "--output-dir",
-        type=Path,
-        default=DEFAULT_TEST_DIR,
-        help=f"Output directory (default: {DEFAULT_TEST_DIR})",
-    )
-    parser.add_argument(
-        "-f", "--force",
-        action="store_true",
-        help="Re-download even if kernel exists",
-    )
-    parser.add_argument(
-        "--version",
-        default=None,
-        help=f"Alpine version to download (default: auto-detect latest {ALPINE_VERSION}.x)",
-    )
+    Args:
+        version: Alpine version.
+        arch: Architecture.
+        test_dir: Target directory.
 
-    args = parser.parse_args(argv)
-
-    test_dir = args.output_dir
-    kernel_path = test_dir / "vmlinuz"
-
+    Returns:
+        Exit code.
+    """
     print("=== Downloading Minimal Alpine Kernel ===")
     print()
-    print(f"Alpine Version: {ALPINE_VERSION}")
-    print(f"Architecture: {ALPINE_ARCH}")
+    print(f"Alpine Version: {version}")
+    print(f"Architecture: {arch}")
     print(f"Target: {test_dir}")
     print()
 
     # Create test directory
     test_dir.mkdir(parents=True, exist_ok=True)
 
+    vmlinuz_path = test_dir / "vmlinuz"
+
     # Check if kernel already exists
-    if kernel_path.exists() and not args.force:
-        size = get_file_size_human(kernel_path)
-        print(f"Kernel already exists: vmlinuz ({size})")
+    if vmlinuz_path.exists():
+        size = get_file_size(vmlinuz_path)
+        print(f"✅ Kernel already exists: vmlinuz ({size})")
         print()
         return 0
 
     # Check for curl
     if not shutil.which("curl"):
-        print("curl not found")
+        print("❌ curl not found")
         return 1
 
     # Find latest release
-    release = args.version or find_latest_release()
+    release = find_latest_release(version, arch)
 
     # Download ISO
-    iso_path = download_iso(test_dir, release)
-    if not iso_path:
+    base_url = f"https://dl-cdn.alpinelinux.org/alpine/v{version}/releases/{arch}"
+    iso_name = f"alpine-virt-{release}-{arch}.iso"
+    iso_url = f"{base_url}/{iso_name}"
+    iso_path = test_dir / iso_name
+
+    print()
+    print(f"📥 Downloading: {iso_name}")
+    print(f"   URL: {iso_url}")
+    print("   This is ~60MB but we'll delete it after extracting kernel")
+    print()
+
+    if not download_file(iso_url, iso_path):
+        print("❌ Failed to download Alpine ISO")
         return 1
 
+    iso_size = get_file_size(iso_path)
+    print(f"✅ Downloaded: {iso_name} ({iso_size})")
+
     # Extract kernel
-    kernel_path = extract_kernel(iso_path, test_dir)
+    if not extract_kernel_from_iso(iso_path, test_dir):
+        print("❌ Failed to extract kernel from ISO")
+        iso_path.unlink(missing_ok=True)
+        return 1
 
     # Delete ISO to save space
     print()
-    print("Cleaning up ISO to save space...")
+    print("🧹 Cleaning up ISO to save space...")
     iso_path.unlink(missing_ok=True)
-    print("Deleted ISO")
+    print("✅ Deleted ISO")
 
     # Verify kernel exists
-    if not kernel_path or not kernel_path.exists():
+    if not vmlinuz_path.exists():
         print()
-        print("Failed to download/extract kernel")
+        print("❌ Failed to download/extract kernel")
         return 1
 
-    size = get_file_size_human(kernel_path)
+    kernel_size = get_file_size(vmlinuz_path)
     print()
     print("=== Download Complete ===")
     print()
-    print(f"Kernel: {kernel_path} ({size})")
+    print(f"✅ Kernel: {vmlinuz_path} ({kernel_size})")
     print()
     print("Next steps:")
     print("  1. ./scripts/vz/create-minimal-initramfs.sh")
@@ -241,6 +275,41 @@ def main(argv: list[str] | None = None) -> int:
     print()
 
     return 0
+
+
+def main() -> int:
+    """Main entry point.
+
+    Returns:
+        Exit code.
+    """
+    parser = argparse.ArgumentParser(
+        description="Download minimal Alpine Linux kernel for ASIF test VM"
+    )
+    parser.add_argument(
+        '--version',
+        default=DEFAULT_ALPINE_VERSION,
+        help=f'Alpine version (default: {DEFAULT_ALPINE_VERSION})'
+    )
+    parser.add_argument(
+        '--arch',
+        default=DEFAULT_ALPINE_ARCH,
+        help=f'Architecture (default: {DEFAULT_ALPINE_ARCH})'
+    )
+    parser.add_argument(
+        '-o', '--output-dir',
+        type=Path,
+        default=DEFAULT_TEST_DIR,
+        help=f'Target directory (default: {DEFAULT_TEST_DIR})'
+    )
+
+    args = parser.parse_args()
+
+    return download_alpine_kernel(
+        version=args.version,
+        arch=args.arch,
+        test_dir=args.output_dir
+    )
 
 
 if __name__ == "__main__":

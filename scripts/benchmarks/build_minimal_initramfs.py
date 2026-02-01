@@ -3,45 +3,122 @@
 
 Target: Sub-2MB initramfs with /healthz endpoint.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
+import gzip
 import os
-import stat
+import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        file_size_human,
-        log,
-        run_cmd,
-        success,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        file_size_human,
-        log,
-        run_cmd,
-        success,
-    )
+from typing import Optional
 
 
-INIT_SCRIPT = '''#!/bin/sh
+# Colors for output
+GREEN = '\033[0;32m'
+NC = '\033[0m'
+
+
+@dataclass
+class BuildConfig:
+    """Build configuration."""
+
+    arch: str = "arm64"
+    output_dir: Path = Path()
+    busybox_version: str = "1.36.1"
+
+
+def log(msg: str) -> None:
+    """Print log message."""
+    print(f"{GREEN}[INFO]{NC} {msg}")
+
+
+def run_command(
+    cmd: list[str],
+    cwd: Optional[Path] = None,
+    check: bool = False,
+    capture: bool = False
+) -> tuple[int, str, str]:
+    """Run a command."""
+    try:
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            check=check,
+            capture_output=capture,
+            text=True
+        )
+        return result.returncode, result.stdout or "", result.stderr or ""
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout or "", e.stderr or ""
+    except FileNotFoundError:
+        return -1, "", f"command not found: {cmd[0]}"
+
+
+def build_busybox(config: BuildConfig, root_dir: Path) -> Optional[Path]:
+    """Build or locate BusyBox binary."""
+    busybox_src = root_dir / "bench-images" / "busybox" / f"busybox-{config.busybox_version}"
+    busybox_bin = busybox_src / "busybox"
+
+    if not busybox_bin.exists():
+        log("Building BusyBox...")
+        build_script = root_dir / "scripts" / "benchmarks" / "build_busybox_musl.py"
+        if build_script.exists():
+            subprocess.run(
+                [sys.executable, str(build_script), config.arch]
+            )
+        else:
+            # Try the shell script
+            shell_script = root_dir / "scripts" / "benchmarks" / "build-busybox-musl.sh"
+            if shell_script.exists():
+                subprocess.run(["bash", str(shell_script), config.arch])
+
+    if busybox_bin.exists():
+        return busybox_bin
+
+    return None
+
+
+def create_rootfs(config: BuildConfig, busybox_bin: Path) -> Path:
+    """Create the rootfs structure."""
+    rootfs = config.output_dir / "rootfs"
+
+    # Clean and create directories
+    if rootfs.exists():
+        shutil.rmtree(rootfs)
+
+    for d in ["bin", "sbin", "etc", "proc", "sys", "dev", "tmp", "var/run"]:
+        (rootfs / d).mkdir(parents=True, exist_ok=True)
+
+    log("Creating minimal rootfs...")
+
+    # Copy BusyBox
+    busybox_dst = rootfs / "bin" / "busybox"
+    shutil.copy2(busybox_bin, busybox_dst)
+    busybox_dst.chmod(0o755)
+
+    # Create essential symlinks
+    bin_cmds = ["sh", "ash", "init", "mount", "umount", "mkdir", "cat", "echo",
+                "ls", "ps", "kill", "sleep", "ip", "ifconfig", "route", "ping",
+                "wget", "httpd", "nc"]
+    for cmd in bin_cmds:
+        link = rootfs / "bin" / cmd
+        if not link.exists():
+            link.symlink_to("busybox")
+
+    sbin_cmds = ["init", "halt", "reboot", "poweroff"]
+    for cmd in sbin_cmds:
+        link = rootfs / "sbin" / cmd
+        if not link.exists():
+            link.symlink_to("../bin/busybox")
+
+    return rootfs
+
+
+def create_init_script(rootfs: Path) -> None:
+    """Create the init script."""
+    init_script = '''#!/bin/sh
 # Minimal init for Apple VF fast boot benchmark
 # Target: Boot to /healthz in < 3s
 
@@ -84,182 +161,129 @@ echo "Boot complete - /healthz ready on port 3000"
 exec /bin/sh
 '''
 
-
-def create_rootfs(rootfs_dir: Path) -> None:
-    """Create the rootfs directory structure."""
-    log("Creating minimal rootfs...")
-
-    # Create directory structure
-    dirs = [
-        "bin", "sbin", "etc", "proc", "sys", "dev",
-        "tmp", "var/run", "www",
-    ]
-    for d in dirs:
-        (rootfs_dir / d).mkdir(parents=True, exist_ok=True)
-
-
-def copy_busybox(rootfs_dir: Path, busybox_src: Path) -> None:
-    """Copy BusyBox binary and create symlinks."""
-    busybox_dst = rootfs_dir / "bin" / "busybox"
-
-    log(f"Copying BusyBox from {busybox_src}...")
-    run_cmd(["cp", str(busybox_src), str(busybox_dst)])
-    busybox_dst.chmod(0o755)
-
-    # Create essential symlinks
-    essential_cmds = [
-        "sh", "ash", "init", "mount", "umount", "mkdir", "cat", "echo",
-        "ls", "ps", "kill", "sleep", "ip", "ifconfig", "route", "ping",
-        "wget", "httpd", "nc",
-    ]
-
-    for cmd in essential_cmds:
-        link_path = rootfs_dir / "bin" / cmd
-        if not link_path.exists():
-            link_path.symlink_to("busybox")
-
-    # Sbin symlinks
-    sbin_cmds = ["init", "halt", "reboot", "poweroff"]
-    for cmd in sbin_cmds:
-        link_path = rootfs_dir / "sbin" / cmd
-        if not link_path.exists():
-            link_path.symlink_to("../bin/busybox")
-
-
-def create_init_script(rootfs_dir: Path) -> None:
-    """Create the /init script."""
-    init_path = rootfs_dir / "init"
-    init_path.write_text(INIT_SCRIPT)
+    init_path = rootfs / "init"
+    init_path.write_text(init_script)
     init_path.chmod(0o755)
 
 
-def create_etc_files(rootfs_dir: Path) -> None:
+def create_etc_files(rootfs: Path) -> None:
     """Create minimal /etc files."""
-    (rootfs_dir / "etc" / "passwd").write_text("root:x:0:0:root:/:/bin/sh\n")
-    (rootfs_dir / "etc" / "group").write_text("root:x:0:\n")
-    (rootfs_dir / "etc" / "hostname").write_text("localhost\n")
+    (rootfs / "etc" / "passwd").write_text("root:x:0:0:root:/:/bin/sh\n")
+    (rootfs / "etc" / "group").write_text("root:x:0:\n")
+    (rootfs / "etc" / "hostname").write_text("localhost\n")
 
 
-def create_initramfs(rootfs_dir: Path, output_path: Path) -> None:
+def create_initramfs(rootfs: Path, output_file: Path) -> None:
     """Create the initramfs archive."""
-    log("Creating initramfs archive...")
+    log("Creating initramfs...")
 
     # Use cpio to create archive
-    find_proc = subprocess.Popen(
-        ["find", "."],
-        cwd=rootfs_dir,
-        stdout=subprocess.PIPE,
-    )
-    cpio_proc = subprocess.Popen(
-        ["cpio", "-o", "-H", "newc"],
-        cwd=rootfs_dir,
-        stdin=find_proc.stdout,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.DEVNULL,
-    )
-    gzip_proc = subprocess.Popen(
-        ["gzip", "-9"],
-        stdin=cpio_proc.stdout,
-        stdout=subprocess.PIPE,
+    result = subprocess.run(
+        ["find", ".", "-print0"],
+        cwd=rootfs,
+        capture_output=True
     )
 
-    output, _ = gzip_proc.communicate()
-    output_path.write_bytes(output)
+    cpio_result = subprocess.run(
+        ["cpio", "--null", "-o", "-H", "newc"],
+        input=result.stdout,
+        cwd=rootfs,
+        capture_output=True
+    )
+
+    # Compress with gzip
+    with gzip.open(output_file, "wb", compresslevel=9) as f:
+        f.write(cpio_result.stdout)
 
 
-def main(argv: list[str] | None = None) -> int:
+def get_size_human(path: Path) -> str:
+    """Get human-readable file size."""
+    size = path.stat().st_size
+    for unit in ["B", "KB", "MB", "GB"]:
+        if size < 1024:
+            return f"{size:.1f} {unit}"
+        size /= 1024
+    return f"{size:.1f} TB"
+
+
+def build(config: BuildConfig) -> int:
+    """Run the full build process."""
+    print("=== Building Minimal Initramfs for Apple VF Fast Boot ===")
+    print(f"Architecture: {config.arch}")
+    print(f"Output: {config.output_dir}")
+    print()
+
+    config.output_dir.mkdir(parents=True, exist_ok=True)
+
+    script_dir = Path(__file__).parent.resolve()
+    root_dir = script_dir.parent.parent
+
+    # Build or find BusyBox
+    busybox_bin = build_busybox(config, root_dir)
+    if not busybox_bin or not busybox_bin.exists():
+        print("Error: Could not find or build BusyBox")
+        return 1
+
+    # Create rootfs
+    rootfs = create_rootfs(config, busybox_bin)
+
+    # Create init script
+    create_init_script(rootfs)
+
+    # Create /etc files
+    create_etc_files(rootfs)
+
+    # Create initramfs
+    output_file = config.output_dir / "initramfs-minimal.cpio.gz"
+    create_initramfs(rootfs, output_file)
+
+    # Report sizes
+    rootfs_size = sum(f.stat().st_size for f in rootfs.rglob("*") if f.is_file())
+    initramfs_size = output_file.stat().st_size
+
+    print()
+    print("=== Build Complete ===")
+    print(f"Rootfs size: {rootfs_size / 1024:.1f} KB")
+    print(f"Initramfs size: {get_size_human(output_file)}")
+    print(f"Output: {output_file}")
+    print()
+    print("To test:")
+    print(f"  MICROVM_INITRD={output_file} \\")
+    print("  scripts/benchmarks/vscode_microvm.py measure")
+
+    return 0
+
+
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Build minimal BusyBox initramfs for Apple VF fast boot"
     )
     parser.add_argument(
         "arch",
         nargs="?",
         default="arm64",
-        choices=["x86_64", "arm64", "armv7"],
-        help="Target architecture (default: arm64)",
+        help="Target architecture"
     )
     parser.add_argument(
         "--busybox-version",
         default=os.environ.get("BUSYBOX_VERSION", "1.36.1"),
-        help="BusyBox version",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=REPO_ROOT / "bench-images" / "apple-vf-fastboot",
-        help="Output directory",
+        help="BusyBox version"
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
-    output_dir = args.output_dir
-    output_dir.mkdir(parents=True, exist_ok=True)
+    script_dir = Path(__file__).parent.resolve()
+    root_dir = script_dir.parent.parent
+    output_dir = root_dir / "bench-images" / "apple-vf-fastboot"
 
-    # Find BusyBox binary
-    busybox_src = REPO_ROOT / "bench-images" / "busybox" / f"busybox-{args.busybox_version}" / "busybox"
+    config = BuildConfig(
+        arch=args.arch,
+        output_dir=output_dir,
+        busybox_version=args.busybox_version
+    )
 
-    if not busybox_src.exists():
-        log(f"BusyBox not found at {busybox_src}")
-        log("Building BusyBox...")
-        try:
-            from .build_busybox_musl import main as build_busybox
-        except ImportError:
-            from build_busybox_musl import main as build_busybox
-
-        result = build_busybox([args.arch])
-        if result != 0:
-            return result
-
-    if not busybox_src.exists():
-        # Try alternative location
-        busybox_src = REPO_ROOT / "bench-images" / "busybox" / "rootfs" / "bin" / "busybox"
-
-    if not busybox_src.exists():
-        print(f"error: BusyBox binary not found", file=sys.stderr)
-        return 1
-
-    print(f"=== Building Minimal Initramfs for Apple VF Fast Boot ===")
-    print(f"Architecture: {args.arch}")
-    print(f"Output: {output_dir}")
-    print()
-
-    try:
-        rootfs_dir = output_dir / "rootfs"
-
-        # Clean and create rootfs
-        if rootfs_dir.exists():
-            run_cmd(["rm", "-rf", str(rootfs_dir)])
-
-        create_rootfs(rootfs_dir)
-        copy_busybox(rootfs_dir, busybox_src)
-        create_init_script(rootfs_dir)
-        create_etc_files(rootfs_dir)
-
-        # Create initramfs
-        initramfs_path = output_dir / "initramfs-minimal.cpio.gz"
-        create_initramfs(rootfs_dir, initramfs_path)
-
-        # Report sizes
-        rootfs_size = sum(f.stat().st_size for f in rootfs_dir.rglob("*") if f.is_file())
-        initramfs_size = initramfs_path.stat().st_size
-
-        print()
-        print("=== Build Complete ===")
-        print(f"Rootfs size: {file_size_human(rootfs_size)}")
-        print(f"Initramfs size: {file_size_human(initramfs_size)}")
-        print(f"Output: {initramfs_path}")
-        print()
-        print("To test:")
-        print(f"  MICROVM_INITRD={initramfs_path} \\")
-        print("  scripts/benchmarks/vscode_microvm.sh measure")
-
-        return 0
-
-    except BenchmarkError as err:
-        print(f"error: {err}", file=sys.stderr)
-        return 1
+    return build(config)
 
 
 if __name__ == "__main__":

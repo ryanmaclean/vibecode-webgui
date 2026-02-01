@@ -2,6 +2,13 @@
 """Read benchmark JSON output and emit DogStatsD metrics."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    pass
+
 import argparse
 import json
 import os
@@ -13,13 +20,6 @@ try:
 except ImportError:  # pragma: no cover - fallback when run as script
   sys.path.append(str(Path(__file__).resolve().parent))
   from _dogstatsd import DogStatsDSender, emit_duration_metrics
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    pass
 
 
 class EmitError(RuntimeError):

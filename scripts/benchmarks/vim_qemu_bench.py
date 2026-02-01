@@ -2,6 +2,13 @@
 """Measure vi launch latency inside qemu-based guests (OpenWrt, Yocto, etc.)."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    pass
+
 import argparse
 import json
 import statistics
@@ -11,13 +18,6 @@ from pathlib import Path
 from typing import Optional
 
 import pexpect
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    pass
 
 
 @dataclass

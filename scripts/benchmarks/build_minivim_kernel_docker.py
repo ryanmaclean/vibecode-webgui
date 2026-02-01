@@ -1,81 +1,40 @@
 #!/usr/bin/env python3
-"""Build MiniVim kernel in Alpine Docker (avoids macOS Make issues).
+"""Build MiniVim kernel in Alpine Docker.
 
-This script builds the kernel inside an Alpine Docker container, which
-avoids issues with macOS Make and provides a consistent build environment.
+Avoids macOS Make issues by building in a Linux container.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import os
+import subprocess
 import sys
 from pathlib import Path
 
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        log,
-        run_cmd,
-        success,
-        error as log_error,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        log,
-        run_cmd,
-        success,
-        error as log_error,
-    )
+
+# Colors for output
+GREEN = '\033[0;32m'
+NC = '\033[0m'
 
 
-DEFAULT_KERNEL_VERSION = "6.17.4"
+def log(msg: str) -> None:
+    """Print log message."""
+    print(f"{GREEN}[INFO]{NC} {msg}")
 
 
-def build_in_docker(arch: str, kernel_version: str) -> Path:
-    """Build kernel inside Alpine Docker container.
+def build_in_docker(arch: str, kernel_version: str, repo_root: Path) -> int:
+    """Build kernel in Alpine Docker container.
 
     Args:
-        arch: Target architecture (x86_64, arm64, armv7)
-        kernel_version: Kernel version to build
+        arch: Target architecture.
+        kernel_version: Kernel version.
+        repo_root: Repository root path.
 
     Returns:
-        Path to built kernel image
+        Exit code.
     """
-    if not check_command("docker"):
-        raise BenchmarkError("Docker is required but not found")
+    log(f"Building kernel {kernel_version} in Alpine Docker...")
 
-    log(f"Building kernel {kernel_version} for {arch} in Alpine Docker...")
-
-    # Determine kernel image name based on architecture
-    if arch == "x86_64":
-        kernel_target = "bzImage"
-        kernel_path = "arch/x86/boot/bzImage"
-        output_name = f"vmlinuz-{kernel_version}-musl"
-    elif arch == "arm64":
-        kernel_target = "Image"
-        kernel_path = "arch/arm64/boot/Image"
-        output_name = f"Image-{kernel_version}-musl"
-    else:  # armv7
-        kernel_target = "zImage"
-        kernel_path = "arch/arm/boot/zImage"
-        output_name = f"zImage-{kernel_version}-musl"
-
-    # Build script to run inside Docker
-    docker_script = f"""
+    script = f'''
 apk add --no-cache build-base linux-headers flex bison bc perl elfutils-dev openssl-dev
 
 mkdir -p artifacts/minivim/work
@@ -98,74 +57,53 @@ scripts/kconfig/merge_config.sh -m .config \\
   /work/scripts/benchmarks/kernel-configs/minivim-{arch}.config
 
 yes '' | make ARCH={arch} olddefconfig
-make ARCH={arch} -j$(nproc) {kernel_target}
+make ARCH={arch} -j$(nproc) bzImage
 
 # Copy output
 mkdir -p /work/bench-images/minivim
-cp {kernel_path} /work/bench-images/minivim/{output_name}
+cp arch/x86/boot/bzImage /work/bench-images/minivim/vmlinuz-{kernel_version}-musl
 
 echo '=== Build Complete ==='
-ls -lh /work/bench-images/minivim/{output_name}
-"""
+ls -lh /work/bench-images/minivim/vmlinuz-{kernel_version}-musl
+'''
 
-    run_cmd([
-        "docker", "run", "--rm",
-        "-v", f"{REPO_ROOT}:/work",
-        "-w", "/work",
-        "alpine:latest",
-        "sh", "-c", docker_script,
-    ])
+    result = subprocess.run(
+        [
+            "docker", "run", "--rm",
+            "-v", f"{repo_root}:/work",
+            "-w", "/work",
+            "alpine:latest",
+            "sh", "-c", script
+        ]
+    )
 
-    output_path = REPO_ROOT / "bench-images" / "minivim" / output_name
-    if not output_path.exists():
-        raise BenchmarkError(f"Build failed: {output_path} not found")
-
-    return output_path
+    return result.returncode
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Build MiniVim kernel in Alpine Docker"
     )
     parser.add_argument(
         "arch",
         nargs="?",
         default="x86_64",
-        choices=["x86_64", "arm64", "armv7"],
-        help="Target architecture (default: x86_64)",
+        help="Target architecture"
     )
     parser.add_argument(
-        "version",
+        "kernel_version",
         nargs="?",
-        default=DEFAULT_KERNEL_VERSION,
-        help=f"Kernel version (default: {DEFAULT_KERNEL_VERSION})",
+        default="6.17.4",
+        help="Kernel version"
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
-    print(f"=== Building MiniVim Kernel in Docker ===")
-    print(f"Architecture: {args.arch}")
-    print(f"Kernel Version: {args.version}")
-    print()
+    script_dir = Path(__file__).parent.resolve()
+    repo_root = script_dir.parent.parent
 
-    try:
-        output_path = build_in_docker(args.arch, args.version)
-
-        print()
-        print("=== Build Complete ===")
-        print(f"Output: {output_path}")
-        print(f"Size: {output_path.stat().st_size / (1024*1024):.2f} MB")
-        print()
-        print("To test with QEMU:")
-        print(f"  qemu-system-{args.arch} -kernel {output_path} ...")
-
-        return 0
-
-    except BenchmarkError as err:
-        log_error(str(err))
-        return 1
+    return build_in_docker(args.arch, args.kernel_version, repo_root)
 
 
 if __name__ == "__main__":

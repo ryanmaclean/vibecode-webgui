@@ -2,6 +2,13 @@
 """Measure host vs container startup latency for simple workloads."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    pass
+
 import argparse
 import json
 import os
@@ -18,13 +25,6 @@ try:
 except ImportError:  # pragma: no cover - fallback when run as a script
   sys.path.append(str(Path(__file__).resolve().parent))
   from _dogstatsd import DogStatsDSender, emit_duration_metrics
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    pass
 
 DEVNULL = subprocess.DEVNULL
 
