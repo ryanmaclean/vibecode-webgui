@@ -81,8 +81,28 @@ jobs:
           # Use Tauri config for static export
           cp next.config.tauri.js next.config.js
 
+          # IMPORTANT: Move API routes out of the way for static export
+          # API routes use force-dynamic which is incompatible with output: export
+          # They will be handled by Tauri's Rust backend instead
+          echo "Temporarily excluding API routes for static export..."
+          if [ -d "src/app/api" ]; then
+            mv src/app/api src/app/api.excluded
+          fi
+
           # Build with static export
           npm run build
+          BUILD_STATUS=$?
+
+          # Restore API routes immediately after build
+          if [ -d "src/app/api.excluded" ]; then
+            mv src/app/api.excluded src/app/api
+          fi
+
+          # Check if build succeeded
+          if [ $BUILD_STATUS -ne 0 ]; then
+            echo "Build failed with status $BUILD_STATUS"
+            exit $BUILD_STATUS
+          fi
 
           # Restore original config
           if [ -f next.config.js.backup ]; then
