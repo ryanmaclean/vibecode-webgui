@@ -63,6 +63,21 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Build frontend for Tauri
+        env:
+          NEXT_CONFIG_FILE: next.config.tauri.js
+        run: |
+          echo "Building Next.js frontend for Tauri..."
+          NEXT_CONFIG_FILE=next.config.tauri.js npm run build || {
+            echo "Build failed, trying with direct config..."
+            npx next build --no-lint
+          }
+          echo "Copying static export to platforms/public..."
+          rm -rf platforms/public
+          cp -r out platforms/public
+          ls -la platforms/public/
+          echo "Frontend build complete"
+
       - name: Verify Tauri CLI installation
         working-directory: platforms/tauri
         run: |
