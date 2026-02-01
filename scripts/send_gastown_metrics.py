@@ -320,6 +320,27 @@ def get_openclaw_jobs() -> Dict[str, int]:
     return jobs
 
 
+def get_rig_count() -> int:
+    output = run_cmd(["gt", "rig", "list"])
+    if not output:
+        return 1
+
+    lines = [line.strip() for line in output.split("\n") if line.strip()]
+    filtered = [
+        line for line in lines
+        if not line.lower().startswith("rig")
+        and "rigs" not in line.lower()
+        and not line.startswith("─")
+        and not line.startswith("-")
+    ]
+    return len(filtered) or len(lines) or 1
+
+
+def is_process_running(pattern: str) -> bool:
+    output = run_cmd(["pgrep", "-fl", pattern])
+    return bool(output)
+
+
 def get_process_count() -> int:
     output = run_cmd(["ps", "aux"])
     if not output:
@@ -423,6 +444,8 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     process_count = get_process_count()
     gt_status = get_gt_status()
     openclaw_jobs = get_openclaw_jobs()
+    rigs_active = get_rig_count()
+    openclaw_running = is_process_running("openclaw")
 
     active_polecats = gt_status["active_polecats"] or polecat_count
     total_polecats = gt_status["total_polecats"] or active_polecats
@@ -492,6 +515,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     core_services_up = sum([gt_status["mayor"], gt_status["deacon"], gt_status["witness"], gt_status["refinery"]])
     health_score = min(100, 50 + (core_services_up * 10) + (active_polecats * 2))
     emitter.send("gastown.town.health", health_score, "g", common_tags)
+    emitter.send("gastown.town.rigs_active", rigs_active, "g", common_tags)
 
     # Polecats
     emitter.send("gastown.polecats.active", active_polecats, "g", common_tags)
@@ -558,6 +582,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("gastown.nudge.duration_ms", 0, "h", common_tags)
     emitter.send("gastown.mail.sent.count", 0, "c", common_tags)
     emitter.send("gastown.mail.read.count", 0, "c", common_tags)
+    emitter.send("gastown.mail.read_delay_s", 0, "h", common_tags)
 
     # Mayor & crew
     for priority, count in created_by_priority.items():
@@ -584,6 +609,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
         emitter.send("gastown.beads.created", count, "c", common_tags + [f"priority:p{priority}"])
     emitter.send("gastown.beads.in_progress", in_progress_issues, "g", common_tags)
     emitter.send("gastown.beads.escalated", blocked_since, "c", common_tags + ["reason:blocked"])
+    emitter.send("gastown.beads.graph_nodes", int(summary.get("total_issues", 0) or 0), "g", common_tags)
     emitter.send("gastown.kanban.column_count", open_issues, "g", common_tags + ["column:todo"])
     emitter.send("gastown.kanban.column_count", in_progress_issues, "g", common_tags + ["column:in_progress"])
     emitter.send("gastown.kanban.column_count", closed_issues, "g", common_tags + ["column:done"])
@@ -598,6 +624,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     molecule_progress = (molecule_closed / molecule_total * 100) if molecule_total else 0
     emitter.send("gastown.molecule.progress_pct", molecule_progress, "g", common_tags + ["formula_template:default"])
     emitter.send("gastown.molecule.started", molecule_started, "c", common_tags)
+    emitter.send("gastown.molecule.completed", molecule_closed, "c", common_tags)
 
     # Agent states
     idle_agents = max(0, total_polecats - active_polecats)
@@ -605,6 +632,12 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("gastown.agent.state", idle_agents, "g", common_tags + ["state:idle"])
     emitter.send("gastown.agent.state", blocked_issues, "g", common_tags + ["state:stuck"])
     emitter.send("gastown.agent.idle_duration_s", 0, "g", common_tags + ["agent_id:unknown"])
+    emitter.send(
+        "gastown.agent.last_activity_s",
+        max(0, int((now - since).total_seconds())),
+        "g",
+        common_tags + ["agent_id:unknown"],
+    )
     emitter.send("gastown.rig.agents_count", active_polecats, "g", common_tags + ["rig_name:default"])
 
     # Claude / OpenAI / Ralph / Sequential Thinking (zero fill for dashboards)
@@ -645,8 +678,19 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     # Cost analysis (zero fill)
     emitter.send("ai_agent.cost.total_usd", 0, "c", common_tags)
     emitter.send("ai_agent.request.count", 0, "c", common_tags)
+    emitter.send("ai_agent.error.count", 0, "c", common_tags)
     emitter.send("ai_agent.tokens.total", 0, "c", common_tags + ["direction:input"])
     emitter.send("ai_agent.tokens.total", 0, "c", common_tags + ["direction:output"])
+
+    # OpenClaw gateway (best-effort)
+    gateway_health = 1 if openclaw_running or openclaw_jobs["cron_jobs"] + openclaw_jobs["poll_jobs"] > 0 else 0
+    nudges_total = openclaw_jobs["nudges_from_cron"] + openclaw_jobs["nudges_from_poll"]
+    emitter.send("openclaw.gateway.health", gateway_health, "g", common_tags)
+    emitter.send("openclaw.requests.routed", nudges_total, "c", common_tags + ["provider:unknown"])
+    emitter.send("openclaw.routing.latency_ms", 0, "h", common_tags)
+    emitter.send("openclaw.provider.selected", active_polecats, "c", common_tags + ["provider:unknown"])
+    emitter.send("openclaw.ratelimit.triggered", 0, "c", common_tags + ["provider:unknown"])
+    emitter.send("openclaw.fallback.count", 0, "c", common_tags)
 
     # RUM / DEM (zero fill unless browser events are flowing)
     emitter.send("rum.performance.dom_complete", 0, "h", common_tags)

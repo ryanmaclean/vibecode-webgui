@@ -1,0 +1,809 @@
+{
+  "title": "Unified Ops Dashboard - GasTown / OpenClaw / WebGUI",
+  "description": "Complete Gas Town multi-agent observability with bead lifecycle tracing",
+  "widgets": [
+    {
+      "definition": {
+        "title": "System Health",
+        "type": "group",
+        "background_color": "vivid_green",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Town Health Score",
+              "type": "query_value",
+              "requests": [{"q": "avg:gastown.town.health{*}", "aggregator": "last"}],
+              "precision": 0,
+              "custom_unit": "/100",
+              "conditional_formats": [
+                {"comparator": ">=", "value": 80, "palette": "white_on_green"},
+                {"comparator": ">=", "value": 50, "palette": "white_on_yellow"},
+                {"comparator": "<", "value": 50, "palette": "white_on_red"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.polecats.active{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Rigs",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.town.rigs_active{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Stuck Agents",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.agent.stuck_count{*}.as_count()", "aggregator": "sum"}],
+              "precision": 0,
+              "conditional_formats": [
+                {"comparator": ">", "value": 0, "palette": "white_on_red"},
+                {"comparator": "==", "value": 0, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Rate",
+              "type": "query_value",
+              "requests": [{"q": "100 * sum:ai_agent.error.count{*}.as_count() / (sum:ai_agent.request.count{*}.as_count() + 1)"}],
+              "precision": 2,
+              "custom_unit": "%",
+              "conditional_formats": [
+                {"comparator": ">", "value": 5, "palette": "white_on_red"},
+                {"comparator": ">", "value": 1, "palette": "white_on_yellow"},
+                {"comparator": "<=", "value": 1, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Cost (24h)",
+              "type": "query_value",
+              "requests": [{"q": "sum:ai_agent.cost.total_usd{*}.as_count() / 1000000"}],
+              "precision": 2,
+              "custom_unit": "$"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Bead Lifecycle Tracing",
+        "type": "group",
+        "background_color": "vivid_purple",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Bead Lifecycle Duration",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:gastown.bead.lifecycle.duration_s{*} by {rig}", "display_type": "line"}
+              ],
+              "yaxis": {"include_zero": true}
+            }
+          },
+          {
+            "definition": {
+              "title": "Bead Hooks",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.bead.hook.count{*} by {agent}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Crew Assignments",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.crew.assign.count{*} by {target}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Polecat Work Duration",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:gastown.polecat.work.duration_ms{*} by {polecat}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Bead Outcomes",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:gastown.bead.lifecycle.count{*} by {outcome}.as_count()"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Polecat Operations",
+        "type": "group",
+        "background_color": "vivid_yellow",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Polecat Lifecycle",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecats.spawned{*}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+                {"q": "sum:gastown.polecats.completed{*}.as_count()", "display_type": "bars", "style": {"palette": "blue"}},
+                {"q": "sum:gastown.polecats.failed{*}.as_count()", "display_type": "bars", "style": {"palette": "red"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats by Rig",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.polecats.active{*} by {rig_name}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Polecat Work Duration",
+              "type": "distribution",
+              "requests": [
+                {"q": "avg:gastown.polecat.duration_s{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage by Rig",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecat.tokens_used{*} by {rig_name}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "PRs Created by Polecats",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.polecat.prs_created{*}.as_count()"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Lines Changed",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecat.lines_added{*}.as_count()", "display_type": "area", "style": {"palette": "green"}},
+                {"q": "sum:gastown.polecat.lines_deleted{*}.as_count()", "display_type": "area", "style": {"palette": "red"}}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Nudges & Communication",
+        "type": "group",
+        "background_color": "vivid_orange",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Nudges Sent",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.nudge.sent.count{*} by {type}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Nudge Response Time",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:gastown.nudge.response_time_ms{*}", "display_type": "line"},
+                {"q": "p95:gastown.nudge.response_time_ms{*}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Mail Sent/Read",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.mail.sent.count{*}.as_count()", "display_type": "bars", "style": {"palette": "blue"}},
+                {"q": "sum:gastown.mail.read.count{*}.as_count()", "display_type": "bars", "style": {"palette": "green"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Mail Read Delay",
+              "type": "query_value",
+              "requests": [{"q": "avg:gastown.mail.read_delay_s{*}"}],
+              "precision": 1,
+              "custom_unit": "s"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Mayor & Crew",
+        "type": "group",
+        "background_color": "vivid_blue",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Mayor Tasks",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.mayor.tasks_assigned{*} by {priority}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Tasks by Type",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:gastown.mayor.tasks_assigned{*} by {task_type}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Crew Members",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.crew.active{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Crew Contributions",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(sum:gastown.crew.contributions{*} by {crew_member}.as_count(), 10, 'sum', 'desc')"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Witness / Deacon / Refinery",
+        "type": "group",
+        "background_color": "vivid_pink",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Witness Lifecycle Events",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.witness.lifecycle_events{*} by {event_type}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Deacon Health Checks",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.deacon.health_checks{*} by {result}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Dogs",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.deacon.dogs_active{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Refinery Merge Queue",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:gastown.refinery.merges_queued{*} by {rig_name}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Merges Processed",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.refinery.merges_processed{outcome:merged}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+                {"q": "sum:gastown.refinery.merges_processed{outcome:rejected}.as_count()", "display_type": "bars", "style": {"palette": "red"}},
+                {"q": "sum:gastown.refinery.merges_processed{outcome:conflict}.as_count()", "display_type": "bars", "style": {"palette": "yellow"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Integration Time",
+              "type": "query_value",
+              "requests": [{"q": "avg:gastown.refinery.integration_time_s{*}"}],
+              "precision": 1,
+              "custom_unit": "s"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Beads & Kanban",
+        "type": "group",
+        "background_color": "gray",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Beads Created",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.beads.created{*} by {priority}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads In Progress",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.beads.in_progress{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads Escalated (Andon)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.beads.escalated{*} by {reason}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Kanban Column Status",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.kanban.column_count{*} by {column}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "WIP Limit Violations",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.kanban.wip_limit_violations{*}.as_count()"}],
+              "precision": 0,
+              "conditional_formats": [
+                {"comparator": ">", "value": 0, "palette": "white_on_red"},
+                {"comparator": "==", "value": 0, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Beads Graph Nodes",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:gastown.beads.graph_nodes{*} by {node_type}"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Convoy & Molecules",
+        "type": "group",
+        "background_color": "vivid_purple",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Convoy Status",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.convoy.started{*}.as_count()", "display_type": "bars", "style": {"palette": "blue"}},
+                {"q": "sum:gastown.convoy.completed{success:true}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+                {"q": "sum:gastown.convoy.completed{success:false}.as_count()", "display_type": "bars", "style": {"palette": "red"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convoy Priority Distribution",
+              "type": "treemap",
+              "requests": [
+                {"q": "sum:gastown.convoy.priority_distribution{*} by {priority,status}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Blocked Convoy Items",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.convoy.blocked{*}", "aggregator": "last"}],
+              "precision": 0,
+              "conditional_formats": [
+                {"comparator": ">", "value": 0, "palette": "white_on_yellow"},
+                {"comparator": "==", "value": 0, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Molecule Progress",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:gastown.molecule.progress_pct{*} by {formula_template}", "display_type": "line"}
+              ],
+              "yaxis": {"max": "100"}
+            }
+          },
+          {
+            "definition": {
+              "title": "Molecules Started/Completed",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.molecule.started{*}.as_count()", "display_type": "bars", "style": {"palette": "blue"}},
+                {"q": "sum:gastown.molecule.completed{success:true}.as_count()", "display_type": "bars", "style": {"palette": "green"}}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Agent States",
+        "type": "group",
+        "background_color": "vivid_green",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Agent States Distribution",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:gastown.agent.state{*} by {state}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Idle Duration by Agent",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.agent.idle_duration_s{*} by {agent_id}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Seconds Since Last Activity",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:gastown.agent.last_activity_s{*} by {agent_id}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Rig Activity",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.rig.agents_count{*} by {rig_name}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "tmux Sessions Active",
+              "type": "query_value",
+              "requests": [{"q": "sum:gastown.tmux.sessions_active{*}", "aggregator": "last"}],
+              "precision": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Claude Code / Anthropic API",
+        "type": "group",
+        "background_color": "vivid_orange",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Claude API Requests",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:claude.api.request.count{*} by {model}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:claude.api.tokens.input{*}.as_count()", "display_type": "area", "style": {"palette": "blue"}},
+                {"q": "sum:claude.api.tokens.output{*}.as_count()", "display_type": "area", "style": {"palette": "orange"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Latency (p50/p95/p99)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "p50:claude.api.request.duration_ms{*}", "display_type": "line"},
+                {"q": "p95:claude.api.request.duration_ms{*}", "display_type": "line"},
+                {"q": "p99:claude.api.request.duration_ms{*}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost by Model",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:claude.api.cost_usd{*} by {model}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cache Hit Rate",
+              "type": "query_value",
+              "requests": [{"q": "100 * sum:claude.api.tokens.cache_read{*}.as_count() / (sum:claude.api.tokens.input{*}.as_count() + 1)"}],
+              "precision": 1,
+              "custom_unit": "%"
+            }
+          },
+          {
+            "definition": {
+              "title": "Tool Calls",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(sum:claude.tool_use.count{*} by {tool_name}.as_count(), 10, 'sum', 'desc')"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "OpenAI / Codex",
+        "type": "group",
+        "background_color": "white",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "OpenAI API Requests",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:openai.api.request.count{*} by {model}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Token Usage",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:openai.api.tokens.input{*}.as_count()", "display_type": "area"},
+                {"q": "sum:openai.api.tokens.output{*}.as_count()", "display_type": "area"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Latency",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:openai.api.request.duration_ms{*} by {model}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Embeddings",
+              "type": "query_value",
+              "requests": [{"q": "sum:openai.embedding.count{*}.as_count()"}],
+              "precision": 0
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Ralph Loop / Sequential Thinking",
+        "type": "group",
+        "background_color": "vivid_blue",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Ralph Iterations",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:ralph.loop.iteration{outcome:success}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+                {"q": "sum:ralph.loop.iteration{outcome:failure}.as_count()", "display_type": "bars", "style": {"palette": "red"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thoughts per Problem",
+              "type": "distribution",
+              "requests": [
+                {"q": "avg:ralph.thinking.thought_count{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convergence Time (p95)",
+              "type": "query_value",
+              "requests": [{"q": "p95:ralph.thinking.convergence_ms{*}"}],
+              "custom_unit": "ms"
+            }
+          },
+          {
+            "definition": {
+              "title": "Sequential Thinking Latency",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:sequential_thinking.request.duration_ms{*} by {model}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Fallback Events",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:sequential_thinking.fallback.count{*} by {reason}.as_count()", "display_type": "bars"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "APM Traces",
+        "type": "group",
+        "background_color": "vivid_pink",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Trace Throughput",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:trace.http.request.hits{service:gastown-sensei OR service:openclaw OR service:gastown}.as_count() by {service}", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Request Latency (p95)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "p95:trace.http.request.duration{service:gastown-sensei}", "display_type": "line"},
+                {"q": "p95:trace.http.request.duration{service:openclaw}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Trace Error Rate",
+              "type": "timeseries",
+              "requests": [
+                {"q": "100 * sum:trace.http.request.errors{*}.as_count() / (sum:trace.http.request.hits{*}.as_count() + 1)", "display_type": "line"}
+              ],
+              "markers": [
+                {"value": "y = 5", "display_type": "error dashed", "label": "Error threshold"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Cost Analysis",
+        "type": "group",
+        "background_color": "white",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Cost by Provider",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:ai_agent.cost.total_usd{*} by {provider}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Daily Cost Trend",
+              "type": "timeseries",
+              "requests": [
+                {"q": "cumsum(sum:ai_agent.cost.total_usd{*}.as_count()) / 1000000", "display_type": "area"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost per Request",
+              "type": "query_value",
+              "requests": [{"q": "(sum:ai_agent.cost.total_usd{*}.as_count() / 1000000) / (sum:ai_agent.request.count{*}.as_count() + 1)"}],
+              "precision": 4,
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Efficiency (Output:Input)",
+              "type": "query_value",
+              "requests": [{"q": "sum:ai_agent.tokens.total{direction:output}.as_count() / (sum:ai_agent.tokens.total{direction:input}.as_count() + 1)"}],
+              "precision": 2,
+              "custom_unit": ":1"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {"name": "env", "default": "*", "prefix": "env", "available_values": ["prod", "staging", "dev", "studio"]},
+    {"name": "service", "default": "*", "prefix": "service", "available_values": ["gastown-sensei", "openclaw", "gastown", "ralph-loop", "claude-code"]},
+    {"name": "rig", "default": "*", "prefix": "rig_name"},
+    {"name": "provider", "default": "*", "prefix": "provider", "available_values": ["anthropic", "openai", "ollama"]},
+    {"name": "model", "default": "*", "prefix": "model"},
+    {"name": "host", "default": "*", "prefix": "host"}
+  ],
+  "layout_type": "ordered",
+  "notify_list": [],
+  "reflow_type": "fixed"
+}
