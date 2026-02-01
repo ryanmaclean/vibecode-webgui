@@ -394,6 +394,7 @@ export async function gtSling(
       ...options.tags,
       'gt.operation': 'sling',
       'gt.bead_id': beadId,
+      'bead.id': beadId,
       'gt.target': target || '',
     },
   })
@@ -571,6 +572,7 @@ export async function bdShow(
       ...options.tags,
       'bd.operation': 'show',
       'bd.bead_id': beadId,
+      'bead.id': beadId,
     },
   })
 }
@@ -588,6 +590,7 @@ export async function bdComplete(
       ...options.tags,
       'bd.operation': 'complete',
       'bd.bead_id': beadId,
+      'bead.id': beadId,
     },
   })
 }

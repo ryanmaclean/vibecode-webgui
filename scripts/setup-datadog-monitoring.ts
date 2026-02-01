@@ -13,6 +13,7 @@ interface SetupResults {
     aiFeatures?: string
     userExperience?: string
     infrastructure?: string
+    unifiedOperations?: string
   }
   alerts: { [key: string]: string }
   success: boolean

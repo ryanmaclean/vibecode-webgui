@@ -213,6 +213,8 @@ class AIAgentTelemetry:
         if DD_ENABLED and tracer:
             span = tracer.trace("claude.api.request", service=self.service_name)
             span.set_tag("model", model)
+            for k, v in extra_tags.items():
+                span.set_tag(str(k), v)
 
         try:
             yield tracker
@@ -238,6 +240,8 @@ class AIAgentTelemetry:
         if DD_ENABLED and tracer:
             span = tracer.trace("openai.api.request", service=self.service_name)
             span.set_tag("model", model)
+            for k, v in extra_tags.items():
+                span.set_tag(str(k), v)
 
         try:
             yield tracker
@@ -263,6 +267,8 @@ class AIAgentTelemetry:
         if DD_ENABLED and tracer:
             span = tracer.trace("ralph.loop.iteration", service="ralph-loop")
             span.set_tag("session_id", session_id)
+            for k, v in extra_tags.items():
+                span.set_tag(str(k), v)
 
         try:
             yield tracker
@@ -298,6 +304,8 @@ class AIAgentTelemetry:
             span = tracer.trace("sequential_thinking.request",
                                service="sequential-thinking")
             span.set_tag("model", model)
+            for k, v in extra_tags.items():
+                span.set_tag(str(k), v)
 
         try:
             yield tracker
@@ -427,112 +435,127 @@ class GasTownTracing:
         ctx = BeadTraceContext(bead_id)
         start_time = time.time()
 
-        span = None
-        if DD_ENABLED and tracer:
-            span = tracer.trace(
-                "bead.lifecycle",
-                service=self.service_name,
-                resource=bead_id
-            )
-            span.set_tag("bead.id", bead_id)
-            span.set_tag("bead.rig", rig)
-            span.set_tag("bead.priority", priority)
-            if title:
-                span.set_tag("bead.title", title[:100])
-            for k, v in extra_tags.items():
-                span.set_tag(f"bead.{k}", v)
-
-            ctx.root_span = span
-            ctx.trace_id = str(span.trace_id) if hasattr(span, 'trace_id') else None
-            ctx.span_id = str(span.span_id) if hasattr(span, 'span_id') else None
-
         self._active_contexts[bead_id] = ctx
         outcome = "unknown"
 
-        try:
-            yield ctx
-            outcome = "success"
-        except Exception as e:
-            outcome = "error"
-            if span:
-                span.set_tag("error", True)
-                span.set_tag("error.type", type(e).__name__)
-            raise
-        finally:
-            duration_s = time.time() - start_time
+        if DD_ENABLED and tracer:
+            with tracer.trace(
+                "bead.lifecycle",
+                service=self.service_name,
+                resource=bead_id
+            ) as span:
+                span.set_tag("bead.id", bead_id)
+                span.set_tag("bead.rig", rig)
+                span.set_tag("bead.priority", priority)
+                if title:
+                    span.set_tag("bead.title", title[:100])
+                for k, v in extra_tags.items():
+                    span.set_tag(f"bead.{k}", v)
 
-            if span:
-                span.set_tag("bead.outcome", outcome)
-                span.set_tag("bead.duration_s", duration_s)
-                span.finish()
+                ctx.root_span = span
+                ctx.trace_id = str(span.trace_id) if hasattr(span, 'trace_id') else None
+                ctx.span_id = str(span.span_id) if hasattr(span, 'span_id') else None
 
-            # Metrics
-            tags = [f"bead_id:{bead_id}", f"rig:{rig}", f"priority:P{priority}",
-                    f"outcome:{outcome}"]
-            self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
-            self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
-                                        duration_s, "histogram", tags)
+                try:
+                    yield ctx
+                    outcome = "success"
+                except Exception as e:
+                    outcome = "error"
+                    span.set_tag("error", True)
+                    span.set_tag("error.type", type(e).__name__)
+                    raise
+                finally:
+                    duration_s = time.time() - start_time
+                    span.set_tag("bead.outcome", outcome)
+                    span.set_tag("bead.duration_s", duration_s)
 
-            del self._active_contexts[bead_id]
+                    # Metrics
+                    tags = [f"bead_id:{bead_id}", f"rig:{rig}", f"priority:P{priority}",
+                            f"outcome:{outcome}"]
+                    self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
+                    self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
+                                                duration_s, "histogram", tags)
+                    del self._active_contexts[bead_id]
+        else:
+            try:
+                yield ctx
+                outcome = "success"
+            except Exception:
+                outcome = "error"
+                raise
+            finally:
+                duration_s = time.time() - start_time
+                tags = [f"bead_id:{bead_id}", f"rig:{rig}", f"priority:P{priority}",
+                        f"outcome:{outcome}"]
+                self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
+                self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
+                                            duration_s, "histogram", tags)
+                del self._active_contexts[bead_id]
 
     @contextmanager
     def track_hook(self, ctx: BeadTraceContext, agent: str,
                    hook_type: str = "work") -> Generator[None, None, None]:
         """Track when work is hooked onto an agent"""
         start_time = time.time()
-        span = None
 
         if DD_ENABLED and tracer:
-            # Use current active span as parent (set by bead_lifecycle)
-            span = tracer.trace(
+            with tracer.trace(
                 "bead.hook",
                 service=self.service_name,
                 resource=agent
-            )
-            span.set_tag("bead.id", ctx.bead_id)
-            span.set_tag("hook.agent", agent)
-            span.set_tag("hook.type", hook_type)
+            ) as span:
+                span.set_tag("bead.id", ctx.bead_id)
+                span.set_tag("hook.agent", agent)
+                span.set_tag("hook.type", hook_type)
 
-        try:
-            yield
-        finally:
-            duration_ms = (time.time() - start_time) * 1000
-            if span:
-                span.set_tag("duration_ms", duration_ms)
-                span.finish()
+                try:
+                    yield
+                finally:
+                    duration_ms = (time.time() - start_time) * 1000
+                    span.set_tag("duration_ms", duration_ms)
 
-            tags = [f"bead_id:{ctx.bead_id}", f"agent:{agent}", f"hook_type:{hook_type}"]
-            self.telemetry._send_metric("gastown.bead.hook.count", 1, "count", tags)
-            self.telemetry._send_metric("gastown.bead.hook.duration_ms",
-                                        duration_ms, "histogram", tags)
+                    tags = [f"bead_id:{ctx.bead_id}", f"agent:{agent}", f"hook_type:{hook_type}"]
+                    self.telemetry._send_metric("gastown.bead.hook.count", 1, "count", tags)
+                    self.telemetry._send_metric("gastown.bead.hook.duration_ms",
+                                                duration_ms, "histogram", tags)
+        else:
+            try:
+                yield
+            finally:
+                duration_ms = (time.time() - start_time) * 1000
+                tags = [f"bead_id:{ctx.bead_id}", f"agent:{agent}", f"hook_type:{hook_type}"]
+                self.telemetry._send_metric("gastown.bead.hook.count", 1, "count", tags)
+                self.telemetry._send_metric("gastown.bead.hook.duration_ms",
+                                            duration_ms, "histogram", tags)
 
     @contextmanager
     def track_crew_assign(self, ctx: BeadTraceContext, crew_member: str,
                           target_polecat: str) -> Generator[None, None, None]:
         """Track when crew assigns work to a polecat"""
-        start_time = time.time()
-        span = None
 
         if DD_ENABLED and tracer:
-            span = tracer.trace(
+            with tracer.trace(
                 "crew.assign",
                 service=self.service_name,
                 resource=target_polecat
-            )
-            span.set_tag("bead.id", ctx.bead_id)
-            span.set_tag("crew.member", crew_member)
-            span.set_tag("crew.target", target_polecat)
+            ) as span:
+                span.set_tag("bead.id", ctx.bead_id)
+                span.set_tag("crew.member", crew_member)
+                span.set_tag("crew.target", target_polecat)
 
-        try:
-            yield
-        finally:
-            duration_ms = (time.time() - start_time) * 1000
-            if span:
-                span.finish()
-
-            tags = [f"bead_id:{ctx.bead_id}", f"crew_member:{crew_member}",
-                    f"target:{target_polecat}"]
-            self.telemetry._send_metric("gastown.crew.assign.count", 1, "count", tags)
+                try:
+                    yield
+                finally:
+                    tags = [f"bead_id:{ctx.bead_id}", f"crew_member:{crew_member}",
+                            f"target:{target_polecat}"]
+                    self.telemetry._send_metric("gastown.crew.assign.count", 1, "count", tags)
+        else:
+            try:
+                yield
+            finally:
+                tags = [f"bead_id:{ctx.bead_id}", f"crew_member:{crew_member}",
+                        f"target:{target_polecat}"]
+                self.telemetry._send_metric("gastown.crew.assign.count", 1, "count", tags)
 
     @contextmanager
     def track_polecat_work(self, ctx: BeadTraceContext, polecat: str,
@@ -546,74 +569,150 @@ class GasTownTracing:
         tracker.extra_tags["rig"] = rig
         tracker.extra_tags["bead_id"] = ctx.bead_id
 
-        span = None
         if DD_ENABLED and tracer:
-            span = tracer.trace(
+            with tracer.trace(
                 "polecat.work",
                 service=self.service_name,
                 resource=polecat
-            )
-            span.set_tag("bead.id", ctx.bead_id)
-            span.set_tag("polecat.name", polecat)
-            span.set_tag("polecat.rig", rig)
+            ) as span:
+                span.set_tag("bead.id", ctx.bead_id)
+                span.set_tag("polecat.name", polecat)
+                span.set_tag("polecat.rig", rig)
 
-        try:
-            yield tracker
-        except Exception as e:
-            tracker.set_error(type(e).__name__)
-            if span:
-                span.set_tag("error", True)
-                span.set_tag("error.type", type(e).__name__)
-            raise
-        finally:
-            if span:
-                span.set_tag("outcome", tracker.extra_tags.get("outcome", "unknown"))
-                span.set_tag("tokens.input", tracker.input_tokens)
-                span.set_tag("tokens.output", tracker.output_tokens)
-                span.set_tag("duration_ms", tracker.duration_ms)
-                span.finish()
+                try:
+                    yield tracker
+                except Exception as e:
+                    tracker.set_error(type(e).__name__)
+                    span.set_tag("error", True)
+                    span.set_tag("error.type", type(e).__name__)
+                    raise
+                finally:
+                    span.set_tag("outcome", tracker.extra_tags.get("outcome", "unknown"))
+                    span.set_tag("tokens.input", tracker.input_tokens)
+                    span.set_tag("tokens.output", tracker.output_tokens)
+                    span.set_tag("duration_ms", tracker.duration_ms)
 
-            tags = [f"bead_id:{ctx.bead_id}", f"polecat:{polecat}", f"rig:{rig}",
-                    f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}"]
-            self.telemetry._send_metric("gastown.polecat.work.count", 1, "count", tags)
-            self.telemetry._send_metric("gastown.polecat.work.duration_ms",
-                                        tracker.duration_ms, "histogram", tags)
-            if tracker.input_tokens > 0:
-                self.telemetry._send_metric("gastown.polecat.tokens.input",
-                                            tracker.input_tokens, "count", tags)
-            if tracker.output_tokens > 0:
-                self.telemetry._send_metric("gastown.polecat.tokens.output",
-                                            tracker.output_tokens, "count", tags)
+                    tags = [f"bead_id:{ctx.bead_id}", f"polecat:{polecat}", f"rig:{rig}",
+                            f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}"]
+                    self.telemetry._send_metric("gastown.polecat.work.count", 1, "count", tags)
+                    self.telemetry._send_metric("gastown.polecat.work.duration_ms",
+                                                tracker.duration_ms, "histogram", tags)
+                    if tracker.input_tokens > 0:
+                        self.telemetry._send_metric("gastown.polecat.tokens.input",
+                                                    tracker.input_tokens, "count", tags)
+                    if tracker.output_tokens > 0:
+                        self.telemetry._send_metric("gastown.polecat.tokens.output",
+                                                    tracker.output_tokens, "count", tags)
+        else:
+            try:
+                yield tracker
+            except Exception as e:
+                tracker.set_error(type(e).__name__)
+                raise
+            finally:
+                tags = [f"bead_id:{ctx.bead_id}", f"polecat:{polecat}", f"rig:{rig}",
+                        f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}"]
+                self.telemetry._send_metric("gastown.polecat.work.count", 1, "count", tags)
+                self.telemetry._send_metric("gastown.polecat.work.duration_ms",
+                                            tracker.duration_ms, "histogram", tags)
+                if tracker.input_tokens > 0:
+                    self.telemetry._send_metric("gastown.polecat.tokens.input",
+                                                tracker.input_tokens, "count", tags)
+                if tracker.output_tokens > 0:
+                    self.telemetry._send_metric("gastown.polecat.tokens.output",
+                                                tracker.output_tokens, "count", tags)
+
+    @contextmanager
+    def track_deacon_review(self, ctx: BeadTraceContext, deacon: str,
+                            review_type: str = "quality") -> Generator[RequestTracker, None, None]:
+        """Track deacon review/verification work"""
+        tracker = RequestTracker(provider="gastown", model="deacon")
+        tracker.extra_tags["deacon"] = deacon
+        tracker.extra_tags["review_type"] = review_type
+        tracker.extra_tags["bead_id"] = ctx.bead_id
+
+        if DD_ENABLED and tracer:
+            with tracer.trace(
+                "deacon.review",
+                service=self.service_name,
+                resource=deacon
+            ) as span:
+                span.set_tag("bead.id", ctx.bead_id)
+                span.set_tag("deacon.name", deacon)
+                span.set_tag("deacon.review_type", review_type)
+
+                try:
+                    yield tracker
+                except Exception as e:
+                    tracker.set_error(type(e).__name__)
+                    span.set_tag("error", True)
+                    span.set_tag("error.type", type(e).__name__)
+                    raise
+                finally:
+                    span.set_tag("outcome", tracker.extra_tags.get("outcome", "unknown"))
+                    span.set_tag("duration_ms", tracker.duration_ms)
+
+                    tags = [
+                        f"bead_id:{ctx.bead_id}",
+                        f"deacon:{deacon}",
+                        f"review_type:{review_type}",
+                        f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}",
+                    ]
+                    self.telemetry._send_metric("gastown.deacon.review.count", 1, "count", tags)
+                    self.telemetry._send_metric("gastown.deacon.review.duration_ms",
+                                                tracker.duration_ms, "histogram", tags)
+        else:
+            try:
+                yield tracker
+            except Exception as e:
+                tracker.set_error(type(e).__name__)
+                raise
+            finally:
+                tags = [
+                    f"bead_id:{ctx.bead_id}",
+                    f"deacon:{deacon}",
+                    f"review_type:{review_type}",
+                    f"outcome:{tracker.extra_tags.get('outcome', 'unknown')}",
+                ]
+                self.telemetry._send_metric("gastown.deacon.review.count", 1, "count", tags)
+                self.telemetry._send_metric("gastown.deacon.review.duration_ms",
+                                            tracker.duration_ms, "histogram", tags)
 
     @contextmanager
     def track_nudge(self, ctx: BeadTraceContext, target: str,
                     nudge_type: str = "status_check") -> Generator[None, None, None]:
         """Track nudge sent to an agent"""
         start_time = time.time()
-        span = None
 
         if DD_ENABLED and tracer:
-            span = tracer.trace(
+            with tracer.trace(
                 "nudge.sent",
                 service=self.service_name,
                 resource=target
-            )
-            span.set_tag("bead.id", ctx.bead_id)
-            span.set_tag("nudge.target", target)
-            span.set_tag("nudge.type", nudge_type)
+            ) as span:
+                span.set_tag("bead.id", ctx.bead_id)
+                span.set_tag("nudge.target", target)
+                span.set_tag("nudge.type", nudge_type)
 
-        try:
-            yield
-        finally:
-            duration_ms = (time.time() - start_time) * 1000
-            if span:
-                span.set_tag("duration_ms", duration_ms)
-                span.finish()
+                try:
+                    yield
+                finally:
+                    duration_ms = (time.time() - start_time) * 1000
+                    span.set_tag("duration_ms", duration_ms)
 
-            tags = [f"bead_id:{ctx.bead_id}", f"target:{target}", f"type:{nudge_type}"]
-            self.telemetry._send_metric("gastown.nudge.sent.count", 1, "count", tags)
-            self.telemetry._send_metric("gastown.nudge.duration_ms",
-                                        duration_ms, "histogram", tags)
+                    tags = [f"bead_id:{ctx.bead_id}", f"target:{target}", f"type:{nudge_type}"]
+                    self.telemetry._send_metric("gastown.nudge.sent.count", 1, "count", tags)
+                    self.telemetry._send_metric("gastown.nudge.duration_ms",
+                                                duration_ms, "histogram", tags)
+        else:
+            try:
+                yield
+            finally:
+                duration_ms = (time.time() - start_time) * 1000
+                tags = [f"bead_id:{ctx.bead_id}", f"target:{target}", f"type:{nudge_type}"]
+                self.telemetry._send_metric("gastown.nudge.sent.count", 1, "count", tags)
+                self.telemetry._send_metric("gastown.nudge.duration_ms",
+                                            duration_ms, "histogram", tags)
 
     def track_nudge_response(self, ctx: BeadTraceContext, target: str,
                              response_time_ms: float, acknowledged: bool = True):
@@ -625,7 +724,7 @@ class GasTownTracing:
                                     response_time_ms, "histogram", tags)
 
     def track_mayor_task(self, task_type: str, priority: str = "normal",
-                         target_agent: str = ""):
+                         target_agent: str = "", bead_id: str = ""):
         """Track Mayor task assignment"""
         span = None
         if DD_ENABLED and tracer:
@@ -633,10 +732,14 @@ class GasTownTracing:
             span.set_tag("task.type", task_type)
             span.set_tag("task.priority", priority)
             span.set_tag("task.target", target_agent)
+            if bead_id:
+                span.set_tag("bead.id", bead_id)
             span.finish()
 
         tags = [f"task_type:{task_type}", f"priority:{priority}",
                 f"target:{target_agent}"]
+        if bead_id:
+            tags.append(f"bead_id:{bead_id}")
         self.telemetry._send_metric("gastown.mayor.task.count", 1, "count", tags)
 
     def track_mail_sent(self, sender: str, recipient: str,
@@ -722,6 +825,12 @@ if __name__ == "__main__":
         t.set_thought_count(5)
     print(f"Ralph iteration: {t.duration_ms:.2f}ms")
 
+    # Test sequential thinking
+    with telemetry.track_sequential_thinking(model="claude-3-sonnet") as t:
+        time.sleep(0.03)
+        t.set_outcome("success")
+    print(f"Sequential thinking: {t.duration_ms:.2f}ms")
+
     # Test polecat tracking
     telemetry.track_polecat_spawn("vibecode-107", "claude", "high")
     telemetry.set_active_polecats("vibecode-107", 5)
@@ -761,6 +870,12 @@ if __name__ == "__main__":
             work.set_outcome("success")
             print(f"  Polecat work completed: {work.duration_ms:.2f}ms")
 
+        # Deacon review
+        with tracing.track_deacon_review(ctx, deacon="deacon/abacus", review_type="qa") as review:
+            time.sleep(0.02)
+            review.set_outcome("approved")
+            print(f"  Deacon review completed: {review.duration_ms:.2f}ms")
+
         # Send nudge
         with tracing.track_nudge(ctx, target="vibecode/polecats/agate", nudge_type="status_check"):
             time.sleep(0.01)
@@ -791,5 +906,6 @@ if __name__ == "__main__":
     print("    ├── crew.assign")
     print("    ├── polecat.work")
     print("    │     └── claude.api.request")
+    print("    ├── deacon.review")
     print("    ├── nudge.sent")
     print("    └── nudge.response")

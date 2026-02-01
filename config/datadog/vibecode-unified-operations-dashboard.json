@@ -1,0 +1,1921 @@
+{
+    "title": "VibeCode Unified Operations (APM \u00b7 Logs \u00b7 Profiling \u00b7 DEM)",
+    "description": "Single unified dashboard for logging, tracing/APM, profiling/runtime, and DEM (RUM, synthetics, web vitals) plus core app metrics.",
+    "layout_type": "ordered",
+    "reflow_type": "fixed",
+    "template_variables": [
+        {
+            "name": "env",
+            "prefix": "env",
+            "default": "*"
+        },
+        {
+            "name": "service",
+            "prefix": "service",
+            "default": "vibecode-webgui"
+        },
+        {
+            "name": "provider",
+            "prefix": "provider",
+            "default": "*"
+        },
+        {
+            "name": "model",
+            "prefix": "model",
+            "default": "*"
+        }
+    ],
+    "widgets": [
+        {
+            "id": 1,
+            "definition": {
+                "title": "\ud83d\udea6 APM & Tracing",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_blue",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Request Rate (RPM)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1 * 60"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:trace.web.request.hits{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true,
+                            "precision": 0,
+                            "custom_unit": "rpm"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "APM Error Rate %",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "(query1 / query2) * 100"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:trace.web.request.errors{$service,$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:trace.web.request.hits{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "P95 Request Latency",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:trace.web.request.duration{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0,
+                            "custom_unit": "ms"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Latency (p50 / p95 / p99)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "p50"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "p95"
+                                        },
+                                        {
+                                            "formula": "query3",
+                                            "alias": "p99"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p50:trace.web.request.duration{$service,$env}"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "p95:trace.web.request.duration{$service,$env}"
+                                        },
+                                        {
+                                            "name": "query3",
+                                            "data_source": "metrics",
+                                            "query": "p99:trace.web.request.duration{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line",
+                                    "style": {
+                                        "palette": "dog_classic",
+                                        "line_type": "solid",
+                                        "line_width": "normal"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Throughput by Endpoint",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:trace.web.request.hits{$service,$env} by {resource_name}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars",
+                                    "style": {
+                                        "palette": "semantic"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Slowest Endpoints",
+                            "title_size": "16",
+                            "type": "toplist",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "limit": {
+                                                "count": 10,
+                                                "order": "desc"
+                                            }
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:trace.web.request.duration{$service,$env} by {resource_name}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 2,
+            "definition": {
+                "title": "\ud83d\udcdd Logs & Events",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "gray",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Log Volume by Service",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "logs",
+                                            "compute": {
+                                                "aggregation": "count"
+                                            },
+                                            "group_by": [
+                                                {
+                                                    "facet": "service",
+                                                    "limit": 10,
+                                                    "sort": {
+                                                        "aggregation": "count",
+                                                        "order": "desc"
+                                                    }
+                                                }
+                                            ],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "service:$service env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars",
+                                    "style": {
+                                        "palette": "semantic"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Error Logs by Status",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "logs",
+                                            "compute": {
+                                                "aggregation": "count"
+                                            },
+                                            "group_by": [
+                                                {
+                                                    "facet": "status",
+                                                    "limit": 5,
+                                                    "sort": {
+                                                        "aggregation": "count",
+                                                        "order": "desc"
+                                                    }
+                                                }
+                                            ],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "status:(error OR critical OR warning) service:$service env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars",
+                                    "style": {
+                                        "palette": "warm"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Recent Error Logs",
+                            "title_size": "16",
+                            "type": "log_stream",
+                            "query": "status:error service:$service env:$env",
+                            "columns": [
+                                "core_host",
+                                "core_service",
+                                "message"
+                            ],
+                            "indexes": [
+                                "*"
+                            ],
+                            "message_display": "inline",
+                            "show_date_column": true,
+                            "show_message_column": true,
+                            "sort": {
+                                "column": "time",
+                                "order": "desc"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 3,
+            "definition": {
+                "title": "\ud83d\udd2c Profiling & Runtime",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_pink",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "CPU (user/system)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "user"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "system"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:runtime.node.cpu.user{$service,$env}"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "avg:runtime.node.cpu.system{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Heap Usage",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:runtime.node.mem.heap.used{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "area"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "GC Pause Time",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:runtime.node.gc.pause{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Process RSS",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:process.mem.rss{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 4,
+            "definition": {
+                "title": "\u2699\ufe0f Application Metrics",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_green",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "API Response Time",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.api.response_time{$service,$env} by {endpoint}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "API Requests",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.api.request.count{$service,$env}.as_rate() by {endpoint}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "API Errors",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.api.errors.count{$service,$env}.as_rate() by {status}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars",
+                                    "style": {
+                                        "palette": "warm"
+                                    }
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Active Connections",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.system.active_connections{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true,
+                            "precision": 0
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 5,
+            "definition": {
+                "title": "\ud83e\udd16 AI / LLM Operations",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_purple",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "AI Request Volume",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.ai.requests{$service,$env} by {provider,model}.as_count()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "AI Response Time",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.ai.response_time{$service,$env} by {model}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Tokens Used",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.ai.tokens_used{$service,$env} by {model}.as_count()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "AI Error Rate %",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "(query1 / query2) * 100"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.ai.requests{$service,$env,success:false}.as_count()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.ai.requests{$service,$env}.as_count()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 6,
+            "definition": {
+                "title": "\ud83d\udcda RAG \u00b7 Embeddings \u00b7 Vector DB",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_yellow",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Embedding Request Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.embedding.requests.total{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Embedding Latency (P95)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:vibecode.embedding.duration{$service,$env} by {operation}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Embedding Token Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.embedding.tokens{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Embedding Error Rate %",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "(query1 / query2) * 100"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.embedding.requests.errors{$service,$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.embedding.requests.total{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 7,
+            "definition": {
+                "title": "\ud83d\uddc4\ufe0f Database & Cache",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_green",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "DB Query Time",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.database.query_time{$service,$env} by {query_type}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "DB Rows Returned",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:vibecode.database.rows_returned{$service,$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Valkey Hit Rate",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.valkey.keyspace.hit_rate{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Valkey Commands/sec",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.valkey.commands.per_sec{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Valkey Memory Used",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.valkey.memory.used{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "area"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 8,
+            "definition": {
+                "title": "\ud83d\udcf1 Digital Experience (RUM/DEM)",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_blue",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "RUM Page Views",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "rum",
+                                            "compute": {
+                                                "aggregation": "count"
+                                            },
+                                            "group_by": [],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "@type:view service:$service env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "RUM Errors",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "rum",
+                                            "compute": {
+                                                "aggregation": "count"
+                                            },
+                                            "group_by": [
+                                                {
+                                                    "facet": "@error.source",
+                                                    "limit": 5,
+                                                    "sort": {
+                                                        "aggregation": "count",
+                                                        "order": "desc"
+                                                    }
+                                                }
+                                            ],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "@type:error service:$service env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Web Vitals (LCP/FID/CLS)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "LCP"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "FID"
+                                        },
+                                        {
+                                            "formula": "query3",
+                                            "alias": "CLS"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.webvitals.lcp{$service,$env}"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.webvitals.fid{$service,$env}"
+                                        },
+                                        {
+                                            "name": "query3",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.webvitals.cls{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "User Sessions",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "rum",
+                                            "compute": {
+                                                "aggregation": "cardinality",
+                                                "metric": "@session.id"
+                                            },
+                                            "group_by": [],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "service:$service env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 9,
+            "definition": {
+                "title": "\ud83e\uddea Synthetics & Lighthouse",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_purple",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Synthetic Test Success Rate",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.synthetic_test.success_rate{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Synthetic Response Time",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.synthetic_test.response_time_avg{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Lighthouse Performance Score",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.lighthouse.performance_score{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Lighthouse LCP",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:vibecode.lighthouse.largest_contentful_paint{$service,$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 10,
+            "definition": {
+                "title": "\ud83e\uddf5 Gas Town Ops (Beads \u00b7 Crew \u00b7 Polecats \u00b7 Deacons)",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_blue",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Bead Lifecycle Rate (per min)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1 * 60"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.lifecycle.count{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true,
+                            "precision": 0,
+                            "custom_unit": "rpm"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Bead Lifecycle P95 (s)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.gastown.bead.lifecycle.duration_s{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "s"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Hook & Crew Assign Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "hook"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "crew.assign"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.hook.count{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.crew.assign.count{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Polecat Work Rate by Polecat",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.polecat.work.count{$env} by {polecat}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Polecat Work P95 (ms)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.gastown.polecat.work.duration_ms{$env} by {polecat}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Active Polecats",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:ai_agent.gastown.polecats.active{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true,
+                            "precision": 0
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Deacon Reviews Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.deacon.review.count{$env} by {deacon}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Deacon Review P95 (ms)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.gastown.deacon.review.duration_ms{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0,
+                            "custom_unit": "ms"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Nudges Sent vs Response",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "sent"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "response"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.nudge.sent.count{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.nudge.response.count{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Nudge Response P95 (ms)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.gastown.nudge.response_time_ms{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0,
+                            "custom_unit": "ms"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Mayor Tasks Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.mayor.task.count{$env} by {task_type}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Mail Sent vs Read",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "sent"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "read"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.mail.sent.count{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.mail.read.count{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 11,
+            "definition": {
+                "title": "\ud83e\udde0 Agent Reasoning (Ralph \u00b7 Sequential)",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_yellow",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Ralph Iterations (per min)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1 * 60"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.ralph.loop.iteration{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "autoscale": true,
+                            "precision": 0,
+                            "custom_unit": "rpm"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Ralph Loop P95 (ms)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.ralph.loop.duration_ms{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0,
+                            "custom_unit": "ms"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Ralph Thought Count",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:ai_agent.ralph.thinking.thought_count{$env}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Sequential Thinking Requests",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "requests"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "fallbacks"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.sequential_thinking.request.count{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.sequential_thinking.fallback.count{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Sequential Thinking P95 (ms)",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:ai_agent.sequential_thinking.request.duration_ms{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0,
+                            "custom_unit": "ms"
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "id": 12,
+            "definition": {
+                "title": "\ud83e\udde9 MCP Server Ops",
+                "title_size": "16",
+                "title_align": "left",
+                "show_title": true,
+                "type": "group",
+                "background_color": "vivid_green",
+                "layout_type": "ordered",
+                "widgets": [
+                    {
+                        "definition": {
+                            "title": "Tool Calls by Status",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:mcp.tool.calls by {status,tool}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Tool Duration P95 (ms)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:mcp.tool.duration by {tool}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Tool Errors",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:mcp.tool.errors by {tool}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Auth Attempts vs Failures",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "attempts"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "failures"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:mcp.auth.attempts by {status}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:mcp.auth.failures.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Resource Access Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:mcp.resource.access by {resource,status}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+        }
+    ],
+    "notify_list": []
+}
