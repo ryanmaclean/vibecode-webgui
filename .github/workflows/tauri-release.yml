@@ -13,9 +13,9 @@ on:
   workflow_dispatch:  # Manual trigger for testing
     inputs:
       skip_signing:
-        description: 'Skip code signing (for testing)'
+        description: 'Skip code signing (for testing without Apple credentials)'
         required: false
-        default: 'false'
+        default: 'true'
         type: choice
         options:
           - 'true'
