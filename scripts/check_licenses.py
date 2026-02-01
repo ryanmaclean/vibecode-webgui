@@ -6,6 +6,14 @@ Ensures all dependencies use MIT, BSD, or Apache licenses.
 Converts check-licenses.sh to Python with proper error handling.
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import shutil
 import subprocess
 import sys

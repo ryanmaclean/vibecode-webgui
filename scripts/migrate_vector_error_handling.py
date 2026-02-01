@@ -5,6 +5,14 @@ This script updates all vector database adapters to use the new VectorDbErrorHan
 """
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import re
 import shutil
 import sys

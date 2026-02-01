@@ -2,6 +2,13 @@
 """Measure Firecracker microVM boot latency using the local resources."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 import argparse
 import json
 import os
@@ -68,15 +75,6 @@ def load_microvm_tags() -> list[str]:
 
 def run_microvm(timeout: float) -> float:
   """Boot the microVM, return time until login prompt."""
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
-
   cmd = [str(FIRECRACKER_BIN), "--no-api", "--config-file", str(CONFIG_FILE)]
   start = time.perf_counter()
   proc = subprocess.Popen(

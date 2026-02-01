@@ -3,6 +3,14 @@
 Enhanced VM Manager - Incorporating VirtualBuddy and Viable best practices
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import os
 import subprocess
 import shutil
@@ -232,7 +240,7 @@ class EnhancedVMManager:
                 for i, opt in enumerate(options):
                     marker = "▸" if i == idx else " "
                     # Disable based on state
-                    if opt == "Start" and vm["status"]] == "running":
+                    if opt == "Start" and vm["status"] == "running":
                         opt = term.dim("Start (already running)")
                     elif opt == "Stop" and vm["status"] != "running":
                         opt = term.dim("Stop (not running)")

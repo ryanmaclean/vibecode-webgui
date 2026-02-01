@@ -6,6 +6,14 @@ helpers (logging, path management, command execution) so each converted
 script can remain a thin wrapper around the real orchestration logic.
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 from .paths import VFKitPaths
 from .log import log_error, log_info, log_section, log_success, log_warn
 from .runner import run_command

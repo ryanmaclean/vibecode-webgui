@@ -8,6 +8,14 @@ Converts changelog-helper.sh to Python with proper error handling.
 Usage: python changelog_helper.py [previous_tag] [current_tag]
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import argparse
 import re
 import subprocess

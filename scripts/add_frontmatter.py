@@ -6,6 +6,14 @@ to any files that don't already have it.
 """
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import argparse
 import re
 import sys

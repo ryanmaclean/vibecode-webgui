@@ -5,6 +5,14 @@ Initramfs Builder (Linux-native)
 Converts build-initramfs.sh to Python with proper error handling and testability.
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import subprocess
 import sys
 from pathlib import Path
