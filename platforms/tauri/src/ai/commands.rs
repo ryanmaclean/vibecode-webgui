@@ -126,10 +126,7 @@ pub async fn ai_list_models() -> Result<Vec<serde_json::Value>, String> {
 
 /// Stream AI Chat (WebSocket-style streaming)
 #[command]
-pub async fn ai_chat_stream(
-    request: AIChatRequest,
-    stream_id: String,
-) -> Result<String, String> {
+pub async fn ai_chat_stream(request: AIChatRequest, stream_id: String) -> Result<String, String> {
     // TODO: Implement streaming
     Err("Streaming not yet implemented".to_string())
 }

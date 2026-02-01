@@ -16,6 +16,14 @@ except ImportError:
 Usage: from scripts.lib.datadog_logging import dd_info, dd_error, dd_metric
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import json
 import os
 import socket

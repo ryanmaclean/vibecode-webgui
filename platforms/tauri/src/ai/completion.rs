@@ -171,7 +171,10 @@ impl CompletionOptimizer {
     }
 
     /// Select best model for completion based on language and context size
-    pub fn select_completion_model(request: &CompletionRequest, prefer_local: bool) -> (String, String) {
+    pub fn select_completion_model(
+        request: &CompletionRequest,
+        prefer_local: bool,
+    ) -> (String, String) {
         let code_size = request.code.len();
 
         if prefer_local {
@@ -180,16 +183,20 @@ impl CompletionOptimizer {
                 "rust" | "javascript" | "typescript" | "python" | "go" => {
                     ("ollama".to_string(), "qwen2.5-coder:1.5b".to_string())
                 }
-                _ => {
-                    ("ollama".to_string(), "llama3.2:1b".to_string())
-                }
+                _ => ("ollama".to_string(), "llama3.2:1b".to_string()),
             }
         } else if code_size < 10_000 {
             // Small context - use fast model
-            ("openrouter".to_string(), "google/gemini-flash-1.5".to_string())
+            (
+                "openrouter".to_string(),
+                "google/gemini-flash-1.5".to_string(),
+            )
         } else {
             // Large context - use capable model
-            ("openrouter".to_string(), "anthropic/claude-3.5-sonnet".to_string())
+            (
+                "openrouter".to_string(),
+                "anthropic/claude-3.5-sonnet".to_string(),
+            )
         }
     }
 

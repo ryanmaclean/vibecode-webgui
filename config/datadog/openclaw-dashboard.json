@@ -1,5 +1,6 @@
 {
   "title": "OpenClaw Gateway Dashboard",
+  "layout_type": "ordered",
   "widgets": [
     {
       "definition": {

@@ -360,6 +360,7 @@ final class ContainerRuntime: @unchecked Sendable {
         vmConfig.networkDevices = [networkDevice]
 
         // Console
+        /*
         let consoleDevice = VZVirtioConsoleDeviceConfiguration()
         let consolePort = VZVirtioConsolePortConfiguration()
 
@@ -375,6 +376,7 @@ final class ContainerRuntime: @unchecked Sendable {
 
         consoleDevice.ports[0] = consolePort
         vmConfig.consoleDevices = [consoleDevice]
+        */
 
         // Entropy (for random number generation)
         vmConfig.entropyDevices = [VZVirtioEntropyDeviceConfiguration()]

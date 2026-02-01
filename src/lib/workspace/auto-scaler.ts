@@ -839,7 +839,6 @@ export class WorkspaceAutoScaler {
         : 0
     }
   }
-
 }
 
 // Export singleton instance

@@ -392,9 +392,14 @@ PROMISE_VERIFICATION_REPORT.md
 # Tauri build artifacts (large)
 src-tauri/target/
 
-# Separate workspace (should not be committed)
-vibecode_webgui/
-
 # Event logs
 .events.jsonl
 .specstory/
+
+# Local-only runtime artifacts
+.feed.jsonl
+daemon/
+
+# Legacy dispatch scripts (replaced by Python tooling)
+scripts/assign-issues-to-polecats.sh
+scripts/assign-all-to-polecats.sh

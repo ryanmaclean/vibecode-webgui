@@ -10,14 +10,16 @@ wrappers and tests.
 """
 
 
+from __future__ import annotations
+
 # Datadog APM tracing
 try:
-    import ddtrace
-    ddtrace.patch_all()
+    from ddtrace import tracer, patch_all
+    patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
+    pass  # ddtrace not installed
 
+<<<<<<< HEAD
 from __future__ import annotations
 # -- VibeCode Telemetry --
 import sys
@@ -29,6 +31,8 @@ try:
 except ImportError:
     pass
 # ------------------------
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import os
@@ -60,6 +64,7 @@ def run(cmd: list[str], *, input_text: str | None = None, dry_run: bool = False)
             print(f"[DRY-RUN] with stdin:\n{snippet}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
+<<<<<<< HEAD
     try:
         return subprocess.run(  # noqa: S603
             cmd,
@@ -243,3 +248,5 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

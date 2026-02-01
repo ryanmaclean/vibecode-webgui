@@ -10,6 +10,9 @@ services:
     environment:
       - OPENCLAW_ENV=production
       - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN:-openclaw-local}
+      - DD_SERVICE=openclaw
+      - DD_ENV=${DD_ENV:-local}
+      - DD_VERSION=${OPENCLAW_VERSION:-unknown}
     volumes:
       - ./data/openclaw:/root/.openclaw
     restart: unless-stopped
