@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,8 +11,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-from __future__ import annotations
 
 import argparse
 import io
@@ -83,6 +83,7 @@ class ValkeyTester:
         return f"test:vibecode:{suffix}:{now}:{random.randint(1000, 9999)}"
 
     # ------------------------------------------------------------------
+
     # tests
     def test_port_connectivity(self) -> bool:
         try:

@@ -1,4 +1,6 @@
 
+from __future__ import annotations
+
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -9,8 +11,6 @@ try:
 except ImportError:
     pass
 # ------------------------
-
-from __future__ import annotations
 
 import argparse
 import os
@@ -349,6 +349,7 @@ class VMManager:
         subprocess.run(["tail", "-f", str(log_file)])
 
     # ------------------------------------------------------------------
+
     # health + monitoring
     def health_check(self) -> None:
         log_section("VM Health Check")
