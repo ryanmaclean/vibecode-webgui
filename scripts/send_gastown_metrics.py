@@ -490,7 +490,13 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
 
     env_tag = os.getenv("DD_ENV", "studio")
     host_tag = os.getenv("DD_HOST", socket.gethostname())
-    common_tags = [f"env:{env_tag}", f"host:{host_tag}"]
+    common_tags = [
+        f"env:{env_tag}",
+        f"host:{host_tag}",
+        "service:gastown",
+        "app:gas-town",
+        "team:gas-town",
+    ]
 
     print("Sending Gas Town metrics...")
     print(f"  Gas Town Status: mayor={'●' if gt_status['mayor'] else '○'}, deacon={'●' if gt_status['deacon'] else '○'}, witness={'●' if gt_status['witness'] else '○'}, refinery={'●' if gt_status['refinery'] else '○'}")
