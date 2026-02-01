@@ -347,15 +347,41 @@ def get_openclaw_jobs() -> Dict[str, int]:
         "nudges_from_cron": 0,
         "nudges_from_poll": 0,
     }
+    candidates = []
+    state_dir = os.getenv("OPENCLAW_STATE_DIR")
+    if state_dir:
+        candidates.append(os.path.join(state_dir, "cron", "jobs.json"))
+    candidates.extend([
+        os.path.expanduser("~/.openclaw/cron/jobs.json"),
+        os.path.expanduser("~/.openclaw-dev/cron/jobs.json"),
+        os.path.expanduser("~/.config/openclaw/jobs.json"),
+    ])
 
-    config_path = os.path.expanduser("~/.config/openclaw/jobs.json")
-    if not os.path.exists(config_path):
+    config = None
+    for path in candidates:
+        if not path or not os.path.exists(path):
+            continue
+        try:
+            with open(path, "r", encoding="utf-8") as handle:
+                config = json.load(handle)
+            break
+        except Exception:
+            continue
+
+    if not config:
         return jobs
 
-    try:
-        with open(config_path, "r", encoding="utf-8") as handle:
-            config = json.load(handle)
-    except Exception:
+    if "jobs" in config:
+        entries = config.get("jobs", []) or []
+        enabled_jobs = [job for job in entries if job.get("enabled", True)]
+        jobs["cron_jobs"] = len(enabled_jobs)
+        for job in enabled_jobs:
+            name = str(job.get("name", "")).lower()
+            payload = job.get("payload", {}) or {}
+            text = str(payload.get("text", "")).lower()
+            message = str(payload.get("message", "")).lower()
+            if "nudge" in name or "nudge" in text or "nudge" in message:
+                jobs["nudges_from_cron"] += 1
         return jobs
 
     jobs["cron_jobs"] = len(config.get("cron", []) or [])
@@ -644,36 +670,56 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     active_polecats = gt_status["active_polecats"] or polecat_count
     total_polecats = gt_status["total_polecats"] or active_polecats
 
-    status_data = bd_status()
-    summary = status_data.get("summary", {}) if isinstance(status_data, dict) else {}
-    open_issues = int(summary.get("open_issues", 0) or 0)
-    in_progress_issues = int(summary.get("in_progress_issues", 0) or 0)
-    blocked_issues = int(summary.get("blocked_issues", 0) or 0)
-    closed_issues = int(summary.get("closed_issues", 0) or 0)
-    deferred_issues = int(summary.get("deferred_issues", 0) or 0)
-    avg_lead_time_hours = float(summary.get("average_lead_time_hours", 0) or 0)
+    skip_bd = os.getenv("GASTOWN_SKIP_BD", "").lower() in {"1", "true", "yes"}
+    if skip_bd:
+        status_data = {}
+        summary = {}
+        open_issues = in_progress_issues = blocked_issues = closed_issues = deferred_issues = 0
+        avg_lead_time_hours = 0.0
+        created_since = closed_since = updated_since = blocked_since = 0
+        created_by_priority = {}
+        created_by_type = {}
+        created_by_assignee = {}
+        in_progress_by_assignee = {}
+        closed_by_assignee = {}
+        acceptance_since = 0
+        merge_requests_open = merge_requests_closed = 0
+        molecule_total = molecule_closed = molecule_started = 0
+    else:
+        status_data = bd_status()
+        summary = status_data.get("summary", {}) if isinstance(status_data, dict) else {}
+        open_issues = int(summary.get("open_issues", 0) or 0)
+        in_progress_issues = int(summary.get("in_progress_issues", 0) or 0)
+        blocked_issues = int(summary.get("blocked_issues", 0) or 0)
+        closed_issues = int(summary.get("closed_issues", 0) or 0)
+        deferred_issues = int(summary.get("deferred_issues", 0) or 0)
+        avg_lead_time_hours = float(summary.get("average_lead_time_hours", 0) or 0)
 
-    created_since = bd_count(["--created-after", since_iso])
-    closed_since = bd_count(["--closed-after", since_iso])
-    updated_since = bd_count(["--updated-after", since_iso])
-    blocked_since = bd_count(["--status", "blocked", "--updated-after", since_iso])
+        created_since = bd_count(["--created-after", since_iso])
+        closed_since = bd_count(["--closed-after", since_iso])
+        updated_since = bd_count(["--updated-after", since_iso])
+        blocked_since = bd_count(["--status", "blocked", "--updated-after", since_iso])
 
-    created_by_priority = bd_group_counts(["--created-after", since_iso, "--by-priority"])
-    created_by_type = bd_group_counts(["--created-after", since_iso, "--by-type"])
-    created_by_assignee = bd_group_counts(["--created-after", since_iso, "--by-assignee"])
-    in_progress_by_assignee = bd_group_counts(["--status", "in_progress", "--by-assignee"])
-    closed_by_assignee = bd_group_counts(["--closed-after", since_iso, "--by-assignee"])
+        created_by_priority = bd_group_counts(["--created-after", since_iso, "--by-priority"])
+        created_by_type = bd_group_counts(["--created-after", since_iso, "--by-type"])
+        created_by_assignee = bd_group_counts(["--created-after", since_iso, "--by-assignee"])
+        in_progress_by_assignee = bd_group_counts(["--status", "in_progress", "--by-assignee"])
+        closed_by_assignee = bd_group_counts(["--closed-after", since_iso, "--by-assignee"])
 
-    acceptance_since = bd_count(["--status", "in_progress", "--updated-after", since_iso])
+        acceptance_since = bd_count(["--status", "in_progress", "--updated-after", since_iso])
 
-    merge_requests_open = bd_count(["--type", "merge-request", "--status", "open"])
-    merge_requests_closed = bd_count(["--type", "merge-request", "--closed-after", since_iso])
+        merge_requests_open = bd_count(["--type", "merge-request", "--status", "open"])
+        merge_requests_closed = bd_count(["--type", "merge-request", "--closed-after", since_iso])
 
-    molecule_total = bd_count(["--type", "molecule"])
-    molecule_closed = bd_count(["--type", "molecule", "--status", "closed"])
-    molecule_started = bd_count(["--type", "molecule", "--created-after", since_iso])
+        molecule_total = bd_count(["--type", "molecule"])
+        molecule_closed = bd_count(["--type", "molecule", "--status", "closed"])
+        molecule_started = bd_count(["--type", "molecule", "--created-after", since_iso])
 
-    git_stats = get_git_stats(since)
+    skip_git = os.getenv("GASTOWN_SKIP_GIT", "").lower() in {"1", "true", "yes"}
+    if skip_git:
+        git_stats = {"lines_added": 0, "lines_deleted": 0, "pr_merges": 0, "commits_by_author": Counter()}
+    else:
+        git_stats = get_git_stats(since)
     lines_added = git_stats["lines_added"]
     lines_deleted = git_stats["lines_deleted"]
     pr_merges = git_stats["pr_merges"]

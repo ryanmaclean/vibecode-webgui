@@ -146,6 +146,10 @@ migration-report.txt
 
 .claude/
 .beads/
+!.beads/issues.jsonl
+!.beads/.gitkeep
+!.beads/issues.jsonl
+!.beads/.gitkeep
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
