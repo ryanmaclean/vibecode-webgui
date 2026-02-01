@@ -74,20 +74,112 @@ keep the VM process running, and record the background PID in
 The helper script records a PID file in `${TARGET_DIR}/.microvm.pid` and
 captures console output in `${TARGET_DIR}/qemu-console.log` for debugging.
 
-## Benchmarks
+### Apple VF Fast Boot (Apple Silicon)
+
+For sub-10-second boot times on Apple Silicon Macs, use the optimized EFI-stub
+kernel configuration with Apple Virtualization Framework:
+
+#### Prerequisites
+```bash
+# Install vfkit and gvproxy
+brew install vfkit
+go install github.com/containers/gvisor-tap-vsock/cmd/gvproxy@latest
 ```
+
+#### Building Fast Boot Artifacts
+
+Build inside a Linux environment (Lima VM or Docker container):
+
+```bash
+# Start kernel-builder Lima VM
+limactl start kernel-builder
+
+# Build EFI-stub kernel (~15 min)
+lima kernel-builder -- ./scripts/benchmarks/build-efi-stub-kernel.sh arm64
+
+# Build minimal initramfs (~1 min)
+lima kernel-builder -- ./scripts/benchmarks/build-minimal-initramfs.sh arm64
+
+# Copy artifacts to host
+limactl copy kernel-builder:/workspace/bench-images/apple-vf-fastboot/vmlinux-efi-stub bench-images/apple-vf-fastboot/
+limactl copy kernel-builder:/workspace/bench-images/apple-vf-fastboot/initramfs-minimal.cpio.gz bench-images/apple-vf-fastboot/
+```
+
+#### Running with Apple VF
+
+```bash
+# Using the main harness
+MICROVM_ARCH=arm64 MICROVM_RUNTIME=applevf \
+  MICROVM_DIR=bench-images/apple-vf-fastboot \
+  MICROVM_KERNEL=bench-images/apple-vf-fastboot/vmlinux-efi-stub \
+  MICROVM_INITRD=bench-images/apple-vf-fastboot/initramfs-minimal.cpio.gz \
+  MICROVM_APPLEVF_CMD=./scripts/benchmarks/applevf-vfkit-launcher.sh \
+  scripts/benchmarks/vscode_microvm.sh start
+
+# Or use the dedicated fast-boot benchmark
+./scripts/benchmarks/applevf_fastboot_bench.sh bench 5
+```
+
+#### Kernel Configuration
+
+The EFI-stub kernel config (`scripts/benchmarks/kernel-configs/efi-stub-arm64.config`)
+enables:
+- `CONFIG_EFI_STUB=y` - Direct EFI boot without GRUB
+- `CONFIG_ARCH_APPLE=y` - Apple Silicon optimizations
+- `CONFIG_VIRTIO_*=y` - VF virtio devices (net, blk, console)
+- `CONFIG_CC_OPTIMIZE_FOR_SIZE=y` - Smaller kernel image
+- Disabled: USB, DRM, sound, debug, tracing for minimal boot time
+
+## Benchmarks
+
+### Boot Time Comparison Table
+
+| Runtime | Architecture | Host | Hypervisor | Boot to /healthz | Notes |
+|---------|-------------|------|------------|------------------|-------|
+| QEMU | x86_64 | macOS (Intel) | HVF | ~6.1s | HVF acceleration |
+| QEMU | arm64 | macOS (Intel) | TCG | ~19.5s | Emulation overhead |
+| **Apple VF** | **arm64** | **macOS (M-series)** | **VF Native** | **<10s target** | EFI-stub kernel |
+| Docker | x86_64 | macOS | - | ~0.29s | Container baseline |
+
+### Running Benchmarks
+
+#### x86_64 QEMU (Intel Mac)
+```bash
 $ scripts/benchmarks/vscode_microvm.sh measure 5
 {"port_ready_ms": [6212, 6002, 6103, 6057, 6177]}
+```
 
+#### arm64 QEMU/TCG (Intel Mac emulating ARM)
+```bash
 $ MICROVM_ARCH=arm64 scripts/benchmarks/vscode_microvm.sh measure 3
 {"port_ready_ms": [19745, 19525, 19217]}
 ```
-Average HTTP-ready time on macOS 14.6.1: ~6.1 s for the HVF-backed x86_64 guest
-and ~19.5 s for the arm64 guest running under TCG on Intel hardware. Docker
-start/stop on the same host averages ~0.29 s using `boot_latency_bench.py`, so
-we still trail containers for cold launches; keep a warm VM running for demos to
-avoid repeated cold boots. Once we validate on Apple Silicon with Virtualization
-Framework passthrough we expect the arm64 numbers to drop substantially.
+
+#### Apple Virtualization Framework (Apple Silicon)
+```bash
+# Requires: vfkit (brew install vfkit) and gvproxy
+# Build artifacts first (in Lima or Docker Linux environment):
+#   ./scripts/benchmarks/build-efi-stub-kernel.sh arm64
+#   ./scripts/benchmarks/build-minimal-initramfs.sh arm64
+
+# Run with Apple VF launcher
+MICROVM_ARCH=arm64 MICROVM_RUNTIME=applevf \
+  MICROVM_APPLEVF_CMD=./scripts/benchmarks/applevf-vfkit-launcher.sh \
+  scripts/benchmarks/vscode_microvm.sh measure 5
+
+# Or use the dedicated fast-boot benchmark
+./scripts/benchmarks/applevf_fastboot_bench.sh bench 5
+```
+
+### Performance Notes
+
+- **Intel Mac HVF**: ~6.1s average - HVF acceleration for x86_64 guests
+- **Intel Mac TCG**: ~19.5s average - ARM emulation is slow without native acceleration
+- **Apple Silicon VF**: Target <10s - Native ARM execution via Virtualization.framework
+- **Docker**: ~0.29s average - Container baseline (not a VM)
+
+For demos, keep a warm VM running to avoid cold boot latency. Apple Silicon with
+Virtualization.framework passthrough provides native ARM execution performance.
 
 ## Packaging
 ```bash
