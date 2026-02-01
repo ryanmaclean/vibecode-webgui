@@ -66,6 +66,7 @@ def bd_create_for_github_issue(issue: Dict) -> str:
             'bd',
             'create',
             title,
+            '--silent',
             '--type',
             'task',
             '--description',
@@ -74,14 +75,9 @@ def bd_create_for_github_issue(issue: Dict) -> str:
         check=True,
     )
 
-    # bd create prints the created ID; fall back to searching by title marker.
-    created = proc.stdout.strip()
-    if created:
-        # It may include other text; take last token that looks like prefix-xxx.
-        tokens = created.split()
-        for t in reversed(tokens):
-            if '-' in t:
-                return t
+    created_id = proc.stdout.strip()
+    if created_id:
+        return created_id
 
     found = bd_find_by_external_ref(external_ref)
     if not found:
