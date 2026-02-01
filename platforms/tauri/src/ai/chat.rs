@@ -4,7 +4,7 @@
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
-use super::commands::{AIMessage, AIChatRequest, AIChatResponse};
+use super::commands::{AIChatRequest, AIChatResponse, AIMessage};
 
 /// Conversation history manager
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -206,14 +206,8 @@ impl ChatUtils {
             return String::from("Empty conversation");
         }
 
-        let user_messages = messages
-            .iter()
-            .filter(|m| m.role == "user")
-            .count();
-        let assistant_messages = messages
-            .iter()
-            .filter(|m| m.role == "assistant")
-            .count();
+        let user_messages = messages.iter().filter(|m| m.role == "user").count();
+        let assistant_messages = messages.iter().filter(|m| m.role == "assistant").count();
 
         format!(
             "Conversation with {} user messages and {} assistant messages",

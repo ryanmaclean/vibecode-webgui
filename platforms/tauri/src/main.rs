@@ -8,9 +8,9 @@ mod docker;
 mod mdns;
 mod menu;
 mod ml;
-mod vm;
 mod service;
 mod tailscale;
+mod vm;
 
 // use tauri::Manager; // Removed unused import
 
@@ -29,7 +29,7 @@ fn main() {
     std::env::set_var("DD_RUNTIME_METRICS_ENABLED", "true");
     std::env::set_var("DD_LOGS_ENABLED", "true");
     std::env::set_var("DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL", "true");
-    
+
     // Set hostname for tracing
     if let Ok(hostname) = hostname::get() {
         std::env::set_var("DD_HOSTNAME", hostname.to_string_lossy().to_string());
@@ -89,14 +89,14 @@ fn main() {
         .setup(|app| {
             // Check if running in service mode (for Electron)
             let service_mode = std::env::var("VIBECODE_SERVICE_MODE").is_ok();
-            
+
             if service_mode {
                 // Start HTTP service in background
                 let port = std::env::var("VIBECODE_SERVICE_PORT")
                     .unwrap_or_else(|_| "3030".to_string())
                     .parse::<u16>()
                     .unwrap_or(3030);
-                
+
                 let app_handle = app.handle().clone();
                 tauri::async_runtime::spawn(async move {
                     if let Err(e) = service::start_service(port).await {
@@ -104,7 +104,7 @@ fn main() {
                     }
                 });
             }
-            
+
             // Initialize system tray
             if let Err(e) = menu::create_system_tray(app.handle()) {
                 eprintln!("Failed to create system tray: {}", e);
@@ -121,7 +121,7 @@ fn main() {
                         if let Err(e) = commands::start_vfkit_vm().await {
                             println!("⚠️  vfkit VM not available: {}", e);
                         }
-                    },
+                    }
                     Err(e) => {
                         eprintln!("❌ Failed to start code-server: {}", e);
                         // As a fallback, still attempt vfkit VM

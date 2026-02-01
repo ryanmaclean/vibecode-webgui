@@ -63,6 +63,48 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci --legacy-peer-deps
 
+      - name: Build frontend for Tauri
+        env:
+          NODE_OPTIONS: "--max_old_space_size=4096"
+        run: |
+          echo "Building Next.js frontend for Tauri static export..."
+          echo "Node memory limit: $NODE_OPTIONS"
+
+          # Backup original config and use Tauri-specific config
+          if [ -f next.config.js ]; then
+            cp next.config.js next.config.js.backup
+          fi
+          if [ -f next.config.mjs ]; then
+            mv next.config.mjs next.config.mjs.backup
+          fi
+
+          # Use Tauri config for static export
+          cp next.config.tauri.js next.config.js
+
+          # Build with static export
+          npm run build
+
+          # Restore original config
+          if [ -f next.config.js.backup ]; then
+            mv next.config.js.backup next.config.js
+          fi
+          if [ -f next.config.mjs.backup ]; then
+            mv next.config.mjs.backup next.config.mjs
+          fi
+
+          # Verify static export was created
+          if [ ! -d "out" ]; then
+            echo "Error: Static export directory 'out' not created"
+            echo "Build output type may be incorrect - check next.config.tauri.js has output: 'export'"
+            exit 1
+          fi
+
+          echo "Copying static export to platforms/public..."
+          rm -rf platforms/public
+          cp -r out platforms/public
+          ls -la platforms/public/
+          echo "Frontend build complete - $(find platforms/public -type f | wc -l) files"
+
       - name: Verify Tauri CLI installation
         working-directory: platforms/tauri
         run: |
