@@ -481,7 +481,7 @@ DogStatsDClient.shared.event(
 - Release notes document VM discovery behavior
 
 ✅ **Tests Added/Updated**
-- Integration tests: `tests/integration/vm-providers.test.ts` (100+ test cases)
+- Integration tests: `tests/integration/vm-providers.test.ts` (35 passing tests)
 - Unit tests: Provider-specific test files
 - Coverage: All detection methods and fallback scenarios
 
@@ -548,7 +548,7 @@ The **Automatic VM Image Detection** feature is **fully implemented and verified
 
 1. ✅ **Automatic VM image discovery** across multiple directory locations
 2. ✅ **Intelligent provider detection** with platform-specific optimization
-3. ✅ **Comprehensive test coverage** (100+ integration tests)
+3. ✅ **Comprehensive test coverage** (35 passing integration tests)
 4. ✅ **Complete documentation** including usage examples and API references
 5. ✅ **Production-ready observability** with structured logging and metrics
 
