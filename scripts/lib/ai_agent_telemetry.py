@@ -42,15 +42,31 @@ except ImportError:
 # DogStatsD for metrics
 try:
     from datadog import DogStatsd
+    _statsd_namespace = os.getenv("AI_AGENT_METRICS_NAMESPACE", "ai_agent").strip()
+    _statsd_host = os.getenv("DD_AGENT_HOST", "127.0.0.1")
+    _statsd_port = int(os.getenv("DD_DOGSTATSD_PORT", "8125"))
     statsd = DogStatsd(
-        host=os.getenv("DD_AGENT_HOST", "127.0.0.1"),
-        port=int(os.getenv("DD_DOGSTATSD_PORT", "8125")),
-        namespace="ai_agent"
+        host=_statsd_host,
+        port=_statsd_port,
+        namespace=_statsd_namespace or None,
+    )
+    raw_statsd = None
+    if _statsd_namespace and os.getenv("AI_AGENT_MIRROR_RAW", "true").lower() in {"1", "true", "yes"}:
+        raw_statsd = DogStatsd(host=_statsd_host, port=_statsd_port)
+    MIRROR_PREFIXES = tuple(
+        p.strip()
+        for p in os.getenv(
+            "AI_AGENT_MIRROR_PREFIXES",
+            "gastown.,ralph.,sequential_thinking.,claude.,openai.,tokens.",
+        ).split(",")
+        if p.strip()
     )
     STATSD_ENABLED = True
 except ImportError:
     STATSD_ENABLED = False
     statsd = None
+    raw_statsd = None
+    MIRROR_PREFIXES = ()
 
 
 # Model pricing (USD per 1M tokens) - updated Jan 2026
@@ -143,12 +159,17 @@ class AIAgentTelemetry:
 
         all_tags = self.default_tags + (tags or [])
 
-        if metric_type == "count":
-            statsd.increment(name, value, tags=all_tags)
-        elif metric_type == "gauge":
-            statsd.gauge(name, value, tags=all_tags)
-        elif metric_type == "histogram":
-            statsd.histogram(name, value, tags=all_tags)
+        def emit(client: DogStatsd, metric: str) -> None:
+            if metric_type == "count":
+                client.increment(metric, value, tags=all_tags)
+            elif metric_type == "gauge":
+                client.gauge(metric, value, tags=all_tags)
+            elif metric_type == "histogram":
+                client.histogram(metric, value, tags=all_tags)
+
+        emit(statsd, name)
+        if raw_statsd is not None and any(name.startswith(p) for p in MIRROR_PREFIXES):
+            emit(raw_statsd, name)
 
     def _finalize_tracker(self, tracker: RequestTracker):
         """Send all metrics for a completed request"""
@@ -162,8 +183,11 @@ class AIAgentTelemetry:
         ]
         base_tags.extend([f"{k}:{v}" for k, v in tracker.extra_tags.items()])
 
-        # Provider-specific metrics
-        prefix = f"{provider}.api"
+        # Provider-specific metrics (map Anthropic to Claude naming used in dashboards)
+        if provider == "anthropic":
+            prefix = "claude.api"
+        else:
+            prefix = f"{provider}.api"
         self._send_metric(f"{prefix}.request.count", 1, "count", base_tags)
         self._send_metric(f"{prefix}.request.duration_ms", tracker.duration_ms,
                          "histogram", base_tags)
