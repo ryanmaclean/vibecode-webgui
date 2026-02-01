@@ -53,9 +53,21 @@ interface Config {
     };
 }
 
+function parseEnabledProviders(): Set<string> {
+    const raw = process.env.PROVIDERS_ENABLED || 'openrouter';
+    return new Set(
+        raw.split(',')
+            .map(value => value.trim().toLowerCase())
+            .filter(Boolean)
+    );
+}
+
+const enabledProviders = parseEnabledProviders();
+const openrouterEnabled = enabledProviders.has('openrouter');
+
 const requiredEnvVars = [
-    'OPENROUTER_API_KEY',
-    'JWT_SECRET'
+    'JWT_SECRET',
+    ...(openrouterEnabled ? ['OPENROUTER_API_KEY'] : [])
 ];
 
 // Validate required environment variables
@@ -81,7 +93,7 @@ export const config: Config = {
     },
 
     openrouter: {
-        apiKey: process.env.OPENROUTER_API_KEY!,
+        apiKey: process.env.OPENROUTER_API_KEY || '',
         baseUrl: process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1',
         timeout: parseInt(process.env.OPENROUTER_TIMEOUT || '60000', 10),
         referrer: process.env.OPENROUTER_REFERRER || 'https://vibecode.dev',
