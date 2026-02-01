@@ -354,6 +354,52 @@
                                 "order": "desc"
                             }
                         }
+                    },
+                    {
+                        "definition": {
+                            "title": "Gas Town CLI Logs",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "logs",
+                                            "compute": {
+                                                "aggregation": "count"
+                                            },
+                                            "group_by": [
+                                                {
+                                                    "facet": "service",
+                                                    "limit": 10,
+                                                    "sort": {
+                                                        "aggregation": "count",
+                                                        "order": "desc"
+                                                    }
+                                                }
+                                            ],
+                                            "indexes": [
+                                                "*"
+                                            ],
+                                            "search": {
+                                                "query": "service:gastown-cli env:$env"
+                                            }
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars",
+                                    "style": {
+                                        "palette": "semantic"
+                                    }
+                                }
+                            ]
+                        }
                     }
                 ]
             }
@@ -715,6 +761,116 @@
                             ],
                             "precision": 2,
                             "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Claude Request Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.claude.api.request.count{$env} by {model}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "OpenAI Request Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.openai.api.request.count{$env} by {model}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Claude Tokens (in/out)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "input"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "output"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.claude.api.tokens.input{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.claude.api.tokens.output{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Claude Cost (USD)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1 / 1000000"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.claude.api.cost_usd{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
                         }
                     }
                 ]
@@ -1607,6 +1763,345 @@
                                     ],
                                     "response_format": "timeseries",
                                     "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Bead Stage Throughput",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "created"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "hooked"
+                                        },
+                                        {
+                                            "formula": "query3",
+                                            "alias": "assigned"
+                                        },
+                                        {
+                                            "formula": "query4",
+                                            "alias": "working"
+                                        },
+                                        {
+                                            "formula": "query5",
+                                            "alias": "completed"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.created{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.hooked{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query3",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.assigned{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query4",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.working{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query5",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.completed{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Bead Completion Rate %",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "(query2 / (query1 + 1)) * 100"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.created{$env}.as_count()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.bead.stage.completed{$env}.as_count()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Witness Events",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.witness.lifecycle_events{$env} by {event_type}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Refinery Merges",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:ai_agent.gastown.refinery.merges_processed{$env} by {outcome}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Refinery Queue",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:ai_agent.gastown.refinery.merges_queued{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "CLI Command Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:gastown.cli.command.count{service:gastown-cli,$env} by {command}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "CLI Duration P95 (ms)",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "p95:gastown.cli.command.duration_ms{service:gastown-cli,$env} by {command}"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "line"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "CLI Success Rate %",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "(query1 / (query2 + 1)) * 100"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:gastown.cli.command.count{service:gastown-cli,success:true,$env}.as_count()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:gastown.cli.command.count{service:gastown-cli,$env}.as_count()"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 2,
+                            "custom_unit": "%"
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "Role Command Rate",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:gastown.role.command.count{service:gastown-cli,$env} by {role}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
+                                }
+                            ]
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "OpenClaw Jobs Active",
+                            "title_size": "16",
+                            "type": "query_value",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1 + query2"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "avg:openclaw.cron.jobs_active{$env}"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "avg:openclaw.poll.jobs_active{$env}"
+                                        }
+                                    ],
+                                    "response_format": "scalar"
+                                }
+                            ],
+                            "precision": 0
+                        }
+                    },
+                    {
+                        "definition": {
+                            "title": "OpenClaw Nudges Sent",
+                            "title_size": "16",
+                            "type": "timeseries",
+                            "requests": [
+                                {
+                                    "formulas": [
+                                        {
+                                            "formula": "query1",
+                                            "alias": "cron"
+                                        },
+                                        {
+                                            "formula": "query2",
+                                            "alias": "poll"
+                                        }
+                                    ],
+                                    "queries": [
+                                        {
+                                            "name": "query1",
+                                            "data_source": "metrics",
+                                            "query": "sum:openclaw.cron.nudges_sent{$env}.as_rate()"
+                                        },
+                                        {
+                                            "name": "query2",
+                                            "data_source": "metrics",
+                                            "query": "sum:openclaw.poll.nudges_sent{$env}.as_rate()"
+                                        }
+                                    ],
+                                    "response_format": "timeseries",
+                                    "display_type": "bars"
                                 }
                             ]
                         }
