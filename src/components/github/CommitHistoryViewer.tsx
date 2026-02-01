@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -65,12 +65,11 @@ export function CommitHistoryViewer({
   })
   const [showFilters, setShowFilters] = useState(false)
 
-  const fetchCommits = async (resetPage = false) => {
+  const fetchCommits = useCallback(async (pageToFetch: number) => {
     setLoading(true)
     setError(null)
 
     try {
-      const currentPage = resetPage ? 1 : page
       const response = await fetch('/api/github/commits/list', {
         method: 'POST',
         headers: {
@@ -80,7 +79,7 @@ export function CommitHistoryViewer({
           repoName,
           accessToken,
           branch,
-          page: currentPage,
+          page: pageToFetch,
           per_page: perPage,
           ...filters,
         }),
@@ -91,40 +90,37 @@ export function CommitHistoryViewer({
       }
 
       const data = await response.json()
-      
-      if (resetPage) {
-        setCommits(data.commits)
-        setPage(1)
-      } else {
-        setCommits(data.commits)
-      }
-
+      setCommits(data.commits)
       setHasMore(data.commits.length === perPage)
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to load commits')
     } finally {
       setLoading(false)
     }
-  }
+  }, [repoName, accessToken, branch, perPage, filters])
 
   useEffect(() => {
-    fetchCommits(true)
-  }, [repoName, accessToken, branch])
+    setPage(1)
+    fetchCommits(1)
+  }, [repoName, accessToken, branch, fetchCommits])
 
   const handleNextPage = () => {
-    setPage(p => p + 1)
-    fetchCommits()
+    const nextPage = page + 1
+    setPage(nextPage)
+    fetchCommits(nextPage)
   }
 
   const handlePrevPage = () => {
     if (page > 1) {
-      setPage(p => p - 1)
-      fetchCommits()
+      const prevPage = page - 1
+      setPage(prevPage)
+      fetchCommits(prevPage)
     }
   }
 
   const handleApplyFilters = () => {
-    fetchCommits(true)
+    setPage(1)
+    fetchCommits(1)
   }
 
   const handleClearFilters = () => {
@@ -134,7 +130,8 @@ export function CommitHistoryViewer({
       until: '',
       path: '',
     })
-    setTimeout(() => fetchCommits(true), 0)
+    setPage(1)
+    setTimeout(() => fetchCommits(1), 0)
   }
 
   const getCommitMessageTitle = (message: string) => {
