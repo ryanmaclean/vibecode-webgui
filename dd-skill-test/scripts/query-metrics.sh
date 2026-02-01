@@ -156,8 +156,8 @@ fi
 echo "[INFO] Found $SERIES_COUNT time series" >&2
 echo "" >&2
 
-# Extract all data points from all series
-ALL_POINTS=$(echo "$RESPONSE" | jq -c '[.series[].pointlist[][] | select(. != null)]')
+# Extract numeric values from all series (ignore timestamps/nulls)
+ALL_POINTS=$(echo "$RESPONSE" | jq -c '[.series[].pointlist[] | .[1] | select(. != null)]')
 POINT_COUNT=$(echo "$ALL_POINTS" | jq 'length')
 
 if [ "$POINT_COUNT" -eq 0 ]; then
@@ -215,14 +215,14 @@ echo "" >&2
 # Trend analysis - compare first half vs second half
 HALF_POINT=$((POINT_COUNT / 2))
 FIRST_HALF_AVG=$(echo "$ALL_POINTS" | jq --argjson half "$HALF_POINT" '
-  .[:$half] | add / length
+  if $half == 0 then 0 else (.[:$half] | add / length) end
 ')
 SECOND_HALF_AVG=$(echo "$ALL_POINTS" | jq --argjson half "$HALF_POINT" '
-  .[$half:] | add / length
+  if $half == 0 then (add / length) else (.[ $half: ] | add / length) end
 ')
 
 # Calculate trend percentage change
-TREND_PCT=$(echo "$FIRST_HALF_AVG $SECOND_HALF_AVG" | jq -n --argjson first "$(cat -)" --argjson second "$(cat -)" '
+TREND_PCT=$(jq -n --argjson first "$FIRST_HALF_AVG" --argjson second "$SECOND_HALF_AVG" '
   if $first == 0 then 0 else (($second - $first) / $first * 100) end
 ' 2>/dev/null || echo "0")
 
@@ -256,8 +256,8 @@ ANOMALIES=$(echo "$ALL_POINTS" | jq --argjson upper "$UPPER_THRESHOLD" --argjson
 ')
 
 ANOMALY_COUNT=$(echo "$ANOMALIES" | jq 'length')
-ANOMALY_PCT=$(echo "$ANOMALY_COUNT $POINT_COUNT" | jq -n '
-  (input / input * 100)
+ANOMALY_PCT=$(jq -n --argjson count "$ANOMALY_COUNT" --argjson total "$POINT_COUNT" '
+  if $total == 0 then 0 else ($count / $total * 100) end
 ')
 
 echo "[ANOMALY] Detected: $ANOMALY_COUNT points (${ANOMALY_PCT}%)" >&2

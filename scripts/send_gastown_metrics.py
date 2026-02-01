@@ -50,6 +50,10 @@ class MetricEmitter:
             ok = self._send_one(f"{MIRROR_NAMESPACE}.{metric_name}", value, metric_type, tags) and ok
         return ok
 
+    def send_event(self, title: str, text: str, tags: Optional[list] = None, alert_type: str = "info") -> bool:
+        tags = tags or []
+        return self._send_event(title, text, tags, alert_type)
+
     def _send_one(self, metric_name: str, value: float, metric_type: str, tags: list) -> bool:
         tag_str = f"|#{','.join(tags)}" if tags else ""
         message = f"{metric_name}:{value}|{metric_type}{tag_str}"
@@ -63,6 +67,25 @@ class MetricEmitter:
             return True
         except Exception as exc:
             print(f"Error sending {metric_name}: {exc}")
+            return False
+
+    def _send_event(self, title: str, text: str, tags: list, alert_type: str) -> bool:
+        safe_title = title.replace("\n", " ").strip()
+        safe_text = text.replace("\n", "\\n").strip()
+        tag_str = f"|#{','.join(tags)}" if tags else ""
+        message = (
+            f"_e{{{len(safe_title)},{len(safe_text)}}}:{safe_title}|{safe_text}|t:{alert_type}{tag_str}"
+        )
+        if self.dry_run:
+            print(message)
+            return True
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            sock.sendto(message.encode(), (STATSD_HOST, STATSD_PORT))
+            sock.close()
+            return True
+        except Exception as exc:
+            print(f"Error sending event {safe_title}: {exc}")
             return False
 
     def _should_mirror(self, metric_name: str) -> bool:
@@ -504,6 +527,7 @@ def get_github_stats(since: datetime) -> Dict[str, int]:
         "prs_merged": 0,
         "prs_activity": 0,
         "issues_open": 0,
+        "actions_total": 0,
         "actions_success": 0,
     }
 
@@ -590,6 +614,24 @@ def get_github_stats(since: datetime) -> Dict[str, int]:
     )
     if isinstance(actions_success, list):
         stats["actions_success"] = len(actions_success)
+
+    actions_total = run_json_any(
+        [
+            "gh",
+            "run",
+            "list",
+            "--created",
+            f">={since_date}",
+            "--limit",
+            "200",
+            "--json",
+            "databaseId",
+            *repo_args,
+        ],
+        timeout=15,
+    )
+    if isinstance(actions_total, list):
+        stats["actions_total"] = len(actions_total)
 
     stats["prs_activity"] = stats["prs_opened"] + stats["prs_merged"] + stats["prs_open"]
     return stats
@@ -768,6 +810,15 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     health_score = min(100, 50 + (core_services_up * 10) + (active_polecats * 2))
     emitter.send("gastown.town.health", health_score, "g", common_tags)
     emitter.send("gastown.town.rigs_active", rigs_active, "g", common_tags)
+    emit_event_flag = os.getenv("GASTOWN_EMIT_EVENT", "true").lower() not in {"0", "false", "no"}
+    if emit_event_flag:
+        event_text = (
+            f"Health score: {health_score}/100\n"
+            f"Active polecats: {active_polecats}/{total_polecats}\n"
+            f"Beads open/in_progress/blocked: {open_issues}/{in_progress_issues}/{blocked_issues}\n"
+            f"Nudges scheduled: {openclaw_jobs['nudges_from_cron'] + openclaw_jobs['nudges_from_poll']}"
+        )
+        emitter.send_event("Gas Town metrics heartbeat", event_text, common_tags, alert_type="info")
 
     # Polecats
     emitter.send("gastown.polecats.active", active_polecats, "g", common_tags)
@@ -936,8 +987,11 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("tokens.total", 0, "c", common_tags)
 
     emitter.send("ralph.loop.iteration", 0, "c", common_tags + ["outcome:success"])
+    emitter.send("ralph.loop.started", 0, "c", common_tags + ["outcome:success"])
+    emitter.send("ralph.loop.converged", 0, "c", common_tags + ["outcome:success"])
     emitter.send("ralph.loop.duration_ms", 0, "h", common_tags + ["outcome:success"])
     emitter.send("ralph.thinking.thought_count", 0, "g", common_tags + ["problem_id:unknown"])
+    emitter.send("ralph.thinking.revisions", 0, "c", common_tags + ["problem_id:unknown"])
     emitter.send("ralph.thinking.convergence_ms", 0, "h", common_tags)
     emitter.send("sequential_thinking.request.count", 0, "c", common_tags + ["model:unknown"])
     emitter.send("sequential_thinking.request.duration_ms", 0, "h", common_tags + ["model:unknown"])
@@ -994,6 +1048,7 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("github.prs.merged", merged_prs, "c", common_tags + [f"repo:{repo_slug}"])
     emitter.send("github.prs.activity", github_stats["prs_activity"], "c", common_tags + [f"repo:{repo_slug}"])
     emitter.send("github.issues.open", github_stats["issues_open"], "g", common_tags + [f"repo:{repo_slug}"])
+    emitter.send("github.actions.total", github_stats["actions_total"], "c", common_tags + [f"repo:{repo_slug}"])
     emitter.send("github.actions.success", github_stats["actions_success"], "c", common_tags + [f"repo:{repo_slug}"])
 
     emit_trace_flag = os.getenv("GASTOWN_EMIT_TRACE", "true").lower() not in {"0", "false", "no"}

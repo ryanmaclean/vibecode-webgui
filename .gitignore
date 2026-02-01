@@ -150,6 +150,47 @@ migration-report.txt
 !.beads/.gitkeep
 !.beads/issues.jsonl
 !.beads/.gitkeep
+
+# Local agent skill installs / IDE helpers
+.adal/
+.agent/
+.agents/
+.augment/
+.cline/
+.codebuddy/
+.codex/skills/
+.commandcode/
+.continue/
+.crush/
+.cursor/
+.factory/
+.gemini/
+.github/skills/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openclaude/
+.opencode/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+skills/
+
+# Local exports
+UnifiedOpsDashboard-*.yaml
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
@@ -388,5 +429,8 @@ PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
 
 # Gas Town local runtime
-.beads/
+.beads/*
+!.beads/
+!.beads/issues.jsonl
+!.beads/.gitkeep
 .runtime/

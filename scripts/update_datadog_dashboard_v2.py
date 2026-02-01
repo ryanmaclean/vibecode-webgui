@@ -241,7 +241,7 @@ def create_widgets():
         "definition": {
             "title": "🔴 Error Rate",
             "type": "query_value",
-            "requests": [{"q": "100 * sum:trace.http.request.errors{*}.as_count() / (sum:trace.http.request.hits{*}.as_count() + 1)", "conditional_formats": [
+            "requests": [{"q": "100 * sum:gastown.beads.escalated{*}.as_count() / (sum:gastown.bead.lifecycle.count{*}.as_count() + 1)", "conditional_formats": [
                 {"comparator": ">", "value": 5, "palette": "white_on_red"},
                 {"comparator": ">", "value": 1, "palette": "white_on_yellow"},
                 {"comparator": "<=", "value": 1, "palette": "white_on_green"}
