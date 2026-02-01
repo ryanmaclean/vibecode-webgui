@@ -388,3 +388,6 @@ PROMISE_VERIFICATION_REPORT.md
 .beads/
 .runtime/
 .venv/
+
+# Gas Town (added by gt)
+.logs/

@@ -52,6 +52,10 @@ curl -s http://127.0.0.1:4600/healthz   # -> ok
 curl -I http://127.0.0.1:4600/          # -> HTTP/1.1 200 OK
 MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh stop
 
+# Apple VF fast-boot assets (EFI-stub + minimal BusyBox initramfs)
+./scripts/benchmarks/build-efi-stub-kernel.sh arm64 6.12.10
+./scripts/benchmarks/build-minimal-initramfs.sh arm64
+
 # Launch via Apple Virtualization Framework (experimental)
 # 1. Point MICROVM_APPLEVF_CMD at a launcher that calls `vz`, `macvz`, `vfkit`, etc.
 #    The helper exports these env vars for the launcher:
@@ -62,7 +66,7 @@ MICROVM_ARCH=arm64 MICROVM_RUNTIME=qemu scripts/benchmarks/vscode_microvm.sh sto
 # 2. Ensure the launcher keeps running until the VM exits and writes its PID to
 #    MICROVM_PID_FILE (optional, but enables `stop` / `measure`).
 MICROVM_ARCH=arm64 MICROVM_RUNTIME=applevf \
-  MICROVM_APPLEVF_CMD=./path/to/applevf-launcher.sh \
+  MICROVM_APPLEVF_CMD=./scripts/benchmarks/applevf-vfkit-launcher.sh \
   scripts/benchmarks/vscode_microvm.sh start
 ```
 
@@ -75,6 +79,11 @@ The helper script records a PID file in `${TARGET_DIR}/.microvm.pid` and
 captures console output in `${TARGET_DIR}/qemu-console.log` for debugging.
 
 ## Benchmarks
+| Host | Arch | Runtime | Kernel/initramfs | Avg port-ready | Notes |
+| --- | --- | --- | --- | --- | --- |
+| macOS 14.6.1 (Intel) | x86_64 | QEMU HVF | vmlinux-fast + openvscode-initramfs | ~6.1 s | `/healthz` ready, HTTP proxy in initramfs |
+| macOS 14.x (M-series) | arm64 | Apple VF (vfkit) | EFI-stub kernel + openvscode-initramfs | TBD (<10 s target) | Run `scripts/benchmarks/applevf_fastboot_bench.sh` + `vscode_microvm.sh measure` |
+
 ```
 $ scripts/benchmarks/vscode_microvm.sh measure 5
 {"port_ready_ms": [6212, 6002, 6103, 6057, 6177]}
