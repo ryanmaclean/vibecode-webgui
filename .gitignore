@@ -403,3 +403,6 @@ daemon/
 # Legacy dispatch scripts (replaced by Python tooling)
 scripts/assign-issues-to-polecats.sh
 scripts/assign-all-to-polecats.sh
+
+# Gas Town (added by gt)
+.logs/
