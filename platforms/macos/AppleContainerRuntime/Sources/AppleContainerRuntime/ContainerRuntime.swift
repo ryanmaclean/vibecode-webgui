@@ -14,6 +14,7 @@ final class ContainerRuntime: @unchecked Sendable {
     private let queue = DispatchQueue(label: "com.vibecode.container-runtime", attributes: .concurrent)
 
     private init() {
+        fputs("ContainerRuntime init\n", stderr)
         // Setup directories
         let baseDir = FileManager.default.homeDirectoryForCurrentUser
             .appendingPathComponent(".vibecode/containers")
@@ -37,6 +38,7 @@ final class ContainerRuntime: @unchecked Sendable {
     // MARK: - Container Lifecycle
 
     func createContainer(config: ContainerConfiguration) async throws -> String {
+        fputs("Creating container...\n", stderr)
         let containerId = UUID().uuidString
         let containerDir = containersDirectory.appendingPathComponent(containerId)
 
@@ -46,9 +48,11 @@ final class ContainerRuntime: @unchecked Sendable {
         )
 
         // Pull image if needed
+        fputs("Ensuring image...\n", stderr)
         let imageBundle = try await ensureImage(reference: config.image)
 
         // Create Linux VM configuration
+        fputs("Creating VM config...\n", stderr)
         let vmConfig = try createVMConfiguration(
             imageBundle: imageBundle,
             config: config,
@@ -56,6 +60,7 @@ final class ContainerRuntime: @unchecked Sendable {
         )
 
         // Create and start VM
+        fputs("Initializing VM...\n", stderr)
         let vm = VZVirtualMachine(configuration: vmConfig)
         let container = Container(
             id: containerId,
@@ -75,9 +80,11 @@ final class ContainerRuntime: @unchecked Sendable {
         try saveContainerMetadata(container)
 
         // Start VM
+        fputs("Starting VM...\n", stderr)
         try await startVM(vm)
 
         // Wait for container to be ready
+        fputs("Waiting for container...\n", stderr)
         try await waitForContainerReady(container)
 
         return containerId
@@ -88,18 +95,25 @@ final class ContainerRuntime: @unchecked Sendable {
             throw ContainerError.notFound(id)
         }
 
+        guard let vm = container.vm else {
+            // VM not loaded/running
+            container.state = .stopped
+            try saveContainerMetadata(container)
+            return
+        }
+
         // Request graceful shutdown
-        try await container.vm.requestStop()
+        try vm.requestStop()
 
         // Wait for shutdown or timeout
         let deadline = Date().addingTimeInterval(timeout)
-        while container.vm.state != .stopped && Date() < deadline {
+        while vm.state != .stopped && Date() < deadline {
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
 
         // Force stop if still running
-        if container.vm.state != .stopped {
-            try await container.vm.stop()
+        if vm.state != .stopped {
+            try await vm.stop()
         }
 
         container.state = .stopped
@@ -112,7 +126,7 @@ final class ContainerRuntime: @unchecked Sendable {
         }
 
         // Ensure stopped
-        if container.vm.state != .stopped {
+        if let vm = container.vm, vm.state != .stopped {
             throw ContainerError.stillRunning(id)
         }
 
@@ -169,8 +183,12 @@ final class ContainerRuntime: @unchecked Sendable {
             throw ContainerError.notFound(id)
         }
 
+        guard let vm = container.vm else {
+            return
+        }
+
         // Stream output until container stops
-        while container.vm.state == .running {
+        while vm.state == .running {
             try await Task.sleep(nanoseconds: 100_000_000)
         }
     }
@@ -207,7 +225,10 @@ final class ContainerRuntime: @unchecked Sendable {
         // Simple tail -f implementation
         var lastPosition: UInt64 = 0
 
-        while container.vm.state == .running {
+        // If VM is nil, just read once
+        let isRunning = container.vm?.state == .running
+
+        while container.vm?.state == .running || (isRunning && lastPosition == 0) {
             if FileManager.default.fileExists(atPath: logFile.path) {
                 let handle = try FileHandle(forReadingFrom: logFile)
                 try handle.seek(toOffset: lastPosition)
@@ -224,6 +245,7 @@ final class ContainerRuntime: @unchecked Sendable {
                 try handle.close()
             }
 
+            if container.vm?.state != .running { break }
             try await Task.sleep(nanoseconds: 100_000_000) // 100ms
         }
     }
@@ -342,6 +364,9 @@ final class ContainerRuntime: @unchecked Sendable {
         let consolePort = VZVirtioConsolePortConfiguration()
 
         let logFile = containerDir.appendingPathComponent("console.log")
+        if !FileManager.default.fileExists(atPath: logFile.path) {
+            FileManager.default.createFile(atPath: logFile.path, contents: nil)
+        }
         let fileHandle = try FileHandle(forWritingTo: logFile)
         consolePort.attachment = VZFileHandleSerialPortAttachment(
             fileHandleForReading: nil,
@@ -398,7 +423,7 @@ final class ContainerRuntime: @unchecked Sendable {
         let deadline = Date().addingTimeInterval(5.0)
 
         while Date() < deadline {
-            if container.vm.state == .running {
+            if let vm = container.vm, vm.state == .running {
                 // Additional readiness checks could go here
                 return
             }

@@ -112,7 +112,8 @@ final class OCIImageManager: @unchecked Sendable {
             }
         } else {
             // Full reference
-            registry = String(parts[0])
+            let reg = String(parts[0])
+            registry = reg == "docker.io" ? "registry-1.docker.io" : reg
             parts.removeFirst()
             let repoAndTag = parts.joined(separator: "/")
             let components = repoAndTag.split(separator: ":")
@@ -133,17 +134,39 @@ final class OCIImageManager: @unchecked Sendable {
         let url = URL(string: "https://\(parsed.registry)/v2/\(parsed.repository)/manifests/\(parsed.tagOrDigest)")!
 
         var request = URLRequest(url: url)
-        request.setValue("application/vnd.oci.image.manifest.v1+json", forHTTPHeaderField: "Accept")
-        request.setValue("application/vnd.docker.distribution.manifest.v2+json", forHTTPHeaderField: "Accept")
+        // Accept both Manifest and Manifest List (Index)
+        request.addValue("application/vnd.oci.image.manifest.v1+json", forHTTPHeaderField: "Accept")
+        request.addValue("application/vnd.docker.distribution.manifest.v2+json", forHTTPHeaderField: "Accept")
+        request.addValue("application/vnd.oci.image.index.v1+json", forHTTPHeaderField: "Accept")
+        request.addValue("application/vnd.docker.distribution.manifest.list.v2+json", forHTTPHeaderField: "Accept")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performRequest(request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard response.statusCode == 200 else {
             throw ImageError.manifestFetchFailed
         }
 
         let decoder = JSONDecoder()
+        
+        // Try to decode as Image Index (Manifest List) first
+        if let index = try? decoder.decode(ImageIndex.self, from: data) {
+            print("Received Image Index (Manifest List)")
+            // Find arm64 manifest
+            guard let manifestDesc = index.manifests.first(where: { $0.platform?.architecture == "arm64" && $0.platform?.os == "linux" }) else {
+                throw ImageError.architectureNotSupported
+            }
+            
+            print("Selected arm64 manifest: \(manifestDesc.digest)")
+            // Recursively fetch the specific manifest
+            let newParsed = ParsedReference(
+                registry: parsed.registry,
+                repository: parsed.repository,
+                tagOrDigest: manifestDesc.digest
+            )
+            return try await fetchManifest(parsed: newParsed)
+        }
+
+        // Decode as single Manifest
         return try decoder.decode(ImageManifest.self, from: data)
     }
 
@@ -170,14 +193,17 @@ final class OCIImageManager: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.setValue("application/octet-stream", forHTTPHeaderField: "Accept")
 
-        let (tempURL, response) = try await session.download(for: request)
-
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
-            throw ImageError.layerDownloadFailed(digest)
+        // Use performRequest to handle auth, but for download we need to handle the data differently
+        // Simplified: fetch data in memory for now (not ideal for large layers but works for prototype)
+        // Or better: implement performDownload
+        
+        let (data, response) = try await performRequest(request)
+        
+        guard response.statusCode == 200 else {
+             throw ImageError.layerDownloadFailed(digest)
         }
-
-        try FileManager.default.moveItem(at: tempURL, to: layerPath)
+        
+        try data.write(to: layerPath)
         progressHandler(size)
     }
 
@@ -195,14 +221,96 @@ final class OCIImageManager: @unchecked Sendable {
         var request = URLRequest(url: url)
         request.setValue("application/vnd.oci.image.config.v1+json", forHTTPHeaderField: "Accept")
 
-        let (data, response) = try await session.data(for: request)
+        let (data, response) = try await performRequest(request)
 
-        guard let httpResponse = response as? HTTPURLResponse,
-              httpResponse.statusCode == 200 else {
+        guard response.statusCode == 200 else {
             throw ImageError.configDownloadFailed(digest)
         }
 
         try data.write(to: configPath)
+    }
+    
+    // MARK: - Auth
+    
+    private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        let (data, response) = try await session.data(for: request)
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw URLError(.badServerResponse)
+        }
+
+        // Debug logging
+        if httpResponse.statusCode != 200 {
+            print("Request failed: \(httpResponse.statusCode) \(request.url?.absoluteString ?? "")")
+            if let str = String(data: data, encoding: .utf8) {
+                print("Response body: \(str.prefix(200))")
+            }
+        }
+
+        if httpResponse.statusCode == 401, let authHeader = httpResponse.value(forHTTPHeaderField: "Www-Authenticate") {
+            print("Authenticating...")
+            let token = try await fetchToken(authHeader: authHeader)
+            var newRequest = request
+            newRequest.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+            
+            let (newData, newResponse) = try await session.data(for: newRequest)
+            guard let newHttpResponse = newResponse as? HTTPURLResponse else {
+                throw URLError(.badServerResponse)
+            }
+            return (newData, newHttpResponse)
+        }
+
+        return (data, httpResponse)
+    }
+
+    private func fetchToken(authHeader: String) async throws -> String {
+        // Parse header: Bearer realm="...",service="...",scope="..."
+        // Example: Bearer realm="https://auth.docker.io/token",service="registry.docker.io",scope="repository:library/alpine:pull"
+        
+        guard let range = authHeader.range(of: "Bearer ") else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        
+        let paramsString = String(authHeader[range.upperBound...])
+        let params = paramsString.split(separator: ",")
+        
+        var realm: String?
+        var service: String?
+        var scope: String?
+        
+        for param in params {
+            let parts = param.split(separator: "=")
+            if parts.count == 2 {
+                let key = parts[0].trimmingCharacters(in: .whitespaces)
+                let value = parts[1].trimmingCharacters(in: .whitespaces).replacingOccurrences(of: "\"", with: "")
+                
+                if key == "realm" { realm = value }
+                if key == "service" { service = value }
+                if key == "scope" { scope = value }
+            }
+        }
+        
+        guard let tokenRealm = realm, let tokenService = service else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        
+        var urlComponents = URLComponents(string: tokenRealm)!
+        var queryItems = [URLQueryItem(name: "service", value: tokenService)]
+        if let tokenScope = scope {
+            queryItems.append(URLQueryItem(name: "scope", value: tokenScope))
+        }
+        urlComponents.queryItems = queryItems
+        
+        let (data, response) = try await session.data(from: urlComponents.url!)
+        guard let httpResponse = response as? HTTPURLResponse, httpResponse.statusCode == 200 else {
+            throw URLError(.userAuthenticationRequired)
+        }
+        
+        struct TokenResponse: Codable {
+            let token: String
+        }
+        
+        let tokenResponse = try JSONDecoder().decode(TokenResponse.self, from: data)
+        return tokenResponse.token
     }
 
     // MARK: - Image Bundle Creation
@@ -295,6 +403,24 @@ private struct ImageManifest: Codable {
     let layers: [Descriptor]
 }
 
+private struct ImageIndex: Codable {
+    let schemaVersion: Int
+    let mediaType: String?
+    let manifests: [ManifestDescriptor]
+}
+
+private struct ManifestDescriptor: Codable {
+    let mediaType: String
+    let digest: String
+    let size: UInt64
+    let platform: Platform?
+}
+
+private struct Platform: Codable {
+    let architecture: String
+    let os: String
+}
+
 private struct Descriptor: Codable {
     let mediaType: String
     let digest: String
@@ -310,6 +436,7 @@ enum ImageError: Error, CustomStringConvertible {
     case configDownloadFailed(String)
     case layerExtractionFailed(String)
     case kernelNotAvailable
+    case architectureNotSupported
 
     var description: String {
         switch self {
@@ -325,6 +452,8 @@ enum ImageError: Error, CustomStringConvertible {
             return "Failed to extract layer: \(layer)"
         case .kernelNotAvailable:
             return "Linux kernel not available. Run setup to download kernel."
+        case .architectureNotSupported:
+            return "Architecture not supported (arm64 required)"
         }
     }
 }
