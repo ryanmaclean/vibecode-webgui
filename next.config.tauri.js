@@ -11,31 +11,15 @@ const nextConfig = {
   // Disable server-side features
   trailingSlash: true,
 
-  // Skip problematic routes during build
-  generateStaticParams: false,
+  // Skip middleware URL normalization
+  skipMiddlewareUrlNormalize: true,
+  skipTrailingSlashRedirect: true,
 
-  // Exclude API routes from static export (they use force-dynamic)
-  // These routes are server-only and not needed in Tauri desktop app
-  excludeDefaultMomentLocales: true,
-
-  // Disable page data collection for API routes
-  experimental: {
-    skipTrailingSlashRedirect: true,
-    skipMiddlewareUrlNormalize: true,
-  },
-
-  // Exclude API routes from the static export
-  // API routes will be handled by Tauri's Rust backend
-  exportPathMap: async function (defaultPathMap, { dev, dir, outDir, distDir, buildId }) {
-    // Remove all API routes from the export
-    const filteredPathMap = {}
-    for (const [path, page] of Object.entries(defaultPathMap)) {
-      if (!path.startsWith('/api/')) {
-        filteredPathMap[path] = page
-      }
-    }
-    return filteredPathMap
-  },
+  // NOTE: API routes are physically excluded during build by moving src/app/api
+  // to src/app/api.excluded in the workflow. This is required because:
+  // 1. API routes use force-dynamic which is incompatible with output: export
+  // 2. exportPathMap is not compatible with App Router
+  // 3. API routes will be handled by Tauri's Rust backend instead
 
   // Webpack configuration
   webpack: (config, { dev, isServer }) => {
