@@ -503,6 +503,166 @@ metrics:
       - selected_model
       - reason  # cost, latency, capability, fallback
 
+  # ============================================================
+  # TOWN-LEVEL HEALTH (from gastown-viewer-intent)
+  # ============================================================
+  - name: gastown.town.health
+    type: gauge
+    description: "Overall town health score (0-100)"
+    tags:
+      - town_name
+
+  - name: gastown.town.agents_total
+    type: gauge
+    description: "Total agents in town"
+    tags:
+      - agent_type
+
+  - name: gastown.town.agents_active
+    type: gauge
+    description: "Currently active agents"
+    tags:
+      - agent_type
+
+  - name: gastown.town.rigs_active
+    type: gauge
+    description: "Active rigs"
+    tags: []
+
+  # Agent state detection
+  - name: gastown.agent.state
+    type: gauge
+    description: "Agent state (1=active, 2=idle, 3=stuck)"
+    tags:
+      - agent_id
+      - rig_name
+      - state  # active, idle, stuck
+
+  - name: gastown.agent.idle_duration_s
+    type: gauge
+    description: "Seconds agent has been idle"
+    tags:
+      - agent_id
+      - rig_name
+
+  - name: gastown.agent.stuck_count
+    type: counter
+    description: "Agents detected as stuck (>10min unresponsive)"
+    tags:
+      - rig_name
+
+  - name: gastown.agent.last_activity_s
+    type: gauge
+    description: "Seconds since last activity"
+    tags:
+      - agent_id
+
+  # Workflow/Molecule execution
+  - name: gastown.molecule.started
+    type: counter
+    description: "Molecules started"
+    tags:
+      - formula_template
+      - rig_name
+
+  - name: gastown.molecule.completed
+    type: counter
+    description: "Molecules completed"
+    tags:
+      - formula_template
+      - success
+
+  - name: gastown.molecule.progress_pct
+    type: gauge
+    description: "Molecule completion percentage"
+    tags:
+      - molecule_id
+      - formula_template
+
+  - name: gastown.molecule.step_completed
+    type: counter
+    description: "Molecule steps completed"
+    tags:
+      - step_name
+      - formula_template
+
+  # Convoy batch priority tracking
+  - name: gastown.convoy.priority_distribution
+    type: gauge
+    description: "Convoy items by priority"
+    tags:
+      - priority  # critical, high, medium, low
+      - status  # done, active, blocked, pending
+
+  - name: gastown.convoy.blocked
+    type: gauge
+    description: "Blocked convoy items"
+    tags:
+      - rig_name
+      - block_reason
+
+  # Beads edge types (14 types)
+  - name: gastown.beads.edges
+    type: counter
+    description: "Beads edge relationships created"
+    tags:
+      - edge_type  # blocks, depends_on, relates_to, parent, child, etc
+      - source_type
+      - target_type
+
+  - name: gastown.beads.graph_nodes
+    type: gauge
+    description: "Total nodes in beads dependency graph"
+    tags:
+      - node_type
+
+  # Kanban board status
+  - name: gastown.kanban.column_count
+    type: gauge
+    description: "Items per kanban column"
+    tags:
+      - column  # backlog, todo, in_progress, review, done
+      - priority
+
+  - name: gastown.kanban.wip_limit_violations
+    type: counter
+    description: "WIP limit violations"
+    tags:
+      - column
+
+  # Rig activity
+  - name: gastown.rig.active
+    type: gauge
+    description: "Is rig active (1=yes, 0=no)"
+    tags:
+      - rig_name
+
+  - name: gastown.rig.last_activity_s
+    type: gauge
+    description: "Seconds since last rig activity"
+    tags:
+      - rig_name
+
+  - name: gastown.rig.agents_count
+    type: gauge
+    description: "Agents per rig"
+    tags:
+      - rig_name
+      - agent_type
+
+  # tmux session tracking
+  - name: gastown.tmux.sessions_active
+    type: gauge
+    description: "Active tmux sessions"
+    tags:
+      - session_prefix
+
+  - name: gastown.tmux.hook_attached
+    type: gauge
+    description: "Sessions with hooks attached"
+    tags:
+      - session_name
+
 # Log sources for correlation
 logs:
   - source: ralph_loop

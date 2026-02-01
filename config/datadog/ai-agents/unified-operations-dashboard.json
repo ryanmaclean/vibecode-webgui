@@ -1235,6 +1235,135 @@
                 }
               ]
             }
+          },
+          {
+            "definition": {
+              "title": "Agent States (Active/Idle/Stuck)",
+              "title_size": "16",
+              "type": "pie",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.agent.state{*} by {state}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Stuck Agents",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.agent.stuck_count{*}.as_count()"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "conditional_formats": [
+                {"comparator": ">", "value": 0, "palette": "white_on_red"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Molecule Progress",
+              "title_size": "16",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "formulas": [
+                    {"formula": "query1", "alias": "Started"},
+                    {"formula": "query2", "alias": "Completed"}
+                  ],
+                  "queries": [
+                    {"name": "query1", "data_source": "metrics", "query": "sum:gastown.molecule.started{*}.as_count()"},
+                    {"name": "query2", "data_source": "metrics", "query": "sum:gastown.molecule.completed{*}.as_count()"}
+                  ],
+                  "response_format": "timeseries",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convoy Priority Distribution",
+              "title_size": "16",
+              "type": "treemap",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.convoy.priority_distribution{*} by {priority,status}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Kanban Board Status",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 10, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.kanban.column_count{*} by {column}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Town Health Score",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.town.health{*}"}],
+                  "response_format": "scalar"
+                }
+              ],
+              "precision": 0,
+              "custom_unit": "/100",
+              "conditional_formats": [
+                {"comparator": ">=", "value": 80, "palette": "white_on_green"},
+                {"comparator": ">=", "value": 50, "palette": "white_on_yellow"},
+                {"comparator": "<", "value": 50, "palette": "white_on_red"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Rigs",
+              "title_size": "16",
+              "type": "toplist",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1", "limit": {"count": 20, "order": "desc"}}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "avg:gastown.rig.agents_count{*} by {rig_name}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "tmux Sessions Active",
+              "title_size": "16",
+              "type": "query_value",
+              "requests": [
+                {
+                  "formulas": [{"formula": "query1"}],
+                  "queries": [{"name": "query1", "data_source": "metrics", "query": "sum:gastown.tmux.sessions_active{*}"}],
+                  "response_format": "scalar"
+                }
+              ]
+            }
           }
         ]
       }
