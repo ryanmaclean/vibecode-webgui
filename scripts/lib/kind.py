@@ -10,6 +10,12 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Optional
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer
+except ImportError:
+    tracer = None  # type: ignore
+
 from .logging import ScriptLogger
 
 

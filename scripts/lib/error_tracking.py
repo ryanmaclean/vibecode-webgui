@@ -15,6 +15,12 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Sequence, Union
 from urllib import error, request
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer
+except ImportError:
+    tracer = None  # type: ignore
+
 
 class HTTPTransport:
     def post(self, url: str, payload: Dict[str, Any], headers: Dict[str, str], timeout: int = 5) -> None:

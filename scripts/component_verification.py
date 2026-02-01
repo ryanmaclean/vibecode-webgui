@@ -8,8 +8,11 @@ import os
 import subprocess
 import sys
 import tempfile
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
+
+from lib.datadog_logging import DatadogLogger
 
 
 class Color:
@@ -68,6 +71,7 @@ class ComponentVerifier:
         self.project_root = project_root or Path(__file__).parent.parent.resolve()
         self.test_namespace = "verification-test"
         self.results = VerificationResults()
+        self.logger = DatadogLogger()
 
     def run_command(
         self,
@@ -115,9 +119,17 @@ class ComponentVerifier:
 
         if passed:
             print(f"{Color.GREEN}\u2705 {name}{Color.NC}")
+            self.logger.info(
+                f"Component check passed: {name}",
+                ["script:component-verification", "status:pass"],
+            )
             self.results.record_pass(name)
         else:
             print(f"{Color.RED}\u274c {name}{Color.NC}")
+            self.logger.error(
+                f"Component check failed: {name}",
+                ["script:component-verification", "status:fail"],
+            )
             self.results.record_fail(name)
 
         return passed
@@ -307,7 +319,6 @@ spec:
             shell=True,
         )
 
-        import time
         time.sleep(3)
 
         self.check("Pod Deployment Works", f"kubectl get pod component-test-pod -n '{self.test_namespace}'")
@@ -329,6 +340,27 @@ spec:
         print(f"Failed: {self.results.fail_count}")
         print(f"Success Rate: {self.results.success_rate}%")
         print()
+
+        # Send metrics to Datadog
+        metric_tags = ["script:component-verification"]
+        self.logger.metric(
+            "component.verification.passed",
+            self.results.pass_count,
+            "count",
+            metric_tags,
+        )
+        self.logger.metric(
+            "component.verification.failed",
+            self.results.fail_count,
+            "count",
+            metric_tags,
+        )
+        self.logger.metric(
+            "component.verification.success_rate",
+            self.results.success_rate,
+            "gauge",
+            metric_tags,
+        )
 
         if self.results.all_passed():
             print("\U0001f389 ALL COMPONENTS VERIFIED!")

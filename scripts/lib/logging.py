@@ -8,6 +8,12 @@ import sys
 from dataclasses import dataclass
 from typing import TextIO
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer
+except ImportError:
+    tracer = None  # type: ignore
+
 
 LOG_COLOR_RED = "\033[0;31m"
 LOG_COLOR_GREEN = "\033[0;32m"

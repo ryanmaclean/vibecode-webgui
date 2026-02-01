@@ -13,6 +13,12 @@ from pathlib import Path
 from typing import Dict, Iterable, Optional, Sequence
 from urllib import error, request
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer
+except ImportError:
+    tracer = None  # type: ignore
+
 
 LOG_LEVELS = {
     "debug": 0,

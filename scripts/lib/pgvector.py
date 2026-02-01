@@ -6,6 +6,12 @@ from __future__ import annotations
 import subprocess
 import time
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer
+except ImportError:
+    tracer = None  # type: ignore
+
 
 class PgVectorError(RuntimeError):
     pass
