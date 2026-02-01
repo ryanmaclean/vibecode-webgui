@@ -57,8 +57,10 @@ extension AppleContainerRuntime {
         var rm: Bool = false
 
         func run() async throws {
+            fputs("Run command started\n", stderr)
             let runtime = ContainerRuntime.shared
-
+            fputs("Runtime shared instance accessed\n", stderr)
+            
             let config = ContainerConfiguration(
                 image: image,
                 name: name ?? UUID().uuidString.prefix(12).lowercased(),
@@ -284,7 +286,7 @@ extension AppleContainerRuntime {
         @Argument(help: "OCI image reference")
         var image: String
 
-        @Flag(help: "Show progress output")
+        @Flag(inversion: .prefixedNo, help: "Show progress output")
         var progress: Bool = true
 
         func run() async throws {

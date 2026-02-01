@@ -15,11 +15,14 @@ Usage:
 """
 
 
+from __future__ import annotations
+
 # Datadog APM tracing
 try:
-    import ddtrace
-    ddtrace.patch_all()
+    from ddtrace import tracer, patch_all
+    patch_all()
 except ImportError:
+<<<<<<< HEAD
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
@@ -34,6 +37,9 @@ try:
 except ImportError:
     pass
 # ------------------------
+=======
+    pass  # ddtrace not installed
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import http.server

@@ -4,6 +4,7 @@ set -euo pipefail
 ROOT_DIR=$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)
 ARCH=${MICROVM_ARCH:-x86_64}
 RUNTIME=${MICROVM_RUNTIME:-qemu}
+DEFAULT_APPLEVF_LAUNCHER="${MICROVM_APPLEVF_DEFAULT_CMD:-$ROOT_DIR/scripts/benchmarks/applevf-vfkit-launcher.sh}"
 
 DEFAULT_CPUS=4
 DEFAULT_MEMORY_MB=2048
@@ -38,12 +39,19 @@ case "$ARCH" in
     MACHINE_OPTS=("-machine" "virt,virtualization=on,highmem=off" "-cpu" "cortex-a72")
     NET_OPTS=("-device" "virtio-net-pci,netdev=n0" "-netdev" "user,id=n0,hostfwd=tcp::${PORT}-:3000")
     APPEND="rdinit=/init console=ttyAMA0"
+    APPEND_APPLEVF="rdinit=/init console=hvc0 quiet"
     ;;
   *)
     echo "error: unsupported MICROVM_ARCH '$ARCH'" >&2
     exit 1
     ;;
 esac
+
+if [[ "$RUNTIME" == "applevf" || "$RUNTIME" == "vf" ]]; then
+  if [[ -n ${APPEND_APPLEVF:-} ]]; then
+    APPEND="$APPEND_APPLEVF"
+  fi
+fi
 
 if [[ -n ${MICROVM_CMDLINE_EXTRA:-} ]]; then
   APPEND+=" ${MICROVM_CMDLINE_EXTRA}"
@@ -85,6 +93,10 @@ start_qemu() {
 resolve_applevf_launcher() {
   if [[ -n ${MICROVM_APPLEVF_CMD:-} ]]; then
     echo "$MICROVM_APPLEVF_CMD"
+    return 0
+  fi
+  if [[ -x "$DEFAULT_APPLEVF_LAUNCHER" ]]; then
+    echo "$DEFAULT_APPLEVF_LAUNCHER"
     return 0
   fi
   local candidate
@@ -258,5 +270,6 @@ case ${1:-help} in
   help|*)
     echo "usage: $0 {start|stop|status|measure [n]}"
     echo "environment variables: MICROVM_ARCH, MICROVM_RUNTIME (qemu|applevf), MICROVM_DIR, MICROVM_KERNEL, MICROVM_PORT"
+    echo "applevf variables: MICROVM_APPLEVF_CMD, MICROVM_APPLEVF_FOREGROUND, MICROVM_EXTRA_APPLEVF_ARGS"
     ;;
 esac

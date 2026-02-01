@@ -13,6 +13,14 @@ except ImportError:
 
 """Helpers for working with temporary pgvector containers in tests."""
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import subprocess
 import time
 from typing import Optional

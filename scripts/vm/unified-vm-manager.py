@@ -15,6 +15,14 @@ except ImportError:
 Unified VM Manager - Works with VirtualBuddy or Standalone
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import subprocess
 import os
 from pathlib import Path

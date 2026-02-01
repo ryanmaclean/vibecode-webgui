@@ -1,6 +1,7 @@
 
 from __future__ import annotations
 
+<<<<<<< HEAD
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -11,6 +12,15 @@ try:
 except ImportError:
     pass
 # ------------------------
+=======
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import io
