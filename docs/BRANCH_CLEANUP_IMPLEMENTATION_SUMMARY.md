@@ -170,11 +170,11 @@ git branch -r | wc -l
 ## Files Created/Modified
 
 ### New Files
-- `.github/workflows/cleanup-merged-branches.yml` (107 lines)
-- `scripts/cleanup-branches.sh` (88 lines)
+- `.github/workflows/cleanup-merged-branches.yml` (106 lines)
+- `scripts/cleanup-branches.sh` (87 lines)
 - `scripts/update-branch-list.sh` (110 lines)
-- `docs/branch-cleanup.md` (237 lines)
-- `docs/BRANCH_CLEANUP_GUIDE.md` (183 lines)
+- `docs/branch-cleanup.md` (192 lines)
+- `docs/BRANCH_CLEANUP_GUIDE.md` (173 lines)
 - `docs/branches-to-delete.txt` (113 lines)
 - `docs/BRANCH_CLEANUP_IMPLEMENTATION_SUMMARY.md` (this file)
 
