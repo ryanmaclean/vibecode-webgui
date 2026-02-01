@@ -1,7 +1,12 @@
-# VibeCode pgvector + Datadog DBM Demo
-# Simple Makefile for easy discovery and execution
+# VibeCode CLI + pgvector + Datadog DBM
+# Consolidated CLI that replaces 195 Python scripts
 
-.PHONY: demo help setup status vector dashboard clean build install
+VERSION ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
+COMMIT ?= $(shell git rev-parse --short HEAD 2>/dev/null || echo "unknown")
+LDFLAGS := -ldflags "-X github.com/vibecode/vibecode/cmd/vibecode/cmd.Version=$(VERSION) \
+                     -X github.com/vibecode/vibecode/cmd/vibecode/cmd.Commit=$(COMMIT) -s -w"
+
+.PHONY: demo help setup status vector dashboard clean build install cli cli-all
 
 # Default target - shows the TUI demo
 demo: build
@@ -74,6 +79,52 @@ help:
 	@echo ""
 	@echo "💡 The TUI provides the best experience with real-time feedback!"
 	@echo ""
+	@echo "🔧 CLI (Consolidates 195 Python scripts → 1 binary):"
+	@echo ""
+	@echo "  make cli         🔨 Build unified vibecode CLI"
+	@echo "  make cli-all     🌍 Build for all platforms"
+	@echo "  make cli-install 📦 Install to GOPATH/bin"
+	@echo ""
+	@echo "📋 CLI Commands:"
+	@echo "  vibecode vm list           - List VMs"
+	@echo "  vibecode vm start <name>   - Start VM"
+	@echo "  vibecode build docker      - Build Docker image"
+	@echo "  vibecode bench boot -n 10  - Run boot benchmark"
+	@echo "  vibecode cloud start       - Start cloud workspace"
+	@echo "  vibecode setup all         - Full setup"
+	@echo "  vibecode dev openvscode    - Start OpenVSCode"
+	@echo ""
+
+# ============================================
+# VIBECODE CLI (Consolidates 195 Python scripts)
+# ============================================
+
+# Build the unified vibecode CLI
+cli:
+	@echo "🔨 Building vibecode CLI (consolidates 195 Python scripts)..."
+	@go build $(LDFLAGS) -o bin/vibecode ./cmd/vibecode
+	@echo "✅ Built: bin/vibecode ($(VERSION))"
+	@echo ""
+	@echo "Usage:"
+	@echo "  ./bin/vibecode vm list"
+	@echo "  ./bin/vibecode build docker"
+	@echo "  ./bin/vibecode bench boot"
+	@echo "  ./bin/vibecode --help"
+
+# Build CLI for all platforms
+cli-all:
+	@echo "🔨 Building vibecode CLI for all platforms..."
+	@GOOS=darwin GOARCH=arm64 go build $(LDFLAGS) -o bin/vibecode-darwin-arm64 ./cmd/vibecode
+	@GOOS=darwin GOARCH=amd64 go build $(LDFLAGS) -o bin/vibecode-darwin-amd64 ./cmd/vibecode
+	@GOOS=linux GOARCH=amd64 go build $(LDFLAGS) -o bin/vibecode-linux-amd64 ./cmd/vibecode
+	@GOOS=linux GOARCH=arm64 go build $(LDFLAGS) -o bin/vibecode-linux-arm64 ./cmd/vibecode
+	@echo "✅ Built binaries for darwin-arm64, darwin-amd64, linux-amd64, linux-arm64"
+
+# Install CLI to $GOPATH/bin
+cli-install:
+	@echo "📦 Installing vibecode CLI..."
+	@go install $(LDFLAGS) ./cmd/vibecode
+	@echo "✅ Installed: $(shell go env GOPATH)/bin/vibecode"
 
 # Default help when no target specified
 .DEFAULT_GOAL := help
