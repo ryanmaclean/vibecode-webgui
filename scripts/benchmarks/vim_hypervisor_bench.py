@@ -31,6 +31,13 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import List
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    pass
+
 
 @dataclass
 class Target:

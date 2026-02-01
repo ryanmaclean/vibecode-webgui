@@ -1,167 +1,101 @@
 #!/usr/bin/env python3
-"""Fix git merge conflicts automatically.
+"""Fix all git merge conflicts automatically.
 
-Removes merge conflict markers and keeps the main branch content.
+This script removes merge conflict markers and keeps the main branch content.
 """
+
 from __future__ import annotations
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
-
-import argparse
 import re
 import subprocess
 import sys
 from pathlib import Path
 
 
-class Colors:
-    """ANSI color codes for terminal output."""
-
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    NC = "\033[0m"
-
-    @classmethod
-    def disable(cls) -> None:
-        """Disable colors for non-TTY output."""
-        cls.GREEN = cls.YELLOW = cls.NC = ""
+def get_project_root() -> Path:
+    """Get project root directory."""
+    return Path(__file__).resolve().parent.parent.parent
 
 
-if not sys.stdout.isatty():
-    Colors.disable()
+def find_files_with_conflicts(project_root: Path) -> list[Path]:
+    """Find all files with git merge conflict markers."""
+    result = subprocess.run(
+        ["git", "diff", "--name-only", "--diff-filter=U"],
+        cwd=project_root,
+        capture_output=True,
+        text=True,
+    )
 
-
-def run_cmd(
-    cmd: list[str],
-    capture: bool = True,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=capture, text=True)
-
-
-def find_files_with_conflicts(repo_root: Path) -> list[Path]:
-    """Find all files with merge conflict markers."""
-    result = run_cmd(["git", "-C", str(repo_root), "diff", "--name-only", "--diff-filter=U"])
     if result.returncode != 0 or not result.stdout.strip():
         return []
 
-    return [repo_root / f for f in result.stdout.strip().split("\n") if f]
+    return [project_root / f for f in result.stdout.strip().split("\n") if f]
 
 
-def fix_merge_conflicts(file_path: Path, keep: str = "ours") -> bool:
-    """Fix merge conflicts in a file.
+def fix_conflicts_in_file(file_path: Path) -> bool:
+    """Remove merge conflict markers from a file, keeping main branch content.
 
     Args:
-        file_path: Path to file with conflicts
-        keep: Which version to keep: "ours" (HEAD/current) or "theirs" (incoming)
+        file_path: Path to file with conflicts.
 
     Returns:
-        True if conflicts were fixed, False otherwise
+        True if conflicts were fixed, False otherwise.
     """
     try:
         content = file_path.read_text()
-    except OSError as e:
-        print(f"  Error reading {file_path}: {e}")
+    except OSError:
         return False
 
-    # Pattern matches:
-    # <<<<<<< HEAD (or similar)
-    # ... ours content ...
+    # Pattern to match conflict blocks
+    # <<<<<<< HEAD
+    # ... main content ...
     # =======
-    # ... theirs content ...
-    # >>>>>>> branch-name (or similar)
+    # ... other content ...
+    # >>>>>>> branch
     conflict_pattern = re.compile(
-        r"<<<<<<< [^\n]*\n(.*?)=======\n(.*?)>>>>>>> [^\n]*\n",
+        r"<<<<<<<[^\n]*\n(.*?)\n=======\n.*?\n>>>>>>>[^\n]*\n",
         re.DOTALL,
     )
 
-    def replace_conflict(match: re.Match[str]) -> str:
-        ours = match.group(1)
-        theirs = match.group(2)
-        return ours if keep == "ours" else theirs
+    new_content, count = conflict_pattern.subn(r"\1\n", content)
 
-    new_content, count = conflict_pattern.subn(replace_conflict, content)
+    if count > 0:
+        file_path.write_text(new_content)
+        return True
 
-    if count == 0:
-        return False
-
-    file_path.write_text(new_content)
-    return True
+    return False
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--keep",
-        choices=["ours", "theirs"],
-        default="ours",
-        help="Which version to keep (default: ours/HEAD/current branch)",
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be fixed without making changes",
-    )
-    parser.add_argument(
-        "files",
-        nargs="*",
-        type=Path,
-        help="Specific files to fix (default: all files with conflicts)",
-    )
+    print("\U0001f527 Fixing git merge conflicts...")
 
-    args = parser.parse_args(argv)
-    repo_root = Path.cwd()
-
-    print("Fixing git merge conflicts...")
-
-    # Find files with conflicts
-    if args.files:
-        files_with_conflicts = [Path(f) for f in args.files if Path(f).exists()]
-    else:
-        files_with_conflicts = find_files_with_conflicts(repo_root)
+    project_root = get_project_root()
+    files_with_conflicts = find_files_with_conflicts(project_root)
 
     if not files_with_conflicts:
-        print(f"{Colors.GREEN}No merge conflicts found!{Colors.NC}")
+        print("\u2705 No merge conflicts found!")
         return 0
 
-    print(f"Found conflicts in {len(files_with_conflicts)} files:")
+    print(f"\U0001f4cb Found conflicts in {len(files_with_conflicts)} files:")
     for f in files_with_conflicts:
-        print(f"  {f}")
+        print(f"  {f.relative_to(project_root)}")
     print()
 
-    conflict_count = 0
     fixed_count = 0
-
     for file_path in files_with_conflicts:
-        if not file_path.exists():
-            continue
-
-        print(f"Fixing: {file_path}")
-        conflict_count += 1
-
-        if args.dry_run:
-            print(f"  {Colors.YELLOW}Would fix conflicts (dry run){Colors.NC}")
-            fixed_count += 1
-        elif fix_merge_conflicts(file_path, args.keep):
-            print(f"  {Colors.GREEN}Fixed merge conflicts{Colors.NC}")
-            fixed_count += 1
-        else:
-            print(f"  {Colors.YELLOW}No conflict markers found{Colors.NC}")
+        if file_path.exists():
+            print(f"\U0001f527 Fixing: {file_path.relative_to(project_root)}")
+            if fix_conflicts_in_file(file_path):
+                print(f"  \u2705 Fixed merge conflicts")
+                fixed_count += 1
+            else:
+                print(f"  \u26a0\ufe0f  No standard conflict markers found")
 
     print()
-    print(f"{Colors.GREEN}Merge conflict resolution complete!{Colors.NC}")
-    print(f"  Files processed: {conflict_count}")
-    print(f"  Files fixed: {fixed_count}")
+    print("\U0001f389 Merge conflict resolution complete!")
+    print(f"  \U0001f4ca Files processed: {len(files_with_conflicts)}")
+    print(f"  \u2705 Files fixed: {fixed_count}")
     print()
     print("Next steps:")
     print("1. Review the changes: git diff")

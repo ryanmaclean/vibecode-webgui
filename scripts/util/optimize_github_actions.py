@@ -1,43 +1,21 @@
 #!/usr/bin/env python3
-"""GitHub Actions cost optimization script.
+"""GitHub Actions Cost Optimization Script.
 
 Disables expensive workflows and implements release branch strategy.
 """
+
 from __future__ import annotations
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
-
-import argparse
-import shutil
-import subprocess
 import sys
 from pathlib import Path
+from textwrap import dedent
 
 
-class Colors:
-    """ANSI color codes for terminal output."""
-
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    NC = "\033[0m"
-
-    @classmethod
-    def disable(cls) -> None:
-        """Disable colors for non-TTY output."""
-        cls.GREEN = cls.YELLOW = cls.NC = ""
+def get_project_root() -> Path:
+    """Get project root directory."""
+    return Path(__file__).resolve().parent.parent.parent
 
 
-if not sys.stdout.isatty():
-    Colors.disable()
-
-
-# Expensive workflows to disable
 EXPENSIVE_WORKFLOWS = [
     "ci-complex.yml",
     "ci-enhancements.yml",
@@ -52,7 +30,6 @@ EXPENSIVE_WORKFLOWS = [
     "working-ci.yml",
 ]
 
-# Essential workflows to keep
 KEEP_WORKFLOWS = [
     "deploy-docs.yml",
     "secret-scanning.yml",
@@ -61,175 +38,148 @@ KEEP_WORKFLOWS = [
     "release-branch-ci.yml",
 ]
 
-COST_MONITOR_WORKFLOW = """name: GitHub Actions Cost Monitor
 
-on:
-  schedule:
-    - cron: '0 9 * * MON'  # Weekly on Monday
-  workflow_dispatch:
+def get_cost_monitor_workflow() -> str:
+    """Get the cost monitor workflow content."""
+    return dedent("""\
+        name: GitHub Actions Cost Monitor
 
-jobs:
-  cost-report:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Weekly cost reminder
-        run: |
-          echo "GitHub Actions Cost Optimization Active"
-          echo "Current strategy:"
-          echo "  Main branch: Lightweight CI only (~$0.05 per run)"
-          echo "  Release branches: Full CI/CD (~$2-4 per run)"
-          echo ""
-          echo "To run full tests:"
-          echo "  1. Create branch: git checkout -b release/v1.x.x"
-          echo "  2. Push: git push origin release/v1.x.x"
-          echo "  3. Full CI/CD will run automatically"
-          echo ""
-          echo "Expected monthly savings: ~70-80% ($100 -> $20-30)"
-"""
+        on:
+          schedule:
+            - cron: '0 9 * * MON'  # Weekly on Monday
+          workflow_dispatch:
 
-RELEASE_BRANCH_SCRIPT = """#!/bin/bash
-
-# Helper script to create release branches for full CI/CD testing
-
-if [ -z "$1" ]; then
-    echo "Usage: ./create-release-branch.sh <version>"
-    echo "Example: ./create-release-branch.sh v1.2.0"
-    exit 1
-fi
-
-VERSION=$1
-BRANCH_NAME="release/$VERSION"
-
-echo "Creating release branch: $BRANCH_NAME"
-
-# Create and switch to release branch
-git checkout -b "$BRANCH_NAME"
-
-# Push to trigger full CI/CD
-git push -u origin "$BRANCH_NAME"
-
-echo "Release branch created and pushed"
-echo "Full CI/CD pipeline will run automatically"
-echo "Monitor progress at: https://github.com/$(git remote get-url origin | sed 's/.*github.com[:/]\\([^.]*\\).*/\\1/')/actions"
-"""
-
-README_ADDITION = """
-## GitHub Actions Cost Optimization
-
-To control costs, we use a two-tier CI/CD strategy:
-
-### Main Branch (Lightweight)
-- Fast linting and basic unit tests only
-- ~$0.05 per run
-
-### Release Branches (Comprehensive)
-- Full test suite (unit, integration, E2E)
-- Security scans and performance testing
-- Production deployment pipelines
-- ~$2-4 per run
-
-### Creating Release Branches
-```bash
-# Create release branch for full testing
-./create-release-branch.sh v1.2.0
-```
-"""
+        jobs:
+          cost-report:
+            runs-on: ubuntu-latest
+            steps:
+              - name: Weekly cost reminder
+                run: |
+                  echo "📊 GitHub Actions Cost Optimization Active"
+                  echo "Current strategy:"
+                  echo "  ✅ Main branch: Lightweight CI only (~$0.05 per run)"
+                  echo "  🚀 Release branches: Full CI/CD (~$2-4 per run)"
+                  echo ""
+                  echo "💡 To run full tests:"
+                  echo "  1. Create branch: git checkout -b release/v1.x.x"
+                  echo "  2. Push: git push origin release/v1.x.x"
+                  echo "  3. Full CI/CD will run automatically"
+                  echo ""
+                  echo "Expected monthly savings: ~70-80% ($100 → $20-30)"
+    """)
 
 
-def run_cmd(
-    cmd: list[str],
-    capture: bool = True,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=capture, text=True)
+def get_release_branch_script() -> str:
+    """Get the release branch helper script content."""
+    return dedent("""\
+        #!/bin/bash
+
+        # Helper script to create release branches for full CI/CD testing
+
+        if [ -z "$1" ]; then
+            echo "Usage: ./create-release-branch.sh <version>"
+            echo "Example: ./create-release-branch.sh v1.2.0"
+            exit 1
+        fi
+
+        VERSION=$1
+        BRANCH_NAME="release/$VERSION"
+
+        echo "🚀 Creating release branch: $BRANCH_NAME"
+
+        # Create and switch to release branch
+        git checkout -b "$BRANCH_NAME"
+
+        # Push to trigger full CI/CD
+        git push -u origin "$BRANCH_NAME"
+
+        echo "✅ Release branch created and pushed"
+        echo "🔄 Full CI/CD pipeline will run automatically"
+        echo "📊 Monitor progress at: https://github.com/$(git remote get-url origin | sed 's/.*github.com[:/]\\([^.]*\\).*/\\1/')/actions"
+    """)
 
 
-def main(argv: list[str] | None = None) -> int:
+def main() -> int:
     """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--dry-run",
-        action="store_true",
-        help="Show what would be done without making changes",
-    )
-    parser.add_argument(
-        "--skip-readme",
-        action="store_true",
-        help="Don't update README.md",
-    )
+    print("\U0001f680 Optimizing GitHub Actions for cost control...")
 
-    args = parser.parse_args(argv)
-    repo_root = Path.cwd()
-    workflows_dir = repo_root / ".github" / "workflows"
+    project_root = get_project_root()
+    workflows_dir = project_root / ".github" / "workflows"
     disabled_dir = workflows_dir / "disabled-expensive"
-    dry_run: bool = args.dry_run
 
-    print("Optimizing GitHub Actions for cost control...")
-
-    if dry_run:
-        print("(dry run - no changes will be made)")
-
-    # Create disabled directory
-    if not dry_run:
-        disabled_dir.mkdir(parents=True, exist_ok=True)
+    # Create backup directory
+    disabled_dir.mkdir(parents=True, exist_ok=True)
 
     # Move expensive workflows
-    print("\nMoving expensive workflows to disabled directory...")
+    print("\U0001f4e6 Moving expensive workflows to disabled directory...")
     moved_count = 0
     for workflow in EXPENSIVE_WORKFLOWS:
-        workflow_path = workflows_dir / workflow
-        if workflow_path.exists():
-            if dry_run:
-                print(f"  Would move: {workflow}")
-            else:
-                shutil.move(str(workflow_path), str(disabled_dir / workflow))
-                print(f"  Moved: {workflow}")
+        src = workflows_dir / workflow
+        if src.exists():
+            print(f"  Moving {workflow}")
+            src.rename(disabled_dir / workflow)
             moved_count += 1
 
-    # Show kept workflows
-    print(f"\n{Colors.GREEN}Keeping essential workflows:{Colors.NC}")
+    # Report kept workflows
+    print("\u2705 Keeping essential workflows:")
     for workflow in KEEP_WORKFLOWS:
         if (workflows_dir / workflow).exists():
-            print(f"  {workflow}")
+            print(f"  \u2713 {workflow}")
 
-    # Create cost monitor workflow
-    cost_monitor_path = workflows_dir / "cost-monitor.yml"
-    if not dry_run:
-        cost_monitor_path.write_text(COST_MONITOR_WORKFLOW)
-        print(f"\nCreated: {cost_monitor_path}")
+    # Create cost monitoring workflow
+    cost_monitor = workflows_dir / "cost-monitor.yml"
+    cost_monitor.write_text(get_cost_monitor_workflow())
+    print(f"\u2705 Created {cost_monitor.name}")
 
     # Create release branch helper script
-    release_script_path = repo_root / "create-release-branch.sh"
-    if not dry_run:
-        release_script_path.write_text(RELEASE_BRANCH_SCRIPT)
-        release_script_path.chmod(0o755)
-        print(f"Created: {release_script_path}")
+    release_script = project_root / "create-release-branch.sh"
+    release_script.write_text(get_release_branch_script())
+    release_script.chmod(0o755)
+    print(f"\u2705 Created {release_script.name}")
 
     # Update README
-    readme_path = repo_root / "README.md"
-    if not args.skip_readme and readme_path.exists():
-        if not dry_run:
-            with open(readme_path, "a") as f:
-                f.write(README_ADDITION)
-            print(f"Updated: {readme_path}")
+    readme = project_root / "README.md"
+    if readme.exists():
+        readme_content = readme.read_text()
+        if "GitHub Actions Cost Optimization" not in readme_content:
+            addition = dedent("""
 
-    # Summary
+                ## 🚀 GitHub Actions Cost Optimization
+
+                To control costs, we use a two-tier CI/CD strategy:
+
+                ### Main Branch (Lightweight)
+                - Fast linting and basic unit tests only
+                - ~$0.05 per run
+
+                ### Release Branches (Comprehensive)
+                - Full test suite (unit, integration, E2E)
+                - Security scans and performance testing
+                - Production deployment pipelines
+                - ~$2-4 per run
+
+                ### Creating Release Branches
+                ```bash
+                # Create release branch for full testing
+                ./create-release-branch.sh v1.2.0
+                ```
+            """)
+            readme.write_text(readme_content + addition)
+            print("\u2705 Updated README.md with cost optimization docs")
+
     print()
-    print(f"{Colors.GREEN}GitHub Actions optimization complete!{Colors.NC}")
+    print("\u2705 GitHub Actions optimization complete!")
     print()
-    print("Cost Impact:")
+    print("\U0001f4ca Cost Impact:")
     print("  Before: ~$100/month (full CI on every commit)")
     print("  After:  ~$20-30/month (70-80% reduction)")
     print()
-    print("How to use:")
+    print("\U0001f680 How to use:")
     print("  Main branch: Automatic lightweight CI")
     print("  Full testing: ./create-release-branch.sh v1.x.x")
     print()
-    print(f"Disabled workflows moved to: {disabled_dir}")
-    print("Active workflows: main-branch-ci.yml, release-branch-ci.yml")
+    print(f"\U0001f4c1 Disabled workflows moved to: {disabled_dir.relative_to(project_root)}/")
+    print("\U0001f504 Active workflows: main-branch-ci.yml, release-branch-ci.yml")
 
     return 0
 

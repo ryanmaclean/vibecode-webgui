@@ -44,6 +44,13 @@ except ImportError:  # pragma: no cover - fallback when run as a script
   sys.path.append(str(Path(__file__).resolve().parent))
   from _dogstatsd import DogStatsDSender, emit_duration_metrics
 
+# Datadog APM tracing
+try:
+    import ddtrace
+    ddtrace.patch_all()
+except ImportError:
+    pass
+
 ROOT = Path(__file__).resolve().parent
 FC_DIR = ROOT / "firecracker"
 FIRECRACKER_BIN = FC_DIR / "firecracker"
