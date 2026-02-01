@@ -81,15 +81,27 @@ jobs:
           # Use Tauri config for static export
           cp next.config.tauri.js next.config.js
 
-          # IMPORTANT: Move API routes COMPLETELY OUT of src/app for static export
+          # IMPORTANT: Move incompatible routes COMPLETELY OUT of src/app for static export
           # Next.js App Router compiles ANY directory inside src/app as routes
-          # API routes use force-dynamic which is incompatible with output: export
-          # They will be handled by Tauri's Rust backend instead
-          echo "Temporarily moving API routes outside of src/app..."
+          # 1. API routes use force-dynamic which is incompatible with output: export
+          # 2. Dynamic [param] routes need generateStaticParams() for static export
+          # These will be handled by Tauri's Rust backend instead
+          echo "Temporarily moving incompatible routes outside of src/app..."
+          mkdir -p /tmp/routes-backup
+
+          # Move API routes
           if [ -d "src/app/api" ]; then
-            mv src/app/api /tmp/api-routes-backup
-            echo "API routes moved to /tmp/api-routes-backup"
+            mv src/app/api /tmp/routes-backup/api
+            echo "API routes moved to /tmp/routes-backup/api"
           fi
+
+          # Move dynamic page routes that lack generateStaticParams
+          for route in "experiments" "workspace" "workspaces" "wiki"; do
+            if [ -d "src/app/$route" ]; then
+              mv "src/app/$route" "/tmp/routes-backup/$route"
+              echo "Dynamic route $route moved to /tmp/routes-backup/$route"
+            fi
+          done
 
           # Clean Next.js cache to prevent stale route references
           echo "Cleaning Next.js cache..."
@@ -99,10 +111,15 @@ jobs:
           npm run build
           BUILD_STATUS=$?
 
-          # Restore API routes immediately after build
-          if [ -d "/tmp/api-routes-backup" ]; then
-            mv /tmp/api-routes-backup src/app/api
-            echo "API routes restored from /tmp/api-routes-backup"
+          # Restore all routes immediately after build
+          echo "Restoring routes from /tmp/routes-backup..."
+          if [ -d "/tmp/routes-backup" ]; then
+            for route in /tmp/routes-backup/*; do
+              route_name=$(basename "$route")
+              mv "$route" "src/app/$route_name"
+              echo "Restored $route_name to src/app/"
+            done
+            rmdir /tmp/routes-backup
           fi
 
           # Check if build succeeded
