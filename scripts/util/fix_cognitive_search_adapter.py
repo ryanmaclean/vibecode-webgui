@@ -5,6 +5,14 @@ Updates imports and error handling in the cognitive-search-vector-database-adapt
 """
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import argparse
 import re
 import shutil

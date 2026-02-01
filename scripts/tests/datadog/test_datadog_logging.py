@@ -83,6 +83,13 @@ dd_metric "aks.bootstrap.test" 1 gauge "deployment:aks" "environment:${{NODE_ENV
 """Test Datadog logging integration."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 import os
 import re
 import subprocess

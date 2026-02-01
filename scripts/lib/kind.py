@@ -13,6 +13,14 @@ except ImportError:
 
 """Shared helpers for KIND (Kubernetes in Docker) orchestration scripts."""
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import os
 import stat
 import subprocess

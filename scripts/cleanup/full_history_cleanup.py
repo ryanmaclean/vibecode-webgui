@@ -8,6 +8,14 @@ After running, you MUST force push and all collaborators must re-clone.
 """
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import argparse
 import shutil
 import subprocess

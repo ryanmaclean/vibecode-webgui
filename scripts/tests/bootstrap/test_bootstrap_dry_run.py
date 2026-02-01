@@ -52,6 +52,14 @@ def test_wrapper_scripts_delegate_to_python_helpers(bootstrap_scripts, wrapper, 
 """Test the updated AKS bootstrap script in dry-run mode."""
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import os
 import subprocess
 import sys

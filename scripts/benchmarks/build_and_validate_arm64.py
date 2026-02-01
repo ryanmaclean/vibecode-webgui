@@ -5,6 +5,14 @@ This script automates the workflow described in issue #574.
 """
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import argparse
 import json
 import os

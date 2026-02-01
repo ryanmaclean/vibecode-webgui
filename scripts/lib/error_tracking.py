@@ -16,6 +16,14 @@ except ImportError:
 This module provides automatic error tracking for all Python scripts.
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import json
 import os
 import socket

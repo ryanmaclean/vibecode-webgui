@@ -15,6 +15,14 @@ except ImportError:
 Quick 5-minute intensive monitoring with 15-second intervals
 """
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
 import subprocess
 import time
 import csv
