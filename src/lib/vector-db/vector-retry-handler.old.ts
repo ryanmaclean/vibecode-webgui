@@ -84,7 +84,7 @@ export class RetryHandler {
    * @param config Retry configuration
    * @param provider Provider name for error handler
    */
-  constructor(config: Partial<RetryConfig> = {}, _provider: string = 'retry-handler') {
+  constructor(config: Partial<RetryConfig> = {}, provider: string = 'retry-handler') {
     this.config = { ...this.DEFAULT_CONFIG, ...config };
     this.errorHandler = new VectorDbErrorHandler();
   }
@@ -106,8 +106,6 @@ export class RetryHandler {
         new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
         operationName,
         {
-          errorType: VectorDbErrorType.SERVICE,
-          retryable: false,
           circuitBroken: true,
           failureCount: this.failures.length,
           resetAfterMs: Math.max(0, this.circuitBrokenUntil - Date.now())
@@ -122,16 +120,16 @@ export class RetryHandler {
       try {
         // Execute the operation
         const result = await operation();
-
+        
         // Operation succeeded, return the result
         return result;
       } catch (error) {
         const err = error instanceof Error ? error : new Error(String(error));
         lastError = err;
-
+        
         // Record the failure
         this.recordFailure(err);
-
+        
         // Check if we should break the circuit
         if (this.shouldBreakCircuit()) {
           this.breakCircuit();
@@ -139,75 +137,73 @@ export class RetryHandler {
             new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
             operationName,
             {
-              errorType: VectorDbErrorType.SERVICE,
-              retryable: false,
               circuitBroken: true,
               failureCount: this.failures.length,
               resetAfterMs: this.config.circuitResetTimeMs
             }
           );
         }
-
+        
         // Check if we've reached max retries
         if (attempt >= this.config.maxRetries) {
           break;
         }
-
+        
         // Check if the error is retryable
-        const retryable = isRetryable ?
-          isRetryable(err) :
+        const retryable = isRetryable ? 
+          isRetryable(err) : 
           this.isErrorRetryable(err);
-
+        
         if (!retryable) {
-          console.warn(`Non-retryable error in operation "${operationName}":`, {
-            error: err.message,
-            stack: err.stack
+          console.warn(`Non-retryable error in operation "${operationName}":`, { 
+            error: err.message, 
+            stack: err.stack 
           });
-
+          
           // If the error is already a VectorDbError, just throw it
           if (err instanceof VectorDbError) {
             throw err;
           }
-
+          
           // Otherwise, wrap it with our error handler
           throw this.errorHandler.handleError(
             err,
             operationName,
-            { retryable: false, retryAttempt: attempt }
+            { retryAttempt: attempt }
           );
         }
-
+        
         // Calculate delay for next retry
         const delay = this.calculateBackoff(attempt);
-
-        console.info(`Retrying operation "${operationName}" after ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, {
+        
+        console.info(`Retrying operation "${operationName}" after ${delay}ms (attempt ${attempt + 1}/${this.config.maxRetries}):`, { 
           error: err.message
         });
-
+        
         // Wait before retry
         await new Promise(resolve => setTimeout(resolve, delay));
-
+        
         // Increment attempt counter
         attempt++;
       }
     }
-
+    
     // If we got here, all retries failed
-    console.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, {
-      error: lastError?.message,
-      stack: lastError?.stack
+    console.error(`All ${this.config.maxRetries} retry attempts failed for operation "${operationName}":`, { 
+      error: lastError?.message, 
+      stack: lastError?.stack 
     });
-
+    
     // If the last error is already a VectorDbError, just throw it
     if (lastError instanceof VectorDbError) {
       throw lastError;
     }
-
+    
     // Otherwise, wrap it with our error handler
     throw this.errorHandler.handleError(
       lastError || new Error(`Unknown error in operation: ${operationName}`),
       operationName,
-      { retryable: false, maxRetries: this.config.maxRetries, allRetriesFailed: true }
+      { maxRetries: this.config.maxRetries, allRetriesFailed: true }
     );
   }
 
@@ -218,11 +214,11 @@ export class RetryHandler {
   private isErrorRetryable(error: Error): boolean {
       // If it's a VectorDbError, check if it's retryable based on error type
       if (error instanceof VectorDbError) {
-        return (error.details && 'retryable' in error.details && error.details.retryable === true) ||
+        return (error.details && 'retryable' in error.details && error.details.retryable === true) || 
                error.type === VectorDbErrorType.CONNECTION_FAILED ||
                error.type === VectorDbErrorType.TIMEOUT;
     }
-
+    
     // Otherwise, use the error handler to check if it's retryable
     return this.errorHandler.isRetryableError(error);
   }
@@ -234,16 +230,16 @@ export class RetryHandler {
   private calculateBackoff(attempt: number): number {
     // Calculate exponential backoff
     const exponentialDelay = this.config.baseDelay * Math.pow(this.config.backoffFactor, attempt);
-
+    
     // Cap at maximum delay
     let delay = Math.min(exponentialDelay, this.config.maxDelay);
-
+    
     // Add jitter if enabled (±20% randomness)
     if (this.config.jitter) {
       const jitterFactor = 0.8 + (Math.random() * 0.4); // 0.8-1.2
       delay = Math.floor(delay * jitterFactor);
     }
-
+    
     return delay;
   }
 
@@ -253,10 +249,10 @@ export class RetryHandler {
    */
   private recordFailure(error: Error): void {
     const now = Date.now();
-
+    
     // Add the failure to the list
     this.failures.push({ timestamp: now, error });
-
+    
     // Prune old failures outside the window
     this.failures = this.failures.filter(
       failure => (now - failure.timestamp) < this.config.failureWindowMs
@@ -276,7 +272,7 @@ export class RetryHandler {
   private breakCircuit(): void {
     this.circuitBroken = true;
     this.circuitBrokenUntil = Date.now() + this.config.circuitResetTimeMs;
-
+    
     console.warn('Circuit breaker triggered due to excessive failures', {
       failureCount: this.failures.length,
       resetAfterMs: this.config.circuitResetTimeMs,
@@ -291,17 +287,17 @@ export class RetryHandler {
     if (!this.circuitBroken) {
       return false;
     }
-
+    
     // Check if the circuit reset time has elapsed
     if (Date.now() > this.circuitBrokenUntil) {
       // Reset the circuit
       this.circuitBroken = false;
       this.failures = [];
-
+      
       console.info('Circuit breaker reset after timeout period');
       return false;
     }
-
+    
     return true;
   }
 
@@ -311,7 +307,7 @@ export class RetryHandler {
   public resetCircuit(): void {
     this.circuitBroken = false;
     this.failures = [];
-
+    
     console.info('Circuit breaker manually reset');
   }
 
@@ -331,5 +327,5 @@ export class RetryHandler {
   }
 }
 
-// Legacy types for backward compatibility - VectorDbErrorType exported with correct casing
+// Legacy types for backward compatibility - use VectorDbErrorType
 export { VectorDbErrorType as VectorDBErrorType } from './vector-db-error-handler';
