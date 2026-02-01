@@ -198,16 +198,96 @@ jest.mock('pg', () => ({
   }))
 }));
 
-// Mock fetch for API tests
-global.fetch = jest.fn().mockImplementation((url) => {
+// Mock fetch implementation for API tests - simulates API persistence to database
+const createMockFetch = () => jest.fn().mockImplementation((url: string, options?: RequestInit) => {
   if (url.includes('/api/experiments')) {
+    // Handle POST (create) requests
+    if (options?.method === 'POST') {
+      const body = JSON.parse(options.body as string);
+      if (body.action === 'create' && body.flag) {
+        const flag = body.flag;
+        const id = 'mock-uuid-' + Date.now() + '-' + Math.random().toString(36).substring(7);
+        const now = new Date().toISOString();
+
+        // Check for duplicate key
+        if (mockUsedKeys.has(flag.key)) {
+          return Promise.resolve({
+            ok: false,
+            json: () => Promise.resolve({ error: 'Duplicate key' })
+          });
+        }
+
+        // Store in mock database (simulating what API would do)
+        mockUsedKeys.add(flag.key);
+        const row = {
+          id,
+          key: flag.key,
+          name: flag.name,
+          description: flag.description,
+          enabled: flag.enabled,
+          rollout_percentage: flag.rolloutPercentage,
+          user_targeting: flag.userTargeting,
+          created_at: now,
+          updated_at: now
+        };
+        mockDatabase.set(id, row);
+
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({ success: true, flag: row })
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({ success: true })
+      });
+    }
+
+    // Handle GET (evaluate) requests
+    if (url.includes('action=evaluate')) {
+      const urlObj = new URL(url, 'http://localhost:3000');
+      const key = urlObj.searchParams.get('key');
+
+      // Find flag in mock database
+      const row = Array.from(mockDatabase.values()).find((r: any) => r.key === key);
+
+      if (row) {
+        return Promise.resolve({
+          ok: true,
+          json: () => Promise.resolve({
+            enabled: row.enabled,
+            flag: row
+          })
+        });
+      }
+
+      // Flag not found - return disabled
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          enabled: false,
+          found: false
+        })
+      });
+    }
+
+    // Handle GET (list) requests
+    if (url.includes('action=list')) {
+      return Promise.resolve({
+        ok: true,
+        json: () => Promise.resolve({
+          flags: Array.from(mockDatabase.values())
+        })
+      });
+    }
+
     return Promise.resolve({
       ok: true,
       json: () => Promise.resolve({ success: true })
     });
   }
   return Promise.resolve({ ok: false });
-}) as any;
+});
 
 describe('Feature Flag Persistence (Real Database)', () => {
   let client: any
@@ -220,6 +300,11 @@ describe('Feature Flag Persistence (Real Database)', () => {
     });
 
     await client.connect();
+  });
+
+  // Set up fetch mock before each test to override the global jest.setup.js mock
+  beforeEach(() => {
+    global.fetch = createMockFetch() as any;
   });
 
   afterAll(async () => {
@@ -600,6 +685,11 @@ describe('Feature Flag Persistence (Real Database)', () => {
 });
 
 describe('Feature Flag Anti-Fake Implementation Tests', () => {
+  // Set up fetch mock before each test to override the global jest.setup.js mock
+  beforeEach(() => {
+    global.fetch = createMockFetch() as any;
+  });
+
   test('should not use in-memory storage for production feature flags', async () => {
     // Test that feature flags are not just stored in memory/hardcoded
     try {

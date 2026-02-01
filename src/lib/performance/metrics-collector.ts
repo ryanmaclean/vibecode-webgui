@@ -150,7 +150,27 @@ export class PerformanceCollector {
     const cacheKey = CacheKeys.apiMetrics('performance_summary', `${minutes}m`);
     
     // Try to get from cache first
-    const cached = await cache.get(cacheKey);
+    const cached = await cache.get(cacheKey) as {
+      webVitals: {
+        cls: { avg: number; p95: number; count: number };
+        fid: { avg: number; p95: number; count: number };
+        fcp: { avg: number; p95: number; count: number };
+        lcp: { avg: number; p95: number; count: number };
+        ttfb: { avg: number; p95: number; count: number };
+      };
+      api: {
+        avgResponseTime: number;
+        p95ResponseTime: number;
+        errorRate: number;
+        throughput: number;
+        cacheHitRate: number;
+      };
+      system: {
+        memoryUsage: number;
+        dbConnections: number;
+        cacheHitRate: number;
+      };
+    } | null;
     if (cached) {
       return cached;
     }

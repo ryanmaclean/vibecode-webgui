@@ -4,7 +4,8 @@
  * Provides horizontal scaling capabilities for Prisma-based vector operations
  */
 
-import { EnhancedVectorStore, UnifiedSearchOptions } from './enhanced-vector-store';
+import { EnhancedVectorStore, UnifiedSearchOptions, SearchContext } from './enhanced-vector-store';
+import { SearchResult } from '../vector-db/vector-types';
 
 interface ShardedProviderConfig {
     provider: 'pgvector' | 'weaviate';
@@ -32,7 +33,7 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
      */
     configureSharding(provider: 'pgvector' | 'weaviate', config: ShardedProviderConfig): void {
         this.shardConfigs.set(provider, config);
-        
+
         // Initialize shard metrics
         for (let i = 0; i < config.shardCount; i++) {
             const shardId = `${provider}_shard_${i}`;
@@ -50,37 +51,36 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
     /**
      * Enhanced search with shard-aware routing
      */
-    async search(options: UnifiedSearchOptions): Promise<any[]> {
+    async search(
+        query: string,
+        options: UnifiedSearchOptions = {},
+        context: SearchContext = {}
+    ): Promise<SearchResult[]> {
         // If sharding is configured for the selected provider, use shard-aware search
-        const provider = this.selectOptimalProvider(options);
+        const provider = this.selectShardedProvider(query, options);
         const shardConfig = this.shardConfigs.get(provider);
 
         if (shardConfig) {
-            return this.executeShardedSearch(options, provider, shardConfig);
+            return this.executeShardedSearch(query, options, provider, shardConfig);
         }
 
         // Fall back to original enhanced vector store search
-        return super.search(options);
+        return super.search(query, options, context);
     }
 
-    private selectOptimalProvider(options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
-        // Enhanced provider selection considering shard health
-        if (options.provider && options.provider !== 'auto') {
-            return options.provider;
-        }
-
+    private selectShardedProvider(_query: string, _options: UnifiedSearchOptions): 'pgvector' | 'weaviate' {
         // Analyze shard health and performance
         const pgvectorShards = Array.from(this.shardMetrics.values())
             .filter(s => s.provider === 'pgvector');
         const weaviateShards = Array.from(this.shardMetrics.values())
             .filter(s => s.provider === 'weaviate');
 
-        const pgvectorAvgHealth = pgvectorShards.length > 0 
+        const pgvectorAvgHealth = pgvectorShards.length > 0
             ? pgvectorShards.filter(s => s.healthStatus === 'healthy').length / pgvectorShards.length
             : 0;
 
         const weaviateAvgHealth = weaviateShards.length > 0
-            ? weaviateShards.filter(s => s.healthStatus === 'healthy').length / weaviateShards.length  
+            ? weaviateShards.filter(s => s.healthStatus === 'healthy').length / weaviateShards.length
             : 0;
 
         // Choose provider with better health
@@ -88,27 +88,28 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
     }
 
     private async executeShardedSearch(
-        options: UnifiedSearchOptions, 
+        query: string,
+        options: UnifiedSearchOptions,
         provider: 'pgvector' | 'weaviate',
         shardConfig: ShardedProviderConfig
-    ): Promise<any[]> {
-        const targetShards = this.determineTargetShards(options, shardConfig);
-        
+    ): Promise<SearchResult[]> {
+        const targetShards = this.determineTargetShards(query, options, shardConfig);
+
         if (targetShards.length === 1) {
             // Single shard optimization
-            return this.executeSearchOnShard(options, targetShards[0], provider);
+            return this.executeSearchOnShard(query, options, targetShards[0], provider);
         } else {
             // Multi-shard search with result merging
-            const shardPromises = targetShards.map(shardId => 
-                this.executeSearchOnShard(options, shardId, provider)
+            const shardPromises = targetShards.map(shardId =>
+                this.executeSearchOnShard(query, options, shardId, provider)
             );
-            
+
             const shardResults = await Promise.all(shardPromises);
             return this.mergeAndRankResults(shardResults, options);
         }
     }
 
-    private determineTargetShards(options: UnifiedSearchOptions, config: ShardedProviderConfig): string[] {
+    private determineTargetShards(query: string, options: UnifiedSearchOptions, config: ShardedProviderConfig): string[] {
         switch (config.shardingStrategy) {
             case 'hash':
                 // Hash-based routing for distributed search
@@ -117,48 +118,48 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
                     return [`${config.provider}_shard_${shardIndex}`];
                 }
                 // Search all shards if no workspace context
-                return Array.from({ length: config.shardCount }, (_, i) => 
+                return Array.from({ length: config.shardCount }, (_, i) =>
                     `${config.provider}_shard_${i}`
                 );
-                
+
             case 'range':
                 // Range-based routing (could be based on content size, date, etc.)
-                return this.getRangeShardsForQuery(options, config);
-                
+                return this.getRangeShardsForQuery(query, options, config);
+
             case 'collection':
                 // Collection-based routing (workspace or file-based)
                 if (options.fileIds && options.fileIds.length > 0) {
                     const shardIndex = options.fileIds[0] % config.shardCount;
                     return [`${config.provider}_shard_${shardIndex}`];
                 }
-                return Array.from({ length: config.shardCount }, (_, i) => 
+                return Array.from({ length: config.shardCount }, (_, i) =>
                     `${config.provider}_shard_${i}`
                 );
-                
+
             default:
                 return [`${config.provider}_shard_0`]; // Default to first shard
         }
     }
 
-    private getRangeShardsForQuery(options: UnifiedSearchOptions, config: ShardedProviderConfig): string[] {
+    private getRangeShardsForQuery(query: string, options: UnifiedSearchOptions, config: ShardedProviderConfig): string[] {
         // Simple range sharding based on query length
-        const queryComplexity = options.query.length + (options.fileIds?.length || 0);
+        const queryComplexity = query.length + (options.fileIds?.length || 0);
         const shardIndex = Math.floor(queryComplexity / 100) % config.shardCount;
         return [`${config.provider}_shard_${shardIndex}`];
     }
 
     private async executeSearchOnShard(
-        options: UnifiedSearchOptions, 
-        shardId: string, 
-        provider: 'pgvector' | 'weaviate'
-    ): Promise<any[]> {
+        query: string,
+        options: UnifiedSearchOptions,
+        shardId: string,
+        _provider: 'pgvector' | 'weaviate'
+    ): Promise<SearchResult[]> {
         const startTime = Date.now();
-        
+
         try {
-            // Execute search using parent class with provider override
-            const searchOptions = { ...options, provider };
-            const results = await super.search(searchOptions);
-            
+            // Execute search using parent class
+            const results = await super.search(query, options);
+
             // Update shard metrics
             const metrics = this.shardMetrics.get(shardId);
             if (metrics) {
@@ -166,7 +167,7 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
                 metrics.lastHealthCheck = new Date();
                 metrics.healthStatus = 'healthy';
             }
-            
+
             return results;
         } catch (error) {
             // Update shard health on error
@@ -175,21 +176,21 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
                 metrics.healthStatus = 'unhealthy';
                 metrics.lastHealthCheck = new Date();
             }
-            
+
             console.error(`Shard ${shardId} search failed:`, error);
             return [];
         }
     }
 
-    private mergeAndRankResults(shardResults: any[][], options: UnifiedSearchOptions): any[] {
+    private mergeAndRankResults(shardResults: SearchResult[][], options: UnifiedSearchOptions): SearchResult[] {
         // Flatten all results
         const allResults = shardResults.flat();
-        
-        // Sort by similarity score (assuming similarity field exists)
-        const sortedResults = allResults.sort((a, b) => 
+
+        // Sort by similarity score
+        const sortedResults = allResults.sort((a, b) =>
             (b.similarity || 0) - (a.similarity || 0)
         );
-        
+
         // Apply limit
         return sortedResults.slice(0, options.limit || 10);
     }
@@ -211,31 +212,31 @@ export class ShardedEnhancedVectorStore extends EnhancedVectorStore {
     async rebalanceShards(): Promise<{ rebalanced: string[], reason: string }> {
         const now = new Date();
         const timeSinceLastRebalance = now.getTime() - this.lastRebalance.getTime();
-        
+
         // Only rebalance if it's been at least 5 minutes
         if (timeSinceLastRebalance < 5 * 60 * 1000) {
             return { rebalanced: [], reason: 'Too soon since last rebalance' };
         }
 
         const rebalancedShards: string[] = [];
-        
+
         // Check for unhealthy shards
         for (const [shardId, metrics] of this.shardMetrics) {
             if (metrics.healthStatus === 'unhealthy') {
                 // Mark for rebalancing
                 rebalancedShards.push(shardId);
-                
+
                 // Reset health status to trigger retry
                 metrics.healthStatus = 'degraded';
                 metrics.lastHealthCheck = now;
             }
         }
-        
+
         this.lastRebalance = now;
-        
+
         return {
             rebalanced: rebalancedShards,
-            reason: rebalancedShards.length > 0 
+            reason: rebalancedShards.length > 0
                 ? `Rebalanced ${rebalancedShards.length} unhealthy shards`
                 : 'All shards healthy, no rebalancing needed'
         };

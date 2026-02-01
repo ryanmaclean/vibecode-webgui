@@ -9,7 +9,13 @@ import { litellmClient } from '../../../../lib/ai/litellm-client';
 import { prisma } from '../../../../lib/prisma';
 import { cache, CacheKeys, CacheTTL } from '../../../../lib/cache/unified-cache-client';
 import { validateQueryParams } from '@/lib/api/validation/middleware';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { z } from 'zod';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination';
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const aiManagementActionSchema = z.object({
@@ -18,6 +24,8 @@ const aiManagementActionSchema = z.object({
 });
 
 export const runtime = 'nodejs';
+
+const apiRateLimit = createAPIRateLimit(60) // 60 req/min
 
 // Type Definitions
 interface AIRequestData {
@@ -94,6 +102,20 @@ interface PerformanceRequest {
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
     // Validate query parameters
     const queryValidation = validateQueryParams(request, aiManagementActionSchema);
     if (!queryValidation.success) {
@@ -119,7 +141,7 @@ export async function GET(request: NextRequest) {
         role: testRole,
         email: `${testUserId}@test.com`,
         name: `Test User ${testUserId}`
-      } as any;
+      } as typeof token;
     }
 
     if (!token) {
@@ -188,7 +210,8 @@ async function handleOverview(userId?: string, timeframe = '24h') {
     litellmClient.getUsageStats(userId, timeframe)
   ]);
 
-  // Get recent AI requests from database
+  // Get recent AI requests from database (limited for overview)
+  const RECENT_REQUESTS_LIMIT = 10;
   const recentRequests = await prisma.aIRequest.findMany({
     where: {
       ...(userId && { user_id: parseInt(userId) }),
@@ -197,7 +220,7 @@ async function handleOverview(userId?: string, timeframe = '24h') {
       }
     },
     orderBy: { created_at: 'desc' },
-    take: 10,
+    take: RECENT_REQUESTS_LIMIT,
     include: {
       user: {
         select: {
@@ -311,7 +334,8 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
   // Get usage from LiteLLM proxy
   const proxyUsage = await litellmClient.getUsageStats(filterUserId, timeframe);
 
-  // Get detailed usage from database
+  // Get detailed usage from database (with pagination limit to prevent resource exhaustion)
+  const usageQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const dbRequests = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
@@ -329,21 +353,23 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
       duration_ms: true,
       status: true,
       created_at: true
-    }
+    },
+    take: usageQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   // Aggregate database statistics
   const dbStats = {
     totalRequests: dbRequests.length,
-    successfulRequests: dbRequests.filter((r: AIRequestData) => r.status === 'completed').length,
-    failedRequests: dbRequests.filter((r: AIRequestData) => r.status === 'failed').length,
+    successfulRequests: (dbRequests as AIRequestData[]).filter((r) => r.status === 'completed').length,
+    failedRequests: (dbRequests as AIRequestData[]).filter((r) => r.status === 'failed').length,
     totalTokens: {
-      input: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0), 0),
-      output: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.output_tokens || 0), 0)
+      input: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0), 0),
+      output: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.output_tokens || 0), 0)
     },
-    totalCost: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0),
+    totalCost: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0),
     averageLatency: dbRequests.length > 0
-      ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
+      ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.duration_ms || 0), 0) / dbRequests.length 
       : 0,
     byModel: aggregateByField(dbRequests, 'model'),
     byProvider: aggregateByField(dbRequests, 'provider'),
@@ -374,6 +400,8 @@ async function handleUsageStats(requestUserId?: string, filterUserId?: string, t
 }
 
 async function handleCostAnalysis(requestUserId?: string, filterUserId?: string, timeframe = '24h') {
+  // Apply pagination limit to prevent resource exhaustion
+  const costQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const dbRequests = await prisma.aIRequest.findMany({
     where: {
       ...(filterUserId && { user_id: parseInt(filterUserId) }),
@@ -392,33 +420,35 @@ async function handleCostAnalysis(requestUserId?: string, filterUserId?: string,
       output_tokens: true,
       created_at: true,
       user_id: true
-    }
+    },
+    take: costQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   const costAnalysis = {
     timestamp: new Date().toISOString(),
     timeframe,
     total: {
-      cost: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0),
+      cost: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0),
       requests: dbRequests.length,
-      tokens: dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+      tokens: (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
     },
     byModel: aggregateCostByField(dbRequests, 'model'),
     byProvider: aggregateCostByField(dbRequests, 'provider'),
     timeline: generateCostTimeline(dbRequests, timeframe),
     efficiency: {
       costPerToken: dbRequests.length > 0
-        ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0) /
-          dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
+        ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0) /
+          (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.input_tokens || 0) + (r.output_tokens || 0), 0)
         : 0,
       costPerRequest: dbRequests.length > 0
-        ? dbRequests.reduce((sum: number, r: AIRequestData) => sum + (r.cost || 0), 0) / dbRequests.length
+        ? (dbRequests as AIRequestData[]).reduce((sum, r) => sum + (r.cost || 0), 0) / dbRequests.length
         : 0
     }
   };
 
   if (requestUserId && requestUserId === 'admin') {
-    (costAnalysis as any).byUser = aggregateCostByField(dbRequests, 'user_id');
+    (costAnalysis as { byUser?: ReturnType<typeof aggregateCostByField> }).byUser = aggregateCostByField(dbRequests, 'user_id');
   }
 
   return NextResponse.json(costAnalysis);
@@ -447,6 +477,8 @@ async function handleHealthCheck() {
 }
 
 async function handlePerformanceMetrics(timeframe = '24h') {
+  // Apply pagination limit to prevent resource exhaustion
+  const performanceQueryLimit = clampLimit(MAX_PAGE_SIZE.AI_REQUESTS * 10, MAX_PAGE_SIZE.METRICS);
   const requests = await prisma.aIRequest.findMany({
     where: {
       created_at: {
@@ -463,7 +495,9 @@ async function handlePerformanceMetrics(timeframe = '24h') {
       input_tokens: true,
       output_tokens: true,
       status: true
-    }
+    },
+    take: performanceQueryLimit,
+    orderBy: { created_at: 'desc' }
   });
 
   const performance = {
@@ -663,7 +697,29 @@ function generateCostTimeline(_requests: any[], _timeframe: string) {
   return [];
 }
 
-export async function POST(_request: NextRequest) {
-  // Implementation for administrative actions like model configuration
-  return NextResponse.json({ message: 'POST endpoint not implemented' }, { status: 501 });
+export async function POST(request: NextRequest) {
+  try {
+    // Rate limiting check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
+    // Implementation for administrative actions like model configuration
+    return NextResponse.json({ message: 'POST endpoint not implemented' }, { status: 501 });
+  } catch (error) {
+    // Server error logged
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    );
+  }
 }

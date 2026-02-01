@@ -141,6 +141,6 @@ curl -X GET "https://api.datadoghq.com/api/v1/validate" \
 ## Next Steps
 
 - [Architecture Overview](https://github.com/ryanmaclean/vibecode-webgui/blob/main/ARCHITECTURE.md) - Understand the system design
-- [Monitoring Setup](../monitoring/overview/) - Configure observability
-- [Azure Deployment](../azure-infrastructure/) - Deploy to production
-- [Contributing](../contributing/) - Join the development
+- [Monitoring Setup](/monitoring/overview/) - Configure observability
+- [Azure Deployment](/azure-infrastructure/) - Deploy to production
+- [Contributing](/contributing/) - Join the development

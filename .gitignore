@@ -211,7 +211,15 @@ operations/
 optimization/
 development/
 technical-debt/
-platforms/
+platforms/*
+!platforms/kubernetes/
+platforms/kubernetes/*
+!platforms/kubernetes/scripts/
+!platforms/docker/
+platforms/docker/*
+!platforms/docker/scripts/
+!platforms/tauri/
+!platforms/macos/
 
 # Build directories
 initramfs-rebuild/
@@ -379,3 +387,14 @@ PROMISE_VERIFICATION_REPORT.md
 # Gas Town local runtime
 .beads/
 .runtime/
+.venv/
+
+# Tauri build artifacts (large)
+src-tauri/target/
+
+# Separate workspace (should not be committed)
+vibecode_webgui/
+
+# Event logs
+.events.jsonl
+.specstory/

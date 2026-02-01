@@ -116,7 +116,7 @@ describe('Rate Limiting', () => {
       expect(response.status).toBe(429);
 
       const json = await response.json();
-      expect(json.error).toBe('Rate limit exceeded');
+      expect(json.title).toBe('Rate limit exceeded');
       expect(json.retryAfter).toBe(60);
     });
 
@@ -230,7 +230,7 @@ describe('Rate Limiting', () => {
       const result = await applyRateLimit(mockRequest, customConfig, 'custom');
 
       const json = await result.errorResponse!.json();
-      expect(json.message).toBe('Custom error message');
+      expect(json.detail).toBe('Custom error message');
     });
   });
 

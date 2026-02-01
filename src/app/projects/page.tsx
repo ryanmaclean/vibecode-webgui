@@ -160,12 +160,10 @@ export default function ProjectsPage() {
           <TabsContent value="scaffolder">
             {selectedTemplate ? (
               <ProjectScaffolder
-                {...({
-                  template: selectedTemplate,
-                  projectName: projectName || selectedTemplate.name.toLowerCase().replace(/\s+/g, '-'),
-                  onGenerate: handleCreateWorkspace,
-                  onDownload: handleDownloadProject
-                } as any)}
+                initialTemplate={selectedTemplate}
+                initialProjectName={projectName || selectedTemplate.name.toLowerCase().replace(/\s+/g, '-')}
+                onGenerate={handleCreateWorkspace}
+                onDownload={handleDownloadProject}
               />
             ) : (
                 <div className="text-center py-12">

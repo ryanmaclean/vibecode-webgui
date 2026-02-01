@@ -33,11 +33,7 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
     this.adapter = adapter;
     this.retryHandler = new RetryHandler(retryConfig);
     this.adapterName = `${config.provider}-adapter`;
-    this.errorHandler = new VectorDbErrorHandler(
-      this.adapterName,
-      config.enableLogging || false,
-      config.enableMetrics || false
-    );
+    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
@@ -70,10 +66,8 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
     } catch (error) {
       const enhancedError = this.errorHandler.handleError(
-        error, 
+        error,
         'search',
-        undefined, // Let the error handler determine the type
-        undefined, // Let the error handler determine if retryable
         {
           embeddingSize: embedding.length,
           options: {
@@ -85,13 +79,13 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
           }
         }
       );
-      
+
       // Log detailed search context
       console.error('Vector search failed after retries', {
         provider: this.adapterName,
         error: enhancedError
       });
-      
+
       throw enhancedError;
     }
   }
@@ -107,10 +101,8 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
     } catch (error) {
       const enhancedError = this.errorHandler.handleError(
-        error, 
+        error,
         'searchWithText',
-        undefined,
-        undefined,
         {
           query: query.substring(0, 100), // Truncate long queries
           options: {
@@ -122,12 +114,12 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
           }
         }
       );
-      
+
       console.error('Vector text search failed after retries', {
         provider: this.adapterName,
         error: enhancedError
       });
-      
+
       throw enhancedError;
     }
   }
@@ -160,23 +152,21 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
     } catch (error) {
       const enhancedError = this.errorHandler.handleError(
-        error, 
-        'storeChunks', 
-        undefined,
-        undefined,
+        error,
+        'storeChunks',
         {
           fileId,
           chunkCount: chunks.length,
           totalTokens: chunks.reduce((sum, chunk) => sum + chunk.tokens, 0)
         }
       );
-      
+
       // Log detailed context
       console.error('Failed to store vector chunks after retries', {
         provider: this.adapterName,
         error: enhancedError
       });
-      
+
       throw enhancedError;
     }
   }
@@ -200,18 +190,16 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       );
     } catch (error) {
       const enhancedError = this.errorHandler.handleError(
-        error, 
-        'deleteFileChunks', 
-        undefined,
-        undefined,
+        error,
+        'deleteFileChunks',
         { fileId }
       );
-      
+
       console.error('Failed to delete vector chunks after retries', {
         provider: this.adapterName,
         error: enhancedError
       });
-      
+
       throw enhancedError;
     }
   }
@@ -279,16 +267,14 @@ export class EnhancedVectorDatabaseAdapter implements VectorDatabaseInterface {
       const enhancedError = this.errorHandler.handleError(
         error,
         'generateEmbedding',
-        VectorDbErrorType.EMBEDDING_GENERATION_FAILED,
-        undefined,
-        { textLength: text.length }
+        { errorType: VectorDbErrorType.EMBEDDING_GENERATION_FAILED, textLength: text.length }
       );
-      
+
       console.error('Failed to generate embedding after retries', {
         provider: this.adapterName,
         error: enhancedError
       });
-      
+
       throw enhancedError;
     }
   }

@@ -5,14 +5,7 @@
  * assignment logging pattern with statistical analysis capabilities.
  */
 
-export {
-  ExperimentWarehouse,
-  experimentWarehouse,
-  type Assignment,
-  type MetricEvent,
-  type ExperimentResults,
-  type VariantMetricStats
-} from './warehouse'
+export { ExperimentWarehouse, experimentWarehouse } from './warehouse'
 
 export {
   ExperimentQueries,
@@ -21,7 +14,7 @@ export {
   type TimeSeriesPoint,
   type RetentionCohort,
   type SampleRatioCheck,
-  type MetricAggregation
+  type MetricAggregation,
 } from './queries'
 
 // Lifecycle Management
@@ -114,12 +107,9 @@ export {
 // Guardrails
 export {
   evaluateGuardrails,
-  monitorGuardrails,
-  snapshotGuardrailStatus,
-  getGuardrailHistory,
   startGuardrailMonitoring,
   stopGuardrailMonitoring,
   getMonitoringStatus,
   type GuardrailResult,
-  type GuardrailViolation
+  type GuardrailViolation,
 } from './guardrails'

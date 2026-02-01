@@ -56,7 +56,7 @@ export async function initializeVectorDatabase(options: VectorDatabaseOptions = 
         await prisma.$executeRaw`CREATE EXTENSION IF NOT EXISTS vector;`;
         log('✅ pgvector extension created or already exists');
       } catch (extError) {
-        log(`⚠️ Could not create pgvector extension: ${extError.message}`);
+        log(`⚠️ Could not create pgvector extension: ${extError instanceof Error ? extError.message : String(extError)}`);
         log('This may be due to insufficient database permissions or pgvector not being installed.');
         log('You can still use the embedding service, but vector storage and similarity search will not work.');
       }
@@ -95,21 +95,21 @@ export async function initializeVectorDatabase(options: VectorDatabaseOptions = 
           `;
           log('✅ Vector L2 index created or already exists');
         } catch (idxError) {
-          log(`⚠️ Could not create vector L2 index: ${idxError.message}`);
+          log(`⚠️ Could not create vector L2 index: ${idxError instanceof Error ? idxError.message : String(idxError)}`);
         }
-        
+
         try {
           await prisma.$executeRaw`
-            CREATE INDEX IF NOT EXISTS document_embeddings_embedding_ip_idx ON document_embeddings 
+            CREATE INDEX IF NOT EXISTS document_embeddings_embedding_ip_idx ON document_embeddings
             USING ivfflat (embedding vector_ip_ops);
           `;
           log('✅ Vector IP index created or already exists');
         } catch (idxError) {
-          log(`⚠️ Could not create vector IP index: ${idxError.message}`);
+          log(`⚠️ Could not create vector IP index: ${idxError instanceof Error ? idxError.message : String(idxError)}`);
         }
         
       } catch (tableError) {
-        log(`⚠️ Could not create document_embeddings table: ${tableError.message}`);
+        log(`⚠️ Could not create document_embeddings table: ${tableError instanceof Error ? tableError.message : String(tableError)}`);
         log('This may be due to insufficient database permissions.');
         throw tableError;
       }
@@ -117,7 +117,7 @@ export async function initializeVectorDatabase(options: VectorDatabaseOptions = 
     
     return { prisma, success: true };
   } catch (error) {
-    log(`❌ Database initialization failed: ${error.message}`);
+    log(`❌ Database initialization failed: ${error instanceof Error ? error.message : String(error)}`);
     await prisma.$disconnect();
     return { prisma: null, success: false, error };
   }

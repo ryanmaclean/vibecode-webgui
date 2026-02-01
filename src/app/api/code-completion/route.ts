@@ -1,11 +1,16 @@
 import { createHmac, createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
 // import { logger } from '../../../lib/logger'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { loadSecret } from '@/lib/security/macos-keychain'
+import { loadSecret } from '@/lib/security/macos-keychain-server'
 import { fetchWithRetry } from '@/lib/utils/fetch'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 req/min for AI endpoints
 
 // Code completion request validation schema
 const codeCompletionSchema = z.object({
@@ -890,6 +895,29 @@ async function generateCompletion(body: CompletionRequestBody): Promise<Completi
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for code completion' },
+        { status: 401 }
+      )
+    }
+
     // Validate request body
     const validation = await validateRequestBody(request, codeCompletionSchema)
     if (!validation.success) {
@@ -916,7 +944,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Authentication check for GET endpoint
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Authentication required for code completion status' },
+      { status: 401 }
+    )
+  }
+
   return NextResponse.json({
     status: 'ok',
     provider: DEFAULT_PROVIDER,

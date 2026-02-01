@@ -61,7 +61,7 @@ export function GradioEditor({ initialCode }: GradioEditorProps) {
           {isLoading ? 'Running...' : 'Run'}
         </Button>
       </div>
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1">
         <ResizablePanel defaultSize={50}>
           <Monaco
             language="python"

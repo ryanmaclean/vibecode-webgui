@@ -52,12 +52,12 @@ export enum VectorDbErrorType {
 
 // Legacy compatibility exports
 export const VectorDBErrorType = {
-  CONNECTION_FAILED: VectorDbErrorType.CONNECTION,
+  // Legacy mappings (must come before spread to be overwritten by actual enum values)
   SIMILARITY_SEARCH_FAILED: VectorDbErrorType.SEARCH,
   VECTOR_CREATION_FAILED: VectorDbErrorType.VECTOR_OPERATION_FAILED,
   VECTOR_UPDATE_FAILED: VectorDbErrorType.VECTOR_OPERATION_FAILED,
   VECTOR_DELETION_FAILED: VectorDbErrorType.VECTOR_OPERATION_FAILED,
-  // Include all new enum values
+  // Include all new enum values (overwrites any conflicting legacy keys)
   ...VectorDbErrorType
 };
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo, memo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
@@ -27,13 +27,22 @@ interface ProjectGeneratorProps {
   autoStart?: boolean;
 }
 
-export function ProjectGenerator({ 
-  initialPrompt = '', 
+function ProjectGeneratorInner({
+  initialPrompt = '',
   onComplete,
-  autoStart = false 
+  autoStart = false
 }: ProjectGeneratorProps) {
   const [prompt, setPrompt] = useState(initialPrompt);
-  
+
+  // Memoize callbacks to prevent recreation
+  const handleComplete = useCallback((data: { workspaceId: string; projectName: string }) => {
+    onComplete?.(data);
+    // Auto-redirect to workspace on completion
+    setTimeout(() => {
+      window.location.href = `/workspace/${data.workspaceId}`;
+    }, 1500);
+  }, [onComplete]);
+
   const {
     isGenerating,
     progress,
@@ -41,23 +50,16 @@ export function ProjectGenerator({
     cancelGeneration,
     updateProgress
   } = useProjectGenerator({
-    // Set initial prompt if provided
-    onComplete: (data) => {
-      onComplete?.(data);
-      // Auto-redirect to workspace on completion
-      setTimeout(() => {
-        window.location.href = `/workspace/${data.workspaceId}`;
-      }, 1500);
-    },
-    onProgress: (data) => {
+    onComplete: handleComplete,
+    onProgress: () => {
       // Debug log removed
     },
-    onError: (error) => {
+    onError: () => {
       // Generation error handled
     }
   });
 
-  const handleGenerate = () => {
+  const handleGenerate = useCallback(() => {
     const trimmedPrompt = prompt.trim();
     if (!trimmedPrompt) {
       updateProgress({
@@ -67,7 +69,7 @@ export function ProjectGenerator({
       });
       return;
     }
-    
+
     // Start project generation with the current prompt
     generateProject(trimmedPrompt, {
       // Add any generation options here
@@ -79,12 +81,24 @@ export function ProjectGenerator({
         progress: 0,
       });
     });
-  };
+  }, [prompt, generateProject, updateProgress]);
+
+  // Memoize input change handler
+  const handleInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    setPrompt(e.target.value);
+  }, []);
+
+  // Memoize keydown handler
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleGenerate();
+    }
+  }, [handleGenerate]);
 
   // Auto-start generation if initialPrompt is provided and autoStart is true
   useEffect(() => {
     const shouldStart = autoStart && initialPrompt && !isGenerating && progress.status === 'idle';
-    
+
     if (shouldStart) {
       const trimmedPrompt = prompt.trim();
       if (trimmedPrompt) {
@@ -106,6 +120,21 @@ export function ProjectGenerator({
     }
   }, [autoStart, initialPrompt, isGenerating, progress.status, prompt, generateProject, updateProgress]);
 
+  // Memoize status icon
+  const currentStatusIcon = useMemo(() => {
+    return statusIcons[progress.status] || statusIcons.idle;
+  }, [progress.status]);
+
+  // Memoize whether to show progress section
+  const showProgress = useMemo(() => {
+    return isGenerating || progress.status !== 'idle';
+  }, [isGenerating, progress.status]);
+
+  // Memoize button disabled state
+  const isGenerateDisabled = useMemo(() => {
+    return isGenerating || !prompt.trim();
+  }, [isGenerating, prompt]);
+
   return (
     <div className="space-y-4 w-full max-w-2xl mx-auto">
       {!initialPrompt && (
@@ -121,16 +150,16 @@ export function ProjectGenerator({
             <input
               type="text"
               value={prompt}
-              onChange={(e) => setPrompt(e.target.value)}
+              onChange={handleInputChange}
               placeholder="A modern React dashboard with dark mode..."
               className="flex-1 px-4 py-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
               disabled={isGenerating}
-              onKeyDown={(e) => e.key === 'Enter' && handleGenerate()}
+              onKeyDown={handleKeyDown}
               data-testid="prompt-input"
             />
-            <Button 
+            <Button
               onClick={handleGenerate}
-              disabled={isGenerating || !prompt.trim()}
+              disabled={isGenerateDisabled}
               data-testid="generate-button"
             >
               {isGenerating ? 'Generating...' : 'Generate'}
@@ -139,12 +168,12 @@ export function ProjectGenerator({
         </div>
       )}
 
-      {(isGenerating || progress.status !== 'idle') && (
+      {showProgress && (
         <div className="space-y-4">
           <div className="space-y-2">
             <div className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
-                {statusIcons[progress.status] || statusIcons.idle}
+                {currentStatusIcon}
                 <span className="text-sm font-medium">
                   {progress.status.charAt(0).toUpperCase() + progress.status.slice(1)}
                 </span>
@@ -216,7 +245,7 @@ export function ProjectGenerator({
               </>
             ) : (
               <>
-                {statusIcons[progress.status] || statusIcons.idle}
+                {currentStatusIcon}
                 <AlertDescription>{progress.message}</AlertDescription>
               </>
             )}
@@ -239,3 +268,5 @@ export function ProjectGenerator({
     </div>
   );
 }
+
+export const ProjectGenerator = memo(ProjectGeneratorInner)

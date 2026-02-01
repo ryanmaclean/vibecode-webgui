@@ -1,9 +1,29 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger'
 
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
+
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     // Get authentication token with development bypass support
     let token = await getToken({ req: request })
@@ -20,7 +40,7 @@ export async function POST(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as any
+        } as unknown as typeof token
       }
     }
     
@@ -137,6 +157,23 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     // Get authentication token with development bypass support
     let token = await getToken({ req: request })
@@ -153,7 +190,7 @@ export async function GET(request: NextRequest) {
           role: testUserRole || 'developer',
           email: `test-${testUserId}@vibecode.dev`,
           name: `Test User ${testUserId}`
-        } as any
+        } as unknown as typeof token
       }
     }
     

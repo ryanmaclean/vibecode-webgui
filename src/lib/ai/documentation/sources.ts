@@ -95,7 +95,7 @@ export class DocumentationSources {
         
         // Debug log removed
       } catch (error) {
-        console.error(`Failed to load ${framework.name}:`, error.message);
+        console.error(`Failed to load ${framework.name}:`, error instanceof Error ? error.message : String(error));
       }
     }
   }
@@ -148,7 +148,7 @@ export class DocumentationSources {
       
       return true;
     } catch (error) {
-      console.error(`Failed to load from ${url}:`, error.message);
+      console.error(`Failed to load from ${url}:`, error instanceof Error ? error.message : String(error));
       return false;
     }
   }
@@ -171,7 +171,7 @@ export class DocumentationSources {
       
       return true;
     } catch (error) {
-      console.error(`Failed to load from file ${filePath}:`, error.message);
+      console.error(`Failed to load from file ${filePath}:`, error instanceof Error ? error.message : String(error));
       return false;
     }
   }

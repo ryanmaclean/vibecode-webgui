@@ -5,6 +5,9 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 
 export const dynamic = 'force-dynamic';
 
@@ -14,6 +17,7 @@ interface WebVitalMetric {
   rating: 'good' | 'needs-improvement' | 'poor';
   id: string;
   navigationType?: string;
+  timestamp?: number;
 }
 
 // In-memory storage for metrics (replace with database in production)
@@ -21,6 +25,23 @@ const metricsStore: WebVitalMetric[] = [];
 const MAX_METRICS = 10000; // Keep last 10k metrics
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const metric: WebVitalMetric = await request.json();
 
@@ -36,7 +57,7 @@ export async function POST(request: NextRequest) {
     metricsStore.push({
       ...metric,
       timestamp: Date.now()
-    } as any);
+    });
 
     // Keep only recent metrics
     if (metricsStore.length > MAX_METRICS) {
@@ -59,6 +80,23 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const { searchParams } = new URL(request.url);
     const metricName = searchParams.get('name');
@@ -74,7 +112,7 @@ export async function GET(request: NextRequest) {
     // Filter by time
     if (since) {
       const sinceTime = parseInt(since);
-      filteredMetrics = filteredMetrics.filter((m: any) => m.timestamp >= sinceTime);
+      filteredMetrics = filteredMetrics.filter((m) => (m.timestamp ?? 0) >= sinceTime);
     }
 
     // Calculate aggregates
@@ -94,7 +132,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-function calculateAggregates(metrics: WebVitalMetric[]) {
+interface MetricAggregate {
+  count: number;
+  min: number;
+  max: number;
+  avg: number;
+  p50: number;
+  p75: number;
+  p90: number;
+  p95: number;
+  p99: number;
+}
+
+function calculateAggregates(metrics: WebVitalMetric[]): Record<string, MetricAggregate> | null {
   if (metrics.length === 0) return null;
 
   const byName: Record<string, number[]> = {};
@@ -104,7 +154,7 @@ function calculateAggregates(metrics: WebVitalMetric[]) {
     byName[m.name].push(m.value);
   });
 
-  const aggregates: Record<string, any> = {};
+  const aggregates: Record<string, MetricAggregate> = {};
 
   Object.keys(byName).forEach(name => {
     const values = byName[name].sort((a, b) => a - b);

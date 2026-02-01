@@ -313,7 +313,7 @@ export class ToolRegistry {
     description: string
     category?: string
     tags?: string[]
-    metrics: ReturnType<typeof this.getMetrics>
+    metrics: ReturnType<ToolRegistry['getMetrics']>
   }> {
     return Array.from(this.tools.entries()).map(([name, tool]) => ({
       name,

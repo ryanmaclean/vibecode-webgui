@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useCallback, type ChangeEvent, type FormEvent } from 'react';
 import { useChat } from '@ai-sdk/react';
+import type { UIMessage, TextUIPart } from 'ai';
 import { z } from '@/lib/zod-compat';
 
 const chatInputSchema = z.object({
@@ -12,13 +13,26 @@ const chatInputSchema = z.object({
     .max(2000, 'Message is too long'),
 });
 
+/** Extract text content from UIMessage parts */
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is TextUIPart => part.type === 'text')
+    .map((part) => part.text)
+    .join('');
+}
+
 export default function GenerativeUIChat() {
-  const { messages, input, handleInputChange, handleSubmit: submitChat } = useChat({
-    api: '/api/chat',
+  const { messages, sendMessage } = useChat({
+    id: 'generative-ui-chat',
   });
+  const [input, setInput] = useState('');
   const [formError, setFormError] = useState<string | null>(null);
 
-  const handleSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value);
+  }, []);
+
+  const handleSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
     const validation = chatInputSchema.safeParse({ message: input });
@@ -29,16 +43,17 @@ export default function GenerativeUIChat() {
     }
 
     setFormError(null);
-    submitChat(event);
+    sendMessage({ text: input });
+    setInput('');
   };
 
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto py-12">
       <div className="space-y-4">
-        {messages.map(m => (
+        {messages.map((m) => (
           <div key={m.id} className="whitespace-pre-wrap">
             <strong className='capitalize'>{m.role === 'user' ? 'You: ' : 'AI: '}</strong>
-            {m.content}
+            {getMessageText(m)}
           </div>
         ))}
       </div>

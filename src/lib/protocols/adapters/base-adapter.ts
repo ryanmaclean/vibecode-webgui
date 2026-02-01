@@ -113,14 +113,17 @@ export abstract class BaseAgentAdapter {
 // Adapter Registry
 // ============================================================================
 
-export class AgentAdapterRegistry {
-  private static adapters = new Map<AgentAdapterType, typeof BaseAgentAdapter>();
+// Type for concrete adapter class constructors (not abstract)
+type ConcreteAdapterClass = new (config: AgentConfig) => BaseAgentAdapter;
 
-  static register(type: AgentAdapterType, adapter: typeof BaseAgentAdapter): void {
+export class AgentAdapterRegistry {
+  private static adapters = new Map<AgentAdapterType, ConcreteAdapterClass>();
+
+  static register(type: AgentAdapterType, adapter: ConcreteAdapterClass): void {
     this.adapters.set(type, adapter);
   }
 
-  static get(type: AgentAdapterType): typeof BaseAgentAdapter | undefined {
+  static get(type: AgentAdapterType): ConcreteAdapterClass | undefined {
     return this.adapters.get(type);
   }
 

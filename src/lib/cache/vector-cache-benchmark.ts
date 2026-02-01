@@ -204,7 +204,7 @@ export class VectorCacheBenchmark {
       
       // Run vector search
       const results = await PgVectorSearch.findSimilarCode(embedding, {
-        language: options.contentType,
+        contentTypes: options.contentType ? [options.contentType] : undefined,
         minSimilarity: options.minSimilarity,
         limit: options.limit,
         useCache: options.useCache

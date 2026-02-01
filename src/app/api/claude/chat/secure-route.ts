@@ -12,33 +12,26 @@ import path from 'path'
 import { getServerSession } from 'next-auth'
 import { getSecureClaudeCliInstance } from '@/lib/claude-cli-integration-secure'
 import type { SecureClaudeCliConfig } from '@/lib/claude-cli-integration-secure'
-import rateLimit from '@/lib/rate-limiting'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
-// Rate limiting: 20 requests per minute per user
-const rateLimiter = rateLimit({
-  windowMs: 60 * 1000, // 1 minute
-  max: 20,
-  keyGenerator: (req: NextRequest) => {
-    const session = req.headers.get('x-user-session')
-    return session || req.headers.get('x-forwarded-for')?.split(',')[0] || 'anonymous'
-  }
-})
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 export async function POST(request: NextRequest) {
   try {
-    // Apply rate limiting
-    const rateLimitResult = await rateLimiter(request)
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
     if (!rateLimitResult.success) {
       return NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          retryAfter: rateLimitResult.retryAfter
-        },
+        { error: 'Too many requests' },
         {
           status: 429,
           headers: {
-            'Retry-After': rateLimitResult.retryAfter?.toString() || '60'
-          }
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
         }
       )
     }
@@ -234,14 +227,15 @@ function validateAndSanitizeFiles(files: string[]): string[] {
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation with database
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
-  // Basic format validation
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -250,14 +244,26 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  // TODO: Database query
-  // const access = await db.query(
-  //   'SELECT role FROM user_workspaces WHERE user_id = $1 AND workspace_id = $2',
-  //   [userId, workspaceId]
-  // )
-  // return access.rows.length > 0
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
 
-  return true // Temporary for development
+    // If userId is not a valid number, deny access
+    // Passing 0 as userId would be a security issue - deny access instead
+    if (isNaN(userIdNum) || userIdNum <= 0) {
+      console.warn('Invalid numeric userId for workspace access check:', userId)
+      return false
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }
 
 export async function OPTIONS(_request: NextRequest) {

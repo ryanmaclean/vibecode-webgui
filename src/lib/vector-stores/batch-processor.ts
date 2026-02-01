@@ -97,7 +97,7 @@ export class VectorBatchProcessor {
     } catch (error) {
       console.error(`Batch ${queueKey} processing failed:`, error)
       // Call error callbacks
-      operations.forEach(op => op.callback({ error: error.message }))
+      operations.forEach(op => op.callback({ error: error instanceof Error ? error.message : String(error) }))
     }
   }
 
@@ -120,7 +120,7 @@ export class VectorBatchProcessor {
         const result = await this.batchStoreDocuments(documents)
         ops.forEach(op => op.callback(result))
       } catch (error) {
-        ops.forEach(op => op.callback({ error: error.message }))
+        ops.forEach(op => op.callback({ error: error instanceof Error ? error.message : String(error) }))
       }
     }
   }
@@ -135,7 +135,7 @@ export class VectorBatchProcessor {
         const result = await this.executeSearch(op.payload)
         op.callback(result)
       } catch (error) {
-        op.callback({ error: error.message })
+        op.callback({ error: error instanceof Error ? error.message : String(error) })
       }
     })
 
@@ -154,7 +154,7 @@ export class VectorBatchProcessor {
       const result = await this.batchDeleteDocuments({ fileIds, workspaceIds })
       operations.forEach(op => op.callback(result))
     } catch (error) {
-      operations.forEach(op => op.callback({ error: error.message }))
+      operations.forEach(op => op.callback({ error: error instanceof Error ? error.message : String(error) }))
     }
   }
 
@@ -187,8 +187,8 @@ export class VectorBatchProcessor {
   /**
    * Get batch processing statistics
    */
-  getStats(): Record<string, any> {
-    const stats = {}
+  getStats(): Record<string, { queueLength: number; oldestOperation: number }> {
+    const stats: Record<string, { queueLength: number; oldestOperation: number }> = {}
     for (const [key, queue] of this.queues.entries()) {
       stats[key] = {
         queueLength: queue.length,

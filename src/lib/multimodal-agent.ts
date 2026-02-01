@@ -264,7 +264,7 @@ export class MultimodalAgent {
 
     } catch (error) {
       this.logAgentActivity('multimodal_processing_error', {
-        error: error.message,
+        error: error instanceof Error ? error.message : String(error),
         processingTime: Date.now() - startTime
       });
       
@@ -707,13 +707,13 @@ Be encouraging, technically accurate, and provide working code examples.`;
    * Calculate cost based on tokens and model
    */
   private calculateCost(tokens: number, model: string): number {
-    const costs = {
+    const costs: Record<string, number> = {
       'anthropic/claude-3.5-sonnet': 0.015 / 1000,
       'anthropic/claude-3-haiku': 0.0025 / 1000,
       'openai/gpt-4o-mini': 0.0015 / 1000
     };
 
-    return tokens * (costs[model] || 0.01 / 1000);
+    return tokens * (costs[model] ?? 0.01 / 1000);
   }
 
   /**

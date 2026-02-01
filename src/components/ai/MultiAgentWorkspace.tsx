@@ -17,7 +17,7 @@
 
 'use client'
 
-import React, { useState, useCallback, useMemo } from 'react'
+import React, { useState, useCallback, useMemo, memo } from 'react'
 import {
   Layout,
   Grid,
@@ -35,6 +35,7 @@ import { Label } from '@/components/ui/label'
 import { cn } from '@/lib/utils'
 import { UnifiedAgentChat } from './UnifiedAgentChat'
 import type { AgentResponse } from '@/types/agent-api'
+import { AIErrorBoundary, CompactErrorBoundary } from '@/components/error/ErrorBoundary'
 
 // ============================================================================
 // Type Definitions
@@ -115,7 +116,29 @@ interface MetricsCardProps {
   className?: string
 }
 
-function MetricsCard({ metrics, className }: MetricsCardProps) {
+// Memoized Metric Row component
+const MetricRow = memo(function MetricRow({ metric }: { metric: AgentMetrics }) {
+  return (
+    <div
+      className="flex items-center justify-between text-xs p-2 rounded bg-muted/50"
+    >
+      <span className="font-medium truncate flex-1">
+        {metric.agentId}
+      </span>
+      <div className="flex items-center gap-3 text-muted-foreground">
+        <span>{metric.responseTime}ms</span>
+        <span>{metric.messageCount} msgs</span>
+        {metric.errorRate > 0 && (
+          <Badge variant="destructive" className="text-xs">
+            {(metric.errorRate * 100).toFixed(0)}% errors
+          </Badge>
+        )}
+      </div>
+    </div>
+  )
+})
+
+const MetricsCard = memo(function MetricsCard({ metrics, className }: MetricsCardProps) {
   // Calculate averages
   const avgResponseTime = useMemo(() => {
     if (metrics.length === 0) return 0
@@ -158,28 +181,12 @@ function MetricsCard({ metrics, className }: MetricsCardProps) {
       {/* Individual Agent Metrics */}
       <div className="space-y-2">
         {metrics.map((metric) => (
-          <div
-            key={metric.agentId}
-            className="flex items-center justify-between text-xs p-2 rounded bg-muted/50"
-          >
-            <span className="font-medium truncate flex-1">
-              {metric.agentId}
-            </span>
-            <div className="flex items-center gap-3 text-muted-foreground">
-              <span>{metric.responseTime}ms</span>
-              <span>{metric.messageCount} msgs</span>
-              {metric.errorRate > 0 && (
-                <Badge variant="destructive" className="text-xs">
-                  {(metric.errorRate * 100).toFixed(0)}% errors
-                </Badge>
-              )}
-            </div>
-          </div>
+          <MetricRow key={metric.agentId} metric={metric} />
         ))}
       </div>
     </Card>
   )
-}
+})
 
 // ============================================================================
 // Draggable Panel Component
@@ -196,7 +203,7 @@ interface DraggablePanelProps {
   onDragEnd: () => void
 }
 
-function DraggablePanel({
+const DraggablePanel = memo(function DraggablePanel({
   panel,
   layoutMode,
   contextSyncEnabled,
@@ -208,6 +215,36 @@ function DraggablePanel({
 }: DraggablePanelProps) {
   const [isDragging, setIsDragging] = useState(false)
 
+  // Memoize drag handlers
+  const handleDragStart = useCallback(() => {
+    setIsDragging(true)
+    onDragStart(panel.id)
+  }, [onDragStart, panel.id])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    onDragOver(panel.id)
+  }, [onDragOver, panel.id])
+
+  const handleDragEnd = useCallback(() => {
+    setIsDragging(false)
+    onDragEnd()
+  }, [onDragEnd])
+
+  const handleDrop = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+  }, [])
+
+  // Memoize expand handler
+  const handleExpand = useCallback(() => {
+    onExpand(panel.id)
+  }, [onExpand, panel.id])
+
+  // Memoize message send handler
+  const handleMessageSend = useCallback((msg: string) => {
+    onMessageSend(panel.agent.agent_id, msg)
+  }, [onMessageSend, panel.agent.agent_id])
+
   return (
     <div
       className={cn(
@@ -216,21 +253,10 @@ function DraggablePanel({
         isDragging && "opacity-50"
       )}
       draggable
-      onDragStart={() => {
-        setIsDragging(true)
-        onDragStart(panel.id)
-      }}
-      onDragOver={(e) => {
-        e.preventDefault()
-        onDragOver(panel.id)
-      }}
-      onDragEnd={() => {
-        setIsDragging(false)
-        onDragEnd()
-      }}
-      onDrop={(e) => {
-        e.preventDefault()
-      }}
+      onDragStart={handleDragStart}
+      onDragOver={handleDragOver}
+      onDragEnd={handleDragEnd}
+      onDrop={handleDrop}
     >
       {/* Drag Handle */}
       <div className="absolute top-2 right-2 z-10 flex items-center gap-1">
@@ -247,7 +273,7 @@ function DraggablePanel({
             variant="ghost"
             size="sm"
             className="h-6 w-6 p-0"
-            onClick={() => onExpand(panel.id)}
+            onClick={handleExpand}
             aria-label={panel.isExpanded ? "Minimize panel" : "Maximize panel"}
           >
             {panel.isExpanded ? (
@@ -269,22 +295,29 @@ function DraggablePanel({
         </div>
       )}
 
-      {/* Agent Chat */}
-      <UnifiedAgentChat
-        agent={panel.agent}
-        onMessageSend={(msg) => onMessageSend(panel.agent.agent_id, msg)}
-        enableMentions={layoutMode.maxAgents > 1}
-        className="h-full"
-      />
+      {/* Agent Chat with Error Boundary for individual agent panels */}
+      <CompactErrorBoundary
+        componentName={`AgentChat-${panel.agent.agent_id}`}
+        onError={(error) => {
+          console.error(`Agent ${panel.agent.agent_id} error:`, error)
+        }}
+      >
+        <UnifiedAgentChat
+          agent={panel.agent}
+          onMessageSend={handleMessageSend}
+          enableMentions={layoutMode.maxAgents > 1}
+          className="h-full"
+        />
+      </CompactErrorBoundary>
     </div>
   )
-}
+})
 
 // ============================================================================
 // Main Component
 // ============================================================================
 
-export function MultiAgentWorkspace({
+const MultiAgentWorkspaceContent = memo(function MultiAgentWorkspaceContent({
   agents,
   enableContextSync = false,
   showMetrics = false,
@@ -401,6 +434,16 @@ export function MultiAgentWorkspace({
     return panels.slice(0, layoutMode.maxAgents)
   }, [panels, layoutMode])
 
+  // Memoize layout mode change handler
+  const handleLayoutModeChange = useCallback((mode: LayoutMode) => {
+    setLayoutMode(mode)
+  }, [])
+
+  // Memoize metrics toggle handler
+  const handleMetricsToggle = useCallback(() => {
+    setShowMetricsView(prev => !prev)
+  }, [])
+
   return (
     <div className={cn("flex flex-col h-full gap-3", className)}>
       {/* Control Bar */}
@@ -414,7 +457,7 @@ export function MultiAgentWorkspace({
                 key={mode.id}
                 variant={layoutMode.id === mode.id ? "default" : "outline"}
                 size="sm"
-                onClick={() => setLayoutMode(mode)}
+                onClick={() => handleLayoutModeChange(mode)}
                 disabled={panels.length < mode.maxAgents && mode.id !== 'single'}
                 aria-label={`Switch to ${mode.name} layout`}
               >
@@ -454,7 +497,7 @@ export function MultiAgentWorkspace({
             <Button
               variant={showMetricsView ? "default" : "outline"}
               size="sm"
-              onClick={() => setShowMetricsView(!showMetricsView)}
+              onClick={handleMetricsToggle}
               aria-label="Toggle metrics view"
             >
               <BarChart className="h-4 w-4" aria-hidden="true" />
@@ -510,5 +553,22 @@ export function MultiAgentWorkspace({
         </div>
       )}
     </div>
+  )
+})
+
+/**
+ * MultiAgentWorkspace with Error Boundary
+ * Wraps the workspace with AI-specific error handling
+ */
+export function MultiAgentWorkspace(props: MultiAgentWorkspaceProps) {
+  return (
+    <AIErrorBoundary
+      componentName="MultiAgentWorkspace"
+      onError={(error, errorInfo) => {
+        console.error('MultiAgentWorkspace error:', error, errorInfo)
+      }}
+    >
+      <MultiAgentWorkspaceContent {...props} />
+    </AIErrorBoundary>
   )
 }

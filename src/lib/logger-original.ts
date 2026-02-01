@@ -8,7 +8,7 @@
  * - Includes metadata for monitoring/debugging
  */
 
-const isEdgeRuntime = typeof (globalThis as any).EdgeRuntime !== 'undefined';
+const isEdgeRuntime = typeof (globalThis as { EdgeRuntime?: unknown }).EdgeRuntime !== 'undefined';
 const isProduction = process.env.NODE_ENV === 'production';
 const logLevel = process.env.LOG_LEVEL || (isProduction ? 'info' : 'debug');
 
@@ -59,25 +59,28 @@ if (!isEdgeRuntime) {
     console.info = () => {};
   }
 
+  const toLogMessage = (message: unknown): string =>
+    typeof message === 'string' ? message : JSON.stringify(message);
+
   baseLogger = {
-    error: (message, metadata) => winstonLogger.error(message, metadata || {}),
-    warn: (message, metadata) => winstonLogger.warn(message, metadata || {}),
-    info: (message, metadata) => winstonLogger.info(message, metadata || {}),
-    debug: (message, metadata) => winstonLogger.debug(message, metadata || {}),
+    error: (message, metadata) => winstonLogger.error(toLogMessage(message), metadata || {}),
+    warn: (message, metadata) => winstonLogger.warn(toLogMessage(message), metadata || {}),
+    info: (message, metadata) => winstonLogger.info(toLogMessage(message), metadata || {}),
+    debug: (message, metadata) => winstonLogger.debug(toLogMessage(message), metadata || {}),
   };
 
   consoleImpl = (metadata: Record<string, unknown>) => ({
     error: (message: unknown, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.error(message, { ...metadata, ...additionalMeta });
+      winstonLogger.error(toLogMessage(message), { ...metadata, ...additionalMeta });
     },
     warn: (message: unknown, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.warn(message, { ...metadata, ...additionalMeta });
+      winstonLogger.warn(toLogMessage(message), { ...metadata, ...additionalMeta });
     },
     info: (message: unknown, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.info(message, { ...metadata, ...additionalMeta });
+      winstonLogger.info(toLogMessage(message), { ...metadata, ...additionalMeta });
     },
     debug: (message: unknown, additionalMeta?: Record<string, unknown>) => {
-      winstonLogger.debug(message, { ...metadata, ...additionalMeta });
+      winstonLogger.debug(toLogMessage(message), { ...metadata, ...additionalMeta });
     },
   });
 } else {
@@ -88,7 +91,8 @@ if (!isEdgeRuntime) {
   ) => {
     const payload = metadata && Object.keys(metadata).length > 0 ? { metadata } : undefined;
     const logArgs = [message, payload].filter(Boolean);
-    (console[level] ?? console.log).apply(console, logArgs as [unknown, ...unknown[]]);
+    const globalConsole = globalThis.console as unknown as Record<string, (...args: unknown[]) => void>;
+    (globalConsole[level] ?? globalConsole.log).apply(globalConsole, logArgs);
   };
 
   baseLogger = {

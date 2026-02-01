@@ -5,9 +5,9 @@
  */
 
 // Re-export everything from the main implementation
+// Use 'export type' for interfaces/types to satisfy isolatedModules
+export type { EmbeddingService, EmbeddingServiceConfig } from './ai/embedding-service';
 export {
-  EmbeddingService,
-  EmbeddingServiceConfig,
   EmbeddingServiceFactory,
   BaseEmbeddingService,
   MockEmbeddingService

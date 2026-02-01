@@ -211,7 +211,7 @@ export class VectorShardingManager {
       this.addShard(shard);
     }
     
-    this.console.info(`Initialized sharding manager with ${defaultShards.length} shards`);
+    console.info(`Initialized sharding manager with ${defaultShards.length} shards`);
   }
   
   /**
@@ -220,7 +220,7 @@ export class VectorShardingManager {
   public addShard(shard: ShardInfo): void {
     this.shardMap.set(shard.id, shard);
     this.consistentHashRing.addShard(shard);
-    this.console.info(`Added shard ${shard.id} to sharding manager`);
+    console.info(`Added shard ${shard.id} to sharding manager`);
   }
   
   /**
@@ -231,7 +231,7 @@ export class VectorShardingManager {
     if (shard) {
       this.shardMap.delete(shardId);
       this.consistentHashRing.removeShard(shardId);
-      this.console.info(`Removed shard ${shardId} from sharding manager`);
+      console.info(`Removed shard ${shardId} from sharding manager`);
     }
   }
   
@@ -374,10 +374,16 @@ export class VectorShardingManager {
       });
       
       // Race query vs timeout
-      const results = await Promise.race([resultPromise, timeoutPromise]) as any[];
-      
-      // Process results
-      const matches = results.map(row => ({
+      const results = await Promise.race([resultPromise, timeoutPromise]);
+
+      // Process results - assert as array of query results
+      const queryResults = results as Array<{
+        id: string;
+        similarity: number;
+        metadata?: Record<string, unknown>;
+        document?: string;
+      }>;
+      const matches = queryResults.map(row => ({
         id: row.id,
         similarity: row.similarity,
         metadata: row.metadata || {},
@@ -392,7 +398,7 @@ export class VectorShardingManager {
       const endTime = Date.now();
       const latency = endTime - startTime;
       
-      this.console.error(`Error executing query on shard ${shard.id}: ${(error as Error).message}`);
+      console.error(`Error executing query on shard ${shard.id}: ${(error as Error).message}`);
       
       return { 
         results: [], 
@@ -460,7 +466,7 @@ export class VectorShardingManager {
       const targetShards = this.determineTargetShards(query);
       
       if (targetShards.length === 0) {
-        this.console.warn('No active shards available for query');
+        console.warn('No active shards available for query');
         return {
           results: [],
           stats: {
@@ -509,7 +515,7 @@ export class VectorShardingManager {
       
       return result;
     } catch (error) {
-      this.console.error(`Error executing sharded query: ${(error as Error).message}`);
+      console.error(`Error executing sharded query: ${(error as Error).message}`);
       
       const endTime = Date.now();
       const totalTime = endTime - startTime;

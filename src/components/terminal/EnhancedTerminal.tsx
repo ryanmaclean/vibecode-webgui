@@ -10,7 +10,7 @@ import { Terminal } from '@xterm/xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import {
   PlayIcon,
-  SquareIcon,
+  StopIcon,
   ArrowPathIcon,
   MagnifyingGlassIcon,
   CommandLineIcon,
@@ -38,12 +38,16 @@ interface CommandSuggestion {
 }
 
 interface EnhancedTerminalProps {
-  workspaceId?: number;
+  workspaceId?: string | number;
   projectId?: string;
   onCommandExecute?: (command: string, output: string) => void;
   onAISuggestion?: (suggestion: string) => void;
   className?: string;
   initialCommand?: string;
+  theme?: 'dark' | 'light';
+  enableAI?: boolean;
+  enableWebGL?: boolean;
+  onReady?: (terminal: unknown) => void;
 }
 
 export function EnhancedTerminal({
@@ -95,7 +99,7 @@ export function EnhancedTerminal({
         background: '#1f2937',
         foreground: '#f9fafb',
         cursor: '#fbbf24',
-        selection: '#374151',
+        selectionBackground: '#374151',
         black: '#1f2937',
         red: '#ef4444',
         green: '#10b981',
@@ -623,3 +627,5 @@ export function EnhancedTerminal({
     </div>
   );
 }
+
+export default EnhancedTerminal;

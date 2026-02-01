@@ -66,8 +66,8 @@ const templateFormSchema = z.object({
   framework: z.string().trim().min(2, 'Select a framework'),
   complexity: z.enum(['beginner', 'intermediate', 'advanced']),
   tags: z.array(z.string().trim().min(1)).max(20).default([]),
-  dependencies: z.record(z.string().trim().min(1)).default({}),
-  scripts: z.record(z.string().trim().min(1)).default({}),
+  dependencies: z.record(z.string(), z.string().trim().min(1)).default({}),
+  scripts: z.record(z.string(), z.string().trim().min(1)).default({}),
   envVars: z
     .array(
       z.object({
@@ -216,7 +216,7 @@ export function TemplateSubmissionForm({
     });
 
     try {
-      await onSubmit?.(validation.data);
+      await onSubmit?.(validation.data as TemplateFormData);
 
       setSubmissionStatus({
         status: 'success',
@@ -376,7 +376,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => updateFormData({ category: e.target.value as any })}
+                onChange={(e) => updateFormData({ category: e.target.value as TemplateFormData['category'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {categories.map(cat => (
@@ -427,7 +427,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.complexity}
-                onChange={(e) => updateFormData({ complexity: e.target.value as any })}
+                onChange={(e) => updateFormData({ complexity: e.target.value as TemplateFormData['complexity'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="beginner">Beginner</option>

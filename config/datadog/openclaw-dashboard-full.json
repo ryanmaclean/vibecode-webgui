@@ -1,0 +1,51 @@
+{
+  "title": "OpenClaw VM Monitoring Dashboard",
+  "description": "Complete monitoring for OpenClaw in VM",
+  "widgets": [
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Gateway Requests per Second",
+        "requests": [{
+          "q": "avg:openclaw.gateway.requests_per_second{*}"
+        }]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "Gateway Health Status",
+        "requests": [{
+          "q": "avg:openclaw.gateway.health{*}"
+        }]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "VM CPU Usage",
+        "requests": [{
+          "q": "avg:system.cpu.user{host:openclaw-vm}"
+        }]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "VM Memory Usage",
+        "requests": [{
+          "q": "avg:system.mem.used{host:openclaw-vm}"
+        }]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Tailscale Connectivity",
+        "requests": [{
+          "q": "avg:tailscale.connected{host:openclaw-vm}"
+        }]
+      }
+    }
+  ]
+}

@@ -109,7 +109,7 @@ function buildGeneratedProject(
     description: customizations.description ?? template.description,
     templateId: template.id,
     templateName: template.name,
-    category: (template as Record<string, unknown>).category as string | undefined,
+    category: (template as unknown as Record<string, unknown>).category as string | undefined,
     files: toGeneratedFiles(template),
     dependencies: { ...template.dependencies },
     devDependencies: { ...(template.devDependencies ?? {}) },

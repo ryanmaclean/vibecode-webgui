@@ -75,7 +75,9 @@ export class QueryOptimizer {
     // Implement LRU eviction if cache is getting too large
     if (this.queryCache.size >= QueryOptimizations.MAX_CACHE_SIZE) {
       const firstKey = this.queryCache.keys().next().value;
-      this.queryCache.delete(firstKey);
+      if (firstKey !== undefined) {
+        this.queryCache.delete(firstKey);
+      }
     }
 
     this.queryCache.set(cacheKey, {
@@ -114,7 +116,7 @@ export class QueryOptimizer {
         return 30 * 60 * 1000; // 30 minutes
       case CacheTTL.LONG:
         return 2 * 60 * 60 * 1000; // 2 hours
-      case CacheTTL.EXTENDED:
+      case CacheTTL.VERY_LONG:
         return 24 * 60 * 60 * 1000; // 24 hours
       default:
         return 30 * 60 * 1000; // Default to medium
@@ -183,11 +185,10 @@ export class QueryOptimizer {
     }
 
     // Process batches in parallel for better performance
-    const promises = batches.map(batch => processor(batch));
-    await Promise.allSettled(promises);
+    const results = await Promise.allSettled(batches.map(batch => processor(batch)));
 
     // Log any failed batches for investigation
-    const failures = promises.filter(p => p.status === 'rejected');
+    const failures = results.filter(p => p.status === 'rejected');
     if (failures.length > 0) {
       console.warn(`${failures.length} out of ${batches.length} batches failed during processing`);
     }

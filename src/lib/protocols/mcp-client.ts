@@ -312,7 +312,7 @@ export class MCPClient extends EventEmitter {
         reject(new Error(`Request timeout: ${method}`));
       }, this.config.timeout);
 
-      this.pendingRequests.set(id, { resolve, reject, timeout });
+      this.pendingRequests.set(id, { resolve: resolve as (value: unknown) => void, reject, timeout });
 
       if (this.config.transport === 'websocket') {
         this.ws?.send(JSON.stringify(request));

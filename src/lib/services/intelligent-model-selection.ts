@@ -457,7 +457,7 @@ class IntelligentModelSelectionService {
 
     // Cost filtering
     if (preferences?.maxCostTier) {
-      const costOrder = { free: 0, low: 1, medium: 2, high: 3 }
+      const costOrder: Record<string, number> = { free: 0, low: 1, medium: 2, high: 3 }
       const maxCost = costOrder[preferences.maxCostTier]
       const modelCost = costOrder[model.costTier]
       if (modelCost > maxCost) score -= 50

@@ -3,8 +3,23 @@
  * This file contains provider-specific error patterns to enhance error categorization accuracy
  */
 
-// Import VectorDBErrorType from the original file to avoid circular dependency
-import { VectorDBErrorType } from './vector-db-error-handler';
+// Import VectorDbErrorType from the new handler which has more complete error types
+import { VectorDbErrorType, VectorDBErrorType } from './vector-db-error-handler-new';
+
+/**
+ * Generic error object interface for type-safe error handling
+ */
+interface GenericError {
+  message?: string;
+  code?: string | number;
+  name?: string;
+  status?: number;
+  statusCode?: number;
+  sqlState?: string;
+  body?: {
+    code?: string;
+  };
+}
 
 /**
  * Interface for database-specific error patterns
@@ -19,11 +34,11 @@ export interface DbErrorPattern {
   // Name patterns
   names?: string[];
   // Error types
-  types?: VectorDBErrorType[];
+  types?: VectorDbErrorType[];
   // SQLSTATE codes (for SQL databases)
   sqlStates?: string[];
   // Additional condition function for complex cases
-  condition?: (error: any) => boolean;
+  condition?: (error: unknown) => boolean;
 }
 
 /**
@@ -59,13 +74,14 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
         'operator does not exist: vector',
         'type "vector" does not exist'
       ],
-      condition: (error: any) => {
-        const message = (error?.message || '').toLowerCase();
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = (err?.message || '').toLowerCase();
         return (
-          message.includes('vector') && 
+          message.includes('vector') &&
           (
             message.includes('shared_preload_libraries') ||
-            message.includes('extension') || 
+            message.includes('extension') ||
             message.includes('serverparametertocmsunallowedparametervalue')
           )
         );
@@ -157,10 +173,11 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     // Vector extension errors
     vectorExtension: {
       messages: ['vector', 'extension not installed', 'pgvector'],
-      condition: (error: any) => {
-        const message = error?.message?.toLowerCase() || '';
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') && 
+          message.includes('vector') &&
           (message.includes('extension') || message.includes('type') || message.includes('operator'))
         );
       },
@@ -211,12 +228,13 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     // Vector search errors
     vectorSearch: {
       messages: ['vector', 'index', 'similarity', 'cannot find vector'],
-      condition: (error: any) => {
-        const message = error?.message?.toLowerCase() || '';
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') || 
-          message.includes('index') || 
-          message.includes('search') || 
+          message.includes('vector') ||
+          message.includes('index') ||
+          message.includes('search') ||
           message.includes('distance')
         );
       },
@@ -310,12 +328,13 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     query: {
       statusCodes: [400],
       messages: ['query', 'syntax', 'invalid', 'bad request', 'malformed'],
-      condition: (error: any) => {
-        const message = error?.message?.toLowerCase() || '';
-        const bodyCode = error?.body?.code?.toLowerCase() || '';
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
+        const bodyCode = err?.body?.code?.toLowerCase() || '';
         return (
-          message.includes('query') || 
-          bodyCode.includes('badrequest') || 
+          message.includes('query') ||
+          bodyCode.includes('badrequest') ||
           bodyCode.includes('invalidsyntax')
         );
       },
@@ -334,13 +353,14 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
     rateLimiting: {
       statusCodes: [429],
       messages: ['too many requests', 'rate limit', 'throttled', 'throughput'],
-      condition: (error: any) => {
-        const message = error?.message?.toLowerCase() || '';
-        const bodyCode = error?.body?.code?.toLowerCase() || '';
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
+        const bodyCode = err?.body?.code?.toLowerCase() || '';
         return (
-          message.includes('rate') || 
-          message.includes('throughput') || 
-          bodyCode.includes('throttling') || 
+          message.includes('rate') ||
+          message.includes('throughput') ||
+          bodyCode.includes('throttling') ||
           bodyCode.includes('requestratetoolarge')
         );
       },
@@ -460,12 +480,13 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
         'vector', 'embedding', 'dimension', 'vectorization',
         'semantic configuration', 'similarity'
       ],
-      condition: (error: any) => {
-        const message = error?.message?.toLowerCase() || '';
+      condition: (error: unknown) => {
+        const err = error as GenericError | null;
+        const message = err?.message?.toLowerCase() || '';
         return (
-          message.includes('vector') || 
-          message.includes('embedding') || 
-          message.includes('dimension') || 
+          message.includes('vector') ||
+          message.includes('embedding') ||
+          message.includes('dimension') ||
           message.includes('semantic')
         );
       },
@@ -495,21 +516,22 @@ export const DB_ERROR_PATTERNS: Record<string, Record<string, DbErrorPattern>> =
  * @param provider The database provider name (postgres, redis, etc.)
  * @returns The appropriate VectorDBErrorType
  */
-export function categorizeErrorWithProvider(error: any, provider: string): VectorDBErrorType {
+export function categorizeErrorWithProvider(error: unknown, provider: string): VectorDbErrorType {
   if (!error) {
     return VectorDBErrorType.UNKNOWN_ERROR;
   }
 
-  const rawMessage = (error as any)?.message;
+  const err = error as GenericError;
+  const rawMessage = err?.message;
   const message = String(rawMessage ?? '').toLowerCase();
-  const code = String((error as any)?.code ?? '');
-  const name = String((error as any)?.name ?? '').toLowerCase();
-  const status = (error as any)?.status ?? (error as any)?.statusCode ?? 0;
-  const numericCode = Number.isFinite((error as any)?.code) ? Number((error as any)?.code) : (
-    Number.isFinite((error as any)?.statusCode) ? Number((error as any)?.statusCode) : NaN
+  const code = String(err?.code ?? '');
+  const name = String(err?.name ?? '').toLowerCase();
+  const status = err?.status ?? err?.statusCode ?? 0;
+  const numericCode = Number.isFinite(err?.code) ? Number(err?.code) : (
+    Number.isFinite(err?.statusCode) ? Number(err?.statusCode) : NaN
   );
-  const sqlState = (error as any)?.sqlState ?? '';
-  const bodyCode = String((error as any)?.body?.code ?? '').toLowerCase();
+  const sqlState = err?.sqlState ?? '';
+  const bodyCode = String(err?.body?.code ?? '').toLowerCase();
 
   // Simple provider heuristics before pattern matching
   if (provider === 'cosmosdb') {
@@ -576,7 +598,7 @@ export function categorizeErrorWithProvider(error: any, provider: string): Vecto
  * @param provider The database provider name
  * @returns Boolean indicating if the error is retryable
  */
-export function isRetryableWithProvider(error: any, provider: string): boolean {
+export function isRetryableWithProvider(error: unknown, provider: string): boolean {
   if (!error) {
     return false;
   }
@@ -592,12 +614,14 @@ export function isRetryableWithProvider(error: any, provider: string): boolean {
     return true;
   }
 
+  const err = error as GenericError;
+
   // Provider-specific retry logic
   if (provider === 'postgres' || provider === 'sqlserver') {
     // Check for deadlock errors which are retryable
-    const message = (error?.message || '').toLowerCase();
-    const code = (error?.code || '').toString();
-    
+    const message = (err?.message || '').toLowerCase();
+    const code = (err?.code || '').toString();
+
     if (
       message.includes('deadlock') ||
       code === '1205' || // SQL Server deadlock
@@ -610,7 +634,7 @@ export function isRetryableWithProvider(error: any, provider: string): boolean {
 
   if (provider === 'cosmosdb' || provider === 'cognitive-search') {
     // Rate limiting errors are retryable
-    const status = error?.status || error?.statusCode || 0;
+    const status = err?.status || err?.statusCode || 0;
     if (status === 429) {
       return true;
     }

@@ -180,7 +180,7 @@ export function GitHubDeploymentWorkflow({
       // Step 3: Add GitHub Actions workflow
       updateStepStatus('workflow', 'in-progress', 'Setting up CI/CD...')
       const workflowContent = generateGitHubActionsWorkflow(
-        project.category,
+        project.category ?? 'general',
         detectProjectLanguage(project),
         detectFramework(project)
       )

@@ -5,8 +5,9 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useChat } from '@ai-sdk/react'
+import type { UIMessage, TextUIPart } from 'ai'
 import { useAuth } from '@/hooks/useAuth'
 import { z } from '@/lib/zod-compat'
 
@@ -32,6 +33,14 @@ const chatInputSchema = z.object({
     .max(4000, 'Message is too long'),
 })
 
+/** Extract text content from UIMessage parts */
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is TextUIPart => part.type === 'text')
+    .map((part) => part.text)
+    .join('')
+}
+
 export default function CodeAssistant({
   workspaceId,
   visible,
@@ -41,23 +50,17 @@ export default function CodeAssistant({
   const { user } = useAuth()
   const [codeContext, setCodeContext] = useState<CodeContext>({})
   const [isMinimized, setIsMinimized] = useState(false)
+  const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const formRef = useRef<HTMLFormElement>(null)
 
-  const {
-    messages,
-    input,
-    handleInputChange,
-    handleSubmit: submitChat,
-    isLoading,
-    error,
-  } = useChat({
-    api: '/api/ai/chat',
-    initialMessages: [
+  const welcomeMessage: UIMessage = {
+    id: 'welcome',
+    role: 'assistant',
+    parts: [
       {
-        id: 'welcome',
-        role: 'assistant',
-        content: `Hello! I'm your AI coding assistant for workspace ${workspaceId}. I can help you with:
+        type: 'text',
+        text: `Hello! I'm your AI coding assistant for workspace ${workspaceId}. I can help you with:
 
 • Code explanations and debugging
 • Code generation and completion
@@ -68,15 +71,26 @@ export default function CodeAssistant({
 Feel free to share your code or ask any development questions!`,
       },
     ],
-    body: {
-      workspaceId,
-      userId: user?.id,
-      codeContext,
-    },
+  }
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+  } = useChat({
+    id: `code-assistant-${workspaceId}`,
+    messages: [welcomeMessage],
   })
+
+  const isLoading = status === 'streaming' || status === 'submitted'
   const [inputError, setInputError] = useState<string | null>(null)
 
-  const handleFormSubmit = (event: React.FormEvent<HTMLFormElement>) => {
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }, [])
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
 
     const validation = chatInputSchema.safeParse({ message: input })
@@ -87,7 +101,8 @@ Feel free to share your code or ask any development questions!`,
     }
 
     setInputError(null)
-    submitChat(event)
+    sendMessage({ text: input })
+    setInput('')
   }
 
   // Auto-scroll to bottom of messages
@@ -135,15 +150,8 @@ Feel free to share your code or ask any development questions!`,
         return
     }
 
-    // Update input value and submit
-    handleInputChange({ target: { value: prompt } } as React.ChangeEvent<HTMLInputElement>)
-
-    // Use a timeout to ensure the input value is updated before submission
-    setTimeout(() => {
-      if (formRef.current) {
-        formRef.current.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }))
-      }
-    }, 100)
+    // Send the quick action prompt directly
+    sendMessage({ text: prompt })
   }
 
   if (!visible) return null
@@ -225,7 +233,7 @@ Feel free to share your code or ask any development questions!`,
 
           {/* Messages */}
           <div className="h-64 overflow-y-auto p-4 space-y-3">
-            {messages.map((message: { id: string; role: string; content: string }) => (
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -238,7 +246,7 @@ Feel free to share your code or ask any development questions!`,
                   }`}
                 >
                   <div className="whitespace-pre-wrap break-words">
-                    {message.content}
+                    {getMessageText(message)}
                   </div>
                 </div>
               </div>

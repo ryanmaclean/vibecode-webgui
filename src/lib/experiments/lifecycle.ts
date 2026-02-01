@@ -10,7 +10,7 @@
  *                   running    completed
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ExperimentStatus as PrismaExperimentStatus } from '@prisma/client';
 import { logger, appLogger } from '@/lib/server-monitoring';
 
 const prisma = new PrismaClient();
@@ -173,12 +173,13 @@ export async function transitionStatus(
       }
     }
 
-    // Update experiment status
+    // Update experiment status - convert lowercase status to Prisma enum
+    const prismaStatus = newStatus.toUpperCase() as PrismaExperimentStatus;
     await prisma.experiment.update({
       where: { key: experimentKey },
       data: {
-        status: newStatus,
-        updated_at: new Date()
+        status: prismaStatus,
+        updatedAt: new Date()
       }
     });
 

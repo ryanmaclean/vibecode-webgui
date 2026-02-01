@@ -25,7 +25,7 @@ import { getExperimentByKey, generateTimeSeriesData } from '@/lib/experiments/mo
 export default function ExperimentDetailPage() {
   const params = useParams()
   const router = useRouter()
-  const experimentKey = params.key as string
+  const experimentKey = params?.key as string
   const experiment = getExperimentByKey(experimentKey)
 
   if (!experiment) {
@@ -396,7 +396,14 @@ export default function ExperimentDetailPage() {
             </Card>
 
             <GuardrailConfig
-              guardrails={experiment.config.metrics.guardrails}
+              guardrails={experiment.config.metrics.guardrails.map(g => ({
+                metricName: g.metricName,
+                operator: g.operator === 'gt' ? '>' : g.operator === 'lt' ? '<' : g.operator === 'gte' ? '>=' : '<=' as const,
+                threshold: g.threshold,
+                severity: 'warning' as const
+              }))}
+              onChange={() => {}}
+              metricOptions={[...experiment.config.metrics.primary, ...experiment.config.metrics.secondary]}
               readOnly={experiment.status !== 'draft'}
             />
           </TabsContent>

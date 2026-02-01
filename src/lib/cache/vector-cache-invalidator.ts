@@ -37,7 +37,7 @@ export class VectorCacheInvalidator {
     table: 'rag_chunks' | 'ai_embeddings',
     contentType?: string
   ): Promise<number> {
-    const pattern = contentType ? `${table}:${contentType}` : table;
-    return await VectorCacheManager.clearCache(pattern);
+    // Use invalidateForTable method which exists on VectorCacheManager
+    return await VectorCacheManager.invalidateForTable(table, contentType);
   }
 }

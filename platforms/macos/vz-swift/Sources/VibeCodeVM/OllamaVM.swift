@@ -64,14 +64,12 @@ class OllamaVMConfiguration {
         
         config.storageDevices = storageDevices
         
-        // Network - NAT with proper MAC address
+        // Network - NAT (no MAC address set, let Apple auto-generate)
         let networkDevice = VZVirtioNetworkDeviceConfiguration()
-        let macAddress = VZMACAddress.randomLocallyAdministered()
-        networkDevice.macAddress = macAddress
         networkDevice.attachment = VZNATNetworkDeviceAttachment()
         config.networkDevices = [networkDevice]
         
-        print("📡 Network configured: MAC \(macAddress.string)")
+        print("📡 Network configured: NAT (auto MAC)")
         
         // Serial Console for installation
         let serialConfig = VZVirtioConsoleDeviceSerialPortConfiguration()

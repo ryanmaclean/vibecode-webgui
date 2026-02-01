@@ -269,8 +269,8 @@ export function AgentSidebar({
               'bg-neutral-100 dark:bg-neutral-800 ring-2 ring-inset'
           )}
           style={{
-            ringColor: selectedAgent.id === agent.id ? agent.color : 'transparent',
-          }}
+            '--tw-ring-color': selectedAgent.id === agent.id ? agent.color : 'transparent',
+          } as React.CSSProperties}
           aria-current={selectedAgent.id === agent.id ? 'page' : undefined}
         >
           <div

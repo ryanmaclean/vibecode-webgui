@@ -480,7 +480,8 @@ async function executeTrafficRamp(
   experimentKey: string,
   metadata?: Record<string, unknown>
 ): Promise<void> {
-  const { targetPercentage, variantKey } = metadata || {};
+  const { targetPercentage: rawTargetPercentage, variantKey } = metadata || {};
+  const targetPercentage = typeof rawTargetPercentage === 'number' ? rawTargetPercentage : 0;
 
   logger.info('Executing traffic ramp', {
     experimentKey,

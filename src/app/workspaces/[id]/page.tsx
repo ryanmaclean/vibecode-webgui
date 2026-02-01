@@ -10,7 +10,7 @@ import { useState, useEffect, useRef } from 'react'
 // import { logger } from '@/lib/logger';
 export default function WorkspacePage() {
   const params = useParams()
-  const workspaceId = params.id as string
+  const workspaceId = params?.id as string
   const [aiChatOpen, setAiChatOpen] = useState(false)
   const buttonRef = useRef<HTMLButtonElement>(null)
   

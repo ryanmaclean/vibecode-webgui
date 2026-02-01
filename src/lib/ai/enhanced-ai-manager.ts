@@ -154,7 +154,7 @@ export class EnhancedAIManager {
       const results = await this.multiAgentWorkflow.executeWorkflow(request);
 
       const totalDuration = Date.now() - startTime;
-      const modelsUsed = [...new Set(results.map((r: WorkflowResult) => r.metadata.model))];
+      const modelsUsed: string[] = Array.from(new Set(results.map((r: WorkflowResult) => r.metadata.model)));
 
       return {
         success: true,

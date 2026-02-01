@@ -228,18 +228,31 @@ export class NativeVMProvider implements VMProvider {
       await this.sendRequest(proc, 'vm.stop', { vmId });
 
       // Wait for graceful shutdown
-      await new Promise<void>((resolve) => {
+      const timedOut = await new Promise<boolean>((resolve) => {
+        let resolved = false;
         const timeout = setTimeout(() => {
-          // Force kill if doesn't stop gracefully
-          proc.kill('SIGTERM');
-          resolve();
+          if (!resolved) {
+            resolved = true;
+            resolve(true);
+          }
         }, 10000);
 
         proc.once('exit', () => {
-          clearTimeout(timeout);
-          resolve();
+          if (!resolved) {
+            resolved = true;
+            clearTimeout(timeout);
+            resolve(false);
+          }
         });
       });
+
+      if (timedOut) {
+        // Force kill if doesn't stop gracefully
+        logger.error('Failed to stop VM gracefully, forcing', { vmId });
+        proc.kill('SIGKILL');
+        this.processes.delete(vmId);
+        throw new Error(`VM ${vmId} failed to stop gracefully, forced kill`);
+      }
 
       this.processes.delete(vmId);
     } catch (error) {
@@ -335,11 +348,11 @@ export class NativeVMProvider implements VMProvider {
         stderr: result.stderr || '',
         duration: Date.now() - startTime
       };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         exitCode: 1,
         stdout: '',
-        stderr: error.message,
+        stderr: error instanceof Error ? error.message : 'Unknown error',
         duration: Date.now() - startTime
       };
     }

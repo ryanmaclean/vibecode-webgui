@@ -532,5 +532,3 @@ class MonitoringDashboardService {
 // Export singleton instance
 export const monitoringDashboard = new MonitoringDashboardService()
 
-// Export types
-export type { DashboardWidget, MonitoringDashboard }

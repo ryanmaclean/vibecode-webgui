@@ -7,7 +7,39 @@
 import { BaseAgentAdapter, AgentCapabilities, AgentSession, AgentResult } from './base-adapter';
 import { createAgentAPIClient } from '../agentapi-client';
 import type { AgentConfig } from './base-adapter';
+import type { ModelType } from '@/types/agent-api';
 // import { logger } from '@/lib/logger';
+
+/**
+ * Type guard to check if a status string is a valid AgentSession status
+ */
+function isValidSessionStatus(status: string): status is AgentSession['status'] {
+  return ['running', 'completed', 'failed', 'stopped'].includes(status);
+}
+
+/**
+ * Type guard to check if a model string is a valid ModelType
+ */
+function isValidModelType(model: string): model is ModelType {
+  return [
+    'claude-3-5-sonnet-20241022',
+    'claude-3-5-haiku-20241022',
+    'gpt-4o',
+    'gpt-4o-mini',
+    'deepseek-chat',
+  ].includes(model);
+}
+
+/**
+ * Get a valid model type, defaulting to claude-3-5-sonnet if invalid
+ */
+function getValidModel(model: string | undefined): ModelType {
+  if (model && isValidModelType(model)) {
+    return model;
+  }
+  return 'claude-3-5-sonnet-20241022';
+}
+
 export class ClineAdapter extends BaseAgentAdapter {
   private agentId: string | null = null;
   private eventSource: EventSource | null = null;
@@ -43,7 +75,7 @@ export class ClineAdapter extends BaseAgentAdapter {
       agent_type: 'cline',
       workspace: this.config.workspace,
       files: this.config.files,
-      model: (this.config.model || 'claude-3-5-sonnet-20241022') as any,
+      model: getValidModel(this.config.model),
       task,
     });
 
@@ -114,8 +146,8 @@ export class ClineAdapter extends BaseAgentAdapter {
           console.info(`[Cline] ${data.line}`);
         },
         onStatus: (data) => {
-          if (this.session) {
-            this.session.status = data.status as any;
+          if (this.session && isValidSessionStatus(data.status)) {
+            this.session.status = data.status;
           }
         },
         onError: (data) => {

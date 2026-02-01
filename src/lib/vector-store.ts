@@ -10,9 +10,34 @@ import { PgVectorSearch } from './cache/pgvector-search'
 import { EmbeddingServiceFactory, EmbeddingServiceType } from './ai/embeddingServiceFactory'
 
 // Check if we're in build mode
-const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' || 
+const isBuilding = process.env.NEXT_PHASE === 'phase-production-build' ||
                   process.argv.includes('build') ||
                   process.env.BUILDING === 'true'
+
+/**
+ * Generate a local hash-based embedding for text content.
+ * This is a fallback when no external embedding service is available.
+ */
+function generateLocalEmbedding(text: string, dimensions: number): number[] {
+  const embedding = new Array(dimensions).fill(0);
+
+  // Simple hash-based embedding using character codes
+  for (let i = 0; i < text.length; i++) {
+    const charCode = text.charCodeAt(i);
+    const index = (charCode + i) % dimensions;
+    embedding[index] += charCode / 256;
+  }
+
+  // Normalize the embedding
+  const magnitude = Math.sqrt(embedding.reduce((sum, val) => sum + val * val, 0));
+  if (magnitude > 0) {
+    for (let i = 0; i < dimensions; i++) {
+      embedding[i] /= magnitude;
+    }
+  }
+
+  return embedding;
+}
 
 interface VectorChunk {
   id: string

@@ -155,8 +155,6 @@ export class ConnectionPoolMonitor extends EventEmitter {
       return;
     }
 
-    console.log('Starting connection pool monitor');
-
     // Start regular health checks
     this.checkInterval = setInterval(() => {
       this.checkPools();
@@ -183,8 +181,6 @@ export class ConnectionPoolMonitor extends EventEmitter {
       clearInterval(this.capacityPlanningInterval);
       this.capacityPlanningInterval = null;
     }
-
-    console.log('Connection pool monitor stopped');
   }
 
   /**
@@ -206,7 +202,6 @@ export class ConnectionPoolMonitor extends EventEmitter {
     pool.on(PoolEvent.TIMEOUT, this.handlePoolEvent.bind(this));
     pool.on(PoolEvent.ERROR, this.handlePoolEvent.bind(this));
 
-    console.log(`Now monitoring connection pool: ${poolName}`);
   }
 
   /**
@@ -227,7 +222,6 @@ export class ConnectionPoolMonitor extends EventEmitter {
     pool.removeAllListeners(PoolEvent.ERROR);
 
     this.pools.delete(poolName);
-    console.log(`Stopped monitoring connection pool: ${poolName}`);
   }
 
   /**
@@ -260,9 +254,9 @@ export class ConnectionPoolMonitor extends EventEmitter {
    */
   public getMetrics(): Map<string, any> {
     // Update metrics first
-    for (const [poolName, pool] of this.pools.entries()) {
+    Array.from(this.pools.entries()).forEach(([poolName, pool]) => {
       this.metrics.set(poolName, pool.getMetrics());
-    }
+    });
     return new Map(this.metrics);
   }
 
@@ -272,9 +266,9 @@ export class ConnectionPoolMonitor extends EventEmitter {
    */
   public getPoolStatus(): Map<string, PoolStatusInfo> {
     const status = new Map<string, PoolStatusInfo>();
-    for (const [poolName, pool] of this.pools.entries()) {
+    Array.from(this.pools.entries()).forEach(([poolName, pool]) => {
       status.set(poolName, pool.getStatus());
-    }
+    });
     return status;
   }
 
@@ -304,7 +298,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     const recommendation = this.recommendations.find(
       r => r.id === recommendationId && !r.implemented
     );
-    
+
     if (!recommendation) {
       return false;
     }
@@ -321,7 +315,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       case RecommendationType.DECREASE_MAX_CONNECTIONS:
         pool.setMaxPoolSize(recommendation.recommendedValue);
         break;
-      
+
       // Other recommendation types would require more complex handling
       default:
         // Just mark as implemented without taking action
@@ -331,7 +325,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
     // Update the recommendation
     recommendation.implemented = true;
     recommendation.implementedAt = new Date();
-    
+
     return true;
   }
 
@@ -341,17 +335,17 @@ export class ConnectionPoolMonitor extends EventEmitter {
   public cleanup(): void {
     const now = Date.now();
     const cutoff = now - this.config.retentionPeriodMs;
-    
+
     // Clean up old alerts
     let i = this.alerts.length;
     while (i--) {
       const alert = this.alerts[i];
-      if (alert.timestamp.getTime() < cutoff && 
+      if (alert.timestamp.getTime() < cutoff &&
           (alert.acknowledged || this.config.autoAcknowledgeAlerts)) {
         this.alerts.splice(i, 1);
       }
     }
-    
+
     // Clean up old recommendations
     i = this.recommendations.length;
     while (i--) {
@@ -360,13 +354,13 @@ export class ConnectionPoolMonitor extends EventEmitter {
         this.recommendations.splice(i, 1);
       }
     }
-    
+
     // Clean up alert history
-    for (const [key, timestamp] of this.alertHistory.entries()) {
+    Array.from(this.alertHistory.entries()).forEach(([key, timestamp]) => {
       if (timestamp.getTime() < cutoff) {
         this.alertHistory.delete(key);
       }
-    }
+    });
   }
 
   /**
@@ -376,20 +370,20 @@ export class ConnectionPoolMonitor extends EventEmitter {
   private handlePoolEvent(event: any): void {
     const poolName = event.poolName;
     const pool = this.pools.get(poolName);
-    
+
     if (!pool) {
       return;
     }
-    
+
     // Update metrics
     this.metrics.set(poolName, pool.getMetrics());
-    
+
     // Emit metrics updated event
     this.emit(MonitorEvent.METRICS_UPDATED, {
       poolName,
       metrics: this.metrics.get(poolName)
     });
-    
+
     // Check for alerts
     if (event.type === PoolEvent.EXHAUSTED) {
       this.createAlert(
@@ -438,14 +432,14 @@ export class ConnectionPoolMonitor extends EventEmitter {
    * Checks all monitored pools for health issues
    */
   private checkPools(): void {
-    for (const [poolName, pool] of this.pools.entries()) {
+    Array.from(this.pools.entries()).forEach(([poolName, pool]) => {
       const metrics = pool.getMetrics();
       const utilization = this.calculateUtilization(pool);
       const waitingClients = this.getWaitingClients(pool);
-      
+
       // Update metrics
       this.metrics.set(poolName, metrics);
-      
+
       // Check for high utilization
       if (utilization >= this.config.poolUtilizationThresholds.critical) {
         this.createAlert(
@@ -474,7 +468,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
           }
         );
       }
-      
+
       // Check for waiting clients
       if (waitingClients >= this.config.waitingClientsThresholds.critical) {
         this.createAlert(
@@ -503,16 +497,16 @@ export class ConnectionPoolMonitor extends EventEmitter {
           }
         );
       }
-      
+
       // Check for recovery from previous critical alerts
       const hasActiveCriticalAlerts = this.alerts.some(
-        alert => alert.poolName === poolName && 
-                alert.level === AlertLevel.CRITICAL && 
+        alert => alert.poolName === poolName &&
+                alert.level === AlertLevel.CRITICAL &&
                 !alert.acknowledged
       );
-      
-      if (hasActiveCriticalAlerts && 
-          utilization < this.config.poolUtilizationThresholds.warning && 
+
+      if (hasActiveCriticalAlerts &&
+          utilization < this.config.poolUtilizationThresholds.warning &&
           waitingClients < this.config.waitingClientsThresholds.warning) {
         this.createAlert(
           poolName,
@@ -526,13 +520,13 @@ export class ConnectionPoolMonitor extends EventEmitter {
             maxConnections: this.getMaxConnections(pool)
           }
         );
-        
+
         // Auto-acknowledge critical alerts for this pool
         if (this.config.autoAcknowledgeAlerts) {
           this.alerts
-            .filter(alert => 
-              alert.poolName === poolName && 
-              alert.level === AlertLevel.CRITICAL && 
+            .filter(alert =>
+              alert.poolName === poolName &&
+              alert.level === AlertLevel.CRITICAL &&
               !alert.acknowledged
             )
             .forEach(alert => {
@@ -542,7 +536,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
             });
         }
       }
-    }
+    });
   }
 
   /**
@@ -570,12 +564,12 @@ export class ConnectionPoolMonitor extends EventEmitter {
     // Check if we've recently created a similar alert
     const alertKey = `${poolName}:${type}:${level}`;
     const lastAlertTime = this.alertHistory.get(alertKey);
-    
-    if (lastAlertTime && 
+
+    if (lastAlertTime &&
         Date.now() - lastAlertTime.getTime() < this.config.alertCooldownMs) {
       return;
     }
-    
+
     // Create the alert
     const alert: PoolAlert = {
       id: `alert-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
@@ -587,16 +581,16 @@ export class ConnectionPoolMonitor extends EventEmitter {
       metrics,
       acknowledged: false
     };
-    
+
     // Add to alerts
     this.alerts.push(alert);
-    
+
     // Update alert history
     this.alertHistory.set(alertKey, new Date());
-    
+
     // Emit alert event
     this.emit(MonitorEvent.ALERT, alert);
-    
+
     // Auto-acknowledge INFO alerts
     if (level === AlertLevel.INFO && this.config.autoAcknowledgeAlerts) {
       alert.acknowledged = true;
@@ -609,21 +603,21 @@ export class ConnectionPoolMonitor extends EventEmitter {
    * Analyzes capacity and creates recommendations
    */
   private analyzeCapacity(): void {
-    for (const [poolName, pool] of this.pools.entries()) {
+    Array.from(this.pools.entries()).forEach(([poolName, pool]) => {
       const metrics = pool.getMetrics();
       const utilization = this.calculateUtilization(pool);
       const avgUtilization = this.calculateAverageUtilization(poolName);
-      
+
       // Current pool size
       const currentMaxConnections = this.getMaxConnections(pool);
-      
+
       // Check if we need to increase pool size
       if (avgUtilization > 80 && currentMaxConnections < 100) {
         const recommendedSize = Math.min(
           Math.ceil(currentMaxConnections * 1.5),
           100
         );
-        
+
         this.createRecommendation(
           poolName,
           RecommendationType.INCREASE_MAX_CONNECTIONS,
@@ -633,14 +627,14 @@ export class ConnectionPoolMonitor extends EventEmitter {
           0.8
         );
       }
-      
+
       // Check if we can decrease pool size
       else if (avgUtilization < 30 && currentMaxConnections > 10) {
         const recommendedSize = Math.max(
           Math.floor(currentMaxConnections * 0.7),
           10
         );
-        
+
         this.createRecommendation(
           poolName,
           RecommendationType.DECREASE_MAX_CONNECTIONS,
@@ -650,44 +644,46 @@ export class ConnectionPoolMonitor extends EventEmitter {
           0.6
         );
       }
-      
+
       // Check if we need to add shards
-      if (avgUtilization > 90 && metrics.waitingClients > 20) {
+      const waitingClientsCount = metrics.waitingClients ?? 0;
+      if (avgUtilization > 90 && waitingClientsCount > 20) {
         this.createRecommendation(
           poolName,
           RecommendationType.ADD_SHARDS,
-          `Consider adding more database shards due to sustained high pool utilization (${avgUtilization.toFixed(1)}%) and many waiting clients (${metrics.waitingClients}).`,
+          `Consider adding more database shards due to sustained high pool utilization (${avgUtilization.toFixed(1)}%) and many waiting clients (${waitingClientsCount}).`,
           1,
           2,
           0.7
         );
       }
-      
+
       // Check if queries need optimization
-      if (metrics.avgAcquireTime > 1000 && metrics.totalTimeouts > 10) {
+      const totalTimeoutsCount = metrics.totalTimeouts ?? 0;
+      if (metrics.averageAcquireTime > 1000 && totalTimeoutsCount > 10) {
         this.createRecommendation(
           poolName,
           RecommendationType.OPTIMIZE_QUERIES,
-          `Optimize long-running queries in connection pool ${poolName}. Average acquire time: ${metrics.avgAcquireTime.toFixed(0)}ms with ${metrics.totalTimeouts} timeouts.`,
-          metrics.avgAcquireTime,
-          metrics.avgAcquireTime * 0.5,
+          `Optimize long-running queries in connection pool ${poolName}. Average acquire time: ${metrics.averageAcquireTime.toFixed(0)}ms with ${totalTimeoutsCount} timeouts.`,
+          metrics.averageAcquireTime,
+          metrics.averageAcquireTime * 0.5,
           0.9
         );
       }
-      
+
       // Check if caching would help
-      if (metrics.totalAcquired > 1000 && avgUtilization > 70) {
+      if (metrics.acquiredConnections > 1000 && avgUtilization > 70) {
         this.createRecommendation(
           poolName,
           RecommendationType.IMPLEMENT_CACHING,
-          `Implement query caching to reduce database load. Pool ${poolName} has processed ${metrics.totalAcquired} requests with ${avgUtilization.toFixed(1)}% utilization.`,
+          `Implement query caching to reduce database load. Pool ${poolName} has processed ${metrics.acquiredConnections} requests with ${avgUtilization.toFixed(1)}% utilization.`,
           0,
           1,
           0.8
         );
       }
-    }
-    
+    });
+
     // Clean up old alerts and recommendations
     this.cleanup();
   }
@@ -711,11 +707,11 @@ export class ConnectionPoolMonitor extends EventEmitter {
   ): void {
     // Check if we already have a similar recommendation
     const existingRecommendation = this.recommendations.find(
-      rec => rec.poolName === poolName && 
-             rec.type === type && 
+      rec => rec.poolName === poolName &&
+             rec.type === type &&
              !rec.implemented
     );
-    
+
     if (existingRecommendation) {
       // Update the existing recommendation
       existingRecommendation.message = message;
@@ -725,7 +721,7 @@ export class ConnectionPoolMonitor extends EventEmitter {
       existingRecommendation.timestamp = new Date();
       return;
     }
-    
+
     // Create a new recommendation
     const recommendation: CapacityRecommendation = {
       id: `rec-${Date.now()}-${Math.random().toString(36).substring(2, 10)}`,
@@ -738,10 +734,10 @@ export class ConnectionPoolMonitor extends EventEmitter {
       confidence,
       implemented: false
     };
-    
+
     // Add to recommendations
     this.recommendations.push(recommendation);
-    
+
     // Emit recommendation event
     this.emit(MonitorEvent.RECOMMENDATION, recommendation);
   }
@@ -793,11 +789,11 @@ export class ConnectionPoolMonitor extends EventEmitter {
    */
   private calculateErrorRate(pool: VectorConnectionPool): number {
     const metrics = pool.getMetrics();
-    const total = metrics.totalAcquired || 0;
+    const total = metrics.acquiredConnections || 0;
     if (total === 0) {
       return 0;
     }
-    return (metrics.totalErrors || 0) / total;
+    return (metrics.errors || 0) / total;
   }
 
   /**

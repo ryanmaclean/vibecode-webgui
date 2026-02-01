@@ -10,15 +10,22 @@
  * - Secure filename validation (no path traversal)
  * - Filesystem storage with workspace isolation
  * - Progress tracking support
+ *
+ * Rate Limited: 20 requests per minute
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { writeFile, mkdir } from 'fs/promises';
 import { existsSync } from 'fs';
 import path from 'path';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic';
+
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - file uploads
 
 // File upload limits (must match client-side validation)
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
@@ -129,7 +136,7 @@ function validateFilename(filename: string): { valid: boolean; error?: string } 
  * Validate MIME type
  */
 function validateMimeType(mimeType: string): { valid: boolean; error?: string } {
-  if (!ALLOWED_MIME_TYPES.includes(mimeType as any)) {
+  if (!ALLOWED_MIME_TYPES.includes(mimeType as typeof ALLOWED_MIME_TYPES[number])) {
     return {
       valid: false,
       error: `Invalid file type. Allowed types: ${ALLOWED_MIME_TYPES.join(', ')}`,
@@ -157,7 +164,33 @@ function validateFileSize(size: number): { valid: boolean; error?: string } {
  * POST handler for file uploads
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for file uploads' },
+        { status: 401 }
+      );
+    }
+
     // Parse form data
     const formData = await request.formData();
     const workspaceId = formData.get('workspaceId') as string | null;
@@ -306,15 +339,40 @@ export async function POST(request: NextRequest) {
 }
 
 /**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  return ['https://vibecode.dev', 'http://localhost:3000', 'http://localhost:8080']
+}
+
+/**
+ * Validate request origin against allowed origins
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null
+  const allowedOrigins = getAllowedOrigins()
+  if (allowedOrigins.includes(requestOrigin)) return requestOrigin
+  return null
+}
+
+/**
  * OPTIONS handler for CORS
  */
-export async function OPTIONS() {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
-  });
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'POST, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+  return new NextResponse(null, { status: 200, headers })
 }

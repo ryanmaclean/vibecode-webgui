@@ -12,6 +12,9 @@ import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { workspaceIdSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
 // import { logger } from '@/lib/logger';
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 export const dynamic = 'force-dynamic'
 
@@ -69,14 +72,31 @@ const autoScalingConfigSchema = z.object({
 /**
  * GET /api/workspace/auto-scaling - Get scaling status and statistics
  */
-export async function GET(req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const workspaceId = searchParams.get('workspaceId')
     const action = searchParams.get('action')
 
@@ -131,15 +151,32 @@ export async function GET(req: NextRequest) {
 /**
  * POST /api/workspace/auto-scaling - Update workspace metrics
  */
-export async function POST(req: NextRequest) {
+export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Validate request body
-    const validation = await validateRequestBody(req, workspaceMetricsSchema)
+    const validation = await validateRequestBody(request, workspaceMetricsSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
@@ -191,15 +228,32 @@ export async function POST(req: NextRequest) {
 /**
  * PUT /api/workspace/auto-scaling - Register workspace for auto-scaling
  */
-export async function PUT(req: NextRequest) {
+export async function PUT(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
     // Validate request body
-    const validation = await validateRequestBody(req, workspaceRegistrationSchema)
+    const validation = await validateRequestBody(request, workspaceRegistrationSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
@@ -207,8 +261,8 @@ export async function PUT(req: NextRequest) {
     const registration = validation.data
 
     await workspaceAutoScaler.registerWorkspace(
-      registration.workspaceId, 
-      registration.resources || {}
+      registration.workspaceId,
+      {}
     )
 
     // Initialize metrics for the workspace
@@ -260,8 +314,25 @@ export async function PUT(req: NextRequest) {
 /**
  * PATCH /api/workspace/auto-scaling - Update auto-scaling configuration
  */
-export async function PATCH(req: NextRequest) {
+export async function PATCH(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -273,14 +344,17 @@ export async function PATCH(req: NextRequest) {
     }
 
     // Validate request body
-    const validation = await validateRequestBody(req, autoScalingConfigSchema)
+    const validation = await validateRequestBody(request, autoScalingConfigSchema)
     if (!validation.success) {
       return validation.error as NextResponse
     }
 
     const config = validation.data
 
-    workspaceAutoScaler.updateConfig(config)
+    workspaceAutoScaler.updateConfig({
+      enabled: config.enabled,
+      evaluationInterval: config.evaluationInterval
+    })
 
     return NextResponse.json({
       status: 'success',
@@ -318,14 +392,31 @@ export async function PATCH(req: NextRequest) {
 /**
  * DELETE /api/workspace/auto-scaling - Unregister workspace from auto-scaling
  */
-export async function DELETE(req: NextRequest) {
+export async function DELETE(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { searchParams } = new URL(req.url)
+    const { searchParams } = new URL(request.url)
     const workspaceId = searchParams.get('workspaceId')
     
     if (!workspaceId) {

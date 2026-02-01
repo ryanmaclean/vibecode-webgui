@@ -140,14 +140,20 @@ describe('ChatInterface Component', () => {
     });
 
     it('allows changing the selected model', async () => {
-      const user = userEvent.setup();
       renderWithProviders(<ChatInterface />);
 
-      const selector = screen.getByTestId('model-selector') as HTMLSelectElement;
-      await user.selectOptions(selector, 'openai/gpt-4');
+      // Click on the Select trigger to open the dropdown
+      const selector = screen.getByTestId('model-selector');
+      fireEvent.click(selector);
 
-      expect(selector.value).toBe('openai/gpt-4');
-      expect(screen.getByTestId('model-badge')).toHaveTextContent('GPT-4');
+      // Wait for the dropdown options to appear and click the desired option
+      const gpt4Option = await screen.findByRole('option', { name: 'GPT-4' });
+      fireEvent.click(gpt4Option);
+
+      // Verify the model badge shows the selected model
+      await waitFor(() => {
+        expect(screen.getByTestId('model-badge')).toHaveTextContent('GPT-4');
+      });
     });
 
     it('disables model selector while loading', async () => {
@@ -181,17 +187,19 @@ describe('ChatInterface Component', () => {
       resolveStream!();
     });
 
-    it('displays all available models in selector', () => {
+    it('displays all available models in selector', async () => {
       renderWithProviders(<ChatInterface />);
 
-      const selector = screen.getByTestId('model-selector') as HTMLSelectElement;
-      const options = Array.from(selector.options).map((opt) => opt.value);
+      // Click on the Select trigger to open the dropdown
+      const selector = screen.getByTestId('model-selector');
+      fireEvent.click(selector);
 
-      expect(options).toContain('anthropic/claude-3.5-sonnet');
-      expect(options).toContain('openai/gpt-4');
-      expect(options).toContain('openai/gpt-4-turbo');
-      expect(options).toContain('openai/gpt-3.5-turbo');
-      expect(options).toContain('anthropic/claude-3-opus');
+      // Verify all expected models are present in the dropdown
+      expect(await screen.findByRole('option', { name: 'Claude 3.5 Sonnet' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'GPT-4' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'GPT-4 Turbo' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'GPT-3.5 Turbo' })).toBeInTheDocument();
+      expect(screen.getByRole('option', { name: 'Claude 3 Opus' })).toBeInTheDocument();
     });
   });
 

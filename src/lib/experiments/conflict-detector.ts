@@ -5,7 +5,7 @@
  * Checks for targeting overlap, metric interference, and resource contention.
  */
 
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ExperimentStatus } from '@prisma/client';
 import { logger } from '@/lib/server-monitoring';
 import { isActiveStatus } from './lifecycle';
 
@@ -75,7 +75,7 @@ export async function detectConflicts(
     const activeExperiments = await prisma.experiment.findMany({
       where: {
         key: { not: experimentKey },
-        status: { in: ['running', 'scheduled'] }
+        status: { in: [ExperimentStatus.RUNNING, ExperimentStatus.REVIEW] }
       }
     });
 
@@ -376,7 +376,7 @@ export async function getActiveExperiments(): Promise<string[]> {
   try {
     const experiments = await prisma.experiment.findMany({
       where: {
-        status: { in: ['running', 'scheduled'] }
+        status: { in: [ExperimentStatus.RUNNING, ExperimentStatus.REVIEW] }
       },
       select: {
         key: true
@@ -513,7 +513,7 @@ export async function checkExperimentCapacity(
   try {
     const activeCount = await prisma.experiment.count({
       where: {
-        status: { in: ['running', 'scheduled'] }
+        status: { in: [ExperimentStatus.RUNNING, ExperimentStatus.REVIEW] }
       }
     });
 

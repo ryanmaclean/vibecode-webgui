@@ -3,11 +3,25 @@ import { Server as SocketIOServer } from 'socket.io'
 import { Server as HTTPServer } from 'http'
 import { collaborationService } from '@/lib/services/collaboration'
 
+interface ExtendedServer extends HTTPServer {
+  io?: SocketIOServer;
+}
+
+interface ExtendedSocket {
+  server: ExtendedServer;
+}
+
 const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
-  if (!(res.socket as any).server.io) {
+  const socket = res.socket as ExtendedSocket | null
+  if (!socket) {
+    res.status(500).end()
+    return
+  }
+
+  if (!socket.server.io) {
     // Debug log removed
 
-    const httpServer: HTTPServer = (res.socket as any).server
+    const httpServer: HTTPServer = socket.server
     const io = new SocketIOServer(httpServer, {
       path: '/api/collaboration/socket',
       addTrailingSlash: false,
@@ -18,9 +32,9 @@ const SocketHandler = (req: NextApiRequest, res: NextApiResponse) => {
     })
 
     // Initialize collaboration service with the socket server
-    collaborationService.initialize(httpServer)
-    
-    (res.socket as any).server.io = io
+    collaborationService.initialize(io)
+
+    socket.server.io = io
 
     // Debug log removed
   } else {
