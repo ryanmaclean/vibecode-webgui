@@ -23,6 +23,7 @@ Usage:
 from __future__ import annotations
 
 import os
+import logging
 import time
 import socket
 from contextlib import contextmanager
@@ -61,12 +62,17 @@ try:
         ).split(",")
         if p.strip()
     )
+    EVENTS_ENABLED = os.getenv("AI_AGENT_EVENTS_ENABLED", "true").lower() in {"1", "true", "yes"}
     STATSD_ENABLED = True
 except ImportError:
     STATSD_ENABLED = False
     statsd = None
     raw_statsd = None
     MIRROR_PREFIXES = ()
+    EVENTS_ENABLED = False
+
+
+logger = logging.getLogger("gastown.telemetry")
 
 
 # Model pricing (USD per 1M tokens) - updated Jan 2026
@@ -171,6 +177,21 @@ class AIAgentTelemetry:
         if raw_statsd is not None and any(name.startswith(p) for p in MIRROR_PREFIXES):
             emit(raw_statsd, name)
 
+    def _send_event(self, title: str, text: str, tags: Optional[list] = None,
+                    alert_type: str = "info"):
+        """Send event to Datadog (if enabled)."""
+        if not STATSD_ENABLED or not EVENTS_ENABLED:
+            return
+
+        client = raw_statsd or statsd
+        if client is None:
+            return
+
+        try:
+            client.event(title, text, alert_type=alert_type, tags=tags or [])
+        except Exception as exc:
+            logger.debug("Failed to send Datadog event: %s", exc)
+
     def _finalize_tracker(self, tracker: RequestTracker):
         """Send all metrics for a completed request"""
         provider = tracker.provider
@@ -237,6 +258,7 @@ class AIAgentTelemetry:
         if DD_ENABLED and tracer:
             span = tracer.trace("claude.api.request", service=self.service_name)
             span.set_tag("model", model)
+            span.set_tag("ml.app", os.getenv("DD_LLMOBS_ML_APP", "gastown"))
             for k, v in extra_tags.items():
                 span.set_tag(str(k), v)
 
@@ -264,6 +286,7 @@ class AIAgentTelemetry:
         if DD_ENABLED and tracer:
             span = tracer.trace("openai.api.request", service=self.service_name)
             span.set_tag("model", model)
+            span.set_tag("ml.app", os.getenv("DD_LLMOBS_ML_APP", "gastown"))
             for k, v in extra_tags.items():
                 span.set_tag(str(k), v)
 
@@ -461,6 +484,13 @@ class GasTownTracing:
 
         self._active_contexts[bead_id] = ctx
         outcome = "unknown"
+        stage_tags = [f"bead_id:{bead_id}", f"rig:{rig}", f"priority:P{priority}"]
+        self.telemetry._send_metric("gastown.bead.stage.created", 1, "count", stage_tags)
+        self.telemetry._send_event(
+            "Bead created",
+            f"bead={bead_id} rig={rig} priority=P{priority}",
+            tags=stage_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -499,6 +529,13 @@ class GasTownTracing:
                     self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
                     self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
                                                 duration_s, "histogram", tags)
+                    self.telemetry._send_metric("gastown.bead.stage.completed", 1, "count", tags)
+                    self.telemetry._send_event(
+                        "Bead completed" if outcome == "success" else "Bead failed",
+                        f"bead={bead_id} rig={rig} outcome={outcome} duration_s={duration_s:.2f}",
+                        tags=tags,
+                        alert_type="success" if outcome == "success" else "error",
+                    )
                     del self._active_contexts[bead_id]
         else:
             try:
@@ -514,6 +551,13 @@ class GasTownTracing:
                 self.telemetry._send_metric("gastown.bead.lifecycle.count", 1, "count", tags)
                 self.telemetry._send_metric("gastown.bead.lifecycle.duration_s",
                                             duration_s, "histogram", tags)
+                self.telemetry._send_metric("gastown.bead.stage.completed", 1, "count", tags)
+                self.telemetry._send_event(
+                    "Bead completed" if outcome == "success" else "Bead failed",
+                    f"bead={bead_id} rig={rig} outcome={outcome} duration_s={duration_s:.2f}",
+                    tags=tags,
+                    alert_type="success" if outcome == "success" else "error",
+                )
                 del self._active_contexts[bead_id]
 
     @contextmanager
@@ -521,6 +565,13 @@ class GasTownTracing:
                    hook_type: str = "work") -> Generator[None, None, None]:
         """Track when work is hooked onto an agent"""
         start_time = time.time()
+        stage_tags = [f"bead_id:{ctx.bead_id}", f"agent:{agent}", f"hook_type:{hook_type}"]
+        self.telemetry._send_metric("gastown.bead.stage.hooked", 1, "count", stage_tags)
+        self.telemetry._send_event(
+            "Bead hooked",
+            f"bead={ctx.bead_id} agent={agent} hook_type={hook_type}",
+            tags=stage_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -556,6 +607,13 @@ class GasTownTracing:
     def track_crew_assign(self, ctx: BeadTraceContext, crew_member: str,
                           target_polecat: str) -> Generator[None, None, None]:
         """Track when crew assigns work to a polecat"""
+        stage_tags = [f"bead_id:{ctx.bead_id}", f"crew_member:{crew_member}", f"target:{target_polecat}"]
+        self.telemetry._send_metric("gastown.bead.stage.assigned", 1, "count", stage_tags)
+        self.telemetry._send_event(
+            "Crew assigned bead",
+            f"bead={ctx.bead_id} crew_member={crew_member} target={target_polecat}",
+            tags=stage_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -592,6 +650,13 @@ class GasTownTracing:
         tracker.extra_tags["polecat"] = polecat
         tracker.extra_tags["rig"] = rig
         tracker.extra_tags["bead_id"] = ctx.bead_id
+        stage_tags = [f"bead_id:{ctx.bead_id}", f"polecat:{polecat}", f"rig:{rig}"]
+        self.telemetry._send_metric("gastown.bead.stage.working", 1, "count", stage_tags)
+        self.telemetry._send_event(
+            "Polecat started work",
+            f"bead={ctx.bead_id} polecat={polecat} rig={rig}",
+            tags=stage_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -627,6 +692,12 @@ class GasTownTracing:
                     if tracker.output_tokens > 0:
                         self.telemetry._send_metric("gastown.polecat.tokens.output",
                                                     tracker.output_tokens, "count", tags)
+                    self.telemetry._send_event(
+                        "Polecat work finished",
+                        f"bead={ctx.bead_id} polecat={polecat} rig={rig} outcome={tracker.extra_tags.get('outcome', 'unknown')}",
+                        tags=tags,
+                        alert_type="success" if tracker.extra_tags.get("outcome") == "success" else "info",
+                    )
         else:
             try:
                 yield tracker
@@ -645,6 +716,12 @@ class GasTownTracing:
                 if tracker.output_tokens > 0:
                     self.telemetry._send_metric("gastown.polecat.tokens.output",
                                                 tracker.output_tokens, "count", tags)
+                self.telemetry._send_event(
+                    "Polecat work finished",
+                    f"bead={ctx.bead_id} polecat={polecat} rig={rig} outcome={tracker.extra_tags.get('outcome', 'unknown')}",
+                    tags=tags,
+                    alert_type="success" if tracker.extra_tags.get("outcome") == "success" else "info",
+                )
 
     @contextmanager
     def track_deacon_review(self, ctx: BeadTraceContext, deacon: str,
@@ -654,6 +731,12 @@ class GasTownTracing:
         tracker.extra_tags["deacon"] = deacon
         tracker.extra_tags["review_type"] = review_type
         tracker.extra_tags["bead_id"] = ctx.bead_id
+        stage_tags = [f"bead_id:{ctx.bead_id}", f"deacon:{deacon}", f"review_type:{review_type}"]
+        self.telemetry._send_event(
+            "Deacon review started",
+            f"bead={ctx.bead_id} deacon={deacon} review_type={review_type}",
+            tags=stage_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -685,6 +768,12 @@ class GasTownTracing:
                     self.telemetry._send_metric("gastown.deacon.review.count", 1, "count", tags)
                     self.telemetry._send_metric("gastown.deacon.review.duration_ms",
                                                 tracker.duration_ms, "histogram", tags)
+                    self.telemetry._send_event(
+                        "Deacon review finished",
+                        f"bead={ctx.bead_id} deacon={deacon} outcome={tracker.extra_tags.get('outcome', 'unknown')}",
+                        tags=tags,
+                        alert_type="success" if tracker.extra_tags.get("outcome") == "approved" else "info",
+                    )
         else:
             try:
                 yield tracker
@@ -701,12 +790,24 @@ class GasTownTracing:
                 self.telemetry._send_metric("gastown.deacon.review.count", 1, "count", tags)
                 self.telemetry._send_metric("gastown.deacon.review.duration_ms",
                                             tracker.duration_ms, "histogram", tags)
+                self.telemetry._send_event(
+                    "Deacon review finished",
+                    f"bead={ctx.bead_id} deacon={deacon} outcome={tracker.extra_tags.get('outcome', 'unknown')}",
+                    tags=tags,
+                    alert_type="success" if tracker.extra_tags.get("outcome") == "approved" else "info",
+                )
 
     @contextmanager
     def track_nudge(self, ctx: BeadTraceContext, target: str,
                     nudge_type: str = "status_check") -> Generator[None, None, None]:
         """Track nudge sent to an agent"""
         start_time = time.time()
+        nudge_tags = [f"bead_id:{ctx.bead_id}", f"target:{target}", f"type:{nudge_type}"]
+        self.telemetry._send_event(
+            "Nudge sent",
+            f"bead={ctx.bead_id} target={target} type={nudge_type}",
+            tags=nudge_tags,
+        )
 
         if DD_ENABLED and tracer:
             with tracer.trace(
@@ -746,6 +847,11 @@ class GasTownTracing:
         self.telemetry._send_metric("gastown.nudge.response.count", 1, "count", tags)
         self.telemetry._send_metric("gastown.nudge.response_time_ms",
                                     response_time_ms, "histogram", tags)
+        self.telemetry._send_event(
+            "Nudge response",
+            f"bead={ctx.bead_id} target={target} acknowledged={str(acknowledged).lower()} response_time_ms={response_time_ms:.0f}",
+            tags=tags,
+        )
 
     def track_mayor_task(self, task_type: str, priority: str = "normal",
                          target_agent: str = "", bead_id: str = ""):
@@ -765,12 +871,22 @@ class GasTownTracing:
         if bead_id:
             tags.append(f"bead_id:{bead_id}")
         self.telemetry._send_metric("gastown.mayor.task.count", 1, "count", tags)
+        self.telemetry._send_event(
+            "Mayor task assigned",
+            f"task_type={task_type} priority={priority} target={target_agent} bead_id={bead_id or 'n/a'}",
+            tags=tags,
+        )
 
     def track_mail_sent(self, sender: str, recipient: str,
                         mail_type: str = "message"):
         """Track mail sent between agents"""
         tags = [f"sender:{sender}", f"recipient:{recipient}", f"type:{mail_type}"]
         self.telemetry._send_metric("gastown.mail.sent.count", 1, "count", tags)
+        self.telemetry._send_event(
+            "Mail sent",
+            f"sender={sender} recipient={recipient} type={mail_type}",
+            tags=tags,
+        )
 
     def track_mail_read(self, recipient: str, mail_type: str = "message",
                         read_delay_s: float = 0):
@@ -780,6 +896,48 @@ class GasTownTracing:
         if read_delay_s > 0:
             self.telemetry._send_metric("gastown.mail.read_delay_s",
                                         read_delay_s, "histogram", tags)
+        self.telemetry._send_event(
+            "Mail read",
+            f"recipient={recipient} type={mail_type} read_delay_s={read_delay_s:.1f}",
+            tags=tags,
+        )
+
+    def track_witness_event(self, event_type: str, bead_id: str = "",
+                            details: str = ""):
+        """Track witness lifecycle events"""
+        tags = [f"event_type:{event_type}"]
+        if bead_id:
+            tags.append(f"bead_id:{bead_id}")
+        self.telemetry._send_metric("gastown.witness.lifecycle_events", 1, "count", tags)
+        self.telemetry._send_event(
+            "Witness event",
+            f"event_type={event_type} bead_id={bead_id or 'n/a'} {details}".strip(),
+            tags=tags,
+        )
+
+    def track_refinery_event(self, event_type: str, outcome: str = "",
+                             rig_name: str = "", bead_id: str = ""):
+        """Track refinery queue/merge events"""
+        tags = [f"event_type:{event_type}"]
+        if outcome:
+            tags.append(f"outcome:{outcome}")
+        if rig_name:
+            tags.append(f"rig_name:{rig_name}")
+        if bead_id:
+            tags.append(f"bead_id:{bead_id}")
+
+        if event_type == "merge_processed":
+            self.telemetry._send_metric("gastown.refinery.merges_processed", 1, "count", tags)
+        elif event_type == "merge_queued":
+            self.telemetry._send_metric("gastown.refinery.merges_queued", 1, "count", tags)
+        else:
+            self.telemetry._send_metric("gastown.refinery.events", 1, "count", tags)
+
+        self.telemetry._send_event(
+            "Refinery event",
+            f"event_type={event_type} outcome={outcome or 'n/a'} rig_name={rig_name or 'n/a'} bead_id={bead_id or 'n/a'}",
+            tags=tags,
+        )
 
 
 def get_gastown_tracing(service_name: str = "gastown") -> GasTownTracing:

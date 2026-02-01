@@ -515,6 +515,11 @@ def send_all_metrics(emitter: MetricEmitter, since: datetime, state: Dict[str, A
     emitter.send("gastown.bead.lifecycle.duration_s", lead_time_s, "g", common_tags + ["rig:default"])
     emitter.send("gastown.bead.lifecycle.count", closed_since, "c", common_tags + ["outcome:success"])
     emitter.send("gastown.bead.lifecycle.count", blocked_since, "c", common_tags + ["outcome:failed"])
+    emitter.send("gastown.bead.stage.created", created_since, "c", common_tags)
+    emitter.send("gastown.bead.stage.hooked", created_since, "c", common_tags)
+    emitter.send("gastown.bead.stage.assigned", acceptance_since, "c", common_tags)
+    emitter.send("gastown.bead.stage.working", acceptance_since, "c", common_tags)
+    emitter.send("gastown.bead.stage.completed", closed_since, "c", common_tags)
 
     # Hooks/assignments approximated by new work
     hook_total = created_since
