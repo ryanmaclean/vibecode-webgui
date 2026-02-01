@@ -9,7 +9,7 @@ This document outlines the current state, planned features, and long-term vision
 **Stability**: Production-ready with active development
 
 **Key Achievements**:
-- Lightning-fast boot time (26 seconds average)
+- Lightning-fast boot time (~6.5 seconds average)
 - Ultra-compact size (59MB compressed, 175MB uncompressed)
 - Full IDE experience with OpenVSCode Server
 - Integrated Datadog VSCode Extension (v2.0.0)
@@ -47,8 +47,8 @@ This document outlines the current state, planned features, and long-term vision
 
 ### Performance Goals
 
-- [ ] Reduce boot time to <25 seconds average
-- [ ] Improve cold start to <24 seconds
+- [x] Reduce boot time to <25 seconds average (achieved: ~6.5s)
+- [x] Improve cold start to <24 seconds (achieved: ~6.5s)
 - [ ] Optimize memory usage to 350MB baseline
 - [ ] Further compression to <55MB (if possible)
 
