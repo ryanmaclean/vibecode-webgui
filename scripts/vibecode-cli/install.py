@@ -1,31 +1,19 @@
 #!/usr/bin/env python3
-
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
-    pass
-# ------------------------
-
 """Vibecode WebGUI - Local installation helper.
 
 Bootstraps development prerequisites, env files, and optional setup routines.
 """
+from __future__ import annotations
 
 import argparse
 import os
 import shutil
 import subprocess
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 
 
-class Color:
+class Colors:
     """ANSI color codes for terminal output."""
 
     RED = "\033[0;31m"
@@ -34,208 +22,79 @@ class Color:
     BLUE = "\033[0;34m"
     NC = "\033[0m"
 
-
-@dataclass
-class InstallConfig:
-    """Configuration for the installer."""
-
-    skip_install: bool = False
-    skip_setup: bool = False
-    project_root: Path | None = None
+    @classmethod
+    def disable(cls) -> None:
+        """Disable colors for non-TTY output."""
+        cls.RED = cls.GREEN = cls.YELLOW = cls.BLUE = cls.NC = ""
 
 
-def log(message: str) -> None:
-    """Print an info message."""
-    print(f"{Color.BLUE}{message}{Color.NC}")
+if not sys.stdout.isatty():
+    Colors.disable()
 
 
-def ok(message: str) -> None:
-    """Print a success message."""
-    print(f"{Color.GREEN}\u2713 {message}{Color.NC}")
+def log(msg: str) -> None:
+    """Print info message."""
+    print(f"{Colors.BLUE}{msg}{Colors.NC}")
 
 
-def warn(message: str) -> None:
-    """Print a warning message."""
-    print(f"{Color.YELLOW}\u26a0 {message}{Color.NC}")
+def ok(msg: str) -> None:
+    """Print success message."""
+    print(f"{Colors.GREEN}\u2713 {msg}{Colors.NC}")
 
 
-def err(message: str) -> None:
-    """Print an error message."""
-    print(f"{Color.RED}\u2717 {message}{Color.NC}")
+def warn(msg: str) -> None:
+    """Print warning message."""
+    print(f"{Colors.YELLOW}\u26a0 {msg}{Colors.NC}")
 
 
-def check_command(name: str, required: bool = True) -> bool:
-    """Check if a command is available.
+def err(msg: str) -> None:
+    """Print error message."""
+    print(f"{Colors.RED}\u2717 {msg}{Colors.NC}")
 
-    Args:
-        name: The command name to check.
-        required: If True, exit on missing command.
 
-    Returns:
-        True if command exists, False otherwise.
-    """
-    if shutil.which(name) is None:
-        if required:
-            err(f"Missing dependency: {name}")
-            print("Install the dependency and re-run this script.")
-            sys.exit(1)
+def check_command(cmd: str) -> bool:
+    """Check if a command is available."""
+    if shutil.which(cmd) is None:
+        err(f"Missing dependency: {cmd}")
+        print("Install the dependency and re-run this script.")
         return False
-    ok(f"{name} available")
+    ok(f"{cmd} available")
     return True
 
 
-def get_node_version() -> tuple[int, int, int]:
-    """Get the installed Node.js version.
-
-    Returns:
-        Tuple of (major, minor, patch) version numbers.
-    """
+def get_node_version() -> tuple[int, int, str]:
+    """Get Node.js version as (major, minor, full_version)."""
     result = subprocess.run(
         ["node", "-v"],
         capture_output=True,
         text=True,
         check=True,
     )
-    version_str = result.stdout.strip().lstrip("v")
-    parts = version_str.split(".")
-    return (
-        int(parts[0]) if len(parts) > 0 else 0,
-        int(parts[1]) if len(parts) > 1 else 0,
-        int(parts[2]) if len(parts) > 2 else 0,
+    version = result.stdout.strip().lstrip("v")
+    parts = version.split(".")
+    return int(parts[0]), int(parts[1]), version
+
+
+def run_npm_command(
+    args: list[str],
+    cwd: Path,
+    capture: bool = False,
+) -> subprocess.CompletedProcess[str]:
+    """Run an npm command."""
+    return subprocess.run(
+        ["npm", *args],
+        cwd=cwd,
+        capture_output=capture,
+        text=True,
     )
 
 
-def check_node_version(min_major: int = 18, min_minor: int = 18) -> None:
-    """Check that Node.js version meets minimum requirements.
-
-    Args:
-        min_major: Minimum major version required.
-        min_minor: Minimum minor version required.
-    """
-    major, minor, patch = get_node_version()
-    version_str = f"{major}.{minor}.{patch}"
-
-    if major < min_major or (major == min_major and minor < min_minor):
-        err(f"Node.js {version_str} detected. Require >= {min_major}.{min_minor}.")
-        print("Update Node.js and retry.")
-        sys.exit(1)
-
-    ok(f"Node.js version {version_str} compatible")
-
-
-def check_running_as_root() -> None:
-    """Check if running as root and warn user."""
-    if os.geteuid() == 0:
-        print(
-            f"{Color.YELLOW}\u26a0 Running as root is not recommended. "
-            f"Continue? (y/N): {Color.NC}",
-            end="",
-        )
-        answer = input().strip().lower()
-        if answer not in ("y", "yes"):
-            print(f"{Color.RED}Aborting install. Re-run without sudo.{Color.NC}")
-            sys.exit(1)
-
-
-def ensure_env_files(project_root: Path) -> None:
-    """Ensure environment files are set up.
-
-    Args:
-        project_root: Path to the project root directory.
-    """
-    log("Ensuring env files...")
-    env_local = project_root / ".env.local"
-    env_example = project_root / "env.development.example"
-
-    if not env_local.exists():
-        if env_example.exists():
-            shutil.copy(env_example, env_local)
-            warn(".env.local created from env.development.example. Review placeholder values.")
-        else:
-            warn("env.development.example missing. Skipping env bootstrap.")
-    else:
-        ok(".env.local already present")
-
-
-def check_prisma_schema(project_root: Path) -> None:
-    """Check for Prisma schema file.
-
-    Args:
-        project_root: Path to the project root directory.
-    """
-    log("Verifying Prisma schema (optional)...")
-    schema_path = project_root / "prisma" / "schema.prisma"
-
-    if schema_path.exists():
-        ok("Prisma schema detected")
-    else:
-        warn("Prisma schema not found; skipping database validation")
-
-
-def run_npm_install(project_root: Path) -> None:
-    """Run npm install.
-
-    Args:
-        project_root: Path to the project root directory.
-    """
-    log("Installing npm dependencies...")
-    subprocess.run(["npm", "install"], cwd=project_root, check=True)
-    ok("npm install complete")
-
-
-def run_npm_setup(project_root: Path) -> None:
-    """Run npm run setup.
-
-    Args:
-        project_root: Path to the project root directory.
-    """
-    result = subprocess.run(
-        ["npm", "run", "setup"],
-        cwd=project_root,
-        capture_output=True,
-    )
-    if result.returncode == 0:
-        ok("npm run setup completed")
-    else:
-        warn("npm run setup exited with non-zero status. Inspect logs above.")
-
-
-def run_health_checks(project_root: Path) -> None:
-    """Run quick health checks.
-
-    Args:
-        project_root: Path to the project root directory.
-    """
-    log("Running quick health checks...")
-    result = subprocess.run(
-        ["npm", "run", "check"],
-        cwd=project_root,
-        capture_output=True,
-    )
-    if result.returncode == 0:
-        ok("Lint + type-check passed")
-    else:
-        warn("npm run check failed. Review output for details.")
-
-
-def print_next_steps() -> None:
-    """Print next steps for the user."""
-    log("Install complete. Next steps:")
-    print("  1. Update .env.local with real credentials.")
-    print("  2. Start development server via 'npm run dev'.")
-    print("  3. Optional: run validation script scripts/vibecode-cli/validate-config.sh")
-
-
-def parse_args() -> InstallConfig:
-    """Parse command line arguments.
-
-    Returns:
-        InstallConfig with parsed options.
-    """
+def main() -> int:
+    """Main entry point."""
     parser = argparse.ArgumentParser(
         description="Prepares a local Vibecode WebGUI development environment.",
         formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""\
+        epilog="""
 Examples:
     # Standard install
     scripts/vibecode-cli/install.py
@@ -254,28 +113,27 @@ Examples:
         action="store_true",
         help="Skip project setup script (npm run setup)",
     )
-
     args = parser.parse_args()
-    return InstallConfig(
-        skip_install=args.skip_install,
-        skip_setup=args.skip_setup,
-    )
-
-
-def main() -> int:
-    """Main entry point.
-
-    Returns:
-        Exit code (0 for success).
-    """
-    config = parse_args()
 
     # Check if running as root
-    check_running_as_root()
+    if os.getuid() == 0:
+        print(
+            f"{Colors.YELLOW}\u26a0 Running as root is not recommended. "
+            f"Continue? (y/N): {Colors.NC}",
+            end="",
+        )
+        try:
+            answer = input().strip().lower()
+        except (EOFError, KeyboardInterrupt):
+            answer = ""
+
+        if answer not in ("y", "yes"):
+            print(f"{Colors.RED}Aborting install. Re-run without sudo.{Colors.NC}")
+            return 1
 
     # Determine project root
     script_path = Path(__file__).resolve()
-    project_root = (script_path.parent / "../..").resolve()
+    project_root = script_path.parent.parent.parent
     os.chdir(project_root)
 
     log("Vibecode WebGUI installer")
@@ -283,8 +141,10 @@ def main() -> int:
 
     # Check required tooling
     log("Checking required tooling...")
-    check_command("node", required=True)
-    check_command("npm", required=True)
+    if not check_command("node"):
+        return 1
+    if not check_command("npm"):
+        return 1
 
     # Docker is optional
     if shutil.which("docker"):
@@ -293,31 +153,78 @@ def main() -> int:
         warn("docker not found. Container workflows will be skipped.")
 
     # Check Node.js version
-    check_node_version(min_major=18, min_minor=18)
+    min_major = 18
+    min_minor = 18
+
+    try:
+        node_major, node_minor, node_version = get_node_version()
+    except (subprocess.CalledProcessError, ValueError, IndexError) as e:
+        err(f"Failed to get Node.js version: {e}")
+        return 1
+
+    if node_major < min_major or (node_major == min_major and node_minor < min_minor):
+        err(f"Node.js {node_version} detected. Require >= {min_major}.{min_minor}.")
+        print("Update Node.js and retry.")
+        return 1
+
+    ok(f"Node.js version {node_version} compatible")
 
     # Ensure env files
-    ensure_env_files(project_root)
+    log("Ensuring env files...")
+    env_local = project_root / ".env.local"
+    env_example = project_root / "env.development.example"
 
-    # Check Prisma schema
-    check_prisma_schema(project_root)
+    if not env_local.exists():
+        if env_example.exists():
+            shutil.copy(env_example, env_local)
+            warn(".env.local created from env.development.example. Review placeholder values.")
+        else:
+            warn("env.development.example missing. Skipping env bootstrap.")
+    else:
+        ok(".env.local already present")
 
-    # Install dependencies
-    if not config.skip_install:
-        run_npm_install(project_root)
+    # Verify Prisma schema
+    log("Verifying Prisma schema (optional)...")
+    prisma_schema = project_root / "prisma" / "schema.prisma"
+    if prisma_schema.exists():
+        ok("Prisma schema detected")
+    else:
+        warn("Prisma schema not found; skipping database validation")
+
+    # Install npm dependencies
+    if not args.skip_install:
+        log("Installing npm dependencies...")
+        result = run_npm_command(["install"], cwd=project_root)
+        if result.returncode != 0:
+            err("npm install failed")
+            return 1
+        ok("npm install complete")
     else:
         warn("Skipping dependency install (--skip-install)")
 
-    # Run setup
-    if not config.skip_setup:
-        run_npm_setup(project_root)
+    # Run npm setup
+    if not args.skip_setup:
+        result = run_npm_command(["run", "setup"], cwd=project_root, capture=True)
+        if result.returncode == 0:
+            ok("npm run setup completed")
+        else:
+            warn("npm run setup exited with non-zero status. Inspect logs above.")
     else:
         warn("Skipping project setup (--skip-setup)")
 
-    # Health checks
-    run_health_checks(project_root)
+    # Run health checks
+    log("Running quick health checks...")
+    result = run_npm_command(["run", "check"], cwd=project_root, capture=True)
+    if result.returncode == 0:
+        ok("Lint + type-check passed")
+    else:
+        warn("npm run check failed. Review output for details.")
 
     # Print next steps
-    print_next_steps()
+    log("Install complete. Next steps:")
+    print("  1. Update .env.local with real credentials.")
+    print("  2. Start development server via 'npm run dev'.")
+    print("  3. Optional: run validation script scripts/vibecode-cli/validate-config.sh")
 
     return 0
 
