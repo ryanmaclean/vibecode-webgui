@@ -15,6 +15,8 @@ On this box **and** `ssh studio`, these processes are active:
 - **Kafka DSM services**
   - `daemon/kafka-dsm/gt-kafka-consumer.js`
   - `daemon/kafka-dsm/tundra-observer.js`
+  - `daemon/kafka-dsm/td-event-emitter.js`
+  - *(note: `gt-kafka-emitter.js` was not observed running in the latest check)*
 
 ## Airflow DAGs (Tundra Dome)
 
@@ -66,6 +68,29 @@ Location: `daemon/kafka-dsm/`
   - `KAFKA_TOPIC=gastown-beads`
   - `GT_EVENTS_PATH=/Users/studio/gt/.events.jsonl`
 
+### td-event-emitter
+
+- **Script:** `td-event-emitter.sh`
+- **Env:** `td-event-emitter.env`
+- **Purpose:** Consumes multiple Tundra/Kafka topics and emits logs + OpenLineage events.
+- **Defaults:**
+  - `KAFKA_BROKERS=localhost:9092`
+  - `KAFKA_TOPICS=... (lane + bead lifecycle + chat + commands)`
+  - `TD_EVENT_LOG=/Users/studio/gt/logs/td-event-emitter.jsonl`
+
+### td-sling
+
+- **Script:** `td-sling.sh`
+- **Env:** `td-sling.env`
+- **Purpose:** CLI that emits bead lifecycle events to Kafka and optionally runs `gt sling`.
+- **Defaults:**
+  - `TD_RIG=mbp_m1`
+  - `TD_ACTOR=mayor`
+  - `TD_LANE=standard`
+  - `TD_TOPIC_WORK=tundra-work-intake`
+  - `TD_TOPIC_AUDIT=tundra-audit-actions`
+  - `TD_TOPIC_IN_PROGRESS=tundra-beads-in-progress`
+
 ### tundra-observer
 
 - **Script:** `tundra-observer.sh`
@@ -89,6 +114,8 @@ Location: `daemon/kafka-dsm/`
 
 ## Useful commands
 
+- `daemon/kafka-dsm/td-sling.sh <bead-id> [target] --lane <lane> --message <msg>`
+
 > Local
 
 - `ps aux | rg -i "airflow|tundra|kafka|dsm|gt-kafka|tundra-observer"`
@@ -102,5 +129,7 @@ Location: `daemon/kafka-dsm/`
 ## Notes
 
 - Airflow config + DB live in `airflow/`.
-- Logs live in `logs/` (including `tundra-observer.jsonl`).
+- Logs live in `logs/` (including `tundra-observer.jsonl`, `td-event-emitter.jsonl`).
 - Kafka topics list: `daemon/kafka-dsm/kafka-topics.txt`.
+- Observer rules: `settings/observer-rules.json`.
+- KPI thresholds: `settings/kpi-thresholds.json`.
