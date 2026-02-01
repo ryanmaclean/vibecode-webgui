@@ -240,7 +240,8 @@
     "@octokit/openapi-types": "24.0.0",
     "axios": "^1.10.0",
     "diff": "8.0.3",
-    "hono": "^4.11.4"
+    "hono": "^4.11.4",
+    "fast-xml-parser": "^5.3.4"
   },
   "devDependencies": {
     "@axe-core/playwright": "4.11.0",
