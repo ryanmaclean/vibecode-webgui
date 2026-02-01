@@ -6,5 +6,13 @@
     "status": "unknown",
     "doc": "docs/feature-audit/feature-1331-documentation-generation.md",
     "sourceRelease": "VibeCode Desktop v1.2.0 - Apple Virtualization Framework (1.2.0-2)"
+  },
+  {
+    "id": "vm-auto-start",
+    "title": "VM Auto-Start - Configure VMs to start with application",
+    "issue": "https://github.com/ryanmaclean/vibecode-webgui/issues/[TBD]",
+    "status": "implemented",
+    "doc": "docs/feature-audit/feature-vm-auto-start.md",
+    "sourceRelease": "VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance (v1.5.0)"
   }
 ]
