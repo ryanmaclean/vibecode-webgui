@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Generate SwiftUI app for full GUI Linux VM based on Apple's sample code.
 
@@ -491,4 +503,3 @@ if __name__ == '__main__':
         print(f"2. Run: open {app_dir}")
         print(f"3. Select Ubuntu 26.x ARM64 ISO when prompted")
         print(f"\nFeatures: GUI, audio, copy/paste, auto-resize, ASIF disk")
-

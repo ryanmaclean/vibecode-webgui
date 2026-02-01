@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+
 """Simple mock telemetry server for Vibecode WebGUI tests.
 
 Features:
@@ -13,15 +15,31 @@ Usage:
 """
 
 
+from __future__ import annotations
+
 # Datadog APM tracing
 try:
-    import ddtrace
-    ddtrace.patch_all()
+    from ddtrace import tracer, patch_all
+    patch_all()
 except ImportError:
+<<<<<<< HEAD
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+=======
+    pass  # ddtrace not installed
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import http.server
@@ -160,4 +178,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-

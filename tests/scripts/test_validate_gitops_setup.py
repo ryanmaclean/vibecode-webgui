@@ -1,4 +1,16 @@
+
+
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
 
 import os
 from pathlib import Path
@@ -47,4 +59,3 @@ def test_run_command_missing_binary() -> None:
     success, _, stderr = run_command(["/nonexistent/binary"])
     assert success is False
     assert "No such file" in stderr or "not found" in stderr
-

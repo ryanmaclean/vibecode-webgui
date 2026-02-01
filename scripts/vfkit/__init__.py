@@ -1,5 +1,18 @@
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """Legacy vfkit helpers and their Python replacements."""
 
+<<<<<<< HEAD
 # Import Python-converted scripts with underscored names
 from pathlib import Path as _Path
 import importlib.util as _util
@@ -24,3 +37,12 @@ _load_hyphenated_module("download_alpine_kernel", "02-download-alpine-kernel.py"
 _load_hyphenated_module("create_alpine_rootfs", "03-create-alpine-rootfs.py")
 _load_hyphenated_module("launch_alpine_vm", "04-launch-alpine-vm.py")
 _load_hyphenated_module("create_persistent_vm", "07-create-persistent-vm.py")
+=======
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

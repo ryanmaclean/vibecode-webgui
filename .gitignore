@@ -389,5 +389,23 @@ PROMISE_VERIFICATION_REPORT.md
 .runtime/
 .venv/
 
+
 # Gas Town (added by gt)
 .logs/
+
+# Gas Town (added by gt)
+# Tauri build artifacts (large)
+src-tauri/target/
+
+# Event logs
+.events.jsonl
+.specstory/
+
+# Local-only runtime artifacts
+.feed.jsonl
+daemon/
+
+# Legacy dispatch scripts (replaced by Python tooling)
+scripts/assign-issues-to-polecats.sh
+scripts/assign-all-to-polecats.sh
+

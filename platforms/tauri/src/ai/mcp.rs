@@ -1,10 +1,10 @@
 // MCP (Model Context Protocol) Integration
 // Provides bridge to MCP servers for agent capabilities
 
+use once_cell::sync::OnceCell;
 use std::collections::HashMap;
 use std::sync::Arc;
 use tokio::sync::RwLock;
-use once_cell::sync::OnceCell;
 
 pub struct MCPManager {
     servers: Arc<RwLock<HashMap<String, MCPServer>>>,

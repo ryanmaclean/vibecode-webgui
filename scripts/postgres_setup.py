@@ -1,7 +1,26 @@
 #!/usr/bin/env python3
+
+
 """PostgreSQL + pgvector setup helper for AKS clusters."""
 
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
 
 import argparse
 import secrets
@@ -223,15 +242,6 @@ def ensure_namespace(namespace: str, *, dry_run: bool) -> None:
         metadata:
           name: {namespace}
         """
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
-
     )
     run(["kubectl", "apply", "-f", "-"], input_text=manifest, dry_run=dry_run)
 

@@ -1,6 +1,7 @@
 {
   "title": "OpenClaw VM Monitoring Dashboard",
   "description": "Complete monitoring for OpenClaw in VM",
+  "layout_type": "ordered",
   "widgets": [
     {
       "definition": {
