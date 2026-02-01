@@ -19,6 +19,8 @@ class VMManager: ObservableObject {
     @Published var runningVMs: [String: VZVirtualMachine] = [:]
     @Published var vmStatus: [String: VMStatus] = [:]
     
+    var preferences: IDEPreferences?
+    
     private let logger = Logger(subsystem: "com.vibecode.vm", category: "VMManager")
     
     // CRITICAL: VZVirtualMachine requires operations on a serial dispatch queue
@@ -157,26 +159,31 @@ class VMManager: ObservableObject {
                     "current_vm_count": self.vms.count
                 ])
                 
-                // Auto-start codeserver VM (DELAYED for 5 seconds to let UI load first)
-                NSLog("🔍 VIBECODE: Checking for codeserver VM... Found \(discoveredVMs.count) VMs")
-                for vm in discoveredVMs {
-                    NSLog("  - VM name: %@", vm.name)
+                // Auto-start VMs based on preferences (DELAYED for 5 seconds to let UI load first)
+                NSLog("🔍 VIBECODE: Checking for auto-start VMs... Found \(discoveredVMs.count) VMs")
+                
+                let vmsToAutoStart = discoveredVMs.filter { vm in
+                    let shouldAutoStart = self.preferences?.isAutoStartEnabled(for: vm.id) ?? false
+                    NSLog("  - VM: %@ (ID: %@) - Auto-start: %@", vm.name, vm.id, shouldAutoStart ? "YES" : "NO")
+                    return shouldAutoStart
                 }
                 
-                if let codeserverVM = discoveredVMs.first(where: { $0.name.lowercased().contains("codeserver") }) {
-                    NSLog("⏱️  VIBECODE: Will auto-start codeserver VM (%@) in 5 seconds...", codeserverVM.name)
+                if !vmsToAutoStart.isEmpty {
+                    NSLog("⏱️  VIBECODE: Will auto-start \(vmsToAutoStart.count) VM(s) in 5 seconds...")
                     Task {
                         try? await Task.sleep(nanoseconds: 5_000_000_000) // 5 seconds
-                        NSLog("🚀 VIBECODE: Starting auto-start for codeserver VM...")
-                        do {
-                            try await self.startVM(codeserverVM)
-                            NSLog("✅ VIBECODE: Codeserver VM auto-started")
-                        } catch {
-                            NSLog("❌ VIBECODE: Failed to auto-start codeserver: %@", error.localizedDescription)
+                        NSLog("🚀 VIBECODE: Starting auto-start for VMs...")
+                        for vm in vmsToAutoStart {
+                            do {
+                                try await self.startVM(vm)
+                                NSLog("✅ VIBECODE: Auto-started VM: %@", vm.name)
+                            } catch {
+                                NSLog("❌ VIBECODE: Failed to auto-start %@: %@", vm.name, error.localizedDescription)
+                            }
                         }
                     }
                 } else {
-                    NSLog("❌ VIBECODE: No codeserver VM found in discovered VMs")
+                    NSLog("ℹ️  VIBECODE: No VMs configured for auto-start")
                 }
             }
             
