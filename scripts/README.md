@@ -18,6 +18,7 @@ This directory contains scripts to set up and manage a local Kubernetes developm
 | `kind-deploy-services.sh` | 📦 Deploy VibeCode services | `./scripts/kind-deploy-services.sh` |
 | `kind-health-check.sh` | 🩺 Validate deployment | `./scripts/kind-health-check.sh` |
 | `start-docker.sh` | 🐳 Docker Desktop helper | `./scripts/start-docker.sh` |
+| `cleanup-branches.sh` | 🌿 **Branch cleanup** - Delete merged Git branches | `./scripts/cleanup-branches.sh` |
 
 ## 🚀 Quick Start
 
