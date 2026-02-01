@@ -51,7 +51,7 @@ Get keys from Datadog: Organization Settings > API Keys and Application Keys
 Find slow endpoints and performance issues:
 
 ```bash
-bash scripts/query-apm.sh --service my-service --duration 1h --limit 20
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h --limit 20
 ```
 
 Returns:
@@ -65,7 +65,7 @@ Returns:
 Find security threats and attack attempts:
 
 ```bash
-bash scripts/query-security-signals.sh --service my-service --duration 24h
+bash scripts/datadog/query-security-signals.sh --service my-service --duration 24h
 ```
 
 Returns:
@@ -79,7 +79,7 @@ Returns:
 Automated anomaly detection from Datadog Watchdog:
 
 ```bash
-bash scripts/query-watchdog.sh --service my-service --type latency --duration 7d
+bash scripts/datadog/query-watchdog.sh --service my-service --type latency --duration 7d
 ```
 
 Returns:
@@ -93,7 +93,7 @@ Returns:
 Search logs for error patterns:
 
 ```bash
-bash scripts/search-logs.sh --query "status:error service:my-service" --duration 1h
+bash scripts/datadog/search-logs.sh --query "status:error service:my-service" --duration 1h
 ```
 
 Returns:
@@ -107,7 +107,7 @@ Returns:
 Fetch metric data with statistical analysis:
 
 ```bash
-bash scripts/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 24h
+bash scripts/datadog/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 24h
 ```
 
 Returns:
@@ -121,7 +121,7 @@ Returns:
 FinOps cost analysis and optimization:
 
 ```bash
-bash scripts/analyze-usage-cost.sh --duration 30d --product all
+bash scripts/datadog/analyze-usage-cost.sh --duration 30d --product all
 ```
 
 Returns:
@@ -137,7 +137,7 @@ Returns:
 For GenAI applications, analyze LLM observability data:
 
 ```bash
-bash scripts/analyze-llm.sh --service my-llm-app --duration 24h
+bash scripts/datadog/analyze-llm.sh --service my-llm-app --duration 24h
 ```
 
 Returns:
@@ -154,19 +154,19 @@ Create, list, mute, and manage Datadog monitors:
 
 ```bash
 # List all monitors
-bash scripts/manage-monitors.sh list
+bash scripts/datadog/manage-monitors.sh list
 
 # Create error rate monitor
-bash scripts/manage-monitors.sh create \
+bash scripts/datadog/manage-monitors.sh create \
   --name "High Error Rate" \
   --query "avg(last_5m):sum:trace.express.request.errors{service:my-service}.as_count() > 10" \
   --message "Error rate is high @slack-alerts"
 
 # Mute monitor for 2 hours
-bash scripts/manage-monitors.sh mute --id 12345 --duration 2
+bash scripts/datadog/manage-monitors.sh mute --id 12345 --duration 2
 
 # Unmute monitor
-bash scripts/manage-monitors.sh unmute --id 12345
+bash scripts/datadog/manage-monitors.sh unmute --id 12345
 ```
 
 Returns:
@@ -180,16 +180,16 @@ Generate dashboards from templates:
 
 ```bash
 # Create APM performance dashboard
-bash scripts/create-dashboard.sh --service payment-api --title "Payment API Performance" --type apm
+bash scripts/datadog/create-dashboard.sh --service payment-api --title "Payment API Performance" --type apm
 
 # Create security monitoring dashboard
-bash scripts/create-dashboard.sh --service payment-api --title "Security Dashboard" --type security
+bash scripts/datadog/create-dashboard.sh --service payment-api --title "Security Dashboard" --type security
 
 # Create cost analysis dashboard
-bash scripts/create-dashboard.sh --title "Infrastructure Costs" --type cost
+bash scripts/datadog/create-dashboard.sh --title "Infrastructure Costs" --type cost
 
 # Create LLM observability dashboard
-bash scripts/create-dashboard.sh --service my-genai-app --title "LLM Performance" --type llm
+bash scripts/datadog/create-dashboard.sh --service my-genai-app --title "LLM Performance" --type llm
 ```
 
 Dashboard types:
@@ -205,13 +205,13 @@ Check Service Level Objectives and error budgets:
 
 ```bash
 # List all SLOs
-bash scripts/query-slos.sh
+bash scripts/datadog/query-slos.sh
 
 # List SLOs for service
-bash scripts/query-slos.sh --service payment-api
+bash scripts/datadog/query-slos.sh --service payment-api
 
 # List SLOs with tag
-bash scripts/query-slos.sh --tag team:backend
+bash scripts/datadog/query-slos.sh --tag team:backend
 ```
 
 Returns:
@@ -226,13 +226,13 @@ Execute Datadog workflow automation:
 
 ```bash
 # List available workflows
-bash scripts/trigger-workflow.sh list
+bash scripts/datadog/trigger-workflow.sh list
 
 # Trigger workflow
-bash scripts/trigger-workflow.sh run --id abc123
+bash scripts/datadog/trigger-workflow.sh run --id abc123
 
 # Trigger with input data
-bash scripts/trigger-workflow.sh run --id abc123 --input '{"service": "payment-api", "severity": "high"}'
+bash scripts/datadog/trigger-workflow.sh run --id abc123 --input '{"service": "payment-api", "severity": "high"}'
 ```
 
 Returns:
@@ -246,19 +246,19 @@ Create and manage incident response:
 
 ```bash
 # List active incidents
-bash scripts/manage-incidents.sh list --status active
+bash scripts/datadog/manage-incidents.sh list --status active
 
 # Create critical incident
-bash scripts/manage-incidents.sh create \
+bash scripts/datadog/manage-incidents.sh create \
   --title "Payment API Down" \
   --service payment-api \
   --severity SEV-1
 
 # Update incident status
-bash scripts/manage-incidents.sh update --id abc123 --status resolved
+bash scripts/datadog/manage-incidents.sh update --id abc123 --status resolved
 
 # Get incident details
-bash scripts/manage-incidents.sh get --id abc123
+bash scripts/datadog/manage-incidents.sh get --id abc123
 ```
 
 Returns:
@@ -272,13 +272,13 @@ List services and ownership metadata:
 
 ```bash
 # List all services
-bash scripts/query-service-catalog.sh list
+bash scripts/datadog/query-service-catalog.sh list
 
 # List services for team
-bash scripts/query-service-catalog.sh list --team backend
+bash scripts/datadog/query-service-catalog.sh list --team backend
 
 # Get service details
-bash scripts/query-service-catalog.sh get --service payment-api
+bash scripts/datadog/query-service-catalog.sh get --service payment-api
 ```
 
 Returns:
@@ -293,21 +293,21 @@ Create uptime checks and API tests:
 
 ```bash
 # List all synthetic tests
-bash scripts/manage-synthetics.sh list
+bash scripts/datadog/manage-synthetics.sh list
 
 # Create API uptime check
-bash scripts/manage-synthetics.sh create-api \
+bash scripts/datadog/manage-synthetics.sh create-api \
   --name "Payment API Uptime" \
   --url "https://api.example.com/health" \
   --method GET
 
 # Create browser test
-bash scripts/manage-synthetics.sh create-browser \
+bash scripts/datadog/manage-synthetics.sh create-browser \
   --name "Login Flow" \
   --url "https://app.example.com/login"
 
 # Get test results
-bash scripts/manage-synthetics.sh get --id abc-123-def
+bash scripts/datadog/manage-synthetics.sh get --id abc-123-def
 ```
 
 Returns:
@@ -321,10 +321,10 @@ Analyze database queries and performance:
 
 ```bash
 # Query database performance
-bash scripts/query-database.sh --host postgres-prod --duration 1h
+bash scripts/datadog/query-database.sh --host postgres-prod --duration 1h
 
 # Get slow queries
-bash scripts/query-database.sh --host mysql-01 --duration 24h
+bash scripts/datadog/query-database.sh --host mysql-01 --duration 24h
 ```
 
 Returns:
@@ -339,10 +339,10 @@ Analyze frontend performance and user experience:
 
 ```bash
 # Query RUM data for application
-bash scripts/query-rum.sh --application abc-123-def --duration 1h
+bash scripts/datadog/query-rum.sh --application abc-123-def --duration 1h
 
 # Get page load performance
-bash scripts/query-rum.sh --application abc-123-def --duration 24h
+bash scripts/datadog/query-rum.sh --application abc-123-def --duration 24h
 ```
 
 Returns:
@@ -356,7 +356,7 @@ Returns:
 Validate Datadog configuration:
 
 ```bash
-bash scripts/verify-setup.sh
+bash scripts/datadog/verify-setup.sh
 ```
 
 Returns:
@@ -371,37 +371,37 @@ When investigating production issues:
 **1. Identify scope**
 ```bash
 # Check for security threats
-bash scripts/query-security-signals.sh --severity critical --duration 1h
+bash scripts/datadog/query-security-signals.sh --severity critical --duration 1h
 
 # Check for anomalies
-bash scripts/query-watchdog.sh --service affected-service --duration 24h
+bash scripts/datadog/query-watchdog.sh --service affected-service --duration 24h
 ```
 
 **2. Find performance issues**
 ```bash
 # Find slow endpoints
-bash scripts/query-apm.sh --service affected-service --duration 1h
+bash scripts/datadog/query-apm.sh --service affected-service --duration 1h
 
 # Check error patterns
-bash scripts/search-logs.sh --service affected-service --status error --duration 1h
+bash scripts/datadog/search-logs.sh --service affected-service --status error --duration 1h
 ```
 
 **3. Analyze metrics**
 ```bash
 # Check latency trends
-bash scripts/query-metrics.sh --metric "trace.express.request.duration" --service affected-service --duration 24h
+bash scripts/datadog/query-metrics.sh --metric "trace.express.request.duration" --service affected-service --duration 24h
 
 # Check error rate trends
-bash scripts/query-metrics.sh --metric "trace.express.request.errors" --service affected-service --duration 24h
+bash scripts/datadog/query-metrics.sh --metric "trace.express.request.errors" --service affected-service --duration 24h
 ```
 
 **4. Get specific traces**
 ```bash
 # Get error traces
-bash scripts/query-apm.sh --service affected-service --status error --limit 10
+bash scripts/datadog/query-apm.sh --service affected-service --status error --limit 10
 
 # Search logs for trace context
-bash scripts/search-logs.sh --query "trace_id:abc123def456"
+bash scripts/datadog/search-logs.sh --query "trace_id:abc123def456"
 ```
 
 ## Security Analysis Workflow
@@ -410,13 +410,13 @@ Monitor and investigate security threats:
 
 ```bash
 # Check critical security signals
-bash scripts/query-security-signals.sh --severity critical --duration 7d
+bash scripts/datadog/query-security-signals.sh --severity critical --duration 7d
 
 # Analyze specific service
-bash scripts/query-security-signals.sh --service payment-api --duration 24h
+bash scripts/datadog/query-security-signals.sh --service payment-api --duration 24h
 
 # Search for attack patterns in logs
-bash scripts/search-logs.sh --query "sql injection OR xss OR authentication failed" --duration 24h
+bash scripts/datadog/search-logs.sh --query "sql injection OR xss OR authentication failed" --duration 24h
 ```
 
 ## Cost Optimization Workflow
@@ -425,16 +425,16 @@ Analyze and optimize Datadog costs:
 
 ```bash
 # Get full cost breakdown
-bash scripts/analyze-usage-cost.sh --duration 30d --product all
+bash scripts/datadog/analyze-usage-cost.sh --duration 30d --product all
 
 # Focus on APM costs
-bash scripts/analyze-usage-cost.sh --duration 30d --product apm
+bash scripts/datadog/analyze-usage-cost.sh --duration 30d --product apm
 
 # Extract high-priority recommendations
-bash scripts/analyze-usage-cost.sh --duration 30d --product all | jq '.recommendations[] | select(.priority == "high")'
+bash scripts/datadog/analyze-usage-cost.sh --duration 30d --product all | jq '.recommendations[] | select(.priority == "high")'
 
 # Track weekly trends
-bash scripts/analyze-usage-cost.sh --duration 7d --product all | jq '.cost_summary'
+bash scripts/datadog/analyze-usage-cost.sh --duration 7d --product all | jq '.cost_summary'
 ```
 
 ## LLM Observability Workflow
@@ -443,16 +443,16 @@ For GenAI applications, monitor token usage and costs:
 
 ```bash
 # Analyze LLM performance
-bash scripts/analyze-llm.sh --service my-genai-app --duration 24h
+bash scripts/datadog/analyze-llm.sh --service my-genai-app --duration 24h
 
 # Filter by specific model
-bash scripts/analyze-llm.sh --service my-genai-app --model gpt-4 --duration 7d
+bash scripts/datadog/analyze-llm.sh --service my-genai-app --model gpt-4 --duration 7d
 
 # Find most expensive operations
-bash scripts/analyze-llm.sh --service my-genai-app --duration 30d | jq '.operations | sort_by(.total_cost_usd) | reverse | .[0:5]'
+bash scripts/datadog/analyze-llm.sh --service my-genai-app --duration 30d | jq '.operations | sort_by(.total_cost_usd) | reverse | .[0:5]'
 
 # Track token usage trends
-bash scripts/analyze-llm.sh --service my-genai-app --duration 7d | jq '.summary.token_usage'
+bash scripts/datadog/analyze-llm.sh --service my-genai-app --duration 7d | jq '.summary.token_usage'
 ```
 
 ## Deployment Impact Analysis
@@ -461,20 +461,20 @@ Compare metrics before/after deployment:
 
 ```bash
 # Before deployment
-bash scripts/query-apm.sh --service my-service --duration 1h > before.json
-bash scripts/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 1h >> before_metrics.json
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h > before.json
+bash scripts/datadog/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 1h >> before_metrics.json
 
 # Deploy...
 
 # After deployment
-bash scripts/query-apm.sh --service my-service --duration 1h > after.json
-bash scripts/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 1h >> after_metrics.json
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h > after.json
+bash scripts/datadog/query-metrics.sh --metric "trace.express.request.duration" --service my-service --duration 1h >> after_metrics.json
 
 # Compare latency
 jq -s '.[0].summary.avg_p95_ms - .[1].summary.avg_p95_ms' before.json after.json
 
 # Check for new errors
-bash scripts/search-logs.sh --service my-service --status error --duration 30m
+bash scripts/datadog/search-logs.sh --service my-service --status error --duration 30m
 ```
 
 ## Monitor Creation Workflow
@@ -483,22 +483,22 @@ Set up monitoring for new services:
 
 ```bash
 # Create latency monitor
-bash scripts/manage-monitors.sh create \
+bash scripts/datadog/manage-monitors.sh create \
   --name "Payment API - High Latency" \
   --query "avg(last_5m):avg:trace.express.request.duration{service:payment-api} > 500" \
   --message "P95 latency above 500ms @slack-ops"
 
 # Create error rate monitor
-bash scripts/manage-monitors.sh create \
+bash scripts/datadog/manage-monitors.sh create \
   --name "Payment API - Error Rate" \
   --query "avg(last_5m):sum:trace.express.request.errors{service:payment-api}.as_count() / sum:trace.express.request.hits{service:payment-api}.as_count() > 0.05" \
   --message "Error rate above 5% @pagerduty"
 
 # Create APM dashboard
-bash scripts/create-dashboard.sh --service payment-api --title "Payment API Performance" --type apm
+bash scripts/datadog/create-dashboard.sh --service payment-api --title "Payment API Performance" --type apm
 
 # Create security dashboard
-bash scripts/create-dashboard.sh --service payment-api --title "Payment API Security" --type security
+bash scripts/datadog/create-dashboard.sh --service payment-api --title "Payment API Security" --type security
 ```
 
 ## Incident Response Workflow
@@ -507,24 +507,24 @@ Automated incident management:
 
 ```bash
 # Check for SLO breaches
-bash scripts/query-slos.sh --service payment-api | jq '.slos[] | select(.status == "breaching")'
+bash scripts/datadog/query-slos.sh --service payment-api | jq '.slos[] | select(.status == "breaching")'
 
 # Create incident if SLO breached
-bash scripts/manage-incidents.sh create \
+bash scripts/datadog/manage-incidents.sh create \
   --title "Payment API SLO Breach" \
   --service payment-api \
   --severity SEV-2
 
 # Trigger remediation workflow
-bash scripts/trigger-workflow.sh run --id remediation-workflow-123 --input '{"service": "payment-api"}'
+bash scripts/datadog/trigger-workflow.sh run --id remediation-workflow-123 --input '{"service": "payment-api"}'
 
 # Mute non-critical monitors during incident
-bash scripts/manage-monitors.sh list --service payment-api | \
+bash scripts/datadog/manage-monitors.sh list --service payment-api | \
   jq '.monitors[] | select(.name | contains("non-critical")) | .id' | \
-  xargs -I {} bash scripts/manage-monitors.sh mute --id {} --duration 2
+  xargs -I {} bash scripts/datadog/manage-monitors.sh mute --id {} --duration 2
 
 # Update incident when resolved
-bash scripts/manage-incidents.sh update --id abc123 --status resolved
+bash scripts/datadog/manage-incidents.sh update --id abc123 --status resolved
 ```
 
 ## SLO Monitoring Workflow
@@ -533,19 +533,19 @@ Track service level objectives:
 
 ```bash
 # Check all SLOs
-bash scripts/query-slos.sh
+bash scripts/datadog/query-slos.sh
 
 # Alert if error budget exhausted
-EXHAUSTED=$(bash scripts/query-slos.sh | jq '.summary.budget_exhausted')
+EXHAUSTED=$(bash scripts/datadog/query-slos.sh | jq '.summary.budget_exhausted')
 if [ "$EXHAUSTED" -gt 0 ]; then
-  bash scripts/manage-incidents.sh create \
+  bash scripts/datadog/manage-incidents.sh create \
     --title "Error Budget Exhausted" \
     --service affected-service \
     --severity SEV-3
 fi
 
 # Weekly SLO report
-bash scripts/query-slos.sh | jq '{
+bash scripts/datadog/query-slos.sh | jq '{
   total: .total_slos,
   breaching: .summary.breaching,
   low_budget: .summary.budget_low,
@@ -572,13 +572,13 @@ Status messages go to stderr, JSON to stdout. This allows:
 
 ```bash
 # Silent execution, capture JSON
-bash scripts/query-apm.sh --service my-service --duration 1h 2>/dev/null | jq '.summary'
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h 2>/dev/null | jq '.summary'
 
 # Log messages only
-bash scripts/query-apm.sh --service my-service --duration 1h >/dev/null
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h >/dev/null
 
 # Both
-bash scripts/query-apm.sh --service my-service --duration 1h
+bash scripts/datadog/query-apm.sh --service my-service --duration 1h
 ```
 
 ## Best Practices
