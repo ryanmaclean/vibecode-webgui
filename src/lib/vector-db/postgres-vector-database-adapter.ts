@@ -610,7 +610,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       },
       similarity: item.similarity
     }));
-  private errorHandler: VectorDbErrorHandler;
   }
 
   /**
