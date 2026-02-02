@@ -66,6 +66,34 @@ export interface GlobalPoolConfiguration {
     /** Metrics collection interval (ms) */
     metricsIntervalMs: number;
   };
+
+  // Connection Reuse Optimization
+  connectionReuse: {
+    /** Enable connection reuse optimization */
+    enabled: boolean;
+    /** Maximum age of a connection before forced recycling (ms) */
+    maxConnectionAgeMs: number;
+    /** Prefer recently used connections (warm connections) */
+    preferWarmConnections: boolean;
+    /** Maximum idle time before connection is considered stale (ms) */
+    maxIdleTimeMs: number;
+    /** Enable connection validation before reuse */
+    validateBeforeReuse: boolean;
+    /** Validation query timeout (ms) */
+    validationTimeoutMs: number;
+  };
+
+  // Adaptive Timeouts
+  adaptiveTimeouts: {
+    /** Enable adaptive timeout adjustment */
+    enabled: boolean;
+    /** Base acquire timeout (ms) */
+    baseAcquireTimeoutMs: number;
+    /** Maximum acquire timeout under load (ms) */
+    maxAcquireTimeoutMs: number;
+    /** Utilization threshold to start increasing timeout */
+    loadThreshold: number;
+  };
 }
 
 /**
@@ -123,6 +151,24 @@ export const DEFAULT_GLOBAL_CONFIG: GlobalPoolConfiguration = {
     enableDetailedMetrics: true,
     enableLeakDetection: true,
     metricsIntervalMs: 60000    // 1 minute
+  },
+
+  // Connection Reuse Optimization
+  connectionReuse: {
+    enabled: true,
+    maxConnectionAgeMs: 30 * 60 * 1000, // 30 minutes max connection age
+    preferWarmConnections: true,         // Prefer recently used connections
+    maxIdleTimeMs: 60000,                // 1 minute max idle before stale
+    validateBeforeReuse: true,           // Validate before reuse
+    validationTimeoutMs: 3000            // 3 second validation timeout
+  },
+
+  // Adaptive Timeouts
+  adaptiveTimeouts: {
+    enabled: true,
+    baseAcquireTimeoutMs: 5000,          // 5 seconds base
+    maxAcquireTimeoutMs: 30000,          // 30 seconds max under load
+    loadThreshold: 0.70                  // Start increasing timeout at 70% load
   }
 };
 
@@ -248,8 +294,103 @@ export function getGlobalConfig(): GlobalPoolConfiguration {
     monitoring: {
       ...DEFAULT_GLOBAL_CONFIG.monitoring,
       ...(envConfig.monitoring || {})
+    },
+    connectionReuse: {
+      ...DEFAULT_GLOBAL_CONFIG.connectionReuse,
+      ...(envConfig.connectionReuse || {})
+    },
+    adaptiveTimeouts: {
+      ...DEFAULT_GLOBAL_CONFIG.adaptiveTimeouts,
+      ...(envConfig.adaptiveTimeouts || {})
     }
   };
+}
+
+/**
+ * Calculate adaptive acquire timeout based on current pool utilization
+ * Returns adjusted timeout in milliseconds
+ */
+export function calculateAdaptiveTimeout(
+  currentUtilization: number,
+  config: GlobalPoolConfiguration = getGlobalConfig()
+): number {
+  if (!config.adaptiveTimeouts.enabled) {
+    return config.adaptiveTimeouts.baseAcquireTimeoutMs;
+  }
+
+  const { baseAcquireTimeoutMs, maxAcquireTimeoutMs, loadThreshold } = config.adaptiveTimeouts;
+
+  // If under load threshold, use base timeout
+  if (currentUtilization < loadThreshold) {
+    return baseAcquireTimeoutMs;
+  }
+
+  // Calculate scaled timeout based on utilization above threshold
+  // Linear scaling from base to max as utilization goes from threshold to 100%
+  const utilizationAboveThreshold = currentUtilization - loadThreshold;
+  const utilizationRange = 1 - loadThreshold;
+  const scaleFactor = Math.min(1, utilizationAboveThreshold / utilizationRange);
+
+  const timeoutRange = maxAcquireTimeoutMs - baseAcquireTimeoutMs;
+  const additionalTimeout = timeoutRange * scaleFactor;
+
+  return Math.round(baseAcquireTimeoutMs + additionalTimeout);
+}
+
+/**
+ * Find best connection for reuse based on connection reuse optimization settings
+ * Returns connection key or null if no suitable connection found
+ */
+export function findBestConnectionForReuse(
+  connections: Map<string, { lastUsed: number; createdAt: number; inUse: boolean }>,
+  config: GlobalPoolConfiguration = getGlobalConfig()
+): string | null {
+  if (!config.connectionReuse.enabled) {
+    return null;
+  }
+
+  const now = Date.now();
+  const { maxConnectionAgeMs, preferWarmConnections, maxIdleTimeMs } = config.connectionReuse;
+
+  let bestConnection: string | null = null;
+  let bestScore = -Infinity;
+
+  for (const [key, conn] of connections.entries()) {
+    // Skip in-use connections
+    if (conn.inUse) continue;
+
+    const age = now - conn.createdAt;
+    const idleTime = now - conn.lastUsed;
+
+    // Skip connections that are too old
+    if (age > maxConnectionAgeMs) continue;
+
+    // Skip connections that have been idle too long (stale)
+    if (idleTime > maxIdleTimeMs) continue;
+
+    // Calculate score based on preferences
+    let score = 0;
+
+    if (preferWarmConnections) {
+      // Prefer recently used connections (lower idle time = higher score)
+      // Score inversely proportional to idle time
+      score = maxIdleTimeMs - idleTime;
+    } else {
+      // Prefer least recently used (for more even connection usage)
+      score = idleTime;
+    }
+
+    // Penalize very old connections slightly
+    const ageRatio = age / maxConnectionAgeMs;
+    score = score * (1 - ageRatio * 0.2); // Up to 20% penalty for old connections
+
+    if (score > bestScore) {
+      bestScore = score;
+      bestConnection = key;
+    }
+  }
+
+  return bestConnection;
 }
 
 /**

@@ -43,6 +43,12 @@ interface PredictiveScalingConfig {
   forecastWindow: number; // milliseconds to look ahead for predictions
   aggressiveness: number; // 0-1 how aggressively to scale
   usagePatternDetection: boolean; // enable time-based usage pattern detection
+  burstDetectionEnabled: boolean; // enable burst traffic detection
+  burstThreshold: number; // percentage increase over baseline to consider a burst
+  burstScaleFactor: number; // how much to scale during burst (e.g., 2.0 = double)
+  burstCooldownPeriod: number; // cooldown after burst scaling (ms)
+  warmupEnabled: boolean; // enable connection warmup/preheating
+  warmupSize: number; // number of connections to preheat
 }
 
 // Default configuration
@@ -58,8 +64,32 @@ const DEFAULT_CONFIG: PredictiveScalingConfig = {
   cooldownPeriod: 60 * 1000, // 1 minute cooldown between scaling actions
   forecastWindow: 60 * 1000, // 1 minute forecast window
   aggressiveness: 0.5, // Moderate aggressiveness
-  usagePatternDetection: true // Enable usage pattern detection
+  usagePatternDetection: true, // Enable usage pattern detection
+  burstDetectionEnabled: process.env.DB_POOL_BURST_DETECTION !== 'false',
+  burstThreshold: 150, // 150% of baseline = burst
+  burstScaleFactor: 2.0, // Double capacity during burst
+  burstCooldownPeriod: 30 * 1000, // 30 second cooldown after burst scaling
+  warmupEnabled: process.env.DB_POOL_WARMUP !== 'false',
+  warmupSize: Math.max(2, Math.floor(poolConfig.minSize * 0.5)) // Warmup at least 2 or half of min
 };
+
+// Burst detection state
+interface BurstState {
+  isInBurst: boolean;
+  burstStartTime: number;
+  burstEndTime: number;
+  baselineConnections: number;
+  peakConnections: number;
+  lastBurstScaling: number;
+}
+
+// Connection warmup state
+interface WarmupState {
+  isWarmingUp: boolean;
+  warmupStartTime: number;
+  connectionsWarmed: number;
+  targetConnections: number;
+}
 
 // Usage pattern detection state
 interface UsagePatternData {
@@ -83,6 +113,20 @@ class PredictiveScaler {
     dayOfWeekPatterns: new Map(),
     lastScalingAction: 0
   };
+  private burstState: BurstState = {
+    isInBurst: false,
+    burstStartTime: 0,
+    burstEndTime: 0,
+    baselineConnections: 0,
+    peakConnections: 0,
+    lastBurstScaling: 0
+  };
+  private warmupState: WarmupState = {
+    isWarmingUp: false,
+    warmupStartTime: 0,
+    connectionsWarmed: 0,
+    targetConnections: 0
+  };
   private logger = getDatabaseLogger({
     defaultCategory: LogCategory.CONNECTION
   });
@@ -91,8 +135,152 @@ class PredictiveScaler {
     this.config = { ...DEFAULT_CONFIG, ...config };
     this.logger.info('Predictive connection pool scaler initialized', {
       strategy: this.config.strategy,
-      enabled: this.config.enabled
+      enabled: this.config.enabled,
+      burstDetection: this.config.burstDetectionEnabled,
+      warmupEnabled: this.config.warmupEnabled
     });
+
+    // Start warmup if enabled
+    if (this.config.warmupEnabled) {
+      this.initiateWarmup();
+    }
+  }
+
+  /**
+   * Initiate connection warmup/preheating
+   */
+  private initiateWarmup(): void {
+    if (this.warmupState.isWarmingUp) return;
+
+    this.warmupState = {
+      isWarmingUp: true,
+      warmupStartTime: Date.now(),
+      connectionsWarmed: 0,
+      targetConnections: this.config.warmupSize
+    };
+
+    this.logger.info('Initiating connection warmup', {
+      targetConnections: this.config.warmupSize
+    });
+
+    // Warmup is handled by pre-creating connections in the pool
+    // The pool's initializePool method handles this, so we just track state
+    this.warmupState.isWarmingUp = false;
+    this.warmupState.connectionsWarmed = this.config.warmupSize;
+
+    this.logger.info('Connection warmup completed', {
+      connectionsWarmed: this.warmupState.connectionsWarmed,
+      duration: Date.now() - this.warmupState.warmupStartTime
+    });
+  }
+
+  /**
+   * Detect burst traffic patterns
+   */
+  private detectBurst(): boolean {
+    if (!this.config.burstDetectionEnabled) return false;
+
+    const now = Date.now();
+    const recentMetrics = this.metricHistory.filter(
+      m => m.timestamp >= now - TIME_WINDOWS.SHORT
+    );
+
+    if (recentMetrics.length < 3) return false;
+
+    // Calculate baseline from medium-term history
+    const mediumTermMetrics = this.metricHistory.filter(
+      m => m.timestamp >= now - TIME_WINDOWS.MEDIUM && m.timestamp < now - TIME_WINDOWS.SHORT
+    );
+
+    if (mediumTermMetrics.length === 0) {
+      // Not enough history for baseline, use recent average
+      this.burstState.baselineConnections = recentMetrics.reduce(
+        (sum, m) => sum + m.activeConnections, 0
+      ) / recentMetrics.length;
+    } else {
+      this.burstState.baselineConnections = mediumTermMetrics.reduce(
+        (sum, m) => sum + m.activeConnections, 0
+      ) / mediumTermMetrics.length;
+    }
+
+    // Calculate current activity level
+    const currentConnections = recentMetrics.reduce(
+      (sum, m) => sum + m.activeConnections, 0
+    ) / recentMetrics.length;
+
+    // Check if current is significantly above baseline
+    const percentageOfBaseline = this.burstState.baselineConnections > 0
+      ? (currentConnections / this.burstState.baselineConnections) * 100
+      : 100;
+
+    const isBurst = percentageOfBaseline >= this.config.burstThreshold;
+
+    if (isBurst && !this.burstState.isInBurst) {
+      // Burst started
+      this.burstState.isInBurst = true;
+      this.burstState.burstStartTime = now;
+      this.burstState.peakConnections = currentConnections;
+
+      this.logger.info('Burst traffic detected', {
+        baseline: this.burstState.baselineConnections,
+        current: currentConnections,
+        percentageOfBaseline
+      });
+    } else if (!isBurst && this.burstState.isInBurst) {
+      // Burst ended
+      this.burstState.isInBurst = false;
+      this.burstState.burstEndTime = now;
+
+      this.logger.info('Burst traffic ended', {
+        duration: now - this.burstState.burstStartTime,
+        peakConnections: this.burstState.peakConnections
+      });
+    } else if (isBurst) {
+      // Update peak during burst
+      this.burstState.peakConnections = Math.max(
+        this.burstState.peakConnections,
+        currentConnections
+      );
+    }
+
+    return isBurst;
+  }
+
+  /**
+   * Handle burst scaling
+   */
+  private handleBurstScaling(): boolean {
+    if (!this.config.burstDetectionEnabled || !this.burstState.isInBurst) {
+      return false;
+    }
+
+    const now = Date.now();
+
+    // Check burst cooldown
+    if (now - this.burstState.lastBurstScaling < this.config.burstCooldownPeriod) {
+      return false;
+    }
+
+    // Calculate burst target size
+    const burstTargetSize = Math.min(
+      this.config.maxConnections,
+      Math.ceil(connectionPool.clients.size * this.config.burstScaleFactor)
+    );
+
+    if (burstTargetSize > connectionPool.maxSize) {
+      connectionPool.maxSize = burstTargetSize;
+      this.burstState.lastBurstScaling = now;
+
+      this.logger.info('Burst scaling applied', {
+        newMaxSize: burstTargetSize,
+        burstScaleFactor: this.config.burstScaleFactor,
+        peakConnections: this.burstState.peakConnections
+      });
+
+      return true;
+    }
+
+    return false;
   }
 
   /**
@@ -120,7 +308,16 @@ class PredictiveScaler {
     const oldestToKeep = now - TIME_WINDOWS.LONG;
     this.metricHistory = this.metricHistory.filter(m => m.timestamp >= oldestToKeep);
 
-    // Check if we should scale the pool
+    // Check for burst traffic
+    const isBurst = this.detectBurst();
+
+    // Handle burst scaling first (priority over regular scaling)
+    if (isBurst) {
+      const burstScaled = this.handleBurstScaling();
+      if (burstScaled) return; // Skip regular scaling if burst scaling was applied
+    }
+
+    // Check if we should scale the pool (regular scaling)
     this.evaluatePoolScaling();
   }
 
@@ -420,7 +617,7 @@ class PredictiveScaler {
   public getPredictionMetrics() {
     const predictedConnections = this.predictFutureConnections();
     const currentConnections = connectionPool.inUse;
-    
+
     return {
       enabled: this.config.enabled,
       strategy: this.config.strategy,
@@ -442,8 +639,67 @@ class PredictiveScaler {
             avgConnections: data.avgConnections,
             samples: data.samples
           }))
+      },
+      burstState: {
+        isInBurst: this.burstState.isInBurst,
+        baselineConnections: this.burstState.baselineConnections,
+        peakConnections: this.burstState.peakConnections,
+        burstDuration: this.burstState.isInBurst
+          ? Date.now() - this.burstState.burstStartTime
+          : 0
+      },
+      warmupState: {
+        connectionsWarmed: this.warmupState.connectionsWarmed,
+        targetConnections: this.warmupState.targetConnections
       }
     };
+  }
+
+  /**
+   * Get burst state for external monitoring
+   */
+  public getBurstState(): BurstState {
+    return { ...this.burstState };
+  }
+
+  /**
+   * Get warmup state for external monitoring
+   */
+  public getWarmupState(): WarmupState {
+    return { ...this.warmupState };
+  }
+
+  /**
+   * Trigger manual warmup (useful for scheduled warmup before known traffic spikes)
+   */
+  public triggerWarmup(targetConnections?: number): void {
+    const target = targetConnections || this.config.warmupSize;
+    this.warmupState = {
+      isWarmingUp: true,
+      warmupStartTime: Date.now(),
+      connectionsWarmed: 0,
+      targetConnections: target
+    };
+
+    this.logger.info('Manual warmup triggered', { targetConnections: target });
+
+    // Update pool min size temporarily to trigger warmup
+    const currentMinSize = connectionPool.minSize;
+    if (target > currentMinSize) {
+      connectionPool.minSize = target;
+
+      // Reset after warmup period
+      setTimeout(() => {
+        connectionPool.minSize = currentMinSize;
+        this.warmupState.isWarmingUp = false;
+        this.warmupState.connectionsWarmed = target;
+
+        this.logger.info('Manual warmup completed', {
+          connectionsWarmed: target,
+          duration: Date.now() - this.warmupState.warmupStartTime
+        });
+      }, 5000); // 5 seconds to allow connections to be created
+    }
   }
 
   /**
