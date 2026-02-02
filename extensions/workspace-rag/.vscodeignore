@@ -3,9 +3,8 @@
 src/**
 .gitignore
 .yarnrc
-webpack.config.js
+vsc-extension-quickstart.md
 **/tsconfig.json
-**/.eslintrc.json
 **/*.map
 **/*.ts
 
@@ -21,5 +20,4 @@ node_modules/**
 .github/**
 scripts/**
 .vscodeignore
-.github/**
 
