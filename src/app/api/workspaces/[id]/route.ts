@@ -4,6 +4,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { WorkspaceProvisioningService } from '@/lib/services/workspace-provisioning-simple'
 import { z } from '@/lib/zod-compat'
 // import { logger } from '@/lib/logger';
@@ -56,7 +58,7 @@ function validateWorkspaceId(id: string): { valid: boolean; error?: string } {
     if (error instanceof z.ZodError) {
       return {
         valid: false,
-        error: error.errors.map(e => e.message).join(', ')
+        error: error.issues.map(e => e.message).join(', ')
       }
     }
     return { valid: false, error: 'Validation failed' }
@@ -65,6 +67,15 @@ function validateWorkspaceId(id: string): { valid: boolean; error?: string } {
 
 export async function GET(request: NextRequest, { params }: RouteParams) {
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to access workspace' },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const workspaceId = id
 
@@ -74,7 +85,8 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       console.warn('Invalid workspace ID in GET request', {
         workspaceId,
         error: validation.error,
-        ip: request.headers.get('x-forwarded-for') || 'unknown'
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userId: session.user.id
       })
       return NextResponse.json(
         { error: 'Invalid workspace ID', details: validation.error },
@@ -82,7 +94,7 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.info('Getting workspace status', { workspaceId })
+    console.info('Getting workspace status', { workspaceId, userId: session.user.id })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -121,6 +133,15 @@ export async function GET(request: NextRequest, { params }: RouteParams) {
 
 export async function DELETE(request: NextRequest, { params }: RouteParams) {
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to delete workspace' },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const workspaceId = id
 
@@ -131,7 +152,8 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
         workspaceId,
         error: validation.error,
         ip: request.headers.get('x-forwarded-for') || 'unknown',
-        severity: 'high'
+        severity: 'high',
+        userId: session.user.id
       })
       return NextResponse.json(
         { error: 'Invalid workspace ID', details: validation.error },
@@ -139,7 +161,7 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
       )
     }
 
-    console.info('Deleting workspace', { workspaceId })
+    console.info('Deleting workspace', { workspaceId, userId: session.user.id })
 
     // Check if Kubernetes is available
     if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
@@ -173,6 +195,15 @@ export async function DELETE(request: NextRequest, { params }: RouteParams) {
 
 export async function PATCH(request: NextRequest, { params }: RouteParams) {
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required to update workspace' },
+        { status: 401 }
+      )
+    }
+
     const { id } = await params
     const workspaceId = id
 
@@ -182,7 +213,8 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
       console.warn('Invalid workspace ID in PATCH request', {
         workspaceId,
         error: validation.error,
-        ip: request.headers.get('x-forwarded-for') || 'unknown'
+        ip: request.headers.get('x-forwarded-for') || 'unknown',
+        userId: session.user.id
       })
       return NextResponse.json(
         { error: 'Invalid workspace ID', details: validation.error },
@@ -220,24 +252,36 @@ export async function PATCH(request: NextRequest, { params }: RouteParams) {
 
     console.info('Updating workspace', { workspaceId, updates: updateValidation.data })
 
-    // For now, we'll just return the current status
-    // TODO: Implement workspace updates (scaling, configuration changes)
-    
-    const workspaceService = new WorkspaceProvisioningService()
-    const workspace = await workspaceService.getWorkspaceStatus(workspaceId)
+    // Check if Kubernetes is available
+    if (!process.env.KUBECONFIG && !process.env.KUBERNETES_SERVICE_HOST) {
+      return NextResponse.json(
+        { error: 'Workspace service not available' },
+        { status: 503 }
+      )
+    }
 
-    if (!workspace) {
+    const workspaceService = new WorkspaceProvisioningService()
+
+    // Apply workspace updates (resources, scaling, metadata)
+    const updatedWorkspace = await workspaceService.updateWorkspace(
+      workspaceId,
+      updateValidation.data
+    )
+
+    if (!updatedWorkspace) {
       return NextResponse.json(
         { error: 'Workspace not found' },
         { status: 404 }
       )
     }
 
+    console.info(`Workspace updated: ${workspaceId}`)
+
     return NextResponse.json({
       success: true,
-      workspace,
-      message: 'Workspace update not yet implemented',
-      requestedUpdates: updateValidation.data
+      workspace: updatedWorkspace,
+      message: 'Workspace updated successfully',
+      appliedUpdates: updateValidation.data
     })
 
   } catch (error) {

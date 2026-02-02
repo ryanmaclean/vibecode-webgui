@@ -1,15 +1,22 @@
 /**
  * Vector Search API Route for VibeCode Platform
  * Provides semantic search capabilities for AI project generation
+ *
+ * Rate Limited: 30 requests per minute (resource-heavy operations)
  */
 
 import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
 import { z } from '@/lib/zod-compat';
 // import { logger } from '@/lib/logger';
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client';
 import crypto from 'crypto';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(30); // 30 requests per minute
 const searchRequestSchema = z.object({
   query: z.string().min(1, 'Query cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']).optional(),
@@ -22,7 +29,7 @@ const searchRequestSchema = z.object({
 const storeEmbeddingSchema = z.object({
   content: z.string().min(1, 'Content cannot be empty'),
   content_type: z.enum(['code', 'documentation', 'chat']),
-  metadata: z.record(z.any()).optional()
+  metadata: z.record(z.string(), z.any()).optional()
 });
 
 const batchSearchSchema = z.object({
@@ -34,7 +41,33 @@ const batchSearchSchema = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
+    // Authentication check
+    const session = await getServerSession(authOptions);
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for vector search' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json();
     const action = request.nextUrl.searchParams.get('action') || 'search';
 
@@ -162,7 +195,7 @@ async function handleBatchSearch(body: any) {
       const searchParams = { content_type, language, framework, limit };
       const cacheKey = generateVectorSearchCacheKey(query, searchParams);
       
-      const cached = await cache.get(cacheKey);
+      const cached = await cache.get<{ results: unknown[]; total_results: number }>(cacheKey);
       if (cached) {
         batchResults.push({
           query,
@@ -281,13 +314,39 @@ async function handleHybridSearch(body: any) {
 }
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Authentication required for vector search' },
+      { status: 401 }
+    );
+  }
+
   const action = request.nextUrl.searchParams.get('action');
 
   if (action === 'stats') {
     // Cache statistics for 60 seconds to reduce database load
     const statsCacheKey = 'vector-search:stats';
     const cached = await cache.get(statsCacheKey);
-    
+
     if (cached) {
       return NextResponse.json({
         success: true,
@@ -299,7 +358,7 @@ export async function GET(request: NextRequest) {
     const vectorSearch = new VectorSearchService();
     try {
       const stats = await vectorSearch.getStats();
-      
+
       // Include cache statistics
       const cacheStats = await cache.getStats();
       const enhancedStats = {
@@ -311,9 +370,9 @@ export async function GET(request: NextRequest) {
           estimated_cache_hit_rate: cacheStats.hitRate
         }
       };
-      
+
       await cache.set(statsCacheKey, enhancedStats, CacheTTL.SHORT);
-      
+
       return NextResponse.json({
         success: true,
         stats: enhancedStats,
@@ -330,7 +389,7 @@ export async function GET(request: NextRequest) {
     if (keys.length > 0) {
       await cache.del(keys);
     }
-    
+
     return NextResponse.json({
       success: true,
       message: `Cleared ${keys.length} vector search cache entries`,
@@ -355,7 +414,11 @@ export async function GET(request: NextRequest) {
       'stats_caching': 'Statistics cached for 60 seconds',
       'performance_gain': 'Expected 70-90% latency reduction for repeated queries'
     },
-    version: '1.1.0'
+    version: '1.1.0',
+    rate_limiting: {
+      'limit': '30 requests per minute',
+      'algorithm': 'sliding window'
+    }
   });
 }
 

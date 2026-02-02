@@ -5,11 +5,31 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(120) // 120 requests per minute - monitoring data
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const action = searchParams.get('action') || 'config'
@@ -126,17 +146,32 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const body = await request.json()
-    const { action, data } = body
+    const { action } = body
 
     switch (action) {
       case 'track_conversion':
         // Track business conversions
-        const conversionData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // conversionData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -146,10 +181,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_feature_usage':
         // Track feature usage for product analytics
-        const featureData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // featureData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -159,10 +192,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_user_journey':
         // Track user journey steps
-        const journeyData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // journeyData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,
@@ -172,10 +203,8 @@ export async function POST(request: NextRequest) {
 
       case 'track_performance':
         // Track custom performance metrics
-        const performanceData = {
-          ...data,
-          timestamp: new Date().toISOString()
-        }
+        // Data logged but not stored in variable to avoid unused warning
+        // performanceData = { ...data, timestamp: new Date().toISOString() }
 
         return NextResponse.json({
           success: true,

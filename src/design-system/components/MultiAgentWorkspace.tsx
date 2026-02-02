@@ -8,8 +8,8 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Panel, PanelGroup, PanelResizeHandle } from 'react-resizable-panels';
-import { Menu, X, Maximize2, Minimize2 } from 'lucide-react';
+import { Panel, Group as PanelGroup, Separator as PanelResizeHandle } from 'react-resizable-panels';
+import { Menu, X, Maximize, Minimize } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { AgentSelector, Agent } from './AgentSelector';
 import { ConversationThread, Message } from './ConversationThread';
@@ -250,7 +250,7 @@ function TabletWorkspace({
   };
 
   return (
-    <PanelGroup direction="horizontal" className="h-screen">
+    <PanelGroup orientation="horizontal" className="h-screen">
       {/* Agent sidebar */}
       <Panel defaultSize={20} minSize={15} maxSize={30}>
         <div className="h-full bg-white dark:bg-neutral-900 border-r border-neutral-200 dark:border-neutral-700">
@@ -272,7 +272,7 @@ function TabletWorkspace({
                     'bg-neutral-100 dark:bg-neutral-800 ring-2 ring-inset'
                 )}
                 style={{
-                  ringColor: selectedAgent.id === agent.id ? agent.color : undefined,
+                  ['--tw-ring-color' as string]: selectedAgent.id === agent.id ? agent.color : undefined,
                 }}
               >
                 <div
@@ -403,7 +403,7 @@ function DesktopWorkspace({
               )}
               style={{
                 backgroundColor: agent.bgColor,
-                ringColor: isActive ? agent.color : undefined,
+                ['--tw-ring-color' as string]: isActive ? agent.color : undefined,
               }}
               title={agent.name}
               aria-label={`${isActive ? 'Remove' : 'Add'} ${agent.name}`}

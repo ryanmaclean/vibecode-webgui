@@ -11,9 +11,13 @@ const { describe, test, expect, beforeAll, beforeEach, afterEach } = require('@j
 let mockFetch: jest.Mock;
 
 beforeAll(() => {
+  console.log('🔧 OpenRouter integration tests - using mocked APIs');
+});
+
+// Set up mock in beforeEach to override the default fetch mock from jest.setup.js
+beforeEach(() => {
   mockFetch = jest.fn();
   global.fetch = mockFetch;
-  console.log('🔧 OpenRouter integration tests - using mocked APIs');
 });
 
 afterEach(() => {

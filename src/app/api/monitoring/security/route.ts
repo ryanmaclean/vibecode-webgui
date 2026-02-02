@@ -6,7 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { getSecurityStats } from '../../../../middleware/security-middleware';
-import { aiRateLimiter, AISecurityLogger } from '../../../../lib/security/input-validator';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 
 interface SecurityMetrics {
   timestamp: string;
@@ -46,6 +48,23 @@ let rateLimitedRequests = 0;
 let suspiciousActivities = 0;
 
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication for security endpoint access
     const token = await getToken({
@@ -129,6 +148,23 @@ export async function GET(request: NextRequest) {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const token = await getToken({
       req: request,
@@ -217,15 +253,15 @@ function addSecurityEvent(
 }
 
 // Export helper functions for use by middleware
-function _incrementRateLimitCounter() {
+export function incrementRateLimitCounter() {
   rateLimitedRequests++;
 }
 
-function _incrementSuspiciousActivityCounter() {
+export function incrementSuspiciousActivityCounter() {
   suspiciousActivities++;
 }
 
-function _logSecurityEvent(
+export function logSecurityEvent(
   type: string,
   severity: 'low' | 'medium' | 'high' | 'critical',
   message: string

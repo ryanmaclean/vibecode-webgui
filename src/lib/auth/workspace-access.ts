@@ -121,7 +121,7 @@ export async function hasWorkspaceAccess(
     // No active membership found
     if (!membership || membership.length === 0) {
       datadogMetrics.increment('workspace.access.denied', 1, {
-        reason: 'no_membership'
+        tags: { reason: 'no_membership' }
       });
       return false;
     }
@@ -134,16 +134,18 @@ export async function hasWorkspaceAccess(
 
       if (!hasRequiredRole) {
         datadogMetrics.increment('workspace.access.denied', 1, {
-          reason: 'insufficient_role',
-          user_role: member.role,
-          required_role: requiredRole
+          tags: {
+            reason: 'insufficient_role',
+            user_role: member.role,
+            required_role: requiredRole
+          }
         });
         return false;
       }
     }
 
     datadogMetrics.increment('workspace.access.granted', 1, {
-      role: member.role
+      tags: { role: member.role }
     });
 
     return true;
@@ -299,7 +301,7 @@ export async function addWorkspaceMember(
         updated_at = CURRENT_TIMESTAMP
     `;
 
-    datadogMetrics.increment('workspace.member.added', 1, { role });
+    datadogMetrics.increment('workspace.member.added', 1, { tags: { role } });
     return true;
   } catch (error) {
     console.error('Failed to add workspace member:', error);
@@ -351,7 +353,7 @@ export async function updateWorkspaceRole(
     `;
 
     datadogMetrics.increment('workspace.member.role_updated', 1, {
-      new_role: newRole
+      tags: { new_role: newRole }
     });
     return true;
   } catch (error) {

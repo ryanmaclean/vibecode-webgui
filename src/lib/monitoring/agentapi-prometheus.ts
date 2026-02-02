@@ -11,8 +11,27 @@ import { ATTR_SERVICE_NAME, ATTR_SERVICE_VERSION } from '@opentelemetry/semantic
 interface PrometheusConfig {
   port: number;
   endpoint: string;
-  hostname?: string;
+  host?: string;
   preventServerStart?: boolean;
+}
+
+// Extended config interface for PrometheusExporter constructor which accepts more options
+interface PrometheusExporterConfig {
+  port: number;
+  endpoint: string;
+  host?: string;
+  preventServerStart?: boolean;
+}
+
+// Interface for HTTP request/response handlers
+interface HttpRequest {
+  url?: string;
+  method?: string;
+}
+
+interface HttpResponse {
+  writeHead(statusCode: number, headers?: Record<string, string>): void;
+  end(data?: string): void;
 }
 
 interface MetricSnapshot {
@@ -46,29 +65,31 @@ class AgentAPIPrometheusExporter {
       });
 
       // Create Prometheus exporter
+      const exporterConfig: PrometheusExporterConfig = {
+        port: config.port,
+        endpoint: config.endpoint,
+        host: config.host,
+        preventServerStart: config.preventServerStart
+      };
       this.exporter = new PrometheusExporter(
-        {
-          port: config.port,
-          endpoint: config.endpoint,
-          host: config.hostname,
-          preventServerStart: config.preventServerStart
-        },
+        exporterConfig as ConstructorParameters<typeof PrometheusExporter>[0],
         () => {
           console.info(
-            `📊 Prometheus metrics available at http://${config.hostname || 'localhost'}:${config.port}${config.endpoint}`
+            `Prometheus metrics available at http://${config.host || 'localhost'}:${config.port}${config.endpoint}`
           );
         }
       );
 
       // Create meter provider with Prometheus exporter
+      // PrometheusExporter extends MetricReader, so it can be used directly
       this.meterProvider = new MeterProvider({
         resource,
-        readers: [this.exporter]
+        readers: [this.exporter as unknown as PeriodicExportingMetricReader]
       });
 
-      console.info('✅ AgentAPI Prometheus exporter initialized');
+      console.info('AgentAPI Prometheus exporter initialized');
     } catch (error) {
-      console.error('❌ Failed to initialize Prometheus exporter:', error);
+      console.error('Failed to initialize Prometheus exporter:', error);
       throw error;
     }
   }
@@ -109,13 +130,18 @@ class AgentAPIPrometheusExporter {
       throw new Error('Prometheus exporter not initialized');
     }
 
-    // Standard metrics from OpenTelemetry
-    const standardMetrics = await this.exporter.getMetrics();
+    // Collect metrics from the exporter (triggers collection cycle)
+    // Note: PrometheusExporter serves metrics via HTTP endpoint, not getMetrics()
+    // We collect our custom metrics in Prometheus format
+    // The collect method exists at runtime but may not be in types
+    if (typeof (this.exporter as unknown as { collect?: () => Promise<void> }).collect === 'function') {
+      await (this.exporter as unknown as { collect: () => Promise<void> }).collect();
+    }
 
-    // Custom metrics
+    // Custom metrics in Prometheus format
     const customMetrics = this.formatCustomMetrics();
 
-    return `${standardMetrics}\n${customMetrics}`;
+    return customMetrics;
   }
 
   /**
@@ -151,7 +177,7 @@ class AgentAPIPrometheusExporter {
   async shutdown(): Promise<void> {
     if (this.meterProvider) {
       await this.meterProvider.shutdown();
-      console.info('✅ Prometheus exporter shutdown complete');
+      console.info('Prometheus exporter shutdown complete');
     }
   }
 
@@ -243,8 +269,8 @@ export function startProcessMetricsCollection(intervalMs: number = 15000): NodeJ
 /**
  * Create metrics endpoint handler for Express/HTTP server
  */
-export async function createMetricsHandler(): Promise<(req: any, res: any) => Promise<void>> {
-  return async (req: any, res: any) => {
+export async function createMetricsHandler(): Promise<(req: HttpRequest, res: HttpResponse) => Promise<void>> {
+  return async (_req: HttpRequest, res: HttpResponse) => {
     try {
       const metrics = await prometheusExporter.getPrometheusMetrics();
 
@@ -267,7 +293,7 @@ export function initializeDefaultPrometheusExporter(): void {
   prometheusExporter.initialize({
     port: parseInt(process.env.PROMETHEUS_PORT || '9090', 10),
     endpoint: process.env.PROMETHEUS_ENDPOINT || '/metrics',
-    hostname: process.env.PROMETHEUS_HOST || '0.0.0.0'
+    host: process.env.PROMETHEUS_HOST || '0.0.0.0'
   });
 
   // Start automatic process metrics collection
@@ -275,4 +301,4 @@ export function initializeDefaultPrometheusExporter(): void {
 }
 
 // Export types
-export type { PrometheusConfig, MetricSnapshot, StandardMetrics };
+export type { PrometheusConfig, MetricSnapshot };

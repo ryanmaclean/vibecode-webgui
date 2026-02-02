@@ -117,6 +117,16 @@ export class EnhancedAIClient {
       }));
     }
 
+    // OpenClaw Gateway (Local Agent Orchestrator)
+    // Added for Feb 1 "Ruthless" Edition
+    this.clients.set('openclaw', new OpenAI({
+      baseURL: process.env.OPENCLAW_ENDPOINT || 'http://localhost:18789/v1',
+      apiKey: process.env.OPENCLAW_API_KEY || 'openclaw-local',
+      defaultHeaders: {
+        'X-Agent-Runtime': 'OpenClaw'
+      }
+    }));
+
     // Google Gemini client
     if (process.env.GOOGLE_AI_API_KEY) {
       // Note: This would need a custom implementation or wrapper
@@ -229,7 +239,7 @@ export class EnhancedAIClient {
         }
       }
       
-      throw new Error(`All providers failed. Last error: ${error.message}`);
+      throw new Error(`All providers failed. Last error: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -255,7 +265,7 @@ export class EnhancedAIClient {
         return await this.handleAnthropic(client as OpenAI, messages, config);
       
       case 'ollama':
-        return await this.handleOllama(client as { apiKey: string; endpoint: string }, messages, config);
+        return await this.handleOllama(client as OpenAI, messages, config);
       
       case 'gemini':
         return await this.handleGemini(client as { apiKey: string; endpoint: string }, messages, config);

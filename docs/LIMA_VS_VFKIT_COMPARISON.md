@@ -463,7 +463,7 @@ limactl start --name=vibecode-valkey config/lima/valkey-vm.yaml
 - VZ virtualization driver
 - 4 CPUs, 8GB RAM
 - 3 disks: 20GB root, 100GB data, 50GB backup
-- PostgreSQL 16 + pgvector 0.7.4
+- PostgreSQL 16 + pgvector 0.8.0
 - Optimized postgresql.conf for vector workloads
 - Port forwarding: 5432, 9187
 - SSL/TLS enabled

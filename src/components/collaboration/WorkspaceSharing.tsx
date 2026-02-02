@@ -157,6 +157,7 @@ export default function WorkspaceSharing({
   const [inviteEmail, setInviteEmail] = useState('')
   const [inviteRole, setInviteRole] = useState<WorkspaceMember['role']>('viewer')
   const [shareLink, setShareLink] = useState('')
+  const [copyStatus, setCopyStatus] = useState<'idle' | 'success' | 'error'>('idle')
   const [selectedMember, setSelectedMember] = useState<WorkspaceMember | null>(null)
   const [newTeam, setNewTeam] = useState({
     teamName: '',
@@ -182,10 +183,12 @@ export default function WorkspaceSharing({
 
     try {
       await navigator.clipboard.writeText(shareLink)
-      // TODO: Show success toast
+      setCopyStatus('success')
+      setTimeout(() => setCopyStatus('idle'), 2000)
     } catch (error) {
       console.error('Failed to copy share link:', error)
-      // TODO: Show error toast
+      setCopyStatus('error')
+      setTimeout(() => setCopyStatus('idle'), 2000)
     }
   }, [shareLink])
 
@@ -513,9 +516,22 @@ export default function WorkspaceSharing({
                       />
                       <button
                         onClick={copyShareLink}
-                        className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                        className={`px-2 py-1 rounded text-xs transition-colors ${
+                          copyStatus === 'success'
+                            ? 'bg-green-600 text-white'
+                            : copyStatus === 'error'
+                            ? 'bg-red-600 text-white'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                        aria-label={copyStatus === 'success' ? 'Copied!' : copyStatus === 'error' ? 'Failed to copy' : 'Copy link'}
                       >
-                        <Copy className="w-3 h-3" />
+                        {copyStatus === 'success' ? (
+                          <CheckCircle className="w-3 h-3" />
+                        ) : copyStatus === 'error' ? (
+                          <AlertTriangle className="w-3 h-3" />
+                        ) : (
+                          <Copy className="w-3 h-3" />
+                        )}
                       </button>
                     </div>
                   </div>
@@ -669,7 +685,7 @@ export default function WorkspaceSharing({
           ].map(({ key, label, icon: Icon }) => (
             <button
               key={key}
-              onClick={() => setActiveTab(key as any)}
+              onClick={() => setActiveTab(key as 'members' | 'teams' | 'settings')}
               className={`py-2 px-1 border-b-2 font-medium text-sm flex items-center gap-2 ${
                 activeTab === key
                   ? 'border-blue-500 text-blue-600 dark:text-blue-400'

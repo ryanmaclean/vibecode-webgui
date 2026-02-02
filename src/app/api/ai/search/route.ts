@@ -9,6 +9,9 @@ import { authOptions } from '@/lib/auth'
 import { vectorStore } from '@/lib/vector-store'
 import { prisma } from '@/lib/prisma'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 export const runtime = 'nodejs'
 
@@ -25,6 +28,23 @@ const searchSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Check authentication
     const session = await getServerSession(authOptions)
     if (!session?.user) {

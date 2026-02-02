@@ -8,6 +8,16 @@ import { vectorStore as newVectorStore } from '../vector-db/vector-store-service
 import { PrismaClient } from '@prisma/client';
 import { PgVectorSearch } from '../cache/pgvector-search';
 // import { logger } from '@/lib/logger';
+
+/**
+ * Interface for vector store connection checking capabilities
+ */
+interface VectorStoreWithConnection {
+  vectorDb?: {
+    isConnected(): Promise<boolean>;
+  };
+  isConnected?(): Promise<boolean>;
+}
 /**
  * Migration helper to move from the old vector store to the new adapter pattern
  */
@@ -25,9 +35,15 @@ export async function migrateToVectorDatabaseAdapters() {
     let isConnected = false;
     try {
       // Try different ways to check connection since we're in a transition period
-      isConnected = await (newVectorStore as any).vectorDb?.isConnected() || 
-                    await (newVectorStore as any).isConnected?.() ||
-                    true; // Assume connected if we can't check
+      const storeWithConnection = newVectorStore as unknown as VectorStoreWithConnection;
+      if (storeWithConnection.vectorDb?.isConnected) {
+        isConnected = await storeWithConnection.vectorDb.isConnected();
+      } else if (storeWithConnection.isConnected) {
+        isConnected = await storeWithConnection.isConnected();
+      } else {
+        // Assume connected if we can't check
+        isConnected = true;
+      }
     } catch (error) {
       console.error('Error checking connection:', error);
     }

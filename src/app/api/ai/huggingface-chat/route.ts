@@ -3,7 +3,10 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { HfInference } from '@huggingface/inference'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 // import { logger } from '@/lib/logger'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 req/min
 
 // Validation schema
 const huggingfaceChatSchema = z.object({
@@ -26,6 +29,20 @@ interface ChatRequest {
 }
 
 export async function POST(request: NextRequest) {
+  // Rate limiting check
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json({ error: 'Too many requests' }, {
+      status: 429,
+      headers: {
+        'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+        'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+        'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+        'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+      },
+    })
+  }
+
   try {
     // Validate request body
     let validatedData;
@@ -34,12 +51,12 @@ export async function POST(request: NextRequest) {
       validatedData = huggingfaceChatSchema.parse(body);
     } catch (error) {
       if (error instanceof z.ZodError) {
-        console.warn('HuggingFace chat validation failed', { errors: error.errors });
+        console.warn('HuggingFace chat validation failed', { errors: error.issues });
         return NextResponse.json(
           {
             success: false,
             error: 'Invalid request parameters',
-            details: error.errors.map(e => ({
+            details: error.issues.map(e => ({
               field: e.path.join('.'),
               message: e.message
             }))
@@ -130,11 +147,11 @@ export async function POST(request: NextRequest) {
         }
       })
 
-    } catch (modelError: any) {
+    } catch (modelError: unknown) {
       // Server error logged
       
       // Try fallback to a simpler approach for some models
-      if (modelError.message?.includes('loading') || modelError.message?.includes('unavailable')) {
+      if ((modelError instanceof Error && modelError.message.includes('loading')) || (modelError instanceof Error && modelError.message.includes('unavailable'))) {
         return NextResponse.json({
           success: false,
           error: `Model ${model} is currently loading. Please try again in a few seconds.`,
@@ -154,13 +171,13 @@ export async function POST(request: NextRequest) {
       })
     }
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Server error logged
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to process chat request',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error instanceof Error ? error.message : 'Failed to process chat request',
+      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }

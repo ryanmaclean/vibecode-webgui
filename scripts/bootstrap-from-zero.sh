@@ -4,6 +4,11 @@
 
 set -euo pipefail
 
+# Source Datadog logging (optional - doesn't fail if unavailable)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/datadog-logging.sh" 2>/dev/null || true
+
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'

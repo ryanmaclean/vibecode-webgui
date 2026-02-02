@@ -40,8 +40,29 @@ const originalEnv = { ...process.env }
 const TEST_NEXTAUTH_SECRET = 'unit-test-nextauth-secret-value-with-32-chars'
 
 let authOptions: typeof import('../auth')['authOptions']
+let hashPassword: typeof import('../auth')['hashPassword']
+let testUsersJson: string
 
 describe('auth.ts Configuration', () => {
+  beforeAll(async () => {
+    // Import hashPassword to generate test user password hashes
+    const authModule = await import('../auth')
+    hashPassword = authModule.hashPassword
+
+    // Create hashed password for test user
+    const developerPasswordHash = await hashPassword('dev123')
+
+    testUsersJson = JSON.stringify([
+      {
+        id: 'legacy-developer',
+        name: 'Developer User',
+        email: 'developer@vibecode.dev',
+        role: 'developer',
+        passwordHash: developerPasswordHash,
+      },
+    ])
+  })
+
   beforeEach(async () => {
     jest.resetModules()
 
@@ -52,7 +73,8 @@ describe('auth.ts Configuration', () => {
       GITHUB_SECRET: 'test-github-secret',
       GOOGLE_CLIENT_ID: 'test-google-id',
       GOOGLE_CLIENT_SECRET: 'test-google-secret',
-      NODE_ENV: 'test',
+      NODE_ENV: 'development', // Must be 'development' for credentials provider to work
+      AUTH_TEST_USERS: testUsersJson,
     }
 
     authOptions = (await import('../auth')).authOptions
@@ -90,7 +112,7 @@ describe('auth.ts Configuration', () => {
     })
 
     it('should have debug enabled in development', () => {
-      expect(authOptions.debug).toBe(false) // NODE_ENV is 'test'
+      expect(authOptions.debug).toBe(true) // NODE_ENV is 'development'
     })
   })
 
@@ -140,7 +162,7 @@ describe('auth.ts Configuration', () => {
       const result = await authorizeFunction(credentials)
 
       expect(result).toEqual({
-        id: '2',
+        id: 'legacy-developer',
         name: 'Developer User',
         email: 'developer@vibecode.dev',
         role: 'developer',

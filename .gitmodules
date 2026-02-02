@@ -1,19 +1,8 @@
-[submodule "watermarkpodautoscaler"]
-	path = watermarkpodautoscaler
-	url = https://github.com/DataDog/watermarkpodautoscaler.git
 [submodule "external/magic-code-gen"]
 	path = external/magic-code-gen
 	url = https://github.com/ryanmaclean/magic-code-gen.git
-
-[submodule "templates/nestjs-embedjs-template"]
-	path = templates/nestjs-embedjs-template
-	url = https://github.com/ryanmaclean/nestjs-embedjs-template.git
-	update = none
 
 [submodule "openvscode-server"]
 	path = openvscode-server
 	url = https://github.com/gitpod-io/openvscode-server.git
 
-[submodule "vendor/vfkit"]
-	path = vendor/vfkit
-	url = https://github.com/crc-org/vfkit.git

@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils'
 
 type MessageRole = 'user' | 'assistant' | 'system'
 
-interface ThreadMessage {
+export interface ThreadMessage {
   id: string
   threadId: string
   role: MessageRole
@@ -57,7 +57,7 @@ interface ThreadMessage {
   }
 }
 
-interface AgentConversationThreadProps {
+export interface AgentConversationThreadProps {
   /** Thread identifier */
   threadId: string
   /** Messages to display */

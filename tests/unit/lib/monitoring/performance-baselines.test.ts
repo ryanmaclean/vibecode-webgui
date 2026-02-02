@@ -13,7 +13,8 @@ jest.mock('@/lib/logger', () => ({
     info: jest.fn(),
     warn: jest.fn(),
     error: jest.fn()
-  }
+  },
+  logPerformance: jest.fn()
 }))
 
 // Mock datadog-metrics module
@@ -29,10 +30,11 @@ import {
   type PerformanceBaseline,
   type PerformanceAlert
 } from '@/lib/monitoring/performance-baselines'
-import { logger } from '@/lib/logger'
+import { logger, logPerformance } from '@/lib/logger'
 import { datadogMetrics } from '@/lib/monitoring/datadog-metrics'
 
 const mockLogger = logger as jest.Mocked<typeof logger>
+const mockLogPerformance = logPerformance as jest.Mock
 const mockDatadogMetrics = datadogMetrics as jest.Mocked<typeof datadogMetrics>
 
 describe('PerformanceMonitoringService', () => {
@@ -62,11 +64,12 @@ describe('PerformanceMonitoringService', () => {
     it('should record single measurement', () => {
       performanceBaselines.recordMeasurement('api.test', 100)
 
-      expect(mockLogger.performance).toHaveBeenCalledWith(
+      expect(mockLogPerformance).toHaveBeenCalledWith(
         'api.test',
         100,
         expect.objectContaining({
-          operation: 'api.test'
+          baseline_exists: false,
+          tags: '{}'
         })
       )
 
@@ -84,11 +87,11 @@ describe('PerformanceMonitoringService', () => {
 
       performanceBaselines.recordMeasurement('api.users', 150, tags)
 
-      expect(mockLogger.performance).toHaveBeenCalledWith(
+      expect(mockLogPerformance).toHaveBeenCalledWith(
         'api.users',
         150,
         expect.objectContaining({
-          operation: 'api.users',
+          baseline_exists: false,
           tags: JSON.stringify(tags)
         })
       )
@@ -107,7 +110,7 @@ describe('PerformanceMonitoringService', () => {
       performanceBaselines.recordMeasurement('api.test', 200)
       performanceBaselines.recordMeasurement('api.test', 150)
 
-      expect(mockLogger.performance).toHaveBeenCalledTimes(3)
+      expect(mockLogPerformance).toHaveBeenCalledTimes(3)
       expect(mockDatadogMetrics.recordResponseTime).toHaveBeenCalledTimes(3)
     })
 
@@ -275,8 +278,9 @@ describe('PerformanceMonitoringService', () => {
         performanceBaselines.recordMeasurement('api.alert', 100)
       }
       // Clear only the mocked functions, not the console spies
-      mockLogger.performance.mockClear()
+      mockLogPerformance.mockClear()
       mockLogger.counter.mockClear()
+      mockLogger.info.mockClear()
       mockDatadogMetrics.recordResponseTime.mockClear()
       mockDatadogMetrics.sendBatchMetrics.mockClear()
       consoleSpy.mockClear()
@@ -298,10 +302,12 @@ describe('PerformanceMonitoringService', () => {
         })
       )
 
-      expect(mockLogger.counter).toHaveBeenCalledWith(
+      expect(mockLogger.info).toHaveBeenCalledWith(
         'vibecode.performance.alerts.critical',
-        1,
-        expect.any(Object)
+        expect.objectContaining({
+          count: 1,
+          operation: 'api.alert'
+        })
       )
     })
 
@@ -319,10 +325,12 @@ describe('PerformanceMonitoringService', () => {
         })
       )
 
-      expect(mockLogger.counter).toHaveBeenCalledWith(
+      expect(mockLogger.info).toHaveBeenCalledWith(
         'vibecode.performance.alerts.warning',
-        1,
-        expect.any(Object)
+        expect.objectContaining({
+          count: 1,
+          operation: 'api.alert'
+        })
       )
     })
 
@@ -347,8 +355,9 @@ describe('PerformanceMonitoringService', () => {
         performanceBaselines.recordMeasurement('custom.operation', 100)
       }
       // Clear only the mocked functions, not the console spies
-      mockLogger.performance.mockClear()
+      mockLogPerformance.mockClear()
       mockLogger.counter.mockClear()
+      mockLogger.info.mockClear()
       mockDatadogMetrics.recordResponseTime.mockClear()
       mockDatadogMetrics.sendBatchMetrics.mockClear()
       consoleSpy.mockClear()
@@ -699,7 +708,7 @@ describe('PerformanceMonitoringService', () => {
     it('should handle operation name with special characters', () => {
       performanceBaselines.recordMeasurement('api.users/123/posts', 100)
 
-      expect(mockLogger.performance).toHaveBeenCalledWith(
+      expect(mockLogPerformance).toHaveBeenCalledWith(
         'api.users/123/posts',
         100,
         expect.any(Object)
@@ -724,7 +733,7 @@ describe('PerformanceMonitoringService', () => {
       performanceBaselines.recordMeasurement('api.concurrent', 200)
       performanceBaselines.recordMeasurement('api.concurrent', 150)
 
-      expect(mockLogger.performance).toHaveBeenCalledTimes(3)
+      expect(mockLogPerformance).toHaveBeenCalledTimes(3)
     })
   })
 })

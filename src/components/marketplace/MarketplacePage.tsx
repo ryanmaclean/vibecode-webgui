@@ -4,14 +4,13 @@
 
 'use client'
 
-import React, { useState } from 'react'
+import React, { useState, useCallback } from 'react'
 import { TemplateMarketplace } from './TemplateMarketplace'
 import { TemplateSubmissionForm } from './TemplateSubmissionForm'
 import { type MarketplaceTemplate } from '@/lib/marketplace/template-marketplace'
 import {
   PlusIcon,
   MagnifyingGlassIcon,
-  DocumentPlusIcon,
   ArrowLeftIcon
 } from '@heroicons/react/24/outline'
 
@@ -29,25 +28,66 @@ export function MarketplacePage({
   const [view, setView] = useState<'browse' | 'submit'>('browse')
   const [selectedTemplate, setSelectedTemplate] = useState<MarketplaceTemplate | null>(null)
 
-  const handleSelectTemplate = (template: MarketplaceTemplate) => {
-    setSelectedTemplate(template)
-    onSelectTemplate?.(template)
-    
+  const handleSelectTemplate = (template: MarketplaceTemplate | Record<string, unknown>) => {
+    const marketplaceTemplate = template as MarketplaceTemplate
+    setSelectedTemplate(marketplaceTemplate)
+    onSelectTemplate?.(marketplaceTemplate)
+
     // If onStartProject is provided, use it; otherwise use onSelectTemplate
     if (onStartProject) {
-      onStartProject(template)
+      onStartProject(marketplaceTemplate)
     }
   }
 
   const handleSubmissionComplete = (submissionId: string) => {
     // Show success message and return to browse view
-    // Debug log removed
+    console.info('Template submitted successfully:', submissionId)
     setView('browse')
   }
 
   const handleCancelSubmission = () => {
     setView('browse')
   }
+
+  /**
+   * Submit template to the backend API
+   */
+  const submitTemplateToAPI = useCallback(async (data: Parameters<typeof handleSubmissionComplete>[0] extends string ? any : any) => {
+    const response = await fetch('/api/templates', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        name: data.name,
+        description: data.description,
+        category: data.category,
+        language: data.language,
+        framework: data.framework,
+        complexity: data.complexity,
+        tags: data.tags,
+        dependencies: data.dependencies,
+        scripts: data.scripts,
+        envVars: data.envVars,
+        documentation: data.documentation,
+        features: {
+          dockerSupport: data.dockerSupport,
+          kubernetesSupport: data.kubernetesSupport,
+          cicdTemplate: data.cicdTemplate,
+          testingSetup: data.testingSetup,
+          monitoringSetup: data.monitoringSetup
+        }
+      }),
+    })
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}))
+      throw new Error(errorData.error || errorData.message || `Failed to submit template: ${response.status}`)
+    }
+
+    const result = await response.json()
+    handleSubmissionComplete(result.id || result.templateId || 'new-submission')
+  }, [])
 
   if (view === 'submit') {
     return (
@@ -65,13 +105,10 @@ export function MarketplacePage({
             </div>
           </div>
         </div>
-        
+
         <div className="py-8">
           <TemplateSubmissionForm
-            onSubmit={async (data) => {
-              // TODO: integrate with backend API
-              handleSubmissionComplete('submission')
-            }}
+            onSubmit={submitTemplateToAPI}
             onCancel={handleCancelSubmission}
           />
         </div>
@@ -107,7 +144,7 @@ export function MarketplacePage({
       {/* Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <TemplateMarketplace
-          onTemplateSelect={handleSelectTemplate}
+          onTemplateSelect={(template) => handleSelectTemplate(template as unknown as MarketplaceTemplate)}
           selectedTemplateId={selectedTemplate?.id}
           selectedCategory={selectedCategory}
         />

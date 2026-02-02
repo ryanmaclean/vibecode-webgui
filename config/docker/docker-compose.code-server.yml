@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  code-server:
+    image: codercom/code-server:latest
+    container_name: vibecode-code-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./code-server:/home/coder
+      - ./code-server-config.yaml:/home/coder/.config/code-server/config.yaml
+    environment:
+      - PASSWORD=${CODE_SERVER_PASSWORD}
+    command: --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry --disable-update-check
+    restart: unless-stopped

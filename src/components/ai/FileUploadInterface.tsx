@@ -14,7 +14,7 @@
  */
 
 import React, { useState, useRef, DragEvent, ChangeEvent } from 'react';
-import { Upload, X, FileText, CheckCircle, AlertCircle, Loader2 } from 'lucide-react';
+import { Upload, X, FileText, CheckCircle, AlertCircle, Loader as Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui';
 import {
   uploadFiles,

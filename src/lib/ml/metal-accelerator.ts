@@ -13,6 +13,7 @@
  * - Power: <10W
  */
 
+// @ts-ignore - Tauri API only available in Tauri environment
 import { invoke } from '@tauri-apps/api/core';
 
 // MARK: - Types

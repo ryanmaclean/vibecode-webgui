@@ -5,6 +5,10 @@ on:
     types: [opened, synchronize, reopened]
   workflow_dispatch:
 
+env:
+  DD_SERVICE: vibecode-webgui
+  DD_ENV: ci
+
 jobs:
   test-pr:
     name: Test PR Changes
@@ -23,7 +27,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: '20'
           cache: 'npm'
 
       - name: Install dependencies
@@ -77,6 +81,9 @@ jobs:
         env:
           NEXT_TELEMETRY_DISABLED: 1
 
+      - name: Install Datadog CI CLI
+        run: npm install -g @datadog/datadog-ci
+
       - name: Run tests
         id: test
         run: |
@@ -90,7 +97,35 @@ jobs:
             tail -50 test.log >> $GITHUB_STEP_SUMMARY
             echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
           fi
+        env:
+          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_ENV: ${{ env.DD_ENV }}
+          DD_GIT_BRANCH: ${{ github.event.pull_request.head.ref }}
+          DD_GIT_COMMIT_SHA: ${{ github.event.pull_request.head.sha }}
+          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
+          DD_SERVICE: ${{ env.DD_SERVICE }}
+          DD_SITE: datadoghq.com
+          DD_VERSION: ${{ github.sha }}
+          DD_CI_VISIBILITY_AGENTLESS_ENABLED: true
+          NODE_OPTIONS: -r dd-trace/ci/init
+          CI: true
         continue-on-error: true
+
+      - name: Upload test results to Datadog
+        if: always()
+        env:
+          DD_API_KEY: ${{ secrets.DD_API_KEY }}
+          DD_SITE: datadoghq.com
+          DD_ENV: ${{ env.DD_ENV }}
+          DD_SERVICE: ${{ env.DD_SERVICE }}
+        run: |
+          # Upload JUnit XML test results with flaky test detection
+          datadog-ci junit upload \
+            --service $DD_SERVICE \
+            --env $DD_ENV \
+            --tags "test.framework:jest,ci.workflow:${{ github.workflow }},ci.job:test-pr,pr.number:${{ github.event.pull_request.number }}" \
+            test-results/*.xml || echo "No test results to upload"
 
       - name: Check for launcher test script
         id: launcher-test

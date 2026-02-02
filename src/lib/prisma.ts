@@ -46,8 +46,11 @@ if (isBuilding) {
 export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
-if (!isBuilding && prisma.$use) {
-  prisma.$use(async (params, next) => {
+// Note: $use middleware is deprecated in Prisma 5+, using extensions instead
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
+if (!isBuilding && typeof (prisma as unknown as { $use?: unknown }).$use === 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
+  (prisma as unknown as { $use: (fn: (params: { action: string; model?: string }, next: (params: unknown) => Promise<unknown>) => Promise<unknown>) => void }).$use(async (params, next) => {
     const startTime = Date.now()
     const span = tracer?.startSpan?.('prisma.query', {
       tags: {
@@ -83,27 +86,30 @@ if (!isBuilding && prisma.$use) {
       })
       
       if (span) {
-        span.setTag('db.rows_affected', result?.count)
+        span.setTag('db.rows_affected', (result as { count?: number } | null)?.count)
         span.finish()
       }
       
       return result
     } catch (error) {
       // Record error metrics
+      const errorName = error instanceof Error ? error.name : 'unknown_error'
+      const errorMessage = error instanceof Error ? error.message : String(error)
+
       metrics.increment('db.query.error', {
         service: 'vibecode-webgui',
         operation: params.action,
         model: params.model || 'unknown',
-        error: error?.name || 'unknown_error'
+        error: errorName
       })
-      
+
       if (span) {
         span.setTag('error', true)
-        span.setTag('error.msg', error?.message)
-        span.setTag('error.type', error?.name || 'DatabaseError')
+        span.setTag('error.msg', errorMessage)
+        span.setTag('error.type', errorName)
         span.finish()
       }
-      
+
       throw error
     }
   })

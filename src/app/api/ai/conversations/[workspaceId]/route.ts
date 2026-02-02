@@ -10,6 +10,16 @@ import { getServerSession } from 'next-auth/next';
 import { authOptions } from '@/lib/auth';
 // import { logger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+  clampOffset,
+  getPaginationFromSearchParams,
+} from '@/lib/api/pagination';
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - conversation management
 
 // Zod validation schemas
 const workspaceIdSchema = z.object({
@@ -24,7 +34,7 @@ const conversationMessageSchema = z.object({
     .min(1, 'Message is required')
     .max(5000, 'Message too long')
     .regex(/^[^\x00-\x1F\x7F]*$/, 'Message contains invalid characters'),
-  context: z.record(z.any()).optional(),
+  context: z.record(z.string(), z.any()).optional(),
   model: z.string()
     .min(1, 'Model name is required')
     .max(100, 'Model name too long')
@@ -36,6 +46,23 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -64,13 +91,26 @@ export async function GET(
       return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
     }
 
-    // Get conversation history from database
-    const conversations = await getWorkspaceConversations(workspaceId);
+    // Extract and validate pagination parameters
+    const { searchParams } = new URL(request.url);
+    const pagination = getPaginationFromSearchParams(
+      searchParams,
+      MAX_PAGE_SIZE.CONVERSATIONS,
+      DEFAULT_PAGE_SIZE.CONVERSATIONS
+    );
+
+    // Get conversation history from database with pagination
+    const conversations = await getWorkspaceConversations(workspaceId, pagination.limit, pagination.offset);
 
     return NextResponse.json({
       conversations,
       workspaceId,
-      count: conversations.length
+      count: conversations.length,
+      pagination: {
+        limit: pagination.limit,
+        offset: pagination.offset,
+        hasMore: conversations.length === pagination.limit
+      }
     });
 
   } catch (error) {
@@ -87,6 +127,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -194,6 +251,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ workspaceId: string }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions);
     if (!session?.user?.id) {
@@ -257,8 +331,12 @@ async function validateWorkspaceAccess(userId: string, workspaceId: string): Pro
 /**
  * Get conversation history for a workspace
  */
-async function getWorkspaceConversations(workspaceId: string): Promise<any[]> {
+async function getWorkspaceConversations(workspaceId: string, limit: number = DEFAULT_PAGE_SIZE.CONVERSATIONS, offset: number = 0): Promise<any[]> {
   try {
+    // Ensure limit and offset are capped to prevent resource exhaustion
+    const safeLimit = clampLimit(limit, MAX_PAGE_SIZE.CONVERSATIONS, DEFAULT_PAGE_SIZE.CONVERSATIONS);
+    const safeOffset = clampOffset(offset);
+
     // This would integrate with your chat/conversation storage system
     // For now, return empty array as a placeholder
     return [];

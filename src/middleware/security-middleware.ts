@@ -7,13 +7,19 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getToken } from 'next-auth/jwt';
 import { validateAIQuery, aiRateLimiter, AISecurityLogger } from '../lib/security/input-validator';
 // import { logger } from '@/lib/logger';
-import { 
-  needsCSRFProtection, 
-  validateCSRFToken, 
-  extractCSRFToken, 
-  getSessionId, 
-  validateOrigin 
+import {
+  needsCSRFProtection,
+  validateCSRFToken,
+  extractCSRFToken,
+  getSessionId,
+  validateOrigin
 } from '../lib/security/csrf-protection';
+import {
+  getClientIpString,
+  isPrivateIp as isPrivateIpValidator,
+  logSuspiciousPattern,
+  sanitizeIpAddress,
+} from '../lib/security/ip-validator';
 // Security configuration
 const SECURITY_CONFIG = {
   maxRequestSize: 10 * 1024 * 1024, // 10MB
@@ -107,31 +113,56 @@ function checkIPSecurity(request: NextRequest): { allowed: boolean; reason?: str
 }
 
 /**
- * Get client IP from request
+ * Get client IP from request using secure IP validator
+ *
+ * This function uses the secure IP validator to prevent IP spoofing attacks.
+ * It validates IP format, checks trusted proxies, and logs suspicious patterns.
  */
 function getClientIP(request: NextRequest): string {
-  const xff = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim();
-  const realIP = request.headers.get('x-real-ip');
-  const cfIP = request.headers.get('cf-connecting-ip');
-  
-  return xff || realIP || cfIP || '127.0.0.1';
+  // Use the secure IP validator
+  const ip = getClientIpString(request);
+
+  // Log suspicious patterns for security monitoring
+  const xForwardedFor = request.headers.get('x-forwarded-for');
+  if (xForwardedFor) {
+    const claimedIps = xForwardedFor.split(',').map(s => s.trim());
+
+    // Check for unusually long proxy chains (potential manipulation)
+    if (claimedIps.length > 5) {
+      logSuspiciousPattern('security_middleware_long_chain', ip, {
+        chainLength: claimedIps.length,
+        xForwardedFor: xForwardedFor.substring(0, 200),
+        pathname: request.nextUrl.pathname,
+        reason: 'Excessive X-Forwarded-For chain in security check',
+      });
+    }
+
+    // Check for potential spoofing attempts
+    const firstClaimed = sanitizeIpAddress(claimedIps[0]);
+    if (firstClaimed && ip !== 'unknown' && firstClaimed !== ip) {
+      // Different IP resolved than claimed - could be legitimate proxy or spoofing
+      if (!isPrivateIpValidator(firstClaimed)) {
+        logSuspiciousPattern('security_middleware_ip_mismatch', ip, {
+          claimedIp: firstClaimed,
+          resolvedIp: ip,
+          pathname: request.nextUrl.pathname,
+          reason: 'Public IP in XFF does not match resolved IP',
+        });
+      }
+    }
+  }
+
+  return ip !== 'unknown' ? ip : '127.0.0.1';
 }
 
 /**
  * Check if IP is in private range
+ *
+ * Uses the comprehensive IP validator for accurate private IP detection
+ * including all RFC reserved ranges.
  */
 function isPrivateIP(ip: string): boolean {
-  const privateRanges = [
-    /^10\./,
-    /^192\.168\./,
-    /^172\.(1[6-9]|2[0-9]|3[0-1])\./,
-    /^127\./,
-    /^::1$/,
-    /^fc00:/,
-    /^fe80:/
-  ];
-  
-  return privateRanges.some(range => range.test(ip));
+  return isPrivateIpValidator(ip);
 }
 
 /**
@@ -294,13 +325,8 @@ async function validateRequestSecurity(
             const body = JSON.parse(bodyText);
             validateAIQuery(body);
           
-          // Reconstruct request with validated body
-          const newRequest = new NextRequest(request.url, {
-            method: request.method,
-            headers: request.headers,
-            body: bodyText
-          });
-          
+          // Request validated successfully
+          // Note: Request reconstruction removed as it wasn't used
             return { valid: true };
           }
         } catch (error) {
@@ -324,11 +350,11 @@ async function validateRequestSecurity(
 /**
  * CORS validation
  */
-function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<string, string> } {
+function validateCORS(request: NextRequest): { valid: boolean; headers: Record<string, string> } {
   const origin = request.headers.get('origin');
-  
+
   if (!origin) {
-    return { valid: true }; // Same-origin requests don't have origin header
+    return { valid: true, headers: {} }; // Same-origin requests don't have origin header
   }
 
   if (SECURITY_CONFIG.allowedOrigins.includes(origin)) {
@@ -341,7 +367,7 @@ function validateCORS(request: NextRequest): { valid: boolean; headers?: Record<
     };
   }
 
-  return { valid: false };
+  return { valid: false, headers: {} };
 }
 
 /**

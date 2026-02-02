@@ -1,6 +1,6 @@
 import { ChromaClient, type GetResult, type Metadata } from 'chromadb';
 import { OpenAIEmbeddings } from '@langchain/openai';
-import { Document } from 'langchain/document';
+import { Document } from '@langchain/core/documents';
 
 // Extended type for ChromaDB get result with distances
 interface ChromaGetResult extends GetResult<Metadata> {
@@ -27,6 +27,7 @@ interface ChromaCollection {
 export class VectorSearch {
   private chroma: ChromaClient;
   private embeddings: OpenAIEmbeddings;
+  private chromaAvailable: boolean = true;
 
   constructor() {
     this.chroma = new ChromaClient({
@@ -35,40 +36,61 @@ export class VectorSearch {
     this.embeddings = new OpenAIEmbeddings({
       openAIApiKey: process.env.OPENAI_API_KEY,
     });
+    // Initial availability check (non-blocking)
+    this.checkChromaAvailability();
+  }
+
+  private async checkChromaAvailability(): Promise<boolean> {
+    try {
+      await this.chroma.heartbeat();
+      this.chromaAvailable = true;
+      return true;
+    } catch {
+      this.chromaAvailable = false;
+      console.warn('ChromaDB is not available - vector search features will be disabled');
+      return false;
+    }
   }
 
   private async createCollectionIfNotExists(collectionName: string): Promise<void> {
+    if (!this.chromaAvailable) {
+      return;
+    }
     try {
       const collections = await this.chroma.listCollections();
-      const exists = collections.some((collection: ChromaCollection) => 
+      const exists = collections.some((collection: ChromaCollection) =>
         collection.name === collectionName
       );
       if (!exists) {
-        await this.chroma.createCollection({ 
+        await this.chroma.createCollection({
           name: collectionName,
           // Add any additional collection configuration here
         });
       }
     } catch (error) {
-      console.error('Error creating collection:', error);
-      throw error instanceof Error ? error : new Error('Failed to create collection');
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - cannot create collection:', error instanceof Error ? error.message : String(error));
     }
   }
 
   async addDocuments(documents: Document[], collectionName: string): Promise<void> {
+    // Skip if ChromaDB is not available
+    if (!this.chromaAvailable) {
+      return;
+    }
     try {
       await this.createCollectionIfNotExists(collectionName);
-      const collection = await this.chroma.getCollection({ 
-        name: collectionName 
+      const collection = await this.chroma.getCollection({
+        name: collectionName
       });
-      
+
       const texts = documents.map(doc => doc.pageContent);
       const embeddings = await this.embeddings.embedDocuments(texts);
-      
+
       // Prepare metadata with proper type safety for ChromaDB
       const metadatas: Metadata[] = documents.map(doc => {
         const metadata: Record<string, string | number | boolean | null> = {};
-        
+
         // Copy all metadata properties, handling type conversion
         if (doc.metadata) {
           Object.entries(doc.metadata).forEach(([key, value]) => {
@@ -77,8 +99,8 @@ export class VectorSearch {
             } else if (Array.isArray(value)) {
               // Convert arrays to comma-separated strings
               metadata[key] = value.join(',');
-            } else if (typeof value === 'string' || 
-                      typeof value === 'number' || 
+            } else if (typeof value === 'string' ||
+                      typeof value === 'number' ||
                       typeof value === 'boolean') {
               // Directly use primitive types that ChromaDB supports
               metadata[key] = value;
@@ -97,10 +119,10 @@ export class VectorSearch {
             }
           });
         }
-        
+
         return metadata;
       });
-      
+
       await collection.add({
         ids: documents.map((_, i) => `doc_${i}_${Date.now()}`),
         embeddings,
@@ -108,17 +130,22 @@ export class VectorSearch {
         metadatas
       });
     } catch (error) {
-      console.error('Error adding documents:', error);
-      throw new Error('Failed to add documents to vector store');
+      // Mark ChromaDB as unavailable and log warning
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - skipping document indexing:', error instanceof Error ? error.message : String(error));
     }
   }
 
   async semanticSearch(query: string, collectionName: string, k = 5): Promise<SearchResult[]> {
+    // Return empty results if ChromaDB is unavailable
+    if (!this.chromaAvailable) {
+      return [];
+    }
     try {
       await this.createCollectionIfNotExists(collectionName);
       const collection = await this.chroma.getCollection({ name: collectionName });
       const queryEmbedding = await this.embeddings.embedQuery(query);
-      
+
       const results = await collection.query({
         queryEmbeddings: [queryEmbedding],
         nResults: k,
@@ -132,11 +159,11 @@ export class VectorSearch {
         const document = results.documents?.[0]?.[index] || '';
         const metadata = (results.metadatas?.[0]?.[index] || {}) as DocumentMetadata;
         const distance = results.distances?.[0]?.[index] ?? 0;
-        
+
         // Ensure tags is always an array of strings
         const processedMetadata: DocumentMetadata = {
           ...metadata,
-          tags: typeof metadata.tags === 'string' 
+          tags: typeof metadata.tags === 'string'
             ? metadata.tags.split(',').map(tag => tag.trim())
             : Array.isArray(metadata.tags)
               ? metadata.tags
@@ -150,16 +177,20 @@ export class VectorSearch {
         };
       });
     } catch (error) {
-      console.error('Error in semantic search:', error);
-      throw new Error('Failed to perform semantic search');
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - returning empty search results');
+      return [];
     }
   }
 
   async keywordSearch(
-    query: string, 
-    collection: string, 
+    query: string,
+    collection: string,
     limit = 5
   ): Promise<SearchResult[]> {
+    if (!this.chromaAvailable) {
+      return [];
+    }
     try {
       // Get the collection
       const col = await this.chroma.getCollection({ name: collection });
@@ -198,17 +229,21 @@ export class VectorSearch {
         .sort((a: SearchResult, b: SearchResult) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
-      console.error('Error in keyword search:', error);
-      throw new Error('Failed to perform keyword search');
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - returning empty keyword search results');
+      return [];
     }
   }
 
   async hybridSearch(
-    query: string, 
-    collection: string, 
-    keywords: string[] = [], 
+    query: string,
+    collection: string,
+    keywords: string[] = [],
     limit = 5
   ): Promise<SearchResult[]> {
+    if (!this.chromaAvailable) {
+      return [];
+    }
     try {
       const [semanticResults, keywordResults] = await Promise.all([
         this.semanticSearch(query, collection, limit * 2), // Get more results to have better candidates
@@ -245,15 +280,19 @@ export class VectorSearch {
         .sort((a, b) => b.score - a.score)
         .slice(0, limit);
     } catch (error) {
-      console.error('Error in hybrid search:', error);
-      throw new Error('Failed to perform hybrid search');
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - returning empty hybrid search results');
+      return [];
     }
   }
 
   async createCollection(
-    name: string, 
+    name: string,
     metadata: Record<string, string | number | boolean | null> = {}
   ): Promise<boolean> {
+    if (!this.chromaAvailable) {
+      return false;
+    }
     try {
       await this.chroma.createCollection({
         name,
@@ -264,17 +303,21 @@ export class VectorSearch {
       });
       return true;
     } catch (error) {
-      console.error(`Error creating collection ${name}:`, error);
-      throw error instanceof Error ? error : new Error('Failed to create collection');
+      this.chromaAvailable = false;
+      console.warn(`ChromaDB unavailable - cannot create collection ${name}`);
+      return false;
     }
   }
 
   async deleteCollection(collectionName: string): Promise<void> {
+    if (!this.chromaAvailable) {
+      return;
+    }
     try {
       await this.chroma.deleteCollection({ name: collectionName });
     } catch (error) {
-      console.error('Error deleting collection:', error);
-      throw new Error('Failed to delete collection');
+      this.chromaAvailable = false;
+      console.warn('ChromaDB unavailable - cannot delete collection');
     }
   }
 

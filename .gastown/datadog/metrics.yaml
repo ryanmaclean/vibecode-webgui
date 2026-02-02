@@ -1,0 +1,133 @@
+# Gas Town Custom Metrics for Datadog
+# Use with datadog-ci or dd-trace custom metrics
+
+# Agent metrics
+metrics:
+  # Task execution metrics
+  - name: gastown.task.started
+    type: counter
+    description: "Number of tasks started"
+    tags:
+      - agent_type
+      - task_priority
+      - rig_name
+
+  - name: gastown.task.completed
+    type: counter
+    description: "Number of tasks completed"
+    tags:
+      - agent_type
+      - task_priority
+      - success
+
+  - name: gastown.task.duration_ms
+    type: histogram
+    description: "Task execution duration in milliseconds"
+    tags:
+      - agent_type
+      - task_type
+
+  # Agent utilization
+  - name: gastown.agent.active_count
+    type: gauge
+    description: "Number of active agents"
+    tags:
+      - agent_type
+      - rig_name
+
+  - name: gastown.agent.idle_count
+    type: gauge
+    description: "Number of idle agents"
+    tags:
+      - agent_type
+      - rig_name
+
+  # Model usage (for cost tracking)
+  - name: gastown.model.tokens_in
+    type: counter
+    description: "Input tokens consumed"
+    tags:
+      - model_name
+      - agent_type
+      - provider
+
+  - name: gastown.model.tokens_out
+    type: counter
+    description: "Output tokens generated"
+    tags:
+      - model_name
+      - agent_type
+      - provider
+
+  - name: gastown.model.cost_usd
+    type: counter
+    description: "Estimated cost in USD (millicents)"
+    tags:
+      - model_name
+      - provider
+
+  # Routing decisions
+  - name: gastown.routing.ollama_selected
+    type: counter
+    description: "Tasks routed to Ollama"
+    tags:
+      - model_name
+      - task_priority
+
+  - name: gastown.routing.claude_selected
+    type: counter
+    description: "Tasks routed to Claude"
+    tags:
+      - task_priority
+      - complexity
+
+  - name: gastown.routing.codex_selected
+    type: counter
+    description: "Tasks routed to Codex"
+    tags:
+      - task_type
+
+  # Beads/Kanban metrics
+  - name: gastown.beads.created
+    type: counter
+    description: "New beads created"
+    tags:
+      - priority
+      - type
+      - rig_name
+
+  - name: gastown.beads.completed
+    type: counter
+    description: "Beads marked complete"
+    tags:
+      - priority
+      - assigned_agent
+
+  - name: gastown.beads.escalated
+    type: counter
+    description: "Beads escalated (Andon)"
+    tags:
+      - reason
+      - from_agent
+
+  # Convoy metrics
+  - name: gastown.convoy.started
+    type: counter
+    description: "Convoys started"
+    tags:
+      - rig_name
+      - task_count
+
+  - name: gastown.convoy.completed
+    type: counter
+    description: "Convoys completed"
+    tags:
+      - rig_name
+      - success
+
+  - name: gastown.convoy.duration_s
+    type: histogram
+    description: "Convoy duration in seconds"
+    tags:
+      - rig_name
+      - task_count

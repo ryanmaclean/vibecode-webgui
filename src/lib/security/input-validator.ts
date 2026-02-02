@@ -41,17 +41,17 @@ export const aiQuerySchema = z.object({
     .max(MAX_LENGTHS.query, `Query cannot exceed ${MAX_LENGTHS.query} characters`)
     .refine(
       (value) => !containsSuspiciousPatterns(value),
-      'Query contains potentially unsafe content'
+      { message: 'Query contains potentially unsafe content' }
     ),
   context: z.string().optional(),
-  metadata: z.record(z.any()).optional(),
+  metadata: z.record(z.string(), z.any()).optional(),
 });
 
 export const promptSchema = z.object({
   content: z.string()
     .min(1, 'Prompt cannot be empty')
     .max(MAX_LENGTHS.prompt, `Prompt cannot exceed ${MAX_LENGTHS.prompt} characters`),
-  variables: z.record(z.string()).optional(),
+  variables: z.record(z.string(), z.string()).optional(),
   systemPrompt: z.string().optional(),
 });
 
@@ -61,11 +61,11 @@ export const fileUploadSchema = z.object({
     .max(MAX_LENGTHS.filename, `Filename cannot exceed ${MAX_LENGTHS.filename} characters`)
     .refine(
       (filename) => !filename.includes('..') && !/[<>:"|?*]/.test(filename),
-      'Invalid filename format'
+      { message: 'Invalid filename format' }
     ),
   contentType: z.string().refine(
     (type) => /^(application|text|image|audio|video|multipart)\/[a-zA-Z0-9][a-zA-Z0-9!#$&\-\^_.+]*$/.test(type),
-    'Invalid content type'
+    { message: 'Invalid content type' }
   ),
   size: z.number().positive().max(100 * 1024 * 1024, 'File size cannot exceed 100MB'),
 });
@@ -122,7 +122,7 @@ export function validateAIQuery(input: unknown): { query: string; context?: stri
   const result = aiQuerySchema.safeParse(input);
 
   if (!result.success) {
-    throw new Error(`Invalid AI query: ${result.error.issues.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid AI query: ${result.error.issues.map((e: { message: string }) => e.message).join(', ')}`);
   }
 
   return {
@@ -139,14 +139,14 @@ export function validatePrompt(input: unknown): { content: string; variables?: R
   const result = promptSchema.safeParse(input);
 
   if (!result.success) {
-    throw new Error(`Invalid prompt: ${result.error.issues.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid prompt: ${result.error.issues.map((e: { message: string }) => e.message).join(', ')}`);
   }
 
   const sanitizedVariables = result.data.variables
     ? Object.fromEntries(
         Object.entries(result.data.variables).map(([key, value]) => [
           key,
-          sanitizeHtml(sanitizeUserInput(value))
+          sanitizeHtml(sanitizeUserInput(String(value)))
         ])
       )
     : undefined;
@@ -165,7 +165,7 @@ export function validateFileUpload(input: unknown): { filename: string; contentT
   const result = fileUploadSchema.safeParse(input);
 
   if (!result.success) {
-    throw new Error(`Invalid file upload: ${result.error.issues.map(e => e.message).join(', ')}`);
+    throw new Error(`Invalid file upload: ${result.error.issues.map((e: { message: string }) => e.message).join(', ')}`);
   }
 
   return result.data;

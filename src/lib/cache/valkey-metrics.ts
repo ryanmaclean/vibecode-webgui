@@ -112,7 +112,7 @@ export class ValKeyMetricsCollector {
       
       // Get slowlog length - using generic 'call' since slowlog may not be directly exposed
       try {
-        const slowlog = await (this.client as any).call('SLOWLOG', 'LEN');
+        const slowlog = await (this.client as unknown as { call: (cmd: string, subcmd: string) => Promise<number | string> }).call('SLOWLOG', 'LEN');
         parsedMetrics.slowlog_length = typeof slowlog === 'number' ? slowlog : parseInt(slowlog.toString(), 10);
       } catch (error) {
         console.warn('Error getting ValKey slowlog length', { error });
@@ -172,7 +172,7 @@ export class ValKeyMetricsCollector {
           case 'evicted_keys':
           case 'expired_keys':
           case 'cluster_enabled':
-            metrics[key.trim() as keyof ValKeyMetrics] = parseInt(value.trim(), 10) as any;
+            (metrics as Record<string, number>)[key.trim()] = parseInt(value.trim(), 10);
             break;
           case 'mem_fragmentation_ratio':
             metrics.mem_fragmentation_ratio = parseFloat(value.trim());

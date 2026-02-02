@@ -1,10 +1,16 @@
 import { createHmac, createHash } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
 // import { logger } from '../../../lib/logger'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
-import { loadSecret } from '@/lib/security/macos-keychain'
+import { loadSecret } from '@/lib/security/macos-keychain-server'
+import { fetchWithRetry } from '@/lib/utils/fetch'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 req/min for AI endpoints
 
 // Code completion request validation schema
 const codeCompletionSchema = z.object({
@@ -49,6 +55,27 @@ const DEFAULT_MAX_TOKENS = Number(process.env.AI_COMPLETION_MAX_TOKENS || '512')
 const CURSOR_MARKER = '<cursor>'
 const SYSTEM_PROMPT =
   'You are an expert pair programmer. Return only the code to insert at the cursor with no additional commentary.'
+const REQUEST_TIMEOUT_MS = Number(process.env.AI_COMPLETION_REQUEST_TIMEOUT_MS || '45000')
+const REQUEST_RETRY_COUNT = Number(process.env.AI_COMPLETION_REQUEST_RETRIES || '2')
+const REQUEST_RETRY_DELAY_MS = Number(process.env.AI_COMPLETION_RETRY_DELAY_MS || '1000')
+
+type CompletionRequestInit = RequestInit & {
+  timeout?: number
+  retries?: number
+  retryDelay?: number
+}
+
+function fetchLLM(input: RequestInfo | URL, init: CompletionRequestInit = {}) {
+  const { timeout, retries, retryDelay, ...rest } = init
+
+  return fetchWithRetry(input, {
+    failOnNonOk: false,
+    timeout: timeout ?? REQUEST_TIMEOUT_MS,
+    retries: retries ?? REQUEST_RETRY_COUNT,
+    retryDelay: retryDelay ?? REQUEST_RETRY_DELAY_MS,
+    ...rest,
+  })
+}
 
 const AVAILABLE_PROVIDERS = [
   'openai',
@@ -231,7 +258,7 @@ async function callGemini(metadata: CompletionMetadata, modelOverride?: string):
     },
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -275,7 +302,7 @@ async function callGeminiCli(metadata: CompletionMetadata, modelOverride?: strin
     },
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -328,7 +355,7 @@ async function callOpenCode(metadata: CompletionMetadata, modelOverride?: string
     headers['X-Title'] = process.env.OPENROUTER_APP_TITLE
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -369,7 +396,7 @@ async function callClaude(metadata: CompletionMetadata, modelOverride?: string):
     ],
   }
 
-  const response = await fetch(process.env.CLAUDE_API_BASE || 'https://api.anthropic.com/v1/messages', {
+  const response = await fetchLLM(process.env.CLAUDE_API_BASE || 'https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -460,7 +487,7 @@ async function callOpenRouter(metadata: CompletionMetadata, modelOverride?: stri
     headers['X-Title'] = process.env.OPENROUTER_APP_TITLE
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers,
     body: JSON.stringify(body),
@@ -513,7 +540,7 @@ async function callDeepSeek(metadata: CompletionMetadata, modelOverride?: string
     max_tokens: Number(process.env.AI_COMPLETION_MAX_TOKENS || DEFAULT_MAX_TOKENS),
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -567,7 +594,7 @@ async function callAzureOpenAI(metadata: CompletionMetadata, modelOverride?: str
     model: modelOverride || process.env.AZURE_OPENAI_MODEL || undefined,
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -641,7 +668,7 @@ async function callBedrock(metadata: CompletionMetadata, modelOverride?: string)
     headers['X-Amz-Security-Token'] = securityTokenHeader
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers,
     body,
@@ -688,7 +715,7 @@ async function callVertex(metadata: CompletionMetadata, modelOverride?: string):
     },
   }
 
-  const response = await fetch(url, {
+  const response = await fetchLLM(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -868,6 +895,29 @@ async function generateCompletion(body: CompletionRequestBody): Promise<Completi
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit check
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json({ error: 'Too many requests' }, {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      })
+    }
+
+    // Authentication check
+    const session = await getServerSession(authOptions)
+    if (!session?.user?.id) {
+      return NextResponse.json(
+        { error: 'Unauthorized', message: 'Authentication required for code completion' },
+        { status: 401 }
+      )
+    }
+
     // Validate request body
     const validation = await validateRequestBody(request, codeCompletionSchema)
     if (!validation.success) {
@@ -894,7 +944,16 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Authentication check for GET endpoint
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Authentication required for code completion status' },
+      { status: 401 }
+    )
+  }
+
   return NextResponse.json({
     status: 'ok',
     provider: DEFAULT_PROVIDER,

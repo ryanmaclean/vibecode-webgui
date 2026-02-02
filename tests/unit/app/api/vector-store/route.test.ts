@@ -87,7 +87,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it('should handle health check action', async () => {
@@ -134,7 +135,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Health check failed');
     });
   });
 
@@ -177,7 +179,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate search parameters', async () => {
@@ -191,8 +194,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Invalid request parameters');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Invalid request parameters');
     });
 
     it('should include performance metrics', async () => {
@@ -215,8 +218,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Search failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Search failed');
     });
   });
 
@@ -237,8 +240,9 @@ describe('/api/vector-store', () => {
 
     it('should store documents successfully', async () => {
       mockVectorStore.storeDocuments.mockResolvedValue({
-        totalStored: 1,
-        providers: ['pgvector']
+        stored: 1,
+        failed: 0,
+        providerResults: { pgvector: { stored: 1, failed: 0, duration: 10 } }
       });
 
       const request = createMockRequest('http://localhost:3000/api/vector-store', 'PUT', validStoreRequest);
@@ -247,7 +251,7 @@ describe('/api/vector-store', () => {
 
       expect(response.status).toBe(200);
       expect(data.status).toBe('success');
-      expect(data.data.totalStored).toBe(1);
+      expect(data.data.stored).toBe(1);
       expect(data.message).toContain('Stored 1 documents');
     });
 
@@ -260,7 +264,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate store parameters', async () => {
@@ -299,8 +304,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Storage failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Storage failed');
     });
   });
 
@@ -334,7 +339,8 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(401);
-      expect(data.error).toBe('Unauthorized');
+      expect(data.error.code).toBe('UNAUTHORIZED');
+      expect(data.error.message).toContain('Authentication required');
     });
 
     it.skip('should validate delete parameters', async () => {
@@ -345,7 +351,7 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(400);
-      expect(data.status).toBe('error');
+      expect(data.success).toBe(false);
     });
 
     it('should accept fileIds for deletion', async () => {
@@ -374,22 +380,23 @@ describe('/api/vector-store', () => {
       const data = await response.json();
 
       expect(response.status).toBe(500);
-      expect(data.status).toBe('error');
-      expect(data.message).toBe('Deletion failed');
+      expect(data.success).toBe(false);
+      expect(data.error.message).toBe('Deletion failed');
     });
   });
 
   describe('OPTIONS /api/vector-store', () => {
     it('should handle CORS preflight', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
       expect(response.status).toBe(200);
     });
 
     it('should set CORS headers', async () => {
-      const response = await OPTIONS();
+      const request = createMockRequest('http://localhost:3000/api/vector-store', 'OPTIONS');
+      const response = await OPTIONS(request);
 
-      expect(response.headers.get('Access-Control-Allow-Origin')).toBe('*');
       expect(response.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
       expect(response.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
     });

@@ -1,0 +1,87 @@
+# Gas Town Portable Runtime Configuration
+# Toyota Production System Naming Convention
+#
+# This configuration enables Gas Town to run anywhere:
+# - Native macOS (mbp_m1, Mac Studio)
+# - Docker/Podman containers
+# - Apple Virtualization containers
+# - Cloud VMs
+
+version: "1.0"
+naming: toyota-way
+
+# Runtime Detection
+runtime:
+  auto_detect: true
+  fallback: native
+  supported:
+    - native
+    - docker
+    - apple-vm
+    - podman
+
+# Toyota Way Agent Mapping
+agents:
+  # Sensei (先生) - The Mayor/Orchestrator
+  sensei:
+    role: orchestrator
+    model: claude-opus-4
+    description: "Lead agent coordinating all work"
+
+  # Jidoka (自働化) - Autonomous Workers (Polecats)
+  jidoka:
+    pool_size: 6
+    model: claude-sonnet-4
+    auto_spawn: true
+    names:
+      - jasper
+      - quartz
+      - obsidian
+      - onyx
+      - opal
+      - topaz
+    description: "Autonomous task executors with built-in quality checks"
+
+  # Gemba Walker (現場歩き) - The Witness
+  gemba:
+    role: anomaly_detection
+    patrol_interval: 5m
+    description: "Continuous monitoring for issues"
+
+  # Kaizen (改善) - Code Review Agents
+  kaizen:
+    role: code_review
+    schedule: daily
+    description: "Continuous improvement through review"
+
+# Kanban (看板) - Work Item Storage
+kanban:
+  storage: .beads
+  board_view: true
+  columns:
+    - backlog
+    - in_progress
+    - review
+    - done
+
+# Andon (行灯) - Escalation System
+andon:
+  enabled: true
+  auto_escalate_after: 30m
+  notification: tmux_bell
+  description: "Signal lamp for issues requiring attention"
+
+# Heijunka (平準化) - Load Leveling
+heijunka:
+  convoy_size: 5
+  balance_across_workers: true
+  description: "Level workload across Jidoka workers"
+
+# Muda (無駄) - Waste Elimination
+muda:
+  cleanup_schedule: hourly
+  targets:
+    - stale_beads
+    - orphaned_workers
+    - untracked_files
+  description: "Eliminate waste and inefficiency"

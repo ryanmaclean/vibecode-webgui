@@ -1,0 +1,10 @@
+[
+  {
+    "id": 1331,
+    "title": "Documentation Generation - Automatic docstring creation",
+    "issue": "https://github.com/ryanmaclean/vibecode-webgui/issues/1331",
+    "status": "unknown",
+    "doc": "docs/feature-audit/feature-1331-documentation-generation.md",
+    "sourceRelease": "VibeCode Desktop v1.2.0 - Apple Virtualization Framework (1.2.0-2)"
+  }
+]

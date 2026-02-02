@@ -1,4 +1,4 @@
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, ExperimentStatus } from '@prisma/client';
 import { logger } from '@/lib/server-monitoring';
 
 const prisma = new PrismaClient();
@@ -229,7 +229,7 @@ export class ExperimentWarehouse {
       where: { key: experimentKey },
       include: {
         assignments: {
-          orderBy: { timestamp: 'desc' }
+          orderBy: { assignedAt: 'desc' }
         }
       }
     });
@@ -237,14 +237,18 @@ export class ExperimentWarehouse {
     if (!experiment) return [];
 
     // Map to include both camelCase and snake_case for backward compatibility
-    return experiment.assignments.map((assignment: any) => {
-      // Handle both naming conventions - prioritize snake_case if present (for tests)
+    return experiment.assignments.map((assignment) => {
+      // Use Prisma field names and provide snake_case aliases for backward compatibility
       return {
         id: assignment.id,
-        experiment_id: assignment.experiment_id || assignment.experimentId,
-        user_id: assignment.user_id || assignment.userId,
-        variant_key: assignment.variant_key || assignment.variantKey,
-        timestamp: assignment.timestamp || assignment.assignedAt,
+        experiment_id: assignment.experimentId,
+        experimentId: assignment.experimentId,
+        user_id: assignment.userId,
+        userId: assignment.userId,
+        variant_key: assignment.variantKey,
+        variantKey: assignment.variantKey,
+        timestamp: assignment.assignedAt,
+        assignedAt: assignment.assignedAt,
         metadata: assignment.metadata
       };
     });
@@ -370,23 +374,25 @@ export class ExperimentWarehouse {
     name: string,
     config: any,
     hypothesis?: string,
-    status?: string
+    status?: ExperimentStatus
   ): Promise<any> {
+    // Hypothesis is stored within config JSON since it's not a separate field in schema
+    const configWithHypothesis = hypothesis
+      ? { ...config, hypothesis }
+      : config;
     return await prisma.experiment.upsert({
       where: { key },
       update: {
         name,
-        config,
-        hypothesis,
-        status: status || 'draft'
+        config: configWithHypothesis,
+        status: status || ExperimentStatus.DRAFT,
       },
       create: {
         key,
         name,
-        config,
-        hypothesis,
-        status: status || 'draft'
-      }
+        config: configWithHypothesis,
+        status: status || ExperimentStatus.DRAFT,
+      },
     });
   }
 

@@ -183,7 +183,7 @@ export function TemplateDeploymentIntegration({
     }
   };
 
-  const simulateDeployment = async (deploymentData: any): Promise<void> => {
+  const simulateDeployment = async (_deploymentData: { templateId: string; config: DeploymentConfig; timestamp: string }): Promise<void> => {
     // Simulate deployment steps
     const steps = [
       { status: 'preparing', message: 'Preparing deployment package...', duration: 1000 },
@@ -193,7 +193,7 @@ export function TemplateDeploymentIntegration({
 
     for (const step of steps) {
       setDeploymentStatus({
-        status: step.status as any,
+        status: step.status as DeploymentStatus['status'],
         message: step.message,
         progress: Math.round((steps.indexOf(step) + 1) / steps.length * 100)
       });
@@ -356,7 +356,7 @@ export function TemplateDeploymentIntegration({
                   </label>
                   <select
                     value={deploymentConfig.environment}
-                    onChange={(e) => updateConfig({ environment: e.target.value as any })}
+                    onChange={(e) => updateConfig({ environment: e.target.value as DeploymentConfig['environment'] })}
                     className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   >
                     <option value="development">Development</option>

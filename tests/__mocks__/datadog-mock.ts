@@ -1,452 +1,252 @@
 /**
- * Comprehensive Datadog API Mock for Testing
- *
- * Mocks all Datadog API endpoints to allow testing without real API keys:
- * - Metrics API (gauge, counter, histogram)
- * - Events API
- * - Service Checks API
- * - Logs API
- * - APM/Tracing
- * - RUM (Real User Monitoring)
- *
- * Usage:
- *   import { mockDatadogAPI, mockDatadogRUM, mockDatadogLogs } from '../__mocks__/datadog-mock'
+ * Datadog Mock for Production/Integration Tests
+ * Provides fetch mocking for Datadog API endpoints
+ * Used by tests to avoid actual Datadog API calls
  */
 
-// ================================
-// DATADOG METRICS API MOCK
-// ================================
+// Store submitted metrics for inspection in tests
+let submittedMetrics: Array<{
+  endpoint: string;
+  data: unknown;
+  timestamp: number;
+}> = [];
 
-export interface DatadogMetricPoint {
+// Store metrics by name for query responses
+let metricsByName: Map<string, Array<{
   metric: string;
-  points: [number, number][];
-  type?: 'gauge' | 'count' | 'histogram' | 'rate';
-  host?: string;
-  tags?: string[];
-}
+  points: Array<[number, number]>;
+  tags: string[];
+  type?: string;
+}>> = new Map();
 
-export interface DatadogEvent {
-  title: string;
-  text: string;
-  date_happened?: number;
-  priority?: 'normal' | 'low';
-  tags?: string[];
-  alert_type?: 'error' | 'warning' | 'info' | 'success';
-}
-
-export interface DatadogServiceCheck {
-  check: string;
-  host_name: string;
-  status: 0 | 1 | 2 | 3; // OK, WARNING, CRITICAL, UNKNOWN
-  timestamp?: number;
-  message?: string;
-  tags?: string[];
-}
-
-// Track submitted metrics for assertions
-export const submittedMetrics: DatadogMetricPoint[] = [];
-export const submittedEvents: DatadogEvent[] = [];
-export const submittedServiceChecks: DatadogServiceCheck[] = [];
-export const submittedLogs: any[] = [];
+// Store original fetch
+let originalFetch: typeof globalThis.fetch | null = null;
 
 /**
- * Mock Datadog Metrics API
+ * Creates a mock Response object
  */
-export const mockDatadogAPI = {
-  /**
-   * Mock /api/v1/validate endpoint
-   */
-  validate: async (apiKey: string) => {
-    // In mock mode, accept any non-empty API key except explicitly invalid ones
-    if (!apiKey) {
-      return {
-        ok: false,
-        status: 401,
-        json: async () => ({ valid: false, errors: ['Missing API key'] })
-      };
-    }
-
-    if (apiKey.includes('invalid-key-12345')) {
-      return {
-        ok: false,
-        status: 403,
-        json: async () => ({ valid: false, errors: ['Invalid API key'] })
-      };
-    }
-
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({ valid: true })
-    };
-  },
-
-  /**
-   * Mock /api/v1/series endpoint (metrics submission)
-   */
-  submitMetrics: async (metrics: { series: DatadogMetricPoint[] }) => {
-    submittedMetrics.push(...metrics.series);
-
-    return {
-      ok: true,
-      status: 202,
-      json: async () => ({ status: 'ok' })
-    };
-  },
-
-  /**
-   * Mock /api/v1/query endpoint (metrics query)
-   */
-  queryMetrics: async (query: string, from: number, to: number) => {
-    // Find matching metrics by name (extract metric name from query)
-    const metricNameMatch = query.match(/^([^{]+)/);
-    const metricName = metricNameMatch ? metricNameMatch[1].trim() : '';
-
-    // Filter submitted metrics by name and time range
-    const matchingMetrics = submittedMetrics.filter(m => {
-      if (m.metric !== metricName) return false;
-
-      // Check if any point falls within the time range
-      return m.points.some(point => {
-        const timestamp = point[0];
-        return timestamp >= from && timestamp <= to;
-      });
-    });
-
-    // If metrics found, return them in Datadog query response format
-    if (matchingMetrics.length > 0) {
-      const series = matchingMetrics.map(m => ({
-        metric: m.metric,
-        points: m.points,
-        pointlist: m.points, // Datadog uses "pointlist" in query responses
-        tags: m.tags || [],
-        scope: m.tags ? m.tags.join(',') : '',
-        expression: query
-      }));
-
-      return {
-        ok: true,
-        status: 200,
-        json: async () => ({
-          status: 'ok',
-          series: series
-        })
-      };
-    }
-
-    // No metrics found - return empty result (not an error)
-    return {
-      ok: true,
-      status: 200,
-      json: async () => ({
-        status: 'ok',
-        series: []
-      })
-    };
-  },
-
-  /**
-   * Mock /api/v1/events endpoint
-   */
-  submitEvent: async (event: DatadogEvent) => {
-    submittedEvents.push(event);
-
-    return {
-      ok: true,
-      status: 202,
-      json: async () => ({
-        status: 'ok',
-        event: {
-          ...event,
-          id: Math.random().toString(36).substr(2, 9)
-        }
-      })
-    };
-  },
-
-  /**
-   * Mock /api/v1/check_run endpoint (service checks)
-   */
-  submitServiceCheck: async (check: DatadogServiceCheck) => {
-    submittedServiceChecks.push(check);
-
-    return {
-      ok: true,
-      status: 202,
-      json: async () => ({ status: 'ok' })
-    };
-  },
-
-  /**
-   * Reset all tracked submissions
-   */
-  reset: () => {
-    submittedMetrics.length = 0;
-    submittedEvents.length = 0;
-    submittedServiceChecks.length = 0;
-    submittedLogs.length = 0;
-  }
-};
-
-// ================================
-// DATADOG RUM (Real User Monitoring) MOCK
-// ================================
-
-export const mockDatadogRUM = {
-  init: jest.fn(),
-  startSessionReplayRecording: jest.fn(),
-  stopSessionReplayRecording: jest.fn(),
-  addAction: jest.fn(),
-  addError: jest.fn(),
-  addTiming: jest.fn(),
-  setUser: jest.fn(),
-  removeUser: jest.fn(),
-  setUserProperty: jest.fn(),
-  startView: jest.fn(),
-  setGlobalContext: jest.fn(),
-  setGlobalContextProperty: jest.fn(),
-  getInternalContext: jest.fn().mockReturnValue({}),
-
-  // Track RUM actions for testing
-  actions: [] as any[],
-  errors: [] as any[],
-  timings: [] as any[],
-
-  reset: () => {
-    mockDatadogRUM.actions.length = 0;
-    mockDatadogRUM.errors.length = 0;
-    mockDatadogRUM.timings.length = 0;
-    jest.clearAllMocks();
-  }
-};
-
-// Override addAction to track
-mockDatadogRUM.addAction.mockImplementation((name: string, context?: any) => {
-  mockDatadogRUM.actions.push({ name, context, timestamp: Date.now() });
-});
-
-mockDatadogRUM.addError.mockImplementation((error: Error, context?: any) => {
-  mockDatadogRUM.errors.push({ error, context, timestamp: Date.now() });
-});
-
-mockDatadogRUM.addTiming.mockImplementation((name: string, time?: number) => {
-  mockDatadogRUM.timings.push({ name, time: time || Date.now(), timestamp: Date.now() });
-});
-
-// ================================
-// DATADOG LOGS MOCK
-// ================================
-
-export const mockDatadogLogs = {
-  logger: {
-    log: jest.fn().mockImplementation((message: string, context?: any, level = 'info') => {
-      submittedLogs.push({ message, context, level, timestamp: Date.now() });
-    }),
-    debug: jest.fn().mockImplementation((message: string, context?: any) => {
-      submittedLogs.push({ message, context, level: 'debug', timestamp: Date.now() });
-    }),
-    info: jest.fn().mockImplementation((message: string, context?: any) => {
-      submittedLogs.push({ message, context, level: 'info', timestamp: Date.now() });
-    }),
-    warn: jest.fn().mockImplementation((message: string, context?: any) => {
-      submittedLogs.push({ message, context, level: 'warn', timestamp: Date.now() });
-    }),
-    error: jest.fn().mockImplementation((message: string, context?: any) => {
-      submittedLogs.push({ message, context, level: 'error', timestamp: Date.now() });
-    }),
-    setContext: jest.fn(),
-    setLevel: jest.fn(),
-    setHandler: jest.fn(),
-  },
-
-  reset: () => {
-    submittedLogs.length = 0;
-    jest.clearAllMocks();
-  }
-};
-
-// ================================
-// DATADOG APM/TRACING MOCK
-// ================================
-
-export const mockDatadogTracing = {
-  tracer: {
-    startSpan: jest.fn().mockReturnValue({
-      finish: jest.fn(),
-      setTag: jest.fn(),
-      context: jest.fn().mockReturnValue({}),
-    }),
-    scope: jest.fn().mockReturnValue({
-      active: jest.fn().mockReturnValue(null),
-    }),
-    trace: jest.fn().mockImplementation(async (name: string, fn: () => any) => {
-      return await fn();
-    }),
-  },
-
-  reset: () => {
-    jest.clearAllMocks();
-  }
-};
-
-// ================================
-// GLOBAL FETCH MOCK FOR DATADOG API
-// ================================
+function createMockResponse(status: number, data: unknown, url: string): Response {
+  const body = JSON.stringify(data);
+  return {
+    status,
+    ok: status >= 200 && status < 300,
+    statusText: status === 200 ? 'OK' : status === 202 ? 'Accepted' : 'Error',
+    headers: new Headers({ 'content-type': 'application/json' }),
+    json: async () => data,
+    text: async () => body,
+    blob: async () => new Blob([body]),
+    arrayBuffer: async () => new TextEncoder().encode(body).buffer,
+    formData: async () => new FormData(),
+    clone: function() { return this; },
+    body: null,
+    bodyUsed: false,
+    redirected: false,
+    type: 'basic' as ResponseType,
+    url
+  } as Response;
+}
 
 /**
- * Mock global fetch to intercept Datadog API calls
+ * Mock fetch handler for Datadog API endpoints
  */
-export const mockDatadogFetch = () => {
-  const originalFetch = global.fetch;
+function mockFetch(url: string | URL | Request, options?: RequestInit): Promise<Response> {
+  const urlStr = typeof url === 'string' ? url : url instanceof URL ? url.toString() : url.url;
 
-  // Helper to extract headers from Headers object or plain object
-  const getHeader = (headers: any, key: string): string | null => {
-    if (!headers) return null;
+  // Handle Datadog API endpoints
+  if (urlStr.includes('datadoghq.com') || urlStr.includes('datadog')) {
+    // Handle invalid API key
+    const apiKey = options?.headers && typeof options.headers === 'object' && 'DD-API-KEY' in options.headers
+      ? (options.headers as Record<string, string>)['DD-API-KEY']
+      : undefined;
 
-    // If it's a Headers object (from fetch)
-    if (headers instanceof Headers || (headers.get && typeof headers.get === 'function')) {
-      return headers.get(key);
-    }
-
-    // If it's a plain object
-    return headers[key] || headers[key.toLowerCase()] || null;
-  };
-
-  // Create a proper mock implementation (don't use jest.fn for better compatibility)
-  const mockFetch = async (url: string | URL | Request, options?: RequestInit): Promise<Response> => {
-    const urlStr = typeof url === 'string' ? url : url instanceof Request ? url.url : url.toString();
-    const requestOptions = url instanceof Request ? { headers: url.headers, method: url.method, body: await url.text() } : options;
-
-    // Debug logging
-    console.log('[MOCK FETCH] URL:', urlStr);
-    console.log('[MOCK FETCH] Matches validate:', urlStr.includes('/api/v1/validate'));
-
-    // Mock Datadog API validation endpoint
+    // API key validation endpoint
     if (urlStr.includes('/api/v1/validate')) {
-      const apiKey = getHeader(requestOptions?.headers, 'DD-API-KEY') || '';
-      console.log('[MOCK FETCH] API Key:', apiKey?.substring(0, 10) + '...');
-      const result = await mockDatadogAPI.validate(apiKey);
-      console.log('[MOCK FETCH] Returning status:', result.status);
-      return Promise.resolve(result as any);
+      if (apiKey === 'invalid-key-12345') {
+        return Promise.resolve(createMockResponse(403, { errors: ['Forbidden'] }, urlStr));
+      }
+      return Promise.resolve(createMockResponse(200, { valid: true }, urlStr));
     }
 
-    // Mock Datadog metrics query endpoint
+    // Store the metric submission for inspection and query responses
+    if (options?.body && urlStr.includes('/api/v1/series')) {
+      try {
+        const bodyData = typeof options.body === 'string'
+          ? JSON.parse(options.body)
+          : options.body;
+        submittedMetrics.push({
+          endpoint: urlStr,
+          data: bodyData,
+          timestamp: Date.now()
+        });
+
+        // Store metrics by name for query responses
+        if (bodyData.series && Array.isArray(bodyData.series)) {
+          for (const metric of bodyData.series) {
+            const existing = metricsByName.get(metric.metric) || [];
+            existing.push({
+              metric: metric.metric,
+              points: metric.points || [],
+              tags: metric.tags || [],
+              type: metric.type
+            });
+            metricsByName.set(metric.metric, existing);
+          }
+        }
+      } catch {
+        // Ignore parse errors
+      }
+    }
+
+    // Metrics query endpoint
     if (urlStr.includes('/api/v1/query')) {
-      const url = new URL(urlStr);
-      const query = url.searchParams.get('query') || '';
-      const from = parseInt(url.searchParams.get('from') || '0', 10);
-      const to = parseInt(url.searchParams.get('to') || '0', 10);
-      const result = await mockDatadogAPI.queryMetrics(query, from, to);
-      return Promise.resolve(result as any);
+      const urlObj = new URL(urlStr);
+      const query = urlObj.searchParams.get('query') || '';
+
+      // Find matching metrics
+      const matchingSeries: Array<{
+        metric: string;
+        points: Array<[number, number]>;
+        tags: string[];
+        scope: string;
+        expression: string;
+      }> = [];
+
+      for (const [name, metrics] of metricsByName.entries()) {
+        if (query.includes(name) || name.includes(query)) {
+          for (const m of metrics) {
+            matchingSeries.push({
+              metric: m.metric,
+              points: m.points,
+              tags: m.tags,
+              scope: m.tags.join(','),
+              expression: query
+            });
+          }
+        }
+      }
+
+      return Promise.resolve(createMockResponse(200, {
+        status: 'ok',
+        series: matchingSeries
+      }, urlStr));
     }
 
-    // Mock Datadog metrics endpoint
+    // Metrics submission endpoint
     if (urlStr.includes('/api/v1/series')) {
-      const body = JSON.parse((requestOptions?.body as string) || '{}');
-      const result = await mockDatadogAPI.submitMetrics(body);
-      return Promise.resolve(result as any);
+      return Promise.resolve(createMockResponse(202, { status: 'ok' }, urlStr));
     }
 
-    // Mock Datadog events endpoint
+    // Events submission endpoint
     if (urlStr.includes('/api/v1/events')) {
-      const body = JSON.parse((requestOptions?.body as string) || '{}');
-      const result = await mockDatadogAPI.submitEvent(body);
-      return Promise.resolve(result as any);
+      return Promise.resolve(createMockResponse(202, { status: 'ok' }, urlStr));
     }
 
-    // Mock Datadog service checks endpoint
+    // Service check endpoint
     if (urlStr.includes('/api/v1/check_run')) {
-      const body = JSON.parse((requestOptions?.body as string) || '{}');
-      const result = await mockDatadogAPI.submitServiceCheck(body);
-      return Promise.resolve(result as any);
+      return Promise.resolve(createMockResponse(202, { status: 'ok' }, urlStr));
     }
 
-    // Fallback to original fetch for non-Datadog URLs
-    if (originalFetch) {
-      return originalFetch(url as any, options as any);
+    // Logs endpoint
+    if (urlStr.includes('/api/v2/logs')) {
+      return Promise.resolve(createMockResponse(202, { status: 'ok' }, urlStr));
     }
 
-    // If no original fetch and no match, return a basic error response
-    return Promise.resolve({
-      ok: false,
-      status: 404,
-      json: async () => ({ error: 'Not found' }),
-      text: async () => 'Not found'
-    } as any);
-  };
+    // Default Datadog API response
+    return Promise.resolve(createMockResponse(200, { status: 'ok' }, urlStr));
+  }
 
-  global.fetch = mockFetch as any;
+  // For non-Datadog URLs, use original fetch if available, otherwise mock success
+  if (originalFetch) {
+    return originalFetch(url, options);
+  }
 
-  return () => {
-    global.fetch = originalFetch;
-  };
-};
-
-// ================================
-// COMPLETE DATADOG MOCK SETUP
-// ================================
+  // Default mock response for non-Datadog endpoints
+  return Promise.resolve(createMockResponse(200, {}, urlStr));
+}
 
 /**
- * Complete Datadog mock setup for tests
- * Call this in beforeEach() to set up all Datadog mocks
+ * Set up Datadog API mocks
+ * Replaces global fetch with mocked version for Datadog endpoints
  */
-export const setupDatadogMocks = () => {
-  const restoreFetch = mockDatadogFetch();
+export function setupDatadogMocks(): { restore: () => void } {
+  // Clear previously submitted metrics
+  submittedMetrics = [];
 
-  // Mock environment variable if not set
+  // Store original fetch
+  originalFetch = globalThis.fetch;
+
+  // Replace global fetch with mock
+  globalThis.fetch = mockFetch as typeof globalThis.fetch;
+
+  // Set up mock API key if not set
   if (!process.env.DD_API_KEY) {
     process.env.DD_API_KEY = 'mock-datadog-api-key-32-characters';
   }
 
   return {
     restore: () => {
-      restoreFetch();
-      mockDatadogAPI.reset();
-      mockDatadogRUM.reset();
-      mockDatadogLogs.reset();
-      mockDatadogTracing.reset();
+      if (originalFetch) {
+        globalThis.fetch = originalFetch;
+        originalFetch = null;
+      }
     }
   };
-};
+}
 
 /**
- * Helper to get submitted metrics for assertions
+ * Get all metrics that have been submitted during the test
  */
-export const getSubmittedMetrics = (metricName?: string) => {
-  if (metricName) {
-    return submittedMetrics.filter(m => m.metric === metricName);
-  }
-  return submittedMetrics;
-};
+export function getSubmittedMetrics(): Array<{
+  endpoint: string;
+  data: unknown;
+  timestamp: number;
+}> {
+  return [...submittedMetrics];
+}
 
 /**
- * Helper to get submitted events for assertions
+ * Clear submitted metrics
  */
-export const getSubmittedEvents = (eventTitle?: string) => {
-  if (eventTitle) {
-    return submittedEvents.filter(e => e.title === eventTitle);
-  }
-  return submittedEvents;
-};
+export function clearSubmittedMetrics(): void {
+  submittedMetrics = [];
+  metricsByName.clear();
+}
 
 /**
- * Helper to get submitted logs for assertions
+ * Mock Datadog API object for test control
  */
-export const getSubmittedLogs = (level?: string) => {
-  if (level) {
-    return submittedLogs.filter(l => l.level === level);
+export const mockDatadogAPI = {
+  /**
+   * Reset mock state
+   */
+  reset(): void {
+    clearSubmittedMetrics();
+  },
+
+  /**
+   * Get submitted metrics
+   */
+  getMetrics(): typeof submittedMetrics {
+    return [...submittedMetrics];
+  },
+
+  /**
+   * Get metrics by name
+   */
+  getMetricsByName(): Map<string, Array<{
+    metric: string;
+    points: Array<[number, number]>;
+    tags: string[];
+    type?: string;
+  }>> {
+    return new Map(metricsByName);
   }
-  return submittedLogs;
 };
 
-// Export all mocks
+// Default export for compatibility
 export default {
-  mockDatadogAPI,
-  mockDatadogRUM,
-  mockDatadogLogs,
-  mockDatadogTracing,
   setupDatadogMocks,
   getSubmittedMetrics,
-  getSubmittedEvents,
-  getSubmittedLogs,
+  clearSubmittedMetrics,
+  mockDatadogAPI
 };

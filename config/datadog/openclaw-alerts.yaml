@@ -1,0 +1,17 @@
+# OpenClaw VM Alerts
+alerts:
+  - name: "OpenClaw Gateway Down"
+    query: "avg(last_5m):avg:openclaw.gateway.health{*} < 1"
+    message: "OpenClaw gateway is not responding. Check VM status."
+    
+  - name: "VM High CPU"
+    query: "avg(last_10m):avg:system.cpu.user{host:openclaw-vm} > 80"
+    message: "VM CPU usage is high. Consider scaling resources."
+    
+  - name: "VM High Memory"
+    query: "avg(last_10m):avg:system.mem.used{host:openclaw-vm} > 90"
+    message: "VM memory usage is high. Check for memory leaks."
+    
+  - name: "Tailscale Disconnected"
+    query: "avg(last_5m):avg:tailscale.connected{host:openclaw-vm} < 1"
+    message: "Tailscale VPN disconnected. Check network connectivity."

@@ -1,342 +1,234 @@
 /**
- * Mock implementation of Next.js Edge Runtime (next/server)
- * Provides NextRequest, NextResponse, and related utilities for testing
+ * Mock for next/server module
+ * Provides mock implementations for Next.js server components
  */
 
-// Mock Headers class (Web API standard)
-class MockHeaders {
-  private headers: Map<string, string>;
+import { ReadonlyURLSearchParams } from 'next/navigation';
 
-  constructor(init?: HeadersInit) {
-    this.headers = new Map();
-    if (init) {
-      if (init instanceof MockHeaders) {
-        init.forEach((value, key) => this.set(key, value));
-      } else if (Array.isArray(init)) {
-        init.forEach(([key, value]) => this.set(key, value));
-      } else if (typeof init === 'object') {
-        Object.entries(init).forEach(([key, value]) => this.set(key, value));
-      }
-    }
-  }
-
-  append(name: string, value: string): void {
-    const existing = this.get(name);
-    this.set(name, existing ? `${existing}, ${value}` : value);
-  }
-
-  delete(name: string): void {
-    this.headers.delete(name.toLowerCase());
-  }
-
-  get(name: string): string | null {
-    return this.headers.get(name.toLowerCase()) || null;
-  }
-
-  has(name: string): boolean {
-    return this.headers.has(name.toLowerCase());
-  }
-
-  set(name: string, value: string): void {
-    this.headers.set(name.toLowerCase(), value);
-  }
-
-  forEach(callback: (value: string, key: string, parent: Headers) => void): void {
-    this.headers.forEach((value, key) => callback(value, key, this as any));
-  }
-
-  entries(): IterableIterator<[string, string]> {
-    return this.headers.entries();
-  }
-
-  keys(): IterableIterator<string> {
-    return this.headers.keys();
-  }
-
-  values(): IterableIterator<string> {
-    return this.headers.values();
-  }
-
-  [Symbol.iterator](): IterableIterator<[string, string]> {
-    return this.headers.entries();
-  }
-}
-
-// Mock RequestCookies for NextRequest
-class MockRequestCookies {
-  private cookies: Map<string, { name: string; value: string }>;
-
-  constructor(headers?: MockHeaders) {
-    this.cookies = new Map();
-    if (headers) {
-      const cookieHeader = headers.get('cookie');
-      if (cookieHeader) {
-        this.parseCookieHeader(cookieHeader);
-      }
-    }
-  }
-
-  private parseCookieHeader(header: string): void {
-    header.split(';').forEach(cookie => {
-      const [name, ...valueParts] = cookie.trim().split('=');
-      if (name) {
-        const value = valueParts.join('=');
-        this.cookies.set(name, { name, value });
-      }
-    });
-  }
-
-  get(name: string): { name: string; value: string } | undefined {
-    return this.cookies.get(name);
-  }
-
-  getAll(): Array<{ name: string; value: string }> {
-    return Array.from(this.cookies.values());
-  }
-
-  has(name: string): boolean {
-    return this.cookies.has(name);
-  }
-
-  set(name: string, value: string): void {
-    this.cookies.set(name, { name, value });
-  }
-
-  delete(name: string): void {
-    this.cookies.delete(name);
-  }
-
-  clear(): void {
-    this.cookies.clear();
-  }
-}
-
-// Mock NextURL
-class MockNextURL extends URL {
-  constructor(url: string | URL, base?: string | URL) {
-    super(url, base);
-  }
-
-  clone(): MockNextURL {
-    return new MockNextURL(this.href);
-  }
-}
-
-// Mock NextRequest
-export class NextRequest {
+// Mock Response class
+class MockResponse {
+  private _body: unknown;
+  private _init: ResponseInit;
+  public headers: Headers;
+  public status: number;
+  public statusText: string;
+  public ok: boolean;
+  public redirected: boolean;
+  public type: ResponseType;
   public url: string;
-  public method: string;
-  public headers: MockHeaders;
-  public cookies: MockRequestCookies;
-  public nextUrl: MockNextURL;
-  public body: any;
-  public bodyUsed: boolean = false;
-  public cache?: RequestCache;
-  public credentials?: RequestCredentials;
-  public destination?: string;
-  public integrity?: string;
-  public keepalive?: boolean;
-  public mode?: RequestMode;
-  public redirect?: RequestRedirect;
-  public referrer?: string;
-  public referrerPolicy?: ReferrerPolicy;
-  public signal?: AbortSignal;
+  public bodyUsed: boolean;
 
-  constructor(input: string | URL | Request, init?: RequestInit) {
-    if (typeof input === 'string' || input instanceof URL) {
-      this.url = input.toString();
-      this.method = init?.method || 'GET';
-      this.headers = new MockHeaders(init?.headers);
-      this.body = init?.body;
-    } else {
-      // Request object
-      this.url = input.url;
-      this.method = input.method;
-      this.headers = new MockHeaders(input.headers);
-      this.body = (input as any).body;
-    }
-
-    // Initialize cookies from headers
-    this.cookies = new MockRequestCookies(this.headers);
-
-    // Initialize nextUrl
-    this.nextUrl = new MockNextURL(this.url);
-
-    // Copy other request properties
-    if (init) {
-      this.cache = init.cache;
-      this.credentials = init.credentials;
-      this.integrity = init.integrity;
-      this.keepalive = init.keepalive;
-      this.mode = init.mode;
-      this.redirect = init.redirect;
-      this.referrer = init.referrer;
-      this.referrerPolicy = init.referrerPolicy;
-      this.signal = init.signal;
-    }
+  constructor(body?: BodyInit | null, init?: ResponseInit) {
+    this._body = body;
+    this._init = init || {};
+    this.headers = new Headers(init?.headers);
+    this.status = init?.status || 200;
+    this.statusText = init?.statusText || 'OK';
+    this.ok = this.status >= 200 && this.status < 300;
+    this.redirected = false;
+    this.type = 'basic';
+    this.url = '';
+    this.bodyUsed = false;
   }
 
-  async json(): Promise<any> {
-    if (this.bodyUsed) {
-      throw new TypeError('Body has already been consumed');
-    }
+  async json() {
     this.bodyUsed = true;
-
-    if (typeof this.body === 'string') {
-      return JSON.parse(this.body);
+    if (typeof this._body === 'string') {
+      return JSON.parse(this._body);
     }
-    return this.body || {};
+    return this._body;
   }
 
-  async text(): Promise<string> {
-    if (this.bodyUsed) {
-      throw new TypeError('Body has already been consumed');
-    }
+  async text() {
     this.bodyUsed = true;
-
-    if (typeof this.body === 'string') {
-      return this.body;
+    if (typeof this._body === 'string') {
+      return this._body;
     }
-    return JSON.stringify(this.body || {});
+    return JSON.stringify(this._body);
+  }
+
+  async blob(): Promise<Blob> {
+    this.bodyUsed = true;
+    return new Blob([typeof this._body === 'string' ? this._body : JSON.stringify(this._body)]);
+  }
+
+  async arrayBuffer(): Promise<ArrayBuffer> {
+    this.bodyUsed = true;
+    const blob = await this.blob();
+    return blob.arrayBuffer();
   }
 
   async formData(): Promise<FormData> {
-    if (this.bodyUsed) {
-      throw new TypeError('Body has already been consumed');
-    }
     this.bodyUsed = true;
     return new FormData();
   }
 
-  async arrayBuffer(): Promise<ArrayBuffer> {
-    if (this.bodyUsed) {
-      throw new TypeError('Body has already been consumed');
-    }
-    this.bodyUsed = true;
-    const text = await this.text();
-    const encoder = new TextEncoder();
-    return encoder.encode(text).buffer;
+  clone(): MockResponse {
+    return new MockResponse(
+      typeof this._body === 'string' ? this._body : JSON.stringify(this._body),
+      this._init
+    );
   }
 
-  async blob(): Promise<Blob> {
-    if (this.bodyUsed) {
-      throw new TypeError('Body has already been consumed');
-    }
-    this.bodyUsed = true;
-    return new Blob([this.body || '']);
-  }
-
-  clone(): NextRequest {
-    return new NextRequest(this.url, {
-      method: this.method,
-      headers: this.headers,
-      body: this.body,
-      cache: this.cache,
-      credentials: this.credentials,
-      integrity: this.integrity,
-      keepalive: this.keepalive,
-      mode: this.mode,
-      redirect: this.redirect,
-      referrer: this.referrer,
-      referrerPolicy: this.referrerPolicy,
-      signal: this.signal
-    });
+  get body(): ReadableStream<Uint8Array> | null {
+    return null;
   }
 }
 
-// Mock ResponseCookies for NextResponse
-class MockResponseCookies {
-  private cookies: Map<string, { name: string; value: string; options?: any }>;
-
-  constructor() {
-    this.cookies = new Map();
-  }
-
-  set(name: string, value: string, options?: any): void {
-    this.cookies.set(name, { name, value, options });
-  }
-
-  get(name: string): { name: string; value: string; options?: any } | undefined {
-    return this.cookies.get(name);
-  }
-
-  delete(name: string): void {
-    this.cookies.delete(name);
-  }
-
-  getAll(): Array<{ name: string; value: string; options?: any }> {
-    return Array.from(this.cookies.values());
-  }
-
-  has(name: string): boolean {
-    return this.cookies.has(name);
-  }
-
-  clear(): void {
-    this.cookies.clear();
-  }
-}
-
-// Mock NextResponse
-export class NextResponse extends Response {
-  public cookies: MockResponseCookies;
+// Mock NextResponse class
+class MockNextResponse extends MockResponse {
+  public cookies: {
+    set: (name: string, value: string, options?: unknown) => void;
+    delete: (name: string) => void;
+    get: (name: string) => { name: string; value: string } | undefined;
+    getAll: () => { name: string; value: string }[];
+    has: (name: string) => boolean;
+  };
 
   constructor(body?: BodyInit | null, init?: ResponseInit) {
-    // Create a proper Response object
     super(body, init);
-    this.cookies = new MockResponseCookies();
+
+    const cookieStore = new Map<string, string>();
+
+    this.cookies = {
+      set: (name: string, value: string) => {
+        cookieStore.set(name, value);
+      },
+      delete: (name: string) => {
+        cookieStore.delete(name);
+      },
+      get: (name: string) => {
+        const value = cookieStore.get(name);
+        return value ? { name, value } : undefined;
+      },
+      getAll: () => {
+        return Array.from(cookieStore.entries()).map(([name, value]) => ({ name, value }));
+      },
+      has: (name: string) => {
+        return cookieStore.has(name);
+      },
+    };
   }
 
-  static json(data: any, init?: ResponseInit): NextResponse {
+  static json(data: unknown, init?: ResponseInit): MockNextResponse {
     const body = JSON.stringify(data);
-    const headers = new MockHeaders(init?.headers);
+    const headers = new Headers(init?.headers);
     headers.set('content-type', 'application/json');
 
-    const response = new NextResponse(body, {
+    return new MockNextResponse(body, {
       ...init,
-      headers: headers as any
-    });
-
-    return response;
-  }
-
-  static redirect(url: string | URL, init?: number | ResponseInit): NextResponse {
-    const status = typeof init === 'number' ? init : init?.status || 307;
-    const headers = new MockHeaders(typeof init === 'object' ? init?.headers : undefined);
-    headers.set('location', url.toString());
-
-    return new NextResponse(null, {
-      status,
-      headers: headers as any
+      headers,
     });
   }
 
-  static rewrite(destination: string | URL, init?: ResponseInit): NextResponse {
-    const headers = new MockHeaders(init?.headers);
-    headers.set('x-middleware-rewrite', destination.toString());
-
-    return new NextResponse(null, {
-      ...init,
-      headers: headers as any
-    });
+  static redirect(url: string | URL, status: number = 307): MockNextResponse {
+    const headers = new Headers();
+    headers.set('Location', url.toString());
+    return new MockNextResponse(null, { status, headers });
   }
 
-  static next(init?: ResponseInit): NextResponse {
-    return new NextResponse(null, {
-      ...init,
-      status: 200
-    });
+  static rewrite(url: string | URL): MockNextResponse {
+    const headers = new Headers();
+    headers.set('x-middleware-rewrite', url.toString());
+    return new MockNextResponse(null, { headers });
+  }
+
+  static next(): MockNextResponse {
+    return new MockNextResponse(null, { status: 200 });
   }
 }
 
-// Export utility functions
-export function NextRequest_prototype_get_cookies() {
-  return new MockRequestCookies();
+// Mock NextRequest class - doesn't extend Request due to readonly property issues
+class MockNextRequest {
+  public url: string;
+  public method: string;
+  public headers: Headers;
+  public nextUrl: URL;
+  public cookies: {
+    get: (name: string) => { name: string; value: string } | undefined;
+    getAll: () => { name: string; value: string }[];
+    set: (name: string, value: string) => void;
+    delete: (name: string) => void;
+    has: (name: string) => boolean;
+  };
+  public geo?: {
+    city?: string;
+    country?: string;
+    region?: string;
+    latitude?: string;
+    longitude?: string;
+  };
+  public ip?: string;
+  private _body: unknown;
+
+  constructor(input: RequestInfo | URL, init?: RequestInit) {
+    const url = typeof input === 'string' ? input : input instanceof URL ? input.toString() : input.url;
+    this.url = url;
+    this.method = init?.method || 'GET';
+    this.headers = new Headers(init?.headers);
+    this.nextUrl = new URL(url);
+    this._body = init?.body;
+
+    const cookieStore = new Map<string, string>();
+    const cookieHeader = this.headers.get('cookie');
+    if (cookieHeader) {
+      cookieHeader.split(';').forEach((cookie) => {
+        const [name, value] = cookie.trim().split('=');
+        if (name && value) {
+          cookieStore.set(name, value);
+        }
+      });
+    }
+
+    this.cookies = {
+      get: (name: string) => {
+        const value = cookieStore.get(name);
+        return value ? { name, value } : undefined;
+      },
+      getAll: () => {
+        return Array.from(cookieStore.entries()).map(([name, value]) => ({ name, value }));
+      },
+      set: (name: string, value: string) => {
+        cookieStore.set(name, value);
+      },
+      delete: (name: string) => {
+        cookieStore.delete(name);
+      },
+      has: (name: string) => {
+        return cookieStore.has(name);
+      },
+    };
+
+    this.geo = {
+      city: 'San Francisco',
+      country: 'US',
+      region: 'CA',
+    };
+
+    this.ip = '127.0.0.1';
+  }
+
+  async json() {
+    if (typeof this._body === 'string') {
+      return JSON.parse(this._body);
+    }
+    return this._body;
+  }
+
+  async text() {
+    if (typeof this._body === 'string') {
+      return this._body;
+    }
+    return JSON.stringify(this._body);
+  }
 }
 
-export function NextResponse_prototype_get_cookies() {
-  return new MockResponseCookies();
-}
+// Export all mock classes
+export const NextResponse = MockNextResponse;
+export const NextRequest = MockNextRequest;
 
-// Export for compatibility
-export { MockHeaders as Headers };
+// Default export for compatibility
+export default {
+  NextResponse: MockNextResponse,
+  NextRequest: MockNextRequest,
+};

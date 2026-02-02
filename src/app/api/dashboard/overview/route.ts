@@ -3,10 +3,12 @@
  * Provides a simplified, aggregated view of system health and performance
  *
  * Foundation for Enhanced Monitoring Dashboards feature (AGENT 92)
+ * Protected with admin-only authentication (hq-018)
  */
 
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { monitoring } from '@/lib/monitoring'
+import { checkDashboardAuth, getDashboardUnauthorizedResponse } from '@/lib/monitoring/auth'
 
 // Force dynamic rendering
 export const dynamic = 'force-dynamic'
@@ -34,7 +36,13 @@ interface DashboardOverview {
   }
 }
 
-export async function GET() {
+export async function GET(request: NextRequest) {
+  // Check admin authentication
+  const authResult = await checkDashboardAuth(request)
+  if (!authResult.isAuthorized) {
+    return getDashboardUnauthorizedResponse(authResult.error)
+  }
+
   const startTime = Date.now()
 
   try {

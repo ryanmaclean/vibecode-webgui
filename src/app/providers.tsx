@@ -35,7 +35,7 @@ export default function Providers({ children }: ProvidersProps) {
         RUMMonitoring.initializeWithTracking({
           applicationId,
           clientToken,
-          site: site as any,
+          site: site as 'datadoghq.com' | 'datadoghq.eu' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'ddog-gov.com',
           service: 'vibecode-webgui',
           env,
           version,
@@ -50,7 +50,7 @@ export default function Providers({ children }: ProvidersProps) {
         // Initialize Datadog Logs
         datadogLogs.init({
           clientToken,
-          site: site as any,
+          site: site as 'datadoghq.com' | 'datadoghq.eu' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'ddog-gov.com',
           forwardErrorsToLogs: true,
           sessionSampleRate: 100,
           service: 'vibecode-webgui',

@@ -10,7 +10,7 @@ import { VectorCacheManager } from '../cache/vector-cache-strategy';
 import { metrics } from '../server-monitoring';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
-import { VectorDbError, VectorDbErrorType, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbError, VectorDbErrorHandler } from './vector-db-error-handler';
 // import { logger } from '../logger';
 
 /**
@@ -32,7 +32,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   protected postgresConfig: PostgresVectorDatabaseConfig;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
-  private errorHandler: VectorDbErrorHandler;
 
   /**
    * Constructor for PostgreSQL adapter
@@ -40,6 +39,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
+    this.errorHandler = new VectorDbErrorHandler('postgres', this.config.enableLogging || false, this.config.enableMetrics || false);
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -47,9 +47,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       pgSearchMethod: 'cosine',
       ...config
     };
-    
-    // Initialize error handler
-    this.errorHandler = new VectorDbErrorHandler();
   }
 
   /**
@@ -152,7 +149,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
           { extensionName: 'vector' }
         );
       }
-      throw error;
+      throw this.errorHandler.handleError(error, 'verifyPgVectorExtension', undefined, this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error));
     }
   }
 
@@ -256,7 +253,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         );
       }
       
-      throw error;
+      throw this.errorHandler.handleError(error, 'unknown', undefined, this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error));
     }
   }
 
@@ -303,8 +300,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
               error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheRetrieval',
-                VectorDbErrorType.QUERY_FAILED,
-                true,
                 { embeddingSize: embedding.length }
               )
             });
@@ -463,9 +458,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
               console.warn('Background cache storage failed:', {
                 error: this.errorHandler.handleError(
                   err,
-                  'search.cacheStorage',
-                  VectorDbErrorType.QUERY_FAILED,
-                  true
+                  'search.cacheStorage'
                 )
               });
             }
@@ -475,9 +468,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             console.warn('Failed to cache results:', {
               error: this.errorHandler.handleError(
                 cacheError,
-                'search.cacheStorage',
-                VectorDbErrorType.QUERY_FAILED,
-                true
+                'search.cacheStorage'
               )
             });
           }
@@ -489,20 +480,18 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         metrics.histogram('postgres_vector_db.search.duration', Date.now() - startTime);
         metrics.increment('postgres_vector_db.search.success');
       }
-      
+
       return results;
     } catch (error) {
       if (this.config.enableMetrics) {
         metrics.increment('postgres_vector_db.search.error');
       }
-      
+
       // Only wrap if not already a VectorDbError
       if (!(error instanceof VectorDbError)) {
         throw this.errorHandler.handleError(
           error,
           'search',
-          VectorDbErrorType.SEARCH,
-          this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
           {
             embeddingSize: embedding.length,
             workspaceId: options.workspaceId,
@@ -513,7 +502,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
           }
         );
       }
-      
+
       // Fallback to simple text search if vector search fails
       console.warn('Vector search failed, falling back to text search', { error });
       return this.fallbackTextSearch(
@@ -541,8 +530,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'getCachedResults',
-        VectorDbErrorType.QUERY_FAILED,
-        true,
         {
           embeddingSize: embedding.length,
           options
@@ -594,8 +581,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'cacheResults',
-        VectorDbErrorType.QUERY_FAILED,
-        true,
         {
           embeddingSize: embedding.length,
           resultCount: results.length,
@@ -625,6 +610,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       },
       similarity: item.similarity
     }));
+  private errorHandler: VectorDbErrorHandler;
   }
 
   /**
@@ -634,9 +620,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'fallbackTextSearch',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'fallbackTextSearch'
       );
     }
 
@@ -649,11 +633,11 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
           mode: Prisma.QueryMode.insensitive
         } : undefined
       };
-      
+
       if (workspaceId) {
         whereClause.file = { is: { workspace_id: workspaceId } };
       }
-      
+
       if (fileIds && fileIds.length > 0) {
         whereClause.file_id = { in: fileIds };
       }
@@ -697,8 +681,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
-          VectorDbErrorType.QUERY_FAILED,
-          false,
           {
             query: query.length > 100 ? query.substring(0, 100) + '...' : query,
             workspaceId: options.workspaceId,
@@ -717,9 +699,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'deleteFileChunks',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'deleteFileChunks'
       );
     }
 
@@ -743,12 +723,10 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       if (this.config.enableMetrics) {
         metrics.increment('postgres_vector_db.delete_chunks.error');
       }
-      
+
       throw this.errorHandler.handleError(
         error,
         'deleteFileChunks',
-        VectorDbErrorType.VECTOR_CREATION_FAILED,
-        this.errorHandler.isNetworkError(error) || this.errorHandler.isTimeoutError(error),
         { fileId }
       );
     }
@@ -765,15 +743,13 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       throw this.errorHandler.handleError(
         new Error('PostgreSQL adapter not initialized'),
-        'getStats',
-        VectorDbErrorType.INITIALIZATION,
-        true
+        'getStats'
       );
     }
 
     try {
       const startTime = Date.now();
-      
+
       const totalChunks = await this.prisma.rAGChunk.count();
       const totalFiles = await this.prisma.rAGChunk.groupBy({
         by: ['file_id'],
@@ -802,16 +778,14 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       if (this.config.enableMetrics) {
         metrics.increment('postgres_vector_db.get_stats.error');
       }
-      
+
       console.error('Error getting vector store stats:', {
         error: this.errorHandler.handleError(
           error,
-          'getStats',
-          VectorDbErrorType.QUERY_FAILED,
-          false
+          'getStats'
         )
       });
-      
+
       // Return empty stats on error
       return {
         totalChunks: 0,
@@ -848,17 +822,15 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       if (this.config.enableMetrics) {
         metrics.increment('postgres_vector_db.invalidate_cache.error');
       }
-      
+
       console.error('Error invalidating cache:', {
         error: this.errorHandler.handleError(
           error,
           'invalidateCache',
-          VectorDbErrorType.QUERY_FAILED,
-          true,
           { table, contentType }
         )
       });
-      
+
       return 0;
     }
   }
@@ -870,7 +842,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
     if (!this.prisma) {
       return false;
     }
-    
+
     try {
       // Simple query to check database connectivity
       await this.prisma.$queryRaw`SELECT 1`;
@@ -880,9 +852,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         console.error('PostgreSQL ping failed:', {
           error: this.errorHandler.handleError(
             error,
-            'pingProvider',
-            VectorDbErrorType.CONNECTION_FAILED,
-            true
+            'pingProvider'
           )
         });
       }
@@ -902,9 +872,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         console.warn('Error disconnecting from PostgreSQL:', {
           error: this.errorHandler.handleError(
             error,
-            'closeProvider',
-            VectorDbErrorType.CONNECTION_FAILED,
-            false
+            'closeProvider'
           )
         });
       }

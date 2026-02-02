@@ -122,7 +122,7 @@ export default function EnhancedChatPage() {
             </div>
 
             {/* Demo Mode Selector */}
-            <Tabs value={demoMode} onValueChange={(value) => setDemoMode(value as any)} className="mb-4">
+            <Tabs value={demoMode} onValueChange={(value: string) => setDemoMode(value as "chat" | "functions" | "rag" | "web")} className="mb-4">
               <TabsList className="grid w-full grid-cols-4">
                 <TabsTrigger value="chat" className="flex items-center space-x-1">
                   <MessageSquare className="w-4 h-4" />

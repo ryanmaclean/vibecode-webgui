@@ -11,6 +11,13 @@ const noopSpan = {
   }),
 };
 
+const noopScope = {
+  active: () => noopSpan,
+  activate: (span, fn) => fn(),
+  getSpan: () => null,
+  bind: (fn) => fn,
+};
+
 const tracerStub = {
   init: () => tracerStub,
   use: () => tracerStub,
@@ -19,10 +26,9 @@ const tracerStub = {
   trace: (name, fn) => fn(noopSpan),
   wrap: (name, fn) => fn,
   startSpan: () => noopSpan,
-  scope: () => ({
-    active: () => noopSpan,
-    activate: (span, fn) => fn(),
-  }),
+  scope: () => noopScope,
+  getSpan: () => null,
+  getActiveScopeSpan: () => null,
 };
 
 module.exports = tracerStub;

@@ -70,9 +70,10 @@ describe('VectorDatabaseFactory', () => {
 
       // PostgreSQL adapter can be created without connectionString
       // It will fail during initialization if no DATABASE_URL is provided
+      // The factory wraps PostgresVectorDatabaseAdapter in EnhancedVectorDatabaseAdapter
       const adapter = await VectorDatabaseFactory.create(config);
       expect(adapter).toBeDefined();
-      expect(adapter.constructor.name).toBe('PostgresVectorDatabaseAdapter');
+      expect(adapter.constructor.name).toBe('EnhancedVectorDatabaseAdapter');
     });
 
     it('should document that SQL Server adapter is not implemented', async () => {

@@ -400,7 +400,7 @@ class NodeScriptErrorTracker {
   /**
    * Send data to Datadog
    */
-  private async sendToDatadog(payload: any): Promise<void> {
+  private async sendToDatadog(payload: Record<string, unknown>): Promise<void> {
     try {
       const response = await fetch(`https://http-intake.logs.datadoghq.com/v1/input/${this.config.apiKey}`, {
         method: 'POST',
@@ -459,7 +459,7 @@ export function createScriptErrorTracker(
 export async function safeExecuteCommand(
   command: string,
   errorTracker: NodeScriptErrorTracker,
-  options: any = {}
+  options: Record<string, unknown> = {}
 ): Promise<{ success: boolean; output?: string; error?: Error }> {
   const startTime = Date.now();
   
@@ -479,9 +479,9 @@ export async function safeExecuteCommand(
     return { success: true, output };
   } catch (error) {
     const duration = Date.now() - startTime;
-    const exitCode = (error as any).status || 1;
+    const exitCode = (error as { status?: number }).status || 1;
     
-    errorTracker.trackCommandExecution(command, exitCode, (error as any).stdout);
+    errorTracker.trackCommandExecution(command, exitCode, (error as { stdout?: string }).stdout);
     errorTracker.trackPerformanceMetric('command_execution_time', duration);
     
     if (error instanceof Error) {

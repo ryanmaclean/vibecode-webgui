@@ -1,6 +1,6 @@
 // Basic usage examples for the Agent Framework
 
-import { createAgent } from '..';
+import { createAgent, ToolDefinition } from '..';
 import { builtInTools } from '../tools';
 import { 
   CodeAgent, 
@@ -125,7 +125,7 @@ async function exampleCustomTool() {
       },
       required: ['location'],
     },
-    execute: async ({ location, unit = 'celsius' }) => {
+    execute: async ({ location, unit = 'celsius' }: { location: string; unit?: string }) => {
       // In a real implementation, this would call a weather API
       return {
         location,
@@ -140,7 +140,7 @@ async function exampleCustomTool() {
   // Create an agent with the custom tool
   const agent = createAgent({
     model: 'openrouter/anthropic/claude-3-sonnet',
-    tools: [weatherTool],
+    tools: [weatherTool as unknown as ToolDefinition],
   });
 
   // The agent can now use the weather tool

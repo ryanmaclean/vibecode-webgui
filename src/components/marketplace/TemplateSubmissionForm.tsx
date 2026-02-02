@@ -13,6 +13,7 @@ import {
   CheckCircleIcon,
   ArrowUpTrayIcon
 } from '@heroicons/react/24/outline';
+import { z } from '@/lib/zod-compat';
 
 interface TemplateFormData {
   name: string;
@@ -53,6 +54,41 @@ interface TemplateSubmissionFormProps {
   onCancel?: () => void;
   initialData?: Partial<TemplateFormData>;
 }
+
+const templateFormSchema = z.object({
+  name: z.string().trim().min(3, 'Template name must be at least 3 characters long'),
+  description: z
+    .string()
+    .trim()
+    .min(20, 'Please provide a longer description (20+ characters).'),
+  category: z.enum(['frontend', 'fullstack', 'backend', 'mobile', 'desktop', 'library']),
+  language: z.string().trim().min(2, 'Select a language'),
+  framework: z.string().trim().min(2, 'Select a framework'),
+  complexity: z.enum(['beginner', 'intermediate', 'advanced']),
+  tags: z.array(z.string().trim().min(1)).max(20).default([]),
+  dependencies: z.record(z.string(), z.string().trim().min(1)).default({}),
+  scripts: z.record(z.string(), z.string().trim().min(1)).default({}),
+  envVars: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1, 'Environment variable name is required'),
+        defaultValue: z.string().trim().optional(),
+        description: z.string().trim().optional(),
+      })
+    )
+    .max(20)
+    .default([]),
+  documentation: z.object({
+    setup: z.array(z.string().trim().min(1)).default([]),
+    usage: z.array(z.string().trim().min(1)).default([]),
+    deployment: z.array(z.string().trim().min(1)).default([]),
+  }),
+  dockerSupport: z.boolean(),
+  kubernetesSupport: z.boolean(),
+  cicdTemplate: z.boolean(),
+  testingSetup: z.boolean(),
+  monitoringSetup: z.boolean(),
+});
 
 export function TemplateSubmissionForm({
   onSubmit,
@@ -130,21 +166,57 @@ export function TemplateSubmissionForm({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!formData.name.trim() || !formData.description.trim()) {
+    const sanitizeRecord = (record: Record<string, string>) =>
+      Object.fromEntries(
+        Object.entries(record)
+          .map(([key, value]) => [key.trim(), value.trim()])
+          .filter(([key, value]) => key.length && value.length)
+      );
+
+    const sanitizeLines = (lines: string[]) => lines.map(line => line.trim()).filter(Boolean);
+
+    const sanitizedFormData: TemplateFormData = {
+      ...formData,
+      name: formData.name.trim(),
+      description: formData.description.trim(),
+      language: formData.language.trim(),
+      framework: formData.framework.trim(),
+      tags: formData.tags.map(tag => tag.trim()).filter(Boolean),
+      dependencies: sanitizeRecord(formData.dependencies),
+      scripts: sanitizeRecord(formData.scripts),
+      envVars: formData.envVars
+        .map(envVar => ({
+          name: envVar.name.trim(),
+          defaultValue: envVar.defaultValue?.trim() || undefined,
+          description: envVar.description?.trim() || undefined
+        }))
+        .filter(envVar => envVar.name.length > 0),
+      documentation: {
+        setup: sanitizeLines(formData.documentation.setup),
+        usage: sanitizeLines(formData.documentation.usage),
+        deployment: sanitizeLines(formData.documentation.deployment)
+      }
+    };
+
+    const validation = templateFormSchema.safeParse(sanitizedFormData);
+    if (!validation.success) {
+      const [issue] = validation.error.issues;
       setSubmissionStatus({
         status: 'error',
-        message: 'Please fill in all required fields'
+        message: 'Please correct the form errors',
+        error: issue?.message ?? 'Invalid form data'
       });
       return;
     }
 
     setSubmissionStatus({
       status: 'uploading',
-      message: 'Uploading template...'
+      message: 'Uploading template...',
+      error: undefined
     });
 
     try {
-      await onSubmit?.(formData);
+      await onSubmit?.(validation.data as TemplateFormData);
 
       setSubmissionStatus({
         status: 'success',
@@ -304,7 +376,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.category}
-                onChange={(e) => updateFormData({ category: e.target.value as any })}
+                onChange={(e) => updateFormData({ category: e.target.value as TemplateFormData['category'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 {categories.map(cat => (
@@ -355,7 +427,7 @@ export function TemplateSubmissionForm({
               </label>
               <select
                 value={formData.complexity}
-                onChange={(e) => updateFormData({ complexity: e.target.value as any })}
+                onChange={(e) => updateFormData({ complexity: e.target.value as TemplateFormData['complexity'] })}
                 className="w-full border border-gray-300 rounded-md px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               >
                 <option value="beginner">Beginner</option>

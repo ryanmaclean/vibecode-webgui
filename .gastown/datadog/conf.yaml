@@ -1,0 +1,51 @@
+# Gas Town Custom Datadog Integration
+# Copy to: /opt/datadog-agent/etc/conf.d/gastown.d/conf.yaml
+
+init_config:
+
+instances:
+  # Gas Town Agent Monitoring
+  - name: gastown
+    service: gastown-agents
+    env: development
+
+logs:
+  # Mayor logs
+  - type: file
+    path: /Users/studio/gt/*/mayor/rig/.beads/daemon.log
+    service: gastown-sensei
+    source: gastown
+    tags:
+      - agent:sensei
+      - role:orchestrator
+    log_processing_rules:
+      - type: multi_line
+        name: new_log_start
+        pattern: '^\d{4}-\d{2}-\d{2}'
+
+  # Polecat logs
+  - type: file
+    path: /Users/studio/gt/*/polecats/*/logs/*.log
+    service: gastown-jidoka
+    source: gastown
+    tags:
+      - agent:jidoka
+      - role:worker
+
+  # Witness patrol logs
+  - type: file
+    path: /Users/studio/gt/*/.beads/witness.log
+    service: gastown-gemba
+    source: gastown
+    tags:
+      - agent:gemba
+      - role:patrol
+
+  # Beads interaction logs
+  - type: file
+    path: /Users/studio/gt/*/.beads/interactions.jsonl
+    service: gastown-kanban
+    source: gastown
+    tags:
+      - type:kanban
+      - format:jsonl

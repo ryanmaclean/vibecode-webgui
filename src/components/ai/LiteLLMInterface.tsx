@@ -24,7 +24,7 @@ import {
   AlertCircle,
   CheckCircle,
   TrendingUp,
-  Dollar
+  DollarSign as Dollar
 } from 'lucide-react';
 // import { logger } from '@/lib/logger';
 // Types

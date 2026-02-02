@@ -398,7 +398,7 @@ brew services start postgresql@15
 
 # Install pgvector
 cd /tmp
-git clone --branch v0.5.1 https://github.com/pgvector/pgvector.git
+git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
 cd pgvector
 make
 make install  # May need sudo

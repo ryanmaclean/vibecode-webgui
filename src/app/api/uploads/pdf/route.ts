@@ -1,17 +1,46 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
 import prisma from '@/lib/prisma'
 // import { logger } from '../../../../lib/logger'
-import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation';
+import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 
 export const dynamic = 'force-dynamic'
 
 const MAX_UPLOAD_BYTES = Number(process.env.PDF_UPLOAD_MAX_BYTES ?? 25 * 1024 * 1024)
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute for uploads
 
 export async function POST(request: NextRequest) {
+  // Rate limiting check
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
+  // Authentication check
+  const session = await getServerSession(authOptions)
+  if (!session?.user?.id) {
+    return NextResponse.json(
+      { error: 'Unauthorized', message: 'Authentication required for PDF uploads' },
+      { status: 401 }
+    )
+  }
   // Note: In test environment, content-type might not be set correctly
   // so we'll check for formData availability instead
   const contentType = request.headers.get('content-type')
@@ -109,11 +138,11 @@ export async function POST(request: NextRequest) {
       metadata: {
         originalFileName: file.name,
         uploader: (formData.get('uploader') as string) || 'unknown',
-        securityValidation: {
+        securityValidation: JSON.stringify({
           validated: true,
           warnings: validationResult.warnings,
           validatedAt: new Date().toISOString()
-        }
+        })
       }
     })
   } catch (error) {

@@ -8,8 +8,58 @@ import GithubProvider from 'next-auth/providers/github'
 import GoogleProvider from 'next-auth/providers/google'
 import CredentialsProvider from 'next-auth/providers/credentials'
 import { logger } from '@/lib/logger';
+import { scrypt, randomBytes, timingSafeEqual } from 'crypto';
+import { promisify } from 'util';
 // import { PrismaAdapter } from '@next-auth/prisma-adapter'
 // import { prisma } from './prisma'
+
+const scryptAsync = promisify(scrypt);
+
+/**
+ * Hash a password using scrypt
+ * @param password - Plain text password
+ * @returns Hashed password in format: salt.hash
+ */
+async function hashPassword(password: string): Promise<string> {
+  const salt = randomBytes(16).toString('hex');
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+  return `${salt}.${derivedKey.toString('hex')}`;
+}
+
+/**
+ * Verify a password against a hash
+ * @param password - Plain text password
+ * @param hash - Stored hash in format: salt.hash
+ * @returns True if password matches
+ */
+async function verifyPassword(password: string, hash: string): Promise<boolean> {
+  const [salt, key] = hash.split('.');
+  const keyBuffer = Buffer.from(key, 'hex');
+  const derivedKey = (await scryptAsync(password, salt, 64)) as Buffer;
+  return timingSafeEqual(keyBuffer, derivedKey);
+}
+
+/**
+ * Load test users from environment variables (development only)
+ * Format: JSON array of { email, passwordHash, name, role, id }
+ */
+function getTestUsers() {
+  if (process.env.NODE_ENV !== 'development') {
+    return [];
+  }
+
+  try {
+    const testUsersJson = process.env.AUTH_TEST_USERS;
+    if (!testUsersJson) {
+      logger.warn('AUTH_TEST_USERS not configured - credentials auth disabled');
+      return [];
+    }
+    return JSON.parse(testUsersJson);
+  } catch (error) {
+    logger.error('Failed to parse AUTH_TEST_USERS:', { error: error instanceof Error ? error.message : String(error) });
+    return [];
+  }
+}
 
 declare module 'next-auth' {
   interface Session {
@@ -35,8 +85,8 @@ declare module 'next-auth' {
 
 declare module 'next-auth/jwt' {
   interface JWT {
-    id: string
-    role: string
+    id?: string | null
+    role?: string | null
     githubId?: string
     googleId?: string
   }
@@ -95,30 +145,41 @@ export const authOptions: NextAuthOptions = {
         password: { label: 'Password', type: 'password' },
       },
       async authorize(credentials) {
-        if (!credentials) return null
+        if (!credentials?.email || !credentials?.password) {
+          logger.warn('Missing email or password');
+          return null;
+        }
 
-        // In a real app, you'd look up the user from a database
-        // This is a mock implementation for development
-        const users = [
-          { id: 'legacy-admin', email: 'admin@vibecode.dev', password: 'admin123', name: 'Admin User', role: 'admin' },
-          { id: 'legacy-developer', email: 'developer@vibecode.dev', password: 'dev123', name: 'Developer User', role: 'developer' },
-          { id: 'legacy-lead', email: 'lead@vibecode.dev', password: 'lead123', name: 'Lead User', role: 'lead' },
-          { id: 'legacy-frontend', email: 'frontend@vibecode.dev', password: 'frontend123', name: 'Frontend Developer', role: 'developer' },
-          { id: 'legacy-backend', email: 'backend@vibecode.dev', password: 'backend123', name: 'Backend Developer', role: 'developer' },
-          { id: 'legacy-fullstack', email: 'fullstack@vibecode.dev', password: 'fullstack123', name: 'Fullstack Developer', role: 'developer' },
-          { id: 'legacy-designer', email: 'designer@vibecode.dev', password: 'design123', name: 'Designer', role: 'designer' },
-          { id: 'legacy-tester', email: 'tester@vibecode.dev', password: 'test123', name: 'QA Tester', role: 'tester' },
-          { id: 'legacy-devops', email: 'devops@vibecode.dev', password: 'devops123', name: 'DevOps Engineer', role: 'devops' },
-          { id: 'legacy-intern', email: 'intern@vibecode.dev', password: 'intern123', name: 'Intern', role: 'intern' },
-          { id: 'legacy-security', email: 'security@vibecode.dev', password: 'security123', name: 'Security Engineer', role: 'security' },
-        ]
+        // Load test users from environment (development only)
+        const testUsers = getTestUsers();
 
-        const user = users.find(u => u.email === credentials.email)
+        // Find user by email
+        const user = testUsers.find((u: any) => u.email === credentials.email);
 
-        if (user && user.password === credentials.password) {
-          return { id: user.id, name: user.name, email: user.email, role: user.role }
-        } else {
-          return null
+        if (!user) {
+          logger.warn(`User not found: ${credentials.email}`);
+          return null;
+        }
+
+        // Verify password using secure hash comparison
+        try {
+          const isValid = await verifyPassword(credentials.password, user.passwordHash);
+
+          if (isValid) {
+            logger.info(`Authentication successful: ${user.email}`);
+            return {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              role: user.role
+            };
+          } else {
+            logger.warn(`Invalid password for: ${credentials.email}`);
+            return null;
+          }
+        } catch (error) {
+          logger.error('Password verification error:', { error: error instanceof Error ? error.message : String(error) });
+          return null;
         }
       },
     }),
@@ -135,7 +196,7 @@ export const authOptions: NextAuthOptions = {
   },
   callbacks: {
     async jwt({ token, user, account }) {
-      logger.info('🔄 JWT callback:', {
+      logger.info('JWT callback:', {
         hasUser: !!user,
         hasToken: !!token,
         provider: account?.provider,
@@ -154,12 +215,12 @@ export const authOptions: NextAuthOptions = {
         if (account?.provider === 'google') {
           token.googleId = user.googleId
         }
-        logger.info('✅ JWT token updated with user:', { id: token.id, role: token.role })
+        logger.info('JWT token updated with user:', { id: token.id, role: token.role })
       }
       return token
     },
     async session({ session, token }) {
-      logger.info('📋 Session callback:', {
+      logger.info('Session callback:', {
         hasSession: !!session,
         hasToken: !!token,
         tokenId: token?.id,
@@ -167,11 +228,11 @@ export const authOptions: NextAuthOptions = {
       })
 
       if (token) {
-        session.user.id = token.id
-        session.user.role = token.role
-        session.user.email = token.email as string
-        session.user.name = token.name as string
-        logger.info('✅ Session updated with token:', { id: session.user.id, role: session.user.role })
+        session.user.id = (token.id as string) ?? ''
+        session.user.role = (token.role as string) ?? 'user'
+        session.user.email = (token.email as string) ?? ''
+        session.user.name = (token.name as string) ?? ''
+        logger.info('Session updated with token:', { id: session.user.id, role: session.user.role })
       }
       return session
     },
@@ -197,3 +258,6 @@ export const authOptions: NextAuthOptions = {
   },
   debug: process.env.NODE_ENV === 'development',
 }
+
+// Export password utilities for generating hashes (dev/test setup only)
+export { hashPassword, verifyPassword };

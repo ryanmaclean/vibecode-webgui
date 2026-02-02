@@ -33,6 +33,14 @@ import {
 } from '@/lib/agents/thread-manager'
 import { logger } from '@/lib/logger'
 import { z } from '@/lib/zod-compat'
+import {
+  MAX_PAGE_SIZE,
+  DEFAULT_PAGE_SIZE,
+  clampLimit,
+} from '@/lib/api/pagination'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
 const { Response: GlobalResponse, ReadableStream, TextEncoder } = globalThis
 
@@ -67,7 +75,7 @@ const createAgentSchema = z.object({
   name: z.string(),
   instructions: z.string(),
   tools: z.array(z.any()).optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
   temperature: z.number().min(0).max(2).optional(),
   top_p: z.number().min(0).max(1).optional(),
 })
@@ -82,7 +90,7 @@ const createThreadSchema = z.object({
       })
     )
     .optional(),
-  metadata: z.record(z.string()).optional(),
+  metadata: z.record(z.string(), z.string()).optional(),
 })
 
 const addMessageSchema = z.object({
@@ -105,6 +113,23 @@ export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'GET')
 }
 
@@ -112,6 +137,23 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'POST')
 }
 
@@ -119,6 +161,23 @@ export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> }
 ) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   return handleRequest(request, params, 'DELETE')
 }
 
@@ -223,7 +282,7 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
-        { error: 'Validation error', message: error.message, issues: error.errors },
+        { error: 'Validation error', message: error.message, issues: error.issues },
         { status: 400 }
       )
     }
@@ -234,7 +293,9 @@ async function handleCreateAgent(request: NextRequest, userId: string) {
 async function handleListAgents(request: NextRequest, userId: string) {
   const { client } = getClient()
   const { searchParams } = new globalThis.URL(request.url)
-  const limit = Number(searchParams.get('limit')) || 20
+  // Validate and cap limit parameter to prevent resource exhaustion
+  const requestedLimit = Number(searchParams.get('limit')) || DEFAULT_PAGE_SIZE.AGENTS
+  const limit = clampLimit(requestedLimit, MAX_PAGE_SIZE.AGENTS, DEFAULT_PAGE_SIZE.AGENTS)
   const order = (searchParams.get('order') as 'asc' | 'desc') || 'desc'
 
   const response = await client.listAgents({ limit, order })
@@ -327,7 +388,7 @@ async function handleThreadRoutes(
       } catch (error) {
         if (error instanceof z.ZodError) {
           return NextResponse.json(
-            { error: 'Validation error', message: error.message, issues: error.errors },
+            { error: 'Validation error', message: error.message, issues: error.issues },
             { status: 400 }
           )
         }
@@ -405,7 +466,7 @@ async function handleThreadMessages(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation error', message: error.message, issues: error.errors },
+          { error: 'Validation error', message: error.message, issues: error.issues },
           { status: 400 }
         )
       }
@@ -449,16 +510,25 @@ async function handleThreadRuns(
         tools,
       })
 
+      // Use ReadableStream reader pattern instead of for-await-of
+      // to avoid async iterator type errors with ReadableStream
       const encodedStream = new ReadableStream<Uint8Array>({
         async start(controller) {
+          const reader = stream.getReader()
           try {
-            for await (const event of stream) {
-              controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`))
+            while (true) {
+              const { done, value } = await reader.read()
+              if (done) break
+              if (value) {
+                controller.enqueue(encoder.encode(`data: ${JSON.stringify(value)}\n\n`))
+              }
             }
             controller.enqueue(encoder.encode('data: [DONE]\n\n'))
             controller.close()
           } catch (error) {
             controller.error(error)
+          } finally {
+            reader.releaseLock()
           }
         },
       })
@@ -485,7 +555,7 @@ async function handleThreadRuns(
     } catch (error) {
       if (error instanceof z.ZodError) {
         return NextResponse.json(
-          { error: 'Validation error', message: error.message, issues: error.errors },
+          { error: 'Validation error', message: error.message, issues: error.issues },
           { status: 400 }
         )
       }

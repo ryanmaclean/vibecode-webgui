@@ -307,8 +307,8 @@ export class GitHubIntegration {
         repo: name,
       })
       return false // Repository exists
-    } catch (error: any) {
-      if (error.status === 404) {
+    } catch (error: unknown) {
+      if ((error as any)?.status === 404) {
         return true // Repository doesn't exist, name is available
       }
       throw error // Some other error occurred
@@ -353,8 +353,8 @@ export class GitHubIntegration {
         description: repo.description,
         htmlUrl: repo.html_url,
         private: repo.private,
-        createdAt: repo.created_at,
-        updatedAt: repo.updated_at,
+        createdAt: repo.created_at || '',
+        updatedAt: repo.updated_at || '',
         language: repo.language,
         stargazersCount: repo.stargazers_count,
         forksCount: repo.forks_count,

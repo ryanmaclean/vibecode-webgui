@@ -66,7 +66,7 @@ export class WebSearchService {
           return results
         }
       } catch (error) {
-        console.warn('Search method failed, trying next:', error.message)
+        console.warn('Search method failed, trying next:', error instanceof Error ? error.message : String(error))
         continue
       }
     }
@@ -118,7 +118,7 @@ export class WebSearchService {
 
       return results
     } catch (error) {
-      throw new Error(`DuckDuckGo search failed: ${error.message}`)
+      throw new Error(`DuckDuckGo search failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -160,7 +160,7 @@ export class WebSearchService {
 
       return results
     } catch (error) {
-      throw new Error(`Bing search failed: ${error.message}`)
+      throw new Error(`Bing search failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -196,7 +196,7 @@ export class WebSearchService {
 
       return results
     } catch (error) {
-      throw new Error(`Searx search failed: ${error.message}`)
+      throw new Error(`Searx search failed: ${error instanceof Error ? error.message : String(error)}`)
     }
   }
 
@@ -249,7 +249,7 @@ export class WebSearchService {
     } catch (error) {
       return {
         content: '',
-        error: `Failed to scrape ${url}: ${error.message}`
+        error: `Failed to scrape ${url}: ${error instanceof Error ? error.message : String(error)}`
       }
     }
   }

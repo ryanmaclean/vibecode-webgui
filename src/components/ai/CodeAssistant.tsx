@@ -5,9 +5,11 @@
 
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, useCallback, type ChangeEvent, type FormEvent } from 'react'
 import { useChat } from '@ai-sdk/react'
+import type { UIMessage, TextUIPart } from 'ai'
 import { useAuth } from '@/hooks/useAuth'
+import { z } from '@/lib/zod-compat'
 
 interface CodeAssistantProps {
   workspaceId: string
@@ -23,6 +25,22 @@ interface CodeContext {
   cursorPosition?: { line: number; column: number }
 }
 
+const chatInputSchema = z.object({
+  message: z
+    .string()
+    .trim()
+    .min(1, 'Please enter a question for the assistant')
+    .max(4000, 'Message is too long'),
+})
+
+/** Extract text content from UIMessage parts */
+function getMessageText(message: UIMessage): string {
+  return message.parts
+    .filter((part): part is TextUIPart => part.type === 'text')
+    .map((part) => part.text)
+    .join('')
+}
+
 export default function CodeAssistant({
   workspaceId,
   visible,
@@ -32,15 +50,17 @@ export default function CodeAssistant({
   const { user } = useAuth()
   const [codeContext, setCodeContext] = useState<CodeContext>({})
   const [isMinimized, setIsMinimized] = useState(false)
+  const [input, setInput] = useState('')
   const messagesEndRef = useRef<HTMLDivElement>(null)
+  const formRef = useRef<HTMLFormElement>(null)
 
-  const { messages, input, handleInputChange, handleSubmit, isLoading, error } = useChat({
-    api: '/api/ai/chat',
-    initialMessages: [
+  const welcomeMessage: UIMessage = {
+    id: 'welcome',
+    role: 'assistant',
+    parts: [
       {
-        id: 'welcome',
-        role: 'assistant',
-        content: `Hello! I'm your AI coding assistant for workspace ${workspaceId}. I can help you with:
+        type: 'text',
+        text: `Hello! I'm your AI coding assistant for workspace ${workspaceId}. I can help you with:
 
 • Code explanations and debugging
 • Code generation and completion
@@ -51,12 +71,39 @@ export default function CodeAssistant({
 Feel free to share your code or ask any development questions!`,
       },
     ],
-    body: {
-      workspaceId,
-      userId: user?.id,
-      codeContext,
-    },
+  }
+
+  const {
+    messages,
+    sendMessage,
+    status,
+    error,
+  } = useChat({
+    id: `code-assistant-${workspaceId}`,
+    messages: [welcomeMessage],
   })
+
+  const isLoading = status === 'streaming' || status === 'submitted'
+  const [inputError, setInputError] = useState<string | null>(null)
+
+  const handleInputChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setInput(e.target.value)
+  }, [])
+
+  const handleFormSubmit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault()
+
+    const validation = chatInputSchema.safeParse({ message: input })
+    if (!validation.success) {
+      const [issue] = validation.error.issues
+      setInputError(issue?.message ?? 'Invalid input')
+      return
+    }
+
+    setInputError(null)
+    sendMessage({ text: input })
+    setInput('')
+  }
 
   // Auto-scroll to bottom of messages
   useEffect(() => {
@@ -103,17 +150,8 @@ Feel free to share your code or ask any development questions!`,
         return
     }
 
-    // Update input value and submit
-    handleInputChange({ target: { value: prompt } } as React.ChangeEvent<HTMLInputElement>)
-
-    // Use a timeout to ensure the input value is updated before submission
-    setTimeout(() => {
-      const form = document.querySelector('form')
-      if (form) {
-        const event = new Event('submit', { cancelable: true, bubbles: true })
-        form.dispatchEvent(event)
-      }
-    }, 100)
+    // Send the quick action prompt directly
+    sendMessage({ text: prompt })
   }
 
   if (!visible) return null
@@ -195,7 +233,7 @@ Feel free to share your code or ask any development questions!`,
 
           {/* Messages */}
           <div className="h-64 overflow-y-auto p-4 space-y-3">
-            {messages.map((message: { id: string; role: string; content: string }) => (
+            {messages.map((message) => (
               <div
                 key={message.id}
                 className={`flex ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
@@ -208,7 +246,7 @@ Feel free to share your code or ask any development questions!`,
                   }`}
                 >
                   <div className="whitespace-pre-wrap break-words">
-                    {message.content}
+                    {getMessageText(message)}
                   </div>
                 </div>
               </div>
@@ -238,7 +276,7 @@ Feel free to share your code or ask any development questions!`,
           </div>
 
           {/* Input Form */}
-          <form onSubmit={handleSubmit} className="p-4 border-t border-gray-200">
+          <form ref={formRef} onSubmit={handleFormSubmit} className="p-4 border-t border-gray-200">
             <div className="flex space-x-2">
               <input
                 value={input}
@@ -246,6 +284,8 @@ Feel free to share your code or ask any development questions!`,
                 placeholder="Ask me anything about your code..."
                 disabled={isLoading}
                 className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:opacity-50"
+                aria-invalid={inputError ? 'true' : 'false'}
+                aria-describedby={inputError ? 'code-assistant-error' : undefined}
               />
               <button
                 type="submit"
@@ -257,6 +297,11 @@ Feel free to share your code or ask any development questions!`,
                 </svg>
               </button>
             </div>
+            {inputError && (
+              <p id="code-assistant-error" className="mt-2 text-sm text-red-600">
+                {inputError}
+              </p>
+            )}
           </form>
         </>
       )}

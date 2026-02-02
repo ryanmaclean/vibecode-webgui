@@ -1,6 +1,8 @@
 /**
  * MFA Setup API
  * Handles multi-factor authentication device setup
+ *
+ * Rate Limited: 10 requests per minute (strict, security-sensitive)
  */
 
 import { NextRequest, NextResponse } from 'next/server'
@@ -8,6 +10,9 @@ import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { mfaProvider } from '@/lib/auth/mfa-provider'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(10) // 10 requests per minute - strict for security
 
 export const dynamic = 'force-dynamic'
 
@@ -33,6 +38,23 @@ const verifySchema = z.object({
  * POST /api/auth/mfa/setup - Setup new MFA device
  */
 export async function POST(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -43,7 +65,7 @@ export async function POST(req: NextRequest) {
     const { type, name, phoneNumber, email } = setupSchema.parse(body)
 
     let result
-    
+
     switch (type) {
       case 'totp':
         result = await mfaProvider.setupTOTP(session.user.id, name)
@@ -76,11 +98,11 @@ export async function POST(req: NextRequest) {
     })
   } catch (error) {
     // Server error logged
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -95,6 +117,23 @@ export async function POST(req: NextRequest) {
  * PUT /api/auth/mfa/setup - Verify MFA device setup
  */
 export async function PUT(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user?.id) {
@@ -118,11 +157,11 @@ export async function PUT(req: NextRequest) {
     }
   } catch (error) {
     // Server error logged
-    
+
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 

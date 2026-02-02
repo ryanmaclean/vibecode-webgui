@@ -84,6 +84,8 @@ const serverExternalPackages = [
   '@datadog/pprof',
   'ansi-color',
   '@opentelemetry/exporter-jaeger',
+  // Native modules that need special handling
+  'node-pty',
   // Exclude Node.js built-ins from client bundles
   'child_process',
   'fs',

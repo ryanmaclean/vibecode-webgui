@@ -1,6 +1,6 @@
 'use client'
 
-import { LazyMotion, domAnimation, DomAnimationConfig } from 'framer-motion'
+import { LazyMotion, domAnimation } from 'framer-motion'
 
 /**
  * Optimized Framer Motion provider using LazyMotion

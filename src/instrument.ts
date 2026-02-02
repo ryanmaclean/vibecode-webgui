@@ -2,15 +2,19 @@
 // This file is imported during Next.js build, so we need to completely bypass monitoring
 
 // Hard-coded Docker build detection - most aggressive approach
-const isDockerBuild = (
-  process.env.DOCKER_BUILD === 'true' || 
+const isMonitoringDisabled = (
+  process.env.DOCKER_BUILD === 'true' ||
   process.env.SKIP_MONITORING === 'true' ||
   process.env.CI === 'true' ||
   process.env.GITHUB_ACTIONS === 'true' ||
   process.env.OTEL_ENABLED === 'false' ||
   process.env.DD_ENABLED === 'false' ||
-  process.env.PLAYWRIGHT_TEST === 'true'
+  process.env.PLAYWRIGHT_TEST === 'true' ||
+  !process.env.DD_API_KEY // No API key = no tracing
 );
+
+// Legacy alias for backwards compatibility
+const isDockerBuild = isMonitoringDisabled;
 
 const path = require('path');
 const truthy = ['1', 'true', 'yes', 'on'];
@@ -37,6 +41,8 @@ function getTracer() {
     console.log('🚫 Monitoring disabled by environment flags/bypass conditions');
     return {
       init: () => console.log('Mock tracer initialized'),
+      addTags: () => {},
+      use: () => {},
       // Add other tracer methods as needed
     };
   }
@@ -188,6 +194,8 @@ function getTracer() {
     console.log('⚠️ Monitoring failed to initialize, using mock tracer');
     return {
       init: () => console.log('Mock tracer initialized'),
+      addTags: () => {},
+      use: () => {},
       // Add other tracer methods as needed
     };
   }

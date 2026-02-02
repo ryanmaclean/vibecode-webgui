@@ -90,7 +90,7 @@ export function CodeiumPlayground() {
       setStatus('Monaco ready (v0.53.0)')
 
       try {
-        setupMonacopilot(monaco as any, editorInstance, {
+        setupMonacopilot(monaco as unknown as typeof import("monaco-editor"), editorInstance, {
           endpoint: '/api/code-completion',
           language,
           debug: false,

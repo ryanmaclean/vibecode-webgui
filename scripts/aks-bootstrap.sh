@@ -6,6 +6,8 @@ set -euo pipefail
 # lives in a single, testable implementation.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck disable=SC1091
+source "$SCRIPT_DIR/lib/datadog-logging.sh" 2>/dev/null || true
 PYTHON=${PYTHON:-python3}
 
 ENVIRONMENT=${ENVIRONMENT:-dev}

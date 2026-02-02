@@ -1,0 +1,79 @@
+# Multi-stage Dockerfile for AKS deployment with source maps and dynamic instrumentation
+
+# Build stage
+FROM node:20-alpine AS builder
+
+WORKDIR /app
+
+# Install dependencies including Python for native modules
+RUN apk add --no-cache python3 make g++
+
+# Install dependencies
+COPY package*.json ./
+RUN npm ci --legacy-peer-deps
+
+# Copy source code
+COPY . .
+
+# Generate Prisma client for runtime usage before building
+RUN npx prisma generate
+
+# Build application with source maps enabled
+ENV NODE_ENV=production
+ENV GENERATE_SOURCEMAP=true
+RUN npm run build
+
+# Production stage  
+FROM node:20-alpine AS production
+
+# Install security updates
+RUN apk update && apk upgrade && apk add --no-cache \
+    dumb-init \
+    curl \
+    && rm -rf /var/cache/apk/*
+
+# Create app user
+RUN addgroup -g 1001 -S nodejs
+RUN adduser -S nextjs -u 1001
+
+WORKDIR /app
+
+# Copy built application
+COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
+COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+COPY --from=builder --chown=nextjs:nodejs /app/public ./public
+COPY --from=builder --chown=nextjs:nodejs /app/prisma ./prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/.prisma ./node_modules/.prisma
+COPY --from=builder --chown=nextjs:nodejs /app/node_modules/@prisma ./node_modules/@prisma
+
+# Copy source maps for Datadog Dynamic Instrumentation
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./source-maps/.next
+COPY --from=builder --chown=nextjs:nodejs /app/src ./source-maps/src
+
+# Set up Datadog instrumentation
+ENV DD_DYNAMIC_INSTRUMENTATION_ENABLED=true
+ENV DD_PROFILING_ENABLED=true
+ENV DD_LOGS_INJECTION=true
+ENV DD_TRACE_ENABLED=true
+ENV DD_RUNTIME_METRICS_ENABLED=true
+ENV DD_IAST_ENABLED=true
+
+# Source map configuration
+ENV DD_SOURCE_MAP_PATH=/app/source-maps
+ENV DD_UPLOAD_SOURCE_MAPS=true
+
+# Security: run as non-root user
+USER nextjs
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \
+    CMD curl -f http://localhost:3000/api/health || exit 1
+
+# Expose port
+EXPOSE 3000
+
+# Use dumb-init to handle signals properly
+ENTRYPOINT ["dumb-init", "--"]
+
+# Start the application
+CMD ["node", "server.js"]

@@ -11,6 +11,9 @@ import { generateFromTemplate, GenerateFromTemplateOptions } from '@/lib/templat
 import { getTemplateById } from '@/lib/templates'
 import { llmObservability } from '@/lib/datadog-llm'
 import type { Span } from 'dd-trace'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - template creation
 
 const generateFromTemplateSchema = z.object({
   templateId: z.string().min(1, 'Template ID is required'),
@@ -23,10 +26,27 @@ const generateFromTemplateSchema = z.object({
     gitRepository: z.string().optional(),
   }).optional(),
   features: z.array(z.string()).optional(),
-  envOverrides: z.record(z.string()).optional(),
+  envOverrides: z.record(z.string(), z.string()).optional(),
 })
 
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const session = await getServerSession(authOptions)
     if (!session?.user) {
@@ -74,11 +94,11 @@ export async function POST(request: NextRequest) {
         try {
           // Generate project from template
           const options: GenerateFromTemplateOptions = {
-            name: validatedData.projectName,
-            templateId: validatedData.templateId,
-            description: validatedData.customizations?.description,
+            projectName: validatedData.projectName,
+            template: validatedData.templateId,
+            customizations: validatedData.customizations,
             features: validatedData.features,
-            customVariables: validatedData.envOverrides,
+            envOverrides: validatedData.envOverrides,
           }
 
           const generatedProject = await generateFromTemplate(options)
@@ -134,7 +154,7 @@ export async function POST(request: NextRequest) {
               setupTime: template.estimatedSetupTime
             },
             generationTime,
-            setupInstructions: generatedProject.setupInstructions || template.setupInstructions || [],
+            setupInstructions: generatedProject.setupInstructions || [],
             envVars: generatedProject.envVars?.filter((env: { value?: string }) => env.value) || [],
             nextSteps: [
               `Navigate to /workspace/${workspaceId}`,
@@ -191,7 +211,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         { 
           error: 'Invalid request data',
-          details: error.errors.map(err => ({
+          details: error.issues.map(err => ({
             field: err.path.join('.'),
             message: err.message
           }))
@@ -210,6 +230,23 @@ export async function POST(request: NextRequest) {
 
 // GET endpoint for retrieving available templates
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const { searchParams } = new URL(request.url)
     const category = searchParams.get('category')
@@ -229,7 +266,7 @@ export async function GET(request: NextRequest) {
 
     // Apply filters
     if (category && category !== 'all') {
-      filteredTemplates = getTemplatesByCategory(category as any)
+      filteredTemplates = getTemplatesByCategory(category as Parameters<typeof getTemplatesByCategory>[0])
     }
 
     if (complexity && complexity !== 'all') {

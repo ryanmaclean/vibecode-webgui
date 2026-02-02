@@ -20,9 +20,152 @@ import {
   ListToolsRequestSchema,
   ReadResourceRequestSchema,
 } from '@modelcontextprotocol/sdk/types.js';
+import tracer, { dogstatsd } from 'dd-trace';
+import type { Span } from 'dd-trace';
 
 // Authentication utilities
 import { authenticateRequest, AuthenticationError, type UserContext } from '../lib/auth/jwt-utils.js';
+
+/**
+ * MCP Server Instrumentation Helper
+ * Provides tracing and metrics for MCP operations
+ */
+class MCPInstrumentation {
+  private readonly enabled: boolean;
+  private readonly serviceName = 'vibecode-mcp';
+
+  constructor() {
+    this.enabled = process.env.DD_ENABLED !== 'false' && process.env.NODE_ENV !== 'test';
+  }
+
+  /**
+   * Start a span for tool execution
+   */
+  startToolSpan(toolName: string, args?: Record<string, unknown>): Span | null {
+    if (!this.enabled) return null;
+
+    const span = tracer.startSpan('mcp.tool.execute', {
+      tags: {
+        'service.name': this.serviceName,
+        'mcp.tool.name': toolName,
+        'span.kind': 'server',
+      },
+    });
+
+    // Add safe argument tags (avoid sensitive data)
+    if (args) {
+      if (args.workspaceId) span.setTag('mcp.workspace_id', String(args.workspaceId));
+      if (args.template) span.setTag('mcp.template', String(args.template));
+      if (args.testType) span.setTag('mcp.test_type', String(args.testType));
+      if (args.environment) span.setTag('mcp.environment', String(args.environment));
+      if (args.language) span.setTag('mcp.language', String(args.language));
+    }
+
+    return span;
+  }
+
+  /**
+   * Finish a span with success status
+   */
+  finishSpanSuccess(span: Span | null, additionalTags?: Record<string, string | number | boolean>): void {
+    if (!span) return;
+
+    span.setTag('mcp.status', 'success');
+    if (additionalTags) {
+      Object.entries(additionalTags).forEach(([key, value]) => {
+        span.setTag(key, value);
+      });
+    }
+    span.finish();
+  }
+
+  /**
+   * Finish a span with error status
+   */
+  finishSpanError(span: Span | null, error: Error, errorType?: string): void {
+    if (!span) return;
+
+    span.setTag('mcp.status', 'error');
+    span.setTag('error', true);
+    span.setTag('error.type', errorType || error.name);
+    span.setTag('error.msg', error.message);
+    if (error.stack) {
+      span.setTag('error.stack', error.stack);
+    }
+    span.finish();
+  }
+
+  /**
+   * Record tool execution metrics
+   */
+  recordToolMetrics(toolName: string, durationMs: number, success: boolean): void {
+    if (!this.enabled) return;
+
+    const tags = {
+      tool: toolName,
+      status: success ? 'success' : 'error',
+    };
+
+    dogstatsd.increment('mcp.tool.calls', 1, tags);
+    dogstatsd.histogram('mcp.tool.duration', durationMs, tags);
+
+    if (!success) {
+      dogstatsd.increment('mcp.tool.errors', 1, tags);
+    }
+  }
+
+  /**
+   * Record authentication metrics
+   */
+  recordAuthMetrics(success: boolean, errorCode?: string): void {
+    if (!this.enabled) return;
+
+    const tags: Record<string, string> = {
+      status: success ? 'success' : 'failure',
+    };
+
+    if (errorCode) {
+      tags.error_code = errorCode;
+    }
+
+    dogstatsd.increment('mcp.auth.attempts', 1, tags);
+
+    if (!success) {
+      dogstatsd.increment('mcp.auth.failures', 1, tags);
+    }
+  }
+
+  /**
+   * Record resource access metrics
+   */
+  recordResourceMetrics(resourceUri: string, success: boolean): void {
+    if (!this.enabled) return;
+
+    const resourceType = resourceUri.split('://')[1] || 'unknown';
+    const tags = {
+      resource: resourceType,
+      status: success ? 'success' : 'error',
+    };
+
+    dogstatsd.increment('mcp.resource.access', 1, tags);
+  }
+
+  /**
+   * Record server lifecycle events
+   */
+  recordServerEvent(event: 'start' | 'stop' | 'error', details?: string): void {
+    if (!this.enabled) return;
+
+    const tags: Record<string, string> = { event };
+    if (details) {
+      tags.details = details;
+    }
+
+    dogstatsd.increment('mcp.server.events', 1, tags);
+  }
+}
+
+const mcpInstrumentation = new MCPInstrumentation();
 
 // Tool implementations
 import { createWorkspace, listWorkspaces } from './tools/workspace.js';
@@ -31,6 +174,7 @@ import { deployProject } from './tools/deployment.js';
 import { searchCode, analyzeCode } from './tools/code-analysis.js';
 import { generateCode } from './tools/code-generation.js';
 import { createVM, startVM, stopVM, listVMs, getVMStatus } from './tools/vm-management.js';
+import { sequentialThinking, getThinkingState, resetThinkingProcess } from './tools/sequential-thinking.js';
 
 // Type validation schemas
 import {
@@ -40,6 +184,7 @@ import {
   SearchCodeArgsSchema,
   AnalyzeCodeArgsSchema,
   GenerateCodeArgsSchema,
+  SequentialThinkingArgsSchema,
   validateToolArgs,
 } from './types.js';
 // Unused exports for future implementation
@@ -206,6 +351,52 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
           required: ['prompt', 'language'],
         },
       },
+      {
+        name: 'sequential_thinking',
+        description: 'A tool for structured, step-by-step thinking. Break down complex problems into discrete thoughts, with support for revisions and branching. The thinking process maintains state across calls.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            thought: {
+              type: 'string',
+              description: 'The current thinking step content',
+            },
+            thoughtNumber: {
+              type: 'integer',
+              description: 'Current thought number in the sequence',
+              minimum: 1,
+            },
+            totalThoughts: {
+              type: 'integer',
+              description: 'Estimated total number of thoughts needed (can be adjusted)',
+              minimum: 1,
+            },
+            nextThoughtNeeded: {
+              type: 'boolean',
+              description: 'Whether another thought step is needed after this one',
+            },
+            isRevision: {
+              type: 'boolean',
+              description: 'Whether this thought revises a previous thought',
+            },
+            revisesThought: {
+              type: 'integer',
+              description: 'If isRevision is true, which thought number is being revised',
+              minimum: 1,
+            },
+            branchFromThought: {
+              type: 'integer',
+              description: 'If branching, the thought number to branch from',
+              minimum: 1,
+            },
+            branchId: {
+              type: 'string',
+              description: 'Branch identifier (auto-generated if not provided)',
+            },
+          },
+          required: ['thought', 'thoughtNumber', 'totalThoughts', 'nextThoughtNeeded'],
+        },
+      },
     ],
   };
 });
@@ -222,6 +413,7 @@ async function authenticateToolCall(args: Record<string, unknown>): Promise<User
   try {
     const userContext = await authenticateRequest(args);
     console.error(`✅ Authenticated: ${userContext.email} (${userContext.role})`);
+    mcpInstrumentation.recordAuthMetrics(true);
     return userContext;
   } catch (error) {
     if (error instanceof AuthenticationError) {
@@ -229,8 +421,10 @@ async function authenticateToolCall(args: Record<string, unknown>): Promise<User
       if (error.details) {
         console.error(`   Details:`, error.details);
       }
+      mcpInstrumentation.recordAuthMetrics(false, error.code);
     } else {
       console.error(`❌ Authentication error:`, error);
+      mcpInstrumentation.recordAuthMetrics(false, 'unknown');
     }
     throw error;
   }
@@ -240,55 +434,83 @@ async function authenticateToolCall(args: Record<string, unknown>): Promise<User
  * Handle tool calls with authentication and type-safe validation
  *
  * SECURITY: All tool calls require valid JWT authentication
+ * MONITORING: All tool calls are traced and metered via Datadog
  */
 server.setRequestHandler(CallToolRequestSchema, async (request) => {
   const { name, arguments: args } = request.params;
+  const startTime = Date.now();
+  const argsRecord = (args ?? {}) as Record<string, unknown>;
+
+  // Start tracing span for the tool execution
+  const span = mcpInstrumentation.startToolSpan(name, argsRecord);
 
   try {
-    // Ensure args is defined
-    const argsRecord = (args ?? {}) as Record<string, unknown>;
-
     // SECURITY: Authenticate request before executing any tool
     await authenticateToolCall(argsRecord);
 
     // Execute tool with validated context
+    let result;
     switch (name) {
       case 'create-workspace': {
         const validatedArgs = validateToolArgs(CreateWorkspaceArgsSchema, argsRecord);
-        return await createWorkspace(validatedArgs);
+        result = await createWorkspace(validatedArgs);
+        break;
       }
 
       case 'run-tests': {
         const validatedArgs = validateToolArgs(RunTestsArgsSchema, argsRecord);
-        return await runTests(validatedArgs);
+        result = await runTests(validatedArgs);
+        break;
       }
 
       case 'deploy-project': {
         const validatedArgs = validateToolArgs(DeployProjectArgsSchema, argsRecord);
-        return await deployProject(validatedArgs);
+        result = await deployProject(validatedArgs);
+        break;
       }
 
       case 'search-code': {
         const validatedArgs = validateToolArgs(SearchCodeArgsSchema, argsRecord);
-        return await searchCode(validatedArgs);
+        result = await searchCode(validatedArgs);
+        break;
       }
 
       case 'analyze-code': {
         const validatedArgs = validateToolArgs(AnalyzeCodeArgsSchema, argsRecord);
-        return await analyzeCode(validatedArgs);
+        result = await analyzeCode(validatedArgs);
+        break;
       }
 
       case 'generate-code': {
         const validatedArgs = validateToolArgs(GenerateCodeArgsSchema, argsRecord);
-        return await generateCode(validatedArgs);
+        result = await generateCode(validatedArgs);
+        break;
+      }
+
+      case 'sequential_thinking': {
+        const validatedArgs = validateToolArgs(SequentialThinkingArgsSchema, argsRecord);
+        result = await sequentialThinking(validatedArgs);
+        break;
       }
 
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
+
+    // Record success metrics and finish span
+    const durationMs = Date.now() - startTime;
+    mcpInstrumentation.recordToolMetrics(name, durationMs, true);
+    mcpInstrumentation.finishSpanSuccess(span, { 'mcp.duration_ms': durationMs });
+
+    return result;
   } catch (error) {
+    const durationMs = Date.now() - startTime;
+
     // Handle authentication errors with clear messages
     if (error instanceof AuthenticationError) {
+      mcpInstrumentation.recordToolMetrics(name, durationMs, false);
+      mcpInstrumentation.finishSpanError(span, error, 'AuthenticationError');
+
       return {
         content: [
           {
@@ -307,6 +529,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         .map((issue) => `${issue.path.join('.')}: ${issue.message}`)
         .join(', ');
 
+      mcpInstrumentation.recordToolMetrics(name, durationMs, false);
+      mcpInstrumentation.finishSpanError(
+        span,
+        new Error(`Validation Error: ${validationErrors}`),
+        'ValidationError'
+      );
+
       return {
         content: [
           {
@@ -318,11 +547,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       };
     }
 
+    // Handle generic errors
+    const errorInstance = error instanceof Error ? error : new Error(String(error));
+    mcpInstrumentation.recordToolMetrics(name, durationMs, false);
+    mcpInstrumentation.finishSpanError(span, errorInstance);
+
     return {
       content: [
         {
           type: 'text',
-          text: `Error: ${error instanceof Error ? error.message : 'Unknown error'}`,
+          text: `Error: ${errorInstance.message}`,
         },
       ],
       isError: true,
@@ -364,50 +598,55 @@ server.setRequestHandler(ListResourcesRequestSchema, async () => {
 server.setRequestHandler(ReadResourceRequestSchema, async (request) => {
   const { uri } = request.params;
 
-  switch (uri) {
-    case 'vibecode://templates':
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(
-              {
-                templates: [
-                  { id: 'react', name: 'React', description: 'React with TypeScript' },
-                  { id: 'nextjs', name: 'Next.js', description: 'Next.js 15 with App Router' },
-                  { id: 'nodejs', name: 'Node.js', description: 'Node.js with Express' },
-                  { id: 'python', name: 'Python', description: 'Python with FastAPI' },
-                  { id: 'go', name: 'Go', description: 'Go with Gin framework' },
-                  { id: 'rust', name: 'Rust', description: 'Rust with Actix' },
-                ],
-              },
-              null,
-              2
-            ),
-          },
-        ],
-      };
+  try {
+    let result;
+    switch (uri) {
+      case 'vibecode://templates':
+        result = {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(
+                {
+                  templates: [
+                    { id: 'react', name: 'React', description: 'React with TypeScript' },
+                    { id: 'nextjs', name: 'Next.js', description: 'Next.js 15 with App Router' },
+                    { id: 'nodejs', name: 'Node.js', description: 'Node.js with Express' },
+                    { id: 'python', name: 'Python', description: 'Python with FastAPI' },
+                    { id: 'go', name: 'Go', description: 'Go with Gin framework' },
+                    { id: 'rust', name: 'Rust', description: 'Rust with Actix' },
+                  ],
+                },
+                null,
+                2
+              ),
+            },
+          ],
+        };
+        break;
 
-    case 'vibecode://workspaces':
-      const workspaces = await listWorkspaces();
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: 'application/json',
-            text: JSON.stringify(workspaces, null, 2),
-          },
-        ],
-      };
+      case 'vibecode://workspaces': {
+        const workspaces = await listWorkspaces();
+        result = {
+          contents: [
+            {
+              uri,
+              mimeType: 'application/json',
+              text: JSON.stringify(workspaces, null, 2),
+            },
+          ],
+        };
+        break;
+      }
 
-    case 'vibecode://docs':
-      return {
-        contents: [
-          {
-            uri,
-            mimeType: 'text/markdown',
-            text: `# VibeCode Documentation
+      case 'vibecode://docs':
+        result = {
+          contents: [
+            {
+              uri,
+              mimeType: 'text/markdown',
+              text: `# VibeCode Documentation
 
 ## Getting Started
 VibeCode is an AI-powered development platform with live VS Code experience.
@@ -425,12 +664,21 @@ VibeCode is an AI-powered development platform with live VS Code experience.
 - Workspaces: vibecode://workspaces
 - Docs: vibecode://docs
 `,
-          },
-        ],
-      };
+            },
+          ],
+        };
+        break;
 
-    default:
-      throw new Error(`Unknown resource: ${uri}`);
+      default:
+        mcpInstrumentation.recordResourceMetrics(uri, false);
+        throw new Error(`Unknown resource: ${uri}`);
+    }
+
+    mcpInstrumentation.recordResourceMetrics(uri, true);
+    return result;
+  } catch (error) {
+    mcpInstrumentation.recordResourceMetrics(uri, false);
+    throw error;
   }
 });
 
@@ -443,17 +691,35 @@ async function main() {
     console.error('❌ CRITICAL: NEXTAUTH_SECRET environment variable is not set');
     console.error('   Authentication will fail without this secret');
     console.error('   Set NEXTAUTH_SECRET before starting the MCP server');
+    mcpInstrumentation.recordServerEvent('error', 'missing_nextauth_secret');
     process.exit(1);
   }
 
   const transport = new StdioServerTransport();
   await server.connect(transport);
+
+  // Record server start event
+  mcpInstrumentation.recordServerEvent('start');
+
   console.error('🚀 VibeCode MCP Server running on stdio');
   console.error('🔒 Authentication: ENABLED (JWT required)');
+  console.error('📊 Monitoring: Datadog tracing and metrics ENABLED');
   console.error('💡 Set VIBECODE_TOKEN environment variable to authenticate');
+
+  // Handle graceful shutdown
+  process.on('SIGINT', () => {
+    mcpInstrumentation.recordServerEvent('stop', 'sigint');
+    process.exit(0);
+  });
+
+  process.on('SIGTERM', () => {
+    mcpInstrumentation.recordServerEvent('stop', 'sigterm');
+    process.exit(0);
+  });
 }
 
 main().catch((error) => {
   console.error('❌ Server error:', error);
+  mcpInstrumentation.recordServerEvent('error', error instanceof Error ? error.message : 'unknown');
   process.exit(1);
 });

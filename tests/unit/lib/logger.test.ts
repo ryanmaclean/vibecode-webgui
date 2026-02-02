@@ -10,14 +10,7 @@
  * - Metadata handling
  */
 
-import {
-  logger,
-  createChildLogger,
-  logPerformance,
-  logApiRequest,
-  logDatabaseOperation,
-  LogLevel,
-} from '@/lib/logger';
+import type { LogLevel } from '@/lib/logger';
 
 // Mock Pino to intercept log calls
 // Use a factory function to avoid hoisting issues
@@ -53,11 +46,30 @@ jest.mock('pino', () => {
 
 // Import pino to get access to the mock
 import pino from 'pino';
-const mockPinoLogger = (pino as any).__mockPinoLogger;
-const mockChildLogger = (pino as any).__mockChildLogger;
+let mockPinoLogger = (pino as any).__mockPinoLogger;
+let mockChildLogger = (pino as any).__mockChildLogger;
 
 describe('Logger Utility', () => {
+  let logger: typeof import('@/lib/logger').logger;
+  let createChildLogger: typeof import('@/lib/logger').createChildLogger;
+  let logPerformance: typeof import('@/lib/logger').logPerformance;
+  let logApiRequest: typeof import('@/lib/logger').logApiRequest;
+  let logDatabaseOperation: typeof import('@/lib/logger').logDatabaseOperation;
   let originalEnv: NodeJS.ProcessEnv;
+
+  beforeAll(async () => {
+    jest.resetModules();
+    jest.unmock('@/lib/logger');
+    const loggerModule = await import('@/lib/logger');
+    logger = loggerModule.logger;
+    createChildLogger = loggerModule.createChildLogger;
+    logPerformance = loggerModule.logPerformance;
+    logApiRequest = loggerModule.logApiRequest;
+    logDatabaseOperation = loggerModule.logDatabaseOperation;
+    const pinoMock = jest.requireMock('pino') as any;
+    mockPinoLogger = pinoMock.__mockPinoLogger;
+    mockChildLogger = pinoMock.__mockChildLogger;
+  });
 
   beforeEach(() => {
     // Store original environment

@@ -1,0 +1,69 @@
+{{/*
+This template creates per-user PVCs for workspace storage
+It should be used with Helm template functions to generate PVCs for each user
+*/}}
+{{- define "vibecode-platform.persistentVolumeClaim" }}
+{{- $userId := .userId | required "userId is required for PVC" }}
+{{- $root := .root }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: {{ include "vibecode-platform.pvcName" . }}
+  namespace: {{ $root.Values.global.namespace }}
+  labels:
+    {{- include "vibecode-platform.codeServerLabels" . | nindent 4 }}
+    app.kubernetes.io/component: storage
+    vibecode.dev/data-classification: {{ $root.Values.persistence.dataClassification | default "internal" | quote }}
+    vibecode.dev/backup-policy: {{ $root.Values.persistence.backupPolicy | default "daily" | quote }}
+    vibecode.dev/retention-days: {{ $root.Values.persistence.retentionDays | default "30" | quote }}
+  annotations:
+    vibecode.dev/user-id: {{ $userId | quote }}
+    vibecode.dev/created-at: {{ now | date "2006-01-02T15:04:05Z" | quote }}
+    {{- if $root.Values.codeServer.persistence.storageClass }}
+    volume.beta.kubernetes.io/storage-class: {{ $root.Values.codeServer.persistence.storageClass | quote }}
+    {{- end }}
+    {{- if $root.Values.persistence.encryption.enabled }}
+    volume.kubernetes.io/storage-provisioner: {{ $root.Values.persistence.encryption.provisioner | default "kubernetes.io/no-provisioner" | quote }}
+    {{- if $root.Values.persistence.encryption.key }}
+    volume.kubernetes.io/encryption-key: {{ $root.Values.persistence.encryption.key | quote }}
+    {{- end }}
+    {{- end }}
+    {{- if $root.Values.persistence.securityEnhanced }}
+    pv.kubernetes.io/mount-options: "nosuid,nodev,noexec"
+    pv.kubernetes.io/bind-completed: "yes"
+    pv.kubernetes.io/bound-by-controller: "yes"
+    {{- end }}
+    {{- if $root.Values.persistence.snapshotClass }}
+    snapshot.storage.kubernetes.io/snapshot-class: {{ $root.Values.persistence.snapshotClass | quote }}
+    {{- end }}
+spec:
+  accessModes:
+    - {{ $root.Values.persistence.accessMode | default "ReadWriteOnce" }}
+  resources:
+    requests:
+      storage: {{ $root.Values.persistence.size | default $root.Values.codeServer.persistence.size }}
+    {{- if $root.Values.persistence.maxSize }}
+    limits:
+      storage: {{ $root.Values.persistence.maxSize }}
+    {{- end }}
+  {{- if $root.Values.codeServer.persistence.storageClass }}
+  storageClassName: {{ $root.Values.codeServer.persistence.storageClass | quote }}
+  {{- end }}
+  {{- if $root.Values.persistence.volumeMode }}
+  volumeMode: {{ $root.Values.persistence.volumeMode }}
+  {{- end }}
+  {{- if $root.Values.persistence.performanceTier }}
+  selector:
+    matchLabels:
+      performance-tier: {{ $root.Values.persistence.performanceTier | quote }}
+  {{- end }}
+{{- end }}
+
+{{/*
+Example usage - this would typically be called from a job or external controller
+For demonstration, here's how you would create a PVC for a specific user:
+*/}}
+{{- if .Values.examples.createSampleUser }}
+{{- $context := dict "userId" "sample-user" "root" . }}
+{{ include "vibecode-platform.persistentVolumeClaim" $context }}
+{{- end }}

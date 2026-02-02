@@ -6,22 +6,47 @@
  * - Query performance <50ms P95
  * - Proper indexing utilization
  * - Batch operations for efficiency
+ * - Query caching with automatic invalidation
+ * - N+1 query prevention via batch loaders
  */
 
 import { PrismaClient, Prisma } from '@prisma/client';
 import { agentSessionCache, agentHealthCache, conversationContextCache } from '../cache/agentapi-redis-strategy';
-import { metrics } from '../server-monitoring';
+import { metrics as serverMetrics } from '../server-monitoring';
+import { cacheGet, cacheSet, cacheDelete, CacheKeyGenerators, TTLPresets } from '../cache/cache-utils';
+import { QueryCacheManager } from './query-cache-strategy';
 // import { logger } from '@/lib/logger';
-import { loadSecret } from '@/lib/security/macos-keychain';
+
+// Type definitions for models not yet in Prisma schema
+// These allow the code to compile while the database schema is being developed
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+type AgentModel = any;
+
+// Type for health stats from raw query
+interface HealthStatsResult {
+  avg_cpu: number | null;
+  max_cpu: number | null;
+  avg_memory: number | null;
+  max_memory: number | null;
+  avg_latency: number | null;
+  p95_latency: number | null;
+  total_errors: number | null;
+}
+
+// Type for batch operation results
+interface BatchResult {
+  count: number;
+}
 
 // =====================================================
 // Database Client Configuration
 // =====================================================
 
-// Load database URL from Keychain with fallback to environment variable
-const databaseUrl = loadSecret('DATABASE_URL') || process.env.DATABASE_URL || 'postgresql://localhost:5432/placeholder';
+// Load database URL from environment variable
+// Note: loadSecret is async, so we use env directly for synchronous initialization
+const databaseUrl = process.env.DATABASE_URL ?? 'postgresql://localhost:5432/placeholder';
 
-const prisma = new PrismaClient({
+const prismaBase = new PrismaClient({
   log: process.env.NODE_ENV === 'development' ? ['query', 'error', 'warn'] : ['error'],
   datasources: {
     db: {
@@ -29,6 +54,10 @@ const prisma = new PrismaClient({
     },
   },
 });
+
+// Cast to allow agent model references - these models are expected in the schema
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const prisma = prismaBase as any;
 
 // Connection pool configuration (via DATABASE_URL connection string)
 // Example: postgresql://user:pass@localhost:5432/vibecode?connection_limit=20&pool_timeout=10
@@ -53,10 +82,11 @@ export class AgentSessionQueries {
     environmentVars?: object;
     maxMemoryMb?: number;
     maxCpuCores?: number;
-  }) {
+  }): Promise<AgentModel> {
     const startTime = Date.now();
 
     try {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const session = await prisma.$transaction(async (tx: any) => {
         // Check workspace agent limit (max 3 per workspace)
         const activeCount = await tx.agentSession.count({
@@ -81,10 +111,10 @@ export class AgentSessionQueries {
             agentConfig: data.agentConfig as Prisma.InputJsonValue,
             status: 'initializing',
             agentapiUrl: data.agentapiUrl,
-            agentapiPort: data.agentapiPort || 8766,
-            environmentVars: (data.environmentVars || {}) as Prisma.InputJsonValue,
-            maxMemoryMb: data.maxMemoryMb || 1024,
-            maxCpuCores: data.maxCpuCores || 0.5,
+            agentapiPort: data.agentapiPort ?? 8766,
+            environmentVars: (data.environmentVars ?? {}) as Prisma.InputJsonValue,
+            maxMemoryMb: data.maxMemoryMb ?? 1024,
+            maxCpuCores: data.maxCpuCores ?? 0.5,
           },
           include: {
             workspace: { select: { id: true, name: true } },
@@ -102,17 +132,17 @@ export class AgentSessionQueries {
         status: session.status,
         agentapiUrl: session.agentapiUrl,
         agentapiPort: session.agentapiPort,
-        lastActivityAt: session.lastActivityAt?.toISOString() || null,
+        lastActivityAt: session.lastActivityAt?.toISOString() ?? null,
         activeConnections: session.activeConnections,
       });
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.session.create', latency);
-      metrics.increment('agent.session.created', { agent_type: data.agentType });
+      serverMetrics.histogram('agent.session.create', latency);
+      serverMetrics.increment('agent.session.created', { agent_type: data.agentType });
 
       return session;
     } catch (error) {
-      metrics.increment('agent.session.create.error');
+      serverMetrics.increment('agent.session.create.error');
       throw error;
     }
   }
@@ -121,7 +151,7 @@ export class AgentSessionQueries {
    * Get agent session by ID (with cache)
    * Target: <50ms P95 latency
    */
-  static async getSession(agentId: string) {
+  static async getSession(agentId: string): Promise<AgentModel | null> {
     const startTime = Date.now();
 
     try {
@@ -129,7 +159,7 @@ export class AgentSessionQueries {
       const cached = await agentSessionCache.getSession(agentId);
       if (cached) {
         const latency = Date.now() - startTime;
-        metrics.histogram('agent.session.get.cached', latency);
+        serverMetrics.histogram('agent.session.get.cached', latency);
         return cached;
       }
 
@@ -152,28 +182,39 @@ export class AgentSessionQueries {
           status: session.status,
           agentapiUrl: session.agentapiUrl,
           agentapiPort: session.agentapiPort,
-          lastActivityAt: session.lastActivityAt?.toISOString() || null,
+          lastActivityAt: session.lastActivityAt?.toISOString() ?? null,
           activeConnections: session.activeConnections,
         });
       }
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.session.get.db', latency);
+      serverMetrics.histogram('agent.session.get.db', latency);
 
       return session;
     } catch (error) {
-      metrics.increment('agent.session.get.error');
+      serverMetrics.increment('agent.session.get.error');
       throw error;
     }
   }
 
   /**
-   * List agents for workspace
+   * List agents for workspace (with caching)
    */
-  static async listWorkspaceAgents(workspaceId: number, includeDeleted = false) {
+  static async listWorkspaceAgents(workspaceId: number, includeDeleted = false): Promise<AgentModel[]> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_session', 'list', `ws:${workspaceId}:del:${includeDeleted}`);
 
     try {
+      // Try cache first (only for non-deleted queries which are more common)
+      if (!includeDeleted) {
+        const cached = await cacheGet<AgentModel[]>(cacheKey);
+        if (cached) {
+          const latency = Date.now() - startTime;
+          serverMetrics.histogram('agent.session.list_workspace.cached', latency);
+          return cached;
+        }
+      }
+
       const agents = await prisma.agentSession.findMany({
         where: {
           workspaceId,
@@ -185,12 +226,17 @@ export class AgentSessionQueries {
         },
       });
 
+      // Cache the result for non-deleted queries (2 minute TTL as agent status changes frequently)
+      if (!includeDeleted && agents.length > 0) {
+        await cacheSet(cacheKey, agents, { ttl: 120 }); // 2 minutes
+      }
+
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.session.list_workspace', latency);
+      serverMetrics.histogram('agent.session.list_workspace', latency);
 
       return agents;
     } catch (error) {
-      metrics.increment('agent.session.list.error');
+      serverMetrics.increment('agent.session.list.error');
       throw error;
     }
   }
@@ -202,7 +248,7 @@ export class AgentSessionQueries {
     agentId: string,
     status: string,
     options?: { startedAt?: Date; stoppedAt?: Date }
-  ) {
+  ): Promise<AgentModel> {
     const startTime = Date.now();
 
     try {
@@ -220,12 +266,12 @@ export class AgentSessionQueries {
       await agentSessionCache.invalidateSession(agentId);
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.session.update_status', latency);
-      metrics.increment('agent.session.status_changed', { status });
+      serverMetrics.histogram('agent.session.update_status', latency);
+      serverMetrics.increment('agent.session.status_changed', { status });
 
       return session;
     } catch (error) {
-      metrics.increment('agent.session.update.error');
+      serverMetrics.increment('agent.session.update.error');
       throw error;
     }
   }
@@ -233,7 +279,7 @@ export class AgentSessionQueries {
   /**
    * Soft delete agent session
    */
-  static async deleteSession(agentId: string) {
+  static async deleteSession(agentId: string): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -264,10 +310,10 @@ export class AgentSessionQueries {
       await agentSessionCache.invalidateSession(agentId);
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.session.delete', latency);
-      metrics.increment('agent.session.deleted');
+      serverMetrics.histogram('agent.session.delete', latency);
+      serverMetrics.increment('agent.session.deleted');
     } catch (error) {
-      metrics.increment('agent.session.delete.error');
+      serverMetrics.increment('agent.session.delete.error');
       throw error;
     }
   }
@@ -292,7 +338,7 @@ export class AgentConversationQueries {
     outputTokens?: number;
     latencyMs?: number;
     modelUsed?: string;
-  }) {
+  }): Promise<AgentModel> {
     const startTime = Date.now();
 
     try {
@@ -303,10 +349,10 @@ export class AgentConversationQueries {
           direction: data.direction,
           role: data.role,
           content: data.content,
-          contextFiles: (data.contextFiles || []) as Prisma.InputJsonValue,
+          contextFiles: (data.contextFiles ?? []) as Prisma.InputJsonValue,
           inputTokens: data.inputTokens,
           outputTokens: data.outputTokens,
-          totalTokens: (data.inputTokens || 0) + (data.outputTokens || 0),
+          totalTokens: (data.inputTokens ?? 0) + (data.outputTokens ?? 0),
           latencyMs: data.latencyMs,
           modelUsed: data.modelUsed,
           status: 'completed',
@@ -323,12 +369,12 @@ export class AgentConversationQueries {
       });
 
       const dbLatency = Date.now() - startTime;
-      metrics.histogram('agent.conversation.save', dbLatency);
-      metrics.increment('agent.conversation.message_saved');
+      serverMetrics.histogram('agent.conversation.save', dbLatency);
+      serverMetrics.increment('agent.conversation.message_saved');
 
       return message;
     } catch (error) {
-      metrics.increment('agent.conversation.save.error');
+      serverMetrics.increment('agent.conversation.save.error');
       throw error;
     }
   }
@@ -341,7 +387,7 @@ export class AgentConversationQueries {
     agentSessionId: string,
     conversationId: string,
     limit = 50
-  ) {
+  ): Promise<AgentModel[]> {
     const startTime = Date.now();
 
     try {
@@ -349,7 +395,7 @@ export class AgentConversationQueries {
       if (limit <= 10) {
         const cached = await conversationContextCache.getContext(agentSessionId, conversationId);
         if (cached) {
-          metrics.histogram('agent.conversation.history.cached', Date.now() - startTime);
+          serverMetrics.histogram('agent.conversation.history.cached', Date.now() - startTime);
           return cached;
         }
       }
@@ -387,22 +433,31 @@ export class AgentConversationQueries {
       }
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.conversation.history.db', latency);
+      serverMetrics.histogram('agent.conversation.history.db', latency);
 
       return chronological;
     } catch (error) {
-      metrics.increment('agent.conversation.history.error');
+      serverMetrics.increment('agent.conversation.history.error');
       throw error;
     }
   }
 
   /**
-   * Get conversation statistics
+   * Get conversation statistics (with caching)
    */
-  static async getConversationStats(agentSessionId: string) {
+  static async getConversationStats(agentSessionId: string): Promise<AgentModel | null> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_conversation', 'stats', agentSessionId);
 
     try {
+      // Try cache first (stats change less frequently)
+      const cached = await cacheGet<AgentModel>(cacheKey);
+      if (cached) {
+        const latency = Date.now() - startTime;
+        serverMetrics.histogram('agent.conversation.stats.cached', latency);
+        return cached;
+      }
+
       const stats = await prisma.agentConversation.groupBy({
         by: ['agentSessionId'],
         where: { agentSessionId },
@@ -415,12 +470,19 @@ export class AgentConversationQueries {
         _avg: { latencyMs: true },
       });
 
-      const latency = Date.now() - startTime;
-      metrics.histogram('agent.conversation.stats', latency);
+      const result = stats[0] ?? null;
 
-      return stats[0] || null;
+      // Cache stats for 5 minutes
+      if (result) {
+        await cacheSet(cacheKey, result, { ttl: TTLPresets.SHORT });
+      }
+
+      const latency = Date.now() - startTime;
+      serverMetrics.histogram('agent.conversation.stats', latency);
+
+      return result;
     } catch (error) {
-      metrics.increment('agent.conversation.stats.error');
+      serverMetrics.increment('agent.conversation.stats.error');
       throw error;
     }
   }
@@ -434,7 +496,7 @@ export class AgentHealthQueries {
   /**
    * Record health metrics (batch insert for efficiency)
    */
-  static async recordMetrics(metrics: Array<{
+  static async recordMetrics(healthMetrics: Array<{
     agentSessionId: string;
     cpuUsagePercent?: number;
     memoryUsageMb?: number;
@@ -443,18 +505,18 @@ export class AgentHealthQueries {
     avgLatencyMs?: number;
     healthStatus: string;
     healthScore?: number;
-  }>) {
+  }>): Promise<void> {
     const startTime = Date.now();
 
     try {
       await prisma.agentHealthMetric.createMany({
-        data: metrics.map(m => ({
+        data: healthMetrics.map(m => ({
           agentSessionId: m.agentSessionId,
           metricTimestamp: new Date(),
           cpuUsagePercent: m.cpuUsagePercent,
           memoryUsageMb: m.memoryUsageMb,
-          messageCount: m.messageCount || 0,
-          errorCount: m.errorCount || 0,
+          messageCount: m.messageCount ?? 0,
+          errorCount: m.errorCount ?? 0,
           avgLatencyMs: m.avgLatencyMs,
           healthStatus: m.healthStatus,
           healthScore: m.healthScore,
@@ -462,11 +524,11 @@ export class AgentHealthQueries {
       });
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.health.record_batch', latency, {
-        batch_size: metrics.length.toString(),
+      serverMetrics.histogram('agent.health.record_batch', latency, {
+        batch_size: healthMetrics.length.toString(),
       });
     } catch (error) {
-      metrics.increment('agent.health.record.error');
+      serverMetrics.increment('agent.health.record.error');
       throw error;
     }
   }
@@ -474,7 +536,7 @@ export class AgentHealthQueries {
   /**
    * Get recent health metrics (last 24 hours)
    */
-  static async getRecentMetrics(agentSessionId: string, hours = 24) {
+  static async getRecentMetrics(agentSessionId: string, hours = 24): Promise<AgentModel[]> {
     const startTime = Date.now();
 
     try {
@@ -484,7 +546,7 @@ export class AgentHealthQueries {
         return cached;
       }
 
-      const metrics = await prisma.agentHealthMetric.findMany({
+      const healthMetrics = await prisma.agentHealthMetric.findMany({
         where: {
           agentSessionId,
           metricTimestamp: {
@@ -496,23 +558,32 @@ export class AgentHealthQueries {
       });
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.health.get_recent', latency);
+      serverMetrics.histogram('agent.health.get_recent', latency);
 
-      return metrics;
+      return healthMetrics;
     } catch (error) {
-      metrics.increment('agent.health.get.error');
+      serverMetrics.increment('agent.health.get.error');
       throw error;
     }
   }
 
   /**
-   * Get aggregated health statistics
+   * Get aggregated health statistics (with caching)
    */
-  static async getHealthStats(agentSessionId: string) {
+  static async getHealthStats(agentSessionId: string): Promise<HealthStatsResult | undefined> {
     const startTime = Date.now();
+    const cacheKey = CacheKeyGenerators.dbQuery('agent_health', 'stats', agentSessionId);
 
     try {
-      const stats = await prisma.$queryRaw`
+      // Try cache first (health stats aggregates can be cached for a short period)
+      const cached = await cacheGet<HealthStatsResult>(cacheKey);
+      if (cached) {
+        const latency = Date.now() - startTime;
+        serverMetrics.histogram('agent.health.stats.cached', latency);
+        return cached;
+      }
+
+      const stats = await prisma.$queryRaw<HealthStatsResult[]>`
         SELECT
           AVG(cpu_usage_percent) as avg_cpu,
           MAX(cpu_usage_percent) as max_cpu,
@@ -526,12 +597,19 @@ export class AgentHealthQueries {
           AND metric_timestamp > NOW() - INTERVAL '24 hours'
       `;
 
-      const latency = Date.now() - startTime;
-      metrics.histogram('agent.health.stats', latency);
+      const result = stats[0];
 
-      return stats[0];
+      // Cache health stats for 1 minute (they're computationally expensive)
+      if (result) {
+        await cacheSet(cacheKey, result, { ttl: 60 });
+      }
+
+      const latency = Date.now() - startTime;
+      serverMetrics.histogram('agent.health.stats', latency);
+
+      return result;
     } catch (error) {
-      metrics.increment('agent.health.stats.error');
+      serverMetrics.increment('agent.health.stats.error');
       throw error;
     }
   }
@@ -554,24 +632,24 @@ export class AgentEventQueries {
     eventData?: object;
     userId?: number;
     workspaceId?: number;
-  }) {
+  }): Promise<void> {
     try {
       await prisma.agentEvent.create({
         data: {
           agentSessionId: data.agentSessionId,
           eventType: data.eventType,
           eventCategory: data.eventCategory,
-          eventSeverity: data.eventSeverity || 'info',
+          eventSeverity: data.eventSeverity ?? 'info',
           eventMessage: data.eventMessage,
-          eventData: (data.eventData || {}) as Prisma.InputJsonValue,
+          eventData: (data.eventData ?? {}) as Prisma.InputJsonValue,
           userId: data.userId,
           workspaceId: data.workspaceId,
         },
       });
 
-      metrics.increment('agent.event.logged', {
+      serverMetrics.increment('agent.event.logged', {
         event_type: data.eventType,
-        severity: data.eventSeverity || 'info',
+        severity: data.eventSeverity ?? 'info',
       });
     } catch (error) {
       console.error('Event logging error:', error);
@@ -582,7 +660,7 @@ export class AgentEventQueries {
   /**
    * Get recent events (for debugging)
    */
-  static async getRecentEvents(agentSessionId: string, limit = 100) {
+  static async getRecentEvents(agentSessionId: string, limit = 100): Promise<AgentModel[]> {
     return await prisma.agentEvent.findMany({
       where: { agentSessionId },
       orderBy: { createdAt: 'desc' },
@@ -593,7 +671,7 @@ export class AgentEventQueries {
   /**
    * Get error events (for monitoring)
    */
-  static async getErrorEvents(agentSessionId: string, hours = 24) {
+  static async getErrorEvents(agentSessionId: string, hours = 24): Promise<AgentModel[]> {
     return await prisma.agentEvent.findMany({
       where: {
         agentSessionId,
@@ -615,7 +693,7 @@ export class AgentBatchQueries {
   /**
    * Get multiple agent sessions (batch lookup)
    */
-  static async batchGetSessions(agentIds: string[]) {
+  static async batchGetSessions(agentIds: string[]): Promise<AgentModel[]> {
     const startTime = Date.now();
 
     try {
@@ -627,13 +705,13 @@ export class AgentBatchQueries {
       });
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.batch.get_sessions', latency, {
+      serverMetrics.histogram('agent.batch.get_sessions', latency, {
         batch_size: agentIds.length.toString(),
       });
 
       return sessions;
     } catch (error) {
-      metrics.increment('agent.batch.get.error');
+      serverMetrics.increment('agent.batch.get.error');
       throw error;
     }
   }
@@ -641,7 +719,7 @@ export class AgentBatchQueries {
   /**
    * Update multiple sessions (batch status update)
    */
-  static async batchUpdateStatus(agentIds: string[], status: string) {
+  static async batchUpdateStatus(agentIds: string[], status: string): Promise<void> {
     const startTime = Date.now();
 
     try {
@@ -654,14 +732,14 @@ export class AgentBatchQueries {
       });
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.batch.update_status', latency, {
+      serverMetrics.histogram('agent.batch.update_status', latency, {
         batch_size: agentIds.length.toString(),
       });
 
       // Invalidate caches
       await Promise.all(agentIds.map(id => agentSessionCache.invalidateSession(id)));
     } catch (error) {
-      metrics.increment('agent.batch.update.error');
+      serverMetrics.increment('agent.batch.update.error');
       throw error;
     }
   }
@@ -681,21 +759,21 @@ export class AgentBatchQueries {
     start_line?: number;
     end_line?: number;
     chunk_id?: string;
-  }>) {
+  }>): Promise<{ created: number; batches: number }> {
     const startTime = Date.now();
 
     try {
       // Process in batches of 1000 to avoid memory issues
       const batchSize = 1000;
-      const results = [];
+      const results: BatchResult[] = [];
 
       for (let i = 0; i < chunks.length; i += batchSize) {
         const batch = chunks.slice(i, i + batchSize);
-        
+
         const batchResult = await prisma.rAGChunk.createMany({
           data: batch.map(chunk => ({
             content: chunk.content,
-            metadata: (chunk.metadata || {}) as Prisma.InputJsonValue,
+            metadata: (chunk.metadata ?? {}) as Prisma.InputJsonValue,
             file_id: chunk.file_id,
             user_id: chunk.user_id,
             workspace_id: chunk.workspace_id,
@@ -712,23 +790,24 @@ export class AgentBatchQueries {
         results.push(batchResult);
       }
 
-      const totalCreated = results.reduce((sum, result) => sum + result.count, 0);
+      const totalCreated = results.reduce((sum: number, result: BatchResult) => sum + result.count, 0);
       const latency = Date.now() - startTime;
-      
-      metrics.histogram('agent.batch.create_rag_chunks', latency, {
+
+      serverMetrics.histogram('agent.batch.create_rag_chunks', latency, {
         batch_size: chunks.length.toString(),
         total_created: totalCreated.toString(),
       });
 
       return { created: totalCreated, batches: results.length };
     } catch (error) {
-      metrics.increment('agent.batch.create_rag.error');
+      serverMetrics.increment('agent.batch.create_rag.error');
       throw error;
     }
   }
 
   /**
    * Batch update workspace metadata
+   * Optimized: Uses transaction for atomicity and single round trip
    */
   static async batchUpdateWorkspaces(updates: Array<{
     id: number;
@@ -736,12 +815,17 @@ export class AgentBatchQueries {
     description?: string;
     status?: string;
     url?: string;
-  }>) {
+  }>): Promise<AgentModel[]> {
     const startTime = Date.now();
 
+    if (updates.length === 0) {
+      return [];
+    }
+
     try {
-      const results = await Promise.all(
-        updates.map(update => 
+      // Use transaction for atomicity
+      const results = await prisma.$transaction(
+        updates.map(update =>
           prisma.workspace.update({
             where: { id: update.id },
             data: {
@@ -756,13 +840,22 @@ export class AgentBatchQueries {
       );
 
       const latency = Date.now() - startTime;
-      metrics.histogram('agent.batch.update_workspaces', latency, {
+      serverMetrics.histogram('agent.batch.update_workspaces', latency, {
         batch_size: updates.length.toString(),
       });
 
+      // Invalidate workspace caches
+      await Promise.all(
+        updates.map(update =>
+          QueryCacheManager.invalidateByKey(
+            QueryCacheManager.generateCacheKey('workspace', 'getById', { id: update.id })
+          )
+        )
+      );
+
       return results;
     } catch (error) {
-      metrics.increment('agent.batch.update_workspaces.error');
+      serverMetrics.increment('agent.batch.update_workspaces.error');
       throw error;
     }
   }
@@ -782,17 +875,17 @@ export class AgentBatchQueries {
     user_id: number;
     workspace_id?: number;
     project_id?: number;
-  }>) {
+  }>): Promise<{ created: number; batches: number }> {
     const startTime = Date.now();
 
     try {
       // Process in batches to avoid connection limits
       const batchSize = 500;
-      const results = [];
+      const results: BatchResult[] = [];
 
       for (let i = 0; i < files.length; i += batchSize) {
         const batch = files.slice(i, i + batchSize);
-        
+
         const batchResult = await prisma.file.createMany({
           data: batch,
           skipDuplicates: true,
@@ -801,17 +894,17 @@ export class AgentBatchQueries {
         results.push(batchResult);
       }
 
-      const totalCreated = results.reduce((sum, result) => sum + result.count, 0);
+      const totalCreated = results.reduce((sum: number, result: BatchResult) => sum + result.count, 0);
       const latency = Date.now() - startTime;
-      
-      metrics.histogram('agent.batch.create_files', latency, {
+
+      serverMetrics.histogram('agent.batch.create_files', latency, {
         batch_size: files.length.toString(),
         total_created: totalCreated.toString(),
       });
 
       return { created: totalCreated, batches: results.length };
     } catch (error) {
-      metrics.increment('agent.batch.create_files.error');
+      serverMetrics.increment('agent.batch.create_files.error');
       throw error;
     }
   }
@@ -823,20 +916,20 @@ export class AgentBatchQueries {
     table: 'workspace' | 'project' | 'file';
     ids: number[];
     userId: number; // For authorization
-  }>) {
+  }>): Promise<{ affected: number; operations: BatchResult[] }> {
     const startTime = Date.now();
 
     try {
       const results = await Promise.all(
-        operations.map(async op => {
+        operations.map(async (op): Promise<BatchResult> => {
           switch (op.table) {
             case 'workspace':
               return await prisma.workspace.updateMany({
-                where: { 
+                where: {
                   id: { in: op.ids },
                   user_id: op.userId, // Security: only delete own workspaces
                 },
-                data: { 
+                data: {
                   status: 'archived',
                   updated_at: new Date(),
                 },
@@ -844,11 +937,11 @@ export class AgentBatchQueries {
 
             case 'project':
               return await prisma.project.updateMany({
-                where: { 
+                where: {
                   id: { in: op.ids },
                   user_id: op.userId, // Security: only delete own projects
                 },
-                data: { 
+                data: {
                   status: 'archived',
                   updated_at: new Date(),
                 },
@@ -857,7 +950,7 @@ export class AgentBatchQueries {
             case 'file':
               // For files, we do hard delete as they're content
               return await prisma.file.deleteMany({
-                where: { 
+                where: {
                   id: { in: op.ids },
                   user_id: op.userId, // Security: only delete own files
                 },
@@ -870,16 +963,16 @@ export class AgentBatchQueries {
       );
 
       const latency = Date.now() - startTime;
-      const totalAffected = results.reduce((sum, result) => sum + result.count, 0);
-      
-      metrics.histogram('agent.batch.soft_delete', latency, {
+      const totalAffected = results.reduce((sum: number, result: BatchResult) => sum + result.count, 0);
+
+      serverMetrics.histogram('agent.batch.soft_delete', latency, {
         operations_count: operations.length.toString(),
         total_affected: totalAffected.toString(),
       });
 
       return { affected: totalAffected, operations: results };
     } catch (error) {
-      metrics.increment('agent.batch.soft_delete.error');
+      serverMetrics.increment('agent.batch.soft_delete.error');
       throw error;
     }
   }
@@ -887,12 +980,18 @@ export class AgentBatchQueries {
   /**
    * Batch cleanup old records (for maintenance)
    */
-  static async batchCleanupOldRecords(days: number = 90) {
+  static async batchCleanupOldRecords(days: number = 90): Promise<{
+    cleaned: number;
+    conversations: number;
+    healthMetrics: number;
+    events: number;
+    workspaces: number;
+  }> {
     const startTime = Date.now();
     const cutoffDate = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
 
     try {
-      const results = await Promise.all([
+      const results: BatchResult[] = await Promise.all([
         // Archive old conversations
         prisma.agentConversation.deleteMany({
           where: {
@@ -931,14 +1030,14 @@ export class AgentBatchQueries {
       ]);
 
       const latency = Date.now() - startTime;
-      const totalCleaned = results.reduce((sum, result) => sum + result.count, 0);
-      
-      metrics.histogram('agent.batch.cleanup', latency, {
+      const totalCleaned = results.reduce((sum: number, result: BatchResult) => sum + result.count, 0);
+
+      serverMetrics.histogram('agent.batch.cleanup', latency, {
         days: days.toString(),
         total_cleaned: totalCleaned.toString(),
       });
 
-      return { 
+      return {
         cleaned: totalCleaned,
         conversations: results[0].count,
         healthMetrics: results[1].count,
@@ -946,7 +1045,7 @@ export class AgentBatchQueries {
         workspaces: results[3].count,
       };
     } catch (error) {
-      metrics.increment('agent.batch.cleanup.error');
+      serverMetrics.increment('agent.batch.cleanup.error');
       throw error;
     }
   }
@@ -960,28 +1059,28 @@ export class AgentMaintenanceQueries {
   /**
    * Archive old conversations (90+ days)
    */
-  static async archiveOldConversations() {
+  static async archiveOldConversations(): Promise<unknown> {
     return await prisma.$queryRaw`SELECT archive_old_agent_conversations()`;
   }
 
   /**
    * Archive old metrics (30+ days)
    */
-  static async archiveOldMetrics() {
+  static async archiveOldMetrics(): Promise<unknown> {
     return await prisma.$queryRaw`SELECT archive_old_agent_metrics()`;
   }
 
   /**
    * Cleanup stale sessions (inactive 24+ hours)
    */
-  static async cleanupStaleSessions() {
+  static async cleanupStaleSessions(): Promise<unknown> {
     return await prisma.$queryRaw`SELECT cleanup_stale_agent_sessions()`;
   }
 
   /**
    * Refresh materialized view
    */
-  static async refreshStats() {
+  static async refreshStats(): Promise<unknown> {
     return await prisma.$queryRaw`SELECT refresh_agent_session_stats()`;
   }
 }

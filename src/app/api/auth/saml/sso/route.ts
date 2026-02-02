@@ -6,8 +6,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createSAMLProvider } from '@/lib/auth/saml-provider'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
 
 export const dynamic = 'force-dynamic'
+
+const apiRateLimit = createAPIRateLimit(20) // 20 requests per minute - SSO
 
 // Security: Provider name validation (prevent injection)
 const providerNameSchema = z
@@ -45,6 +48,23 @@ const authResponseSchema = z.object({
  * POST /api/auth/saml/sso - Initiate SAML authentication
  */
 export async function POST(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const body = await req.json()
     const { provider, relayState, forceAuthn } = authRequestSchema.parse(body)
@@ -77,16 +97,16 @@ export async function POST(req: NextRequest) {
     
     if (error instanceof z.ZodError) {
       // Check if it's a provider validation error
-      const providerError = error.errors.find(e => e.path.includes('provider'))
+      const providerError = error.issues.find(e => e.path.includes('provider'))
       if (providerError) {
         return NextResponse.json({
           error: providerError.message,
-          details: error.errors
+          details: error.issues
         }, { status: 400 })
       }
       return NextResponse.json({
         error: 'Invalid request parameters',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -101,6 +121,23 @@ export async function POST(req: NextRequest) {
  * POST /api/auth/saml/acs - SAML Assertion Consumer Service
  */
 export async function PUT(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     let body
     const contentType = req.headers.get('content-type')
@@ -159,7 +196,7 @@ export async function PUT(req: NextRequest) {
     if (error instanceof z.ZodError) {
       return NextResponse.json({
         error: 'Invalid SAML response format',
-        details: error.errors
+        details: error.issues
       }, { status: 400 })
     }
 
@@ -174,6 +211,23 @@ export async function PUT(req: NextRequest) {
  * GET /api/auth/saml/sso - Get SAML SSO configuration
  */
 export async function GET(req: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(req)
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    )
+  }
+
   try {
     const { searchParams } = new URL(req.url)
     const provider = searchParams.get('provider') || 'okta'

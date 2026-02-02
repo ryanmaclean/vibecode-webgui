@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Textarea } from './ui/textarea';
 import { Switch } from './ui/switch';
+import { z } from '@/lib/zod-compat';
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from './ui/resizable';
 import {
 Send,
@@ -234,6 +235,11 @@ const MODELS: ModelConfig[] = [
   }
 ];
 
+const authSchema = z.object({
+  email: z.string().trim().email('Enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters long'),
+});
+
 const MCP_SERVERS: MCPServer[] = [
   {
     id: 'filesystem',
@@ -316,6 +322,7 @@ export default function PromptInterface() {
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [userEmail, setUserEmail] = useState('');
   const [userPassword, setUserPassword] = useState('');
+  const [authError, setAuthError] = useState<string | null>(null);
   const [apiKeys, setApiKeys] = useState({
     openai: '',
     anthropic: '',
@@ -613,6 +620,7 @@ export default function PromptInterface() {
 
     // Require authentication for all interactions
     if (!isAuthenticated) {
+      setAuthError(null);
       setShowAuthModal(true);
       return;
     }
@@ -665,10 +673,20 @@ export default function PromptInterface() {
   };
 
   // Authentication functions
-  const handleAuth = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!userEmail || !userPassword) return;
+  const handleAuth = async (event: React.FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
 
+    const validation = authSchema.safeParse({ email: userEmail, password: userPassword });
+    if (!validation.success) {
+      const [issue] = validation.error.issues;
+      setAuthError(issue?.message ?? 'Invalid credentials');
+      return;
+    }
+
+    const { email: sanitizedEmail, password: sanitizedPassword } = validation.data;
+    setUserEmail(sanitizedEmail);
+    setUserPassword(sanitizedPassword);
+    setAuthError(null);
     setIsTyping(true);
 
     try {
@@ -678,7 +696,7 @@ export default function PromptInterface() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           event: 'login_attempt',
-          email: userEmail,
+          email: sanitizedEmail,
           provider: 'local',
           sessionId: `session_${Date.now()}`,
           loginMethod: 'password'
@@ -691,6 +709,7 @@ export default function PromptInterface() {
       // For demo - always succeed
       setIsAuthenticated(true);
       setShowAuthModal(false);
+      setAuthError(null);
       
       // Track successful login
       await fetch('/api/auth/login-tracking', {
@@ -699,7 +718,7 @@ export default function PromptInterface() {
         body: JSON.stringify({
           event: 'login_success',
           userId: `user_${Date.now()}`,
-          email: userEmail,
+          email: sanitizedEmail,
           provider: 'local',
           sessionId: `session_${Date.now()}`,
           loginMethod: 'password'
@@ -765,23 +784,28 @@ Would you like to set up your API keys now?`,
       
     } catch (error) {
       console.error('Auth error:', error);
-      
-      // Track failed login
-      await fetch('/api/auth/login-tracking', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          event: 'login_failure',
-          email: userEmail,
-          provider: 'local',
-          sessionId: `session_${Date.now()}`,
-          loginMethod: 'password',
-          error: 'authentication_failed'
-        })
-      });
-    }
+      setAuthError('Authentication failed. Please try again.');
 
-    setIsTyping(false);
+      try {
+        // Track failed login
+        await fetch('/api/auth/login-tracking', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            event: 'login_failure',
+            email: sanitizedEmail,
+            provider: 'local',
+            sessionId: `session_${Date.now()}`,
+            loginMethod: 'password',
+            error: 'authentication_failed'
+          })
+        });
+      } catch (trackingError) {
+        console.error('Failed to track login error:', trackingError);
+      }
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const getApiKeyForModel = (provider: string): string => {
@@ -831,6 +855,7 @@ Ready to build something amazing!`,
     setShowAuthModal(false);
     setUserEmail('');
     setUserPassword('');
+    setAuthError(null);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -1004,7 +1029,7 @@ export default function LandingPage() {
         )}
       </div>
 
-      <ResizablePanelGroup direction="horizontal" className="flex-1">
+      <ResizablePanelGroup orientation="horizontal" className="flex-1">
         {/* Enhanced Chat Interface Panel */}
         <ResizablePanel defaultSize={35} minSize={25} maxSize={50}>
           <div className="h-full border-r border-border/50 flex flex-col">
@@ -1544,7 +1569,13 @@ export default function LandingPage() {
               </p>
             </CardHeader>
             <CardContent>
-              <Tabs value={authMode} onValueChange={(value) => setAuthMode(value as 'login' | 'signup')}>
+              <Tabs
+                value={authMode}
+                onValueChange={(value) => {
+                  setAuthMode(value as 'login' | 'signup');
+                  setAuthError(null);
+                }}
+              >
                 <TabsList className="grid w-full grid-cols-2">
                   <TabsTrigger value="signup">Sign Up</TabsTrigger>
                   <TabsTrigger value="login">Log In</TabsTrigger>
@@ -1560,12 +1591,23 @@ export default function LandingPage() {
                     </div>
                     
                     <form onSubmit={handleAuth} className="space-y-3">
+                      {authError && authMode === 'signup' && (
+                        <p
+                          id="auth-error-message-signup"
+                          className="text-sm text-red-600"
+                          role="alert"
+                        >
+                          {authError}
+                        </p>
+                      )}
                       <Input
                         type="email"
                         placeholder="Email address"
                         value={userEmail}
                         onChange={(e) => setUserEmail(e.target.value)}
                         required
+                        aria-invalid={authError ? 'true' : 'false'}
+                        aria-describedby={authError ? 'auth-error-message-signup' : undefined}
                       />
                       <Input
                         type="password"
@@ -1573,6 +1615,8 @@ export default function LandingPage() {
                         value={userPassword}
                         onChange={(e) => setUserPassword(e.target.value)}
                         required
+                        aria-invalid={authError ? 'true' : 'false'}
+                        aria-describedby={authError ? 'auth-error-message-signup' : undefined}
                       />
                       <Button type="submit" className="w-full" disabled={isTyping}>
                         {isTyping ? 'Creating Account...' : 'Sign Up & Start Building'}
@@ -1583,12 +1627,23 @@ export default function LandingPage() {
                 
                 <TabsContent value="login" className="space-y-4">
                   <form onSubmit={handleAuth} className="space-y-3">
+                    {authError && authMode === 'login' && (
+                      <p
+                        id="auth-error-message-login"
+                        className="text-sm text-red-600"
+                        role="alert"
+                      >
+                        {authError}
+                      </p>
+                    )}
                     <Input
                       type="email"
                       placeholder="Email address"
                       value={userEmail}
                       onChange={(e) => setUserEmail(e.target.value)}
                       required
+                      aria-invalid={authError ? 'true' : 'false'}
+                      aria-describedby={authError ? 'auth-error-message-login' : undefined}
                     />
                     <Input
                       type="password"
@@ -1596,6 +1651,8 @@ export default function LandingPage() {
                       value={userPassword}
                       onChange={(e) => setUserPassword(e.target.value)}
                       required
+                      aria-invalid={authError ? 'true' : 'false'}
+                      aria-describedby={authError ? 'auth-error-message-login' : undefined}
                     />
                     <Button type="submit" className="w-full" disabled={isTyping}>
                       {isTyping ? 'Signing In...' : 'Sign In'}

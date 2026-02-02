@@ -49,11 +49,11 @@ apk add --no-cache \
 # Build Valkey
 echo ""
 echo "======================================================================"
-echo "  Building Valkey 7.2.8"
+echo "  Building Valkey 8.1.0"
 echo "======================================================================"
 echo ""
 
-VALKEY_VERSION="7.2.8"
+VALKEY_VERSION="8.1.0"
 cd /tmp
 wget -q "https://github.com/valkey-io/valkey/archive/refs/tags/${VALKEY_VERSION}.tar.gz" -O valkey.tar.gz
 tar xzf valkey.tar.gz
@@ -127,7 +127,7 @@ echo "======================================================================"
 echo "  Build Summary"
 echo "======================================================================"
 echo ""
-echo "✅ Valkey 7.2.8 compiled with ARM64 optimizations"
+echo "✅ Valkey 8.1.0 compiled with ARM64 optimizations"
 echo "✅ pgvector 0.9.0 compiled and installed"
 echo "✅ Node.js $(node --version) verified"
 echo ""

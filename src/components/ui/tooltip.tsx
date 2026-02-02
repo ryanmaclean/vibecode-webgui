@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils"
 
 interface TooltipProps {
   children: React.ReactNode
-  content: string
+  content?: string
   className?: string
 }
 

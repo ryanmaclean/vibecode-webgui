@@ -1,0 +1,194 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: valkey-auth
+  namespace: vibecode-platform
+type: Opaque
+stringData:
+  auth-password: "{{ vault_valkey_password }}"  # Will be replaced by Ansible/Terraform/ArgoCD
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: valkey-security-config
+  namespace: vibecode-platform
+data:
+  valkey-secure.conf: |
+    # ValKey security configuration for VibeCode Platform
+    # Redis-compatible security configuration
+    
+    # Enable authentication
+    requirepass ${VALKEY_PASSWORD}
+    
+    # Network security
+    bind 0.0.0.0
+    protected-mode yes
+    
+    # Client connection limits
+    maxclients 1000
+    timeout 0
+    
+    # Memory and performance limits
+    maxmemory 256mb
+    maxmemory-policy allkeys-lru
+    
+    # Command restrictions
+    # Disable potentially dangerous commands
+    rename-command FLUSHALL ""
+    rename-command FLUSHDB ""
+    rename-command CONFIG ""
+    rename-command KEYS ""
+    rename-command SHUTDOWN ""
+    
+    # TLS/SSL configuration - requires cert management
+    # Enable when proper cert management is in place
+    # tls-port 6380
+    # tls-cert-file /etc/valkey/certs/server.crt
+    # tls-key-file /etc/valkey/certs/server.key
+    # tls-ca-cert-file /etc/valkey/certs/ca.crt
+    # tls-auth-clients yes
+    
+    # ACL rules (Redis 6+ compatible)
+    # Default user is administrator
+    # Additional users can be defined for specific purposes
+    # Format: user [username] [options]
+    # aclfile /etc/valkey/users.acl
+    
+    # Persistence settings
+    appendonly yes
+    appendfsync everysec
+    auto-aof-rewrite-percentage 100
+    auto-aof-rewrite-min-size 64mb
+    save 900 1
+    save 300 10
+    save 60 10000
+    
+    # Logging and monitoring
+    loglevel notice
+    slowlog-log-slower-than 10000
+    slowlog-max-len 128
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: valkey-secure
+  namespace: vibecode-platform
+  labels:
+    app: valkey-secure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: valkey-secure
+  template:
+    metadata:
+      labels:
+        app: valkey-secure
+    spec:
+      containers:
+      - name: valkey
+        image: valkey/valkey:8.1-alpine
+        ports:
+        - containerPort: 6379
+          name: valkey
+        command:
+          - valkey-server
+          - /etc/valkey/valkey-secure.conf
+        env:
+        - name: VALKEY_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: valkey-auth
+              key: auth-password
+        volumeMounts:
+        - name: valkey-data
+          mountPath: /data
+        - name: valkey-secure-config
+          mountPath: /etc/valkey
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "250m"
+        livenessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - valkey-cli -a $VALKEY_PASSWORD ping
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          successThreshold: 1
+          failureThreshold: 3
+        readinessProbe:
+          exec:
+            command:
+            - sh
+            - -c
+            - valkey-cli -a $VALKEY_PASSWORD ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 1
+          successThreshold: 1
+          failureThreshold: 3
+        securityContext:
+          runAsNonRoot: true
+          runAsUser: 1000
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: valkey-data
+        persistentVolumeClaim:
+          claimName: valkey-pvc
+      - name: valkey-secure-config
+        configMap:
+          name: valkey-security-config
+          
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: valkey-secure-service
+  namespace: vibecode-platform
+  labels:
+    app: valkey-secure
+spec:
+  selector:
+    app: valkey-secure
+  ports:
+    - name: valkey
+      port: 6379
+      targetPort: 6379
+      protocol: TCP
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: valkey-network-policy
+  namespace: vibecode-platform
+spec:
+  podSelector:
+    matchLabels:
+      app: valkey-secure
+  ingress:
+  - from:
+    - podSelector:
+        matchLabels:
+          app: vibecode-webgui
+    - podSelector:
+        matchLabels:
+          app: vibecode-api
+    ports:
+    - protocol: TCP
+      port: 6379
+  egress:
+  - {}

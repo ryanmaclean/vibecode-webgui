@@ -189,8 +189,8 @@ type SSEMiddlewareImpl = <
   Mps extends [StoreMutatorIdentifier, unknown][] = [],
   Mcs extends [StoreMutatorIdentifier, unknown][] = []
 >(
-  initializer: StateCreator<T, [...Mps, ['sse', SSEMiddleware]], Mcs>
-) => StateCreator<T, Mps, [['sse', SSEMiddleware], ...Mcs]>;
+  initializer: StateCreator<T, Mps, Mcs>
+) => StateCreator<T & SSEMiddleware, Mps, Mcs>;
 
 /**
  * Create SSE middleware for Zustand
@@ -198,7 +198,7 @@ type SSEMiddlewareImpl = <
 export const sseMiddleware: (
   options?: SSEMiddlewareOptions
 ) => SSEMiddlewareImpl = (options = {}) => {
-  return (initializer) => (set: any, get: any, store: any) => {
+  return (initializer) => (set, get, store) => {
     const manager = new SSEConnectionManager(options);
 
     // Add SSE methods to store
@@ -212,8 +212,8 @@ export const sseMiddleware: (
 
     // Extend store with SSE functionality
     const extendedStore = initializer(
-      set,
-      get,
+      set as Parameters<typeof initializer>[0],
+      get as Parameters<typeof initializer>[1],
       store as Parameters<typeof initializer>[2]
     );
 

@@ -5,11 +5,19 @@
  * SECURITY: Phase 4 - Batch 3 validation added
  */
 
+import { randomUUID } from 'crypto'
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { monitoring } from '@/lib/monitoring'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging'
+
+const log = createServiceLogger({
+  service: 'vibecode-webgui',
+  component: 'health-check'
+})
 
 /**
  * Collects health snapshot with performance metrics
@@ -56,7 +64,7 @@ export async function collectHealthSnapshot(startTime: number) {
 
 export async function GET(request: NextRequest) {
   const startTime = Date.now()
-  const requestId = crypto.randomUUID()
+  const requestId = randomUUID()
   const clientIp = request.headers.get('x-forwarded-for') ||
                    request.headers.get('x-real-ip') ||
                    'unknown'
@@ -79,12 +87,15 @@ export async function GET(request: NextRequest) {
     })
     return validation.error
   }
-  const { filter: _filter, format: _format, verbose: _verbose } = validation.data
+  const { filter: _filter, format: _format } = validation.data
 
   try {
+    // Check authentication for detailed health info
+    const session = await getServerSession(authOptions)
+    const isAuthenticated = !!session?.user
+
     // Collect health snapshot
     const { snapshot, responseTime, healthChecks } = await collectHealthSnapshot(startTime)
-    const healthCheckResponse = snapshot
 
     // Submit health check metrics to Datadog
     await monitoring.trackMetrics()
@@ -94,21 +105,30 @@ export async function GET(request: NextRequest) {
       ['source:health-check', `env:${process.env.NODE_ENV}`]
     )
 
-    // Log performance
-    // logger.performance('health-check', responseTime, logContext)
-
     // Determine overall health status
-    const hasFailures = Object.values(healthChecks.checks).some(check => check.status !== 'healthy')
+    const hasFailures = Object.values(healthChecks.checks).some(check => check.status === 'error')
     if (hasFailures) {
       healthChecks.status = 'degraded'
-      console.warn('Health check shows degraded status', { 
-        ...logContext, 
+      console.warn('Health check shows degraded status', {
+        ...logContext,
         healthStatus: 'degraded',
         failedChecks: Object.entries(healthChecks.checks)
-          .filter(([, check]) => check.status !== 'healthy')
+          .filter(([, check]) => check.status === 'error')
           .map(([name]) => name)
       })
-      
+    }
+
+    // Return limited info for unauthenticated requests (public health check)
+    if (!isAuthenticated) {
+      const publicStatus = hasFailures ? 'degraded' : (healthChecks.status as 'healthy' | 'degraded' | 'unhealthy')
+      return NextResponse.json({
+        status: publicStatus === 'healthy' ? 'ok' : publicStatus,
+        timestamp: new Date().toISOString()
+      }, { status: hasFailures ? 503 : 200 })
+    }
+
+    // Return full details for authenticated requests
+    if (hasFailures) {
       return NextResponse.json({
         ...healthChecks,
         responseTime: `${responseTime}ms`,
@@ -116,10 +136,22 @@ export async function GET(request: NextRequest) {
       }, { status: 503 })
     }
 
-    return NextResponse.json(healthCheckResponse, { status: 200 })
+    return NextResponse.json(snapshot, { status: 200 })
 
   } catch (error) {
     console.error('Health check failed with error:', error)
+
+    // Check authentication for error response detail level
+    const session = await getServerSession(authOptions)
+    const isAuthenticated = !!session?.user
+
+    // Return limited error info for unauthenticated requests
+    if (!isAuthenticated) {
+      return NextResponse.json({
+        status: 'unhealthy',
+        timestamp: new Date().toISOString()
+      }, { status: 503 })
+    }
 
     return NextResponse.json({
       status: 'unhealthy',
@@ -161,7 +193,7 @@ async function checkDiskSpace() {
   try {
     // Basic disk space check (platform-specific)
     const fs = await import('fs/promises')
-    const _stats = await fs.stat(process.cwd())
+    await fs.stat(process.cwd())
 
     return {
       status: 'healthy',
@@ -179,14 +211,59 @@ async function checkDiskSpace() {
 }
 
 
+/**
+ * Get allowed origins from environment or use defaults
+ */
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  // Default allowed origins for health checks
+  return [
+    'https://vibecode.dev',
+    'http://localhost:3000',
+    'http://localhost:8080'
+  ]
+}
+
+/**
+ * Validate and return CORS origin if allowed
+ */
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) {
+    return null
+  }
+
+  const allowedOrigins = getAllowedOrigins()
+
+  // Check if the request origin is in the allowed list
+  if (allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  return null
+}
+
 // Handle CORS for health checks
-export async function OPTIONS() {
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    'Access-Control-Max-Age': '3600',
+  }
+
+  // Only set Access-Control-Allow-Origin if the origin is validated
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+
   return new NextResponse(null, {
     status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-    },
+    headers,
   })
 }

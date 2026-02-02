@@ -2,7 +2,66 @@
 // Provides seamless switching between providers while maintaining compatibility
 
 import OpenAI from 'openai'
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging'
+import {
+  retryWithBackoff,
+  CircuitBreakerRegistry,
+  CircuitState,
+  isRetryableError,
+  RetryExhaustedError,
+  CircuitOpenError,
+} from '@/lib/utils/retry'
+
+// Retry configuration for rate limiting (429) errors
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000, // 1 second initial delay
+  maxDelayMs: 30000, // 30 seconds max delay
+}
+
+// Circuit breaker registry for all AI providers
+const aiProviderCircuitBreakers = new CircuitBreakerRegistry({
+  failureThreshold: 5,
+  cooldownPeriod: 30000,
+  successThreshold: 2,
+})
+
+// Service logger for unified AI client
+const log = createServiceLogger({
+  service: 'vibecode-webgui',
+  component: 'unified-ai-client'
+})
+
+/**
+ * Sleep helper for async delay
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Check if an error is a rate limit (429) error
+ */
+function isRateLimitError(error: unknown): boolean {
+  if (error instanceof OpenAI.APIError) {
+    return error.status === 429
+  }
+  // Check for rate limit error messages
+  if (error instanceof Error) {
+    const message = error.message.toLowerCase()
+    return message.includes('429') ||
+           message.includes('rate limit') ||
+           message.includes('too many requests')
+  }
+  return false
+}
+
+/**
+ * Check if an error should trigger retry (combines rate limit and other retryable errors)
+ */
+function shouldRetryError(error: unknown): boolean {
+  return isRateLimitError(error) || isRetryableError(error)
+}
 export interface UnifiedAIProvider {
   id: string
   name: string
@@ -143,8 +202,8 @@ export class UnifiedAIClient {
         baseURL: AI_PROVIDERS.ollama.baseURL,
         apiKey: 'ollama' // Ollama doesn't require real API key
       }))
-    } catch (error) {
-      console.warn('Ollama not available:', error)
+    } catch {
+      // Ollama not available - this is expected if not running locally
     }
 
     try {
@@ -152,8 +211,8 @@ export class UnifiedAIClient {
         baseURL: AI_PROVIDERS.localai.baseURL,
         apiKey: 'localai' // LocalAI doesn't require real API key
       }))
-    } catch (error) {
-      console.warn('LocalAI not available:', error)
+    } catch {
+      // LocalAI not available - this is expected if not running locally
     }
   }
 
@@ -189,7 +248,7 @@ export class UnifiedAIClient {
       await client.models.list()
       return true
     } catch (error) {
-      console.warn(`Provider ${providerId} connection failed:`, error)
+      log.debug(`Provider ${providerId} connection test failed`, { error: error instanceof Error ? error.message : String(error) })
       return false
     }
   }
@@ -218,7 +277,7 @@ export class UnifiedAIClient {
     if (!isConnected) {
       // Try fallback to OpenRouter if available
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for model: ${model}`)
+        log.info('Falling back to OpenRouter', { originalModel: model, reason: 'connection_failed' })
         return this.chat(messages, `openai/gpt-3.5-turbo`, options)
       }
       throw new Error(`Provider ${providerId} is not available`)
@@ -233,42 +292,76 @@ export class UnifiedAIClient {
     } = options
 
     try {
-      const response = await client.chat.completions.create({
+      // Use circuit breaker with retry for resilient API calls
+      return await aiProviderCircuitBreakers.execute(
+        providerId,
+        () => retryWithBackoff(
+          async () => {
+            const response = await client.chat.completions.create({
+              model,
+              messages,
+              temperature,
+              max_tokens: maxTokens,
+              top_p: topP,
+              frequency_penalty: frequencyPenalty,
+              presence_penalty: presencePenalty,
+              stream: false
+            })
+
+            const choice = response.choices[0]
+            if (!choice?.message?.content) {
+              throw new Error('No content in response')
+            }
+
+            return {
+              content: choice.message.content,
+              model,
+              provider: providerId,
+              usage: response.usage ? {
+                promptTokens: response.usage.prompt_tokens,
+                completionTokens: response.usage.completion_tokens,
+                totalTokens: response.usage.total_tokens
+              } : undefined,
+              finishReason: choice.finish_reason || undefined
+            }
+          },
+          {
+            maxRetries: RETRY_CONFIG.maxRetries,
+            baseDelay: RETRY_CONFIG.baseDelayMs,
+            maxDelay: RETRY_CONFIG.maxDelayMs,
+            jitter: 0.1,
+            timeout: 60000,
+            isRetryable: shouldRetryError,
+            onRetry: (attempt, error, delay) => {
+              log.warn('Request failed, retrying', {
+                providerId,
+                attempt,
+                maxRetries: RETRY_CONFIG.maxRetries,
+                delayMs: Math.round(delay),
+                error: error.message
+              })
+            },
+          }
+        )
+        // Note: Circuit breaker fallback is handled in the catch block below
+      )
+    } catch (error) {
+      log.error('Chat request failed', {
+        providerId,
         model,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: topP,
-        frequency_penalty: frequencyPenalty,
-        presence_penalty: presencePenalty,
-        stream: false
+        error: error instanceof Error ? error.message : String(error)
       })
 
-      const choice = response.choices[0]
-      if (!choice?.message?.content) {
-        throw new Error('No content in response')
-      }
-
-      return {
-        content: choice.message.content,
-        model,
-        provider: providerId,
-        usage: response.usage ? {
-          promptTokens: response.usage.prompt_tokens,
-          completionTokens: response.usage.completion_tokens,
-          totalTokens: response.usage.total_tokens
-        } : undefined,
-        finishReason: choice.finish_reason || undefined
-      }
-    } catch (error) {
-      console.error(`Chat error with ${providerId}:`, error)
-      
-      // Try fallback to OpenRouter if not already using it
-      if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for failed request`)
+      // If circuit breaker is open or retries exhausted, try fallback
+      if (
+        (error instanceof CircuitOpenError || error instanceof RetryExhaustedError) &&
+        providerId !== 'openrouter' &&
+        this.clients.has('openrouter')
+      ) {
+        log.info('Falling back to OpenRouter', { reason: 'circuit_open_or_retries_exhausted' })
         return this.chat(messages, 'openai/gpt-3.5-turbo', options)
       }
-      
+
       throw error
     }
   }
@@ -299,50 +392,91 @@ export class UnifiedAIClient {
       presencePenalty = 0
     } = options
 
-    try {
-      const stream = await client.chat.completions.create({
-        model,
-        messages,
-        temperature,
-        max_tokens: maxTokens,
-        top_p: topP,
-        frequency_penalty: frequencyPenalty,
-        presence_penalty: presencePenalty,
-        stream: true
-      })
-
-      for await (const chunk of stream) {
-        const choice = chunk.choices[0]
-        const content = choice?.delta?.content || ''
-
-        yield {
-          content,
-          done: choice?.finish_reason !== null,
-          model,
-          provider: providerId,
-          usage: chunk.usage ? {
-            promptTokens: chunk.usage.prompt_tokens || 0,
-            completionTokens: chunk.usage.completion_tokens || 0,
-            totalTokens: chunk.usage.total_tokens || 0
-          } : undefined
-        }
-
-        if (choice?.finish_reason) {
-          break
-        }
-      }
-    } catch (error) {
-      console.error(`Stream error with ${providerId}:`, error)
-      
-      // Try fallback to OpenRouter if not already using it
+    // Check circuit breaker state before streaming
+    const circuitBreaker = aiProviderCircuitBreakers.get(providerId)
+    if (!circuitBreaker.isHealthy()) {
+      // Circuit is open, try fallback
       if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
-        console.warn(`Falling back to OpenRouter for failed stream`)
+        log.info('Circuit open, falling back to OpenRouter', { providerId })
         yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
         return
       }
-      
-      throw error
+      throw new CircuitOpenError(providerId, circuitBreaker.getMetrics())
     }
+
+    // Retry loop for rate limit (429) errors with exponential backoff
+    let lastError: Error | unknown
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        const stream = await client.chat.completions.create({
+          model,
+          messages,
+          temperature,
+          max_tokens: maxTokens,
+          top_p: topP,
+          frequency_penalty: frequencyPenalty,
+          presence_penalty: presencePenalty,
+          stream: true
+        })
+
+        for await (const chunk of stream) {
+          const choice = chunk.choices[0]
+          const content = choice?.delta?.content || ''
+
+          yield {
+            content,
+            done: choice?.finish_reason !== null,
+            model,
+            provider: providerId,
+            usage: chunk.usage ? {
+              promptTokens: chunk.usage.prompt_tokens || 0,
+              completionTokens: chunk.usage.completion_tokens || 0,
+              totalTokens: chunk.usage.total_tokens || 0
+            } : undefined
+          }
+
+          if (choice?.finish_reason) {
+            break
+          }
+        }
+        // Stream completed successfully, exit retry loop
+        return
+      } catch (error) {
+        lastError = error
+
+        // Check if this is a retryable error and we have retries left
+        if (shouldRetryError(error) && attempt < RETRY_CONFIG.maxRetries) {
+          const delayMs = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt) +
+            (RETRY_CONFIG.baseDelayMs * 0.1 * (Math.random() * 2 - 1))
+          log.warn('Stream request failed, retrying', {
+            providerId,
+            attempt: attempt + 1,
+            maxRetries: RETRY_CONFIG.maxRetries,
+            delayMs: Math.round(delayMs)
+          })
+          await sleep(Math.min(delayMs, RETRY_CONFIG.maxDelayMs))
+          continue
+        }
+
+        // For non-retryable errors or exhausted retries, break out
+        break
+      }
+    }
+
+    log.error('Stream request failed after all retries', {
+      providerId,
+      model,
+      error: lastError instanceof Error ? lastError.message : String(lastError)
+    })
+
+    // Try fallback to OpenRouter if not already using it
+    if (providerId !== 'openrouter' && this.clients.has('openrouter')) {
+      log.info('Falling back to OpenRouter for failed stream', { providerId })
+      yield* this.chatStream(messages, 'openai/gpt-3.5-turbo', options)
+      return
+    }
+
+    throw lastError
   }
 
   public getAvailableProviders(): UnifiedAIProvider[] {
@@ -368,12 +502,61 @@ export class UnifiedAIClient {
 
   public async getProviderHealth(): Promise<Record<string, boolean>> {
     const health: Record<string, boolean> = {}
-    
+
     for (const providerId of this.clients.keys()) {
       health[providerId] = await this.testProviderConnection(providerId)
     }
-    
+
     return health
+  }
+
+  /**
+   * Get circuit breaker health status for all providers
+   */
+  public getCircuitBreakerHealth(): Record<string, { healthy: boolean; metrics: ReturnType<typeof aiProviderCircuitBreakers.getHealthStatus>[string] }> {
+    const status: Record<string, { healthy: boolean; metrics: ReturnType<typeof aiProviderCircuitBreakers.getHealthStatus>[string] }> = {}
+    const metrics = aiProviderCircuitBreakers.getHealthStatus()
+
+    for (const providerId of this.clients.keys()) {
+      const providerMetrics = metrics[providerId]
+      if (providerMetrics) {
+        status[providerId] = {
+          healthy: providerMetrics.state === 'CLOSED',
+          metrics: providerMetrics
+        }
+      } else {
+        // Circuit breaker not yet created for this provider
+        status[providerId] = {
+          healthy: true,
+          metrics: {
+            state: CircuitState.CLOSED,
+            failureCount: 0,
+            successCount: 0,
+            totalRequests: 0,
+            lastFailureTime: null,
+            lastSuccessTime: null,
+            stateChangedTime: Date.now(),
+            failureRate: 0
+          }
+        }
+      }
+    }
+
+    return status
+  }
+
+  /**
+   * Reset circuit breakers for all or specific providers
+   */
+  public resetCircuitBreakers(providerId?: string): void {
+    if (providerId) {
+      const breaker = aiProviderCircuitBreakers.get(providerId)
+      breaker.reset()
+      log.info('Circuit breaker reset', { providerId })
+    } else {
+      aiProviderCircuitBreakers.resetAll()
+      log.info('All circuit breakers reset')
+    }
   }
 }
 
@@ -394,7 +577,7 @@ export function getUnifiedAI(): UnifiedAIClient {
 // Keep legacy export for backward compatibility (but lazy)
 export const unifiedAI: UnifiedAIClient = new Proxy({} as UnifiedAIClient, {
   get(target, prop) {
-    return (getUnifiedAI() as any)[prop];
+    return (getUnifiedAI() as unknown as Record<string | symbol, unknown>)[prop];
   }
 });
 

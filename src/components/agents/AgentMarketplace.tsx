@@ -43,7 +43,7 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-interface MarketplaceAgent {
+export interface MarketplaceAgent {
   id: string
   name: string
   description: string
@@ -60,7 +60,7 @@ interface MarketplaceAgent {
   previewUrl?: string
 }
 
-interface AgentMarketplaceProps {
+export interface AgentMarketplaceProps {
   /** Available agents */
   agents: MarketplaceAgent[]
   /** Callback when agent is installed */

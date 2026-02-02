@@ -77,7 +77,7 @@ export const containerOptionsSchema = z.object({
   memory: z.string().regex(/^\d+[MGT]$/).optional(),
   ports: z.array(z.string().regex(/^\d+:\d+$/)).optional(),
   volumes: z.array(z.string()).optional(),
-  env: z.record(z.string()).optional(),
+  env: z.record(z.string(), z.string()).optional(),
   workingDir: z.string().optional(),
   command: z.array(z.string()).optional()
 })
@@ -129,9 +129,9 @@ export const createWorkspaceSchema = z.object({
   projectName: z.string().min(1).max(200),
   framework: z.string().min(1).max(50),
   userId: z.string().min(1).max(50).optional().default('anonymous'),
-  files: z.record(z.string()),
+  files: z.record(z.string(), z.string()),
   dependencies: z.array(z.string()).default([]),
-  environment: z.record(z.string()).default({})
+  environment: z.record(z.string(), z.string()).default({})
 })
 
 export const workspaceQuerySchema = z.object({
@@ -174,7 +174,7 @@ export const liteLLMSchema = z.object({
   stop: z.union([z.string(), z.array(z.string())]).optional(),
   stream: z.boolean().optional(),
   user: z.string().max(100).optional(),
-  metadata: z.record(z.unknown()).optional()
+  metadata: z.record(z.string(), z.unknown()).optional()
 })
 
 // ============================================================================
@@ -185,7 +185,7 @@ export const userPreferencesSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']).optional(),
   language: z.string().min(2).max(10).optional(),
   fontSize: z.number().int().min(8).max(32).optional(),
-  editorSettings: z.record(z.unknown()).optional(),
+  editorSettings: z.record(z.string(), z.unknown()).optional(),
   notifications: z.object({
     email: z.boolean().optional(),
     push: z.boolean().optional(),
@@ -204,7 +204,7 @@ export const metricsQuerySchema = z.object({
 
 export const recordMetricSchema = z.object({
   type: z.enum(['response_time', 'error', 'user_activity', 'network_io']),
-  data: z.record(z.unknown()).optional()
+  data: z.record(z.string(), z.unknown()).optional()
 })
 
 // ============================================================================
@@ -391,7 +391,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     defaultValue: z.boolean().optional(),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   }),
   z.object({
@@ -401,7 +401,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     value: z.number(),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   }),
   z.object({
@@ -414,7 +414,7 @@ export const experimentsBodySchema = z.discriminatedUnion('action', [
     ).min(1).max(20),
     context: z.object({
       workspaceId: workspaceIdSchema.optional(),
-      customAttributes: z.record(z.unknown()).optional()
+      customAttributes: z.record(z.string(), z.unknown()).optional()
     }).optional()
   })
 ])
@@ -627,7 +627,7 @@ export const generateProjectSchema = z.object({
 export const vectorStoreSchema = z.object({
   workspaceId: workspaceIdSchema,
   content: z.string().min(1).max(1_000_000), // 1MB limit
-  metadata: z.record(z.unknown()).optional(),
+  metadata: z.record(z.string(), z.unknown()).optional(),
   chunkSize: z.number().int().positive().max(10_000).optional().default(1000)
 })
 
@@ -798,7 +798,7 @@ export const createContainerSecureSchema = z.object({
           return parseInt(host) >= 1024
         }, 'Host port must be >= 1024')
     ).max(20).optional(),
-    env: z.record(z.string()).optional()
+    env: z.record(z.string(), z.string()).optional()
   }).optional()
 }).refine(
   (data) => {
@@ -888,6 +888,94 @@ export const codeServerSessionUpdateSchema = z.object({
 export const aiManagementQuerySchema = z.object({
   action: z.enum(['overview', 'models', 'usage', 'costs', 'health', 'performance']).optional(),
   timeframe: z.enum(['1h', '24h', '7d', '30d']).optional()
+})
+
+// ============================================================================
+// Documentation Search Schemas
+// ============================================================================
+
+/** Documentation search query parameters */
+export const docsSearchQuerySchema = z.object({
+  q: z.string()
+    .min(1, 'Search query is required')
+    .max(500, 'Search query is too long')
+    .transform(val => val.trim()),
+  category: z.string().max(50).optional(),
+  limit: z.coerce.number().int().min(1).max(100).optional().default(10)
+})
+
+/** Documentation search POST body */
+export const docsSearchBodySchema = z.object({
+  query: z.string()
+    .min(1, 'Search query is required')
+    .max(500, 'Search query is too long'),
+  filters: z.object({
+    category: z.string().max(50).optional(),
+    tags: z.array(z.string().max(50)).max(10).optional(),
+    dateRange: z.object({
+      start: z.string().datetime().optional(),
+      end: z.string().datetime().optional()
+    }).optional()
+  }).optional(),
+  options: z.object({
+    limit: z.number().int().min(1).max(100).optional().default(10),
+    includeContent: z.boolean().optional().default(false),
+    highlightMatches: z.boolean().optional().default(true)
+  }).optional()
+})
+
+// ============================================================================
+// Template Submission Schemas
+// ============================================================================
+
+/** Template submission feature flags */
+const templateFeaturesSchema = z.object({
+  dockerSupport: z.boolean().optional().default(false),
+  kubernetesSupport: z.boolean().optional().default(false),
+  cicdTemplate: z.boolean().optional().default(false),
+  testingSetup: z.boolean().optional().default(false),
+  monitoringSetup: z.boolean().optional().default(false)
+}).optional()
+
+/** Template submission documentation */
+const templateDocumentationSchema = z.object({
+  setup: z.array(z.string().max(500)).max(20).optional().default([]),
+  usage: z.array(z.string().max(500)).max(20).optional().default([]),
+  deployment: z.array(z.string().max(500)).max(20).optional().default([])
+}).optional()
+
+/** Template environment variable schema */
+const templateEnvVarSchema = z.object({
+  name: z.string().min(1).max(100).regex(/^[A-Z][A-Z0-9_]*$/, 'Environment variable name must be uppercase with underscores'),
+  defaultValue: z.string().max(200).optional(),
+  description: z.string().max(200).optional()
+})
+
+/** Template submission body schema */
+export const templateSubmissionSchema = z.object({
+  name: z.string()
+    .min(3, 'Template name must be at least 3 characters')
+    .max(100, 'Template name must not exceed 100 characters')
+    .regex(/^[a-zA-Z0-9\s\-_]+$/, 'Template name contains invalid characters'),
+  description: z.string()
+    .min(20, 'Template description must be at least 20 characters')
+    .max(1000, 'Template description must not exceed 1000 characters'),
+  category: z.enum(['frontend', 'fullstack', 'backend', 'mobile', 'desktop', 'library']),
+  language: z.string().min(1).max(50).default('typescript'),
+  framework: z.string().min(1).max(50).default('react'),
+  complexity: z.enum(['beginner', 'intermediate', 'advanced']),
+  tags: z.array(z.string().min(1).max(50)).max(20).optional().default([]),
+  dependencies: z.record(
+    z.string().regex(/^[@a-zA-Z0-9_\-/]+$/, 'Invalid dependency name'),
+    z.string().max(50)
+  ).optional().default({}),
+  scripts: z.record(
+    z.string().regex(/^[a-zA-Z0-9:_-]+$/, 'Invalid script name'),
+    z.string().max(500)
+  ).optional().default({}),
+  envVars: z.array(templateEnvVarSchema).max(50).optional().default([]),
+  documentation: templateDocumentationSchema,
+  features: templateFeaturesSchema
 })
 
 /** AI model selection */

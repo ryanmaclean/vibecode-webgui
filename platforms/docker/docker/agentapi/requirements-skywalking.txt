@@ -1,0 +1,11 @@
+# AgentAPI Python dependencies with SkyWalking instrumentation
+aiohttp==3.13.3
+aiohttp-cors==0.7.0
+PyYAML==6.0.1
+
+# SkyWalking Python agent for distributed tracing
+apache-skywalking==1.1.0
+
+# Additional dependencies for SkyWalking
+grpcio==1.62.2
+protobuf==7.34.0rc1

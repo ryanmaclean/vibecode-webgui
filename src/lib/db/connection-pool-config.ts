@@ -3,7 +3,7 @@
  * Centralized configuration for all database connection pools
  */
 
-import { ConnectionBudget } from './connection-pool-types';
+import { PoolConnectionBudget } from './connection-pool-types';
 
 /**
  * Global pool configuration interface
@@ -20,7 +20,7 @@ export interface GlobalPoolConfiguration {
   // Pool Budgets
   /** Budget allocation per pool */
   budgets: {
-    [poolName: string]: ConnectionBudget;
+    [poolName: string]: PoolConnectionBudget;
   };
 
   // Thresholds

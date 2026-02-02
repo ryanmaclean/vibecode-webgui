@@ -3,7 +3,7 @@
  * This is a placeholder implementation to satisfy imports in the vector database adapter pattern
  */
 
-import { VectorCacheManager } from './vector-cache-strategy';
+import { VectorCacheManager, VectorSimilarityQuery, VectorSimilarityResults } from './vector-cache-strategy';
 
 /**
  * Simple result interface
@@ -42,21 +42,30 @@ export class PgVectorSearch {
   ): Promise<SearchResult[]> {
     // Check cache first if enabled
     if (options.useCache) {
-      const cacheKey = {
+      const cacheQuery: VectorSimilarityQuery = {
         embedding: embedding.slice(0, 10), // Use truncated embedding for key
-        options
+        table: 'code_chunks',
+        limit: options.limit,
+        minSimilarity: options.minSimilarity,
+        contentTypes: options.contentTypes
       };
-      
-      const cachedResults = await VectorCacheManager.getCachedResults(cacheKey, options.workspace);
+
+      const cachedResults = await VectorCacheManager.getCachedResults(cacheQuery, options.workspace);
       if (cachedResults) {
-        return cachedResults;
+        // Convert VectorSimilarityResults to SearchResult[]
+        return cachedResults.map((result): SearchResult => ({
+          id: String(result.id),
+          content: result.content || '',
+          similarity: result.similarity,
+          metadata: result.metadata || {}
+        }));
       }
     }
-    
+
     // Mock implementation returns empty results
     return [];
   }
-  
+
   /**
    * Get cache statistics
    */

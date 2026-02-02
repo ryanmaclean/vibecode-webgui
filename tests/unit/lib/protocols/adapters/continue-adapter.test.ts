@@ -111,18 +111,25 @@ describe('ContinueAdapter', () => {
     });
 
     it('should handle errors gracefully', async () => {
-      const errorAdapter = new ContinueAdapter(mockConfig);
       const { createMCPClient } = require('../../../../../src/lib/protocols/mcp-client');
 
+      let callCount = 0;
       createMCPClient.mockImplementationOnce(() => ({
         connect: jest.fn(async () => {}),
         disconnect: jest.fn(async () => {}),
         invokeTool: jest.fn(async () => {
+          callCount++;
+          // First call is from start(), let it succeed
+          if (callCount === 1) {
+            return { success: true, result: 'Started' };
+          }
+          // Subsequent calls should fail
           throw new Error('MCP invocation failed');
         }),
         isConnected: jest.fn(() => true)
       }));
 
+      const errorAdapter = new ContinueAdapter(mockConfig);
       await errorAdapter.start('Init');
       const result = await errorAdapter.sendMessage('Error test');
 
@@ -190,10 +197,17 @@ describe('ContinueAdapter', () => {
     it('should handle autocomplete errors', async () => {
       const { createMCPClient } = require('../../../../../src/lib/protocols/mcp-client');
 
+      let callCount = 0;
       createMCPClient.mockImplementationOnce(() => ({
         connect: jest.fn(async () => {}),
         disconnect: jest.fn(async () => {}),
         invokeTool: jest.fn(async () => {
+          callCount++;
+          // First call is from start(), let it succeed
+          if (callCount === 1) {
+            return { success: true, result: 'Started' };
+          }
+          // Subsequent calls should fail
           throw new Error('Autocomplete failed');
         }),
         isConnected: jest.fn(() => true)

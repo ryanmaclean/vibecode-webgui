@@ -1,9 +1,51 @@
 /**
  * OpenRouter API Client
- * 
+ *
  * Provides interface to OpenRouter API for accessing multiple AI models
  * including Claude, GPT-4, and other language models through a unified API.
  */
+
+// Retry configuration for rate limiting (429) errors
+const RETRY_CONFIG = {
+  maxRetries: 3,
+  baseDelayMs: 1000, // 1 second initial delay
+  maxDelayMs: 30000, // 30 seconds max delay
+}
+
+/**
+ * Sleep helper for async delay
+ */
+function sleep(ms: number): Promise<void> {
+  return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+/**
+ * Calculate exponential backoff delay with jitter
+ */
+function getBackoffDelay(attempt: number, retryAfterMs?: number): number {
+  if (retryAfterMs) {
+    return Math.min(retryAfterMs, RETRY_CONFIG.maxDelayMs)
+  }
+  // Exponential backoff: 1s, 2s, 4s, 8s...
+  const exponentialDelay = RETRY_CONFIG.baseDelayMs * Math.pow(2, attempt)
+  // Add jitter (±10%) to prevent thundering herd
+  const jitter = exponentialDelay * 0.1 * (Math.random() * 2 - 1)
+  return Math.min(exponentialDelay + jitter, RETRY_CONFIG.maxDelayMs)
+}
+
+/**
+ * Extract retry-after delay from response headers
+ */
+function getRetryAfterFromHeaders(headers: Headers): number | undefined {
+  const retryAfter = headers.get('retry-after')
+  if (retryAfter) {
+    const seconds = parseInt(retryAfter, 10)
+    if (!isNaN(seconds)) {
+      return seconds * 1000
+    }
+  }
+  return undefined
+}
 
 export interface OpenRouterMessage {
   role: 'system' | 'user' | 'assistant';
@@ -55,27 +97,68 @@ export class OpenRouter {
       return this.createMockResponse(request);
     }
 
-    try {
-      const response = await fetch(`${this.baseUrl}/chat/completions`, {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-          'Content-Type': 'application/json',
-          'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
-          'X-Title': 'VibeCode Multimodal AI',
-        },
-        body: JSON.stringify(request),
-      });
+    let lastError: Error | undefined;
 
-      if (!response.ok) {
-        throw new Error(`OpenRouter API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`);
+    // Retry loop for rate limit (429) errors with exponential backoff
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        const response = await fetch(`${this.baseUrl}/chat/completions`, {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+            'Content-Type': 'application/json',
+            'HTTP-Referer': process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
+            'X-Title': 'VibeCode Multimodal AI',
+          },
+          body: JSON.stringify(request),
+        });
+
+        // Handle rate limiting (429) with retry
+        if (response.status === 429) {
+          if (attempt < RETRY_CONFIG.maxRetries) {
+            const retryAfterMs = getRetryAfterFromHeaders(response.headers);
+            const delayMs = getBackoffDelay(attempt, retryAfterMs);
+            console.warn(
+              `[OpenRouter] Rate limited (429), ` +
+              `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+            );
+            await sleep(delayMs);
+            continue;
+          }
+          // Exhausted retries
+          throw new Error(`OpenRouter API rate limited (429) after ${RETRY_CONFIG.maxRetries} retries`);
+        }
+
+        if (!response.ok) {
+          throw new Error(`OpenRouter API error: ${response.status}${response.statusText ? ' ' + response.statusText : ''}`);
+        }
+
+        return await response.json();
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Only retry on network errors that might be transient
+        const isTransientError = lastError.message.includes('fetch') ||
+                                 lastError.message.includes('network') ||
+                                 lastError.message.includes('ECONNRESET');
+
+        if (isTransientError && attempt < RETRY_CONFIG.maxRetries) {
+          const delayMs = getBackoffDelay(attempt);
+          console.warn(
+            `[OpenRouter] Transient error, ` +
+            `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries}): ${lastError.message}`
+          );
+          await sleep(delayMs);
+          continue;
+        }
+
+        // Non-transient error or exhausted retries
+        break;
       }
-
-      return await response.json();
-    } catch (error) {
-      console.error('OpenRouter API call failed:', error);
-      throw error;
     }
+
+    console.error('OpenRouter API call failed:', lastError);
+    throw lastError;
   }
 
   private createMockResponse(request: OpenRouterRequest): OpenRouterResponse {
@@ -379,23 +462,51 @@ I can help implement any of these improvements or answer specific questions abou
       ];
     }
 
-    try {
-      const response = await fetch(`${this.baseUrl}/models`, {
-        headers: {
-          'Authorization': `Bearer ${this.apiKey}`,
-        },
-      });
+    let lastError: Error | undefined;
 
-      if (!response.ok) {
-        throw new Error(`Failed to fetch models: ${response.status}`);
+    // Retry loop for rate limit (429) errors with exponential backoff
+    for (let attempt = 0; attempt <= RETRY_CONFIG.maxRetries; attempt++) {
+      try {
+        const response = await fetch(`${this.baseUrl}/models`, {
+          headers: {
+            'Authorization': `Bearer ${this.apiKey}`,
+          },
+        });
+
+        // Handle rate limiting (429) with retry
+        if (response.status === 429) {
+          if (attempt < RETRY_CONFIG.maxRetries) {
+            const retryAfterMs = getRetryAfterFromHeaders(response.headers);
+            const delayMs = getBackoffDelay(attempt, retryAfterMs);
+            console.warn(
+              `[OpenRouter] Rate limited (429) on models endpoint, ` +
+              `retrying in ${Math.round(delayMs / 1000)}s (attempt ${attempt + 1}/${RETRY_CONFIG.maxRetries})`
+            );
+            await sleep(delayMs);
+            continue;
+          }
+        }
+
+        if (!response.ok) {
+          throw new Error(`Failed to fetch models: ${response.status}`);
+        }
+
+        const data = await response.json();
+        return data.data.map((model: any) => model.id);
+      } catch (error) {
+        lastError = error instanceof Error ? error : new Error(String(error));
+
+        // Retry on transient errors
+        if (attempt < RETRY_CONFIG.maxRetries) {
+          const delayMs = getBackoffDelay(attempt);
+          await sleep(delayMs);
+          continue;
+        }
       }
-
-      const data = await response.json();
-      return data.data.map((model: any) => model.id);
-    } catch (error) {
-      console.error('Failed to fetch models:', error);
-      return [];
     }
+
+    console.error('Failed to fetch models:', lastError);
+    return [];
   }
 
   // Helper method to estimate cost

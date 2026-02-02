@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { intelligentModelSelection } from '@/lib/services/intelligent-model-selection'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { z } from '@/lib/zod-compat'
+import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - read-heavy selection
 
 // Define inline schema since schemas-phase4-batch2 doesn't exist
 const modelSelectionRequestSchema = z.object({
@@ -24,6 +27,23 @@ const modelSelectionRequestSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Development authentication bypass
     const testUserId = request.headers.get('x-test-user-id')
     if (!testUserId) {
@@ -102,19 +122,36 @@ export async function POST(request: NextRequest) {
       }
     })
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Server error logged
     
     return NextResponse.json({
       success: false,
-      error: error.message || 'Model selection failed',
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      error: error instanceof Error ? error.message : 'Model selection failed',
+      details: process.env.NODE_ENV === 'development' && error instanceof Error ? error.stack : undefined
     }, { status: 500 })
   }
 }
 
 export async function GET(request: NextRequest) {
   try {
+    // Rate limiting
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Development authentication bypass
     const testUserId = request.headers.get('x-test-user-id')
     if (!testUserId) {
@@ -155,10 +192,10 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(response)
 
-  } catch (error: any) {
+  } catch (error: unknown) {
     return NextResponse.json({
       success: false,
-      error: error.message || 'Failed to fetch models'
+      error: error instanceof Error ? error.message : 'Failed to fetch models'
     }, { status: 500 })
   }
 }

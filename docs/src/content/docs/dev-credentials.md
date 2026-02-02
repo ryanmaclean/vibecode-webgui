@@ -5,31 +5,50 @@ description: dev credentials documentation
 
 # Development Test Credentials
 
-This file contains test user credentials for development authentication until OAuth is properly deployed.
+⚠️ **SECURITY UPDATE (2026-01-19)**: Legacy plaintext password accounts have been removed.
 
-## 🔐 Test User Accounts
+This document describes the **secure** authentication system for development and testing.
 
-### Admin Users (Full Access)
-| Email | Password | Name | Role |
-|-------|----------|------|------|
-| admin@vibecode.dev | admin123 | VibeCode Admin | admin |
-| lead@vibecode.dev | lead123 | Lisa Thompson | admin |
+## 🔒 Security Changes
 
-### Developer Users (Standard Access)
-| Email | Password | Name | Role |
-|-------|----------|------|------|
-| developer@vibecode.dev | dev123 | Sarah Johnson | user |
-| frontend@vibecode.dev | frontend123 | Michael Chen | user |
-| backend@vibecode.dev | backend123 | Emily Rodriguez | user |
-| fullstack@vibecode.dev | fullstack123 | David Kim | user |
+**REMOVED**: Hardcoded plaintext passwords in source code
+**ADDED**: Secure password hashing with Node.js crypto (scrypt)
+**ADDED**: Environment-based test user configuration
 
-### Team Member Users (Standard Access)
-| Email | Password | Name | Role |
-|-------|----------|------|------|
-| designer@vibecode.dev | design123 | Jessica Taylor | user |
-| tester@vibecode.dev | test123 | Robert Wilson | user |
-| devops@vibecode.dev | devops123 | Amanda Garcia | user |
-| intern@vibecode.dev | intern123 | James Martinez | user |
+### What Changed?
+
+- ❌ **Removed**: 11 legacy accounts with plaintext passwords (`admin123`, `dev123`, etc.)
+- ✅ **Added**: Secure password hashing using scrypt algorithm
+- ✅ **Added**: Environment variable configuration (`AUTH_TEST_USERS`)
+- ✅ **Added**: Password hash generation script
+
+## 🔐 Test User Configuration
+
+### Setup Instructions
+
+1. **Copy the example environment file**:
+   ```bash
+   cp .env.local.example .env.local
+   ```
+
+2. **The `AUTH_TEST_USERS` variable is pre-configured** with secure hashed passwords
+
+3. **Start development server**:
+   ```bash
+   npm run dev
+   ```
+
+### Default Test Accounts
+
+These accounts are configured in `.env.local.example`:
+
+| Email | Password | Role | Notes |
+|-------|----------|------|-------|
+| admin@example.test | admin-dev-only | admin | Full access |
+| developer@example.test | dev-dev-only | developer | Standard access |
+| lead@example.test | lead-dev-only | lead | Lead access |
+
+⚠️ **Important**: These passwords are **only for local development**. Never use in production!
 
 ## 🚀 Quick Access
 
@@ -37,11 +56,36 @@ You can use any of these credentials to sign in at:
 - **Sign In Page**: http://localhost:3000/auth/signin
 - **Test Page**: http://localhost:3000/auth/test
 
-## 🔒 Security Notes
+## 🔧 Generating New Password Hashes
 
-- **Development Only**: These credentials are only active in development mode (`NODE_ENV=development`)
-- **Production Disabled**: All test credentials are automatically disabled in production
-- **No Persistence**: User data is not persisted between sessions
+To create your own test users with custom passwords:
+
+```bash
+# Run the password hash generator
+npx tsx scripts/generate-password-hashes.ts
+```
+
+This will output properly formatted `AUTH_TEST_USERS` JSON that you can copy to your `.env.local` file.
+
+**Edit the script** (`scripts/generate-password-hashes.ts`) to customize:
+- User emails
+- Passwords
+- Roles
+- Names
+
+## 🔒 Security Features
+
+### ✅ Secure Design
+- **Hashed Passwords**: All passwords are hashed using Node.js crypto (scrypt)
+- **No Plaintext Storage**: Passwords never stored in plaintext
+- **Environment-Based**: Credentials loaded from environment variables
+- **Development Only**: Credentials only active when `NODE_ENV=development`
+- **Timing-Safe Comparison**: Uses `timingSafeEqual` to prevent timing attacks
+
+### ⚠️ Development Safeguards
+- **Production Disabled**: Test credentials automatically disabled in production
+- **No Git Commits**: `.env.local` is gitignored
+- **No Persistence**: User data not persisted between sessions
 - **Role-Based Access**: Admin users have full access, regular users have standard access
 
 ### 🔐 API Key Protection System
@@ -82,20 +126,20 @@ Once the platform is deployed and OAuth is configured:
 ## 📝 Usage Examples
 
 ```bash
-# Example sign-in with admin user
+# Example sign-in with test admin user
 curl -X POST http://localhost:3000/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "admin@vibecode.dev",
-    "password": "admin123"
+    "email": "admin@example.test",
+    "password": "admin-dev-only"
   }'
 
-# Example sign-in with developer user
+# Example sign-in with test developer user
 curl -X POST http://localhost:3000/api/auth/signin \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "developer@vibecode.dev",
-    "password": "dev123"
+    "email": "developer@example.test",
+    "password": "dev-dev-only"
   }'
 
 # Test AI project generation (requires authentication)
@@ -113,13 +157,24 @@ curl -X POST http://localhost:3000/api/code-server/session \
   -H "Cookie: next-auth.session-token=<session-token>" \
   -d '{
     "workspaceId": "test-workspace-123",
-    "userId": "developer@vibecode.dev"
+    "userId": "developer@example.test"
   }'
 ```
 
+## 🔄 Migration from Legacy Credentials
+
+If you were using the old hardcoded credentials (`admin@vibecode.dev`, etc.), you need to:
+
+1. ✅ Update your `.env.local` with new `AUTH_TEST_USERS` configuration
+2. ✅ Use new test credentials (`admin@example.test`, etc.)
+3. ✅ Update any test scripts or automation
+
+**Old credentials no longer work** as of 2026-01-19 security update.
+
 ---
 
-**Last Updated**: July 18, 2025
+**Last Updated**: January 19, 2026
 **Environment**: Development Only
-**Status**: Active for local development
+**Status**: ✅ Secure - Active for local development
+**Security Fix**: Issue st-4kc - Removed plaintext passwords
 **Next Step**: Deploy platform and configure OAuth providers

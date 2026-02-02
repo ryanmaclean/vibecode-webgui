@@ -7,9 +7,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { ZodSchema, z } from 'zod'
 import { validateRequestBody, validateQueryParams } from './middleware'
+import {
+  createErrorResponse as createSharedErrorResponse,
+  createProblemResponse,
+} from '@/lib/utils/api-response'
 
 // Re-export validation functions for convenience
 export { validateRequestBody, validateQueryParams }
+export { createErrorResponse, createSuccessResponse } from '@/lib/utils/api-response'
 
 /**
  * Rate limiting check function
@@ -46,8 +51,8 @@ export function checkRateLimit(
   // Handle simple string-based rate limiting (for testing)
   if (typeof requestOrIdentifier === 'string') {
     const identifier = requestOrIdentifier
-    const maxRequests = optionsOrMaxRequests as number
-    const windowMs = windowMsParam as number
+    const maxRequests = typeof optionsOrMaxRequests === 'number' ? optionsOrMaxRequests : 100
+    const windowMs = typeof windowMsParam === 'number' ? windowMsParam : 60 * 1000
     const now = Date.now()
 
     const current = rateLimitStore.get(identifier)
@@ -92,7 +97,7 @@ export function checkRateLimit(
   const {
     maxRequests = 100,
     windowMs = 60 * 1000, // 1 minute
-    keyGenerator = (req) => req.ip || 'unknown'
+    keyGenerator = (req) => req.headers.get('x-forwarded-for')?.split(',')[0] || req.headers.get('x-real-ip') || 'unknown'
   } = options
 
   const key = keyGenerator(request)
@@ -145,22 +150,22 @@ export function checkRateLimit(
  * Create a rate-limited response
  */
 export function createRateLimitResponse(resetTime: number): NextResponse {
-  return NextResponse.json(
-    {
-      error: 'Rate limit exceeded',
-      message: 'Too many requests, please try again later',
-      retryAfter: Math.ceil((resetTime - Date.now()) / 1000)
+  const retryAfterSeconds = Math.ceil((resetTime - Date.now()) / 1000)
+  return createProblemResponse({
+    title: 'Rate limit exceeded',
+    status: 429,
+    detail: 'Too many requests, please try again later',
+    code: 'RATE_LIMIT_EXCEEDED',
+    extensions: {
+      retryAfter: retryAfterSeconds,
     },
-    {
-      status: 429,
-      headers: {
-        'Retry-After': Math.ceil((resetTime - Date.now()) / 1000).toString(),
-        'X-RateLimit-Limit': '100',
-        'X-RateLimit-Remaining': '0',
-        'X-RateLimit-Reset': resetTime.toString()
-      }
-    }
-  )
+    headers: {
+      'Retry-After': retryAfterSeconds.toString(),
+      'X-RateLimit-Limit': '100',
+      'X-RateLimit-Remaining': '0',
+      'X-RateLimit-Reset': resetTime.toString(),
+    },
+  })
 }
 
 /**
@@ -176,13 +181,10 @@ export async function validateBody<T extends ZodSchema>(
   } catch (error) {
     return {
       success: false,
-      error: NextResponse.json(
-        {
-          error: 'Invalid request body',
-          message: error instanceof Error ? error.message : 'Unknown validation error'
-        },
-        { status: 400 }
-      )
+      error: createSharedErrorResponse('Invalid request body', 400, {
+        code: 'INVALID_REQUEST_BODY',
+        detail: error instanceof Error ? error.message : 'Unknown validation error',
+      })
     }
   }
 }
@@ -200,52 +202,12 @@ export function validateQuery<T extends ZodSchema>(
   } catch (error) {
     return {
       success: false,
-      error: NextResponse.json(
-        {
-          error: 'Invalid query parameters',
-          message: error instanceof Error ? error.message : 'Unknown validation error'
-        },
-        { status: 400 }
-      )
+      error: createSharedErrorResponse('Invalid query parameters', 400, {
+        code: 'INVALID_QUERY_PARAMS',
+        detail: error instanceof Error ? error.message : 'Unknown validation error',
+      })
     }
   }
-}
-
-/**
- * Create a standardized error response
- */
-export function createErrorResponse(
-  message: string,
-  status: number = 500,
-  details?: Record<string, unknown>
-): NextResponse {
-  return NextResponse.json(
-    {
-      error: message,
-      timestamp: new Date().toISOString(),
-      ...details
-    },
-    { status }
-  )
-}
-
-/**
- * Create a standardized success response
- */
-export function createSuccessResponse<T>(
-  data: T,
-  status: number = 200,
-  metadata?: Record<string, unknown>
-): NextResponse {
-  return NextResponse.json(
-    {
-      success: true,
-      data,
-      timestamp: new Date().toISOString(),
-      ...metadata
-    },
-    { status }
-  )
 }
 
 /**
@@ -277,8 +239,7 @@ export function isAuthenticated(request: NextRequest): boolean {
  * Get request IP address
  */
 export function getClientIP(request: NextRequest): string {
-  return request.ip || 
-         request.headers.get('x-forwarded-for')?.split(',')[0] ||
+  return request.headers.get('x-forwarded-for')?.split(',')[0] ||
          request.headers.get('x-real-ip') ||
          'unknown'
 }

@@ -31,10 +31,16 @@ Thumbs.db
 
 # Large binary files - use GitHub Releases
 *.cpio.gz
+*.img.gz
 azure/*.img
 azure/*.qcow2
 azure/*.iso
 releases/
+
+# Pre-built binaries - build from source instead
+bin/busybox
+bin/vibecode-vm
+*.bin
 
 # Temporary files
 tmp/
@@ -138,6 +144,7 @@ migration-report.txt
 *.conflict-backup-*
 
 .claude/
+.beads/
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
@@ -204,7 +211,15 @@ operations/
 optimization/
 development/
 technical-debt/
-platforms/
+platforms/*
+!platforms/kubernetes/
+platforms/kubernetes/*
+!platforms/kubernetes/scripts/
+!platforms/docker/
+platforms/docker/*
+!platforms/docker/scripts/
+!platforms/tauri/
+!platforms/macos/
 
 # Build directories
 initramfs-rebuild/
@@ -368,4 +383,31 @@ QUICK_*.md
 USER_GUIDE_*.md
 PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
+
 .beads/
+=======
+
+# Gas Town local runtime
+.beads/
+.runtime/
+.venv/
+
+
+# Gas Town (added by gt)
+.logs/
+
+# Gas Town (added by gt)
+# Tauri build artifacts (large)
+src-tauri/target/
+
+# Event logs
+.events.jsonl
+.specstory/
+
+# Local-only runtime artifacts
+.feed.jsonl
+daemon/
+
+# Legacy dispatch scripts (replaced by Python tooling)
+scripts/assign-issues-to-polecats.sh
+scripts/assign-all-to-polecats.sh

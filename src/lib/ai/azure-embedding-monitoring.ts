@@ -7,7 +7,20 @@
 
 import { VectorConnectionPoolFactory } from '../db/vector-connection-pool';
 import { azureEmbeddingMetrics } from '../monitoring/azure-embedding-metrics';
-import { type AzureEmbeddingService } from './azureEmbeddingService';
+
+/**
+ * Interface for Azure Embedding Service methods expected by monitoring
+ */
+export interface AzureEmbeddingService {
+  generateEmbedding(text: string): Promise<number[]>;
+  storeDocument(documentId: string, content: string, metadata?: Record<string, unknown>): Promise<void>;
+  findSimilarDocuments(queryText: string, options?: {
+    threshold?: number;
+    limit?: number;
+    filter?: Record<string, unknown>;
+  }): Promise<unknown[]>;
+  getDeploymentName(): string;
+}
 // import { logger } from '@/lib/logger';
 /**
  * Registers monitoring hooks on the Azure Embedding Service
@@ -156,10 +169,10 @@ function startConnectionPoolMonitoring(): void {
       
       // Record pool metrics
       azureEmbeddingMetrics.recordPoolMetrics(
-        metrics.poolSize,
+        metrics.poolSize ?? metrics.totalConnections,
         metrics.activeConnections,
-        metrics.availableConnections,
-        metrics.waitingClients
+        metrics.idleConnections,
+        metrics.waitingClients ?? metrics.pendingAcquires
       );
     } catch (error) {
       console.error('Error recording connection pool metrics:', error);

@@ -91,10 +91,10 @@ export interface EmbeddingResponse {
 }
 
 export class AzureAIClient {
-  private openaiClient: OpenAI;
+  private openaiClient!: OpenAI;
   // Optional Azure SDK clients, loaded lazily if dependencies are available
-  private visionClient?: any;
-  private languageClient?: any;
+  private visionClient?: unknown;
+  private languageClient?: unknown;
   private config: AzureAIConfig;
 
   constructor(config: AzureAIConfig) {
@@ -127,7 +127,7 @@ export class AzureAIClient {
 
       const response = await this.openaiClient.chat.completions.create({
         model: deployment, // Use Azure deployment name
-        messages: request.messages as any,
+        messages: request.messages,
         temperature: request.temperature ?? 0.7,
         max_tokens: request.max_tokens ?? 1000,
         top_p: request.top_p ?? 1,
@@ -140,7 +140,7 @@ export class AzureAIClient {
       return {
         id: response.id,
         object: response.object,
-        created: response.created as number,
+        created: response.created,
         model: request.model || deployment,
         choices: response.choices.map(choice => ({
           index: choice.index ?? 0,
@@ -172,7 +172,7 @@ export class AzureAIClient {
       
       const response = await this.openaiClient.embeddings.create({
         model: deployment,
-        input: request.input as any,
+        input: request.input,
       });
 
       return {
@@ -184,8 +184,8 @@ export class AzureAIClient {
         })),
         model: request.model || deployment,
         usage: {
-          prompt_tokens: (response.usage as any)?.prompt_tokens ?? 0,
-          total_tokens: (response.usage as any)?.total_tokens ?? 0,
+          prompt_tokens: response.usage?.prompt_tokens ?? 0,
+          total_tokens: response.usage?.total_tokens ?? 0,
         },
       };
     } catch (error) {

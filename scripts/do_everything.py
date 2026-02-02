@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Complete automation script:
 1. Fix PostgreSQL with all options
@@ -389,5 +401,4 @@ def main():
 
 if __name__ == "__main__":
     sys.exit(main())
-
 

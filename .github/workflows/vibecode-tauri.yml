@@ -1,0 +1,41 @@
+name: VibeCode Tauri Build
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - 'src-tauri/**'
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'src-tauri/**'
+
+jobs:
+  build-tauri:
+    name: Build Tauri (macOS)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          
+      - name: Install Node Dependencies
+        run: npm ci
+        
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin
+          
+      - name: Install Tauri CLI
+        run: cargo install tauri-cli
+        
+      - name: Build Tauri App
+        run: cargo tauri build --target aarch64-apple-darwin
+        env:
+          TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+          TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}

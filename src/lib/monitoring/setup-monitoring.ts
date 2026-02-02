@@ -41,13 +41,20 @@ class MonitoringSetupService {
   private result: MonitoringSetupResult
 
   constructor(config: Partial<MonitoringSetupConfig> = {}) {
+    const envToEnvironment = (env: string | undefined): 'development' | 'staging' | 'production' => {
+      if (env === 'production' || env === 'staging' || env === 'development') {
+        return env;
+      }
+      return 'development';
+    };
+
     this.config = {
       enableDatadog: process.env.NODE_ENV === 'production',
       enableOpenTelemetry: process.env.NODE_ENV === 'production',
       enableAlerting: process.env.NODE_ENV === 'production',
       enableDashboards: process.env.NODE_ENV === 'production',
       enableBaselines: true,
-      environment: (process.env.NODE_ENV as any) || 'development',
+      environment: envToEnvironment(process.env.NODE_ENV),
       skipHealthChecks: false,
       ...config
     }
@@ -369,7 +376,8 @@ class MonitoringSetupService {
     console.log('📊 Monitoring setup report', report)
 
     // Submit setup metrics
-    logger.counter('vibecode.monitoring.setup.completed', 1, {
+    logger.info('Monitoring setup completed', {
+      metric: 'vibecode.monitoring.setup.completed',
       environment: this.config.environment,
       success: this.result.success.toString(),
       components_enabled: enabledComponents.length.toString()
@@ -424,6 +432,5 @@ export async function setupDevelopmentMonitoring(): Promise<MonitoringSetupResul
   return await setup.setupMonitoring()
 }
 
-// Export the service class and types
+// Export the service class
 export { MonitoringSetupService }
-export type { MonitoringSetupConfig, MonitoringSetupResult }

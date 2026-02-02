@@ -23,13 +23,14 @@ model User {
   updated_at  DateTime @updatedAt
 
   // Relations
-  sessions    Session[]
-  workspaces  Workspace[]
-  projects    Project[]
-  files       File[]
-  uploads     Upload[]
-  ai_requests AIRequest[]
-  rag_chunks  RAGChunk[]
+  sessions      Session[]
+  workspaces    Workspace[]
+  projects      Project[]
+  files         File[]
+  uploads       Upload[]
+  ai_requests   AIRequest[]
+  rag_chunks    RAGChunk[]
+  conversations Conversation[]
 
   @@map("users")
 }
@@ -63,11 +64,12 @@ model Workspace {
   updated_at   DateTime @updatedAt
 
   // Relations
-  user       User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
-  projects   Project[]
-  files      File[]
-  uploads    Upload[]
-  rag_chunks RAGChunk[]
+  user          User           @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  projects      Project[]
+  files         File[]
+  uploads       Upload[]
+  rag_chunks    RAGChunk[]
+  conversations Conversation[]
 
   @@index([user_id])
   @@index([workspace_id])
@@ -316,6 +318,89 @@ model Setting {
   @@map("settings")
 }
 
+// Chat Conversation Persistence
+model Conversation {
+  id           String   @id @default(cuid())
+  title        String?
+  user_id      Int
+  workspace_id Int?
+  session_id   String?  // Links to ChatSession for session continuity
+  model        String?  // AI model used (e.g., gpt-4, claude-3)
+  status       ConversationStatus @default(ACTIVE)
+  message_count Int     @default(0)
+  total_tokens  Int?    // Total tokens used in conversation
+  metadata     Json?    // Additional metadata (tags, context, etc.)
+  created_at   DateTime @default(now())
+  updated_at   DateTime @updatedAt
+  archived_at  DateTime?
+
+  // Relations
+  user      User       @relation(fields: [user_id], references: [id], onDelete: Cascade)
+  workspace Workspace? @relation(fields: [workspace_id], references: [id], onDelete: SetNull)
+  messages  Message[]
+
+  @@index([user_id])
+  @@index([workspace_id])
+  @@index([session_id])
+  @@index([status, user_id])
+  @@index([user_id, updated_at])
+  @@index([workspace_id, status, updated_at])
+  @@index([created_at])
+  @@map("conversations")
+}
+
+enum ConversationStatus {
+  ACTIVE
+  ARCHIVED
+  DELETED
+}
+
+model Message {
+  id              String   @id @default(cuid())
+  conversation_id String
+  role            MessageRole
+  content         String
+  tokens          Int?     // Token count for this message
+  model           String?  // Model used for assistant responses
+  provider        String?  // AI provider (openai, anthropic, etc.)
+  duration_ms     Int?     // Response generation time
+  files           Json?    // Attached file references
+  metadata        Json?    // Tool calls, function results, etc.
+  created_at      DateTime @default(now())
+  updated_at      DateTime @updatedAt
+
+  // Relations
+  conversation Conversation @relation(fields: [conversation_id], references: [id], onDelete: Cascade)
+
+  @@index([conversation_id])
+  @@index([conversation_id, created_at])
+  @@index([role, conversation_id])
+  @@index([created_at])
+  @@map("messages")
+}
+
+enum MessageRole {
+  USER
+  ASSISTANT
+  SYSTEM
+  TOOL
+}
+
+model ChatSession {
+  id         String   @id @default(cuid())
+  session_id String   @unique
+  user_id    Int
+  user_agent String?
+  ip_address String?
+  expires_at DateTime
+  created_at DateTime @default(now())
+
+  @@index([user_id])
+  @@index([session_id])
+  @@index([expires_at])
+  @@map("chat_sessions")
+}
+
 // Experimentation Platform - Data Warehouse Layer
 model Experiment {
   id          String   @id @default(cuid())
@@ -382,4 +467,112 @@ model ExperimentMetric {
   @@index([assignmentId, metricName])
   @@index([timestamp])
   @@map("experiment_metrics")
+}
+
+// ============================================
+// Agent Memory Architecture (Issue #897)
+// Multi-tier memory for agent state management
+// ============================================
+
+model AgentMemory {
+  id          String   @id @default(uuid()) @db.Uuid
+  agentId     String   @map("agent_id")
+  projectId   String?  @map("project_id")
+  workspaceId String?  @map("workspace_id")
+  beadId      String?  @map("bead_id")
+
+  tier        String   @default("long_term")
+  content     String
+  contentType String   @map("content_type")
+  embedding   Unsupported("vector(1536)")?
+
+  source      String?
+  confidence  Float    @default(1.0)
+  validatedAt DateTime? @map("validated_at")
+  validatedBy String?  @map("validated_by")
+  usageCount  Int      @default(0) @map("usage_count")
+  lastUsedAt  DateTime? @map("last_used_at")
+  tags        String[] @default([])
+  metadata    Json     @default("{}")
+
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+  expiresAt   DateTime? @map("expires_at")
+  accessedAt  DateTime @default(now()) @map("accessed_at")
+
+  beliefs     AgentBelief[]
+  accessLogs  AgentMemoryAccessLog[]
+
+  @@index([agentId])
+  @@index([projectId])
+  @@index([workspaceId])
+  @@index([beadId])
+  @@index([contentType])
+  @@index([tier])
+  @@index([expiresAt])
+  @@map("agent_memory")
+}
+
+model AgentBelief {
+  id                String   @id @default(uuid()) @db.Uuid
+  agentId           String   @map("agent_id")
+  memoryId          String?  @map("memory_id") @db.Uuid
+  memory            AgentMemory? @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+
+  statement         String
+  evidence          String[] @default([])
+
+  confidence        Float    @default(0.5)
+  confidenceHistory Json     @default("[]") @map("confidence_history")
+
+  status            String   @default("pending")
+  validatedAt       DateTime? @map("validated_at")
+  validatedBy       String?  @map("validated_by")
+
+  createdAt         DateTime @default(now()) @map("created_at")
+  updatedAt         DateTime @updatedAt @map("updated_at")
+
+  @@index([agentId])
+  @@index([status])
+  @@index([memoryId])
+  @@map("agent_beliefs")
+}
+
+model AgentMemoryAccessLog {
+  id         String   @id @default(uuid()) @db.Uuid
+  memoryId   String   @map("memory_id") @db.Uuid
+  memory     AgentMemory @relation(fields: [memoryId], references: [id], onDelete: Cascade)
+  agentId    String   @map("agent_id")
+  accessType String   @map("access_type")
+  context    Json?
+  createdAt  DateTime @default(now()) @map("created_at")
+
+  @@index([memoryId])
+  @@index([agentId])
+  @@index([createdAt])
+  @@map("agent_memory_access_log")
+}
+
+model AgentSessionHandoff {
+  id                    String   @id @default(uuid()) @db.Uuid
+  agentId               String   @map("agent_id")
+  sessionId             String   @map("session_id")
+
+  workingMemorySnapshot String[] @default([]) @map("working_memory_snapshot")
+  ephemeralSummary      String?  @map("ephemeral_summary")
+  activeBeadId          String?  @map("active_bead_id")
+
+  status                String   @default("active")
+  resumedAt             DateTime? @map("resumed_at")
+  resumedBySession      String?  @map("resumed_by_session")
+
+  createdAt             DateTime @default(now()) @map("created_at")
+  expiresAt             DateTime @default(dbgenerated("NOW() + INTERVAL '30 days'")) @map("expires_at")
+
+  @@index([agentId])
+  @@index([sessionId])
+  @@index([status])
+  @@index([activeBeadId])
+  @@index([expiresAt])
+  @@map("agent_session_handoffs")
 }

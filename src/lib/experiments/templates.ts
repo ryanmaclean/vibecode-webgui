@@ -8,6 +8,7 @@
 import { experimentWarehouse } from './warehouse';
 import { GUARDRAIL_TEMPLATES, type Guardrail } from './rollout';
 import { logger } from '@/lib/server-monitoring';
+import { ExperimentStatus } from '@prisma/client';
 
 /**
  * Metric configuration
@@ -454,7 +455,7 @@ export async function createFromTemplate(
       experimentName,
       config,
       `Created from template: ${template.name}`,
-      'draft'
+      ExperimentStatus.DRAFT
     );
 
     logger.info('Experiment created from template', {

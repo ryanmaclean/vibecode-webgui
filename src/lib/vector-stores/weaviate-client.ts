@@ -59,7 +59,7 @@ export class WeaviateClient {
       // Initialize Weaviate client
       const weaviate = await import('weaviate-ts-client');
 
-      this.client = weaviate.weaviate.client({
+      this.client = weaviate.default.client({
         scheme: this.config.protocol,
         host: this.config.host,
         ...(this.config.apiKey && { apiKey: this.config.apiKey }),
@@ -227,7 +227,7 @@ export class WeaviateClient {
    * Search for similar vectors using text query (generates embedding internally)
    */
   async searchWithText(
-    query: string,
+    searchQuery: string,
     options: SearchOptions
   ): Promise<SearchResult[]> {
     if (!this.client) {
@@ -238,17 +238,17 @@ export class WeaviateClient {
       const limit = options.limit || 10;
 
       // Use Weaviate's text-based search (nearText)
-      const query = this.client.graphql
+      const textQuery = this.client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
         .withNearText({
-          concepts: [query],
+          concepts: [searchQuery],
           distance: 0.7 // Default distance threshold for text search
         })
         .withLimit(limit);
 
-      const result = await query.do();
+      const result = await textQuery.do();
 
       if (!result.data || !result.data.Get || !result.data.Get.VectorChunk) {
         return [];
@@ -284,9 +284,9 @@ export class WeaviateClient {
         try {
           await this.client.data.deleter().withClassName('VectorChunk').withId(id).do();
           deletedCount++;
-        } catch (error: any) {
+        } catch (error: unknown) {
           // Item might not exist, which is fine
-          if (error.statusCode !== 404) {
+          if ((error as any)?.statusCode !== 404) {
             throw error;
           }
         }
@@ -375,7 +375,7 @@ export class WeaviateClient {
         for (let i = 0; i < ids.length; i += batchSize) {
           const batch = ids.slice(i, i + batchSize);
           await Promise.all(
-            batch.map(id => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
+            batch.map((id: string) => this.client.data.deleter().withClassName('VectorChunk').withId(id).do())
           );
         }
       }
@@ -439,8 +439,8 @@ export class WeaviateClient {
         embedding: result.vector || [],
         metadata: JSON.parse(result.properties.metadata || '{}')
       };
-    } catch (error: any) {
-      if (error.statusCode === 404) {
+    } catch (error: unknown) {
+      if ((error as any)?.statusCode === 404) {
         return null; // Item not found
       }
 
@@ -628,7 +628,7 @@ export class WeaviateClient {
    * Search with hybrid scoring (semantic + keyword)
    */
   async hybridSearch(
-    query: string,
+    searchQuery: string,
     queryEmbedding: number[],
     options: SearchOptions & {
       keywordWeight?: number;
@@ -645,18 +645,18 @@ export class WeaviateClient {
       const semanticWeight = options.semanticWeight || 0.7;
 
       // Weaviate supports hybrid search through nearText with vector
-      const query = this.client.graphql
+      const hybridQuery = this.client.graphql
         .get()
         .withClassName('VectorChunk')
         .withFields('id content metadata _additional { distance certainty }')
         .withHybrid({
-          query: query,
+          query: searchQuery,
           vector: queryEmbedding,
           alpha: semanticWeight // Weight for semantic vs keyword search
         })
         .withLimit(limit);
 
-      const result = await query.do();
+      const result = await hybridQuery.do();
 
       if (!result.data?.Get?.VectorChunk) {
         return [];

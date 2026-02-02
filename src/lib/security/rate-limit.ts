@@ -11,6 +11,7 @@
  * - Configurable limits per endpoint
  * - Automatic header injection (X-RateLimit-*)
  * - Skip rate limiting for authenticated users (configurable)
+ * - Secure IP extraction with spoofing protection
  *
  * @see https://redis.io/commands/incr#pattern-rate-limiter
  */
@@ -19,6 +20,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { cache, CacheTTL } from '@/lib/cache/valkey-client'
+import { createProblemResponse } from '@/lib/utils/api-response'
+import {
+  getClientIpString,
+  logSuspiciousPattern,
+  isPrivateIp,
+  sanitizeIpAddress,
+} from './ip-validator'
 
 /**
  * Rate limit configuration
@@ -131,24 +139,47 @@ interface RateLimitResult {
 }
 
 /**
- * Extracts client identifier from request
- * Tries multiple headers to find the real IP address
+ * Extracts client identifier from request with security validation
+ *
+ * Uses the secure IP validator to prevent IP spoofing attacks.
+ * Logs suspicious patterns for security monitoring.
  *
  * @param req - The incoming request
  * @returns Client identifier (IP address or 'unknown')
  */
 function getClientIdentifier(req: NextRequest): string {
-  // Try various headers for real IP (in order of preference)
-  const forwarded = req.headers.get('x-forwarded-for')
-  const realIp = req.headers.get('x-real-ip')
-  const cfIP = req.headers.get('cf-connecting-ip')
+  // Use the secure IP validator
+  const ip = getClientIpString(req)
 
-  if (forwarded) {
-    // x-forwarded-for can contain multiple IPs, take the first one
-    return forwarded.split(',')[0].trim()
+  // Log suspicious patterns for security monitoring
+  const xForwardedFor = req.headers.get('x-forwarded-for')
+  if (xForwardedFor) {
+    const claimedIps = xForwardedFor.split(',').map(s => s.trim())
+    const validatedIp = sanitizeIpAddress(claimedIps[0])
+
+    // Detect potential IP spoofing: claiming a private IP but resolved differently
+    if (validatedIp && isPrivateIp(validatedIp) && ip !== validatedIp && ip !== 'unknown') {
+      logSuspiciousPattern('rate_limit_xff_mismatch', ip, {
+        claimedIp: validatedIp,
+        resolvedIp: ip,
+        xForwardedFor,
+        endpoint: req.nextUrl.pathname,
+        reason: 'IP mismatch detected during rate limiting',
+      })
+    }
+
+    // Alert on unusually long proxy chains (potential manipulation)
+    if (claimedIps.length > 5) {
+      logSuspiciousPattern('rate_limit_long_chain', ip, {
+        chainLength: claimedIps.length,
+        xForwardedFor: xForwardedFor.substring(0, 200),
+        endpoint: req.nextUrl.pathname,
+        reason: 'Excessive X-Forwarded-For chain in rate-limited request',
+      })
+    }
   }
 
-  return realIp || cfIP || 'unknown'
+  return ip
 }
 
 /**
@@ -218,24 +249,22 @@ export async function applyRateLimit(
 
     if (!success) {
       // Rate limit exceeded
-      const errorResponse = NextResponse.json(
-        {
-          error: 'Rate limit exceeded',
-          message: config.message || 'Too many requests, please try again later',
-          type: 'https://vibecode.dev/errors/rate-limit-exceeded',
+      const errorResponse = createProblemResponse({
+        title: 'Rate limit exceeded',
+        status: 429,
+        detail: config.message || 'Too many requests, please try again later',
+        type: 'https://vibecode.dev/errors/rate-limit-exceeded',
+        code: 'RATE_LIMIT_EXCEEDED',
+        extensions: {
           retryAfter: config.windowSeconds,
         },
-        {
-          status: 429,
-          headers: {
-            'Content-Type': 'application/problem+json',
-            'Retry-After': config.windowSeconds.toString(),
-            'X-RateLimit-Limit': config.maxRequests.toString(),
-            'X-RateLimit-Remaining': '0',
-            'X-RateLimit-Reset': Math.floor(resetTime / 1000).toString(),
-          },
-        }
-      )
+        headers: {
+          'Retry-After': config.windowSeconds.toString(),
+          'X-RateLimit-Limit': config.maxRequests.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': Math.floor(resetTime / 1000).toString(),
+        },
+      })
 
       return {
         success: false,

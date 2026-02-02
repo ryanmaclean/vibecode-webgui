@@ -40,7 +40,7 @@ import { cn } from '@/lib/utils'
 // Type Definitions
 // ============================================================================
 
-interface AgentTemplate {
+export interface AgentTemplate {
   id: string
   name: string
   description: string
@@ -48,7 +48,7 @@ interface AgentTemplate {
   presetConfig: Partial<WizardData>
 }
 
-interface WizardData {
+export interface WizardData {
   template?: string
   name: string
   description: string
@@ -63,7 +63,7 @@ interface WizardData {
   maxTokens: number
 }
 
-interface CreateAgentWizardProps {
+export interface CreateAgentWizardProps {
   /** Callback when agent is created */
   onCreate?: (data: WizardData) => Promise<void>
   /** Callback when wizard is cancelled */

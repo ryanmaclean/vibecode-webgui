@@ -10,6 +10,9 @@ import * as os from 'os';
 import { checkMonitoringAuth, getUnauthorizedResponse } from '@/lib/monitoring/auth';
 // import { logger } from '@/lib/logger';
 import { z } from '@/lib/zod-compat';
+import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const apiRateLimit = createAPIRateLimit(120); // 120 requests per minute - monitoring data
 
 // In-memory metrics storage
 const metricsStore = {
@@ -26,12 +29,12 @@ const metricsStore = {
 const performanceMetricsSchema = z.object({
   type: z.literal('performance'),
   duration: z.number().min(0).max(300000), // Max 5 minutes
-  metrics: z.record(z.any()).optional()
+  metrics: z.record(z.string(), z.any()).optional()
 }).strict()
 
 const errorMetricsSchema = z.object({
   type: z.literal('error'),
-  metrics: z.record(z.any())
+  metrics: z.record(z.string(), z.any())
 }).strict()
 
 const historicalMetricsSchema = z.object({
@@ -42,6 +45,23 @@ const historicalMetricsSchema = z.object({
 
 // GET - Retrieve system and application metrics
 export async function GET(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication - only admins can view metrics
     const auth = await checkMonitoringAuth(request);
@@ -67,7 +87,6 @@ export async function GET(request: NextRequest) {
  */
 async function collectMetrics() {
   const cpuUsageRaw = process.cpuUsage();
-  const memUsage = process.memoryUsage();
   const totalMemory = os.totalmem();
   const freeMemory = os.freemem();
   const usedMemory = totalMemory - freeMemory;
@@ -103,7 +122,7 @@ async function collectMetrics() {
 /**
  * Health check endpoint (could be used for load balancer health checks)
  */
-export async function HEAD(request: NextRequest) {
+export async function HEAD() {
   try {
     // Perform basic health checks
     const isHealthy = await performHealthChecks();
@@ -156,6 +175,23 @@ async function performHealthChecks(): Promise<boolean> {
  * Record metrics from clients
  */
 export async function POST(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     // Check authentication - any authenticated user can post metrics (not just admins)
     const auth = await checkMonitoringAuth(request, false);
@@ -222,6 +258,23 @@ export async function POST(request: NextRequest) {
  * Get historical metrics for a time range
  */
 export async function PUT(request: NextRequest) {
+  // Rate limiting
+  const rateLimitResult = await apiRateLimit(request);
+  if (!rateLimitResult.success) {
+    return NextResponse.json(
+      { error: 'Too many requests' },
+      {
+        status: 429,
+        headers: {
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+          'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+          'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+        },
+      }
+    );
+  }
+
   try {
     const body = await request.json();
     
@@ -230,7 +283,7 @@ export async function PUT(request: NextRequest) {
     
     if (!validation.success) {
       return NextResponse.json(
-        { 
+        {
           error: 'Invalid request format',
           details: validation.error.issues.map(err => ({
             field: err.path.join('.'),
@@ -240,10 +293,10 @@ export async function PUT(request: NextRequest) {
         { status: 400 }
       );
     }
-    const { startTime, endTime, metricTypes } = validation.data;
+    const { startTime, endTime } = validation.data;
 
     // Get historical metrics from storage
-    const historicalMetrics = await getHistoricalMetrics(startTime, endTime, metricTypes);
+    const historicalMetrics = await getHistoricalMetrics(startTime, endTime);
 
     return NextResponse.json({
       metrics: historicalMetrics,
@@ -265,8 +318,7 @@ export async function PUT(request: NextRequest) {
  */
 async function getHistoricalMetrics(
   startTime: string,
-  endTime: string,
-  metricTypes?: string[]
+  endTime: string
 ): Promise<any[]> {
   // This would integrate with your metrics storage system
   // For now, return mock historical data

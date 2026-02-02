@@ -36,3 +36,16 @@ declare module 'langchain/vectorstores/base' {
     }>): Promise<void>;
   }
 }
+
+declare module 'langchain/document' {
+  export interface DocumentMetadata {
+    source?: string;
+    [key: string]: string | number | boolean | null | undefined;
+  }
+
+  export class Document {
+    pageContent: string;
+    metadata: DocumentMetadata;
+    constructor(fields: { pageContent: string; metadata?: DocumentMetadata });
+  }
+}

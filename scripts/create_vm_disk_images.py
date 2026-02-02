@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Create VM Disk Images for Distribution
 
@@ -36,6 +48,18 @@ class VMImageBuilder:
     def __init__(self, output_dir: Path):
         self.output_dir = output_dir
         self.output_dir.mkdir(parents=True, exist_ok=True)
+        self.efi_helper = Path(__file__).parent / "vfkit" / "create-efi-variable-store.sh"
+
+    def _create_efi_variable_store(self, efi_dest: Path) -> bool:
+        if not self.efi_helper.exists():
+            return False
+
+        result = subprocess.run(["bash", str(self.efi_helper), str(efi_dest)])
+        if result.returncode == 0:
+            return True
+
+        logger.warning("⚠️  EFI helper failed; falling back to Lima NVRAM.")
+        return False
     
     def create_alpine_valkey(self) -> bool:
         """Create Alpine Linux VM with Valkey."""
@@ -101,9 +125,10 @@ class VMImageBuilder:
         subprocess.run(["cp", str(lima_disk), str(output_file)], check=True)
         
         # Create EFI NVRAM
-        efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
         efi_dest = self.output_dir / f"{vm_name}-efi.nvram"
-        subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
+        if not self._create_efi_variable_store(efi_dest):
+            efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
+            subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
         
         # Cleanup Lima VM
         logger.info("🧹 Cleaning up...")
@@ -168,9 +193,10 @@ class VMImageBuilder:
         output_file = self.output_dir / f"{vm_name}.img"
         subprocess.run(["cp", str(lima_disk), str(output_file)], check=True)
         
-        efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
         efi_dest = self.output_dir / f"{vm_name}-efi.nvram"
-        subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
+        if not self._create_efi_variable_store(efi_dest):
+            efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
+            subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
         
         logger.info("🧹 Cleaning up...")
         subprocess.run(["limactl", "delete", vm_name], capture_output=True)
@@ -232,9 +258,10 @@ class VMImageBuilder:
         output_file = self.output_dir / f"{vm_name}.img"
         subprocess.run(["cp", str(lima_disk), str(output_file)], check=True)
         
-        efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
         efi_dest = self.output_dir / f"{vm_name}-efi.nvram"
-        subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
+        if not self._create_efi_variable_store(efi_dest):
+            efi_source = Path.home() / ".lima" / vm_name / "vz-efi"
+            subprocess.run(["cp", str(efi_source), str(efi_dest)], check=True)
         
         logger.info("🧹 Cleaning up...")
         subprocess.run(["limactl", "delete", vm_name], capture_output=True)
@@ -287,4 +314,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

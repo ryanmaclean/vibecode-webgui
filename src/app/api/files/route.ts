@@ -11,6 +11,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { getFileSystemInstance } from '@/lib/file-system-operations'
 import type { FileSystemConfig } from '@/lib/file-system-operations'
+import { createFileRateLimit, createAPIRateLimit } from '@/lib/rate-limiting'
 import {
   validateQueryParams,
   validateRequestBody
@@ -21,12 +22,74 @@ import {
   fileUpdateSchema,
   fileDeleteSchema
 } from '@/lib/api/validation/schemas'
+import { hasWorkspaceAccess as checkWorkspaceAccess } from '@/lib/auth/workspace-access'
 
 // Force dynamic rendering to prevent static analysis during build
 export const dynamic = 'force-dynamic'
 
-export async function GET(request: NextRequest) {
+const fileRateLimiter = createFileRateLimit()
+const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute
+type FileRateLimitResult = Awaited<ReturnType<typeof fileRateLimiter>>
+
+function applyFileRateLimitHeaders(response: NextResponse, info: FileRateLimitResult): NextResponse {
+  response.headers.set('X-RateLimit-Limit', info.limit.toString())
+  response.headers.set('X-RateLimit-Remaining', info.remaining.toString())
+  response.headers.set('X-RateLimit-Reset', info.reset.toString())
+  return response
+}
+
+function buildFileRateLimitResponse(info: FileRateLimitResult): NextResponse {
+  const retryAfter = info.retryAfter ?? 60
+  return applyFileRateLimitHeaders(
+    NextResponse.json(
+      {
+        error: 'File API rate limit exceeded',
+        retryAfter
+      },
+      {
+        status: 429,
+        headers: {
+          'Retry-After': retryAfter.toString()
+        }
+      }
+    ),
+    info
+  )
+}
+
+function withFileRateLimit(
+  handler: (request: NextRequest) => Promise<NextResponse>
+) {
+  return async (request: NextRequest): Promise<NextResponse> => {
+    const rateInfo = await fileRateLimiter(request)
+    if (!rateInfo.success) {
+      return buildFileRateLimitResponse(rateInfo)
+    }
+
+    const response = await handler(request)
+    return applyFileRateLimitHeaders(response, rateInfo)
+  }
+}
+
+async function handleGET(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {
@@ -134,8 +197,25 @@ export async function GET(request: NextRequest) {
   }
 }
 
-export async function POST(request: NextRequest) {
+async function handlePOST(request: NextRequest) {
   try {
+    // Rate limit check at the start before authentication
+    const rateLimitResult = await apiRateLimit(request)
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests' },
+        {
+          status: 429,
+          headers: {
+            'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+            'X-RateLimit-Remaining': rateLimitResult.remaining.toString(),
+            'X-RateLimit-Reset': rateLimitResult.reset.toString(),
+            'Retry-After': rateLimitResult.retryAfter?.toString() ?? '60',
+          },
+        }
+      )
+    }
+
     // Authenticate user
     const session = await getServerSession()
     if (!session?.user?.id) {
@@ -244,7 +324,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-export async function PUT(request: NextRequest) {
+async function handlePUT(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -323,7 +403,7 @@ export async function PUT(request: NextRequest) {
   }
 }
 
-export async function DELETE(request: NextRequest) {
+async function handleDELETE(request: NextRequest) {
   try {
     // Authenticate user
     const session = await getServerSession()
@@ -389,30 +469,52 @@ export async function DELETE(request: NextRequest) {
   }
 }
 
-export async function OPTIONS(_request: NextRequest) {
-  return new NextResponse(null, {
-    status: 200,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
-    },
-  })
+export const GET = withFileRateLimit(handleGET)
+export const POST = withFileRateLimit(handlePOST)
+export const PUT = withFileRateLimit(handlePUT)
+export const DELETE = withFileRateLimit(handleDELETE)
+
+function getAllowedOrigins(): string[] {
+  const envOrigins = process.env.ALLOWED_ORIGINS
+  if (envOrigins) {
+    return envOrigins.split(',').map(origin => origin.trim()).filter(Boolean)
+  }
+  return ['https://vibecode.dev', 'http://localhost:3000', 'http://localhost:8080']
+}
+
+function getValidatedCorsOrigin(requestOrigin: string | null): string | null {
+  if (!requestOrigin) return null
+  const allowedOrigins = getAllowedOrigins()
+  if (allowedOrigins.includes(requestOrigin)) return requestOrigin
+  return null
+}
+
+export async function OPTIONS(request: NextRequest) {
+  const requestOrigin = request.headers.get('origin')
+  const validatedOrigin = getValidatedCorsOrigin(requestOrigin)
+  const headers: Record<string, string> = {
+    'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+    'Access-Control-Max-Age': '3600',
+  }
+  if (validatedOrigin) {
+    headers['Access-Control-Allow-Origin'] = validatedOrigin
+    headers['Vary'] = 'Origin'
+  }
+  return new NextResponse(null, { status: 200, headers })
 }
 
 /**
  * Validate user access to workspace
+ * Uses the workspace-access module for proper database-backed authorization
  */
 async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<boolean> {
-  // TODO: Implement proper workspace access validation
-  // This should check database for user permissions to workspace
-
-  // For now, basic validation
+  // Basic input validation
   if (!userId || !workspaceId) {
     return false
   }
 
-  // Validate format
+  // Format validation to prevent injection
   if (!/^[a-zA-Z0-9_-]+$/.test(workspaceId) || workspaceId.length > 50) {
     return false
   }
@@ -421,13 +523,24 @@ async function hasWorkspaceAccess(userId: string, workspaceId: string): Promise<
     return false
   }
 
-  // TODO: Add database query to check user_workspaces table
-  // Example:
-  // const access = await db.query(
-  //   'SELECT 1 FROM user_workspaces WHERE user_id = $1 AND workspace_id = $2',
-  //   [userId, workspaceId]
-  // )
-  // return access.rows.length > 0
+  try {
+    // Convert userId to number for the workspace access check
+    // The workspace-access module expects numeric user IDs from the database
+    const userIdNum = parseInt(userId, 10)
 
-  return true // Temporary - allow all access for development
+    // If userId is not a valid number or is non-positive, deny access
+    // This prevents security issues with invalid user IDs
+    if (isNaN(userIdNum) || userIdNum <= 0) {
+      console.warn('Invalid numeric userId for workspace access check:', userId)
+      return false
+    }
+
+    // Use the proper workspace access check with database validation
+    // This checks the workspace_members table for active membership
+    return await checkWorkspaceAccess(userIdNum, workspaceId)
+  } catch (error) {
+    // Log error but fail closed (deny access) for security
+    console.error('Workspace access validation error:', error)
+    return false
+  }
 }

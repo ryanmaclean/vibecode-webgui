@@ -289,5 +289,4 @@ export function createDatadogEbpfIntegration(config: EbpfMetricConfig): DatadogE
   return new DatadogEbpfIntegration(config);
 }
 
-// Export types for external use
-export type { VmLifecycleEvent, NetworkEvent, EbpfMetricConfig };
+// Types VmLifecycleEvent, NetworkEvent, and EbpfMetricConfig are exported via their interface declarations above

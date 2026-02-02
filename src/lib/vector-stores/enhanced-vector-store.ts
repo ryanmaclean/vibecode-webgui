@@ -3,11 +3,16 @@
  * Advanced vector database operations with intelligent provider selection and optimization
  */
 
-import { VectorChunk, SearchResult, SearchOptions } from '../vector-db/vector-types';
-import { PostgresVectorDatabaseAdapter } from '../vector-db/postgres-vector-database-adapter';
-import { RedisVectorDatabaseAdapter } from '../vector-db/redis-vector-database-adapter';
-import { SqlServerVectorDatabaseAdapter } from '../vector-db/sqlserver-vector-database-adapter';
-import { CosmosDbVectorDatabaseAdapter } from '../vector-db/cosmosdb-vector-database-adapter';
+import { SearchResult, SearchOptions } from '../vector-db/vector-types';
+
+// Export SearchOptions as UnifiedSearchOptions for backward compatibility with sharding extension
+export type UnifiedSearchOptions = SearchOptions;
+// PostgresVectorDatabaseAdapter import available but not yet used in simulated setup
+// import { PostgresVectorDatabaseAdapter } from '../vector-db/postgres-vector-database-adapter';
+// Future adapter imports (modules do not exist yet):
+// import { RedisVectorDatabaseAdapter } from '../vector-db/redis-vector-database-adapter';
+// import { SqlServerVectorDatabaseAdapter } from '../vector-db/sqlserver-vector-database-adapter';
+// import { CosmosDbVectorDatabaseAdapter } from '../vector-db/cosmosdb-vector-database-adapter';
 
 export interface VectorStoreConfig {
   primaryProvider: 'postgres' | 'redis' | 'sqlserver' | 'cosmosdb';
@@ -35,6 +40,8 @@ export interface SearchContext {
   searchIntent?: 'semantic' | 'hybrid' | 'keyword' | 'generative';
   complexity?: 'simple' | 'moderate' | 'complex';
   urgency?: 'low' | 'normal' | 'high';
+  /** Internal: used for fallback provider routing */
+  _useProvider?: string;
 }
 
 /**
@@ -362,7 +369,7 @@ export class EnhancedVectorStore {
    * Search with fallback provider on failure
    */
   private async searchWithFallback(
-    query: string | number[],
+    query: string,
     options: SearchOptions,
     context: SearchContext,
     failedProvider: string
