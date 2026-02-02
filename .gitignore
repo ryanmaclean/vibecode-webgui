@@ -384,6 +384,9 @@ USER_GUIDE_*.md
 PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
 
+.beads/
+=======
+
 # Gas Town local runtime
 .beads/
 .runtime/
@@ -408,4 +411,3 @@ daemon/
 # Legacy dispatch scripts (replaced by Python tooling)
 scripts/assign-issues-to-polecats.sh
 scripts/assign-all-to-polecats.sh
-
