@@ -1,0 +1,9 @@
+ddtrace>=2.0.0
+opentelemetry-api>=1.20.0
+opentelemetry-sdk>=1.20.0
+requests>=2.31.0
+pytest>=7.4.0
+requests
+PyYAML
+datadog
+libevdev

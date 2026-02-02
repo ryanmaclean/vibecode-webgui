@@ -1,10 +1,7 @@
 use tauri::{command, AppHandle, WebviewUrl, WebviewWindowBuilder};
 
 #[command]
-pub async fn open_browser_window(
-    app: AppHandle,
-    url: String,
-) -> Result<(), String> {
+pub async fn open_browser_window(app: AppHandle, url: String) -> Result<(), String> {
     let timestamp = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
@@ -15,7 +12,7 @@ pub async fn open_browser_window(
     WebviewWindowBuilder::new(
         &app,
         format!("browser_{}", timestamp),
-        WebviewUrl::External(parsed_url)
+        WebviewUrl::External(parsed_url),
     )
     .title("VibeCode Browser")
     .resizable(true)

@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
+
+
 """Network utilities for Alpine VM setup.
 
 Includes fast downloads with aria2c and DNS testing.
 """
 
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
 
 import shutil
 import subprocess

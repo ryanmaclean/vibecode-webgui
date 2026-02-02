@@ -47,8 +47,10 @@ export const prisma = prismaClient
 
 // Middleware for Datadog monitoring (only when not building)
 // Note: $use middleware is deprecated in Prisma 5+, using extensions instead
-if (!isBuilding && typeof (prisma as any).$use === 'function') {
-  (prisma as any).$use(async (params: any, next: any) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
+if (!isBuilding && typeof (prisma as unknown as { $use?: unknown }).$use === 'function') {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any -- deprecated Prisma middleware API
+  (prisma as unknown as { $use: (fn: (params: { action: string; model?: string }, next: (params: unknown) => Promise<unknown>) => Promise<unknown>) => void }).$use(async (params, next) => {
     const startTime = Date.now()
     const span = tracer?.startSpan?.('prisma.query', {
       tags: {
@@ -84,7 +86,7 @@ if (!isBuilding && typeof (prisma as any).$use === 'function') {
       })
       
       if (span) {
-        span.setTag('db.rows_affected', result?.count)
+        span.setTag('db.rows_affected', (result as { count?: number } | null)?.count)
         span.finish()
       }
       

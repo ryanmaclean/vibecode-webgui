@@ -1,7 +1,27 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Enhanced VM Manager - Incorporating VirtualBuddy and Viable best practices
 """
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 
 import os
 import subprocess
@@ -232,7 +252,7 @@ class EnhancedVMManager:
                 for i, opt in enumerate(options):
                     marker = "▸" if i == idx else " "
                     # Disable based on state
-                    if opt == "Start" and vm["status"]] == "running":
+                    if opt == "Start" and vm["status"] == "running":
                         opt = term.dim("Start (already running)")
                     elif opt == "Stop" and vm["status"] != "running":
                         opt = term.dim("Stop (not running)")

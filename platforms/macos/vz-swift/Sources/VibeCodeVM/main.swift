@@ -79,9 +79,15 @@ struct VibeCodeVM {
                 diskPath: vmDir,
                 alpineISO: nil // Set to Alpine ISO path if installing
             )
+        case "openclaw":
+            print("🦞 Creating OpenClaw Tiny macOS VM...")
+            return try await OpenClawVMConfiguration.create(
+                name: name,
+                diskPath: vmDir
+            )
         default:
             throw NSError(domain: "VibeCodeVM", code: 1, userInfo: [
-                NSLocalizedDescriptionKey: "Unknown VM type: \(type). Use: linux, windows, or macos"
+                NSLocalizedDescriptionKey: "Unknown VM type: \(type). Use: linux, windows, macos, or openclaw"
             ])
         }
     }

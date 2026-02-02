@@ -36,8 +36,7 @@ pub struct VibeCodeService {
 impl VibeCodeService {
     /// Create a new VibeCode service instance
     pub fn new(user_name: &str) -> Result<Self, MdnsError> {
-        let daemon = ServiceDaemon::new()
-            .map_err(|e| MdnsError::DaemonCreation(e.to_string()))?;
+        let daemon = ServiceDaemon::new().map_err(|e| MdnsError::DaemonCreation(e.to_string()))?;
 
         let service_name = format!("{}'s VibeCode", user_name);
 
@@ -59,10 +58,7 @@ impl VibeCodeService {
             .to_string();
 
         // Create service properties
-        let properties = [
-            ("version", "1.0.0"),
-            ("protocol", "http"),
-        ];
+        let properties = [("version", "1.0.0"), ("protocol", "http")];
 
         let service_info = ServiceInfo::new(
             service_type,
@@ -120,7 +116,8 @@ impl VibeCodeService {
 
     /// Shutdown the mDNS daemon
     pub fn shutdown(&self) -> Result<(), MdnsError> {
-        let _receiver = self.daemon
+        let _receiver = self
+            .daemon
             .shutdown()
             .map_err(|e| MdnsError::DaemonCreation(format!("Shutdown failed: {}", e)))?;
         Ok(())

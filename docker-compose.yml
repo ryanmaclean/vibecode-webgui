@@ -1,60 +1,33 @@
 version: '3.8'
 
 services:
-  # VibeCode WebGUI Application
-  webgui:
-    build: .
+  # The Brain: OpenClaw Gateway
+  openclaw:
+    image: openclaw/gateway:latest
+    container_name: openclaw-gateway
     ports:
-      - "3000:3000"
-    env_file:
-      - .env.docker
+      - "18789:18789" # API Port
     environment:
-      - DATABASE_URL=postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/vibecode
-      - NEXTAUTH_SECRET=${NEXTAUTH_SECRET}
-      - NEXTAUTH_URL=${NEXTAUTH_URL:-http://localhost:3000}
-      - NODE_ENV=production
-      - NEXT_TELEMETRY_DISABLED=1
-    depends_on:
-      - postgres
-      - redis
-    restart: unless-stopped
-
-  # PostgreSQL Database with pgvector
-  postgres:
-    image: pgvector/pgvector:pg17
-    environment:
-      - POSTGRES_DB=vibecode
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - OPENCLAW_ENV=production
+      - OPENCLAW_AUTH_TOKEN=${OPENCLAW_AUTH_TOKEN:-openclaw-local}
+      - DD_SERVICE=openclaw
+      - DD_ENV=${DD_ENV:-local}
+      - DD_VERSION=${OPENCLAW_VERSION:-unknown}
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./prisma/schema.prisma:/docker-entrypoint-initdb.d/schema.prisma
-    ports:
-      - "5432:5432"
+      - ./data/openclaw:/root/.openclaw
     restart: unless-stopped
+    networks:
+      - vibecode-net
 
-  # Valkey for caching and sessions (Redis-compatible)
+  # Optional: Redis for caching/state
   redis:
-    image: valkey/valkey:8.1-alpine
+    image: redis:alpine
+    container_name: vibecode-redis
     ports:
       - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
+    networks:
+      - vibecode-net
 
-  # Nginx reverse proxy
-  nginx:
-    image: nginx:alpine
-    ports:
-      - "80:80"
-      - "443:443"
-    volumes:
-      - ./nginx.conf:/etc/nginx/nginx.conf
-      - ./ssl:/etc/nginx/ssl
-    depends_on:
-      - webgui
-    restart: unless-stopped
-
-volumes:
-  postgres_data:
-  redis_data:
+networks:
+  vibecode-net:
+    driver: bridge

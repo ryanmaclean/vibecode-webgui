@@ -1,7 +1,27 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Quick 5-minute intensive monitoring with 15-second intervals
 """
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 
 import subprocess
 import time

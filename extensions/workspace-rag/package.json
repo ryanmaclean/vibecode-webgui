@@ -1,49 +1,58 @@
 {
   "name": "workspace-rag",
-  "displayName": "Workspace RAG with MLX",
-  "description": "Workspace-aware RAG extension using local pgvector and MLX for embeddings",
-  "version": "1.0.0",
+  "displayName": "Workspace RAG",
+  "description": "Workspace-aware RAG assistant backed by local pgvector and ddtrace observability.",
+  "version": "0.1.0",
   "publisher": "vibecode",
   "engines": {
     "vscode": "^1.85.0"
   },
-  "categories": [
-    "Machine Learning",
-    "Other"
-  ],
+  "categories": ["Other", "AI"],
   "activationEvents": [
-    "onStartupFinished"
+    "onCommand:workspace-rag.indexWorkspace",
+    "onCommand:workspace-rag.openRagChat",
+    "onView:workspace-rag.chatView"
   ],
   "main": "./dist/extension.js",
   "contributes": {
     "commands": [
       {
         "command": "workspace-rag.indexWorkspace",
-        "title": "Index Workspace for RAG",
-        "category": "RAG"
+        "title": "Workspace RAG: Index Workspace",
+        "category": "Workspace RAG"
       },
       {
         "command": "workspace-rag.openRagChat",
-        "title": "Open RAG Chat",
-        "category": "RAG"
+        "title": "Workspace RAG: Open Chat",
+        "category": "Workspace RAG"
       },
       {
         "command": "workspace-rag.setApiKey",
-        "title": "Set OpenAI API Key (Optional Fallback)",
-        "category": "RAG"
+        "title": "Workspace RAG: Set OpenAI API Key",
+        "category": "Workspace RAG"
+      },
+      {
+        "command": "workspace-rag.explainCode",
+        "title": "Workspace RAG: Explain Selected Code",
+        "category": "Workspace RAG"
       },
       {
         "command": "workspace-rag.showDashboard",
-        "title": "Show Performance Dashboard",
-        "category": "RAG"
+        "title": "Workspace RAG: Show Cost Dashboard",
+        "category": "Workspace RAG"
+      },
+      {
+        "command": "workspace-rag.setBudget",
+        "title": "Workspace RAG: Set Token Budget",
+        "category": "Workspace RAG"
       }
     ],
     "views": {
       "explorer": [
         {
-          "type": "webview",
           "id": "workspace-rag.chatView",
-          "name": "RAG Chat",
+          "name": "Workspace RAG Chat",
+          "type": "webview",
           "when": "workspaceFolderCount > 0"
         }
       ]
@@ -54,213 +63,136 @@
         "workspaceRag.pgHost": {
           "type": "string",
           "default": "localhost",
-          "description": "Hostname for PostgreSQL server"
+          "description": "Hostname for the pgvector-enabled PostgreSQL server."
         },
         "workspaceRag.pgPort": {
           "type": "number",
           "default": 5432,
-          "description": "Port for PostgreSQL server"
+          "description": "Port for the PostgreSQL server."
         },
         "workspaceRag.pgUser": {
           "type": "string",
           "default": "postgres",
-          "description": "Username for PostgreSQL"
+          "description": "PostgreSQL user name."
         },
         "workspaceRag.pgPassword": {
           "type": "string",
-          "default": "",
-          "description": "Password for PostgreSQL"
+          "default": "postgres",
+          "description": "PostgreSQL password",
+          "pattern": "^(?!\\s*$).+",
+          "patternErrorMessage": "Password cannot be empty"
         },
         "workspaceRag.pgDatabase": {
           "type": "string",
-          "default": "rag_db",
-          "description": "Database name for storing vectors"
+          "default": "workspace_rag",
+          "description": "Database used for storing workspace embeddings."
         },
         "workspaceRag.includeGlob": {
           "type": "string",
-          "default": "**/*.{js,ts,jsx,tsx,py,md,txt,json,go,java,c,cpp,h,cs,rb,php,rs}",
-          "description": "Glob pattern for files to include in indexing"
+          "default": "**/*.{js,ts,jsx,tsx,py,md,txt,json,go,java,rb,rs}",
+          "description": "Glob pattern describing files to include when indexing."
         },
         "workspaceRag.excludeGlob": {
           "type": "string",
-          "default": "**/node_modules/**,**/dist/**,**/.git/**,**/venv/**,**/.vscode/**,**/build/**,**/target/**",
-          "description": "Glob pattern for files to exclude from indexing"
+          "default": "**/{node_modules,dist,.git,.next,.turbo,.venv,.vscode}/**",
+          "description": "Glob pattern describing files to exclude when indexing."
         },
         "workspaceRag.chunkSize": {
           "type": "number",
           "default": 1000,
-          "description": "Maximum size (in characters) for text chunks",
-          "minimum": 100,
-          "maximum": 5000
-        },
-        "workspaceRag.chunkOverlap": {
-          "type": "number",
-          "default": 100,
-          "description": "Overlap size between chunks"
+          "description": "Maximum characters per text chunk sent to the embedding model."
         },
         "workspaceRag.embeddingModel": {
           "type": "string",
           "default": "text-embedding-3-small",
-          "description": "OpenAI embedding model to use (fallback)",
-          "enum": [
-            "text-embedding-3-small",
-            "text-embedding-3-large",
-            "text-embedding-ada-002"
-          ]
+          "description": "Embedding model identifier."
+        },
+        "workspaceRag.chatModel": {
+          "type": "string",
+          "default": "gpt-4o-mini",
+          "description": "Chat completion model used for answering questions."
         },
         "workspaceRag.retrievalLimit": {
           "type": "number",
           "default": 5,
-          "description": "Number of top results to retrieve",
-          "minimum": 1,
-          "maximum": 20
-        },
-        "workspaceRag.useLocalMLX": {
-          "type": "boolean",
-          "default": true,
-          "description": "Use local MLX models when available (Apple Silicon only)"
-        },
-        "workspaceRag.debugMode": {
-          "type": "boolean",
-          "default": false,
-          "description": "Enable debug logging"
-        },
-        "workspaceRag.llmProvider": {
-          "type": "string",
-          "default": "openai",
-          "description": "LLM provider for answer generation",
-          "enum": [
-            "openai",
-            "anthropic",
-            "google",
-            "openrouter"
-          ]
-        },
-        "workspaceRag.openaiModel": {
-          "type": "string",
-          "default": "gpt-4-turbo-preview",
-          "description": "OpenAI model to use"
-        },
-        "workspaceRag.openaiBaseURL": {
-          "type": "string",
-          "description": "Custom OpenAI API base URL (optional)"
-        },
-        "workspaceRag.anthropicModel": {
-          "type": "string",
-          "default": "claude-3-5-sonnet-20241022",
-          "description": "Anthropic model to use"
-        },
-        "workspaceRag.anthropicBaseURL": {
-          "type": "string",
-          "description": "Custom Anthropic API base URL (optional)"
-        },
-        "workspaceRag.googleModel": {
-          "type": "string",
-          "default": "gemini-1.5-pro-latest",
-          "description": "Google Gemini model to use"
-        },
-        "workspaceRag.googleBaseURL": {
-          "type": "string",
-          "description": "Custom Google API base URL (optional)"
-        },
-        "workspaceRag.openrouterModel": {
-          "type": "string",
-          "default": "anthropic/claude-3.5-sonnet",
-          "description": "OpenRouter model to use"
-        },
-        "workspaceRag.openrouterBaseURL": {
-          "type": "string",
-          "description": "Custom OpenRouter API base URL (optional)"
-        },
-        "workspaceRag.llmTimeout": {
-          "type": "number",
-          "default": 30000,
-          "description": "LLM request timeout in milliseconds"
-        },
-        "workspaceRag.llmMaxRetries": {
-          "type": "number",
-          "default": 3,
-          "description": "Maximum number of retries for failed LLM requests"
+          "description": "Number of chunks retrieved from pgvector per question."
         },
         "workspaceRag.tracing.enabled": {
           "type": "boolean",
           "default": false,
-          "description": "Enable distributed tracing with ddtrace"
+          "description": "Enable ddtrace-based distributed tracing."
         },
         "workspaceRag.tracing.sampleRate": {
           "type": "number",
           "default": 0.1,
-          "description": "Sampling rate for traces (0.1 = 10%)",
-          "minimum": 0,
-          "maximum": 1
+          "description": "Trace sampling rate (0-1)."
         },
         "workspaceRag.tracing.debug": {
           "type": "boolean",
           "default": false,
-          "description": "Enable debug mode for tracing"
+          "description": "Enable verbose tracing logs."
         },
         "workspaceRag.tracing.exporters": {
           "type": "array",
-          "default": [
-            "console"
-          ],
-          "description": "Trace exporters",
+          "default": ["console"],
+          "description": "Trace exporters (console, datadog, jaeger)",
           "items": {
             "type": "string",
-            "enum": [
-              "console",
-              "datadog",
-              "jaeger"
-            ]
+            "enum": ["console", "datadog", "jaeger"]
           }
         },
-        "workspaceRag.tracing.datadogApiKey": {
-          "type": "string",
-          "default": "",
-          "description": "DataDog API key for trace export"
+        "workspaceRag.tracing.datadog": {
+          "type": "object",
+          "description": "DataDog specific configuration",
+          "properties": {
+            "apiKey": {
+              "type": "string",
+              "description": "DataDog API key for trace export"
+            },
+            "site": {
+              "type": "string",
+              "default": "datadoghq.com",
+              "description": "DataDog site URL"
+            }
+          }
         },
-        "workspaceRag.tracing.datadogSite": {
-          "type": "string",
-          "default": "datadoghq.com",
-          "description": "DataDog site URL"
+        "workspaceRag.tracing.jaeger": {
+          "type": "object",
+          "description": "Jaeger specific configuration",
+          "properties": {
+            "endpoint": {
+              "type": "string",
+              "default": "http://localhost:14268/api/traces",
+              "description": "Jaeger collector endpoint"
+            }
+          }
+        },
+        "workspaceRag.useMLX": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use MLX for local embedding generation (Apple Silicon only)"
         }
       }
     }
   },
   "scripts": {
-    "vscode:prepublish": "npm run package",
-    "compile": "webpack",
-    "watch": "webpack --watch",
-    "package": "webpack --mode production --devtool hidden-source-map",
-    "pretest": "npm run compile-tests",
-    "test": "node ./out/test/runTest.js",
-    "test:unit": "mocha --require ts-node/register 'src/test/**/*.test.ts'",
-    "compile-tests": "tsc -p ./",
+    "build": "esbuild src/extension.ts --bundle --outfile=dist/extension.js --external:vscode --external:dd-trace --format=cjs --platform=node --target=node18",
+    "watch": "npm run build -- --watch",
     "lint": "eslint src --ext ts",
-    "lint:fix": "eslint src --ext ts --fix"
+    "package": "npm run build && npx vsce package --baseContentUrl https://github.com/ryanmaclean/vibecode-webgui/blob/main/extensions/workspace-rag --baseImagesUrl https://github.com/ryanmaclean/vibecode-webgui/raw/main/extensions/workspace-rag",
+    "compile": "tsc -p ./"
   },
   "dependencies": {
-    "dd-trace": "^5.0.0",
-    "openai": "^4.20.1",
+    "dd-trace": "^5.72.0",
+    "openai": "^4.73.0",
     "pg": "^8.11.3"
   },
   "devDependencies": {
-    "@types/glob": "^8.1.0",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^18.19.0",
-    "@types/pg": "^8.10.0",
+    "@types/node": "^20.11.30",
+    "@types/pg": "^8.15.4",
     "@types/vscode": "^1.85.0",
-    "@typescript-eslint/eslint-plugin": "^6.15.0",
-    "@typescript-eslint/parser": "^6.15.0",
-    "@vscode/test-electron": "^2.3.8",
-    "eslint": "^8.56.0",
-    "glob": "^11.1.0",
-    "mocha": "^10.2.0",
-    "ts-loader": "^9.5.1",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.3.3",
-    "webpack": "^5.89.0",
-    "webpack-cli": "^5.1.4"
+    "esbuild": "^0.25.0",
+    "typescript": "^5.3.3"
   },
   "repository": {
     "type": "git",
@@ -272,3 +204,4 @@
     "url": "https://github.com/ryanmaclean/vibecode-webgui/issues"
   }
 }
+

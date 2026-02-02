@@ -49,11 +49,11 @@ struct VolumeMount: Codable, Sendable {
 
 // MARK: - Container Model
 
-class Container: Codable {
+final class Container: Codable, @unchecked Sendable {
     let id: String
     let name: String
     let image: String
-    let vm: VZVirtualMachine
+    var vm: VZVirtualMachine?
     let config: ContainerConfiguration
     let directory: URL
     let created: Date
@@ -64,7 +64,7 @@ class Container: Codable {
         id: String,
         name: String,
         image: String,
-        vm: VZVirtualMachine,
+        vm: VZVirtualMachine?,
         config: ContainerConfiguration,
         directory: URL
     ) {
@@ -96,8 +96,8 @@ class Container: Codable {
         self.state = try container.decode(ContainerState.self, forKey: .state)
         self.ipAddress = try container.decodeIfPresent(String.self, forKey: .ipAddress)
 
-        // VM needs to be reconstructed
-        self.vm = VZVirtualMachine(configuration: VZVirtualMachineConfiguration())
+        // VM cannot be reconstructed from metadata alone
+        self.vm = nil
     }
 
     func encode(to encoder: Encoder) throws {

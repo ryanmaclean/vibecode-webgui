@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Changelog Helper Script
 
@@ -7,6 +19,14 @@ Converts changelog-helper.sh to Python with proper error handling.
 
 Usage: python changelog_helper.py [previous_tag] [current_tag]
 """
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 
 import argparse
 import re

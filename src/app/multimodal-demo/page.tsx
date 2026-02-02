@@ -360,11 +360,11 @@ export default function MultimodalDemoPage() {
             <Card className="h-[600px]">
               <CardContent className="p-0 h-full">
                 <MultimodalPromptInterface
-                  {...({
-                    agent,
-                    onMessage: handleMessage,
-                    onSampleRun: handleSampleRun
-                  } as any)}
+                  onSubmit={async (messages) => {
+                    handleMessage(messages);
+                  }}
+                  enableVoice={true}
+                  enableImages={true}
                 />
               </CardContent>
             </Card>

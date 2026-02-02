@@ -1,5 +1,8 @@
 #!/usr/bin/env python3
 
+<<<<<<< HEAD
+
+
 # Datadog APM tracing
 try:
     import ddtrace
@@ -8,8 +11,28 @@ except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 """Read benchmark JSON output and emit DogStatsD metrics."""
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 
 import argparse
 import json
@@ -17,15 +40,6 @@ import os
 import sys
 from pathlib import Path
 
-try:
-  from ._dogstatsd import DogStatsDSender, emit_duration_metrics
-except ImportError:  # pragma: no cover - fallback when run as script
-  sys.path.append(str(Path(__file__).resolve().parent))
-  from _dogstatsd import DogStatsDSender, emit_duration_metrics
-
-
-class EmitError(RuntimeError):
-  pass
 
 
 def load_results(path: Path) -> list[dict]:
@@ -47,6 +61,7 @@ def load_results(path: Path) -> list[dict]:
   raise EmitError("Unsupported JSON structure; expected dict/list with 'results' entries")
 
 
+<<<<<<< HEAD
 def summarise(entry: dict) -> str:
   return (
       f"{entry['label']}: avg={entry['avg_seconds']:.4f}s"
@@ -103,3 +118,5 @@ if __name__ == "__main__":
   except json.JSONDecodeError as exc:
     print(f"error parsing JSON: {exc}", file=sys.stderr)
     sys.exit(2)
+=======
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

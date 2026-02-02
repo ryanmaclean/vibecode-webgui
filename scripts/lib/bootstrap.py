@@ -1,9 +1,34 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """Shared bootstrap helpers for scripts living under scripts/ops and scripts/tests.
 
 Provides a consistent way to derive SCRIPTS_ROOT and LIB_DIR.
 """
 
+<<<<<<< HEAD
+=======
+from __future__ import annotations
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 import os
 import sys
 from pathlib import Path

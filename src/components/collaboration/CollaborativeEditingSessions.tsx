@@ -463,7 +463,7 @@ function CollaborativeEditingSessionsContent({
                       ...prev,
                       permissions: {
                         ...prev.permissions!,
-                        editMode: e.target.value as SessionPermissions['editMode']
+                        editMode: e.target.value as SessionPermissions["editMode"]
                       }
                     }))}
                     className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white"

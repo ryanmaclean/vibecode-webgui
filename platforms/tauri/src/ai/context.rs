@@ -148,7 +148,9 @@ impl ContextManager {
             ProjectType::NodeJS
         } else if root_path.join("Cargo.toml").exists() {
             ProjectType::Rust
-        } else if root_path.join("requirements.txt").exists() || root_path.join("pyproject.toml").exists() {
+        } else if root_path.join("requirements.txt").exists()
+            || root_path.join("pyproject.toml").exists()
+        {
             ProjectType::Python
         } else if root_path.join("go.mod").exists() {
             ProjectType::Go
@@ -200,10 +202,7 @@ impl ContextManager {
                 for line in content.lines() {
                     let trimmed = line.trim();
                     if trimmed.starts_with("use ") {
-                        let use_part = trimmed[4..]
-                            .trim_end_matches(';')
-                            .trim()
-                            .to_string();
+                        let use_part = trimmed[4..].trim_end_matches(';').trim().to_string();
                         imports.push(use_part);
                     }
                 }
@@ -212,7 +211,11 @@ impl ContextManager {
                 for line in content.lines() {
                     let trimmed = line.trim();
                     if trimmed.starts_with("import ") {
-                        let module = trimmed[7..].split_whitespace().next().unwrap_or("").to_string();
+                        let module = trimmed[7..]
+                            .split_whitespace()
+                            .next()
+                            .unwrap_or("")
+                            .to_string();
                         if !module.is_empty() {
                             imports.push(module);
                         }
@@ -295,8 +298,11 @@ impl ContextManager {
         language: String,
         project_root: Option<PathBuf>,
     ) -> AIContext {
-        let mut builder = ContextBuilder::new()
-            .with_current_file(file_path.clone(), content.clone(), language.clone());
+        let mut builder = ContextBuilder::new().with_current_file(
+            file_path.clone(),
+            content.clone(),
+            language.clone(),
+        );
 
         // Add project context if available
         if let Some(root) = project_root {
