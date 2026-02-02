@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+"""
+Ralph Loop - Gas Town Health Monitor
+Monitors VM, gateway, and remote Gas Town status.
+
+Test Isolation: This script auto-checks dependencies and provides
+clear instructions if they're missing. For CI, ensure scripts/requirements.txt
+is installed first: pip install -r scripts/requirements.txt
+"""
 
 # -- VibeCode Telemetry --
 import sys
@@ -15,7 +23,22 @@ import time
 import sys
 import logging
 import subprocess
-# requests imported lazily to allow script to run (with failures) even if deps missing
+
+# Test isolation: Check and report missing dependencies
+REQUIRED_PACKAGES = ['requests']
+_missing_deps = []
+for _pkg in REQUIRED_PACKAGES:
+    try:
+        __import__(_pkg)
+    except ImportError:
+        _missing_deps.append(_pkg)
+
+if _missing_deps:
+    print(f"⚠️  Missing dependencies: {', '.join(_missing_deps)}")
+    print(f"   Install with: pip install -r scripts/requirements.txt")
+    print(f"   Or: pip install {' '.join(_missing_deps)}")
+    if os.environ.get('RALPH_LOOP_STRICT', '').lower() in ('1', 'true', 'yes'):
+        sys.exit(1)  # Fail fast in strict mode (for CI)
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s [RALPH-LOOP] %(message)s')
 logger = logging.getLogger()
