@@ -27,7 +27,7 @@ echo ""
 
 # Test 1: Swift build (release)
 log_test "1/8" "Release build"
-if (cd "$PROJECT_ROOT/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
+if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
     log_pass "Release build successful"
 else
     log_fail "Release build failed"
@@ -35,7 +35,7 @@ fi
 
 # Test 2: Swift build (debug)
 log_test "2/8" "Debug build"
-if (cd "$PROJECT_ROOT/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
+if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
     log_pass "Debug build successful"
 else
     log_fail "Debug build failed"
@@ -61,7 +61,7 @@ fi
 
 # Test 5: Entitlements
 log_test "5/8" "Entitlements"
-if grep -q "com.apple.security.virtualization" "$PROJECT_ROOT/VibeCodeSwift/VibeCode.entitlements"; then
+if grep -q "com.apple.security.virtualization" "$PROJECT_ROOT/platforms/macos/VibeCodeSwift/VibeCode.entitlements"; then
     log_pass "Virtualization entitlement present"
 else
     log_fail "Missing virtualization entitlement"
@@ -86,7 +86,7 @@ fi
 # Test 8: VM discovery (quick app start)
 log_test "8/8" "VM discovery"
 killall VibeCode 2>/dev/null || true
-timeout 5 "$PROJECT_ROOT/VibeCodeSwift/.build/release/VibeCode" 2>&1 | grep -q "VM discovery" &
+timeout 5 "$PROJECT_ROOT/platforms/macos/VibeCodeSwift/.build/release/VibeCode" 2>&1 | grep -q "VM discovery" &
 TEST_PID=$!
 sleep 2
 kill $TEST_PID 2>/dev/null || true
