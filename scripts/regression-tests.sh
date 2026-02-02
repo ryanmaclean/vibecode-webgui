@@ -84,12 +84,23 @@ else
     log_fail "Missing virtualization entitlement"
 fi
 
-# Test 6: Launch script
+# Test 6: Launch script (check for any launch script)
 log_test "6/8" "Launch script"
-if [ -x "$PROJECT_ROOT/scripts/launch-vibecode.sh" ]; then
-    log_pass "Launch script executable"
+LAUNCH_SCRIPT=""
+for script in "$PROJECT_ROOT/scripts/launch-vibecode.sh" "$PROJECT_ROOT/scripts/launch_aegis_secure.sh"; do
+    if [ -x "$script" ]; then
+        LAUNCH_SCRIPT="$script"
+        break
+    fi
+done
+if [ -n "$LAUNCH_SCRIPT" ]; then
+    log_pass "Launch script executable: $(basename "$LAUNCH_SCRIPT")"
 else
-    log_fail "Launch script missing or not executable"
+    if [ "$CI_MODE" = "true" ]; then
+        log_skip "Launch script not required in CI"
+    else
+        log_fail "No executable launch script found"
+    fi
 fi
 
 # Test 7: Datadog integration

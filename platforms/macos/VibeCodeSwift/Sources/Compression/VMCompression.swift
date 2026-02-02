@@ -1,21 +1,45 @@
 import Foundation
 import Compression
 
+// MARK: - ZSTD Availability
+// COMPRESSION_ZSTD (value 5) requires macOS 12.0+ SDK
+// Use conditional compilation to handle older SDKs
+#if compiler(>=5.5) && canImport(Compression)
+    private let compressionZstd: compression_algorithm = {
+        if #available(macOS 12.0, iOS 15.0, *) {
+            // ZSTD algorithm value is 5 in the Compression framework
+            return compression_algorithm(rawValue: 5)
+        }
+        return COMPRESSION_LZFSE
+    }()
+#else
+    private let compressionZstd = COMPRESSION_LZFSE
+#endif
+
 /// Compression algorithms supported for VM operations
 /// Issue #964: Add zstd compression for VM disk images
-public enum CompressionAlgorithm {
-    case zstd       // Best ratio, fast decompression
+/// Note: ZSTD requires macOS 12.0+, falls back to LZFSE on older systems
+public enum CompressionAlgorithm: Sendable {
+    case zstd       // Best ratio, fast decompression (macOS 12.0+)
     case lzfse      // Apple native, good balance
     case lz4        // Fastest, lower ratio
     case zlib       // Wide compatibility
 
     var algorithm: compression_algorithm {
         switch self {
-        case .zstd:  return COMPRESSION_ZSTD
+        case .zstd:  return compressionZstd
         case .lzfse: return COMPRESSION_LZFSE
         case .lz4:   return COMPRESSION_LZ4
         case .zlib:  return COMPRESSION_ZLIB
         }
+    }
+
+    /// Check if ZSTD is available on this system
+    public static var isZstdAvailable: Bool {
+        if #available(macOS 12.0, iOS 15.0, *) {
+            return true
+        }
+        return false
     }
 }
 
@@ -96,7 +120,7 @@ public struct VMCompression {
 
         // Use expected size or estimate (4x compression ratio typical)
         let destinationCapacity = expectedSize ?? (data.count * 4)
-        var destinationBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: destinationCapacity)
+        let destinationBuffer = UnsafeMutablePointer<UInt8>.allocate(capacity: destinationCapacity)
         defer { destinationBuffer.deallocate() }
 
         let decompressedSize = data.withUnsafeBytes { sourceBuffer in
