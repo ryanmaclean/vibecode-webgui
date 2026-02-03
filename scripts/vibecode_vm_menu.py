@@ -561,13 +561,171 @@ def main_menu():
                 break
 
 
+def parse_args():
+    """Parse command line arguments."""
+    import argparse
+    parser = argparse.ArgumentParser(
+        description="VibeCode VM Manager - Native Apple Virtualization Framework",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Commands:
+  status      Show VM status (default if no command)
+  build       Build initramfs using Ansible
+  build-app   Build Swift VM app
+  start       Start a new VM instance
+  stop        Stop running VMs
+  ssh         SSH to a VM
+  vscode      Open VSCode in browser
+  clean       Clean VM bundles
+  help        Show help information
+  menu        Launch interactive TUI menu
+
+Examples:
+  python3 scripts/vibecode_vm_menu.py status
+  python3 scripts/vibecode_vm_menu.py start
+  python3 scripts/vibecode_vm_menu.py ssh
+  python3 scripts/vibecode_vm_menu.py menu  # Interactive mode
+"""
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="menu",
+        choices=["status", "build", "build-app", "start", "stop", "ssh", "vscode", "clean", "help", "menu"],
+        help="Command to run (default: menu for interactive TUI)"
+    )
+    parser.add_argument(
+        "--non-interactive", "-n",
+        action="store_true",
+        help="Run in non-interactive mode (no prompts)"
+    )
+    parser.add_argument(
+        "--test", "-t",
+        action="store_true",
+        help="Test mode: verify TUI can start and exit cleanly"
+    )
+    return parser.parse_args()
+
+
+def dispatch_command(command: str, non_interactive: bool = False) -> int:
+    """Run a specific command non-interactively."""
+    commands = {
+        "status": show_status,
+        "build": build_initramfs,
+        "build-app": build_swift_app,
+        "start": start_vm,
+        "stop": stop_vms,
+        "ssh": connect_ssh,
+        "vscode": open_vscode,
+        "clean": clean_bundles,
+        "help": show_help,
+    }
+
+    if command not in commands:
+        print(f"Unknown command: {command}")
+        return 1
+
+    # For status, just run without waiting for input
+    if command == "status" or non_interactive:
+        # Monkey-patch input to auto-continue in non-interactive mode
+        if non_interactive:
+            import builtins
+            original_input = builtins.input
+            builtins.input = lambda *args: ""
+            try:
+                commands[command]()
+            finally:
+                builtins.input = original_input
+        else:
+            commands[command]()
+    else:
+        commands[command]()
+
+    return 0
+
+
+def test_tui() -> int:
+    """Test TUI can start and render without errors."""
+    import io
+    from contextlib import redirect_stdout, redirect_stderr
+
+    print("Testing TUI components...")
+
+    # Test 1: Check imports
+    print("  [1/4] Checking imports...", end=" ")
+    try:
+        if RICH_AVAILABLE:
+            print("OK (rich available)")
+        else:
+            print("OK (fallback mode)")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        return 1
+
+    # Test 2: Test header rendering
+    print("  [2/4] Testing header render...", end=" ")
+    try:
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            print_header()
+        if "VibeCode" in buf.getvalue():
+            print("OK")
+        else:
+            print("FAIL: header missing expected content")
+            return 1
+    except Exception as e:
+        print(f"FAIL: {e}")
+        return 1
+
+    # Test 3: Test VM detection functions
+    print("  [3/4] Testing VM detection...", end=" ")
+    try:
+        vms = get_running_vms()
+        bundles = get_vm_bundles()
+        print(f"OK ({len(vms)} running, {len(bundles)} bundles)")
+    except Exception as e:
+        print(f"FAIL: {e}")
+        return 1
+
+    # Test 4: Test command dispatch
+    print("  [4/4] Testing command dispatch...", end=" ")
+    try:
+        import builtins
+        original_input = builtins.input
+        builtins.input = lambda *args: ""
+        buf = io.StringIO()
+        try:
+            with redirect_stdout(buf), redirect_stderr(io.StringIO()):
+                show_help()
+        finally:
+            builtins.input = original_input
+        if "QUICK START" in buf.getvalue():
+            print("OK")
+        else:
+            print("FAIL: help content missing")
+            return 1
+    except Exception as e:
+        print(f"FAIL: {e}")
+        return 1
+
+    print("\nAll TUI tests passed!")
+    return 0
+
+
 def main():
     """Entry point."""
     # Handle Ctrl+C gracefully
     signal.signal(signal.SIGINT, lambda s, f: (print("\n\nExiting..."), sys.exit(0)))
-    
+
+    args = parse_args()
+
     try:
-        main_menu()
+        if args.test:
+            sys.exit(test_tui())
+        elif args.command == "menu":
+            main_menu()
+        else:
+            sys.exit(dispatch_command(args.command, args.non_interactive))
     except KeyboardInterrupt:
         print("\n\nExiting...")
         sys.exit(0)

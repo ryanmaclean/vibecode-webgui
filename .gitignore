@@ -144,7 +144,9 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
-.claude/
+# Claude Code local config (but track skills)
+.claude/*
+!.claude/skills/
 .beads/
 !.beads/issues.jsonl
 !.beads/.gitkeep
@@ -188,6 +190,7 @@ migration-report.txt
 .windsurf/
 .zencoder/
 skills/
+!.claude/skills/
 
 # Local exports
 UnifiedOpsDashboard-*.yaml

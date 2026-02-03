@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import shutil
 from dataclasses import dataclass
 from pathlib import Path
 import os
@@ -27,7 +28,13 @@ class VFKitPaths:
         project_root = start
         scripts_dir = project_root / "scripts" / "vfkit"
         config_dir = project_root / "config" / "vfkit"
-        vfkit_binary = project_root / "src-tauri" / "resources" / "vfkit-aarch64-apple-darwin"
+        # Try bundled binary first, fall back to system vfkit
+        bundled_binary = project_root / "src-tauri" / "resources" / "vfkit-aarch64-apple-darwin"
+        if bundled_binary.exists():
+            vfkit_binary = bundled_binary
+        else:
+            system_vfkit = shutil.which("vfkit")
+            vfkit_binary = Path(system_vfkit) if system_vfkit else bundled_binary
         vibecode_home = Path(os.environ.get("VIBECODE_HOME", Path.home() / ".vibecode"))
         vm_logs_dir = vibecode_home / "vm-logs"
         vm_pids_dir = vibecode_home / "vm-pids"
