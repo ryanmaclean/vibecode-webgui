@@ -1,0 +1,106 @@
+name: Cleanup Merged Branches
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Run in dry-run mode (no actual deletion)'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get merged branches
+        id: get_branches
+        run: |
+          # Get all remote branches
+          git fetch --all --prune
+
+          # Get list of merged branches
+          # (branches that have been merged into main)
+          # We'll get all closed and merged PRs
+          MERGED_BRANCHES=$(gh pr list --state merged --limit 1000 \
+            --json headRefName --jq '.[].headRefName' | sort -u)
+
+          # Get list of existing remote branches
+          REMOTE_BRANCHES=$(git branch -r | grep -v '\->' | \
+            sed 's/origin\///' | sed 's/^[ \t]*//' | sort -u)
+
+          # Find branches that are both merged and still exist
+          DELETABLE_BRANCHES=$(comm -12 \
+            <(echo "$MERGED_BRANCHES") <(echo "$REMOTE_BRANCHES"))
+
+          # Filter out protected branches
+          DELETABLE_BRANCHES=$(echo "$DELETABLE_BRANCHES" | \
+            grep -v -E '^(main|master|develop|staging|production)$')
+
+          echo "Found $(echo "$DELETABLE_BRANCHES" | wc -l) \
+            branches to delete"
+          echo "$DELETABLE_BRANCHES" | head -20
+
+          # Save to file
+          echo "$DELETABLE_BRANCHES" > /tmp/branches_to_delete.txt
+
+          # Set output
+          echo "branch_count=$(echo "$DELETABLE_BRANCHES" | wc -l)" \
+            >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Delete merged branches
+        if: github.event.inputs.dry_run == 'false'
+        run: |
+          echo "Deleting branches..."
+          DELETED=0
+          FAILED=0
+
+          while IFS= read -r branch; do
+            if [ -z "$branch" ]; then
+              continue
+            fi
+
+            echo "Deleting branch: $branch"
+            if gh api -X DELETE \
+              "repos/${{ github.repository }}/git/refs/heads/$branch" \
+              2>/dev/null; then
+              echo "✓ Deleted: $branch"
+              ((DELETED++))
+            else
+              echo "✗ Failed to delete: $branch"
+              ((FAILED++))
+            fi
+          done < /tmp/branches_to_delete.txt
+
+          echo ""
+          echo "Summary:"
+          echo "Deleted: $DELETED"
+          echo "Failed: $FAILED"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Dry run summary
+        if: github.event.inputs.dry_run == 'true'
+        run: |
+          echo "DRY RUN MODE - No branches were deleted"
+          echo ""
+          echo "The following branches would be deleted:"
+          cat /tmp/branches_to_delete.txt
+          echo ""
+          echo "Total: $(cat /tmp/branches_to_delete.txt | wc -l) \
+            branches"
+          echo ""
+          echo "To delete these branches, re-run with dry_run=false"
