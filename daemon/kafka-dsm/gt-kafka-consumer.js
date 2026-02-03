@@ -45,6 +45,17 @@ const DD_TAGS = (process.env.DD_TAGS || '').split(',').map((t) => t.trim()).filt
 
 const beadEvents = new Set(['hook', 'sling', 'done', 'escalation_sent']);
 
+function inferRig(evt, message) {
+  if (evt && (evt.rig || evt.r || evt.host || evt.hostname)) {
+    return evt.rig || evt.r || evt.host || evt.hostname;
+  }
+  if (message) {
+    const match = / on ([A-Za-z0-9._-]+)/.exec(message);
+    if (match) return match[1];
+  }
+  return '';
+}
+
 function rigAwareTarget(target, rig) {
   if (!target) return target;
   const lower = String(target).toLowerCase();
@@ -59,7 +70,12 @@ function execGT(args) {
   if (GT_BRIDGE_DRY_RUN) {
     return;
   }
-  execFileSync(GT_CMD, args, { stdio: 'ignore' });
+  try {
+    execFileSync(GT_CMD, args, { stdio: 'ignore' });
+  } catch (err) {
+    // Log and continue so Kafka consumer does not crash on transient nudge failures.
+    console.error('gt command failed', { args, error: String(err && err.message ? err.message : err) });
+  }
 }
 
 function execOpenClawMessage(message) {
@@ -125,7 +141,8 @@ function resolveTarget(evt) {
 
 function handleAction(evt) {
   const action = evt.action;
-  const target = rigAwareTarget(resolveTarget(evt), evt.rig || evt.r || '');
+  const rig = inferRig(evt, evt.message || evt.description || '');
+  const target = rigAwareTarget(resolveTarget(evt), rig);
   const message = evt.message || evt.description || '';
   if (action === 'nudge') {
     execGT(['nudge', target, '-m', message]);
@@ -155,7 +172,7 @@ function handleBeadEvent(evt) {
   if (!beadEvents.has(evt.type)) return false;
   const bead = evt.bead || '';
   const stage = evt.stage || evt.type;
-  const rig = evt.rig || 'unknown';
+  const rig = inferRig(evt, evt.message || '');
   const message = `Bead ${bead} ${stage} on ${rig}`.trim();
   const target = rigAwareTarget(GT_BEAD_NUDGE_TARGET, rig) || GT_ROUTE_DEFAULT;
   execGT(['nudge', target, '-m', message]);
