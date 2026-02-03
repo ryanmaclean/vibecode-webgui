@@ -67,6 +67,8 @@
         "title": "Token Usage Trends (Input vs Output)",
         "title_size": "16",
         "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
         "legend_columns": ["avg", "min", "max", "value"],
         "type": "timeseries",
         "requests": [
@@ -123,6 +125,8 @@
         "title": "Total Token Usage by Model",
         "title_size": "16",
         "title_align": "left",
+        "show_legend": true,
+        "legend_layout": "auto",
         "legend_columns": ["avg", "sum", "value"],
         "type": "timeseries",
         "requests": [
@@ -935,7 +939,7 @@
         "type": "query_value",
         "requests": [
           {
-            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400) / count:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}",
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env,user:*} by {user}.rollup(sum,86400) / sum:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.as_count().rollup(sum,86400)",
             "aggregator": "avg",
             "conditional_formats": [
               {
@@ -976,7 +980,7 @@
         "type": "query_value",
         "requests": [
           {
-            "q": "count:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.rollup(count,86400)",
+            "q": "sum:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.as_count().rollup(sum,86400)",
             "aggregator": "sum"
           }
         ],
