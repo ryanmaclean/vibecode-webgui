@@ -1,0 +1,287 @@
+{
+  "apiVersion": "v1",
+  "items": [
+    {
+      "apiVersion": "v1",
+      "kind": "Service",
+      "metadata": {
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"kind\":\"Service\",\"metadata\":{\"annotations\":{},\"name\":\"datadog-agent\",\"namespace\":\"datadog\"},\"spec\":{\"ports\":[{\"name\":\"dogstatsd\",\"port\":8125,\"protocol\":\"UDP\",\"targetPort\":8125},{\"name\":\"apm\",\"port\":8126,\"protocol\":\"TCP\",\"targetPort\":8126}],\"selector\":{\"app\":\"datadog-agent\"},\"type\":\"ClusterIP\"}}\n"
+        },
+        "name": "datadog-agent",
+        "namespace": "datadog"
+      },
+      "spec": {
+        "clusterIP": "10.96.71.181",
+        "clusterIPs": [
+          "10.96.71.181"
+        ],
+        "internalTrafficPolicy": "Cluster",
+        "ipFamilies": [
+          "IPv4"
+        ],
+        "ipFamilyPolicy": "SingleStack",
+        "ports": [
+          {
+            "name": "dogstatsd",
+            "port": 8125,
+            "protocol": "UDP",
+            "targetPort": 8125
+          },
+          {
+            "name": "apm",
+            "port": 8126,
+            "protocol": "TCP",
+            "targetPort": 8126
+          }
+        ],
+        "selector": {
+          "app": "datadog-agent"
+        },
+        "sessionAffinity": "None",
+        "type": "ClusterIP"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "kafka.yaml": "init_config:\ninstances:\n  - host: kafka-service.tundra-dome.svc.cluster.local\n    port: 9999\n    user: \"\"\n    password: \"\"\n    name: tundra-kafka\n    tags:\n      - env:kind\n      - service:kafka\n      - cluster:tundra-dome\n",
+        "kubernetes.yaml": "ad_identifiers:\n  - kafka\n  - airflow-scheduler\n  - airflow-api-server\n  - airflow-dag-processor\ninit_config:\ninstances:\n  - collect_events: true\n    collect_service_tags: true\n    tags:\n      - env:kind\n      - cluster:tundra-dome\n"
+      },
+      "kind": "ConfigMap",
+      "metadata": {
+        "annotations": {
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"v1\",\"data\":{\"kafka.yaml\":\"init_config:\\ninstances:\\n  - host: kafka-service.tundra-dome.svc.cluster.local\\n    port: 9999\\n    user: \\\"\\\"\\n    password: \\\"\\\"\\n    name: tundra-kafka\\n    tags:\\n      - env:kind\\n      - service:kafka\\n      - cluster:tundra-dome\\n\",\"kubernetes.yaml\":\"ad_identifiers:\\n  - kafka\\n  - airflow-scheduler\\n  - airflow-api-server\\n  - airflow-dag-processor\\ninit_config:\\ninstances:\\n  - collect_events: true\\n    collect_service_tags: true\\n    tags:\\n      - env:kind\\n      - cluster:tundra-dome\\n\"},\"kind\":\"ConfigMap\",\"metadata\":{\"annotations\":{},\"name\":\"datadog-agent-config\",\"namespace\":\"datadog\"}}\n"
+        },
+        "name": "datadog-agent-config",
+        "namespace": "datadog"
+      }
+    },
+    {
+      "apiVersion": "v1",
+      "data": {
+        "ca.crt": "-----BEGIN CERTIFICATE-----\nMIIDBTCCAe2gAwIBAgIIPbdm88WgBxAwDQYJKoZIhvcNAQELBQAwFTETMBEGA1UE\nAxMKa3ViZXJuZXRlczAeFw0yNjAyMDEyMTQzMDhaFw0zNjAxMzAyMTQ4MDhaMBUx\nEzARBgNVBAMTCmt1YmVybmV0ZXMwggEiMA0GCSqGSIb3DQEBAQUAA4IBDwAwggEK\nAoIBAQCsEBx3hMWP+rTjLHK1vtdI6WrNmKETO0zLH1sBv569Xefc1/9vqJPYMVEH\nkbnni+Kgs7/AhdXqsCfOvv7xEGVYtITj5KMnAJgdvtOWN/v3xmz7jbsTpwiNsdC4\nlA+pskVP+8ByHHPP4ihwo3gVrEB32mDJTepm8tCwly6vGVI61D7RgPSd7vubQYf5\n5HdlebD11kNl2bPmoBmRXdPutUYgX/M7hlB0VbVHcMt7zOR/QiMKVkJC90lUVLw/\nSRbtvsgpktNRNFz3kNp9inWenEmOrpMMqSDS4eKkfYJhaQZQMmjetnUsDkZ5RmIq\nN8sAjlZtv+8t0yQ9c0p5oIEovfvTAgMBAAGjWTBXMA4GA1UdDwEB/wQEAwICpDAP\nBgNVHRMBAf8EBTADAQH/MB0GA1UdDgQWBBSsEdFISwdZR/fFRrW5PYXio01oOzAV\nBgNVHREEDjAMggprdWJlcm5ldGVzMA0GCSqGSIb3DQEBCwUAA4IBAQA0bcC2AH5E\nczDWj5+jV3nCV9w0aA2CvUQGfplhbVaadNFth01yuzx4a0Cl9cGiQZLVyiDSSJ7+\nxGKG2w28wMoENHKo94JkeqEVFRidGfuXczIUkOSZkOa6FsrcK1meSvN7ZMwOTBUA\nvmXgm9GDaQzOFul5qFjIF4AhLt843Hbr35RZ42UwXW1oe3NJgvglsnhlTK4QdBMB\n0WApzNk+AHa7jVTC7zEeZbDt/WjnZMWDXoLFYEXvdoPUiDcy8Fu9U/NVG8ezI4h/\nKNxET9lwhomVL3mo0NdFkkc/ysyx4VmKxQ4zzfnDVa6TPCWfyCqGdy3S4R9xYRsP\ndc447CPDguMc\n-----END CERTIFICATE-----\n"
+      },
+      "kind": "ConfigMap",
+      "metadata": {
+        "annotations": {
+          "kubernetes.io/description": "Contains a CA bundle that can be used to verify the kube-apiserver when using internal endpoints such as the internal service IP or kubernetes.default.svc. No other usage is guaranteed across distributions of Kubernetes clusters."
+        },
+        "name": "kube-root-ca.crt",
+        "namespace": "datadog"
+      }
+    },
+    {
+      "apiVersion": "apps/v1",
+      "kind": "DaemonSet",
+      "metadata": {
+        "annotations": {
+          "deprecated.daemonset.template.generation": "3",
+          "kubectl.kubernetes.io/last-applied-configuration": "{\"apiVersion\":\"apps/v1\",\"kind\":\"DaemonSet\",\"metadata\":{\"annotations\":{},\"name\":\"datadog-agent\",\"namespace\":\"datadog\"},\"spec\":{\"selector\":{\"matchLabels\":{\"app\":\"datadog-agent\"}},\"template\":{\"metadata\":{\"labels\":{\"app\":\"datadog-agent\"}},\"spec\":{\"containers\":[{\"env\":[{\"name\":\"DD_API_KEY\",\"valueFrom\":{\"secretKeyRef\":{\"key\":\"DD_API_KEY\",\"name\":\"tundra-dome-secrets\",\"optional\":true}}},{\"name\":\"DD_SITE\",\"value\":\"datadoghq.com\"},{\"name\":\"DD_ENV\",\"value\":\"kind\"},{\"name\":\"DD_APM_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_LOGS_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_PROCESS_AGENT_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_DOGSTATSD_NON_LOCAL_TRAFFIC\",\"value\":\"true\"},{\"name\":\"DD_KUBERNETES_KUBELET_HOST\",\"valueFrom\":{\"fieldRef\":{\"fieldPath\":\"status.hostIP\"}}},{\"name\":\"DD_COLLECT_KUBERNETES_EVENTS\",\"value\":\"true\"},{\"name\":\"DD_LEADER_ELECTION\",\"value\":\"true\"},{\"name\":\"DD_ORCHESTRATOR_EXPLORER_ENABLED\",\"value\":\"true\"},{\"name\":\"DD_KUBERNETES_COLLECT_METADATA_TAGS\",\"value\":\"true\"},{\"name\":\"DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL\",\"value\":\"true\"},{\"name\":\"DD_CONTAINER_EXCLUDE\",\"value\":\"name:datadog-agent\"},{\"name\":\"DD_HOSTNAME\",\"valueFrom\":{\"fieldRef\":{\"fieldPath\":\"spec.nodeName\"}}},{\"name\":\"DD_TAGS\",\"value\":\"env:kind,cluster:tundra-dome\"}],\"image\":\"gcr.io/datadoghq/agent:7\",\"name\":\"agent\",\"resources\":{\"limits\":{\"cpu\":\"250m\",\"memory\":\"512Mi\"},\"requests\":{\"cpu\":\"100m\",\"memory\":\"256Mi\"}},\"volumeMounts\":[{\"mountPath\":\"/var/run/docker.sock\",\"name\":\"dockersocket\"},{\"mountPath\":\"/host/proc\",\"name\":\"procdir\",\"readOnly\":true},{\"mountPath\":\"/host/sys/fs/cgroup\",\"name\":\"cgroups\",\"readOnly\":true},{\"mountPath\":\"/etc/datadog-agent/conf.d\",\"name\":\"confd\"},{\"mountPath\":\"/etc/datadog-agent/checks.d\",\"name\":\"checksd\"}]}],\"hostNetwork\":true,\"hostPID\":true,\"serviceAccountName\":\"datadog-agent\",\"volumes\":[{\"hostPath\":{\"path\":\"/var/run/docker.sock\"},\"name\":\"dockersocket\"},{\"hostPath\":{\"path\":\"/proc\"},\"name\":\"procdir\"},{\"hostPath\":{\"path\":\"/sys/fs/cgroup\"},\"name\":\"cgroups\"},{\"configMap\":{\"name\":\"datadog-agent-config\"},\"name\":\"confd\"},{\"emptyDir\":{},\"name\":\"checksd\"}]}}}}\n"
+        },
+        "generation": 3,
+        "name": "datadog-agent",
+        "namespace": "datadog"
+      },
+      "spec": {
+        "revisionHistoryLimit": 10,
+        "selector": {
+          "matchLabels": {
+            "app": "datadog-agent"
+          }
+        },
+        "template": {
+          "metadata": {
+            "annotations": {
+              "kubectl.kubernetes.io/restartedAt": "2026-02-02T18:43:22-08:00"
+            },
+            "labels": {
+              "app": "datadog-agent"
+            }
+          },
+          "spec": {
+            "containers": [
+              {
+                "env": [
+                  {
+                    "name": "DD_API_KEY",
+                    "valueFrom": {
+                      "secretKeyRef": {
+                        "key": "DD_API_KEY",
+                        "name": "tundra-dome-secrets",
+                        "optional": true
+                      }
+                    }
+                  },
+                  {
+                    "name": "DD_SITE",
+                    "value": "datadoghq.com"
+                  },
+                  {
+                    "name": "DD_ENV",
+                    "value": "kind"
+                  },
+                  {
+                    "name": "DD_APM_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_LOGS_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_PROCESS_AGENT_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_DOGSTATSD_NON_LOCAL_TRAFFIC",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_KUBERNETES_KUBELET_HOST",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "status.hostIP"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DD_COLLECT_KUBERNETES_EVENTS",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_LEADER_ELECTION",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_ORCHESTRATOR_EXPLORER_ENABLED",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_KUBERNETES_COLLECT_METADATA_TAGS",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL",
+                    "value": "true"
+                  },
+                  {
+                    "name": "DD_CONTAINER_EXCLUDE",
+                    "value": "name:datadog-agent"
+                  },
+                  {
+                    "name": "DD_HOSTNAME",
+                    "valueFrom": {
+                      "fieldRef": {
+                        "apiVersion": "v1",
+                        "fieldPath": "spec.nodeName"
+                      }
+                    }
+                  },
+                  {
+                    "name": "DD_TAGS",
+                    "value": "env:kind,cluster:tundra-dome"
+                  }
+                ],
+                "image": "gcr.io/datadoghq/agent:7",
+                "imagePullPolicy": "IfNotPresent",
+                "name": "agent",
+                "resources": {
+                  "limits": {
+                    "cpu": "250m",
+                    "memory": "512Mi"
+                  },
+                  "requests": {
+                    "cpu": "100m",
+                    "memory": "256Mi"
+                  }
+                },
+                "terminationMessagePath": "/dev/termination-log",
+                "terminationMessagePolicy": "File",
+                "volumeMounts": [
+                  {
+                    "mountPath": "/var/run/docker.sock",
+                    "name": "dockersocket"
+                  },
+                  {
+                    "mountPath": "/host/proc",
+                    "name": "procdir",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/host/sys/fs/cgroup",
+                    "name": "cgroups",
+                    "readOnly": true
+                  },
+                  {
+                    "mountPath": "/etc/datadog-agent/conf.d",
+                    "name": "confd"
+                  },
+                  {
+                    "mountPath": "/etc/datadog-agent/checks.d",
+                    "name": "checksd"
+                  }
+                ]
+              }
+            ],
+            "dnsPolicy": "ClusterFirst",
+            "hostNetwork": true,
+            "hostPID": true,
+            "restartPolicy": "Always",
+            "schedulerName": "default-scheduler",
+            "securityContext": {},
+            "serviceAccount": "datadog-agent",
+            "serviceAccountName": "datadog-agent",
+            "terminationGracePeriodSeconds": 30,
+            "volumes": [
+              {
+                "hostPath": {
+                  "path": "/var/run/docker.sock",
+                  "type": ""
+                },
+                "name": "dockersocket"
+              },
+              {
+                "hostPath": {
+                  "path": "/proc",
+                  "type": ""
+                },
+                "name": "procdir"
+              },
+              {
+                "hostPath": {
+                  "path": "/sys/fs/cgroup",
+                  "type": ""
+                },
+                "name": "cgroups"
+              },
+              {
+                "configMap": {
+                  "defaultMode": 420,
+                  "name": "datadog-agent-config"
+                },
+                "name": "confd"
+              },
+              {
+                "emptyDir": {},
+                "name": "checksd"
+              }
+            ]
+          }
+        },
+        "updateStrategy": {
+          "rollingUpdate": {
+            "maxSurge": 0,
+            "maxUnavailable": 1
+          },
+          "type": "RollingUpdate"
+        }
+      }
+    }
+  ],
+  "kind": "List",
+  "metadata": {
+    "resourceVersion": ""
+  }
+}
