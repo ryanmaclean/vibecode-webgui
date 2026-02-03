@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# PROVIDE: td_observer
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Add to rc.conf: td_observer_enable="YES"
+#
+. /etc/rc.subr
+
+name="td_observer"
+rcvar=td_observer_enable
+
+command="/usr/local/bin/node"
+command_args="/usr/local/gt/daemon/kafka-dsm/tundra-observer.js"
+
+load_rc_config $name
+: ${td_observer_enable:=no}
+
+run_rc_command "$1"

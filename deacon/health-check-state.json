@@ -1,0 +1,13 @@
+{
+  "agents": {
+    "deacon": {
+      "agent_id": "deacon",
+      "last_ping_time": "2026-01-20T12:03:43.037339Z",
+      "last_response_time": "0001-01-01T00:00:00Z",
+      "consecutive_failures": 3,
+      "last_force_kill_time": "0001-01-01T00:00:00Z",
+      "force_kill_count": 0
+    }
+  },
+  "last_updated": "2026-01-20T12:04:13.773436Z"
+}

@@ -1,0 +1,21 @@
+layout {
+  pane split_direction="horizontal" {
+    pane {
+      name "queues"
+      command "sh"
+      args "-lc" "cd td/tools/kafka_tui && cargo build --release >/dev/null 2>&1 && ./target/release/kafka_tui"
+    }
+    pane split_direction="vertical" {
+      pane {
+        name "td"
+        command "sh"
+        args "-lc" "td --help; exec $SHELL"
+      }
+      pane {
+        name "logs"
+        command "sh"
+        args "-lc" "tail -n 200 -f logs/td-event-emitter.out.log"
+      }
+    }
+  }
+}
