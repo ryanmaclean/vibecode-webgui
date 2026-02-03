@@ -2,7 +2,6 @@
   "title": "VibeCode - Enhanced LLM Observability",
   "description": "Comprehensive LLM monitoring dashboard with cost tracking, performance analysis, provider health, and business intelligence metrics for the VibeCode AI Gateway and OpenRouter integration.",
   "layout_type": "ordered",
-  "is_read_only": false,
   "notify_list": [],
   "template_variables": [
     {
@@ -68,8 +67,6 @@
         "title": "Token Usage Trends (Input vs Output)",
         "title_size": "16",
         "title_align": "left",
-        "show_legend": true,
-        "legend_layout": "auto",
         "legend_columns": ["avg", "min", "max", "value"],
         "type": "timeseries",
         "requests": [
@@ -126,8 +123,6 @@
         "title": "Total Token Usage by Model",
         "title_size": "16",
         "title_align": "left",
-        "show_legend": true,
-        "legend_layout": "auto",
         "legend_columns": ["avg", "sum", "value"],
         "type": "timeseries",
         "requests": [
@@ -579,8 +574,6 @@
         "title": "Response Time vs Cost by Model",
         "title_size": "16",
         "title_align": "left",
-        "show_legend": true,
-        "legend_layout": "auto",
         "type": "scatterplot",
         "requests": {
           "x": {
@@ -620,8 +613,6 @@
         "title": "Model Selection Distribution",
         "title_size": "16",
         "title_align": "left",
-        "show_legend": true,
-        "legend_layout": "auto",
         "type": "sunburst",
         "requests": [
           {
@@ -788,7 +779,6 @@
         "title": "Provider Error Distribution",
         "title_size": "16",
         "title_align": "left",
-        "show_legend": true,
         "type": "sunburst",
         "requests": [
           {
@@ -945,7 +935,7 @@
         "type": "query_value",
         "requests": [
           {
-            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400) / count_not_null:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}",
+            "q": "sum:vibecode.ai_gateway.cost_usd{service:$service,env:$env}.rollup(sum,86400) / count:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}",
             "aggregator": "avg",
             "conditional_formats": [
               {
@@ -986,7 +976,7 @@
         "type": "query_value",
         "requests": [
           {
-            "q": "count_not_null:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.rollup(count,86400)",
+            "q": "count:vibecode.ai_gateway.requests{service:$service,env:$env,user:*} by {user}.rollup(count,86400)",
             "aggregator": "sum"
           }
         ],

@@ -1,15 +1,13 @@
 #!/usr/bin/env python3
+"""Measure host vs container startup latency for simple workloads."""
+from __future__ import annotations
 
 # Datadog APM tracing
 try:
     import ddtrace
     ddtrace.patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
     pass
-
-"""Measure host vs container startup latency for simple workloads."""
-from __future__ import annotations
 
 import argparse
 import json

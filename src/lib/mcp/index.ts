@@ -3,8 +3,9 @@
  * @module mcp
  */
 
-// Note: Until actual module implementations are complete, we use placeholder exports
-// to establish the module structure. These will be updated as components are implemented.
+// Import actual implementations
+import * as SequentialInterfaces from './sequential/interfaces.js';
+import { SequentialThinkingProcess } from './sequential/thinking-process.js';
 
 // Export module namespaces with placeholder objects
 export const Context7 = {
@@ -14,9 +15,9 @@ export const Context7 = {
 };
 
 export const Sequential = {
-  // Will contain Sequential components when implemented
-  Interfaces: {},
-  ThinkingProcess: {}
+  // Sequential thinking implementation
+  Interfaces: SequentialInterfaces,
+  ThinkingProcess: SequentialThinkingProcess
 };
 
 export const Playwright = {
@@ -35,6 +36,10 @@ export const Serena = {
   CodeServerClient: {},
   MemoryStore: {}
 };
+
+// Re-export sequential thinking types and classes for direct import
+export * from './sequential/interfaces.js';
+export { SequentialThinkingProcess } from './sequential/thinking-process.js';
 
 // Module paths for dynamic imports
 export const ModulePaths = {

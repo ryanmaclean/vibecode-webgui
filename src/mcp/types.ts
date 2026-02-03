@@ -62,6 +62,20 @@ export const GenerateCodeArgsSchema = z.object({
 
 export type GenerateCodeArgs = z.infer<typeof GenerateCodeArgsSchema>;
 
+// Sequential thinking tool schemas
+export const SequentialThinkingArgsSchema = z.object({
+  thought: z.string().min(1, 'Thought content is required'),
+  thoughtNumber: z.number().int().min(1, 'Thought number must be at least 1'),
+  totalThoughts: z.number().int().min(1, 'Total thoughts must be at least 1'),
+  nextThoughtNeeded: z.boolean(),
+  isRevision: z.boolean().optional(),
+  revisesThought: z.number().int().min(1).optional(),
+  branchFromThought: z.number().int().min(1).optional(),
+  branchId: z.string().optional(),
+});
+
+export type SequentialThinkingArgs = z.infer<typeof SequentialThinkingArgsSchema>;
+
 /**
  * Validates and parses MCP tool arguments using Zod schema
  * @param schema - Zod schema to validate against

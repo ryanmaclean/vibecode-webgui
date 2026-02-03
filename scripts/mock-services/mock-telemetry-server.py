@@ -11,17 +11,14 @@ Features:
 Usage:
     python3 scripts/mock-services/mock-telemetry-server.py --http-port 8080 --statsd-port 8125
 """
-
+from __future__ import annotations
 
 # Datadog APM tracing
 try:
     import ddtrace
     ddtrace.patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
     pass
-
-from __future__ import annotations
 
 import argparse
 import http.server

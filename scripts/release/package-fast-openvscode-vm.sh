@@ -16,6 +16,10 @@ EXCLUDES=(
   "--exclude=${TARGET_DIR}/qemu-console.log"
   "--exclude=${TARGET_DIR}/qemu-test.log"
   "--exclude=${TARGET_DIR}/.microvm.pid"
+  "--exclude=${TARGET_DIR}/gvproxy.log"
+  "--exclude=${TARGET_DIR}/gvproxy.pid"
+  "--exclude=${TARGET_DIR}/gvproxy.sock"
+  "--exclude=${TARGET_DIR}/gvproxy-api.sock"
 )
 
 if [[ ! -d "$VM_DIR" ]]; then

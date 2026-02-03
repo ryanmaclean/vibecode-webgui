@@ -1,0 +1,32 @@
+2026/02/02 00:00:00 services/actions/cleanup.go:57:cleanExpiredArtifacts() [I] Found 0 expired artifacts
+2026/02/02 00:00:00 services/actions/cleanup.go:81:cleanNeedDeleteArtifacts() [I] Found 0 artifacts pending deletion
+2026/02/02 00:00:00 services/actions/cleanup.go:137:CleanupExpiredLogs() [I] Removed 0 logs
+2026/02/02 00:00:00 services/actions/cleanup.go:154:CleanupEphemeralRunners() [I] Removed 0 runners
+2026/02/02 09:43:00 models/db/list.go:210:FindAndCount() [W] [Slow SQL Query] SELECT `id`, `repo_id`, `schedule_id`, `next`, `prev`, `spec`, `created`, `updated` FROM `action_schedule_spec` WHERE next<=? ORDER BY `id` DESC LIMIT 50 [1770054143] - 5.205647083s
+2026/02/02 10:28:29 models/db/list.go:210:FindAndCount() [W] [Slow SQL Query] SELECT `id`, `repo_id`, `schedule_id`, `next`, `prev`, `spec`, `created`, `updated` FROM `action_schedule_spec` WHERE next<=? ORDER BY `id` DESC LIMIT 50 [1770056557] - 2m17.096810208s
+2026/02/02 10:49:15 modules/storage/storage.go:180:initAttachments() [I] Initialising Attachment storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/attachments
+2026/02/02 10:49:15 modules/storage/storage.go:170:initAvatars() [I] Initialising Avatar storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/avatars
+2026/02/02 10:49:15 modules/storage/storage.go:196:initRepoAvatars() [I] Initialising Repository Avatar storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/repo-avatars
+2026/02/02 10:49:15 modules/storage/storage.go:202:initRepoArchives() [I] Initialising Repository Archive storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/repo-archive
+2026/02/02 10:49:15 modules/storage/storage.go:212:initPackages() [I] Initialising Packages storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/packages
+2026/02/02 10:49:15 modules/storage/storage.go:223:initActions() [I] Initialising Actions storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/actions_log
+2026/02/02 10:49:15 modules/storage/storage.go:227:initActions() [I] Initialising ActionsArtifacts storage with type: local
+2026/02/02 10:49:15 modules/storage/local.go:33:NewLocalStorage() [I] Creating new Local Storage at /Users/studio/gt/gitea/data/actions_artifacts
+2026/02/02 10:49:15 routers/init.go:140:InitWebInstalled() [I] SQLite3 support is enabled
+2026/02/02 10:49:15 routers/common/db.go:24:InitDBEngine() [I] Beginning ORM engine initialization.
+2026/02/02 10:49:15 routers/common/db.go:31:InitDBEngine() [I] ORM engine initialization attempt #1/10...
+2026/02/02 10:49:15 cmd/web.go:207:serveInstalled() [I] PING DATABASE sqlite3
+2026/02/02 10:49:22 cmd/web.go:207:serveInstalled() [W] Table system_setting Column version db default is , struct default is 1
+2026/02/02 10:49:23 routers/init.go:146:InitWebInstalled() [I] ORM engine initialization successful!
+2026/02/02 10:49:23 .../indexer/stats/indexer.go:41:populateRepoIndexer() [I] Populating the repo stats indexer with existing repositories
+2026/02/02 10:49:23 .../indexer/issues/indexer.go:78:InitIssueIndexer.1() [I] PID 1229: Initializing Issue Indexer: bleve
+2026/02/02 10:49:24 .../indexer/issues/indexer.go:155:InitIssueIndexer.2() [I] Issue Indexer Initialization took 191.236917ms
+2026/02/02 10:49:25 cmd/web.go:328:listen() [I] Listen: http://0.0.0.0:3000
+2026/02/02 10:49:25 cmd/web.go:332:listen() [I] AppURL(ROOT_URL): http://mbp-m1.local:3000/
+2026/02/02 10:49:25 modules/graceful/server.go:50:NewServer() [I] Starting new Web server: tcp:0.0.0.0:3000 on PID: 1229

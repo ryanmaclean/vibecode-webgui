@@ -1,4 +1,16 @@
 #!/usr/bin/env python3
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 """
 Manage EFI Boot Entries for Virtualization.framework VMs
 
@@ -14,6 +26,14 @@ Example:
         ~/.vfkit/vms/vibecode-postgresql/disk/root.img \\
         ~/.vfkit/vms/vibecode-postgresql/efi/efi.nvram
 """
+from __future__ import annotations
+
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass
 
 import sys
 import subprocess
@@ -296,4 +316,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

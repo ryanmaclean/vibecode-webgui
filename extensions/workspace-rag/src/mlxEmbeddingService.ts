@@ -28,7 +28,9 @@ export class MLXEmbeddingService {
         return this.tracing.trace('mlx.initialize', async (span) => {
             try {
                 const config = vscode.workspace.getConfiguration('workspaceRag');
-                const useLocalMLX = config.get<boolean>('useLocalMLX', true);
+                const useLocalMLX = config.has('useLocalMLX')
+                    ? config.get<boolean>('useLocalMLX', true)
+                    : config.get<boolean>('useMLX', true);
                 
                 // Check for MLX availability (Apple Silicon only)
                 const isMLXAvailable = useLocalMLX && isAppleSilicon();
@@ -180,4 +182,3 @@ export class MLXEmbeddingService {
         return this.currentModel?.type === 'local';
     }
 }
-

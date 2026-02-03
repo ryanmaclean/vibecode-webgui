@@ -1,5 +1,17 @@
 #!/usr/bin/env python3
 
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
+
 """
 Package Workspace RAG Extension
 Creates a .vsix file for distribution with Datadog tracing
@@ -324,4 +336,3 @@ def _execute_action(action: str, project_root: Path, skip_tests: bool, span: Any
 
 if __name__ == "__main__":
     sys.exit(main())
-

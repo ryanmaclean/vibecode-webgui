@@ -4,18 +4,16 @@ from __future__ import annotations
 import socket
 from typing import Iterable
 
-
-class DogStatsDSender:
-  """Minimal DogStatsD/StatsD client."""
-
 # Datadog APM tracing
 try:
     import ddtrace
     ddtrace.patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
     pass
 
+
+class DogStatsDSender:
+  """Minimal DogStatsD/StatsD client."""
 
   def __init__(
       self,

@@ -117,6 +117,16 @@ export class EnhancedAIClient {
       }));
     }
 
+    // OpenClaw Gateway (Local Agent Orchestrator)
+    // Added for Feb 1 "Ruthless" Edition
+    this.clients.set('openclaw', new OpenAI({
+      baseURL: process.env.OPENCLAW_ENDPOINT || 'http://localhost:18789/v1',
+      apiKey: process.env.OPENCLAW_API_KEY || 'openclaw-local',
+      defaultHeaders: {
+        'X-Agent-Runtime': 'OpenClaw'
+      }
+    }));
+
     // Google Gemini client
     if (process.env.GOOGLE_AI_API_KEY) {
       // Note: This would need a custom implementation or wrapper

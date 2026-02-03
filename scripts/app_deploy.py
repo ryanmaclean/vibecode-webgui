@@ -1,7 +1,19 @@
 #!/usr/bin/env python3
+
+
 """VibeCode WebGUI deployment helper for AKS."""
 
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
 
 import argparse
 import os

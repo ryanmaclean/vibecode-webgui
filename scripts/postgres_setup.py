@@ -1,9 +1,16 @@
 #!/usr/bin/env python3
 """PostgreSQL + pgvector setup helper for AKS clusters."""
-
 from __future__ import annotations
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
 import argparse
+import os
 import secrets
 import shutil
 import subprocess
@@ -223,15 +230,6 @@ def ensure_namespace(namespace: str, *, dry_run: bool) -> None:
         metadata:
           name: {namespace}
         """
-
-# Datadog APM tracing
-try:
-    import ddtrace
-    ddtrace.patch_all()
-except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
-    pass
-
     )
     run(["kubectl", "apply", "-f", "-"], input_text=manifest, dry_run=dry_run)
 

@@ -56,9 +56,7 @@ async fn ml_get_device_info() -> impl IntoResponse {
     }
 }
 
-async fn ml_generate_embedding(
-    Json(req): Json<EmbeddingRequest>,
-) -> impl IntoResponse {
+async fn ml_generate_embedding(Json(req): Json<EmbeddingRequest>) -> impl IntoResponse {
     // For now, return mock - will integrate with Swift FFI
     // TODO: Call Swift CoreML via FFI
     Json(EmbeddingResponse {
@@ -73,7 +71,8 @@ async fn ai_chat(Json(req): Json<crate::ai::commands::AIChatRequest>) -> impl In
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e })),
-        ).into_response(),
+        )
+            .into_response(),
     }
 }
 
@@ -95,7 +94,8 @@ async fn tailscale_status() -> impl IntoResponse {
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
             Json(serde_json::json!({ "error": e })),
-        ).into_response(),
+        )
+            .into_response(),
     }
 }
 
@@ -114,14 +114,13 @@ pub fn create_router() -> Router {
 // Start HTTP server (can run standalone or alongside Tauri)
 pub async fn start_service(port: u16) -> Result<(), Box<dyn std::error::Error>> {
     let addr = SocketAddr::from(([127, 0, 0, 1], port));
-    
+
     let app = create_router();
-    
+
     println!("🚀 VibeCode backend service listening on {}", addr);
-    
+
     let listener = tokio::net::TcpListener::bind(&addr).await?;
     axum::serve(listener, app).await?;
-    
+
     Ok(())
 }
-

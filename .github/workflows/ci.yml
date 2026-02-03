@@ -74,26 +74,12 @@ jobs:
         run: npm ci --legacy-peer-deps
 
       - name: Run all tests with coverage
-        uses: nick-fields/retry@v3
-        with:
-          timeout_minutes: 15
-          max_attempts: 3
-          retry_on: error
-          command: npm run test:coverage
+        run: npm run test:coverage
         env:
-          DD_CI_VISIBILITY_ENABLED: ${{ secrets.DD_API_KEY != '' }}
           DD_API_KEY: ${{ secrets.DD_API_KEY }}
           DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
-          DD_ENV: ci
-          DD_GIT_BRANCH: ${{ github.head_ref || github.ref_name }}
-          DD_GIT_COMMIT_SHA: ${{ github.sha }}
-          DD_GIT_REPOSITORY_URL: ${{ github.server_url }}/${{ github.repository }}
-          DD_SERVICE: vibecode-webgui
-          DD_SITE: datadoghq.com
-          DD_VERSION: ${{ github.sha }}
           DATADOG_API_KEY: ${{ secrets.DATADOG_API_KEY }}
           DATADOG_APP_KEY: ${{ secrets.DATADOG_APP_KEY }}
-          NODE_OPTIONS: -r dd-trace/ci/init
           REDIS_URL: redis://localhost:6379
           CI: true
 
@@ -148,7 +134,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Run npm audit
@@ -174,7 +160,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          node-version: '24'
           cache: 'npm'
 
       - name: Install dependencies

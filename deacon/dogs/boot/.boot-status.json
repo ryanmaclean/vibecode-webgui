@@ -1,0 +1,7 @@
+{
+  "running": false,
+  "started_at": "2026-01-19T19:09:14.844332-08:00",
+  "completed_at": "2026-01-19T19:09:14.844376-08:00",
+  "last_action": "error",
+  "error": "tmux has-session: exec: \"tmux\": executable file not found in $PATH"
+}

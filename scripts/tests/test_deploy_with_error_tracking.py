@@ -1,238 +1,140 @@
 #!/usr/bin/env python3
-"""Tests for deploy_with_error_tracking script."""
+"""Tests for deploy_with_error_tracking module."""
 
-import unittest
-from unittest.mock import MagicMock, patch
+import sys
+from pathlib import Path
+from unittest import TestCase, mock
 
-from scripts.deploy_with_error_tracking import (
-    Color,
-    DeployConfig,
+# Add scripts directory to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from deploy_with_error_tracking import (
+    DeploymentConfig,
+    DeploymentMetrics,
     DeploymentType,
-    Environment,
-    PerformanceMetric,
-    ErrorTracker,
-    DeploymentRunner,
-    parse_args,
+    command_exists,
+    run_command,
+    safe_execute,
 )
 
 
-class TestColor(unittest.TestCase):
-    """Tests for Color class."""
-
-    def test_color_codes_defined(self):
-        """Test that color codes are defined."""
-        self.assertIsNotNone(Color.RED)
-        self.assertIsNotNone(Color.GREEN)
-        self.assertIsNotNone(Color.YELLOW)
-        self.assertIsNotNone(Color.BLUE)
-        self.assertIsNotNone(Color.NC)
-
-
-class TestDeploymentType(unittest.TestCase):
+class TestDeploymentType(TestCase):
     """Tests for DeploymentType enum."""
 
     def test_auto_value(self):
-        """Test AUTO deployment type."""
+        """Test auto deployment type."""
         self.assertEqual(DeploymentType.AUTO.value, "auto")
 
-    def test_kubernetes_value(self):
-        """Test KUBERNETES deployment type."""
+    def test_kubernetes_values(self):
+        """Test kubernetes deployment types."""
         self.assertEqual(DeploymentType.KUBERNETES.value, "kubernetes")
+        self.assertEqual(DeploymentType.K8S.value, "k8s")
 
-    def test_aks_value(self):
-        """Test AKS deployment type."""
+    def test_azure_values(self):
+        """Test Azure deployment types."""
         self.assertEqual(DeploymentType.AKS.value, "aks")
+        self.assertEqual(DeploymentType.AZURE.value, "azure")
 
-    def test_local_value(self):
-        """Test LOCAL deployment type."""
+    def test_local_values(self):
+        """Test local deployment types."""
         self.assertEqual(DeploymentType.LOCAL.value, "local")
+        self.assertEqual(DeploymentType.DOCKER.value, "docker")
 
 
-class TestEnvironment(unittest.TestCase):
-    """Tests for Environment enum."""
-
-    def test_development_value(self):
-        """Test DEVELOPMENT environment."""
-        self.assertEqual(Environment.DEVELOPMENT.value, "development")
-
-    def test_staging_value(self):
-        """Test STAGING environment."""
-        self.assertEqual(Environment.STAGING.value, "staging")
-
-    def test_production_value(self):
-        """Test PRODUCTION environment."""
-        self.assertEqual(Environment.PRODUCTION.value, "production")
-
-
-class TestDeployConfig(unittest.TestCase):
-    """Tests for DeployConfig dataclass."""
+class TestDeploymentConfig(TestCase):
+    """Tests for DeploymentConfig dataclass."""
 
     def test_default_values(self):
-        """Test default configuration values."""
-        config = DeployConfig()
-        self.assertEqual(config.deployment_type, "auto")
+        """Test default configuration."""
+        config = DeploymentConfig()
+        self.assertEqual(config.deployment_type, DeploymentType.AUTO)
         self.assertEqual(config.environment, "development")
-        self.assertFalse(config.dry_run)
         self.assertFalse(config.verbose)
+        self.assertFalse(config.dry_run)
 
     def test_custom_values(self):
-        """Test custom configuration values."""
-        config = DeployConfig(
-            deployment_type="kubernetes",
+        """Test custom configuration."""
+        config = DeploymentConfig(
+            deployment_type=DeploymentType.KUBERNETES,
             environment="production",
-            dry_run=True,
-            verbose=True,
+            dry_run=True
         )
-        self.assertEqual(config.deployment_type, "kubernetes")
+        self.assertEqual(config.deployment_type, DeploymentType.KUBERNETES)
         self.assertEqual(config.environment, "production")
         self.assertTrue(config.dry_run)
-        self.assertTrue(config.verbose)
 
 
-class TestPerformanceMetric(unittest.TestCase):
-    """Tests for PerformanceMetric dataclass."""
+class TestDeploymentMetrics(TestCase):
+    """Tests for DeploymentMetrics dataclass."""
 
-    def test_metric_creation(self):
-        """Test creating a performance metric."""
-        metric = PerformanceMetric(
-            name="build_duration",
-            value=120.5,
-            category="deployment",
-            unit="seconds",
-        )
-        self.assertEqual(metric.name, "build_duration")
-        self.assertEqual(metric.value, 120.5)
-        self.assertEqual(metric.category, "deployment")
-        self.assertEqual(metric.unit, "seconds")
+    def test_default_values(self):
+        """Test default metrics."""
+        metrics = DeploymentMetrics()
+        self.assertEqual(metrics.start_time, 0.0)
+        self.assertEqual(metrics.build_duration, 0.0)
+        self.assertEqual(metrics.total_duration, 0.0)
 
-
-class TestErrorTracker(unittest.TestCase):
-    """Tests for ErrorTracker class."""
-
-    def test_initialization(self):
-        """Test tracker initialization."""
-        tracker = ErrorTracker("deployment", "test_operation")
-        self.assertEqual(tracker.service, "deployment")
-        self.assertEqual(tracker.operation, "test_operation")
-
-    @patch('builtins.print')
-    @patch.dict('os.environ', {'DD_API_KEY': 'test_key'})
-    def test_log_error_with_api_key(self, mock_print):
-        """Test log_error with API key set."""
-        tracker = ErrorTracker("deployment", "test")
-        tracker.log_error("Test error", 1, "deployment", "test_op")
-        mock_print.assert_called()
-
-    @patch('builtins.print')
-    @patch.dict('os.environ', {'DD_API_KEY': 'test_key'})
-    def test_track_metric_with_api_key(self, mock_print):
-        """Test track_metric with API key set."""
-        tracker = ErrorTracker("deployment", "test")
-        metric = PerformanceMetric("test", 1.0, "cat", "unit")
-        tracker.track_metric(metric)
-        mock_print.assert_called()
+    def test_set_values(self):
+        """Test setting metric values."""
+        metrics = DeploymentMetrics()
+        metrics.build_duration = 60.5
+        metrics.test_duration = 30.2
+        self.assertEqual(metrics.build_duration, 60.5)
+        self.assertEqual(metrics.test_duration, 30.2)
 
 
-class TestDeploymentRunner(unittest.TestCase):
-    """Tests for DeploymentRunner class."""
+class TestRunCommand(TestCase):
+    """Tests for run_command function."""
 
-    def setUp(self):
-        """Set up test fixtures."""
-        self.config = DeployConfig(dry_run=True)
-        self.runner = DeploymentRunner(self.config)
+    def test_successful_command(self):
+        """Test running successful command."""
+        rc, stdout, stderr = run_command(["echo", "hello"])
+        self.assertEqual(rc, 0)
+        self.assertEqual(stdout.strip(), "hello")
 
-    def test_initialization(self):
-        """Test runner initialization."""
-        self.assertTrue(self.runner.config.dry_run)
-        self.assertEqual(self.runner.deployment_start, 0.0)
+    def test_failed_command(self):
+        """Test running failed command."""
+        rc, stdout, stderr = run_command(["false"])
+        self.assertNotEqual(rc, 0)
 
-    @patch('builtins.print')
-    def test_log_info(self, mock_print):
-        """Test log_info method."""
-        self.runner.log_info("Test message")
-        mock_print.assert_called()
-        call_args = mock_print.call_args[0][0]
-        self.assertIn("Test message", call_args)
-        self.assertIn("[INFO]", call_args)
+    def test_command_not_found(self):
+        """Test command not found."""
+        rc, stdout, stderr = run_command(["nonexistent_12345"])
+        self.assertEqual(rc, -1)
+        self.assertIn("not found", stderr)
 
-    @patch('builtins.print')
-    def test_log_success(self, mock_print):
-        """Test log_success method."""
-        self.runner.log_success("Success message")
-        mock_print.assert_called()
-        call_args = mock_print.call_args[0][0]
-        self.assertIn("Success message", call_args)
-        self.assertIn("[SUCCESS]", call_args)
 
-    @patch('builtins.print')
-    def test_run_cmd_dry_run(self, mock_print):
-        """Test run_cmd in dry run mode."""
-        result = self.runner.run_cmd(["echo", "test"], "Testing")
+class TestCommandExists(TestCase):
+    """Tests for command_exists function."""
+
+    def test_existing_command(self):
+        """Test existing command."""
+        self.assertTrue(command_exists("python3") or command_exists("python"))
+
+    def test_nonexistent_command(self):
+        """Test non-existent command."""
+        self.assertFalse(command_exists("nonexistent_command_12345"))
+
+
+class TestSafeExecute(TestCase):
+    """Tests for safe_execute function."""
+
+    def test_dry_run_mode(self):
+        """Test dry run mode."""
+        result = safe_execute("echo test", "test", "test", dry_run=True)
         self.assertTrue(result)
 
-    @patch('shutil.which')
-    def test_validate_prerequisites_missing_tools(self, mock_which):
-        """Test validate_prerequisites with missing tools."""
-        mock_which.return_value = None
-        result = self.runner.validate_prerequisites()
+    def test_successful_execution(self):
+        """Test successful command execution."""
+        result = safe_execute("echo hello", "test", "test", dry_run=False)
+        self.assertTrue(result)
+
+    def test_failed_execution(self):
+        """Test failed command execution."""
+        result = safe_execute("false", "test", "test", dry_run=False)
         self.assertFalse(result)
-
-    @patch('shutil.which')
-    def test_validate_prerequisites_all_found(self, mock_which):
-        """Test validate_prerequisites with all tools found."""
-        mock_which.return_value = "/usr/bin/tool"
-        result = self.runner.validate_prerequisites()
-        self.assertTrue(result)
-
-    @patch('builtins.print')
-    def test_build_application_dry_run(self, mock_print):
-        """Test build_application in dry run mode."""
-        result = self.runner.build_application()
-        self.assertTrue(result)
-
-    @patch('builtins.print')
-    def test_run_tests_dry_run(self, mock_print):
-        """Test run_tests in dry run mode."""
-        result = self.runner.run_tests()
-        self.assertTrue(result)
-
-    @patch('builtins.print')
-    def test_health_check_dry_run(self, mock_print):
-        """Test health_check in dry run mode."""
-        result = self.runner.health_check()
-        self.assertTrue(result)
-
-
-class TestParseArgs(unittest.TestCase):
-    """Tests for parse_args function."""
-
-    @patch('sys.argv', ['deploy.py'])
-    def test_default_args(self):
-        """Test parsing with default arguments."""
-        config = parse_args()
-        self.assertEqual(config.deployment_type, "auto")
-        self.assertEqual(config.environment, "development")
-        self.assertFalse(config.dry_run)
-
-    @patch('sys.argv', ['deploy.py', 'kubernetes', 'production'])
-    def test_positional_args(self):
-        """Test parsing with positional arguments."""
-        config = parse_args()
-        self.assertEqual(config.deployment_type, "kubernetes")
-        self.assertEqual(config.environment, "production")
-
-    @patch('sys.argv', ['deploy.py', '--dry-run'])
-    def test_dry_run_flag(self):
-        """Test parsing with --dry-run flag."""
-        config = parse_args()
-        self.assertTrue(config.dry_run)
-
-    @patch('sys.argv', ['deploy.py', '-v'])
-    def test_verbose_flag(self):
-        """Test parsing with -v flag."""
-        config = parse_args()
-        self.assertTrue(config.verbose)
 
 
 if __name__ == '__main__':
+    import unittest
     unittest.main()

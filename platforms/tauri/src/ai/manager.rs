@@ -1,12 +1,12 @@
 // AI Manager - Core AI functionality and provider orchestration
 
+use once_cell::sync::OnceCell;
+use reqwest::Client;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::Arc;
 use std::time::Duration;
 use tokio::sync::RwLock;
-use once_cell::sync::OnceCell;
-use reqwest::Client;
-use serde::{Deserialize, Serialize};
 
 use super::commands::{AIChatRequest, AIChatResponse, AIMessage};
 
@@ -107,7 +107,7 @@ impl AIManager {
     /// OpenAI chat
     async fn chat_openai(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
         let url = "https://api.openai.com/v1/chat/completions";
-        
+
         let openai_messages: Vec<serde_json::Value> = request
             .messages
             .iter()
@@ -126,7 +126,9 @@ impl AIManager {
             "max_tokens": request.max_tokens.unwrap_or(2000),
         });
 
-        let api_key = self.config.openai_key
+        let api_key = self
+            .config
+            .openai_key
             .as_ref()
             .ok_or("OpenAI API key not set (OPENAI_API_KEY)")?;
 
@@ -165,7 +167,7 @@ impl AIManager {
     /// Anthropic chat (Claude)
     async fn chat_anthropic(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
         let url = "https://api.anthropic.com/v1/messages";
-        
+
         let anthropic_messages: Vec<serde_json::Value> = request
             .messages
             .iter()
@@ -184,7 +186,9 @@ impl AIManager {
             "temperature": request.temperature.unwrap_or(0.7),
         });
 
-        let api_key = self.config.anthropic_key
+        let api_key = self
+            .config
+            .anthropic_key
             .as_ref()
             .ok_or("Anthropic API key not set (ANTHROPIC_API_KEY)")?;
 
@@ -224,7 +228,7 @@ impl AIManager {
     /// OpenRouter chat (unified API for multiple models)
     async fn chat_openrouter(&self, request: AIChatRequest) -> Result<AIChatResponse, String> {
         let url = "https://openrouter.ai/api/v1/chat/completions";
-        
+
         let openrouter_messages: Vec<serde_json::Value> = request
             .messages
             .iter()
@@ -243,7 +247,9 @@ impl AIManager {
             "max_tokens": request.max_tokens.unwrap_or(2000),
         });
 
-        let api_key = self.config.openrouter_key
+        let api_key = self
+            .config
+            .openrouter_key
             .as_ref()
             .ok_or("OpenRouter API key not set (OPENROUTER_API_KEY)")?;
 

@@ -1,9 +1,9 @@
 // Menu bar module for macOS system tray integration
 // Provides system tray menu with docker service control actions
 
-use tauri::{AppHandle, Emitter, Manager};
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::TrayIconBuilder;
+use tauri::{AppHandle, Emitter, Manager};
 
 /// Creates and configures the system tray menu
 ///
@@ -18,7 +18,13 @@ use tauri::tray::TrayIconBuilder;
 /// - Quit
 pub fn create_system_tray(app: &AppHandle) -> Result<(), Box<dyn std::error::Error>> {
     let open_item = MenuItem::with_id(app, "open", "Open VibeCode", true, None::<&str>)?;
-    let openvscode_item = MenuItem::with_id(app, "openvscode", "Open OpenVSCode Server", true, None::<&str>)?;
+    let openvscode_item = MenuItem::with_id(
+        app,
+        "openvscode",
+        "Open OpenVSCode Server",
+        true,
+        None::<&str>,
+    )?;
     let start_item = MenuItem::with_id(app, "start", "Start Services", true, None::<&str>)?;
     let stop_item = MenuItem::with_id(app, "stop", "Stop Services", true, None::<&str>)?;
     let restart_item = MenuItem::with_id(app, "restart", "Restart Services", true, None::<&str>)?;

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+
+
 """VibeCode Fun Demo VM - One-Liner Installer.
 
 Usage: python3 scripts/vfkit/install.py
@@ -6,6 +8,16 @@ Or:    curl -fsSL URL | python3
 """
 
 from __future__ import annotations
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
 
 import gzip
 import os

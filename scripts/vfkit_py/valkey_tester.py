@@ -1,4 +1,26 @@
+
 from __future__ import annotations
+
+<<<<<<< HEAD
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+=======
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass  # ddtrace not installed
+
+>>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import io
@@ -71,6 +93,7 @@ class ValkeyTester:
         return f"test:vibecode:{suffix}:{now}:{random.randint(1000, 9999)}"
 
     # ------------------------------------------------------------------
+
     # tests
     def test_port_connectivity(self) -> bool:
         try:
