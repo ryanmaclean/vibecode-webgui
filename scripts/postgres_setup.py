@@ -1,19 +1,6 @@
 #!/usr/bin/env python3
-
-
 """PostgreSQL + pgvector setup helper for AKS clusters."""
-
 from __future__ import annotations
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
-    pass
-# ------------------------
 
 # Datadog APM tracing
 try:
@@ -23,6 +10,7 @@ except ImportError:
     pass  # ddtrace not installed
 
 import argparse
+import os
 import secrets
 import shutil
 import subprocess
