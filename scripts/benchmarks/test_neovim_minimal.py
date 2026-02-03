@@ -3,15 +3,6 @@
 
 This tests locally without requiring kernel build.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import os
@@ -20,169 +11,150 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        file_size_human,
-        log,
-        run_cmd,
-        run_cmd_output,
-        success,
-        warn,
-        error as log_error,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        file_size_human,
-        log,
-        run_cmd,
-        run_cmd_output,
-        success,
-        warn,
-        error as log_error,
-    )
+from typing import Optional
 
 
-NEOVIM_VERSION = "v0.10.2"
+# Colors for output
+GREEN = '\033[0;32m'
+YELLOW = '\033[1;33m'
+RED = '\033[0;31m'
+NC = '\033[0m'
 
 
-def check_local_neovim() -> tuple[Path | None, str | None]:
-    """Check if Neovim is available locally.
+def success(msg: str) -> None:
+    """Print success message."""
+    print(f"{GREEN}+{NC} {msg}")
 
-    Returns:
-        Tuple of (path, size) or (None, None)
-    """
-    if not check_command("nvim"):
-        return None, None
 
-    nvim_path = Path(shutil.which("nvim"))
+def warning(msg: str) -> None:
+    """Print warning message."""
+    print(f"{YELLOW}!{NC} {msg}")
 
+
+def error(msg: str) -> None:
+    """Print error message."""
+    print(f"{RED}x{NC} {msg}")
+
+
+def run_command(
+    cmd: list[str],
+    capture: bool = True,
+    timeout: int = 60
+) -> tuple[int, str, str]:
+    """Run a command."""
     try:
-        result = run_cmd_output(["nvim", "--version"])
-        version = result.split("\n")[0]
-    except BenchmarkError:
-        version = "unknown"
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            timeout=timeout
+        )
+        return result.returncode, result.stdout or "", result.stderr or ""
+    except subprocess.TimeoutExpired:
+        return -1, "", "timeout"
+    except FileNotFoundError:
+        return -1, "", "command not found"
 
-    size = file_size_human(nvim_path.stat().st_size)
+
+def get_file_size(path: Path) -> str:
+    """Get human-readable file size."""
+    size = path.stat().st_size
+    for unit in ["B", "KB", "MB", "GB"]:
+        if size < 1024:
+            return f"{size:.1f}{unit}"
+        size /= 1024
+    return f"{size:.1f}TB"
+
+
+def check_local_neovim() -> Optional[tuple[Path, str]]:
+    """Check if Neovim is available locally."""
+    nvim_path = shutil.which("nvim")
+    if not nvim_path:
+        return None
+
+    nvim_path = Path(nvim_path)
+
+    # Get version
+    rc, stdout, _ = run_command(["nvim", "--version"])
+    if rc == 0:
+        version = stdout.splitlines()[0] if stdout else "unknown"
+    else:
+        version = "unknown"
 
     return nvim_path, version
 
 
-def check_static_linking(path: Path) -> bool:
-    """Check if binary is statically linked."""
-    if not check_command("file"):
-        return False
+def download_neovim(version: str = "v0.10.2") -> Optional[Path]:
+    """Download Neovim for testing."""
+    temp_dir = Path(tempfile.mkdtemp())
 
-    try:
-        result = run_cmd_output(["file", str(path)])
-        return "statically linked" in result
-    except BenchmarkError:
-        return False
-
-
-def get_dynamic_deps(path: Path) -> list[str]:
-    """Get dynamic library dependencies."""
-    if not check_command("ldd"):
-        return []
-
-    try:
-        result = subprocess.run(
-            ["ldd", str(path)],
-            capture_output=True,
-            text=True,
-        )
-        return result.stdout.split("\n")[:10]
-    except Exception:
-        return []
-
-
-def download_neovim(temp_dir: Path) -> Path | None:
-    """Download Neovim static build.
-
-    Returns:
-        Path to nvim binary or None
-    """
-    import platform
-
-    system = platform.system().lower()
-    machine = platform.machine()
-
-    if system == "darwin":
-        archive = f"nvim-macos-{machine}.tar.gz"
+    if sys.platform == "darwin":
+        print("  Downloading macOS build...")
+        url = f"https://github.com/neovim/neovim/releases/download/{version}/nvim-macos-x86_64.tar.gz"
+        tarball = "nvim-macos.tar.gz"
+        extract_dir = "nvim-macos-x86_64"
     else:
-        archive = "nvim-linux64.tar.gz"
+        print("  Downloading Linux static build...")
+        url = f"https://github.com/neovim/neovim/releases/download/{version}/nvim-linux64.tar.gz"
+        tarball = "nvim-linux.tar.gz"
+        extract_dir = "nvim-linux64"
 
-    url = f"https://github.com/neovim/neovim/releases/download/{NEOVIM_VERSION}/{archive}"
+    tarball_path = temp_dir / tarball
+    rc, _, stderr = run_command([
+        "curl", "-L", "-o", str(tarball_path), url
+    ])
 
-    log(f"Downloading {archive}...")
-
-    try:
-        run_cmd(["curl", "-L", "-o", archive, url], cwd=temp_dir)
-        run_cmd(["tar", "xzf", archive], cwd=temp_dir)
-
-        # Find nvim binary
-        for pattern in ["nvim-*/bin/nvim", "*/bin/nvim"]:
-            matches = list(temp_dir.glob(pattern))
-            if matches:
-                return matches[0]
-
-        return None
-    except BenchmarkError as e:
-        log_error(f"Download failed: {e}")
+    if rc != 0:
+        error(f"Failed to download: {stderr}")
         return None
 
+    run_command(["tar", "xzf", str(tarball_path)], timeout=120)
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
+    nvim_path = temp_dir / extract_dir / "bin" / "nvim"
+    if nvim_path.exists():
+        return nvim_path
 
-    args = parser.parse_args(argv)
+    return None
 
+
+def run_feasibility_test() -> int:
+    """Run the feasibility test."""
     print("=== MiniVim + Neovim Feasibility Test ===")
     print()
 
-    nvim_path, nvim_version = check_local_neovim()
-    nvim_size = "N/A"
-    temp_dir = None
+    nvim_path = None
+    nvim_size = "unknown"
 
-    if nvim_path:
+    # Check local Neovim
+    local_result = check_local_neovim()
+    if local_result:
+        nvim_path, nvim_version = local_result
         success(f"Neovim found: {nvim_version}")
 
-        nvim_size = file_size_human(nvim_path.stat().st_size)
+        nvim_size = get_file_size(nvim_path)
         print(f"  Binary size: {nvim_size}")
 
-        if check_static_linking(nvim_path):
+        # Check if statically linked
+        rc, stdout, _ = run_command(["file", str(nvim_path)])
+        if "statically linked" in stdout:
             success("Statically linked (perfect for initramfs!)")
         else:
-            warn("Dynamically linked (will need libraries in initramfs)")
+            warning("Dynamically linked (will need libraries in initramfs)")
             print()
             print("  Required libraries:")
-            for dep in get_dynamic_deps(nvim_path):
-                if dep.strip():
-                    print(f"    {dep.strip()}")
+            rc, stdout, _ = run_command(["ldd", str(nvim_path)])
+            if rc == 0:
+                for line in stdout.splitlines()[:10]:
+                    print(f"    {line}")
     else:
-        log_error("Neovim not found locally")
+        error("Neovim not found locally")
         print()
-        log("Installing Neovim for testing...")
+        print("Installing Neovim for testing...")
 
-        temp_dir = Path(tempfile.mkdtemp())
-        nvim_path = download_neovim(temp_dir)
-
-        if nvim_path:
-            nvim_size = file_size_human(nvim_path.stat().st_size)
+        nvim_path = download_neovim()
+        if nvim_path and nvim_path.exists():
+            nvim_size = get_file_size(nvim_path)
             success(f"Downloaded: {nvim_size}")
-        else:
-            log_error("Failed to download Neovim")
 
     print()
     print("=== Size Analysis ===")
@@ -194,10 +166,13 @@ def main(argv: list[str] | None = None) -> int:
     print("  - Total: ~15-30 MB compressed")
     print()
 
-    # Compare with current minimal initramfs
-    current_initramfs = REPO_ROOT / "bench-images" / "busybox" / "busybox-initramfs.cpio.gz"
+    # Check current minimal initramfs
+    script_dir = Path(__file__).parent.resolve()
+    repo_root = script_dir.parent.parent
+    current_initramfs = repo_root / "bench-images" / "busybox" / "busybox-initramfs.cpio.gz"
+
     if current_initramfs.exists():
-        current_size = file_size_human(current_initramfs.stat().st_size)
+        current_size = get_file_size(current_initramfs)
         print(f"Current minimal initramfs: {current_size}")
     else:
         print("Current minimal initramfs: N/A")
@@ -215,31 +190,37 @@ def main(argv: list[str] | None = None) -> int:
     print("=== Avante.nvim Compatibility ===")
     print()
     print("Requirements for Avante.nvim:")
-    print("  \u2713 Neovim >= 0.10.0")
-    print("  \u2713 Lua support (built-in)")
-    print("  \u2713 Tree-sitter (built-in)")
-    print("  ? Network access (for AI APIs)")
-    print("  ? Git (optional, for version control)")
+    print(f"  {GREEN}+{NC} Neovim >= 0.10.0")
+    print(f"  {GREEN}+{NC} Lua support (built-in)")
+    print(f"  {GREEN}+{NC} Tree-sitter (built-in)")
+    print(f"  {YELLOW}?{NC} Network access (for AI APIs)")
+    print(f"  {YELLOW}?{NC} Git (optional, for version control)")
     print()
 
     print("=== Next Steps ===")
     print()
     print("To build the full Neovim initramfs:")
-    print("  ./scripts/benchmarks/build-neovim-initramfs.sh")
+    print("  ./scripts/benchmarks/build_neovim_initramfs.py")
     print()
     print("To test with QEMU (after building kernel):")
     print("  qemu-system-x86_64 \\")
     print("    -kernel bench-images/minivim/bzImage-x86_64-6.17 \\")
     print("    -initrd bench-images/busybox/busybox-neovim-initrd.cpio.gz \\")
-    print('    -m 512M -nographic \\')
+    print("    -m 512M -nographic \\")
     print("    -append 'console=ttyS0'")
     print()
 
-    # Cleanup
-    if temp_dir and temp_dir.exists():
-        shutil.rmtree(temp_dir, ignore_errors=True)
-
     return 0
+
+
+def main() -> int:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="MiniVim + Neovim feasibility test"
+    )
+
+    args = parser.parse_args()
+    return run_feasibility_test()
 
 
 if __name__ == "__main__":
