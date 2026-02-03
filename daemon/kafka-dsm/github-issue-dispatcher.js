@@ -31,6 +31,10 @@ const DRY_RUN = (process.env.GITHUB_DRY_RUN || '').toLowerCase() === 'true';
 const LANE_CRITICAL = (process.env.GITHUB_LABEL_LANE_CRITICAL || 'critical,sev1,p0').split(',').map((s) => s.trim()).filter(Boolean);
 const LANE_STANDARD = (process.env.GITHUB_LABEL_LANE_STANDARD || 'standard,sev2,p1').split(',').map((s) => s.trim()).filter(Boolean);
 const LANE_EXPERIMENTAL = (process.env.GITHUB_LABEL_LANE_EXPERIMENTAL || 'experimental,spike,idea').split(',').map((s) => s.trim()).filter(Boolean);
+const TD_LANE_PREFIX = process.env.TD_LANE_PREFIX || 'tundra-lane';
+const TD_TOPIC_WORK = process.env.TD_TOPIC_WORK || 'tundra-work-intake';
+const TD_TOPIC_IN_PROGRESS = process.env.TD_TOPIC_IN_PROGRESS || 'tundra-beads-in-progress';
+const TD_TOPIC_AUDIT = process.env.TD_TOPIC_AUDIT || 'tundra-audit-actions';
 
 const PRIORITY_MAP = (process.env.GITHUB_PRIORITY_MAP || 'p0:0,p1:1,p2:2,p3:3,p4:4,critical:0,high:1,medium:2,low:3').split(',')
   .map((pair) => pair.trim())
@@ -156,12 +160,24 @@ function createBead(issue, priority, labels) {
   return output || null;
 }
 
-function sendKafka(topic, payload) {
-  const kafka = new Kafka({ clientId: 'gastown-github-dispatcher', brokers: BROKERS });
-  const producer = kafka.producer();
-  return producer.connect()
-    .then(() => producer.send({ topic, messages: [{ value: JSON.stringify(payload) }] }))
-    .then(() => producer.disconnect());
+function sendKafkaMulti(producer, topics, payload) {
+  const value = JSON.stringify(payload);
+  const uniqueTopics = Array.from(new Set(topics.filter(Boolean)));
+  return Promise.all(uniqueTopics.map((topic) => producer.send({ topic, messages: [{ value }] })));
+}
+
+async function fetchAllIssues(since) {
+  const allIssues = [];
+  let page = 1;
+  while (true) {
+    const url = `${API_BASE}/repos/${OWNER}/${REPO}/issues?state=open&per_page=100&since=${encodeURIComponent(since)}&page=${page}`;
+    const issues = await requestJson(url);
+    if (!issues || issues.length === 0) break;
+    allIssues.push(...issues);
+    if (issues.length < 100) break;
+    page++;
+  }
+  return allIssues;
 }
 
 async function run() {
@@ -171,10 +187,15 @@ async function run() {
   const state = loadState();
   const since = state.since || new Date(Date.now() - SINCE_DAYS * 86400000).toISOString();
 
-  const url = `${API_BASE}/repos/${OWNER}/${REPO}/issues?state=open&per_page=100&since=${encodeURIComponent(since)}`;
-  const issues = await requestJson(url);
+  const issues = await fetchAllIssues(since);
   const seen = new Set(state.seen || []);
   let newest = state.since || since;
+
+  const kafka = new Kafka({ clientId: 'gastown-github-dispatcher', brokers: BROKERS });
+  const producer = kafka.producer();
+  if (!DRY_RUN) {
+    await producer.connect();
+  }
 
   for (const issue of issues) {
     if (issue.pull_request) continue;
@@ -191,7 +212,7 @@ async function run() {
     const beadId = createBead(issue, priority, labels);
     if (!beadId) continue;
 
-    await sendKafka(`tundra-lane-${lane}-beads`, {
+    const payload = {
       ts: new Date().toISOString(),
       type: 'issue',
       action: 'created',
@@ -205,7 +226,9 @@ async function run() {
         url: issue.html_url,
         labels
       }
-    });
+    };
+    const laneTopic = `${TD_LANE_PREFIX}-${lane}-beads`;
+    await sendKafkaMulti(producer, [laneTopic, TD_TOPIC_WORK, TD_TOPIC_IN_PROGRESS, TD_TOPIC_AUDIT], payload);
 
     if (GT_AUTO_SLING) {
       try {
@@ -222,6 +245,10 @@ async function run() {
   state.since = newest;
   state.seen = Array.from(seen).slice(-2000);
   saveState(state);
+
+  if (!DRY_RUN) {
+    await producer.disconnect();
+  }
 }
 
 run().catch((err) => {
