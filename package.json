@@ -296,7 +296,7 @@
     "null-loader": "4.0.1",
     "pg": "8.17.2",
     "postcss": "^8.4.38",
-    "prisma": "6.19.2",
+    "prisma": "7.3.0",
     "socket.io-client": "4.8.3",
     "terser-webpack-plugin": "5.3.14",
     "testcontainers": "11.11.0",
