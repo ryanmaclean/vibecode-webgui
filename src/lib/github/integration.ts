@@ -298,6 +298,289 @@ export class GitHubIntegration {
   }
 
   /**
+   * Get commit history for a repository
+   */
+  async getCommitHistory(
+    repoName: string,
+    options: {
+      branch?: string
+      path?: string
+      author?: string
+      since?: string
+      until?: string
+      per_page?: number
+      page?: number
+    } = {}
+  ): Promise<Array<{
+    sha: string
+    message: string
+    author: {
+      name: string
+      email: string
+      date: string
+    }
+    committer: {
+      name: string
+      email: string
+      date: string
+    }
+    htmlUrl: string
+    stats?: {
+      additions: number
+      deletions: number
+      total: number
+    }
+  }>> {
+    try {
+      const { data: commits } = await this.octokit.rest.repos.listCommits({
+        owner: this.owner,
+        repo: repoName,
+        sha: options.branch,
+        path: options.path,
+        author: options.author,
+        since: options.since,
+        until: options.until,
+        per_page: options.per_page || 30,
+        page: options.page || 1,
+      })
+
+      return commits.map(commit => ({
+        sha: commit.sha,
+        message: commit.commit.message,
+        author: {
+          name: commit.commit.author?.name || 'Unknown',
+          email: commit.commit.author?.email || '',
+          date: commit.commit.author?.date || '',
+        },
+        committer: {
+          name: commit.commit.committer?.name || 'Unknown',
+          email: commit.commit.committer?.email || '',
+          date: commit.commit.committer?.date || '',
+        },
+        htmlUrl: commit.html_url,
+        stats: commit.stats ? {
+          additions: commit.stats.additions,
+          deletions: commit.stats.deletions,
+          total: commit.stats.total,
+        } : undefined,
+      }))
+    } catch (error) {
+      throw new Error(`Failed to fetch commit history: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Get detailed information for a specific commit
+   */
+  async getCommitDetails(
+    repoName: string,
+    commitSha: string
+  ): Promise<{
+    sha: string
+    message: string
+    author: {
+      name: string
+      email: string
+      date: string
+      avatarUrl?: string
+    }
+    committer: {
+      name: string
+      email: string
+      date: string
+    }
+    htmlUrl: string
+    stats: {
+      additions: number
+      deletions: number
+      total: number
+    }
+    files: Array<{
+      filename: string
+      status: string
+      additions: number
+      deletions: number
+      changes: number
+      patch?: string
+    }>
+    parents: Array<{
+      sha: string
+      htmlUrl: string
+    }>
+  }> {
+    try {
+      const { data: commit } = await this.octokit.rest.repos.getCommit({
+        owner: this.owner,
+        repo: repoName,
+        ref: commitSha,
+      })
+
+      return {
+        sha: commit.sha,
+        message: commit.commit.message,
+        author: {
+          name: commit.commit.author?.name || 'Unknown',
+          email: commit.commit.author?.email || '',
+          date: commit.commit.author?.date || '',
+          avatarUrl: commit.author?.avatar_url,
+        },
+        committer: {
+          name: commit.commit.committer?.name || 'Unknown',
+          email: commit.commit.committer?.email || '',
+          date: commit.commit.committer?.date || '',
+        },
+        htmlUrl: commit.html_url,
+        stats: {
+          additions: commit.stats?.additions || 0,
+          deletions: commit.stats?.deletions || 0,
+          total: commit.stats?.total || 0,
+        },
+        files: commit.files?.map(file => ({
+          filename: file.filename,
+          status: file.status,
+          additions: file.additions,
+          deletions: file.deletions,
+          changes: file.changes,
+          patch: file.patch,
+        })) || [],
+        parents: commit.parents.map(parent => ({
+          sha: parent.sha,
+          htmlUrl: parent.html_url,
+        })),
+      }
+    } catch (error) {
+      throw new Error(`Failed to fetch commit details: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Search commits by message, author, or other criteria
+   */
+  async searchCommits(
+    query: string,
+    options: {
+      sort?: 'author-date' | 'committer-date'
+      order?: 'asc' | 'desc'
+      per_page?: number
+      page?: number
+    } = {}
+  ): Promise<{
+    total: number
+    incomplete: boolean
+    items: Array<{
+      sha: string
+      message: string
+      author: {
+        name: string
+        email: string
+        date: string
+      }
+      repository: {
+        name: string
+        fullName: string
+        htmlUrl: string
+      }
+      htmlUrl: string
+      score: number
+    }>
+  }> {
+    try {
+      const { data } = await this.octokit.rest.search.commits({
+        q: query,
+        sort: options.sort,
+        order: options.order || 'desc',
+        per_page: options.per_page || 30,
+        page: options.page || 1,
+      })
+
+      return {
+        total: data.total_count,
+        incomplete: data.incomplete_results,
+        items: data.items.map(item => ({
+          sha: item.sha,
+          message: item.commit.message,
+          author: {
+            name: item.commit.author.name,
+            email: item.commit.author.email,
+            date: item.commit.author.date,
+          },
+          repository: {
+            name: item.repository.name,
+            fullName: item.repository.full_name,
+            htmlUrl: item.repository.html_url,
+          },
+          htmlUrl: item.html_url,
+          score: item.score,
+        })),
+      }
+    } catch (error) {
+      throw new Error(`Failed to search commits: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
+   * Compare two commits or branches
+   */
+  async compareCommits(
+    repoName: string,
+    base: string,
+    head: string
+  ): Promise<{
+    status: string
+    aheadBy: number
+    behindBy: number
+    totalCommits: number
+    commits: Array<{
+      sha: string
+      message: string
+      author: {
+        name: string
+        date: string
+      }
+    }>
+    files: Array<{
+      filename: string
+      status: string
+      additions: number
+      deletions: number
+      changes: number
+    }>
+  }> {
+    try {
+      const { data } = await this.octokit.rest.repos.compareCommits({
+        owner: this.owner,
+        repo: repoName,
+        base,
+        head,
+      })
+
+      return {
+        status: data.status,
+        aheadBy: data.ahead_by,
+        behindBy: data.behind_by,
+        totalCommits: data.total_commits,
+        commits: data.commits.map(commit => ({
+          sha: commit.sha,
+          message: commit.commit.message,
+          author: {
+            name: commit.commit.author?.name || 'Unknown',
+            date: commit.commit.author?.date || '',
+          },
+        })),
+        files: data.files?.map(file => ({
+          filename: file.filename,
+          status: file.status,
+          additions: file.additions,
+          deletions: file.deletions,
+          changes: file.changes,
+        })) || [],
+      }
+    } catch (error) {
+      throw new Error(`Failed to compare commits: ${error instanceof Error ? error.message : 'Unknown error'}`)
+    }
+  }
+
+  /**
    * Check if a repository name is available
    */
   async isRepositoryNameAvailable(name: string): Promise<boolean> {
