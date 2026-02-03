@@ -58,6 +58,41 @@ final class VMManagerTests: XCTestCase {
         XCTAssertEqual(valkeyPort, 6379, "Valkey should use port 6379")
         XCTAssertEqual(nodejsPort, 3000, "Node.js should use port 3000")
     }
+    
+    func testPreferencesInjection() {
+        guard let suite = UserDefaults(suiteName: "test.vm.prefs") else {
+            XCTFail("Failed to create UserDefaults suite")
+            return
+        }
+        suite.removePersistentDomain(forName: "test.vm.prefs")
+        
+        let prefs = IDEPreferences(userDefaults: suite)
+        vmManager.preferences = prefs
+        
+        XCTAssertNotNil(vmManager.preferences, "VMManager should accept preferences")
+        XCTAssertEqual(vmManager.preferences?.port, 8080, "Preferences should be accessible")
+        
+        suite.removePersistentDomain(forName: "test.vm.prefs")
+    }
+    
+    func testAutoStartConfiguration() {
+        guard let suite = UserDefaults(suiteName: "test.vm.autostart") else {
+            XCTFail("Failed to create UserDefaults suite")
+            return
+        }
+        suite.removePersistentDomain(forName: "test.vm.autostart")
+        
+        let prefs = IDEPreferences(userDefaults: suite)
+        vmManager.preferences = prefs
+        
+        // Configure auto-start for a test VM
+        prefs.setAutoStart(for: "test-vm", enabled: true)
+        
+        XCTAssertTrue(prefs.isAutoStartEnabled(for: "test-vm"), "Auto-start should be enabled")
+        XCTAssertFalse(prefs.isAutoStartEnabled(for: "other-vm"), "Other VM should not auto-start")
+        
+        suite.removePersistentDomain(forName: "test.vm.autostart")
+    }
 }
 
 // Make getDefaultPort accessible for testing
