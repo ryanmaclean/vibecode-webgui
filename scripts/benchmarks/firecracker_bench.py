@@ -21,6 +21,13 @@ try:
 except ImportError:
     pass  # ddtrace not installed
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass
+
 import argparse
 import json
 import os
