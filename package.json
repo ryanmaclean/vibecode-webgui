@@ -138,7 +138,7 @@
   },
   "dependencies": {
     "@ai-sdk/openai": "3.0.12",
-    "@ai-sdk/react": "3.0.41",
+    "@ai-sdk/react": "3.0.70",
     "@azure/cosmos": "4.9.0",
     "@azure/storage-blob": "12.30.0",
     "@azure/storage-queue": "12.29.0",
