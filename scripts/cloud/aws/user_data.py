@@ -1,135 +1,56 @@
 #!/usr/bin/env python3
-"""EC2 user-data script for bootstrapping code-server instance.
+"""EC2 user-data script generator for code-server workspace.
 
-This script runs on EC2 instance startup to install Docker and launch code-server.
+This module generates the user-data script that runs on EC2 instance first boot.
+It installs Docker and starts a code-server container.
+
+Note: The generated script is a bash script intended to run on Ubuntu EC2 instances,
+not a Python script. This module provides the script content as a string.
 """
 
 from __future__ import annotations
 
 import os
-import subprocess
 import sys
-from pathlib import Path
+from textwrap import dedent
 
 
-# Default configuration
-DEFAULT_PASSWORD = "changeme"
-DEFAULT_PORT = 8765
-DEFAULT_WORKSPACE_DIR = "/home/ubuntu/workspace"
-DEFAULT_IMAGE = "ghcr.io/ryanmaclean/vibecode-codeserver:latest"
-
-
-def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
-    """Run a shell command."""
-    return subprocess.run(cmd, check=check)
-
-
-def install_docker() -> bool:
-    """Install and enable Docker.
-
-    Returns:
-        True if successful, False otherwise.
-    """
-    try:
-        # Update package list
-        run_command(["apt-get", "update"])
-
-        # Install Docker
-        run_command(["apt-get", "install", "-y", "docker.io"])
-
-        # Enable and start Docker service
-        run_command(["systemctl", "enable", "--now", "docker"])
-
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-
-def create_workspace_directory(workspace_dir: str = DEFAULT_WORKSPACE_DIR) -> bool:
-    """Create the workspace directory with proper permissions.
-
-    Returns:
-        True if successful, False otherwise.
-    """
-    try:
-        workspace_path = Path(workspace_dir)
-        workspace_path.mkdir(parents=True, exist_ok=True)
-
-        # Set ownership to ubuntu user
-        run_command(["chown", "ubuntu:ubuntu", str(workspace_path)])
-
-        return True
-    except (subprocess.CalledProcessError, OSError):
-        return False
-
-
-def start_code_server(
-    password: str = DEFAULT_PASSWORD,
-    port: int = DEFAULT_PORT,
-    workspace_dir: str = DEFAULT_WORKSPACE_DIR,
-    image: str = DEFAULT_IMAGE,
-) -> bool:
-    """Start code-server Docker container.
-
-    Returns:
-        True if successful, False otherwise.
-    """
-    try:
-        run_command([
-            "docker", "run", "-d",
-            "--restart", "unless-stopped",
-            "-e", f"PASSWORD={password}",
-            "-p", f"{port}:{port}",
-            "-v", f"{workspace_dir}:/home/coder/project",
-            image,
-        ])
-        return True
-    except subprocess.CalledProcessError:
-        return False
-
-
-def bootstrap_instance(
-    password: str | None = None,
-    port: int = DEFAULT_PORT,
-    workspace_dir: str = DEFAULT_WORKSPACE_DIR,
-    image: str = DEFAULT_IMAGE,
-) -> int:
-    """Bootstrap the EC2 instance with code-server.
+def get_user_data_script(password: str | None = None) -> str:
+    """Generate the user-data bash script for EC2 instances.
 
     Args:
-        password: Password for code-server (defaults to env var or "changeme")
-        port: Port for code-server
-        workspace_dir: Directory for workspace files
-        image: Docker image to use
+        password: Password for code-server. Defaults to 'changeme' if not provided.
 
     Returns:
-        Exit code (0 for success, 1 for failure)
+        Bash script content as a string.
     """
-    if password is None:
-        password = os.environ.get("PASSWORD", DEFAULT_PASSWORD)
+    pwd = password or os.environ.get("PASSWORD", "changeme")
 
-    print("Installing Docker...")
-    if not install_docker():
-        print("ERROR: Failed to install Docker", file=sys.stderr)
-        return 1
+    return dedent(f"""\
+        #!/bin/bash
+        set -euxo pipefail
 
-    print(f"Creating workspace directory: {workspace_dir}")
-    if not create_workspace_directory(workspace_dir):
-        print("ERROR: Failed to create workspace directory", file=sys.stderr)
-        return 1
+        apt-get update
+        apt-get install -y docker.io
+        systemctl enable --now docker
 
-    print(f"Starting code-server on port {port}...")
-    if not start_code_server(password, port, workspace_dir, image):
-        print("ERROR: Failed to start code-server", file=sys.stderr)
-        return 1
+        mkdir -p /home/ubuntu/workspace
+        chown ubuntu:ubuntu /home/ubuntu/workspace
 
-    print("Bootstrap complete!")
-    return 0
+        docker run -d --restart unless-stopped \\
+          -e PASSWORD={pwd} \\
+          -p 8765:8765 \\
+          -v /home/ubuntu/workspace:/home/coder/project \\
+          ghcr.io/ryanmaclean/vibecode-codeserver:latest
+    """)
 
 
 def main() -> int:
-    """Main entry point."""
-    return bootstrap_instance()
+    """Main entry point - prints the user-data script to stdout."""
+    password = os.environ.get("PASSWORD")
+    script = get_user_data_script(password)
+    print(script)
+    return 0
 
 
 if __name__ == "__main__":
