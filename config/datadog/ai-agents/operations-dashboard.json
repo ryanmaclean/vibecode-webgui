@@ -1,0 +1,459 @@
+{
+  "title": "AI Agent Operations - Ralph/Claude/GasTown/Codex",
+  "description": "Day-to-day operations dashboard with logs, traces, APM, profiling metrics",
+  "widgets": [
+    {
+      "definition": {
+        "title": "Health Overview",
+        "type": "group",
+        "background_color": "vivid_green",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Service Status",
+              "type": "check_status",
+              "check": "datadog.agent.up",
+              "grouping": "cluster",
+              "group_by": ["service"],
+              "tags": ["service:ralph-loop", "service:claude-code", "service:gastown", "service:sequential-thinking"]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats",
+              "type": "query_value",
+              "requests": [{"q": "avg:gastown.polecats.active{*}", "aggregator": "avg"}],
+              "autoscale": true,
+              "precision": 0
+            }
+          },
+          {
+            "definition": {
+              "title": "Requests/min",
+              "type": "query_value",
+              "requests": [
+                {"q": "sum:trace.http.request.hits{service:ralph-loop OR service:claude-code OR service:gastown}.as_rate()"}
+              ],
+              "autoscale": true,
+              "custom_unit": "/min"
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Rate",
+              "type": "query_value",
+              "requests": [
+                {"q": "100 * sum:trace.http.request.errors{*}.as_count() / sum:trace.http.request.hits{*}.as_count()"}
+              ],
+              "precision": 2,
+              "custom_unit": "%",
+              "conditional_formats": [
+                {"comparator": ">", "value": 5, "palette": "white_on_red"},
+                {"comparator": ">", "value": 1, "palette": "white_on_yellow"},
+                {"comparator": "<=", "value": 1, "palette": "white_on_green"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Cost (24h)",
+              "type": "query_value",
+              "requests": [
+                {"q": "sum:ai_agent.cost.total_usd{*}.as_count() / 1000000"}
+              ],
+              "precision": 2,
+              "custom_unit": "$"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "APM - Traces & Latency",
+        "type": "group",
+        "background_color": "vivid_blue",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Request Latency by Service (p95)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "p95:trace.http.request.duration{service:ralph-loop} by {resource_name}", "display_type": "line"},
+                {"q": "p95:trace.http.request.duration{service:claude-code} by {resource_name}", "display_type": "line"},
+                {"q": "p95:trace.http.request.duration{service:gastown} by {resource_name}", "display_type": "line"}
+              ],
+              "yaxis": {"include_zero": true}
+            }
+          },
+          {
+            "definition": {
+              "title": "Trace Throughput",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:trace.http.request.hits{*} by {service}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Slowest Endpoints (p99)",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(p99:trace.http.request.duration{*} by {resource_name}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Trace Error Rate",
+              "type": "timeseries",
+              "requests": [
+                {"q": "100 * sum:trace.http.request.errors{*} by {service}.as_count() / sum:trace.http.request.hits{*} by {service}.as_count()"}
+              ],
+              "markers": [
+                {"value": "y = 5", "display_type": "error dashed", "label": "Error threshold"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Claude Code / Anthropic API",
+        "type": "group",
+        "background_color": "vivid_purple",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Claude API Requests",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:claude.api.request.count{*} by {model}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage (Input vs Output)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:claude.api.tokens.input{*}.as_count()", "display_type": "area", "style": {"palette": "dog_classic"}},
+                {"q": "sum:claude.api.tokens.output{*}.as_count()", "display_type": "area", "style": {"palette": "warm"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Latency (p50/p95/p99)",
+              "type": "timeseries",
+              "requests": [
+                {"q": "p50:claude.api.request.duration_ms{*}", "display_type": "line"},
+                {"q": "p95:claude.api.request.duration_ms{*}", "display_type": "line"},
+                {"q": "p99:claude.api.request.duration_ms{*}", "display_type": "line"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost by Model",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:claude.api.cost_usd{*} by {model}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cache Hit Rate",
+              "type": "query_value",
+              "requests": [
+                {"q": "100 * sum:claude.api.tokens.cache_read{*}.as_count() / (sum:claude.api.tokens.input{*}.as_count() + 1)"}
+              ],
+              "precision": 1,
+              "custom_unit": "%"
+            }
+          },
+          {
+            "definition": {
+              "title": "Tool Calls",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(sum:claude.tool_use.count{*} by {tool_name}.as_count(), 10, 'sum', 'desc')"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Ralph Loop / Sequential Thinking",
+        "type": "group",
+        "background_color": "vivid_orange",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Ralph Iterations",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:ralph.loop.iteration{outcome:success}.as_count()", "display_type": "bars", "style": {"palette": "green"}},
+                {"q": "sum:ralph.loop.iteration{outcome:failure}.as_count()", "display_type": "bars", "style": {"palette": "red"}}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thoughts per Problem",
+              "type": "distribution",
+              "requests": [
+                {"q": "avg:ralph.thinking.thought_count{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Convergence Time (p95)",
+              "type": "query_value",
+              "requests": [
+                {"q": "p95:ralph.thinking.convergence_ms{*}"}
+              ],
+              "custom_unit": "ms"
+            }
+          },
+          {
+            "definition": {
+              "title": "Sequential Thinking Latency",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:sequential_thinking.request.duration_ms{*} by {model}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Fallback Events",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:sequential_thinking.fallback.count{*} by {reason}.as_count()", "display_type": "bars"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Gas Town / Polecats",
+        "type": "group",
+        "background_color": "vivid_yellow",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Polecat Lifecycle",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecats.spawned{*}.as_count()", "display_type": "bars"},
+                {"q": "sum:gastown.polecats.completed{*}.as_count()", "display_type": "bars"},
+                {"q": "sum:gastown.polecats.failed{*}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active by Rig",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.polecats.active{*} by {rig_name}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Work Duration Distribution",
+              "type": "distribution",
+              "requests": [
+                {"q": "avg:gastown.polecat.duration_s{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Usage by Rig",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecat.tokens_used{*} by {rig_name}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Routing Decisions",
+              "type": "sunburst",
+              "requests": [
+                {"q": "sum:ai_agent.routing.decision{*} by {selected_provider,reason}.as_count()"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Logs",
+        "type": "group",
+        "background_color": "gray",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Log Volume by Service",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:logs.count{service:ralph-loop OR service:claude-code OR service:gastown} by {service}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Logs",
+              "type": "log_stream",
+              "query": "status:error service:(ralph-loop OR claude-code OR gastown OR sequential-thinking)",
+              "columns": ["timestamp", "service", "host", "message"],
+              "indexes": ["*"],
+              "message_display": "inline"
+            }
+          },
+          {
+            "definition": {
+              "title": "Log Patterns",
+              "type": "list_stream",
+              "requests": [
+                {
+                  "response_format": "event_list",
+                  "query": {
+                    "data_source": "logs_pattern_stream",
+                    "query_string": "service:(ralph-loop OR claude-code OR gastown)"
+                  }
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Profiling & Resource Usage",
+        "type": "group",
+        "background_color": "vivid_pink",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "CPU Usage by Service",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:system.cpu.user{service:ralph-loop OR service:claude-code OR service:gastown} by {service}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Memory Usage",
+              "type": "timeseries",
+              "requests": [
+                {"q": "avg:system.mem.used{service:ralph-loop OR service:claude-code OR service:gastown} by {service}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Process Count",
+              "type": "query_value",
+              "requests": [
+                {"q": "sum:system.processes.number{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Top Functions (Profiling)",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:profiling.cpu.percent{service:ralph-loop OR service:claude-code} by {function}, 10, 'mean', 'desc')"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "title": "Cost Analysis",
+        "type": "group",
+        "background_color": "white",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Cost by Provider (24h)",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:ai_agent.cost.total_usd{*} by {provider}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Daily Cost Trend",
+              "type": "timeseries",
+              "requests": [
+                {"q": "cumsum(sum:ai_agent.cost.total_usd{*}.as_count()) / 1000000", "display_type": "area"}
+              ],
+              "yaxis": {"include_zero": true}
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost per Request",
+              "type": "query_value",
+              "requests": [
+                {"q": "(sum:ai_agent.cost.total_usd{*}.as_count() / 1000000) / (sum:ai_agent.request.count{*}.as_count() + 1)"}
+              ],
+              "precision": 4,
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Efficiency",
+              "type": "query_value",
+              "requests": [
+                {"q": "sum:ai_agent.tokens.total{direction:output}.as_count() / (sum:ai_agent.tokens.total{direction:input}.as_count() + 1)"}
+              ],
+              "precision": 2,
+              "custom_unit": ":1"
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {"name": "service", "default": "*", "prefix": "service", "available_values": ["ralph-loop", "claude-code", "gastown", "sequential-thinking"]},
+    {"name": "provider", "default": "*", "prefix": "provider", "available_values": ["anthropic", "openai", "ollama"]},
+    {"name": "model", "default": "*", "prefix": "model"},
+    {"name": "rig_name", "default": "*", "prefix": "rig_name"},
+    {"name": "env", "default": "*", "prefix": "env", "available_values": ["prod", "staging", "dev"]}
+  ],
+  "layout_type": "ordered",
+  "notify_list": [],
+  "reflow_type": "fixed"
+}

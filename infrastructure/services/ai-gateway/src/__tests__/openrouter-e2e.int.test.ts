@@ -140,7 +140,7 @@ describe('AI Gateway OpenRouter E2E', () => {
 
   test('OpenRouter client mock returns valid chat completion', async () => {
     // Test the mocked OpenRouter client directly (express app has timeout issues)
-    const { OpenRouterClient } = require('../services/openrouter-client');
+    const { OpenRouterClient } = await import('../services/openrouter-client');
     const client = new OpenRouterClient();
 
     const response = await client.chatCompletion({

@@ -22,12 +22,11 @@ export class OpenRouterProvider implements Provider {
     };
 
     const resp = await this.client.chatCompletion(reqData, userId || req.user);
-    // Return as-is; shape is compatible
     return {
-      id: (resp as any).id, // tolerate missing id
+      id: resp.id,
       model: resp.model,
-      choices: resp.choices as any,
-      usage: resp.usage as any,
+      choices: resp.choices,
+      usage: resp.usage,
     };
   }
 }

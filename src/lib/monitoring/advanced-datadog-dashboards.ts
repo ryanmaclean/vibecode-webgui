@@ -3,6 +3,8 @@
  * Creates and manages custom dashboards for VibeCode monitoring
  */
 
+import fs from 'node:fs'
+import path from 'node:path'
 import { getDatadogApiKey, getDatadogAppKey, getDatadogSite } from './datadog-env'
 // import { logger } from '@/lib/logger';
 export interface DashboardWidget {
@@ -453,19 +455,58 @@ export class DatadogDashboardManager {
   }
 
   /**
+   * Create unified operations dashboard from JSON config
+   */
+  async createUnifiedOperationsDashboard(): Promise<string | null> {
+    if (!this.apiKey || !this.appKey) {
+      console.warn('Datadog API keys not configured')
+      return null
+    }
+
+    try {
+      const dashboardPath = path.resolve(__dirname, '../../../config/datadog/vibecode-unified-operations-dashboard.json')
+      const dashboardPayload = JSON.parse(fs.readFileSync(dashboardPath, 'utf8'))
+
+      const response = await fetch(`${this.baseUrl}/dashboard`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'DD-API-KEY': this.apiKey,
+          'DD-APPLICATION-KEY': this.appKey
+        },
+        body: JSON.stringify(dashboardPayload)
+      })
+
+      if (!response.ok) {
+        throw new Error(`Failed to create unified operations dashboard: ${response.status}`)
+      }
+
+      const result = await response.json()
+      // Debug log removed
+      return result.id
+
+    } catch (error) {
+      console.error('Failed to create unified operations dashboard:', error)
+      return null
+    }
+  }
+
+  /**
    * Setup all dashboards
    */
   async setupAllDashboards(): Promise<{
     aiFeatures?: string
     userExperience?: string
     infrastructure?: string
+    unifiedOperations?: string
   }> {
     // Debug log removed
     
     const results = await Promise.allSettled([
       this.createAIFeaturesDashboard(),
       this.createUserExperienceDashboard(),
-      this.createInfrastructureDashboard()
+      this.createInfrastructureDashboard(),
+      this.createUnifiedOperationsDashboard()
     ])
 
     const dashboardIds: any = {}
@@ -480,6 +521,10 @@ export class DatadogDashboardManager {
     
     if (results[2].status === 'fulfilled' && results[2].value) {
       dashboardIds.infrastructure = results[2].value
+    }
+
+    if (results[3].status === 'fulfilled' && results[3].value) {
+      dashboardIds.unifiedOperations = results[3].value
     }
 
     // Debug log removed

@@ -1,5 +1,5 @@
 export class RedisService {
-  hGetAll = jest.fn().mockImplementation((key: string) => {
+  hGetAll = jest.fn().mockImplementation((_key: string) => {
     // Simulate different data based on date
     return Promise.resolve({
       requests: '100',

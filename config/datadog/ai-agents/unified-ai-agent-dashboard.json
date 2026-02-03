@@ -1,0 +1,445 @@
+{
+  "title": "AI Agent Observability - Ralph/Claude Code/Gas Town/OpenAI",
+  "description": "Unified dashboard for all AI coding agents and LLM operations",
+  "widgets": [
+    {
+      "id": 1,
+      "definition": {
+        "title": "AI Agent Overview",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Total Requests by Provider",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:ai_agent.request.count{*} by {provider}.as_count()",
+                  "display_type": "bars",
+                  "style": {"palette": "semantic"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Total Cost (USD)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:ai_agent.cost.total_usd{*}.as_count() / 1000000",
+                  "aggregator": "sum"
+                }
+              ],
+              "precision": 2,
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "(sum:ai_agent.error.count{*}.as_count() / sum:ai_agent.request.count{*}.as_count()) * 100"
+                }
+              ],
+              "precision": 2,
+              "custom_unit": "%"
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats",
+              "type": "query_value",
+              "requests": [
+                {"q": "avg:gastown.polecats.active{*}"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 2,
+      "definition": {
+        "title": "Ralph Loop / Sequential Thinking",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Ralph Loop Iterations",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:ralph.loop.iteration{*} by {outcome}.as_count()",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thoughts per Problem",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:ralph.thinking.thought_count{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Thinking Convergence Time (p95)",
+              "type": "query_value",
+              "requests": [
+                {"q": "p95:ralph.thinking.convergence_ms{*}"}
+              ],
+              "custom_unit": "ms"
+            }
+          },
+          {
+            "definition": {
+              "title": "Sequential Thinking Requests",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:sequential_thinking.request.count{*} by {model}.as_count()"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Fallback Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "(sum:sequential_thinking.fallback.count{*}.as_count() / sum:sequential_thinking.request.count{*}.as_count()) * 100"
+                }
+              ],
+              "custom_unit": "%"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 3,
+      "definition": {
+        "title": "Claude Code / Anthropic",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Claude API Requests by Model",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:claude.api.request.count{*} by {model}.as_count()",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Token Usage",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:claude.api.tokens.input{*}.as_count()",
+                  "display_type": "line",
+                  "style": {"line_type": "solid"}
+                },
+                {
+                  "q": "sum:claude.api.tokens.output{*}.as_count()",
+                  "display_type": "line",
+                  "style": {"line_type": "dashed"}
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Cost by Model",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top(sum:claude.api.cost_usd{*} by {model}.as_count() / 1000000, 10, 'sum', 'desc')"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Claude Latency (p95)",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "p95:claude.api.request.duration_ms{*} by {model}"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Tool Use Calls",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:claude.tool_use.count{*} by {tool_name}.as_count()"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cache Hit Rate",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "(sum:claude.api.tokens.cache_read{*}.as_count() / (sum:claude.api.tokens.input{*}.as_count() + 1)) * 100"
+                }
+              ],
+              "custom_unit": "%"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 4,
+      "definition": {
+        "title": "OpenAI / Codex",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "OpenAI Requests by Model",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:openai.api.request.count{*} by {model}.as_count()"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Token Usage",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:openai.api.tokens.input{*}.as_count()"},
+                {"q": "sum:openai.api.tokens.output{*}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "OpenAI Cost",
+              "type": "query_value",
+              "requests": [
+                {"q": "sum:openai.api.cost_usd{*}.as_count() / 1000000"}
+              ],
+              "custom_unit": "$"
+            }
+          },
+          {
+            "definition": {
+              "title": "Embedding Requests",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:openai.embedding.count{*} by {model}.as_count()"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 5,
+      "definition": {
+        "title": "Gas Town / Polecats",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Polecat Lifecycle",
+              "type": "timeseries",
+              "requests": [
+                {"q": "sum:gastown.polecats.spawned{*}.as_count()", "display_type": "bars"},
+                {"q": "sum:gastown.polecats.completed{*}.as_count()", "display_type": "bars"},
+                {"q": "sum:gastown.polecats.failed{*}.as_count()", "display_type": "bars"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Active Polecats by Rig",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(avg:gastown.polecats.active{*} by {rig_name}, 10, 'mean', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Polecat Duration Distribution",
+              "type": "distribution",
+              "requests": [
+                {"q": "avg:gastown.polecat.duration_s{*}"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Routing Decisions",
+              "type": "sunburst",
+              "requests": [
+                {
+                  "q": "sum:ai_agent.routing.decision{*} by {selected_provider,selected_model}.as_count()"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Gas Town Cost by Rig",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(sum:gastown.polecat.cost_usd{*} by {rig_name}.as_count() / 1000000, 10, 'sum', 'desc')"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 6,
+      "definition": {
+        "title": "Cost Analysis",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Cost by Provider (24h)",
+              "type": "pie",
+              "requests": [
+                {"q": "sum:ai_agent.cost.total_usd{*} by {provider}.as_count()"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost Trend",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "cumsum(sum:ai_agent.cost.total_usd{*}.as_count() / 1000000)",
+                  "display_type": "area"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Token Efficiency (Output/Input Ratio)",
+              "type": "query_value",
+              "requests": [
+                {
+                  "q": "sum:ai_agent.tokens.total{direction:output}.as_count() / sum:ai_agent.tokens.total{direction:input}.as_count()"
+                }
+              ],
+              "precision": 2
+            }
+          },
+          {
+            "definition": {
+              "title": "Cost per 1K Tokens by Model",
+              "type": "toplist",
+              "requests": [
+                {
+                  "q": "top((sum:ai_agent.cost.total_usd{*} by {model}.as_count() / (sum:ai_agent.tokens.total{*} by {model}.as_count() + 1)) * 1000, 10, 'mean', 'desc')"
+                }
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 7,
+      "definition": {
+        "title": "Errors & Quality",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Errors by Provider",
+              "type": "timeseries",
+              "requests": [
+                {
+                  "q": "sum:ai_agent.error.count{*} by {provider}.as_count()",
+                  "display_type": "bars"
+                }
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Error Types",
+              "type": "toplist",
+              "requests": [
+                {"q": "top(sum:ai_agent.error.count{*} by {error_category}.as_count(), 10, 'sum', 'desc')"}
+              ]
+            }
+          },
+          {
+            "definition": {
+              "title": "Quality Score by Model",
+              "type": "heatmap",
+              "requests": [
+                {"q": "avg:ai_agent.quality.score{*} by {model}"}
+              ]
+            }
+          }
+        ]
+      }
+    },
+    {
+      "id": 8,
+      "definition": {
+        "title": "Logs",
+        "type": "group",
+        "layout_type": "ordered",
+        "widgets": [
+          {
+            "definition": {
+              "title": "Recent AI Agent Logs",
+              "type": "log_stream",
+              "query": "service:(ralph-loop OR claude-code OR gastown OR sequential-thinking)",
+              "columns": ["timestamp", "service", "message"],
+              "indexes": ["*"]
+            }
+          }
+        ]
+      }
+    }
+  ],
+  "template_variables": [
+    {"name": "provider", "default": "*", "prefix": "provider"},
+    {"name": "model", "default": "*", "prefix": "model"},
+    {"name": "rig_name", "default": "*", "prefix": "rig_name"},
+    {"name": "agent_type", "default": "*", "prefix": "agent_type"}
+  ],
+  "layout_type": "ordered",
+  "notify_list": [],
+  "reflow_type": "fixed"
+}

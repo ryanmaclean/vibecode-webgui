@@ -68,19 +68,23 @@ The gateway will be available at `http://localhost:3001`
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `OPENROUTER_API_KEY` | OpenRouter API key (required) | - |
+| `OPENROUTER_API_KEY` | OpenRouter API key (required when `openrouter` enabled) | - |
 | `REDIS_HOST` | Redis host | `localhost` |
 | `REDIS_PORT` | Redis port | `6379` |
 | `JWT_SECRET` | JWT signing secret (required) | - |
 | `RATE_LIMIT_REQUESTS` | Requests per window | `100` |
 | `DEFAULT_MODEL` | Default AI model | `anthropic/claude-3-sonnet-20240229` |
-| `PROVIDERS_ENABLED` | Comma-separated list of enabled providers | `openrouter,openai,azure,hf,ollama` |
+| `PROVIDERS_ENABLED` | Comma-separated list of enabled providers (order is preference) | `openrouter,openai,azure,hf,ollama` |
+| `FORCE_PROVIDER` | Force all requests to a provider (e.g., `ollama`) | - |
+| `ALLOW_PROVIDER_FALLBACK` | Allow fallback to next provider on rate limits | `true` |
 
 See `.env.example` for complete configuration options.
 
 ### Providers (Unified Abstraction)
 
-The gateway supports multiple providers behind a unified API. Enable providers via `PROVIDERS_ENABLED` (comma-separated): `azure,openai,hf,openrouter,ollama`.
+The gateway supports multiple providers behind a unified API. Enable providers via `PROVIDERS_ENABLED` (comma-separated): `azure,openai,hf,openrouter,ollama`. The order determines the default preference when no explicit provider is set.
+
+To force a local fallback during rate limits, set `FORCE_PROVIDER=ollama` and include `ollama` in `PROVIDERS_ENABLED` (e.g., `ollama,openrouter`).
 
 - Azure OpenAI
   - `AZURE_OPENAI_ENDPOINT` (e.g., https://<resource>.openai.azure.com)

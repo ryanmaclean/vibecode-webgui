@@ -1,0 +1,134 @@
+# Datadog Log Collection for AI Agents
+# Configure the Datadog Agent to collect logs from all AI agent services
+
+logs:
+  # Ralph Loop Logs
+  - type: file
+    path: /Users/studio/gt/*/ralph/*.log
+    service: ralph-loop
+    source: python
+    tags:
+      - env:dev
+      - team:ai-agents
+    log_processing_rules:
+      - type: multi_line
+        name: python_traceback
+        pattern: "^Traceback \\(most recent call last\\):"
+
+  - type: file
+    path: /Users/studio/.claude/logs/*.jsonl
+    service: ralph-loop
+    source: jsonl
+    tags:
+      - env:dev
+      - format:jsonl
+
+  # Claude Code Logs
+  - type: file
+    path: /Users/studio/.claude/projects/*/*.jsonl
+    service: claude-code
+    source: jsonl
+    tags:
+      - env:dev
+      - team:ai-agents
+    log_processing_rules:
+      - type: include_at_match
+        name: include_important
+        pattern: "(error|warn|tool_use|api_call)"
+
+  - type: file
+    path: /Users/studio/.claude/*.log
+    service: claude-code
+    source: python
+    tags:
+      - env:dev
+
+  # Gas Town / Polecat Logs
+  - type: file
+    path: /Users/studio/gt/*/.beads/*.log
+    service: gastown
+    source: beads
+    tags:
+      - env:dev
+      - team:ai-agents
+      - component:beads
+
+  - type: file
+    path: /Users/studio/gt/*/polecats/*/logs/*.log
+    service: gastown
+    source: polecat
+    tags:
+      - env:dev
+      - component:polecat
+
+  - type: file
+    path: /Users/studio/gt/*/.beads/interactions.jsonl
+    service: gastown
+    source: jsonl
+    tags:
+      - env:dev
+      - format:jsonl
+      - type:interaction
+
+  # Sequential Thinking MCP Logs
+  - type: file
+    path: /Users/studio/.mcp/sequential-thinking/*.log
+    service: sequential-thinking
+    source: mcp
+    tags:
+      - env:dev
+      - team:ai-agents
+
+  # Vibecode Logs
+  - type: file
+    path: /Users/studio/gt/vibecode/**/*.log
+    service: vibecode
+    source: vibecode
+    tags:
+      - env:dev
+
+# Custom metrics collection
+dogstatsd_mapper_profiles:
+  - name: ai_agents
+    prefix: "ai_agent."
+    mappings:
+      - match: "ai_agent.request.*"
+        name: "ai_agent.request.$1"
+        tags:
+          provider: "$provider"
+          model: "$model"
+      - match: "claude.api.*"
+        name: "claude.api.$1"
+        tags:
+          model: "$model"
+      - match: "ralph.loop.*"
+        name: "ralph.loop.$1"
+        tags:
+          session_id: "$session_id"
+      - match: "gastown.polecats.*"
+        name: "gastown.polecats.$1"
+        tags:
+          rig_name: "$rig_name"
+
+# APM Configuration
+apm_config:
+  enabled: true
+  apm_non_local_traffic: true
+  analyzed_spans:
+    ralph-loop|http.request: 1
+    claude-code|http.request: 1
+    gastown|http.request: 1
+    sequential-thinking|http.request: 1
+
+# Profiling
+profiling_config:
+  enabled: true
+  profile_dd_url: https://intake.profile.datadoghq.com/v1/input
+
+# Process collection for polecat monitoring
+process_config:
+  enabled: true
+  process_collection:
+    enabled: true
+  container_collection:
+    enabled: true
