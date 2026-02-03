@@ -3,6 +3,7 @@ import VibeCodeCore
 
 struct PreferencesView: View {
     @ObservedObject var preferences: IDEPreferences
+    @EnvironmentObject var vmManager: VMManager
     var ideManager: IDEProcessManager
 
     var body: some View {
@@ -35,6 +36,26 @@ struct PreferencesView: View {
                     .onChange(of: preferences.launchAtLogin) { _ in
                         ideManager.updateLoginItem()
                     }
+            }
+            
+            Section(header: Text("VM Auto-Start")) {
+                if vmManager.vms.isEmpty {
+                    Text("No VMs available")
+                        .foregroundColor(.secondary)
+                        .italic()
+                } else {
+                    ForEach(vmManager.vms) { vm in
+                        Toggle(vm.name, isOn: Binding(
+                            get: { preferences.isAutoStartEnabled(for: vm.id) },
+                            set: { enabled in
+                                preferences.setAutoStart(for: vm.id, enabled: enabled)
+                            }
+                        ))
+                    }
+                }
+                Text("VMs with auto-start enabled will launch automatically when the application starts.")
+                    .font(.caption)
+                    .foregroundColor(.secondary)
             }
         }
         .padding()

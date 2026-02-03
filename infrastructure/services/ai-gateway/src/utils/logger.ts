@@ -74,16 +74,18 @@ if (environment === 'production') {
 }
 
 // Request logger middleware compatible format
+type LogMeta = Record<string, unknown> | undefined;
+
 export const requestLogger = {
-    info: (message: string, meta?: any) => logger.info(message, meta),
-    warn: (message: string, meta?: any) => logger.warn(message, meta),
-    error: (message: string, meta?: any) => logger.error(message, meta),
-    debug: (message: string, meta?: any) => logger.debug(message, meta)
+    info: (message: string, meta?: LogMeta) => logger.info(message, meta),
+    warn: (message: string, meta?: LogMeta) => logger.warn(message, meta),
+    error: (message: string, meta?: LogMeta) => logger.error(message, meta),
+    debug: (message: string, meta?: LogMeta) => logger.debug(message, meta)
 };
 
 // Performance logger for AI operations
 export const performanceLogger = {
-    logRequest: (operation: string, startTime: number, meta?: any) => {
+    logRequest: (operation: string, startTime: number, meta?: LogMeta) => {
         const duration = Date.now() - startTime;
         logger.info(`AI operation completed`, {
             operation,
@@ -92,13 +94,14 @@ export const performanceLogger = {
         });
     },
 
-    logError: (operation: string, startTime: number, error: any, meta?: any) => {
+    logError: (operation: string, startTime: number, error: unknown, meta?: LogMeta) => {
         const duration = Date.now() - startTime;
+        const err = error as { message?: string; stack?: string };
         logger.error(`AI operation failed`, {
             operation,
             duration: `${duration}ms`,
-            error: error.message || error,
-            stack: error.stack,
+            error: err?.message || String(error),
+            stack: err?.stack,
             ...meta
         });
     }

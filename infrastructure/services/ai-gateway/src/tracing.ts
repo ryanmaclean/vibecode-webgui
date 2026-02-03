@@ -1,6 +1,7 @@
 import { NodeSDK } from '@opentelemetry/sdk-node';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-http';
 import { ParentBasedSampler, TraceIdRatioBasedSampler } from '@opentelemetry/sdk-trace-node';
+import { logger } from './utils/logger';
 
 // Minimal OTEL bootstrap. Controlled by ENABLE_TRACING=true
 const ENABLE_TRACING = String(process.env.ENABLE_TRACING || '').toLowerCase() === 'true';
@@ -45,21 +46,18 @@ if (ENABLE_TRACING) {
 
   try {
     sdk.start();
-     
-    console.log(`[OTEL] Tracing initialized (service=${serviceName}, env=${environment}, endpoint=${endpoint}, rate=${sampleRate})`);
+
+    logger.info(`[OTEL] Tracing initialized (service=${serviceName}, env=${environment}, endpoint=${endpoint}, rate=${sampleRate})`);
   } catch (err: unknown) {
-     
-    console.warn('[OTEL] Failed to start tracing', err);
+    logger.warn('[OTEL] Failed to start tracing', { err });
   }
 
   const shutdown = async () => {
     try {
       await sdk.shutdown();
-       
-      console.log('[OTEL] Tracing shut down');
+      logger.info('[OTEL] Tracing shut down');
     } catch (e: unknown) {
-       
-      console.warn('[OTEL] Error during tracing shutdown', e);
+      logger.warn('[OTEL] Error during tracing shutdown', { err: e });
     }
   };
 

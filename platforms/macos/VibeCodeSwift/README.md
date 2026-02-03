@@ -105,6 +105,7 @@ open VibeCode.xcodeproj
 - **Start/Stop:** Direct control via Virtualization.framework
 - **Status tracking:** Real-time VM state updates
 - **Network:** NAT networking with localhost access
+- **Auto-start:** Configure VMs to start automatically with the application
 
 ### Supported VMs
 - **PostgreSQL 16** - Port 5432
@@ -117,8 +118,32 @@ open VibeCode.xcodeproj
 - **Responsive:** Real-time status updates
 - **Color-coded:** Visual VM identification
 - **Connection info:** Copy-paste ready
+- **Auto-start configuration:** Per-VM auto-start settings in Preferences
 
 ## 🎨 Design System
+
+### Auto-Start Configuration
+
+The auto-start feature allows users to configure which VMs should automatically start when the application launches.
+
+**Configuration:**
+1. Open VibeCode app
+2. Go to Preferences (⌘,)
+3. Navigate to "VM Auto-Start" section
+4. Toggle on/off for each VM
+5. Changes are saved automatically
+
+**Behavior:**
+- Auto-start VMs launch 5 seconds after app launch
+- This delay ensures the UI is ready before VM operations begin
+- Each VM's auto-start preference is stored per VM ID
+- Preferences persist across app restarts
+
+**Technical Details:**
+- Settings stored in `UserDefaults` with key `vm.autoStart`
+- VMManager checks preferences during `loadAvailableVMs()`
+- Auto-start logic filters VMs based on preference state
+- All auto-start VMs launch concurrently using async/await
 
 ### Colors
 - PostgreSQL: Blue
@@ -139,12 +164,14 @@ open VibeCode.xcodeproj
 
 1. Launch VibeCode.app
 2. See list of available VMs in sidebar
-3. Click a VM to see details
-4. Click "Start VM" button
-5. VM boots (5-10 seconds)
-6. Connection info displayed
-7. Connect to localhost:PORT
-8. Click "Stop VM" when done
+3. (Optional) Configure auto-start: Open Preferences → VM Auto-Start section → Enable for desired VMs
+4. VMs with auto-start enabled will launch automatically (5 second delay after app launch)
+5. Click a VM to see details
+6. Click "Start VM" button (for VMs not auto-started)
+7. VM boots (5-10 seconds)
+8. Connection info displayed
+9. Connect to localhost:PORT
+10. Click "Stop VM" when done
 
 ## 🔐 Entitlements
 

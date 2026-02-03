@@ -36,6 +36,8 @@ services:
       - API_KEYS=${API_KEYS:-vbai_dev_key_1}
       - JWT_SECRET=${JWT_SECRET:-local_jwt_secret}
       - PROVIDERS_ENABLED=${PROVIDERS_ENABLED:-openrouter}
+      - FORCE_PROVIDER=${FORCE_PROVIDER:-}
+      - ALLOW_PROVIDER_FALLBACK=${ALLOW_PROVIDER_FALLBACK:-true}
       # Providers (populate as needed from your shell or .env)
       - OPENROUTER_API_KEY
       - OPENROUTER_REFERRER

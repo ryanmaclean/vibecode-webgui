@@ -632,3 +632,31 @@ This skill provides comprehensive Datadog automation: query live data to investi
 **Automation:** Create monitors, generate dashboards, trigger workflows, manage incidents, and mute alerts during maintenance.
 
 All scripts return structured JSON for integration with CI/CD pipelines, ChatOps workflows, and automation platforms.
+
+---
+
+# Tundra Dome / TD Commands (PA‑RISC Superdome era)
+
+Use these to operate the local Tundra Dome stack (Kafka DSM + Airflow + GT bridge):
+
+```bash
+# Kafka DSM bridge + observer
+/Users/studio/gt/daemon/kafka-dsm/gt-kafka-consumer.sh
+/Users/studio/gt/daemon/kafka-dsm/gt-kafka-emitter.sh
+/Users/studio/gt/daemon/kafka-dsm/tundra-observer.sh
+/Users/studio/gt/daemon/kafka-dsm/td-event-emitter.sh
+
+# Sling a bead via Tundra Dome (emits Kafka + optionally gt sling)
+/Users/studio/gt/daemon/kafka-dsm/td-sling.sh <bead-id> [target] --lane <lane> --message <msg>
+
+# Airflow (Tundra Dome DAGs live in /Users/studio/gt/airflow/dags)
+/Users/studio/gt/.venv-airflow/bin/airflow scheduler
+/Users/studio/gt/.venv-airflow/bin/airflow dag-processor
+/Users/studio/gt/.venv-airflow/bin/airflow api-server --port 8080
+```
+
+Config/env files live in:
+
+- `/Users/studio/gt/daemon/kafka-dsm/*.env`
+- `/Users/studio/gt/settings/*.json`
+- `/Users/studio/gt/airflow/airflow.cfg`

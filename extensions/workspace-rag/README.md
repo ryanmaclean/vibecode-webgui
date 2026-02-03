@@ -112,6 +112,7 @@ Open VS Code settings (`Ctrl+,` or `Cmd+,`) and search for "Workspace RAG":
   "workspaceRag.retrievalLimit": 5
 }
 ```
+Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ### Tracing Settings (Optional)
 ```json
@@ -322,4 +323,3 @@ Key topics covered:
 - [ ] Performance dashboard with metrics
 - [ ] Custom prompt templates
 - [ ] Integration with GitHub Copilot
-

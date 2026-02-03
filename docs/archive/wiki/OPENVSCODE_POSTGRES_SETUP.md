@@ -211,9 +211,11 @@ docker-compose exec postgres psql -U postgres -d workspace_rag \
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
   "workspaceRag.pgPassword": "password",
-  "workspaceRag.useMLX": false
+  "workspaceRag.useLocalMLX": false
 }
 ```
+
+Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ### Environment Variables (.env)
 

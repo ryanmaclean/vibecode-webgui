@@ -71,6 +71,8 @@ export interface AgentMonacoEditorProps {
   enableAgent?: boolean
 }
 
+export const DEFAULT_EDITOR_LANGUAGE = 'typescript'
+
 export interface EditorStatus {
   agentConnected: boolean
   completionsEnabled: boolean
@@ -85,7 +87,7 @@ export interface EditorStatus {
 
 export function AgentMonacoEditor({
   value = '',
-  language = 'typescript',
+  language = DEFAULT_EDITOR_LANGUAGE,
   theme = 'vs-dark',
   height = '600px',
   width = '100%',

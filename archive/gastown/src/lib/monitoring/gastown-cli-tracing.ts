@@ -10,6 +10,7 @@
  */
 
 import { spawn, SpawnOptions } from 'child_process'
+import StatsD from 'node-statsd'
 import { logger } from '@/lib/logger'
 
 /**
@@ -34,6 +35,36 @@ export interface CLICommandResult {
   stderr: string
   duration: number
   traceContext: CLITraceContext
+}
+
+const metricsEnabled = (process.env.GASTOWN_METRICS_ENABLED || 'true').toLowerCase() !== 'false'
+const statsdClient = metricsEnabled
+  ? new StatsD({
+      host: process.env.DD_AGENT_HOST || '127.0.0.1',
+      port: Number.parseInt(process.env.DD_DOGSTATSD_PORT || '8125', 10),
+      prefix: process.env.GASTOWN_STATSD_PREFIX || 'gastown.',
+      globalTags: [
+        `env:${process.env.DD_ENV || 'development'}`,
+        `service:${process.env.DD_SERVICE || 'gastown-cli'}`,
+        `version:${process.env.DD_VERSION || '0.1.0'}`,
+      ],
+    })
+  : null
+
+function emitMetric(name: string, value: number, type: 'count' | 'histogram' | 'gauge', tags: string[]) {
+  if (!statsdClient) return
+  if (type === 'count') {
+    statsdClient.increment(name, value, 1, tags)
+  } else if (type === 'histogram') {
+    statsdClient.histogram(name, value, 1, tags)
+  } else {
+    statsdClient.gauge(name, value, 1, tags)
+  }
+}
+
+function emitEvent(title: string, text: string, tags: string[], alertType: 'info' | 'success' | 'warning' | 'error' = 'info') {
+  if (!statsdClient) return
+  statsdClient.event(title, text, { alert_type: alertType, tags })
 }
 
 /**
@@ -394,6 +425,7 @@ export async function gtSling(
       ...options.tags,
       'gt.operation': 'sling',
       'gt.bead_id': beadId,
+      'bead.id': beadId,
       'gt.target': target || '',
     },
   })
@@ -571,6 +603,7 @@ export async function bdShow(
       ...options.tags,
       'bd.operation': 'show',
       'bd.bead_id': beadId,
+      'bead.id': beadId,
     },
   })
 }
@@ -588,6 +621,7 @@ export async function bdComplete(
       ...options.tags,
       'bd.operation': 'complete',
       'bd.bead_id': beadId,
+      'bead.id': beadId,
     },
   })
 }
@@ -679,6 +713,13 @@ export function recordCLIMetrics(result: CLICommandResult): void {
   const { traceContext, duration, exitCode } = result
   const command = traceContext.tags['cli.command']
   const subcommand = traceContext.tags['cli.subcommand']
+  const success = exitCode === 0
+  const category =
+    command === 'gt'
+      ? categorizeGTCommand(subcommand || '')
+      : command === 'bd'
+      ? categorizeBDCommand(subcommand || '')
+      : 'other'
 
   // Latency histogram
   logger.info('gastown.cli.latency', {
@@ -688,12 +729,12 @@ export function recordCLIMetrics(result: CLICommandResult): void {
       command,
       subcommand,
       service: traceContext.service,
-      success: String(exitCode === 0),
+      success: String(success),
     },
   })
 
   // Success/failure counter
-  logger.info(exitCode === 0 ? 'gastown.cli.success' : 'gastown.cli.failure', {
+  logger.info(success ? 'gastown.cli.success' : 'gastown.cli.failure', {
     metric_type: 'counter',
     value: 1,
     tags: {
@@ -703,6 +744,45 @@ export function recordCLIMetrics(result: CLICommandResult): void {
       exit_code: String(exitCode),
     },
   })
+
+  const tags = [
+    `command:${command}`,
+    `subcommand:${subcommand || 'none'}`,
+    `category:${category}`,
+    `service:${traceContext.service}`,
+    `success:${String(success)}`,
+    `exit_code:${exitCode}`,
+  ]
+
+  emitMetric('cli.command.count', 1, 'count', tags)
+  emitMetric('cli.command.duration_ms', duration, 'histogram', tags)
+
+  if (command === 'gt') {
+    const roleCommands = new Set(['mayor', 'deacon', 'witness', 'refinery', 'polecat', 'dog'])
+    if (roleCommands.has(subcommand)) {
+      emitMetric('role.command.count', 1, 'count', [...tags, `role:${subcommand}`])
+    }
+
+    const stageMap: Record<string, string> = {
+      sling: 'created',
+      bead: 'created',
+      hook: 'hooked',
+      ready: 'assigned',
+      convoy: 'working',
+      done: 'completed',
+      release: 'completed',
+    }
+    const stage = stageMap[subcommand || '']
+    if (stage) {
+      emitMetric(`bead.stage.${stage}`, 1, 'count', tags)
+      emitEvent(
+        'Bead stage',
+        `stage=${stage} command=${command} ${subcommand}`,
+        [...tags, `stage:${stage}`],
+        success ? 'success' : 'warning'
+      )
+    }
+  }
 }
 
 /**

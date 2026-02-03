@@ -9,9 +9,13 @@ import {
   ConnectionResult,
   LoggerOptions
 } from './db-types';
-import { 
-  poolConfig, 
-  connectionPool 
+import {
+  poolConfig,
+  connectionPool,
+  findLeastRecentlyUsedConnection,
+  markConnectionInUse,
+  markConnectionReleased,
+  isConnectionInUse
 } from './db-pool';
 
 /**
@@ -80,8 +84,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
       if (logger) logger.info(message, { poolKey, idleTime });
       else log(message);
       
-      connectionPool.inUse++;
-      connectionPool.lastUsed.set(poolKey, currentTime);
+      markConnectionInUse(poolKey);
       
       // Record acquire success and time
       const acquireTime = Date.now() - acquireStartTime;
@@ -233,12 +236,11 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
     const currentTime = Date.now();
     
     // Add to connection pool
-    connectionPool.clients.set(poolKey, prisma);
-    connectionPool.inUse++;
-    connectionPool.lastUsed.set(poolKey, currentTime);
-    connectionPool.lastValidated.set(poolKey, currentTime);
-    connectionPool.creationTimes.set(poolKey, currentTime);
-    connectionPool.usage.totalConnections++;
+  connectionPool.clients.set(poolKey, prisma);
+  markConnectionInUse(poolKey);
+  connectionPool.lastValidated.set(poolKey, currentTime);
+  connectionPool.creationTimes.set(poolKey, currentTime);
+  connectionPool.usage.totalConnections++;
     
     // Update peak connections
     if (connectionPool.clients.size > connectionPool.usage.peakConnections) {
@@ -306,8 +308,7 @@ export async function createRobustConnection(options: DatabaseConnectionOptions 
  */
 export function releaseConnection(poolKey: string, logger?: ReturnType<typeof getDatabaseLogger> | null): boolean {
   if (connectionPool.clients.has(poolKey)) {
-    connectionPool.inUse--;
-    connectionPool.lastUsed.set(poolKey, Date.now());
+    markConnectionReleased(poolKey);
     
     if (logger) {
       logger.debug(`Released connection back to pool: ${poolKey}`, {
@@ -319,28 +320,6 @@ export function releaseConnection(poolKey: string, logger?: ReturnType<typeof ge
     return true;
   }
   return false;
-}
-
-/**
- * Find the least recently used connection
- */
-function findLeastRecentlyUsedConnection(): string | null {
-  let oldestKey: string | null = null;
-  let oldestTime = Infinity;
-  
-  for (const [key, lastUsedTime] of connectionPool.lastUsed.entries()) {
-    // Skip connections that are currently in use
-    if (connectionPool.inUse > 0) {
-      continue;
-    }
-    
-    if (lastUsedTime < oldestTime) {
-      oldestTime = lastUsedTime;
-      oldestKey = key;
-    }
-  }
-  
-  return oldestKey;
 }
 
 /**
@@ -428,6 +407,10 @@ async function removeConnection(
     connectionPool.lastUsed.delete(key);
     connectionPool.lastValidated.delete(key);
     connectionPool.creationTimes.delete(key);
+    if (isConnectionInUse(key)) {
+      connectionPool.inUseConnections.delete(key);
+      connectionPool.inUse = Math.max(0, connectionPool.inUse - 1);
+    }
     
     if (logger) logger.debug(`Removed connection from pool: ${key}`);
     return true;

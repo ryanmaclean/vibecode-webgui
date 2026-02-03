@@ -3,391 +3,403 @@
 
 Measures cold boot to /healthz for EFI-stub kernel + minimal initramfs.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import json
 import os
+import shutil
 import signal
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        BenchmarkResult,
-        calc_stats,
-        get_hardware_info,
-        get_iso_timestamp,
-        get_timestamp,
-        log,
-        ms_now,
-        save_results,
-        success,
-        warn,
-        error as log_error,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        BenchmarkResult,
-        calc_stats,
-        get_hardware_info,
-        get_iso_timestamp,
-        get_timestamp,
-        log,
-        ms_now,
-        save_results,
-        success,
-        warn,
-        error as log_error,
-    )
+from typing import Optional
+from urllib.request import urlopen
+from urllib.error import URLError
 
 
-DEFAULT_BENCH_DIR = REPO_ROOT / "bench-images" / "apple-vf-fastboot"
-DEFAULT_RESULTS_DIR = REPO_ROOT / "docs" / "reports" / "benchmarks"
+@dataclass
+class BenchmarkConfig:
+    """Benchmark configuration."""
+
+    kernel: Path
+    initrd: Path
+    cpus: int = 2
+    memory_mb: int = 512
+    port: int = 3000
+    host: str = "127.0.0.1"
+    timeout: int = 30
+    iterations: int = 5
+    launcher: str = "vfkit"
+    bench_dir: Path = field(default_factory=Path)
+    results_dir: Path = field(default_factory=Path)
 
 
-class AppleVFBenchmark:
-    """Apple Virtualization Framework fast boot benchmark."""
+@dataclass
+class BenchmarkResults:
+    """Benchmark results."""
 
-    def __init__(
-        self,
-        kernel: Path,
-        initrd: Path,
-        cpus: int = 2,
-        memory_mb: int = 512,
-        port: int = 3000,
-        host: str = "127.0.0.1",
-        timeout: int = 30,
-        launcher: str = "vfkit",
-        bench_dir: Path = DEFAULT_BENCH_DIR,
-    ):
-        self.kernel = Path(kernel)
-        self.initrd = Path(initrd)
-        self.cpus = cpus
-        self.memory_mb = memory_mb
-        self.port = port
-        self.host = host
-        self.timeout = timeout
-        self.launcher = launcher
-        self.bench_dir = Path(bench_dir)
+    boot_times_ms: list[int] = field(default_factory=list)
+    avg_ms: int = 0
+    min_ms: int = 0
+    max_ms: int = 0
+    config: dict = field(default_factory=dict)
 
-        self.pid_file = self.bench_dir / ".vm.pid"
-        self.serial_log = self.bench_dir / "console.log"
 
-    def validate_assets(self) -> None:
-        """Validate that required assets exist."""
-        if not self.kernel.exists():
-            raise BenchmarkError(
-                f"Kernel not found at {self.kernel}\n\n"
-                "Build it with:\n"
-                "  lima kernel-builder -- ./scripts/benchmarks/build-efi-stub-kernel.sh arm64"
-            )
+def ms_now() -> int:
+    """Get current time in milliseconds."""
+    return int(time.time() * 1000)
 
-        if not self.initrd.exists():
-            raise BenchmarkError(
-                f"Initramfs not found at {self.initrd}\n\n"
-                "Build it with:\n"
-                "  ./scripts/benchmarks/build-minimal-initramfs.sh arm64"
-            )
 
-    def wait_for_healthz(self) -> int:
-        """Wait for /healthz endpoint to become available.
+def wait_for_healthz(host: str, port: int, timeout: int) -> Optional[int]:
+    """Wait for /healthz endpoint to respond.
 
-        Returns:
-            Time in milliseconds until endpoint was ready
+    Returns:
+        Elapsed time in milliseconds, or None if timeout.
+    """
+    start = ms_now()
+    deadline = start + timeout * 1000
 
-        Raises:
-            BenchmarkError: If timeout is reached
-        """
-        import urllib.request
-        import urllib.error
-
-        start = ms_now()
-        deadline = start + self.timeout * 1000
-        url = f"http://{self.host}:{self.port}/healthz"
-
-        while ms_now() < deadline:
-            try:
-                with urllib.request.urlopen(url, timeout=1) as resp:
-                    if resp.status == 200:
-                        return ms_now() - start
-            except (urllib.error.URLError, urllib.error.HTTPError, TimeoutError):
-                pass
-            time.sleep(0.05)
-
-        raise BenchmarkError(f"Timeout waiting for healthz after {self.timeout}s")
-
-    def stop_vm(self) -> None:
-        """Stop the VM if running."""
-        if not self.pid_file.exists():
-            return
-
+    while True:
         try:
-            pid = int(self.pid_file.read_text().strip())
-            os.kill(pid, signal.SIGTERM)
-            time.sleep(0.5)
-            try:
-                os.kill(pid, signal.SIGKILL)
-            except ProcessLookupError:
-                pass
-        except (ValueError, ProcessLookupError, PermissionError):
+            with urlopen(f"http://{host}:{port}/healthz", timeout=1) as response:
+                if response.status == 200:
+                    return ms_now() - start
+        except (URLError, TimeoutError, Exception):
             pass
-        finally:
-            self.pid_file.unlink(missing_ok=True)
 
-    def start_vm_vfkit(self) -> None:
-        """Start VM using vfkit."""
-        cmd = [
-            "vfkit",
-            "--cpus", str(self.cpus),
-            "--memory", str(self.memory_mb),
-            "--bootloader", f"linux,kernel={self.kernel},initrd={self.initrd},cmdline=console=hvc0 rdinit=/init quiet",
-            "--device", f"virtio-net,nat,localPort={self.port}:3000",
-            "--device", "virtio-serial,stdio",
-            "--device", "virtio-rng",
-        ]
+        if ms_now() >= deadline:
+            return None
 
-        self.serial_log.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.serial_log, "w") as log_file:
-            proc = subprocess.Popen(
-                cmd,
-                stdout=log_file,
-                stderr=subprocess.STDOUT,
-            )
-            self.pid_file.write_text(str(proc.pid))
-
-    def start_vm_custom(self) -> None:
-        """Start VM using custom launcher."""
-        env = os.environ.copy()
-        env.update({
-            "MICROVM_KERNEL": str(self.kernel),
-            "MICROVM_INITRD": str(self.initrd),
-            "MICROVM_CMDLINE": "console=hvc0 rdinit=/init quiet",
-            "MICROVM_CPUS": str(self.cpus),
-            "MICROVM_MEMORY_MB": str(self.memory_mb),
-            "MICROVM_HOST": self.host,
-            "MICROVM_PORT": str(self.port),
-            "MICROVM_PID_FILE": str(self.pid_file),
-            "MICROVM_SERIAL_LOG": str(self.serial_log),
-        })
-
-        self.serial_log.parent.mkdir(parents=True, exist_ok=True)
-        with open(self.serial_log, "w") as log_file:
-            proc = subprocess.Popen(
-                [self.launcher],
-                stdout=log_file,
-                stderr=subprocess.STDOUT,
-                env=env,
-            )
-            self.pid_file.write_text(str(proc.pid))
-
-    def start_vm(self) -> None:
-        """Start the VM."""
-        self.serial_log.parent.mkdir(parents=True, exist_ok=True)
-        self.serial_log.write_text("")
-
-        if self.launcher == "vfkit":
-            self.start_vm_vfkit()
-        else:
-            self.start_vm_custom()
-
-    def run_benchmark(self, iterations: int) -> dict:
-        """Run the benchmark.
-
-        Args:
-            iterations: Number of iterations to run
-
-        Returns:
-            Dictionary with benchmark results
-        """
-        samples: list[int] = []
-
-        for i in range(1, iterations + 1):
-            self.stop_vm()
-            time.sleep(0.5)
-
-            print(f"  Run {i}/{iterations}: ", end="", flush=True)
-
-            self.start_vm()
-
-            try:
-                elapsed = self.wait_for_healthz()
-                print(f"{elapsed}ms")
-                samples.append(elapsed)
-            except BenchmarkError:
-                print("TIMEOUT")
-                self.stop_vm()
-                continue
-
-            self.stop_vm()
-
-        if not samples:
-            raise BenchmarkError("No successful runs")
-
-        stats = calc_stats(samples)
-
-        return {
-            "boot_to_healthz_ms": samples,
-            "avg_ms": int(stats["avg"]),
-            "min_ms": int(stats["min"]),
-            "max_ms": int(stats["max"]),
-            "config": {
-                "cpus": self.cpus,
-                "memory_mb": self.memory_mb,
-                "kernel": self.kernel.name,
-                "initrd": self.initrd.name,
-                "launcher": self.launcher,
-            },
-        }
-
-    def status(self) -> str:
-        """Check VM status."""
-        if not self.pid_file.exists():
-            return "VM stopped"
-
-        try:
-            pid = int(self.pid_file.read_text().strip())
-            os.kill(pid, 0)  # Check if process exists
-            return f"VM running (PID {pid})"
-        except (ValueError, ProcessLookupError, PermissionError):
-            return "VM stopped"
+        time.sleep(0.05)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-
-    subparsers = parser.add_subparsers(dest="command", help="Command to run")
-
-    # Bench command
-    bench_parser = subparsers.add_parser("bench", aliases=["measure"], help="Run benchmark")
-    bench_parser.add_argument("iterations", type=int, nargs="?", default=5, help="Number of iterations")
-
-    # Start command
-    start_parser = subparsers.add_parser("start", help="Start VM")
-
-    # Stop command
-    stop_parser = subparsers.add_parser("stop", help="Stop VM")
-
-    # Status command
-    status_parser = subparsers.add_parser("status", help="Check VM status")
-
-    # Common arguments
-    for p in [parser, bench_parser, start_parser, stop_parser, status_parser]:
-        p.add_argument("--kernel", type=Path, help="Path to kernel")
-        p.add_argument("--initrd", type=Path, help="Path to initramfs")
-        p.add_argument("--cpus", type=int, default=2, help="Number of CPUs")
-        p.add_argument("--memory", type=int, default=512, help="Memory in MB")
-        p.add_argument("--port", type=int, default=3000, help="Host port")
-        p.add_argument("--host", default="127.0.0.1", help="Host address")
-        p.add_argument("--timeout", type=int, default=30, help="Timeout in seconds")
-        p.add_argument("--launcher", default="vfkit", help="VM launcher")
-        p.add_argument("--bench-dir", type=Path, default=DEFAULT_BENCH_DIR, help="Benchmark directory")
-        p.add_argument("--output", type=Path, help="Output JSON file")
-
-    args = parser.parse_args(argv)
-
-    # Default command is help
-    if not args.command:
-        parser.print_help()
-        return 0
-
-    # Resolve paths
-    bench_dir = Path(args.bench_dir)
-    kernel = args.kernel or (bench_dir / "vmlinux-efi-stub")
-    initrd = args.initrd or (bench_dir / "initramfs-minimal.cpio.gz")
-
-    benchmark = AppleVFBenchmark(
-        kernel=kernel,
-        initrd=initrd,
-        cpus=args.cpus,
-        memory_mb=args.memory,
-        port=args.port,
-        host=args.host,
-        timeout=args.timeout,
-        launcher=args.launcher,
-        bench_dir=bench_dir,
-    )
+def stop_vm(pid_file: Path) -> None:
+    """Stop the VM."""
+    if not pid_file.exists():
+        return
 
     try:
-        if args.command in ("bench", "measure"):
-            print("=== Apple VF Fast Boot Benchmark ===")
-            print(f"Kernel: {kernel}")
-            print(f"Initrd: {initrd}")
-            print(f"Iterations: {args.iterations}")
-            print()
+        pid = int(pid_file.read_text().strip())
+        os.kill(pid, signal.SIGTERM)
+        time.sleep(0.5)
+        try:
+            os.kill(pid, signal.SIGKILL)
+        except (OSError, ProcessLookupError):
+            pass
+    except (ValueError, OSError, ProcessLookupError):
+        pass
 
-            benchmark.validate_assets()
-            results = benchmark.run_benchmark(args.iterations)
+    pid_file.unlink(missing_ok=True)
 
-            print()
-            print("=== Results ===")
-            print(json.dumps(results, indent=2))
 
-            # Save results
-            if args.output:
-                output_path = args.output
-            else:
-                results_dir = DEFAULT_RESULTS_DIR
-                results_dir.mkdir(parents=True, exist_ok=True)
-                timestamp = get_timestamp()
-                output_path = results_dir / f"applevf-fastboot-{timestamp}.json"
+def start_vm_vfkit(config: BenchmarkConfig, pid_file: Path, serial_log: Path) -> bool:
+    """Start VM using vfkit."""
+    cmd = [
+        "vfkit",
+        "--cpus", str(config.cpus),
+        "--memory", str(config.memory_mb),
+        "--bootloader", f"linux,kernel={config.kernel},initrd={config.initrd},cmdline=console=hvc0 rdinit=/init quiet",
+        "--device", f"virtio-net,nat,localPort={config.port}:3000",
+        "--device", "virtio-serial,stdio",
+        "--device", "virtio-rng"
+    ]
 
-            # Add metadata
-            hw = get_hardware_info()
-            results["timestamp"] = get_iso_timestamp()
-            results["config"]["initrd_size_bytes"] = initrd.stat().st_size if initrd.exists() else 0
-            results["config"]["kernel_size_bytes"] = kernel.stat().st_size if kernel.exists() else 0
-            results["config"]["host_arch"] = hw.arch
+    with open(serial_log, "w") as log_file:
+        proc = subprocess.Popen(
+            cmd,
+            stdout=log_file,
+            stderr=log_file
+        )
 
-            save_results(results, output_path)
-            return 0
+    pid_file.write_text(str(proc.pid))
+    return True
 
-        elif args.command == "start":
-            benchmark.validate_assets()
-            benchmark.stop_vm()
-            benchmark.start_vm()
-            try:
-                elapsed = benchmark.wait_for_healthz()
-                success(f"VM started in {elapsed}ms")
-                print(f"PID: {benchmark.pid_file.read_text().strip()}")
-                print(f"Health: http://{args.host}:{args.port}/healthz")
-                return 0
-            except BenchmarkError:
-                log_error("VM failed to start")
-                benchmark.stop_vm()
-                return 1
 
-        elif args.command == "stop":
-            benchmark.stop_vm()
-            success("VM stopped")
-            return 0
+def start_vm_custom(config: BenchmarkConfig, pid_file: Path, serial_log: Path) -> bool:
+    """Start VM using custom launcher."""
+    env = os.environ.copy()
+    env.update({
+        "MICROVM_KERNEL": str(config.kernel),
+        "MICROVM_INITRD": str(config.initrd),
+        "MICROVM_CMDLINE": "console=hvc0 rdinit=/init quiet",
+        "MICROVM_CPUS": str(config.cpus),
+        "MICROVM_MEMORY_MB": str(config.memory_mb),
+        "MICROVM_HOST": config.host,
+        "MICROVM_PORT": str(config.port),
+        "MICROVM_PID_FILE": str(pid_file),
+        "MICROVM_SERIAL_LOG": str(serial_log)
+    })
 
-        elif args.command == "status":
-            print(benchmark.status())
-            return 0
+    with open(serial_log, "w") as log_file:
+        proc = subprocess.Popen(
+            [config.launcher],
+            env=env,
+            stdout=log_file,
+            stderr=log_file
+        )
 
-    except BenchmarkError as err:
-        log_error(str(err))
+    pid_file.write_text(str(proc.pid))
+    return True
+
+
+def start_vm(config: BenchmarkConfig, pid_file: Path, serial_log: Path) -> bool:
+    """Start the VM."""
+    serial_log.parent.mkdir(parents=True, exist_ok=True)
+    serial_log.write_text("")
+
+    if config.launcher == "vfkit":
+        return start_vm_vfkit(config, pid_file, serial_log)
+    else:
+        return start_vm_custom(config, pid_file, serial_log)
+
+
+def run_benchmark(config: BenchmarkConfig) -> BenchmarkResults:
+    """Run the fast boot benchmark."""
+    results = BenchmarkResults()
+    pid_file = config.bench_dir / ".vm.pid"
+    serial_log = config.bench_dir / "console.log"
+
+    samples = []
+
+    for i in range(1, config.iterations + 1):
+        stop_vm(pid_file)
+        time.sleep(0.5)
+
+        print(f"  Run {i}/{config.iterations}: ", end="", flush=True)
+
+        start_vm(config, pid_file, serial_log)
+
+        elapsed = wait_for_healthz(config.host, config.port, config.timeout)
+
+        if elapsed is not None:
+            print(f"{elapsed}ms")
+            samples.append(elapsed)
+        else:
+            print("TIMEOUT")
+            stop_vm(pid_file)
+            continue
+
+        stop_vm(pid_file)
+
+    if samples:
+        results.boot_times_ms = samples
+        results.avg_ms = sum(samples) // len(samples)
+        results.min_ms = min(samples)
+        results.max_ms = max(samples)
+
+    results.config = {
+        "cpus": config.cpus,
+        "memory_mb": config.memory_mb,
+        "kernel": config.kernel.name,
+        "initrd": config.initrd.name,
+        "launcher": config.launcher
+    }
+
+    return results
+
+
+def print_results(results: BenchmarkResults) -> None:
+    """Print benchmark results."""
+    print()
+    print("=== Results ===")
+    print(json.dumps({
+        "boot_to_healthz_ms": results.boot_times_ms,
+        "avg_ms": results.avg_ms,
+        "min_ms": results.min_ms,
+        "max_ms": results.max_ms,
+        "config": results.config
+    }, indent=2))
+
+
+def save_results(results: BenchmarkResults, results_dir: Path, config: BenchmarkConfig) -> Path:
+    """Save results to file."""
+    results_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    results_file = results_dir / f"applevf-fastboot-{timestamp}.json"
+
+    # Get file sizes
+    kernel_size = config.kernel.stat().st_size if config.kernel.exists() else 0
+    initrd_size = config.initrd.stat().st_size if config.initrd.exists() else 0
+
+    data = {
+        "timestamp": timestamp,
+        "boot_to_healthz_ms": results.boot_times_ms,
+        "avg_ms": results.avg_ms,
+        "min_ms": results.min_ms,
+        "max_ms": results.max_ms,
+        "config": {
+            **results.config,
+            "initrd_size_bytes": initrd_size,
+            "kernel_size_bytes": kernel_size,
+            "host": os.uname().machine
+        }
+    }
+
+    results_file.write_text(json.dumps(data, indent=2))
+    return results_file
+
+
+def cmd_bench(config: BenchmarkConfig) -> int:
+    """Run benchmark command."""
+    results = run_benchmark(config)
+    print_results(results)
+
+    results_file = save_results(results, config.results_dir, config)
+    print()
+    print(f"Results saved to: {results_file}")
+
+    return 0
+
+
+def cmd_start(config: BenchmarkConfig) -> int:
+    """Start VM command."""
+    pid_file = config.bench_dir / ".vm.pid"
+    serial_log = config.bench_dir / "console.log"
+
+    stop_vm(pid_file)
+    start_vm(config, pid_file, serial_log)
+
+    elapsed = wait_for_healthz(config.host, config.port, config.timeout)
+
+    if elapsed is not None:
+        print(f"VM started in {elapsed}ms")
+        print(f"PID: {pid_file.read_text().strip()}")
+        print(f"Health: http://{config.host}:{config.port}/healthz")
+        return 0
+    else:
+        print("VM failed to start")
+        stop_vm(pid_file)
         return 1
+
+
+def cmd_stop(config: BenchmarkConfig) -> int:
+    """Stop VM command."""
+    pid_file = config.bench_dir / ".vm.pid"
+    stop_vm(pid_file)
+    print("VM stopped")
+    return 0
+
+
+def cmd_status(config: BenchmarkConfig) -> int:
+    """Status command."""
+    pid_file = config.bench_dir / ".vm.pid"
+
+    if not pid_file.exists():
+        print("VM stopped")
+        return 0
+
+    try:
+        pid = int(pid_file.read_text().strip())
+        os.kill(pid, 0)  # Check if process exists
+        print(f"VM running (PID {pid})")
+    except (ValueError, OSError, ProcessLookupError):
+        print("VM stopped")
+
+    return 0
+
+
+def main() -> int:
+    """Main entry point."""
+    # Get paths
+    script_dir = Path(__file__).parent.resolve()
+    root_dir = script_dir.parent.parent
+    bench_dir = root_dir / "bench-images" / "apple-vf-fastboot"
+    results_dir = root_dir / "docs" / "reports" / "benchmarks"
+
+    # Default paths
+    default_kernel = bench_dir / "vmlinux-efi-stub"
+    default_initrd = bench_dir / "initramfs-minimal.cpio.gz"
+
+    parser = argparse.ArgumentParser(
+        description="Apple VF Fast Boot Benchmark"
+    )
+    parser.add_argument(
+        "command",
+        nargs="?",
+        default="bench",
+        choices=["bench", "measure", "start", "stop", "status", "help"],
+        help="Command to run"
+    )
+    parser.add_argument(
+        "iterations",
+        nargs="?",
+        type=int,
+        default=5,
+        help="Number of iterations for benchmark"
+    )
+
+    args = parser.parse_args()
+
+    print("=== Apple VF Fast Boot Benchmark ===")
+
+    # Get configuration from environment
+    kernel = Path(os.environ.get("APPLEVF_KERNEL", default_kernel))
+    initrd = Path(os.environ.get("APPLEVF_INITRD", default_initrd))
+    cpus = int(os.environ.get("APPLEVF_CPUS", "2"))
+    memory_mb = int(os.environ.get("APPLEVF_MEMORY_MB", "512"))
+    port = int(os.environ.get("APPLEVF_PORT", "3000"))
+    host = os.environ.get("APPLEVF_HOST", "127.0.0.1")
+    timeout = int(os.environ.get("APPLEVF_TIMEOUT", "30"))
+    launcher = os.environ.get("APPLEVF_LAUNCHER", "vfkit")
+
+    print(f"Kernel: {kernel}")
+    print(f"Initrd: {initrd}")
+    print(f"Iterations: {args.iterations}")
+    print()
+
+    # Validate kernel
+    if not kernel.exists():
+        print(f"Error: Kernel not found at {kernel}")
+        print()
+        print("Build it with:")
+        print("  lima kernel-builder -- ./scripts/benchmarks/build-efi-stub-kernel.sh arm64")
+        return 1
+
+    # Validate initrd
+    if not initrd.exists():
+        print(f"Error: Initramfs not found at {initrd}")
+        print()
+        print("Build it with:")
+        print("  ./scripts/benchmarks/build-minimal-initramfs.sh arm64")
+        return 1
+
+    config = BenchmarkConfig(
+        kernel=kernel,
+        initrd=initrd,
+        cpus=cpus,
+        memory_mb=memory_mb,
+        port=port,
+        host=host,
+        timeout=timeout,
+        iterations=args.iterations,
+        launcher=launcher,
+        bench_dir=bench_dir,
+        results_dir=results_dir
+    )
+
+    if args.command in ("bench", "measure"):
+        return cmd_bench(config)
+    elif args.command == "start":
+        return cmd_start(config)
+    elif args.command == "stop":
+        return cmd_stop(config)
+    elif args.command == "status":
+        return cmd_status(config)
+    elif args.command == "help":
+        print(f"Usage: {sys.argv[0]} {{bench|start|stop|status}} [iterations]")
+        print()
+        print("Environment variables:")
+        print("  APPLEVF_KERNEL   - Path to kernel")
+        print("  APPLEVF_INITRD   - Path to initramfs")
+        print("  APPLEVF_CPUS     - Number of CPUs (default: 2)")
+        print("  APPLEVF_MEMORY_MB - Memory in MB (default: 512)")
+        print("  APPLEVF_LAUNCHER - vfkit or custom launcher path")
+        return 0
+
+    return 0
 
 
 if __name__ == "__main__":

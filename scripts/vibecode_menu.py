@@ -1,54 +1,41 @@
 #!/usr/bin/env python3
 """VibeCode Development Menu.
 
-Quick access to common development operations via interactive menu.
+Quick access to common operations.
 """
+
 from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Callable
 
 
+@dataclass(frozen=True)
 class Colors:
     """ANSI color codes for terminal output."""
 
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    BLUE = "\033[0;34m"
-    CYAN = "\033[0;36m"
-    BOLD = "\033[1m"
-    NC = "\033[0m"
-
-    @classmethod
-    def disable(cls) -> None:
-        """Disable colors for non-TTY output."""
-        cls.RED = cls.GREEN = cls.YELLOW = cls.BLUE = cls.CYAN = cls.BOLD = cls.NC = ""
+    red: str = "\033[0;31m"
+    green: str = "\033[0;32m"
+    yellow: str = "\033[1;33m"
+    blue: str = "\033[0;34m"
+    cyan: str = "\033[0;36m"
+    bold: str = "\033[1m"
+    reset: str = "\033[0m"
 
 
-if not sys.stdout.isatty():
-    Colors.disable()
+COLORS = Colors()
 
 
-def run_cmd(
-    cmd: list[str],
-    capture: bool = False,
-    check: bool = False,
-    cwd: str | Path | None = None,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=capture, text=True, check=check, cwd=cwd)
+def get_paths() -> tuple[Path, Path]:
+    """Get script directory and project root paths."""
+    script_dir = Path(__file__).resolve().parent
+    project_root = script_dir.parent
+    return script_dir, project_root
 
 
 def clear_screen() -> None:
@@ -56,10 +43,52 @@ def clear_screen() -> None:
     os.system("clear" if os.name != "nt" else "cls")
 
 
+def print_status(message: str) -> None:
+    """Print a status message."""
+    print(f"{COLORS.blue}[*]{COLORS.reset} {message}")
+
+
+def print_success(message: str) -> None:
+    """Print a success message."""
+    print(f"{COLORS.green}[✓]{COLORS.reset} {message}")
+
+
+def print_error(message: str) -> None:
+    """Print an error message."""
+    print(f"{COLORS.red}[✗]{COLORS.reset} {message}")
+
+
+def run_script(script_name: str, *, with_datadog: bool = False) -> None:
+    """Run a shell script from the scripts directory.
+
+    Args:
+        script_name: Name of the script to run
+        with_datadog: If True, wrap with run-with-secure-datadog-key.sh
+    """
+    script_dir, _ = get_paths()
+    script_path = script_dir / script_name
+
+    if not script_path.exists():
+        print_error(f"Script not found: {script_path}")
+        return
+
+    try:
+        if with_datadog:
+            wrapper = script_dir / "run-with-secure-datadog-key.sh"
+            subprocess.run([str(wrapper), str(script_path)], check=True)
+        else:
+            subprocess.run([str(script_path)], check=True)
+    except subprocess.CalledProcessError as e:
+        print_error(f"Script failed with exit code {e.returncode}")
+    except FileNotFoundError:
+        print_error(f"Could not execute: {script_path}")
+
+
 def show_menu() -> None:
     """Display the main menu."""
     clear_screen()
-    print("""╔═══════════════════════════════════════════════════════════╗
+    menu = """\
+╔═══════════════════════════════════════════════════════════╗
 ║                                                           ║
 ║                   VibeCode Dev Menu                       ║
 ║                                                           ║
@@ -95,93 +124,121 @@ Utilities:
   19) Git status
 
   0) Exit
-""")
-    print("Select option: ", end="", flush=True)
+"""
+    print(menu)
 
 
-def build_and_launch(script_dir: Path) -> None:
+def build_and_launch() -> None:
     """Build and launch VibeCode."""
-    print("Building and launching VibeCode...")
-    run_cmd([str(script_dir / "launch-vibecode.sh")])
+    print_status("Building and launching VibeCode...")
+    run_script("launch-vibecode.sh")
 
 
-def run_swift_tests(project_root: Path) -> None:
+def run_swift_tests() -> None:
     """Run Swift unit tests."""
-    print("Running Swift unit tests...")
+    print_status("Running Swift unit tests...")
+    _, project_root = get_paths()
     swift_dir = project_root / "VibeCodeSwift"
-    run_cmd(["swift", "test"], cwd=swift_dir)
+
+    try:
+        subprocess.run(["swift", "test"], cwd=swift_dir, check=True)
+    except subprocess.CalledProcessError as e:
+        print_error(f"Swift tests failed with exit code {e.returncode}")
+    except FileNotFoundError:
+        print_error("Swift not found. Please install Xcode command line tools.")
 
 
-def run_integration_tests(script_dir: Path) -> None:
+def run_integration_tests() -> None:
     """Run integration tests."""
-    print("Running integration tests...")
-    run_cmd([str(script_dir / "test-vibecode-vms.sh")])
+    print_status("Running integration tests...")
+    run_script("test-vibecode-vms.sh")
 
 
-def clean_build(project_root: Path) -> None:
+def clean_build() -> None:
     """Clean build artifacts."""
-    print("Cleaning build artifacts...")
+    print_status("Cleaning build artifacts...")
+    _, project_root = get_paths()
     swift_dir = project_root / "VibeCodeSwift"
-    run_cmd(["swift", "package", "clean"], cwd=swift_dir)
 
-    build_dir = swift_dir / ".build"
-    if build_dir.exists():
-        shutil.rmtree(build_dir)
+    try:
+        subprocess.run(["swift", "package", "clean"], cwd=swift_dir, check=True)
+        build_dir = swift_dir / ".build"
+        if build_dir.exists():
+            shutil.rmtree(build_dir)
+        print_success("Clean complete")
+    except subprocess.CalledProcessError as e:
+        print_error(f"Clean failed with exit code {e.returncode}")
+    except FileNotFoundError:
+        print_error("Swift not found. Please install Xcode command line tools.")
 
-    print("Clean complete")
 
-
-def build_vms_parallel(script_dir: Path) -> None:
+def build_vms_parallel() -> None:
     """Build VMs in parallel."""
-    print("Building VMs in parallel...")
-    run_cmd([
-        str(script_dir / "run-with-secure-datadog-key.sh"),
-        str(script_dir / "build-vz-vms-parallel.sh"),
-    ])
+    print_status("Building VMs in parallel...")
+    run_script("build-vz-vms-parallel.sh", with_datadog=True)
 
 
-def check_vm_status(project_root: Path) -> None:
+def build_vms_sequential() -> None:
+    """Build VMs sequentially."""
+    print_status("Sequential build not yet implemented")
+
+
+def check_vm_status() -> None:
     """Check VM image status."""
+    _, project_root = get_paths()
+    vm_images_dir = project_root / "dist" / "vm-images"
+
     print("VM Image Status:")
     print("================")
-
-    vm_images_dir = project_root / "dist" / "vm-images"
 
     # List .img files
     img_files = list(vm_images_dir.glob("*.img")) if vm_images_dir.exists() else []
     if img_files:
-        for img in img_files:
+        for img in sorted(img_files):
             size = img.stat().st_size
-            size_str = f"{size / (1024**3):.1f}G" if size > 1024**3 else f"{size / (1024**2):.1f}M"
+            size_str = format_size(size)
             print(f"  {img.name}: {size_str}")
     else:
-        print("No VMs found")
+        print("  No VMs found")
 
     print()
     print("EFI NVRAM Files:")
+
+    # List NVRAM files
     nvram_files = list(vm_images_dir.glob("*-efi.nvram")) if vm_images_dir.exists() else []
     if nvram_files:
-        for nvram in nvram_files:
+        for nvram in sorted(nvram_files):
             size = nvram.stat().st_size
-            print(f"  {nvram.name}: {size} bytes")
+            size_str = format_size(size)
+            print(f"  {nvram.name}: {size_str}")
     else:
-        print("No NVRAM files found")
+        print("  No NVRAM files found")
+
+
+def format_size(size: int) -> str:
+    """Format file size in human-readable form."""
+    for unit in ["B", "K", "M", "G", "T"]:
+        if size < 1024:
+            return f"{size:.1f}{unit}"
+        size /= 1024
+    return f"{size:.1f}P"
 
 
 def list_lima_vms() -> None:
     """List Lima VMs."""
     print("Lima VMs:")
-    if shutil.which("limactl"):
-        run_cmd(["limactl", "list"])
-    else:
-        print("limactl not found")
+    try:
+        subprocess.run(["limactl", "list"], check=True)
+    except subprocess.CalledProcessError:
+        print_error("Failed to list Lima VMs")
+    except FileNotFoundError:
+        print_error("limactl not found. Is Lima installed?")
 
 
-def run_full_tests(script_dir: Path) -> None:
-    """Run full test suite."""
-    print("Running full test suite...")
-
-    test_scripts = [
+def run_full_tests() -> None:
+    """Run the full test suite."""
+    print_status("Running full test suite...")
+    scripts = [
         "regression-tests.sh",
         "test-vibecode-vms.sh",
         "functional-tests.sh",
@@ -189,159 +246,192 @@ def run_full_tests(script_dir: Path) -> None:
         "service-tests.sh",
         "test-e2e-with-datadog.sh",
     ]
-
-    for script in test_scripts:
-        script_path = script_dir / script
-        if script_path.exists():
-            print(f"\n--- Running {script} ---")
-            run_cmd([str(script_path)])
-        else:
-            print(f"Skipping {script} (not found)")
-
-    print()
-    print("Full test suite complete")
+    for script in scripts:
+        run_script(script)
+        print()
+    print_success("Full test suite complete")
 
 
-def run_script(script_dir: Path, script_name: str) -> None:
-    """Run a script by name."""
-    script_path = script_dir / script_name
-    if script_path.exists():
-        run_cmd([str(script_path)])
-    else:
-        print(f"Script not found: {script_path}")
-
-
-def view_logs(project_root: Path) -> None:
+def view_logs() -> None:
     """View recent logs."""
-    print("Recent logs:")
+    _, project_root = get_paths()
     log_file = project_root / "logs" / "vibecode.log"
 
+    print("Recent logs:")
     if log_file.exists():
-        result = run_cmd(["tail", "-50", str(log_file)], capture=True)
-        print(result.stdout)
+        try:
+            with log_file.open() as f:
+                lines = f.readlines()
+                for line in lines[-50:]:
+                    print(line, end="")
+        except OSError as e:
+            print_error(f"Failed to read logs: {e}")
     else:
         print("No logs found")
 
 
-def check_requirements(project_root: Path) -> None:
+def check_requirements() -> None:
     """Check system requirements."""
+    _, project_root = get_paths()
+
     print("System Requirements Check:")
     print("=========================")
 
     # macOS version
-    result = run_cmd(["sw_vers", "-productVersion"], capture=True)
-    print(f"macOS version: {result.stdout.strip()}")
+    try:
+        result = subprocess.run(
+            ["sw_vers", "-productVersion"],
+            capture_output=True,
+            text=True,
+        )
+        print(f"macOS version: {result.stdout.strip()}")
+    except FileNotFoundError:
+        print("macOS version: Unknown (not macOS?)")
 
     # Swift version
-    result = run_cmd(["swift", "--version"], capture=True)
-    swift_version = result.stdout.strip().split("\n")[0] if result.stdout else "Not installed"
-    print(f"Swift version: {swift_version}")
+    try:
+        result = subprocess.run(
+            ["swift", "--version"],
+            capture_output=True,
+            text=True,
+        )
+        first_line = result.stdout.strip().split("\n")[0]
+        print(f"Swift version: {first_line}")
+    except FileNotFoundError:
+        print("Swift version: Not installed")
 
     # Xcode version
-    result = run_cmd(["xcodebuild", "-version"], capture=True)
-    if result.returncode == 0 and result.stdout:
-        xcode_version = result.stdout.strip().split("\n")[0]
-    else:
-        xcode_version = "Not installed"
-    print(f"Xcode version: {xcode_version}")
+    try:
+        result = subprocess.run(
+            ["xcodebuild", "-version"],
+            capture_output=True,
+            text=True,
+        )
+        first_line = result.stdout.strip().split("\n")[0]
+        print(f"Xcode version: {first_line}")
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        print("Xcode version: Not installed")
 
     print()
 
-    # Disk space
+    # Disk space for VMs
     vm_images_dir = project_root / "dist" / "vm-images"
     print("Disk space in dist/vm-images:")
     if vm_images_dir.exists():
-        result = run_cmd(["du", "-sh", str(vm_images_dir)], capture=True)
-        print(f"  {result.stdout.strip()}")
+        total_size = sum(f.stat().st_size for f in vm_images_dir.rglob("*") if f.is_file())
+        print(f"  {format_size(total_size)}")
     else:
         print("  No VMs found")
 
     print()
+
+    # Available disk space
     print("Available disk space:")
-    result = run_cmd(["df", "-h", str(project_root)], capture=True)
-    lines = result.stdout.strip().split("\n")
-    if len(lines) > 1:
-        print(f"  {lines[-1]}")
+    try:
+        result = subprocess.run(
+            ["df", "-h", str(project_root)],
+            capture_output=True,
+            text=True,
+        )
+        lines = result.stdout.strip().split("\n")
+        if len(lines) > 1:
+            print(f"  {lines[-1]}")
+    except (FileNotFoundError, subprocess.CalledProcessError):
+        print("  Unknown")
 
 
-def git_status(project_root: Path) -> None:
+def git_status() -> None:
     """Show git status."""
+    _, project_root = get_paths()
+
     print("Git Status:")
-    run_cmd(["git", "status", "--short"], cwd=project_root)
+    try:
+        subprocess.run(
+            ["git", "status", "--short"],
+            cwd=project_root,
+            check=True,
+        )
+    except subprocess.CalledProcessError:
+        print_error("Failed to get git status")
 
     print()
     print("Current branch:")
-    result = run_cmd(["git", "branch", "--show-current"], capture=True, cwd=project_root)
-    print(f"  {result.stdout.strip()}")
+    try:
+        result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            cwd=project_root,
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        print(f"  {result.stdout.strip()}")
+    except subprocess.CalledProcessError:
+        print_error("Failed to get current branch")
+
+
+def test_datadog() -> None:
+    """Test Datadog integration."""
+    print_status("Testing Datadog integration...")
+    run_script("test-parallel-datadog.sh", with_datadog=True)
 
 
 def wait_for_enter() -> None:
     """Wait for user to press Enter."""
     print()
-    input("Press Enter to continue...")
+    try:
+        input("Press Enter to continue...")
+    except EOFError:
+        pass
+
+
+def get_menu_actions() -> dict[str, Callable[[], None]]:
+    """Get mapping of menu choices to actions."""
+    script_dir, _ = get_paths()
+
+    return {
+        "1": build_and_launch,
+        "2": run_swift_tests,
+        "3": run_integration_tests,
+        "4": clean_build,
+        "5": build_vms_parallel,
+        "6": build_vms_sequential,
+        "7": check_vm_status,
+        "8": list_lima_vms,
+        "9": run_full_tests,
+        "10": lambda: run_script("regression-tests.sh"),
+        "11": lambda: run_script("functional-tests.sh"),
+        "12": lambda: run_script("test-gui.sh"),
+        "13": lambda: run_script("service-tests.sh"),
+        "14": lambda: run_script("test-e2e-with-datadog.sh"),
+        "15": lambda: run_script("test-all-datadog-solutions.sh"),
+        "16": lambda: run_script("start-lima-vms-with-datadog.sh"),
+        "17": view_logs,
+        "18": check_requirements,
+        "19": git_status,
+    }
 
 
 def main() -> int:
     """Main entry point."""
-    script_dir = Path(__file__).parent.resolve()
-    project_root = script_dir.parent
+    actions = get_menu_actions()
 
     while True:
         show_menu()
-
         try:
-            choice = input().strip()
+            choice = input("Select option: ").strip()
         except (EOFError, KeyboardInterrupt):
             print("\nExiting...")
             return 0
 
-        try:
-            if choice == "1":
-                build_and_launch(script_dir)
-            elif choice == "2":
-                run_swift_tests(project_root)
-            elif choice == "3":
-                run_integration_tests(script_dir)
-            elif choice == "4":
-                clean_build(project_root)
-            elif choice == "5":
-                build_vms_parallel(script_dir)
-            elif choice == "6":
-                print("Sequential build not yet implemented")
-            elif choice == "7":
-                check_vm_status(project_root)
-            elif choice == "8":
-                list_lima_vms()
-            elif choice == "9":
-                run_full_tests(script_dir)
-            elif choice == "10":
-                run_script(script_dir, "regression-tests.sh")
-            elif choice == "11":
-                run_script(script_dir, "functional-tests.sh")
-            elif choice == "12":
-                run_script(script_dir, "test-gui.sh")
-            elif choice == "13":
-                run_script(script_dir, "service-tests.sh")
-            elif choice == "14":
-                run_script(script_dir, "test-e2e-with-datadog.sh")
-            elif choice == "15":
-                run_script(script_dir, "test-all-datadog-solutions.sh")
-            elif choice == "16":
-                run_script(script_dir, "start-lima-vms-with-datadog.sh")
-            elif choice == "17":
-                view_logs(project_root)
-            elif choice == "18":
-                check_requirements(project_root)
-            elif choice == "19":
-                git_status(project_root)
-            elif choice == "0":
-                print("Exiting...")
-                return 0
-            else:
-                print("Invalid option")
+        if choice == "0":
+            print("Exiting...")
+            return 0
 
-        except Exception as e:
-            print(f"{Colors.RED}Error: {e}{Colors.NC}")
+        action = actions.get(choice)
+        if action:
+            action()
+        else:
+            print_error("Invalid option")
 
         wait_for_enter()
 

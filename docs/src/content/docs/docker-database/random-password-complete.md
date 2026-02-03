@@ -129,9 +129,11 @@ $ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
   "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
-  "workspaceRag.useMLX": false
+  "workspaceRag.useLocalMLX": false
 }
 ```
+
+Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ### Both Containers Use Same Password
 

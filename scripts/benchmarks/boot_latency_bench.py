@@ -1,38 +1,13 @@
 #!/usr/bin/env python3
-
-<<<<<<< HEAD
-
+"""Measure host vs container startup latency for simple workloads."""
+from __future__ import annotations
 
 # Datadog APM tracing
 try:
     import ddtrace
     ddtrace.patch_all()
 except ImportError:
-    print("Warning: ddtrace not installed, tracing disabled")
     pass
-
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
-"""Measure host vs container startup latency for simple workloads."""
-from __future__ import annotations
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
-    pass
-# ------------------------
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import json
@@ -45,6 +20,17 @@ import time
 import uuid
 from pathlib import Path
 
+try:
+  from ._dogstatsd import DogStatsDSender, emit_duration_metrics
+except ImportError:  # pragma: no cover - fallback when run as a script
+  sys.path.append(str(Path(__file__).resolve().parent))
+  from _dogstatsd import DogStatsDSender, emit_duration_metrics
+
+DEVNULL = subprocess.DEVNULL
+
+
+class BenchmarkError(RuntimeError):
+  pass
 
 SCRIPT_DIR = Path(__file__).resolve().parent
 REPO_ROOT = SCRIPT_DIR.parent.parent
@@ -57,9 +43,124 @@ QEMU_BINARIES = {
 
 
 def run_command(cmd: list[str], check: bool = True) -> subprocess.CompletedProcess:
+  try:
+    return subprocess.run(cmd, check=check, stdout=DEVNULL, stderr=DEVNULL)
+  except FileNotFoundError as exc:
+    raise BenchmarkError(f"Command not found: {cmd[0]}") from exc
+
+
+def measure_latency(label: str, cmd: list[str], iterations: int, extra_tags: list[str] | None = None) -> dict:
+  samples: list[float] = []
+  for _ in range(iterations):
+    start = time.perf_counter()
+    run_command(cmd)
+    samples.append(time.perf_counter() - start)
+  result = summarise(label, samples)
+  if extra_tags:
+    result["tags"] = extra_tags
+  return result
+
+
+def summarise(label: str, samples: list[float]) -> dict:
+  return {
+      "label": label,
+      "runs": len(samples),
+      "avg_seconds": statistics.mean(samples),
+      "min_seconds": min(samples),
+      "max_seconds": max(samples),
+      "samples": samples,
+  }
+
+
+
+
+def measure_kernel_boot(
+    kernel: Path,
+    initrd: Path,
+    arch: str,
+    iterations: int,
+    timeout: float,
+) -> dict:
+  if arch not in QEMU_BINARIES:
+    raise BenchmarkError(f"Unsupported kernel architecture: {arch}")
+
+  qemu_bin = QEMU_BINARIES[arch]
+  if shutil.which(qemu_bin) is None:
+    raise BenchmarkError(
+        f"{qemu_bin} not found in PATH. Install qemu-system-{arch} to run kernel benchmarks."
+    )
+
+  if not kernel.is_file():
+    raise BenchmarkError(f"Kernel image not found: {kernel}")
+
+  if not initrd.is_file():
+    raise BenchmarkError(f"Initrd image not found: {initrd}")
+
+  samples: list[float] = []
+  append_args = "console=ttyS0 root=/dev/ram0 rdinit=/init nokaslr"
+
+  for iteration in range(1, iterations + 1):
+    cmd = [
+        qemu_bin,
+        "-m",
+        "512",
+        "-machine",
+        "accel=tcg",
+        "-kernel",
+        str(kernel),
+        "-initrd",
+        str(initrd),
+        "-append",
+        append_args,
+        "-nographic",
+        "-no-reboot",
+    ]
+
+    start = time.perf_counter()
+    proc = subprocess.Popen(
+        cmd,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        stdin=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+
+    boot_time: float | None = None
+
+    try:
+      assert proc.stdout is not None
+      buffer = ""
+      while True:
+        elapsed = time.perf_counter() - start
+        if elapsed > timeout:
+          raise BenchmarkError(
+              f"Kernel boot timed out after {timeout:.1f}s (iteration {iteration})"
+          )
+        char = proc.stdout.read(1)
+        if not char:
+          break
+        buffer += char
+        if char in ("\n", "\r"):
+          normalized = buffer.strip()
+          if normalized.endswith("/ #") or normalized.endswith("#"):
+            boot_time = elapsed
+            break
+          buffer = ""
+        elif buffer.endswith("# "):
+          boot_time = elapsed
+          break
+      if boot_time is None:
+        continue
+    finally:
+      try:
+        if boot_time is not None and proc.stdin and not proc.stdin.closed:
+          proc.stdin.write("poweroff\n")
+          proc.stdin.flush()
+      except BrokenPipeError:
+        pass
 
       proc.terminate()
-<<<<<<< HEAD
       try:
         proc.wait(timeout=5)
       except subprocess.TimeoutExpired:
@@ -313,5 +414,3 @@ if __name__ == "__main__":
   except subprocess.CalledProcessError as err:
     print(f"command failed: {err}", file=sys.stderr)
     sys.exit(err.returncode)
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

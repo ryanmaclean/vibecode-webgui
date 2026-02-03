@@ -264,7 +264,7 @@ export class RedisService {
     }
 
     // Utility methods for AI Gateway specific operations
-    public async cacheResponse(cacheKey: string, response: any, ttlSeconds: number = config.caching.ttl): Promise<void> {
+    public async cacheResponse(cacheKey: string, response: unknown, ttlSeconds: number = config.caching.ttl): Promise<void> {
         const value = JSON.stringify({
             response,
             timestamp: Date.now(),
@@ -273,7 +273,7 @@ export class RedisService {
         await this.set(cacheKey, value, ttlSeconds);
     }
 
-    public async getCachedResponse(cacheKey: string): Promise<any | null> {
+    public async getCachedResponse(cacheKey: string): Promise<unknown | null> {
         const cached = await this.get(cacheKey);
         if (!cached) {
             return null;

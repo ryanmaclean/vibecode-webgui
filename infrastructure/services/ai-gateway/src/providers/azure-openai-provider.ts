@@ -35,7 +35,7 @@ export class AzureOpenAIProvider implements Provider {
     const deployment = this.resolveDeployment(req.model);
     const url = `${this.endpoint}/openai/deployments/${encodeURIComponent(deployment)}/chat/completions?api-version=${encodeURIComponent(this.apiVersion)}`;
 
-    const payload: any = {
+    const payload: Record<string, unknown> = {
       messages: req.messages.map(m => ({ role: m.role, content: m.content })),
     };
 
@@ -54,11 +54,15 @@ export class AzureOpenAIProvider implements Provider {
       timeout: 60000,
     });
 
-    const data = resp.data;
+    const data = resp.data as {
+      id?: string;
+      choices?: Array<{ index?: number; message?: { role: 'assistant' | 'user' | 'system'; content: string }; finish_reason?: string | null }>;
+      usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+    };
     return {
       id: data.id,
       model: deployment, // report deployment as model identifier
-      choices: data.choices?.map((c: any, idx: number) => ({
+      choices: data.choices?.map((c, idx) => ({
         index: typeof c.index === 'number' ? c.index : idx,
         message: c.message,
         finish_reason: c.finish_reason ?? null,

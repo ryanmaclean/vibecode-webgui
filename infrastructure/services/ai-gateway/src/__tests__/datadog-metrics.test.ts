@@ -16,7 +16,7 @@ jest.mock('../utils/logger', () => ({
 
 describe('DatadogMetricsService', () => {
   let service: DatadogMetricsService;
-  let originalEnv: NodeJS.ProcessEnv;
+  let originalEnv: Record<string, string | undefined>;
 
   beforeEach(() => {
     originalEnv = { ...process.env };

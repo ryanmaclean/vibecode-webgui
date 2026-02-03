@@ -1,0 +1,11 @@
+diff --git a/.gitignore b/.gitignore
+index bbc51f9c4..f8fc11904 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -385,3 +385,6 @@ PROMISE_VERIFICATION_REPORT.md
+ # Gas Town local runtime
+ .beads/
+ .runtime/
++
++# Gas Town (added by gt)
++.logs/

@@ -1,22 +1,8 @@
 #!/usr/bin/env python3
 """Evaluate all 3 Datadog installation solutions.
 
-Compares three approaches for installing Datadog agents in VMs:
-1. SSH into running VZ VMs (Runtime installation)
-2. Cloud-init VM build (Pre-installed)
-3. Lima VMs with provisioning (Hybrid)
-
-Generates a comparison report with pros, cons, and recommendations.
+Compares SSH installation, Cloud-init build, and Lima provisioning approaches.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import os
@@ -26,14 +12,18 @@ import sys
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import Path
+from typing import Optional
 
-
-RESULTS_FILE = Path("/tmp/datadog-evaluation-results.txt")
+# Colors for output
+GREEN = '\033[0;32m'
+RED = '\033[0;31m'
+YELLOW = '\033[1;33m'
+NC = '\033[0m'
 
 
 @dataclass
 class SolutionEvaluation:
-    """Evaluation of a single solution."""
+    """Evaluation data for a solution."""
 
     name: str
     number: int
@@ -46,63 +36,85 @@ class SolutionEvaluation:
     test_command: str = ""
 
 
-def run_cmd(cmd: list[str], check: bool = False) -> subprocess.CompletedProcess[str]:
+@dataclass
+class EvaluationConfig:
+    """Evaluation configuration."""
+
+    datadog_api_key: str
+    datadog_site: str = "datadoghq.com"
+    results_file: Path = Path("/tmp/datadog-evaluation-results.txt")
+
+
+def command_exists(cmd: str) -> bool:
+    """Check if a command exists."""
+    return shutil.which(cmd) is not None
+
+
+def run_command(cmd: list[str]) -> tuple[int, str, str]:
     """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=True, text=True, check=check)
+    try:
+        result = subprocess.run(cmd, capture_output=True, text=True)
+        return result.returncode, result.stdout, result.stderr
+    except FileNotFoundError:
+        return -1, "", "command not found"
 
 
 def check_lima_running() -> bool:
     """Check if any Lima VMs are running."""
-    if not shutil.which("limactl"):
+    if not command_exists("limactl"):
         return False
-    result = run_cmd(["limactl", "list"])
-    return result.returncode == 0 and "Running" in result.stdout
+    rc, stdout, _ = run_command(["limactl", "list"])
+    return rc == 0 and "Running" in stdout
 
 
-def check_qemu_available() -> bool:
-    """Check if qemu-img is available."""
-    return shutil.which("qemu-img") is not None
+def write_output(file: Path, text: str, also_print: bool = True) -> None:
+    """Write text to file and optionally print.
+
+    Args:
+        file: Output file path.
+        text: Text to write.
+        also_print: Whether to also print to stdout.
+    """
+    with open(file, 'a') as f:
+        f.write(text + "\n")
+    if also_print:
+        print(text)
 
 
-def check_lima_installed() -> bool:
-    """Check if Lima is installed."""
-    return shutil.which("limactl") is not None
-
-
-def evaluate_ssh_solution() -> SolutionEvaluation:
-    """Evaluate Solution 1: SSH into Running VMs."""
-    eval_result = SolutionEvaluation(
+def get_solution_1() -> SolutionEvaluation:
+    """Get evaluation for Solution 1: SSH Installation."""
+    solution = SolutionEvaluation(
         name="SSH into Running VMs",
         number=1,
         pros=[
             "Works with already-running VMs",
             "No rebuild required",
             "Quick to apply",
-            "Can update agents on existing VMs",
+            "Can update agents on existing VMs"
         ],
         cons=[
             "Requires SSH access to VMs",
             "VZ VMs currently don't have SSH configured",
             "Manual process for each VM",
-            "Agents not preserved if VM is recreated",
+            "Agents not preserved if VM is recreated"
         ],
         setup_time="2-5 minutes per VM",
         complexity="Medium (requires SSH setup first)",
-        best_for="Lima VMs with SSH already configured",
+        best_for="Lima VMs with SSH already configured"
     )
 
     if check_lima_running():
-        eval_result.test_status = "Can test with Lima VMs"
-        eval_result.test_command = "./scripts/install-datadog-in-vms.sh"
+        solution.test_status = "✅ Can test with Lima VMs"
+        solution.test_command = "./scripts/install-datadog-in-vms.sh"
     else:
-        eval_result.test_status = "No Lima VMs running to test"
+        solution.test_status = "⚠️  No Lima VMs running to test"
 
-    return eval_result
+    return solution
 
 
-def evaluate_cloudinit_solution() -> SolutionEvaluation:
-    """Evaluate Solution 2: Cloud-init VM Build."""
-    eval_result = SolutionEvaluation(
+def get_solution_2() -> SolutionEvaluation:
+    """Get evaluation for Solution 2: Cloud-init Build."""
+    solution = SolutionEvaluation(
         name="Cloud-init VM Build Process",
         number=2,
         pros=[
@@ -110,31 +122,31 @@ def evaluate_cloudinit_solution() -> SolutionEvaluation:
             "VM ready immediately on first boot",
             "Reproducible and version-controlled",
             "Works with VZ VMs natively",
-            "Can include specific Datadog checks",
+            "Can include specific Datadog checks"
         ],
         cons=[
             "Requires rebuilding all VM images (~30-45 min)",
             "Larger image size",
             "Need to rebuild to update Datadog agent",
-            "API key baked into image (security concern)",
+            "API key baked into image (security concern)"
         ],
         setup_time="30-45 minutes (one-time build)",
         complexity="High (requires qemu-img, cloud-init knowledge)",
-        best_for="Production deployments, golden images",
+        best_for="Production deployments, golden images"
     )
 
-    if check_qemu_available():
-        eval_result.test_status = "qemu-img available"
-        eval_result.test_command = "./scripts/build-vms-with-datadog.sh"
+    if command_exists("qemu-img"):
+        solution.test_status = "✅ qemu-img available"
+        solution.test_command = "./scripts/build-vms-with-datadog.sh"
     else:
-        eval_result.test_status = "qemu-img not installed (brew install qemu)"
+        solution.test_status = "⚠️  qemu-img not installed (brew install qemu)"
 
-    return eval_result
+    return solution
 
 
-def evaluate_lima_solution() -> SolutionEvaluation:
-    """Evaluate Solution 3: Lima VMs with Provisioning."""
-    eval_result = SolutionEvaluation(
+def get_solution_3() -> SolutionEvaluation:
+    """Get evaluation for Solution 3: Lima with Provisioning."""
+    solution = SolutionEvaluation(
         name="Lima VMs with Provisioning Scripts",
         number=3,
         pros=[
@@ -143,144 +155,132 @@ def evaluate_lima_solution() -> SolutionEvaluation:
             "API key not in image, passed at runtime",
             "Easy to update (just restart VM)",
             "Supports port forwarding and mounts",
-            "Best integration with macOS",
+            "Best integration with macOS"
         ],
         cons=[
             "Only works with Lima (not native VZ)",
             "First boot takes 2-3 minutes (provisioning)",
-            "Requires Lima CLI installed",
+            "Requires Lima CLI installed"
         ],
         setup_time="5-10 minutes (includes provisioning)",
         complexity="Low (Lima handles most details)",
-        best_for="Development, VibeCode native app alternative",
+        best_for="Development, VibeCode native app alternative"
     )
 
-    if check_lima_installed():
-        eval_result.test_status = "Lima installed"
-        eval_result.test_command = "./scripts/start-lima-vms-with-datadog.sh"
+    if command_exists("limactl"):
+        solution.test_status = "✅ Lima installed"
+        solution.test_command = "./scripts/start-lima-vms-with-datadog.sh"
     else:
-        eval_result.test_status = "Lima not installed (brew install lima)"
+        solution.test_status = "⚠️  Lima not installed (brew install lima)"
 
-    return eval_result
-
-
-def format_solution_evaluation(sol: SolutionEvaluation) -> list[str]:
-    """Format a solution evaluation as text lines."""
-    lines = [
-        "",
-        "=" * 70,
-        f"  Solution {sol.number}: {sol.name}",
-        "=" * 70,
-        "",
-        "Evaluation Criteria:",
-        "",
-        "Pros:",
-    ]
-
-    for pro in sol.pros:
-        lines.append(f"  - {pro}")
-
-    lines.append("")
-    lines.append("Cons:")
-
-    for con in sol.cons:
-        lines.append(f"  - {con}")
-
-    lines.extend([
-        "",
-        f"Setup Time: {sol.setup_time}",
-        f"Complexity: {sol.complexity}",
-        f"Best For: {sol.best_for}",
-        "",
-        "Test Status:",
-    ])
-
-    if sol.test_command:
-        lines.append(f"  Available - {sol.test_status}")
-        lines.append(f"  Run: {sol.test_command}")
-    else:
-        lines.append(f"  {sol.test_status}")
-
-    return lines
+    return solution
 
 
-def generate_comparison_matrix() -> list[str]:
-    """Generate the comparison matrix."""
-    return [
-        "",
-        "Comparison Matrix:",
-        "",
-        "| Criteria           | Solution 1 (SSH) | Solution 2 (Cloud-init) | Solution 3 (Lima) |",
-        "|--------------------|--------------------|-------------------------|-------------------|",
-        "| Setup Time         | 2-5 min/VM         | 30-45 min (one-time)    | 5-10 min          |",
-        "| Complexity         | Medium             | High                    | Low               |",
-        "| VZ Compatible      | Needs SSH          | Yes                     | No                |",
-        "| Updates            | Manual             | Rebuild required        | Easy (restart)    |",
-        "| Security           | Good               | API key in image        | Best              |",
-        "| Automation         | Medium             | High                    | High              |",
-        "",
-    ]
+def write_solution_evaluation(
+    solution: SolutionEvaluation,
+    file: Path
+) -> None:
+    """Write solution evaluation to file.
+
+    Args:
+        solution: Solution evaluation data.
+        file: Output file path.
+    """
+    write_output(file, "")
+    write_output(file, "=" * 70)
+    write_output(file, f"  Solution {solution.number}: {solution.name}")
+    write_output(file, "=" * 70)
+    write_output(file, "")
+    write_output(file, "📋 Evaluation Criteria:")
+    write_output(file, "")
+
+    write_output(file, "✅ Pros:")
+    for pro in solution.pros:
+        write_output(file, f"  - {pro}")
+    write_output(file, "")
+
+    write_output(file, "❌ Cons:")
+    for con in solution.cons:
+        write_output(file, f"  - {con}")
+    write_output(file, "")
+
+    write_output(file, f"⏱️  Setup Time: {solution.setup_time}")
+    write_output(file, f"🔧 Complexity: {solution.complexity}")
+    write_output(file, f"🎯 Best For: {solution.best_for}")
+    write_output(file, "")
+
+    write_output(file, "📊 Test Status:")
+    write_output(file, f"  {solution.test_status}")
+    if solution.test_command:
+        write_output(file, f"  Run: {solution.test_command}")
 
 
-def generate_recommendations(datadog_site: str) -> list[str]:
-    """Generate recommendations section."""
-    return [
-        "RECOMMENDATION:",
-        "",
-        "For VibeCode Native App (Current Goal):",
-        "  -> Use Solution 3 (Lima) for development",
-        "  -> Use Solution 2 (Cloud-init) for production distribution",
-        "",
-        "Reasoning:",
-        "  - Lima VMs work now and are easier to manage",
-        "  - Cloud-init images for distribution ensure consistency",
-        "  - Hybrid approach: develop with Lima, ship with cloud-init",
-        "",
-        "Next Steps:",
-        "",
-        "1. Test Lima solution immediately:",
-        "   DATADOG_API_KEY=$DD_KEY ./scripts/start-lima-vms-with-datadog.sh",
-        "",
-        "2. Build cloud-init images for distribution:",
-        "   DATADOG_API_KEY=$DD_KEY ./scripts/build-vms-with-datadog.sh",
-        "",
-        "3. Verify Datadog metrics are flowing:",
-        f"   https://app.{datadog_site}/infrastructure",
-        "",
-    ]
+def write_comparison_matrix(file: Path) -> None:
+    """Write comparison matrix to file.
+
+    Args:
+        file: Output file path.
+    """
+    write_output(file, "📊 Comparison Matrix:")
+    write_output(file, "")
+    write_output(file, "| Criteria           | Solution 1 (SSH) | Solution 2 (Cloud-init) | Solution 3 (Lima) |")
+    write_output(file, "|--------------------|--------------------|-------------------------|-------------------|")
+    write_output(file, "| Setup Time         | 2-5 min/VM         | 30-45 min (one-time)    | 5-10 min          |")
+    write_output(file, "| Complexity         | Medium             | High                    | Low               |")
+    write_output(file, "| VZ Compatible      | Needs SSH          | ✅ Yes                   | ❌ No              |")
+    write_output(file, "| Updates            | Manual             | Rebuild required        | Easy (restart)    |")
+    write_output(file, "| Security           | Good               | API key in image        | Best              |")
+    write_output(file, "| Automation         | Medium             | High                    | High              |")
+    write_output(file, "")
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "-o", "--output",
-        type=Path,
-        default=RESULTS_FILE,
-        help=f"Output file for results (default: {RESULTS_FILE})",
-    )
-    parser.add_argument(
-        "--no-api-key-check",
-        action="store_true",
-        help="Skip DATADOG_API_KEY check",
-    )
+def write_recommendations(file: Path, config: EvaluationConfig) -> None:
+    """Write recommendations to file.
 
-    args = parser.parse_args(argv)
+    Args:
+        file: Output file path.
+        config: Evaluation configuration.
+    """
+    write_output(file, "🏆 RECOMMENDATION:")
+    write_output(file, "")
+    write_output(file, "For VibeCode Native App (Current Goal):")
+    write_output(file, "  → Use Solution 3 (Lima) for development")
+    write_output(file, "  → Use Solution 2 (Cloud-init) for production distribution")
+    write_output(file, "")
+    write_output(file, "Reasoning:")
+    write_output(file, "  - Lima VMs work now and are easier to manage")
+    write_output(file, "  - Cloud-init images for distribution ensure consistency")
+    write_output(file, "  - Hybrid approach: develop with Lima, ship with cloud-init")
+    write_output(file, "")
+    write_output(file, "🚀 Next Steps:")
+    write_output(file, "")
+    write_output(file, "1. Test Lima solution immediately:")
+    write_output(file, "   DATADOG_API_KEY=$DD_KEY ./scripts/start-lima-vms-with-datadog.sh")
+    write_output(file, "")
+    write_output(file, "2. Build cloud-init images for distribution:")
+    write_output(file, "   DATADOG_API_KEY=$DD_KEY ./scripts/build-vms-with-datadog.sh")
+    write_output(file, "")
+    write_output(file, "3. Verify Datadog metrics are flowing:")
+    write_output(file, f"   https://app.{config.datadog_site}/infrastructure")
+    write_output(file, "")
 
-    # Check for API key
-    datadog_api_key = os.environ.get("DATADOG_API_KEY", "")
-    datadog_site = os.environ.get("DATADOG_SITE", "datadoghq.com")
 
-    if not datadog_api_key and not args.no_api_key_check:
-        print("Error: DATADOG_API_KEY environment variable not set")
-        print()
-        print("Usage: DATADOG_API_KEY=your-key-here ./scripts/evaluate_datadog_solutions.py")
-        print()
-        print("Or use --no-api-key-check to skip this check")
-        return 1
+def evaluate_solutions(config: EvaluationConfig) -> int:
+    """Evaluate all Datadog installation solutions.
+
+    Args:
+        config: Evaluation configuration.
+
+    Returns:
+        Exit code.
+    """
+    file = config.results_file
+
+    # Initialize results file
+    with open(file, 'w') as f:
+        f.write("# Datadog Installation Solutions - Evaluation Results\n")
+        f.write(f"Generated: {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}\n")
+        f.write("\n")
 
     print("=" * 70)
     print("  Evaluating Datadog Installation Solutions")
@@ -292,51 +292,92 @@ def main(argv: list[str] | None = None) -> int:
     print("  3. Lima VMs with provisioning (Hybrid)")
     print()
 
-    # Build report
-    report_lines = [
-        "# Datadog Installation Solutions - Evaluation Results",
-        f"Generated: {datetime.now().isoformat()}",
-        "",
-    ]
-
     # Evaluate each solution
     solutions = [
-        evaluate_ssh_solution(),
-        evaluate_cloudinit_solution(),
-        evaluate_lima_solution(),
+        get_solution_1(),
+        get_solution_2(),
+        get_solution_3()
     ]
 
-    for sol in solutions:
-        report_lines.extend(format_solution_evaluation(sol))
+    for solution in solutions:
+        write_solution_evaluation(solution, file)
 
-    # Add summary
-    report_lines.extend([
-        "",
-        "=" * 70,
-        "  SUMMARY & RECOMMENDATIONS",
-        "=" * 70,
-        "",
-    ])
+    # Summary and recommendations
+    write_output(file, "")
+    write_output(file, "=" * 70)
+    write_output(file, "  SUMMARY & RECOMMENDATIONS")
+    write_output(file, "=" * 70)
+    write_output(file, "")
 
-    report_lines.extend(generate_comparison_matrix())
-    report_lines.extend(generate_recommendations(datadog_site))
+    write_comparison_matrix(file)
+    write_recommendations(file, config)
 
-    report_lines.append("=" * 70)
-
-    # Write to file
-    report_content = "\n".join(report_lines)
-    args.output.write_text(report_content)
-
-    # Print report
-    print(report_content)
-
+    write_output(file, "=" * 70)
     print()
-    print("Evaluation complete!")
+    print("✅ Evaluation complete!")
     print()
-    print(f"Full results saved to: {args.output}")
+    print(f"📄 Full results saved to: {file}")
+    print()
+
+    # Display results
+    print(file.read_text())
 
     return 0
 
 
+def main(
+    datadog_api_key: Optional[str] = None,
+    datadog_site: str = "datadoghq.com",
+    output_file: Optional[str] = None
+) -> int:
+    """Main entry point.
+
+    Args:
+        datadog_api_key: Datadog API key.
+        datadog_site: Datadog site.
+        output_file: Custom output file path.
+
+    Returns:
+        Exit code.
+    """
+    api_key = datadog_api_key or os.environ.get("DATADOG_API_KEY", "")
+
+    if not api_key:
+        print(f"{RED}❌ Error: DATADOG_API_KEY environment variable not set{NC}")
+        print()
+        print("Usage: DATADOG_API_KEY=your-key-here python3 evaluate_datadog_solutions.py")
+        return 1
+
+    config = EvaluationConfig(
+        datadog_api_key=api_key,
+        datadog_site=datadog_site,
+        results_file=Path(output_file) if output_file else Path("/tmp/datadog-evaluation-results.txt")
+    )
+
+    return evaluate_solutions(config)
+
+
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(
+        description="Evaluate Datadog installation solutions"
+    )
+    parser.add_argument(
+        '--api-key',
+        help='Datadog API key (or set DATADOG_API_KEY env var)'
+    )
+    parser.add_argument(
+        '--site',
+        default='datadoghq.com',
+        help='Datadog site (default: datadoghq.com)'
+    )
+    parser.add_argument(
+        '-o', '--output',
+        help='Output file path (default: /tmp/datadog-evaluation-results.txt)'
+    )
+
+    args = parser.parse_args()
+    sys.exit(main(
+        datadog_api_key=args.api_key,
+        datadog_site=args.site,
+        output_file=args.output
+    ))

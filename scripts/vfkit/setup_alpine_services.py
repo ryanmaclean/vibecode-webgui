@@ -19,6 +19,13 @@ except ImportError:
     pass
 # ------------------------
 
+# Datadog APM tracing
+try:
+    from ddtrace import tracer, patch_all
+    patch_all()
+except ImportError:
+    pass
+
 import os
 import shutil
 import subprocess

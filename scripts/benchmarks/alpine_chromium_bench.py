@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 """Alpine (musl) Chromium headless DOM benchmark.
 
-This benchmark:
 - Pulls alpine:3.20, installs chromium
 - Hits a URL (default http://host.docker.internal:8080/)
 - Measures time-to-DOM via --dump-dom
@@ -9,229 +8,265 @@ This benchmark:
 - Optionally emits DogStatsD metrics to host (Datadog agent) via UDP
   metric: vibecode.bench.dom_dump_ms (gauge)
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import json
-import re
+import shutil
+import socket
+import statistics
+import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        BenchmarkError,
-        calc_stats,
-        check_command,
-        log,
-        run_cmd,
-        run_cmd_output,
-    )
-    from ._dogstatsd import DogStatsDSender
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        BenchmarkError,
-        calc_stats,
-        check_command,
-        log,
-        run_cmd,
-        run_cmd_output,
-    )
-    from _dogstatsd import DogStatsDSender
+from typing import Optional
 
 
-DEFAULT_URL = "http://host.docker.internal:8080/"
-DEFAULT_ITERATIONS = 3
-DEFAULT_DOCKER_IMAGE = "alpine:3.20"
-DEFAULT_DOGSTATSD_ADDR = "host.docker.internal:8125"
+@dataclass
+class BenchmarkConfig:
+    """Benchmark configuration."""
+
+    url: str = "http://host.docker.internal:8080/"
+    iterations: int = 3
+    docker_image: str = "alpine:3.20"
+    dogstatsd_addr: str = "host.docker.internal:8125"
+    emit_stats: bool = True
 
 
-def sanitize_url_tag(url: str) -> str:
-    """Sanitize URL for use as a DogStatsD tag."""
-    return re.sub(r"[:,|# ]", "_", url)
+@dataclass
+class BenchmarkResults:
+    """Benchmark results."""
+
+    url: str = ""
+    iterations: int = 0
+    musl_version: str = ""
+    chromium_version: str = ""
+    durations_ms: list[int] = field(default_factory=list)
+    min_ms: int = 0
+    p50_ms: int = 0
+    p95_ms: int = 0
+    max_ms: int = 0
 
 
-def run_chromium_benchmark(
-    url: str,
-    iterations: int,
-    docker_image: str,
-    dogstatsd_addr: str,
-    emit_stats: bool,
-) -> dict:
-    """Run the Chromium DOM dump benchmark in a Docker container.
+def command_exists(cmd: str) -> bool:
+    """Check if a command exists."""
+    return shutil.which(cmd) is not None
+
+
+def run_command(
+    cmd: list[str],
+    capture: bool = True,
+    cwd: Optional[Path] = None
+) -> tuple[int, str, str]:
+    """Run a command and return result."""
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            cwd=cwd
+        )
+        return result.returncode, result.stdout, result.stderr
+    except FileNotFoundError:
+        return -1, "", "command not found"
+
+
+def check_docker() -> bool:
+    """Check if Docker is available."""
+    rc, _, _ = run_command(["docker", "info"])
+    return rc == 0
+
+
+def send_dogstatsd_metric(
+    addr: str,
+    metric_name: str,
+    value: int,
+    tags: dict[str, str]
+) -> None:
+    """Send a metric via DogStatsD UDP."""
+    try:
+        host, port_str = addr.split(":")
+        port = int(port_str)
+
+        tag_str = ",".join(f"{k}:{v}" for k, v in tags.items())
+        message = f"{metric_name}:{value}|g|#{tag_str}"
+
+        sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        sock.sendto(message.encode(), (host, port))
+        sock.close()
+    except Exception:
+        pass  # Fire and forget
+
+
+def calculate_percentile(data: list[int], percentile: float) -> int:
+    """Calculate percentile from sorted data."""
+    if not data:
+        return 0
+    sorted_data = sorted(data)
+    idx = int(percentile * len(sorted_data))
+    if idx >= len(sorted_data):
+        idx = len(sorted_data) - 1
+    if idx < 0:
+        idx = 0
+    return sorted_data[idx]
+
+
+def run_benchmark(config: BenchmarkConfig) -> BenchmarkResults:
+    """Run the Chromium DOM benchmark.
 
     Args:
-        url: URL to fetch
-        iterations: Number of iterations to run
-        docker_image: Docker image to use
-        dogstatsd_addr: DogStatsD address (host:port)
-        emit_stats: Whether to emit DogStatsD metrics
+        config: Benchmark configuration.
 
     Returns:
-        Dictionary with benchmark results
+        Benchmark results.
     """
-    if not check_command("docker"):
-        raise BenchmarkError("Docker CLI not found in PATH")
-
-    # Check Docker daemon
-    result = run_cmd(["docker", "info"], check=False, capture=True)
-    if result.returncode != 0:
-        raise BenchmarkError("Docker daemon not available")
+    results = BenchmarkResults(
+        url=config.url,
+        iterations=config.iterations
+    )
 
     # Build the container script
     container_script = f'''
 set -euo pipefail
-URL="{url}"
-ITER={iterations}
-DOGSTATSD_ADDR="{dogstatsd_addr}"
-EMIT_STATS="{str(emit_stats).lower()}"
+URL="{config.url}"
+ITER="{config.iterations}"
+DOGSTATSD_ADDR="{config.dogstatsd_addr}"
+EMIT_STATS="{str(config.emit_stats).lower()}"
 
 apk add --no-cache chromium curl coreutils >/dev/null
 
-# Versions
+# Get versions
 MUSL_VER=$(ldd --version 2>&1 | head -n1 | tr -s ' ')
 CHROME_BIN=$(command -v chromium-browser || command -v chromium)
 CHROME_VER=$($CHROME_BIN --version 2>/dev/null | tr -s ' ')
 
+echo "MUSL_VERSION:$MUSL_VER"
+echo "CHROME_VERSION:$CHROME_VER"
+
 # Run iterations
-RESULTS=""
 for i in $(seq 1 "$ITER"); do
   start=$(date +%s%3N)
   "$CHROME_BIN" --headless=new --disable-gpu --no-sandbox \\
     --user-data-dir=/tmp/chrome --dump-dom "$URL" >/tmp/dom.html 2>/tmp/chrome.log || true
   end=$(date +%s%3N)
   dur=$((end - start))
-  if [ -n "$RESULTS" ]; then
-    RESULTS="$RESULTS,$dur"
-  else
-    RESULTS="$dur"
-  fi
-  if [ "$EMIT_STATS" = "true" ]; then
-    METRIC="vibecode.bench.dom_dump_ms:${{dur}}|g|#mode:alpine_chromium,url:$(echo "$URL" | sed 's/[:,|# ]/_/g')"
-    (echo "$METRIC" >/dev/udp/${{DOGSTATSD_ADDR%:*}}/${{DOGSTATSD_ADDR#*:}}) 2>/dev/null || true
-  fi
+  echo "DURATION:$dur"
   sleep 0.2
 done
-
-# Output JSON
-echo "{{\\"url\\": \\"$URL\\", \\"iter\\": $ITER, \\"musl\\": \\"$MUSL_VER\\", \\"chromium\\": \\"$CHROME_VER\\", \\"durations_ms\\": [$RESULTS]}}"
 '''
 
-    log(f"Running Chromium benchmark: {iterations} iterations on {url}")
-    log(f"Using Docker image: {docker_image}")
+    # Run Docker container
+    rc, stdout, stderr = run_command([
+        "docker", "run", "--rm",
+        "-e", f"URL={config.url}",
+        "-e", f"ITER={config.iterations}",
+        "-e", f"DOGSTATSD_ADDR={config.dogstatsd_addr}",
+        "-e", f"EMIT_STATS={str(config.emit_stats).lower()}",
+        config.docker_image,
+        "sh", "-c", container_script
+    ])
 
-    result = run_cmd(
-        [
-            "docker", "run", "--rm",
-            "-e", f"URL={url}",
-            "-e", f"ITER={iterations}",
-            "-e", f"DOGSTATSD_ADDR={dogstatsd_addr}",
-            "-e", f"EMIT_STATS={str(emit_stats).lower()}",
-            docker_image,
-            "sh", "-c", container_script,
-        ],
-        capture=True,
-        timeout=300,  # 5 minutes max
-    )
+    if rc != 0:
+        print(f"Docker run failed: {stderr}", file=sys.stderr)
+        return results
 
-    # Parse the JSON output (last line)
-    output_lines = result.stdout.strip().split("\n")
-    json_line = output_lines[-1]
+    # Parse output
+    durations = []
+    for line in stdout.splitlines():
+        if line.startswith("MUSL_VERSION:"):
+            results.musl_version = line.split(":", 1)[1].strip()
+        elif line.startswith("CHROME_VERSION:"):
+            results.chromium_version = line.split(":", 1)[1].strip()
+        elif line.startswith("DURATION:"):
+            try:
+                dur = int(line.split(":", 1)[1].strip())
+                durations.append(dur)
 
-    try:
-        data = json.loads(json_line)
-    except json.JSONDecodeError as exc:
-        raise BenchmarkError(f"Failed to parse benchmark output: {exc}") from exc
+                # Send to DogStatsD if enabled
+                if config.emit_stats:
+                    safe_url = config.url.replace(":", "_").replace("|", "_").replace("#", "_").replace(" ", "_")
+                    send_dogstatsd_metric(
+                        config.dogstatsd_addr,
+                        "vibecode.bench.dom_dump_ms",
+                        dur,
+                        {"mode": "alpine_chromium", "url": safe_url}
+                    )
+            except ValueError:
+                pass
 
-    # Calculate statistics
-    durations = data.get("durations_ms", [])
-    stats = calc_stats(durations)
+    results.durations_ms = durations
 
-    return {
-        "url": data.get("url", url),
-        "iter": data.get("iter", iterations),
-        "musl": data.get("musl", "unknown"),
-        "chromium": data.get("chromium", "unknown"),
-        "durations_ms": durations,
-        "min_ms": int(stats["min"]),
-        "p50_ms": int(stats["p50"]),
-        "p95_ms": int(stats["p95"]),
-        "max_ms": int(stats["max"]),
-    }
+    if durations:
+        results.min_ms = min(durations)
+        results.max_ms = max(durations)
+        results.p50_ms = int(statistics.median(durations))
+        results.p95_ms = calculate_percentile(durations, 0.95)
+
+    return results
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
+def main() -> int:
+    """Main entry point.
+
+    Returns:
+        Exit code.
+    """
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Alpine (musl) Chromium headless DOM benchmark"
     )
     parser.add_argument(
         "--url",
-        default=DEFAULT_URL,
-        help=f"URL to benchmark (default: {DEFAULT_URL})",
+        default="http://host.docker.internal:8080/",
+        help="URL to benchmark"
     )
     parser.add_argument(
         "-n", "--iter",
         type=int,
-        default=DEFAULT_ITERATIONS,
-        help=f"Number of iterations (default: {DEFAULT_ITERATIONS})",
+        default=3,
+        help="Number of iterations"
     )
     parser.add_argument(
         "--dogstatsd",
-        default=DEFAULT_DOGSTATSD_ADDR,
-        help=f"DogStatsD address (default: {DEFAULT_DOGSTATSD_ADDR})",
+        default="host.docker.internal:8125",
+        help="DogStatsD address"
     )
     parser.add_argument(
         "--no-stats",
         action="store_true",
-        help="Disable DogStatsD metric emission",
-    )
-    parser.add_argument(
-        "--image",
-        default=DEFAULT_DOCKER_IMAGE,
-        help=f"Docker image to use (default: {DEFAULT_DOCKER_IMAGE})",
-    )
-    parser.add_argument(
-        "--output",
-        type=Path,
-        help="Output JSON file (default: stdout)",
+        help="Disable DogStatsD metrics"
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
-    try:
-        results = run_chromium_benchmark(
-            url=args.url,
-            iterations=args.iter,
-            docker_image=args.image,
-            dogstatsd_addr=args.dogstatsd,
-            emit_stats=not args.no_stats,
-        )
-
-        output = json.dumps(results, indent=2)
-
-        if args.output:
-            args.output.parent.mkdir(parents=True, exist_ok=True)
-            args.output.write_text(output)
-            log(f"Results saved to: {args.output}")
-        else:
-            print(output)
-
-        return 0
-
-    except BenchmarkError as err:
-        print(f"error: {err}", file=sys.stderr)
+    # Check Docker
+    if not check_docker():
+        print("ERROR: Docker daemon not available", file=sys.stderr)
         return 1
+
+    config = BenchmarkConfig(
+        url=args.url,
+        iterations=args.iter,
+        dogstatsd_addr=args.dogstatsd,
+        emit_stats=not args.no_stats
+    )
+
+    results = run_benchmark(config)
+
+    # Output JSON
+    output = {
+        "url": results.url,
+        "iter": results.iterations,
+        "musl": results.musl_version,
+        "chromium": results.chromium_version,
+        "durations_ms": results.durations_ms,
+        "min_ms": results.min_ms,
+        "p50_ms": results.p50_ms,
+        "p95_ms": results.p95_ms,
+        "max_ms": results.max_ms
+    }
+    print(json.dumps(output, indent=2))
+
+    return 0
 
 
 if __name__ == "__main__":

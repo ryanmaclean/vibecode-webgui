@@ -1,0 +1,14 @@
+# Tundra Dome Starship config (optional)
+add_newline = true
+
+[custom.tundra_kafka]
+command = "td/scripts/kafka-queue-summary.sh"
+when = "command -v kafka-consumer-groups >/dev/null 2>&1"
+format = "[$output]($style)"
+style = "bold cyan"
+
+[custom.tundra_role]
+command = "printf '%s' ${TD_ROLE:-mayor}"
+when = "true"
+format = "[$output]($style)"
+style = "bold yellow"

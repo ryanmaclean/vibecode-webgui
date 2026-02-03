@@ -152,7 +152,7 @@ export class OpenRouterClient {
                     span.setAttribute('http.status_code', resp.status);
                     return resp as AxiosResponse<{ data: AIModel[] }>;
                 } catch (err) {
-                    span.recordException(err as any);
+                    span.recordException(err as Error);
                     span.setStatus({ code: 2, message: 'openrouter.getModels failed' });
                     throw err;
                 } finally {
@@ -199,7 +199,7 @@ export class OpenRouterClient {
                     span.setAttribute('http.status_code', resp.status);
                     return resp as AxiosResponse<ChatCompletionResponse>;
                 } catch (err) {
-                    span.recordException(err as any);
+                    span.recordException(err as Error);
                     span.setStatus({ code: 2, message: 'openrouter.chatCompletion failed' });
                     throw err;
                 } finally {
@@ -285,7 +285,7 @@ export class OpenRouterClient {
                                 if (content) {
                                     totalTokens += Math.ceil(content.length / 4);
                                 }
-                            } catch (e) {
+                            } catch {
                                 // Skip invalid JSON lines
                             }
                         }
@@ -302,7 +302,7 @@ export class OpenRouterClient {
                     resolve();
                 });
 
-                response.data.on('error', (error: any) => {
+                response.data.on('error', (error: unknown) => {
                     this.updatePerformanceMetrics(model, Date.now() - startTime, false);
                     performanceLogger.logError('stream_chat_completion', startTime, error, { model, userId });
                     reject(error);
@@ -371,10 +371,15 @@ export class OpenRouterClient {
         }
     }
 
-    private handleError(error: any, defaultMessage: string): Error {
-        if (error.response) {
-            const status = error.response.status;
-            const data = error.response.data;
+    private handleError(error: unknown, defaultMessage: string): Error {
+        const err = error as {
+            response?: { status?: number; data?: { error?: { message?: string } } };
+            code?: string;
+            message?: string;
+        };
+        if (err.response) {
+            const status = err.response.status;
+            const data = err.response.data;
 
             switch (status) {
                 case 400:
@@ -396,12 +401,12 @@ export class OpenRouterClient {
                 default:
                     return new Error(`HTTP ${status}: ${data?.error?.message || defaultMessage}`);
             }
-        } else if (error.code === 'ECONNABORTED') {
+        } else if (err.code === 'ECONNABORTED') {
             return new Error('Request Timeout: OpenRouter request timed out');
-        } else if (error.code === 'ENOTFOUND' || error.code === 'ECONNREFUSED') {
+        } else if (err.code === 'ENOTFOUND' || err.code === 'ECONNREFUSED') {
             return new Error('Network Error: Unable to connect to OpenRouter');
         } else {
-            return new Error(`${defaultMessage}: ${error.message}`);
+            return new Error(`${defaultMessage}: ${err.message ?? String(error)}`);
         }
     }
 

@@ -1,0 +1,20 @@
+#!/bin/sh
+#
+# PROVIDE: td_session
+# REQUIRE: NETWORKING
+# KEYWORD: shutdown
+#
+# Add to rc.conf: td_session_enable="YES"
+#
+. /etc/rc.subr
+
+name="td_session"
+rcvar=td_session_enable
+
+command="/usr/local/gt/td/bin/td"
+command_args="session start --name tundra-core"
+
+load_rc_config $name
+: ${td_session_enable:=no}
+
+run_rc_command "$1"
