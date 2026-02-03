@@ -1,9 +1,14 @@
-import { registerOTel } from '@vercel/otel'
-
-export function register() {
-  registerOTel({
-    serviceName: 'vibecode-webgui',
-  })
+export async function register() {
+  try {
+    const otel = await import('@vercel/otel');
+    if (typeof otel.registerOTel === 'function') {
+      otel.registerOTel({
+        serviceName: 'vibecode-webgui',
+      });
+    }
+  } catch (error) {
+    console.warn('⚠️ Failed to initialize OpenTelemetry', error);
+  }
   
   if (process.env.NEXT_RUNTIME === 'nodejs') {
     // Initialize Datadog Trace
