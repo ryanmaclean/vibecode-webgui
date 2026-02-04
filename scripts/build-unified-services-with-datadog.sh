@@ -192,16 +192,17 @@ validate_datadog_config() {
     esac
 
     # Print warnings
-    for warn in "${warnings[@]}"; do
-        log_warn "$warn"
-    done
+    if [[ ${#warnings[@]} -gt 0 ]]; then
+        for warn in "${warnings[@]}"; do
+            log_warn "$warn"
+        done
+    fi
 
     # Print errors
-    for err in "${errors[@]}"; do
-        log_error "$err"
-    done
-
     if [[ ${#errors[@]} -gt 0 ]]; then
+        for err in "${errors[@]}"; do
+            log_error "$err"
+        done
         return 1
     fi
 

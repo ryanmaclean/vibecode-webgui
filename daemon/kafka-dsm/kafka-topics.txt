@@ -21,3 +21,5 @@ tundra-work-intake
 tundra-polecats-events
 tundra-metrics-kpi
 tundra-audit-actions
+tundra-beads-sync-request
+tundra-beads-sync-complete
