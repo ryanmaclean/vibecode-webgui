@@ -37,6 +37,11 @@ This audit identified **100+ files and directories** that are candidates for cle
 
 **Recommendation**: Archive or delete these branches after verifying no unique work exists on them.
 
+### Audit Notes (2026-02-04)
+
+- `feature/workspace-rag-mlx-ddtrace`: MLX + ddtrace tracing support already exists in `src/tracing/MLXEmbeddingService.ts`. The remote branch no longer exists on `origin`.
+- `feature/workspace-rag-swift-container`: Docker Compose + auto-password artifacts were missing from main. Restored `docker-compose.openvscode.yml`, `init-db.sql`, and `scripts/openvscode-entrypoint.sh` to align with docker-database docs.
+
 ## 2. Empty Directories
 
 | Directory | Status |

@@ -207,7 +207,7 @@ docker-compose exec postgres psql -U postgres -d workspace_rag -c "SELECT 1;"
 
 ```
 vibecode-webgui/
-├── docker-compose.yml                    # Orchestration with auto-password
+├── docker-compose.openvscode.yml                    # Orchestration with auto-password
 ├── scripts/
 │   ├── openvscode-entrypoint.sh         # Auto-configures settings from password
 │   └── init-password.sh                 # (unused - kept for reference)
@@ -219,7 +219,7 @@ vibecode-webgui/
 
 ## Docker Compose Configuration
 
-### Complete docker-compose.yml
+### Complete docker-compose.openvscode.yml
 
 ```yaml
 services:
@@ -427,7 +427,7 @@ data:
 # .env
 POSTGRES_PASSWORD=password  # Hardcoded, version controlled
 
-# docker-compose.yml
+# docker-compose.openvscode.yml
 environment:
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # From .env
 
@@ -446,7 +446,7 @@ environment:
 ```bash
 # No .env password needed!
 
-# docker-compose.yml
+# docker-compose.openvscode.yml
 environment:
   POSTGRES_PASSWORD_FILE: /run/secrets/db_password  # From volume
 

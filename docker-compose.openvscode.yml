@@ -1,0 +1,70 @@
+services:
+  # Init container that generates password on first run
+  init-secrets:
+    image: alpine:latest
+    container_name: init-secrets
+    volumes:
+      - secrets:/run/secrets
+    command: >
+      sh -c "
+      if [ ! -f /run/secrets/db_password ]; then
+        echo 'Generating random database password...';
+        apk add --no-cache openssl > /dev/null 2>&1;
+        openssl rand -base64 32 > /run/secrets/db_password;
+        chmod 644 /run/secrets/db_password;
+        echo 'Password generated successfully';
+      else
+        echo 'Using existing password';
+      fi
+      "
+
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: postgres-pgvector
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD_FILE: /run/secrets/db_password
+      POSTGRES_DB: ${POSTGRES_DB:-workspace_rag}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
+      - secrets:/run/secrets:ro
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    networks:
+      - rag-network
+    depends_on:
+      init-secrets:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  openvscode:
+    image: openvscode-with-rag:latest
+    container_name: openvscode-server
+    ports:
+      - "${OPENVSCODE_PORT:-3000}:3000"
+    networks:
+      - rag-network
+    volumes:
+      - secrets:/run/secrets:ro
+    depends_on:
+      init-secrets:
+        condition: service_completed_successfully
+      postgres:
+        condition: service_healthy
+    environment:
+      WORKSPACE_PATH: /workspace
+
+networks:
+  rag-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+    driver: local
+  secrets:
+    driver: local
