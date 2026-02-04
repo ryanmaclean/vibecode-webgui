@@ -4,7 +4,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ## Current Status
 
-**Version**: 1.5.0 (January 2025)
+**Version**: 1.5.0 (January 2026)
 
 **Stability**: Production-ready with active development
 
@@ -18,7 +18,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v1.6.0 (Q1 2025)
+## v1.6.0 (Q1 2026)
 
 ### Features
 
@@ -61,7 +61,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v2.0.0 (Q2 2025)
+## v2.0.0 (Q2 2026)
 
 ### Multi-Architecture Support
 
@@ -100,7 +100,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v2.1.0 (Q3 2025)
+## v2.1.0 (Q3 2026)
 
 ### Clustering & Multi-VM
 
@@ -139,7 +139,7 @@ This document outlines the current state, planned features, and long-term vision
 
 ---
 
-## v3.0.0 (Q4 2025)
+## v3.0.0 (Q4 2026)
 
 ### Major Architecture Upgrade
 
@@ -352,11 +352,11 @@ Features requested by the community (sorted by frequency):
 
 | Version | Expected | Status |
 |---------|----------|--------|
-| 1.5.0   | Jan 2025 | Current |
-| 1.6.0   | Mar 2025 | Planned |
-| 2.0.0   | Jun 2025 | Planned |
-| 2.1.0   | Sep 2025 | Planned |
-| 3.0.0   | Dec 2025 | Planned |
+| 1.5.0   | Jan 2026 | Current |
+| 1.6.0   | Mar 2026 | Planned |
+| 2.0.0   | Jun 2026 | Planned |
+| 2.1.0   | Sep 2026 | Planned |
+| 3.0.0   | Dec 2026 | Planned |
 
 *Note: Timeline may shift based on community feedback, dependencies, and discovered technical challenges.*
 
@@ -414,8 +414,8 @@ Have questions about the roadmap?
 
 ---
 
-**Last Updated**: January 14, 2025
+**Last Updated**: January 14, 2026
 
-**Next Review**: Q1 2025
+**Next Review**: Q1 2026
 
 The roadmap reflects the current vision and is subject to change based on community feedback, technical discoveries, and strategic decisions.
