@@ -166,7 +166,7 @@
     "@opentelemetry/instrumentation-express": "0.52.0",
     "@opentelemetry/instrumentation-fs": "0.30.0",
     "@opentelemetry/instrumentation-http": "0.211.0",
-    "@opentelemetry/sdk-node": "0.210.0",
+    "@opentelemetry/sdk-node": "0.211.0",
     "@opentelemetry/sdk-trace-base": "2.5.0",
     "@opentelemetry/semantic-conventions": "1.39.0",
     "@prisma/client": "6.19.2",
