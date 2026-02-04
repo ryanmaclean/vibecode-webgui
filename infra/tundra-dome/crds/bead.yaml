@@ -115,6 +115,35 @@ spec:
                         type: string
                       actor:
                         type: string
+                sync:
+                  type: object
+                  description: Cross-rig synchronization status
+                  properties:
+                    sourceRig:
+                      type: string
+                      description: The rig where this bead originated
+                    syncedToRigs:
+                      type: array
+                      items:
+                        type: string
+                      description: List of rigs this bead has been synced to
+                    lastSyncTimestamp:
+                      type: string
+                      format: date-time
+                      description: When this bead was last synced
+                    syncVersion:
+                      type: integer
+                      description: Monotonic version counter for conflict resolution
+                    syncState:
+                      type: string
+                      enum: [pending, syncing, synced, conflict, failed]
+                      default: pending
+                      description: Current synchronization state
+                    conflictResolution:
+                      type: string
+                      enum: [source-wins, target-wins, manual]
+                      default: source-wins
+                      description: How to resolve sync conflicts
       subresources:
         status: {}
       additionalPrinterColumns:
