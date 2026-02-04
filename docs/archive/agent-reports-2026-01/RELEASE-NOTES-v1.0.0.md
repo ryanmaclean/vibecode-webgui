@@ -1,5 +1,10 @@
 # VibeCode VM v1.0.0 - Release Notes
 
+> **ARCHIVAL NOTICE**: This document was created during development and contains
+> outdated size references. The actual v1.0.0 DMG artifact is 105.7 MB (110,799,961 bytes),
+> not 81 MB as originally stated. The artifact is available at tag `v3.0.0-unified-app`.
+> See the [GitHub release](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/v3.0.0-unified-app) for current download links and checksums.
+
 **Release Date**: January 5, 2026
 **Version**: 1.0.0
 **Status**: Initial Public Release
@@ -8,7 +13,7 @@
 
 ## Welcome to VibeCode VM!
 
-Fast-booting VM with PostgreSQL 16, Valkey 8, OpenVSCode Server, and SSH - all in 81MB!
+Fast-booting VM with PostgreSQL 16, Valkey 8, OpenVSCode Server, and SSH - all in ~106 MB!
 
 Perfect for local development, testing databases, running code in a browser, and experimenting with infrastructure.
 
@@ -26,7 +31,7 @@ Perfect for local development, testing databases, running code in a browser, and
 
 ### Performance
 - **Fast Boot**: Starts all services in ~17 seconds
-- **Compact**: Only 81MB download, ~230MB extracted
+- **Compact**: ~106 MB download, ~230MB extracted
 - **Efficient**: 2GB RAM, 4 CPUs (configurable)
 - **Parallel Startup**: All services launch simultaneously
 
@@ -253,7 +258,7 @@ open http://192.168.64.10:8080
 ### Performance Metrics
 - **Boot Time**: ~17 seconds to all services ready
 - **Memory**: 2GB RAM (configurable up to 8GB+)
-- **Disk**: 81MB download, ~230MB extracted, ~2GB in operation
+- **Disk**: ~106 MB download, ~230MB extracted, ~2GB in operation
 - **CPU**: 4 cores (configurable)
 - **Network**: ~100+ Mbps throughput
 
@@ -381,12 +386,12 @@ Features:
 - VirtioFS volume mounting (code integrated, kernel module future work)
 - Boot display with automatic credential generation
 - Parallel service startup for fast boot
-- 81MB optimized production build
+- ~106 MB optimized production build
 
 Performance:
 - ~17 second boot time
 - 2GB RAM allocation
-- 81MB download, ~230MB extracted
+- ~106 MB download, ~230MB extracted
 - All 4 services in parallel
 
 Quality:
@@ -399,7 +404,7 @@ Quality:
 
 **Release Created**: January 5, 2026
 **Download**: https://github.com/yourusername/vibecode-vm/releases/tag/v1.0.0
-**Distribution**: vibecode-vm-v1.0.tar.gz (90MB)
+**Distribution**: VibeCode-Unified-v1.0.0.dmg (~106 MB)
 **SHA256**: d5388d4c9aa221e1381ecdc19429f40e512daca1f1f08f4d6b0ae85f2effeb74
 
 ---
