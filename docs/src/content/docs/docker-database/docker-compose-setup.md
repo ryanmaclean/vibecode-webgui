@@ -104,7 +104,7 @@ The workspace-rag extension uses these default values (from package.json):
 
 ```
 vibecode-webgui/
-├── docker-compose.yml      # Service definitions
+├── docker-compose.openvscode.yml      # Service definitions
 ├── .env                    # Your environment variables (gitignored)
 ├── .env.example            # Template for .env
 ├── init-db.sql             # Database initialization script
@@ -321,7 +321,7 @@ OPENVSCODE_PORT=8080
 
 2. **Don't expose PostgreSQL port:**
 
-   Edit `docker-compose.yml`, remove:
+   Edit `docker-compose.openvscode.yml`, remove:
    ```yaml
    ports:
      - "${POSTGRES_PORT:-5432}:5432"
@@ -354,13 +354,13 @@ OPENVSCODE_PORT=8080
 
 ```bash
 # Development
-docker-compose -f docker-compose.yml up -d
+docker-compose -f docker-compose.openvscode.yml up -d
 
 # Production
-docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+docker-compose -f docker-compose.openvscode.yml -f docker-compose.prod.yml up -d
 
 # Staging
-docker-compose -f docker-compose.yml -f docker-compose.staging.yml up -d
+docker-compose -f docker-compose.openvscode.yml -f docker-compose.staging.yml up -d
 ```
 
 ## Rebuilding the Extension
