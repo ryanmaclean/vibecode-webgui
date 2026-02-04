@@ -1,0 +1,118 @@
+---
+apiVersion: tundra.dome/v1
+kind: Station
+metadata:
+  name: kafka
+  namespace: tundra-dome
+  labels:
+    tundra.dome/station: kafka
+    tundra.dome/type: messaging
+spec:
+  type: kafka
+  displayName: Kafka Message Broker
+  host: kafka-service.tundra-dome.svc.cluster.local
+  port: 9092
+  protocol: tcp
+  selector:
+    app: kafka
+  healthCheck:
+    enabled: true
+    interval: "30s"
+    timeout: "5s"
+  auth:
+    type: none
+---
+apiVersion: tundra.dome/v1
+kind: Station
+metadata:
+  name: airflow-api
+  namespace: tundra-dome
+  labels:
+    tundra.dome/station: airflow-api
+    tundra.dome/type: orchestration
+spec:
+  type: http
+  displayName: Airflow API Server
+  host: airflow-api-service.tundra-dome.svc.cluster.local
+  port: 8080
+  protocol: http
+  selector:
+    app: airflow-api-server
+  healthCheck:
+    enabled: true
+    path: /health
+    interval: "30s"
+    timeout: "5s"
+  auth:
+    type: basic
+    secretRef: airflow-credentials
+---
+apiVersion: tundra.dome/v1
+kind: Station
+metadata:
+  name: datadog-agent
+  namespace: datadog
+  labels:
+    tundra.dome/station: datadog-agent
+    tundra.dome/type: observability
+spec:
+  type: http
+  displayName: Datadog Agent
+  host: datadog-agent.datadog.svc.cluster.local
+  port: 8126
+  protocol: http
+  selector:
+    app: datadog-agent
+  healthCheck:
+    enabled: true
+    path: /info
+    interval: "60s"
+    timeout: "10s"
+  auth:
+    type: none
+---
+apiVersion: tundra.dome/v1
+kind: Station
+metadata:
+  name: github-api
+  namespace: tundra-dome
+  labels:
+    tundra.dome/station: github-api
+    tundra.dome/type: external
+spec:
+  type: external
+  displayName: GitHub API
+  externalName: api.github.com
+  port: 443
+  protocol: https
+  healthCheck:
+    enabled: true
+    path: /status
+    interval: "5m"
+    timeout: "30s"
+  auth:
+    type: token
+    secretRef: github-token
+---
+apiVersion: tundra.dome/v1
+kind: Station
+metadata:
+  name: openrouter-api
+  namespace: tundra-dome
+  labels:
+    tundra.dome/station: openrouter-api
+    tundra.dome/type: external
+spec:
+  type: external
+  displayName: OpenRouter API
+  externalName: openrouter.ai
+  port: 443
+  protocol: https
+  healthCheck:
+    enabled: true
+    path: /api/v1/models
+    interval: "5m"
+    timeout: "30s"
+  auth:
+    type: token
+    secretRef: openrouter-token

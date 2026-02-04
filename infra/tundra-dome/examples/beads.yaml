@@ -1,0 +1,94 @@
+---
+apiVersion: tundra.dome/v1
+kind: Bead
+metadata:
+  name: github-issue-123
+  namespace: tundra-dome
+  labels:
+    tundra.dome/source: github
+    tundra.dome/lane: standard
+    tundra.dome/type: issue
+spec:
+  title: "Fix login timeout bug"
+  description: "Users are experiencing timeout errors when logging in during peak hours"
+  source: github
+  sourceId: "123"
+  sourceUrl: "https://github.com/example/repo/issues/123"
+  lane: standard
+  assignedRole: polecat
+  labels:
+    priority: "p1"
+    component: "auth"
+    team: "backend"
+  maxAttempts: 3
+---
+apiVersion: tundra.dome/v1
+kind: Bead
+metadata:
+  name: github-pr-456
+  namespace: tundra-dome
+  labels:
+    tundra.dome/source: github
+    tundra.dome/lane: standard
+    tundra.dome/type: pr
+spec:
+  title: "Add rate limiting to API"
+  description: "Implements rate limiting middleware for all API endpoints"
+  source: github
+  sourceId: "456"
+  sourceUrl: "https://github.com/example/repo/pull/456"
+  lane: standard
+  assignedRole: deacon
+  labels:
+    priority: "p2"
+    component: "api"
+    team: "platform"
+    requires-review: "true"
+  maxAttempts: 2
+---
+apiVersion: tundra.dome/v1
+kind: Bead
+metadata:
+  name: critical-outage-789
+  namespace: tundra-dome
+  labels:
+    tundra.dome/source: manual
+    tundra.dome/lane: critical
+    tundra.dome/type: incident
+spec:
+  title: "Production database connection pool exhausted"
+  description: "All database connections are in use, causing 500 errors"
+  source: manual
+  sourceId: "INC-789"
+  lane: critical
+  assignedRole: mayor
+  labels:
+    priority: "p0"
+    component: "database"
+    team: "sre"
+    sla-bound: "true"
+  dueDate: "2026-02-04T01:00:00Z"
+  maxAttempts: 5
+---
+apiVersion: tundra.dome/v1
+kind: Bead
+metadata:
+  name: experiment-ai-feature
+  namespace: tundra-dome
+  labels:
+    tundra.dome/source: manual
+    tundra.dome/lane: experimental
+    tundra.dome/type: feature
+spec:
+  title: "Test new AI code review feature"
+  description: "Experimental integration with LLM for automated code review"
+  source: manual
+  sourceId: "EXP-001"
+  lane: experimental
+  assignedRole: polecat
+  labels:
+    priority: "p3"
+    component: "ai"
+    team: "innovation"
+    can-fail: "true"
+  maxAttempts: 1

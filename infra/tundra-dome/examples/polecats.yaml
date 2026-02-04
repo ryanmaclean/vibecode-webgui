@@ -1,0 +1,187 @@
+---
+apiVersion: tundra.dome/v1
+kind: Polecat
+metadata:
+  name: github-syncer
+  namespace: tundra-dome
+  labels:
+    tundra.dome/role: polecat
+    tundra.dome/crew: github-sync
+spec:
+  role: polecat
+  image: node:20-alpine
+  replicas: 2
+  lanes:
+    - standard
+    - experimental
+  skills:
+    - github-api
+    - issue-sync
+    - pr-sync
+  kafkaTopics:
+    consume:
+      - tundra-work-intake
+      - tundra-polecat-commands
+    produce:
+      - tundra-beads-created
+      - tundra-audit-actions
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  concurrency: 5
+  heartbeatInterval: "30s"
+  retryPolicy:
+    maxAttempts: 3
+    backoffMultiplier: 2.0
+    initialDelay: "1s"
+---
+apiVersion: tundra.dome/v1
+kind: Polecat
+metadata:
+  name: kafka-emitter
+  namespace: tundra-dome
+  labels:
+    tundra.dome/role: polecat
+    tundra.dome/crew: kafka-emit
+spec:
+  role: polecat
+  image: node:20-alpine
+  replicas: 1
+  lanes:
+    - critical
+    - standard
+    - experimental
+  skills:
+    - kafka-produce
+    - event-emit
+  kafkaTopics:
+    consume:
+      - tundra-beads-in-progress
+    produce:
+      - tundra-beads-completed
+      - tundra-beads-failed
+      - tundra-metrics-kpi
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+  concurrency: 10
+  heartbeatInterval: "15s"
+---
+apiVersion: tundra.dome/v1
+kind: Polecat
+metadata:
+  name: td-witness
+  namespace: tundra-dome
+  labels:
+    tundra.dome/role: witness
+    tundra.dome/crew: observability
+spec:
+  role: witness
+  image: node:20-alpine
+  replicas: 1
+  lanes:
+    - critical
+    - standard
+    - experimental
+  skills:
+    - logging
+    - metrics
+    - tracing
+    - audit
+  kafkaTopics:
+    consume:
+      - tundra-witness-commands
+      - tundra-beads-completed
+      - tundra-beads-failed
+      - tundra-beads-escalated
+    produce:
+      - tundra-audit-actions
+      - tundra-metrics-kpi
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  concurrency: 20
+  heartbeatInterval: "10s"
+---
+apiVersion: tundra.dome/v1
+kind: Polecat
+metadata:
+  name: td-reaper
+  namespace: tundra-dome
+  labels:
+    tundra.dome/role: reaper
+    tundra.dome/crew: cleanup
+spec:
+  role: reaper
+  image: node:20-alpine
+  replicas: 1
+  lanes:
+    - experimental
+  skills:
+    - garbage-collection
+    - resource-cleanup
+    - stale-bead-removal
+  kafkaTopics:
+    consume:
+      - tundra-reaper-commands
+      - tundra-beads-failed
+    produce:
+      - tundra-audit-actions
+  resources:
+    requests:
+      cpu: "50m"
+      memory: "128Mi"
+    limits:
+      cpu: "250m"
+      memory: "256Mi"
+  concurrency: 2
+  heartbeatInterval: "60s"
+---
+apiVersion: tundra.dome/v1
+kind: Polecat
+metadata:
+  name: td-overseer
+  namespace: tundra-dome
+  labels:
+    tundra.dome/role: overseer
+    tundra.dome/crew: validation
+spec:
+  role: overseer
+  image: node:20-alpine
+  replicas: 1
+  lanes:
+    - critical
+    - standard
+  skills:
+    - validation
+    - quality-check
+    - schema-enforcement
+  kafkaTopics:
+    consume:
+      - tundra-overseer-commands
+      - tundra-beads-created
+    produce:
+      - tundra-beads-in-progress
+      - tundra-beads-failed
+      - tundra-schema-dlq
+  resources:
+    requests:
+      cpu: "100m"
+      memory: "256Mi"
+    limits:
+      cpu: "500m"
+      memory: "512Mi"
+  concurrency: 5
+  heartbeatInterval: "30s"

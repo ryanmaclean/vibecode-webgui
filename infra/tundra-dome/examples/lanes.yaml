@@ -1,0 +1,94 @@
+---
+apiVersion: tundra.dome/v1
+kind: Lane
+metadata:
+  name: critical
+  namespace: tundra-dome
+  labels:
+    tundra.dome/priority: critical
+spec:
+  priority: critical
+  kafkaTopic: tundra-lane-critical-beads
+  displayName: Critical Lane
+  description: Urgent work requiring immediate attention. SLA-bound items.
+  sla:
+    maxProcessingTime: "30m"
+    maxQueueTime: "5m"
+    targetThroughput: 100
+  routing:
+    labelSelectors:
+      - key: priority
+        operator: In
+        values: ["critical", "urgent", "p0"]
+      - key: sla-bound
+        operator: Exists
+  quotas:
+    maxConcurrent: 10
+    maxQueueDepth: 50
+    rateLimit: 120
+  escalation:
+    enabled: false
+---
+apiVersion: tundra.dome/v1
+kind: Lane
+metadata:
+  name: standard
+  namespace: tundra-dome
+  labels:
+    tundra.dome/priority: standard
+spec:
+  priority: standard
+  kafkaTopic: tundra-lane-standard-beads
+  displayName: Standard Lane
+  description: Normal priority work. Most beads flow here.
+  sla:
+    maxProcessingTime: "4h"
+    maxQueueTime: "1h"
+    targetThroughput: 500
+  routing:
+    labelSelectors:
+      - key: priority
+        operator: In
+        values: ["standard", "normal", "p1", "p2"]
+  quotas:
+    maxConcurrent: 50
+    maxQueueDepth: 500
+    rateLimit: 600
+  escalation:
+    enabled: true
+    targetLane: critical
+    triggerAfter: "4h"
+    notifyRoles:
+      - mayor
+      - overseer
+---
+apiVersion: tundra.dome/v1
+kind: Lane
+metadata:
+  name: experimental
+  namespace: tundra-dome
+  labels:
+    tundra.dome/priority: experimental
+spec:
+  priority: experimental
+  kafkaTopic: tundra-lane-experimental-beads
+  displayName: Experimental Lane
+  description: Low priority work. Can fail without impact. Used for testing.
+  sla:
+    maxProcessingTime: "24h"
+    maxQueueTime: "12h"
+    targetThroughput: 50
+  routing:
+    labelSelectors:
+      - key: priority
+        operator: In
+        values: ["experimental", "low", "p3", "backlog"]
+      - key: can-fail
+        operator: In
+        values: ["true"]
+  quotas:
+    maxConcurrent: 5
+    maxQueueDepth: 100
+    rateLimit: 60
+  escalation:
+    enabled: false

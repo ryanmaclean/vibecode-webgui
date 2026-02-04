@@ -1,0 +1,230 @@
+---
+apiVersion: tundra.dome/v1
+kind: Playbook
+metadata:
+  name: github-sync
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: github-sync
+spec:
+  dagId: tundra_github_ollama
+  displayName: GitHub Issue & PR Sync
+  description: Syncs GitHub issues and PRs to beads in Tundra Dome
+  owner: platform-team
+  schedule:
+    cron: "*/3 * * * *"
+    enabled: true
+  triggers:
+    - type: webhook
+      webhookPath: /api/webhooks/github
+    - type: kafka
+      kafkaTopic: tundra-work-intake
+  errands:
+    - taskId: process_github_issues
+      displayName: Fetch & Process Issues
+      operator: python
+      pythonCallable: tundra_github_ollama:process_github_issues
+      retries: 3
+      timeout: "5m"
+    - taskId: process_github_prs
+      displayName: Fetch & Process PRs
+      operator: python
+      pythonCallable: tundra_github_ollama:process_github_prs
+      dependencies:
+        - process_github_issues
+      retries: 3
+      timeout: "5m"
+  lanes:
+    - standard
+    - experimental
+  tags:
+    - github
+    - sync
+    - issues
+    - prs
+---
+apiVersion: tundra.dome/v1
+kind: Playbook
+metadata:
+  name: kafka-emit
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: kafka-emit
+spec:
+  dagId: tundra_dome_kafka_emit
+  displayName: Kafka Event Emitter
+  description: Emits bead lifecycle events to Kafka topics
+  owner: platform-team
+  schedule:
+    cron: "*/5 * * * *"
+    enabled: true
+  triggers:
+    - type: bead
+      beadPhase: created
+    - type: bead
+      beadPhase: completed
+  errands:
+    - taskId: emit_bead_event
+      displayName: Emit Bead Event
+      operator: python
+      pythonCallable: tundra_dome_kafka:emit_bead_event
+      retries: 2
+      timeout: "2m"
+  lanes:
+    - critical
+    - standard
+    - experimental
+  tags:
+    - kafka
+    - events
+    - beads
+---
+apiVersion: tundra.dome/v1
+kind: Playbook
+metadata:
+  name: integrations-tick
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: integrations-tick
+spec:
+  dagId: tundra_dome_integrations
+  displayName: Integration Health Checks
+  description: Periodic health checks for all external integrations
+  owner: platform-team
+  schedule:
+    cron: "*/10 * * * *"
+    enabled: true
+  triggers:
+    - type: manual
+  errands:
+    - taskId: gastown_tick
+      displayName: Gas Town Health Check
+      operator: python
+      pythonCallable: tundra_dome_integrations:gastown_tick
+      retries: 1
+      timeout: "1m"
+    - taskId: opencode_tick
+      displayName: OpenCode Health Check
+      operator: python
+      pythonCallable: tundra_dome_integrations:opencode_tick
+      retries: 1
+      timeout: "1m"
+    - taskId: openrouter_tick
+      displayName: OpenRouter Health Check
+      operator: python
+      pythonCallable: tundra_dome_integrations:openrouter_tick
+      retries: 1
+      timeout: "1m"
+    - taskId: openclaw_tick
+      displayName: OpenClaw Health Check
+      operator: python
+      pythonCallable: tundra_dome_integrations:openclaw_tick
+      retries: 1
+      timeout: "1m"
+  lanes:
+    - standard
+  tags:
+    - health
+    - integrations
+    - monitoring
+---
+apiVersion: tundra.dome/v1
+kind: Playbook
+metadata:
+  name: lane-router
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: lane-router
+spec:
+  dagId: tundra_lane_router
+  displayName: Lane Router
+  description: Routes beads to appropriate lanes based on labels and rules
+  owner: platform-team
+  schedule:
+    enabled: false
+  triggers:
+    - type: bead
+      beadPhase: created
+    - type: kafka
+      kafkaTopic: tundra-beads-created
+  errands:
+    - taskId: evaluate_labels
+      displayName: Evaluate Bead Labels
+      operator: python
+      pythonCallable: tundra_superdome_policies:evaluate_labels
+      retries: 2
+      timeout: "30s"
+    - taskId: assign_lane
+      displayName: Assign to Lane
+      operator: python
+      pythonCallable: tundra_superdome_policies:assign_lane
+      dependencies:
+        - evaluate_labels
+      retries: 2
+      timeout: "30s"
+    - taskId: emit_to_lane
+      displayName: Emit to Lane Topic
+      operator: kafka_produce
+      dependencies:
+        - assign_lane
+      retries: 3
+      timeout: "30s"
+  lanes:
+    - critical
+    - standard
+    - experimental
+  tags:
+    - routing
+    - lanes
+    - priority
+---
+apiVersion: tundra.dome/v1
+kind: Playbook
+metadata:
+  name: escalation-gate
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: escalation-gate
+spec:
+  dagId: tundra_escalation_gate
+  displayName: Escalation Gate
+  description: Handles bead escalations and notifications
+  owner: platform-team
+  schedule:
+    cron: "*/15 * * * *"
+    enabled: true
+  triggers:
+    - type: bead
+      beadPhase: escalated
+    - type: kafka
+      kafkaTopic: tundra-beads-escalated
+  errands:
+    - taskId: check_escalation_rules
+      displayName: Check Escalation Rules
+      operator: python
+      pythonCallable: tundra_superdome_policies:check_escalation_rules
+      retries: 2
+      timeout: "1m"
+    - taskId: notify_roles
+      displayName: Notify Responsible Roles
+      operator: python
+      pythonCallable: tundra_superdome_policies:notify_roles
+      dependencies:
+        - check_escalation_rules
+      retries: 3
+      timeout: "2m"
+    - taskId: promote_lane
+      displayName: Promote to Higher Lane
+      operator: python
+      pythonCallable: tundra_superdome_policies:promote_lane
+      dependencies:
+        - check_escalation_rules
+      retries: 2
+      timeout: "30s"
+  lanes:
+    - critical
+    - standard
+  tags:
+    - escalation
+    - notifications
+    - alerts

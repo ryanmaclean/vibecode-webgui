@@ -1,0 +1,127 @@
+---
+apiVersion: tundra.dome/v1
+kind: Errand
+metadata:
+  name: github-sync-fetch-issues-run-001
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: github-sync
+    tundra.dome/task: fetch-issues
+spec:
+  taskId: process_github_issues
+  playbookRef: github-sync
+  runId: manual__2026-02-04T00:00:00
+  operator: python
+  displayName: Fetch GitHub Issues
+  description: Fetches open issues from configured GitHub repositories
+  inputs:
+    - name: github-api
+      namespace: external
+      type: api
+  outputs:
+    - name: issues-list
+      namespace: tundra-dome
+      type: dataset
+  maxRetries: 3
+  timeout: "5m"
+status:
+  phase: success
+  startTime: "2026-02-04T00:00:01Z"
+  endTime: "2026-02-04T00:00:15Z"
+  duration: "14s"
+  durationSeconds: 14
+  attempt: 1
+---
+apiVersion: tundra.dome/v1
+kind: Errand
+metadata:
+  name: github-sync-process-prs-run-001
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: github-sync
+    tundra.dome/task: process-prs
+spec:
+  taskId: process_github_prs
+  playbookRef: github-sync
+  runId: manual__2026-02-04T00:00:00
+  operator: python
+  displayName: Process GitHub PRs
+  description: Processes pull requests and creates beads
+  inputs:
+    - name: issues-list
+      namespace: tundra-dome
+      type: dataset
+  outputs:
+    - name: beads-created
+      namespace: tundra-dome
+      type: kafka-topic
+  maxRetries: 3
+  timeout: "5m"
+status:
+  phase: success
+  startTime: "2026-02-04T00:00:16Z"
+  endTime: "2026-02-04T00:00:28Z"
+  duration: "12s"
+  durationSeconds: 12
+  attempt: 1
+---
+apiVersion: tundra.dome/v1
+kind: Errand
+metadata:
+  name: integrations-gastown-tick-run-001
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: integrations-tick
+    tundra.dome/task: gastown-tick
+spec:
+  taskId: gastown_tick
+  playbookRef: integrations-tick
+  runId: scheduled__2026-02-04T00:10:00
+  operator: python
+  displayName: Gas Town Health Check
+  description: Checks health of Gas Town integration
+  outputs:
+    - name: health-status
+      namespace: tundra-dome
+      type: metric
+  maxRetries: 1
+  timeout: "1m"
+status:
+  phase: running
+  startTime: "2026-02-04T00:10:01Z"
+  attempt: 1
+---
+apiVersion: tundra.dome/v1
+kind: Errand
+metadata:
+  name: kafka-emit-failed-run-001
+  namespace: tundra-dome
+  labels:
+    tundra.dome/playbook: kafka-emit
+    tundra.dome/task: emit-bead-event
+spec:
+  taskId: emit_bead_event
+  playbookRef: kafka-emit
+  runId: manual__2026-02-04T00:05:00
+  beadRef: github-issue-123
+  operator: kafka_produce
+  displayName: Emit Bead Event
+  description: Emits bead lifecycle event to Kafka
+  inputs:
+    - name: bead-data
+      namespace: tundra-dome
+      type: crd
+  outputs:
+    - name: tundra-beads-in-progress
+      namespace: tundra-dome
+      type: kafka-topic
+  maxRetries: 2
+  timeout: "2m"
+status:
+  phase: failed
+  startTime: "2026-02-04T00:05:01Z"
+  endTime: "2026-02-04T00:05:10Z"
+  duration: "9s"
+  durationSeconds: 9
+  attempt: 2
+  errorMessage: "KafkaError: Connection refused to kafka-service:9092"
