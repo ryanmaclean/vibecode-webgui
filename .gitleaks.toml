@@ -5,7 +5,7 @@ title = "Vibecode Secrets Policy"
 useDefault = true
 
 [allowlist]
-# Allow common test fixture directories
+# Allow common test fixture directories and node_modules
 paths = [
   "docs/",
   "archive/",
@@ -13,6 +13,36 @@ paths = [
   "services/ai-gateway/node_modules/",
   "extensions/vibecode-ai-assistant/node_modules/",
   "docs/node_modules/",
+  # Files containing password masking/sanitization code (not actual secrets)
+  "src/lib/vector-db/DatabaseTracing.ts",
+  "src/lib/monitoring/distributed-tracing.ts",
+]
+
+# Regex patterns to allow (e.g., password masking code, test fixtures)
+regexes = [
+  # Password masking/sanitization patterns (replacing passwords with ***)
+  '''password\s*=\s*['"]\*{1,}['"]''',
+  # Example/placeholder API keys in documentation
+  '''sk-[xX]{20,}''',
+  '''AKIA[X]{16}''',
+  # Test fixture patterns
+  '''test[-_]?secret[-_]?key''',
+  '''dummy[-_]?api[-_]?key''',
+  '''example[-_]?token''',
+]
+
+# Allow specific commits if needed (empty for now)
+commits = []
+
+# Allow specific stopwords in paths (files with these patterns are ignored)
+stopwords = [
+  "test",
+  "mock",
+  "fixture",
+  "example",
+  "sample",
+  "sanitiz",
+  "mask",
 ]
 
 # Custom rules
