@@ -292,7 +292,7 @@
     "jest-watch-typeahead": "3.0.1",
     "lighthouse": "13.0.1",
     "markdownlint-cli2": "0.20.0",
-    "msw": "^2.12.7",
+    "msw": "^2.12.8",
     "null-loader": "4.0.1",
     "pg": "8.17.2",
     "postcss": "^8.4.38",
