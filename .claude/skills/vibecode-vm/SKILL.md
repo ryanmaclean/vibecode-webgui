@@ -251,6 +251,5 @@ codesign -dv $(which vfkit)
 ## Notes
 
 - **Apple Silicon recommended** - Native ARM64 VMs with near-native performance
-- **Intel Macs** - Supported but use x86_64 emulation
 - **Persistent storage** - Use `07-create-persistent-vm.py` for disk-backed VMs
 - **Ansible integration** - Full Ansible playbooks in `ansible/` directory
