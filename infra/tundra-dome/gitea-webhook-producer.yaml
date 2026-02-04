@@ -1,0 +1,206 @@
+# Gitea Webhook Producer - Converts Git events to Tundra beads
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-webhook-producer-code
+  namespace: tundra-dome
+data:
+  webhook-producer.js: |
+    'use strict';
+    
+    require('dd-trace').init({
+      service: process.env.DD_SERVICE || 'tundra-gitea-webhook',
+      env: process.env.DD_ENV || 'kind',
+    });
+    
+    const http = require('http');
+    const { Kafka, Partitioners } = require('kafkajs');
+    
+    const kafka = new Kafka({
+      clientId: 'tundra-gitea-webhook',
+      brokers: (process.env.KAFKA_BROKERS || 'kafka-service:9092').split(','),
+    });
+    
+    const producer = kafka.producer({
+      createPartitioner: Partitioners.LegacyPartitioner,
+    });
+    
+    const WORK_INTAKE_TOPIC = process.env.TD_TOPIC_WORK || 'tundra-work-intake';
+    const BEADS_CREATED_TOPIC = process.env.TD_TOPIC_CREATED || 'tundra-beads-created';
+    
+    async function produceBead(event, payload) {
+      const bead = {
+        id: `gitea-${event}-${Date.now()}`,
+        event: 'bead.lifecycle',
+        stage: 'created',
+        lane: payload.lane || 'standard',
+        source: 'gitea',
+        gitea_event: event,
+        repo: payload.repository?.full_name || 'unknown',
+        action: payload.action || 'unknown',
+        timestamp: new Date().toISOString(),
+        payload: payload,
+      };
+      
+      console.log(`Producing bead: ${bead.id} for ${event}`);
+      
+      await producer.send({
+        topic: WORK_INTAKE_TOPIC,
+        messages: [{ key: bead.id, value: JSON.stringify(bead) }],
+      });
+      
+      await producer.send({
+        topic: BEADS_CREATED_TOPIC,
+        messages: [{ key: bead.id, value: JSON.stringify(bead) }],
+      });
+      
+      return bead;
+    }
+    
+    const server = http.createServer(async (req, res) => {
+      if (req.method === 'POST' && req.url === '/webhook') {
+        let body = '';
+        req.on('data', chunk => body += chunk);
+        req.on('end', async () => {
+          try {
+            const payload = JSON.parse(body);
+            const event = req.headers['x-gitea-event'] || req.headers['x-github-event'] || 'unknown';
+            
+            // Map events to lanes
+            let lane = 'standard';
+            if (event === 'issues' || event === 'issue_comment') {
+              lane = payload.issue?.labels?.some(l => l.name === 'critical') ? 'critical' : 'standard';
+            } else if (event === 'pull_request') {
+              lane = 'standard';
+            } else if (event === 'push') {
+              lane = payload.ref?.includes('main') || payload.ref?.includes('master') ? 'critical' : 'standard';
+            }
+            
+            payload.lane = lane;
+            const bead = await produceBead(event, payload);
+            
+            res.writeHead(200, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ success: true, bead_id: bead.id }));
+          } catch (err) {
+            console.error('Webhook error:', err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: err.message }));
+          }
+        });
+      } else if (req.method === 'GET' && req.url === '/health') {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ status: 'healthy' }));
+      } else {
+        res.writeHead(404);
+        res.end('Not found');
+      }
+    });
+    
+    async function main() {
+      await producer.connect();
+      console.log('Connected to Kafka');
+      
+      const port = process.env.PORT || 8080;
+      server.listen(port, () => {
+        console.log(`Gitea webhook producer listening on port ${port}`);
+      });
+    }
+    
+    main().catch(err => {
+      console.error('Fatal error:', err);
+      process.exit(1);
+    });
+  package.json: |
+    {
+      "name": "gitea-webhook-producer",
+      "version": "1.0.0",
+      "main": "webhook-producer.js",
+      "dependencies": {
+        "kafkajs": "^2.2.4",
+        "dd-trace": "^5.0.0"
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea-webhook-producer
+  namespace: tundra-dome
+  labels:
+    app: gitea-webhook-producer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea-webhook-producer
+  template:
+    metadata:
+      labels:
+        app: gitea-webhook-producer
+    spec:
+      containers:
+        - name: producer
+          image: node:20-alpine
+          command: ["sh", "-c", "cp -r /app/* /work/ && cd /work && npm install --production && node webhook-producer.js"]
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: DD_SERVICE
+              value: "tundra-gitea-webhook"
+            - name: DD_ENV
+              value: "kind"
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: TD_TOPIC_WORK
+              value: "tundra-work-intake"
+            - name: TD_TOPIC_CREATED
+              value: "tundra-beads-created"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          volumeMounts:
+            - name: code
+              mountPath: /app
+              readOnly: true
+            - name: work
+              mountPath: /work
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: code
+          configMap:
+            name: gitea-webhook-producer-code
+        - name: work
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-webhook-producer
+  namespace: tundra-dome
+  labels:
+    app: gitea-webhook-producer
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: gitea-webhook-producer

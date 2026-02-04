@@ -1,0 +1,139 @@
+# Gitea - Local Git Server for Tundra Dome
+# Mirrors GitHub repos and receives webhooks to produce tasks
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitea-data-pvc
+  namespace: tundra-dome
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitea-config
+  namespace: tundra-dome
+data:
+  app.ini: |
+    APP_NAME = Tundra Dome Gitea
+    RUN_MODE = prod
+    RUN_USER = git
+    
+    [database]
+    DB_TYPE = sqlite3
+    PATH = /data/gitea/gitea.db
+    
+    [repository]
+    ROOT = /data/git/repositories
+    
+    [server]
+    DOMAIN = gitea-service.tundra-dome.svc.cluster.local
+    HTTP_PORT = 3000
+    ROOT_URL = http://gitea-service.tundra-dome.svc.cluster.local:3000/
+    DISABLE_SSH = true
+    START_SSH_SERVER = false
+    LFS_START_SERVER = false
+    
+    [service]
+    DISABLE_REGISTRATION = false
+    REQUIRE_SIGNIN_VIEW = false
+    
+    [webhook]
+    ALLOWED_HOST_LIST = *
+    SKIP_TLS_VERIFY = true
+    
+    [mirror]
+    ENABLED = true
+    DISABLE_NEW_PULL = false
+    DISABLE_NEW_PUSH = true
+    DEFAULT_INTERVAL = 10m
+    MIN_INTERVAL = 1m
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitea
+  namespace: tundra-dome
+  labels:
+    app: gitea
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitea
+  template:
+    metadata:
+      labels:
+        app: gitea
+    spec:
+      containers:
+        - name: gitea
+          image: gitea/gitea:1.21-rootless
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: GITEA__database__DB_TYPE
+              value: "sqlite3"
+            - name: GITEA__server__DOMAIN
+              value: "gitea-service.tundra-dome.svc.cluster.local"
+            - name: GITEA__server__ROOT_URL
+              value: "http://gitea-service.tundra-dome.svc.cluster.local:3000/"
+            - name: GITEA__webhook__ALLOWED_HOST_LIST
+              value: "*"
+            - name: DD_SERVICE
+              value: "tundra-gitea"
+            - name: DD_ENV
+              value: "kind"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: gitea-data
+              mountPath: /var/lib/gitea
+            - name: gitea-config
+              mountPath: /etc/gitea
+          livenessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /api/healthz
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: gitea-data
+          persistentVolumeClaim:
+            claimName: gitea-data-pvc
+        - name: gitea-config
+          configMap:
+            name: gitea-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gitea-service
+  namespace: tundra-dome
+  labels:
+    app: gitea
+spec:
+  type: ClusterIP
+  ports:
+    - port: 3000
+      targetPort: 3000
+      name: http
+  selector:
+    app: gitea
