@@ -62,6 +62,10 @@ Standardize bead/PR/issue flow across Gas Town → Tundra Dome.
   - `gastown.kafka_consumer.processed`
 
 4) Kafka health + topic hygiene
+- TD helpers (preferred):
+  - `td kafka summary` (works; outputs lane counters)
+  - `td kafka topics` (works; lists tundra-* topics)
+  - `td kafka status` (currently exits 1 in local rig; use topics/summary instead)
 - List topics:
   - `kafka-topics --bootstrap-server localhost:9092 --list | sort`
 - Delete dot topics:
