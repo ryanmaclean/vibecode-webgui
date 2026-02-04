@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>com.tundra.nat64</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>/Users/studio/gt/plugins/tundra-nat64/bin/tundra-nat64</string>
+  </array>
+  <key>EnvironmentVariables</key>
+  <dict>
+    <key>NAT64_RIG</key>
+    <string>mbp_m1</string>
+    <key>NAT64_LANE</key>
+    <string>standard</string>
+    <key>NAT64_ROLE</key>
+    <string>deacon</string>
+    <key>NAT64_SERVICE</key>
+    <string>tundra-nat64</string>
+    <key>NAT64_LOG_LEVEL</key>
+    <string>info</string>
+    <key>DD_ENV</key>
+    <string>local</string>
+    <key>DD_SERVICE</key>
+    <string>tundra-nat64</string>
+    <key>DD_VERSION</key>
+    <string>0.1.0</string>
+  </dict>
+  <key>RunAtLoad</key>
+  <true/>
+  <key>KeepAlive</key>
+  <true/>
+  <key>StandardOutPath</key>
+  <string>/Users/studio/gt/logs/nat64.out.log</string>
+  <key>StandardErrorPath</key>
+  <string>/Users/studio/gt/logs/nat64.err.log</string>
+</dict>
+</plist>

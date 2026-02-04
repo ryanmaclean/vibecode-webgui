@@ -1,0 +1,16 @@
+{
+  "topics": [
+    "tundra-chat-private",
+    "tundra-chat-shared",
+    "tundra-chat-gossip",
+    "tundra-work-intake",
+    "tundra-audit-actions",
+    "tundra-metrics-kpi"
+  ],
+  "allow_event_types": ["bead.lifecycle", "role.activity", "bead_provenance", "issue", "pr", "push", "action", "chat"],
+  "redact": {
+    "max_len": 280,
+    "hash_private_body": true,
+    "strip_code": true
+  }
+}

@@ -1,0 +1,52 @@
+# Gas Town Custom Datadog Check Configuration
+# Copy to: /opt/datadog-agent/etc/conf.d/gastown.d/conf.yaml
+
+init_config:
+
+instances:
+  - gt_root: /Users/studio/gt
+    tags:
+      - env:studio
+      - team:vibecode
+
+# Optional: Add logs collection
+logs:
+  # Mayor/orchestrator logs
+  - type: file
+    path: /Users/studio/gt/*/mayor/rig/.beads/daemon.log
+    service: gastown
+    source: gastown
+    tags:
+      - agent:mayor
+      - role:orchestrator
+    log_processing_rules:
+      - type: multi_line
+        name: new_log_start
+        pattern: '^\d{4}-\d{2}-\d{2}'
+
+  # Polecat worker logs
+  - type: file
+    path: /Users/studio/gt/*/polecats/*/session.log
+    service: gastown
+    source: gastown
+    tags:
+      - agent:polecat
+      - role:worker
+
+  # Witness patrol logs
+  - type: file
+    path: /Users/studio/gt/*/.beads/witness.log
+    service: gastown
+    source: gastown
+    tags:
+      - agent:witness
+      - role:patrol
+
+  # Beads activity (JSONL)
+  - type: file
+    path: /Users/studio/gt/*/.beads/interactions.jsonl
+    service: gastown
+    source: gastown
+    tags:
+      - type:activity
+      - format:jsonl

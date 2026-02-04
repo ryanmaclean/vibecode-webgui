@@ -1,0 +1,43 @@
+{
+  "nat64": {
+    "deploy_mode": "per_rig",
+    "binary_path": "plugins/tundra-nat64/bin/tundra-nat64",
+    "tags": ["service:nat64", "component:tundra-nat64"],
+    "notes": "Run one shared NAT64 gateway per rig by default."
+  },
+  "sessions": {
+    "primary_mux": "tmux",
+    "optional_mux": "zellij",
+    "policy": "tmux for automation + reconciler; zellij allowed for human operators."
+  },
+  "openclaw": {
+    "routing": {
+      "critical": "mayor",
+      "escalation": "deacon",
+      "default": "deacon"
+    },
+    "target": "",
+    "notes": "Set OPENCLAW_MESSAGE_TARGET explicitly per rig."
+  },
+  "gitea": {
+    "mbp_m1_root_url": "http://mbp-m1.local:3000/",
+    "studio_root_url": "http://studio.local:3000/"
+  },
+  "github_dispatcher": {
+    "dry_run": true,
+    "owner": "",
+    "repo": "",
+    "notes": "Set owner/repo/token to enable."
+  },
+  "polecats": {
+    "k8s_target": "both"
+  },
+  "vector": {
+    "placement": "host_and_k8s",
+    "private_redaction": "hash_body"
+  },
+  "skills": {
+    "path": "skills/",
+    "list": ["tundra-ops", "tundra-observer", "kafka-ops", "openclaw-ops"]
+  }
+}
