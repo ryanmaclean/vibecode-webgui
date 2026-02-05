@@ -66,6 +66,12 @@ log "Creating namespaces..."
 kubectl create namespace tundra-dome --dry-run=client -o yaml | kubectl apply -f -
 kubectl create namespace datadog --dry-run=client -o yaml | kubectl apply -f -
 
+# Create secrets (required by deployments that reference secretRef)
+log "Creating secrets..."
+kubectl -n tundra-dome create secret generic tundra-dome-secrets \
+  --from-literal=DD_API_KEY="${DD_API_KEY:-placeholder-key}" \
+  --dry-run=client -o yaml | kubectl apply -f -
+
 # Install CRDs
 log "Installing CRDs..."
 kubectl apply -f "$SCRIPT_DIR/crds/"
