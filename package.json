@@ -256,7 +256,7 @@
     "@datadog/browser-rum": "6.26.0",
     "@datadog/datadog-ci": "5.5.0",
     "@eslint/eslintrc": "3.3.1",
-    "@opentelemetry/exporter-jaeger": "2.2.0",
+    "@opentelemetry/exporter-jaeger": "2.5.0",
     "@playwright/test": "1.58.0",
     "@tailwindcss/postcss": "4.1.18",
     "@tauri-apps/cli": "2.10.0",
