@@ -760,7 +760,7 @@ spec:
     protocol: TCP
     targetPort: 8080
   selector:
-    app: airflow-api-server
+    app: airflow-scheduler
   sessionAffinity: None
   type: ClusterIP
 ---
