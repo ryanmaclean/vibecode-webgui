@@ -1,9 +1,10 @@
 # VibeCode Complete Product Specification
 
-**Version:** 6.0.0
+**Version:** 6.1.0
 **Compiled From:** 48 GitHub Releases (v0.9-beta → v5.1.0-beta)
 **Date:** 2026-02-06
-**Status:** Development
+**Status:** Development (Waves 3-8 complete)
+**Total Pages:** 70+ | **API Routes:** 95+ | **Tests:** 7,133+
 
 ---
 
@@ -481,7 +482,7 @@ openai → openrouter → anthropic
 
 | Route | Purpose | Status |
 |-------|---------|--------|
-| `/` | Landing page | Implemented |
+| `/` | Landing + dashboard cards | Implemented (Wave 7) |
 | `/chat` | AI chat interface | Implemented |
 | `/chat/enhanced` | Enhanced AI chat | Implemented |
 | `/chat/collaborative` | Collaborative chat | Implemented |
@@ -497,18 +498,30 @@ openai → openrouter → anthropic
 | `/deploy` | Deployment tools | Implemented |
 | `/upload` | File upload | Implemented |
 | `/auth/signin` | Authentication | Implemented |
+| `/vm` | VM management dashboard | Implemented (Wave 6) |
+| `/vm/snapshots` | VM snapshot management | Implemented (Wave 6) |
+| `/ai/costs` | AI cost tracking | Implemented (Wave 6) |
+| `/ai/models` | Model comparison | Implemented (Wave 6) |
+| `/ai/prompts` | Prompt library browser | Implemented (Wave 6) |
+| `/settings` | Application settings | Implemented (Wave 6) |
+| `/health` | Service health + WebSocket | Implemented (Wave 6+7) |
+| `/updates` | Auto-update management | Implemented (Wave 7) |
 
-### 9.2 Pages Needed (Components exist, pages missing)
+### 9.2 Shared Navigation & Layouts
 
-| Route | Purpose | Components Available |
-|-------|---------|---------------------|
-| `/vm` | VM management dashboard | MultiVMDashboard, VMCard |
-| `/vm/snapshots` | VM snapshot management | SnapshotManager |
-| `/ai/costs` | AI cost tracking | CostDashboard, CostEstimator |
-| `/ai/models` | Model comparison | ModelComparison, ModelSelector, ModelDetails |
-| `/settings` | Application settings | SettingsPanel |
-| `/health` | Service health | Unified health service + WebSocket |
-| `/ai/prompts` | Prompt library browser | Prompt templates (33) |
+| Component | Purpose | Status |
+|-----------|---------|--------|
+| `AppNavigation` | Responsive top nav with dropdowns | Implemented (Wave 7) |
+| `ai/layout.tsx` | AI section sidebar (Chat, Models, Costs, Prompts) | Implemented (Wave 6) |
+| `vm/layout.tsx` | VM section sidebar (Dashboard, Snapshots) | Implemented (Wave 6) |
+
+### 9.3 Pages Needed
+
+| Route | Purpose | APIs Available |
+|-------|---------|---------------|
+| `/containers` | Docker container management | /api/containers, /api/docker/status |
+| `/ai/chat` | AI chat under AI section layout | /api/ai/chat, /api/ai/chat/stream |
+| `/monitoring/alerts` | Service & budget alerts | /api/monitoring/pool-alerts |
 
 ---
 
@@ -567,11 +580,12 @@ openai → openrouter → anthropic
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 7,085+ |
-| Passing | 6,992+ |
+| Total Tests | 7,133+ |
+| Passing | 7,040+ |
 | Failing | 0 |
 | Skipped | 63 |
 | Coverage (new code) | 87%+ |
+| Wave 6 Page Tests | 48 (7 suites) |
 | Frameworks | Jest 30.x |
 
 ---

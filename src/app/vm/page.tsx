@@ -1,8 +1,42 @@
 'use client'
 
 import { useState, useEffect, useCallback } from 'react'
+import { Copy, Check, Terminal, Database, Server, Globe, Container } from 'lucide-react'
 import { MultiVMDashboard } from '@/components/vm'
 import type { VMInstance, VMProfile, VMDashboardStats, CreateVMOptions } from '@/types/multi-vm'
+
+const connectionCards = [
+  {
+    name: 'SSH',
+    icon: Terminal,
+    command: 'ssh -p 2222 root@localhost',
+    description: 'Password: vibecode',
+  },
+  {
+    name: 'PostgreSQL',
+    icon: Database,
+    command: 'psql -h localhost -U postgres',
+    description: 'PostgreSQL 16',
+  },
+  {
+    name: 'Valkey',
+    icon: Server,
+    command: 'redis-cli -h localhost -p 6379',
+    description: 'Valkey 7.2 (Redis-compatible)',
+  },
+  {
+    name: 'OpenVSCode',
+    icon: Globe,
+    command: 'http://localhost:3000',
+    description: 'Browser-based IDE',
+  },
+  {
+    name: 'Docker',
+    icon: Container,
+    command: 'docker -H tcp://localhost:2375 info',
+    description: 'Docker CE remote API',
+  },
+]
 
 /**
  * VM Dashboard Page
@@ -168,19 +202,68 @@ export default function VMDashboardPage() {
     }
   }, [fetchVMs])
 
+  const [copiedCard, setCopiedCard] = useState<string | null>(null)
+
+  const handleCopy = useCallback(async (command: string, name: string) => {
+    await navigator.clipboard.writeText(command)
+    setCopiedCard(name)
+    setTimeout(() => setCopiedCard(null), 2000)
+  }, [])
+
   return (
-    <MultiVMDashboard
-      vms={vms}
-      profiles={profiles}
-      stats={stats}
-      loading={loading}
-      error={error}
-      onCreateVM={handleCreateVM}
-      onStartVM={handleStartVM}
-      onStopVM={handleStopVM}
-      onDeleteVM={handleDeleteVM}
-      onCloneVM={handleCloneVM}
-      onRefresh={fetchVMs}
-    />
+    <>
+      <MultiVMDashboard
+        vms={vms}
+        profiles={profiles}
+        stats={stats}
+        loading={loading}
+        error={error}
+        onCreateVM={handleCreateVM}
+        onStartVM={handleStartVM}
+        onStopVM={handleStopVM}
+        onDeleteVM={handleDeleteVM}
+        onCloneVM={handleCloneVM}
+        onRefresh={fetchVMs}
+      />
+
+      {/* Quick Connect */}
+      <div className="mt-8">
+        <h2 className="text-lg font-medium text-gray-900 mb-4">Quick Connect</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {connectionCards.map((card) => {
+            const Icon = card.icon
+            const isCopied = copiedCard === card.name
+            return (
+              <div
+                key={card.name}
+                className="bg-white rounded-lg shadow-sm border border-gray-200 p-4"
+              >
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-2">
+                    <Icon className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-gray-900">{card.name}</span>
+                  </div>
+                  <button
+                    onClick={() => handleCopy(card.command, card.name)}
+                    className="p-1.5 rounded-md text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-colors"
+                    title={isCopied ? 'Copied!' : 'Copy command'}
+                  >
+                    {isCopied ? (
+                      <Check className="h-4 w-4 text-green-500" />
+                    ) : (
+                      <Copy className="h-4 w-4" />
+                    )}
+                  </button>
+                </div>
+                <p className="text-xs text-gray-500 mb-2">{card.description}</p>
+                <code className="block text-sm bg-gray-50 text-gray-800 rounded px-3 py-2 font-mono break-all">
+                  {card.command}
+                </code>
+              </div>
+            )
+          })}
+        </div>
+      </div>
+    </>
   )
 }
