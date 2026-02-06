@@ -6,6 +6,9 @@ export * from './prompts/templates';
 export * from './search/vector-search';
 export * from './analytics';
 
+// Context Management
+export * from './context';
+
 // Enhanced AI capabilities
 export * from './agents/multi-agent-workflow';
 export * from './vector-stores/pgvector-client';
