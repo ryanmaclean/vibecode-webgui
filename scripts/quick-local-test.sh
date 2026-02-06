@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Quick Local Test Script for VibeCode GitOps
 # This script performs a rapid validation of the setup
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 VibeCode GitOps Quick Local Test"
 echo "=================================="

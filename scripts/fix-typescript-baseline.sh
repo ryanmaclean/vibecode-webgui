@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # TypeScript Baseline Restoration Script
 # Purpose: Automatically fix common TypeScript errors to establish clean baseline
 # Issue: #408
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

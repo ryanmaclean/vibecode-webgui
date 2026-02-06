@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Test script for Datadog LLM Observability
  * Verifies that traces are being sent to Datadog
@@ -21,6 +25,10 @@ if (!process.env.DD_API_KEY) {
 
 // Initialize ddtrace BEFORE any other imports
 const tracer = require('dd-trace')
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 tracer.init({
   service: 'vibecode-test',

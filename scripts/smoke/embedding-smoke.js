@@ -1,8 +1,16 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 const assert = require('assert');
 const { PrismaClient } = require('@prisma/client');
 const { EmbeddingServiceFactory, EmbeddingProvider } = require('../dist/lib/ai/embeddingServiceFactory');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 async function main() {
   if (!process.env.OPENAI_API_KEY) {

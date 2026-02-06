@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Securely extract and use Datadog API key without displaying it
 # The key will NEVER be printed or logged
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

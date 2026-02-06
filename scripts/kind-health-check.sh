@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # KIND Health Check - Comprehensive validation of VibeCode deployment
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "🩺 VibeCode KIND Health Check"

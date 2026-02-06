@@ -1,9 +1,17 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # CI/CD Test Script
 # Exit code 0 = all tests pass
 # Exit code 1 = any test fails
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "=== CI/CD Test Suite ==="
 echo ""

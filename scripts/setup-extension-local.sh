@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Setup extension for code-server testing
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔧 Setting up VibeCode AI Assistant for code-server testing..."
 

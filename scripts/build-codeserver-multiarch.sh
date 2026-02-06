@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # VibeCode Code-Server Multi-Architecture Build Script
 # Builds code-server with custom VibeCode extensions for both ARM64 and AMD64
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Building VibeCode Code-Server Multi-Architecture Images"
 echo "============================================================"

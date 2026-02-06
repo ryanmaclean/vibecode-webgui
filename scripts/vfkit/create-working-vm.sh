@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create fully working Alpine VM with network and package management
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

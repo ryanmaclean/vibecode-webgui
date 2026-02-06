@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Local KIND Cluster Setup for VibeCode GitOps Testing
 # This script sets up a complete local Kubernetes environment for testing
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Setting up local KIND cluster for VibeCode GitOps testing..."
 

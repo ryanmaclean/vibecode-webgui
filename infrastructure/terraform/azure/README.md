@@ -108,6 +108,8 @@ azure_region = "East US 2"
 # Monitoring (required)
 datadog_api_key = "your-datadog-api-key"
 datadog_app_key = "your-datadog-app-key"
+datadog_rum_application_id = "your-rum-application-id"
+datadog_rum_client_token = "your-rum-client-token"
 
 # Optional: keep Terraform in sync with rotated DB credentials
 # postgres_admin_password_override = "<value from Key Vault postgres-admin-password>"

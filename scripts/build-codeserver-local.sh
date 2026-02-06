@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build multi-architecture code-server images locally (no push)
 # Usage: ./scripts/build-codeserver-local.sh [version]
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Test script to validate Datadog API key and send test metrics
  * This verifies our monitoring integration works with the provided API key
@@ -7,6 +11,10 @@
 // Load environment variables from .env (preferred) or .env.local
 const fs = require('fs')
 const path = require('path')
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 try {
   const envPathPrimary = path.join(__dirname, '..', '.env')

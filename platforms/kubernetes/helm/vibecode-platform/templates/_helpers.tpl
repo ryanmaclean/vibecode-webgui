@@ -40,6 +40,9 @@ helm.sh/chart: {{ include "vibecode-platform.chart" . }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+tags.datadoghq.com/env: {{ .Values.global.environment | default "development" | quote }}
+tags.datadoghq.com/service: {{ .Chart.Name | quote }}
+tags.datadoghq.com/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
 {{- end }}
 
 {{/*

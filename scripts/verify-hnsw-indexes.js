@@ -1,8 +1,16 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /*
  * Verify HNSW (cosine) indexes exist and are used by planner with EXPLAIN
  */
 const { Client } = require('pg');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 function unitVec(dim) {
   const v = Array.from({ length: dim }, () => Math.random() * 2 - 1);

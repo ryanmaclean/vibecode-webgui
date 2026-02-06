@@ -24,9 +24,12 @@ resource "kubernetes_namespace" "vibecode" {
   metadata {
     name = "vibecode"
     labels = {
-      name        = "vibecode"
-      environment = var.environment
-      project     = var.project_name
+      name                           = "vibecode"
+      environment                    = var.environment
+      project                        = var.project_name
+      "tags.datadoghq.com/env"       = var.environment
+      "tags.datadoghq.com/service"   = "vibecode-platform"
+      "tags.datadoghq.com/version"   = var.app_version
     }
   }
 }
@@ -77,6 +80,15 @@ resource "kubernetes_secret" "app_config" {
     DD_SERVICE = "vibecode-webgui"
     DD_ENV     = var.environment
     DD_VERSION = "1.0.0"
+    DD_LOGS_INJECTION        = "true"
+    DD_PROFILING_ENABLED     = "true"
+    DD_RUNTIME_METRICS_ENABLED = "true"
+
+    # Browser RUM (public)
+    NEXT_PUBLIC_DD_APPLICATION_ID = var.datadog_rum_application_id
+    NEXT_PUBLIC_DD_CLIENT_TOKEN   = var.datadog_rum_client_token
+    NEXT_PUBLIC_DD_SITE           = "datadoghq.com"
+    NEXT_PUBLIC_APP_VERSION       = "1.0.0"
 
     # Database monitoring
     # Note: Only canonical DD_* variables are injected here.
@@ -238,8 +250,11 @@ resource "kubernetes_deployment" "vibecode_app" {
     name      = "vibecode-app"
     namespace = kubernetes_namespace.vibecode.metadata[0].name
     labels = {
-      app     = "vibecode"
-      version = "1.0.0"
+      app                            = "vibecode"
+      version                        = "1.0.0"
+      "tags.datadoghq.com/env"       = var.environment
+      "tags.datadoghq.com/service"   = "vibecode-app"
+      "tags.datadoghq.com/version"   = var.app_version
     }
   }
 
@@ -255,8 +270,11 @@ resource "kubernetes_deployment" "vibecode_app" {
     template {
       metadata {
         labels = {
-          app     = "vibecode"
-          version = "1.0.0"
+          app                            = "vibecode"
+          version                        = "1.0.0"
+          "tags.datadoghq.com/env"       = var.environment
+          "tags.datadoghq.com/service"   = "vibecode-app"
+          "tags.datadoghq.com/version"   = var.app_version
         }
         annotations = {
           "prometheus.io/scrape" = "true"
@@ -382,10 +400,13 @@ resource "kubernetes_deployment" "vibecode_docs" {
     name      = "vibecode-docs"
     namespace = kubernetes_namespace.vibecode.metadata[0].name
     labels = {
-      app       = "vibecode-docs"
-      component = "documentation"
-      tier      = "frontend"
-      version   = "1.0.0"
+      app                            = "vibecode-docs"
+      component                      = "documentation"
+      tier                           = "frontend"
+      version                        = "1.0.0"
+      "tags.datadoghq.com/env"       = var.environment
+      "tags.datadoghq.com/service"   = "vibecode-docs"
+      "tags.datadoghq.com/version"   = var.app_version
     }
   }
 
@@ -401,10 +422,13 @@ resource "kubernetes_deployment" "vibecode_docs" {
     template {
       metadata {
         labels = {
-          app       = "vibecode-docs"
-          component = "documentation"
-          tier      = "frontend"
-          version   = "1.0.0"
+          app                            = "vibecode-docs"
+          component                      = "documentation"
+          tier                           = "frontend"
+          version                        = "1.0.0"
+          "tags.datadoghq.com/env"       = var.environment
+          "tags.datadoghq.com/service"   = "vibecode-docs"
+          "tags.datadoghq.com/version"   = var.app_version
         }
         annotations = {
           "prometheus.io/scrape" = "true"
@@ -524,8 +548,11 @@ resource "kubernetes_service" "vibecode_docs" {
     name      = "vibecode-docs-service"
     namespace = kubernetes_namespace.vibecode.metadata[0].name
     labels = {
-      app       = "vibecode-docs"
-      component = "documentation"
+      app                            = "vibecode-docs"
+      component                      = "documentation"
+      "tags.datadoghq.com/env"       = var.environment
+      "tags.datadoghq.com/service"   = "vibecode-docs"
+      "tags.datadoghq.com/version"   = var.app_version
     }
   }
 
@@ -551,7 +578,10 @@ resource "kubernetes_service" "vibecode_app" {
     name      = "vibecode-service"
     namespace = kubernetes_namespace.vibecode.metadata[0].name
     labels = {
-      app = "vibecode"
+      app                            = "vibecode"
+      "tags.datadoghq.com/env"       = var.environment
+      "tags.datadoghq.com/service"   = "vibecode-app"
+      "tags.datadoghq.com/version"   = var.app_version
     }
   }
 

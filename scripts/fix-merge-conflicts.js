@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Automated Merge Conflict Resolution Script
  * Resolves merge conflicts systematically by choosing the more comprehensive version
@@ -11,6 +15,10 @@ import { execSync } from 'child_process';
 
 // Priority order for conflict resolution
 const PRIORITY_PATTERNS = [
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
   /src\/app\/api/,           // API routes first
   /src\/lib\/ai/,            // AI libraries
   /src\/lib\/db/,            // Database libraries

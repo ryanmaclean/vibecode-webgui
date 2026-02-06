@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # KIND Cluster Status and Management Script
 # Provides comprehensive status information and management commands
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -43,12 +43,21 @@ locals {
 
   name_prefix = "${local.project_name}-${local.environment}"
 
+  # Common tags including Datadog unified service tagging for APM correlation
   common_tags = {
-    Project     = local.project_name
-    Environment = local.environment
-    ManagedBy   = "OpenTofu"
-    Template    = "vercel-doc-search"
-    Repository  = "vibecode-webgui"
+    Project      = local.project_name
+    Environment  = local.environment
+    ManagedBy    = "OpenTofu"
+    Template     = "vercel-doc-search"
+    Repository   = "vibecode-webgui"
+    # Standard tags for resource organization
+    service      = var.service_name
+    env          = local.environment
+    team         = var.team
+    # Datadog unified service tagging (dd.* prefixed)
+    "dd.env"     = local.environment
+    "dd.service" = var.service_name
+    "dd.version" = var.app_version
   }
 }
 

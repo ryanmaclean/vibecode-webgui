@@ -168,3 +168,22 @@ variable "additional_tags" {
   type        = map(string)
   default     = {}
 }
+
+# Datadog unified service tagging variables
+variable "service_name" {
+  description = "Service name for Datadog unified service tagging"
+  type        = string
+  default     = "vibecode-docs"
+}
+
+variable "team" {
+  description = "Team name for resource ownership and Datadog tagging"
+  type        = string
+  default     = "platform"
+}
+
+variable "app_version" {
+  description = "Application version for Datadog unified service tagging"
+  type        = string
+  default     = "1.0.0"
+}

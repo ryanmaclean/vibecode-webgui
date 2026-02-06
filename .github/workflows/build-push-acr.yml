@@ -21,6 +21,10 @@ env:
   ACR_NAME: vibecodeacr
   ACR_REGISTRY: vibecodeacr.azurecr.io
   IMAGE_NAME: vibecode-webgui
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
 
 jobs:
   build-and-push:

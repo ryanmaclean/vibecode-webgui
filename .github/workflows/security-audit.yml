@@ -8,6 +8,12 @@ on:
     branches:
       - '**'
 
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
+
 concurrency:
   group: security-audit-${{ github.ref }}
   cancel-in-progress: true

@@ -1,10 +1,18 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 const fs = require('fs');
 const http = require('http');
 const https = require('https');
 const net = require('net');
 const path = require('path');
 const { URL } = require('url');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 function parseArgs(argv) {
   const result = {

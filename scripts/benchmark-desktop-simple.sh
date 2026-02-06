@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 #############################################################################
 # VibeCode Desktop App Simple Performance Benchmark
 #
@@ -11,6 +15,10 @@
 #
 # Usage: ./scripts/benchmark-desktop-simple.sh
 #############################################################################
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Docker wrapper for OpenTofu to ensure consistent versions
 # Usage: ./tofu-docker.sh [tofu command arguments]
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

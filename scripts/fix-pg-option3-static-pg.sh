@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Option 3: Use statically compiled PostgreSQL
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Option 3: Statically compiled PostgreSQL ==="

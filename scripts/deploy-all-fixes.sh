@@ -1,9 +1,17 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deploy All VM Access Fixes
 # This script deploys:
 # 1. VSOCK relay fix (localhost:3000 access)
 # 2. SSH server fix (tunnel access)
 # 3. Rebuilds app bundles with all fixes
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

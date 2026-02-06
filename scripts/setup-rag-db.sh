@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # RAG Database Setup Script
 # Sets up the pgvector database for documentation ingestion
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

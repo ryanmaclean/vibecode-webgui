@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Configuration
+
+# Initialize log aggregation
+init_log_aggregation
+
 IMAGE_NAME="vibecode/code-server"
 TAG="latest"
 PLATFORM="linux/amd64,linux/arm64"

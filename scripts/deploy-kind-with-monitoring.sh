@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # VibeCode KIND Deployment with Full Monitoring Stack
 # Deploys docs service + Datadog monitoring for dev/stg/prd parity
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 VibeCode KIND Deployment with Monitoring"
 echo "============================================="

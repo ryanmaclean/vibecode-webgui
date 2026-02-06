@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Install OpenClaw + Tailscale + DNS + Let's Encrypt in macOS VM
 # Run this INSIDE the VM after first boot
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

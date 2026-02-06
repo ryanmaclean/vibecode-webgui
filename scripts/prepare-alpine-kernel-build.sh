@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Alpine Kernel Build Preparation Script
 # Sets up the build environment for Apple Silicon optimized kernel
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

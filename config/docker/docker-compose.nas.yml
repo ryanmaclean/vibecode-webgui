@@ -9,6 +9,10 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_SERVICE: ${DD_SERVICE:-code-server}
+      DD_ENV: ${DD_ENV:-development}
+      DD_VERSION: ${DD_VERSION:-0.1.0}
+      DD_TAGS: team:platform,component:infra
       DD_API_KEY: "${DD_API_KEY:-}"
       DD_SITE: "${DD_SITE:-datadoghq.com}"
     ports:
@@ -29,6 +33,10 @@ services:
       OPENAI_API_KEY: "${OPENAI_API_KEY:-}"
       ANTHROPIC_API_KEY: "${ANTHROPIC_API_KEY:-}"
       OPENROUTER_API_KEY: "${OPENROUTER_API_KEY:-}"
+      DD_SERVICE: ${DD_SERVICE:-vibecode-app}
+      DD_ENV: ${DD_ENV:-development}
+      DD_VERSION: ${DD_VERSION:-0.1.0}
+      DD_TAGS: team:platform,component:infra
       DD_API_KEY: "${DD_API_KEY:-}"
       DD_SITE: "${DD_SITE:-datadoghq.com}"
     ports:

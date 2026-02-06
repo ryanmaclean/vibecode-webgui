@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Comprehensive Deployment Script with Error Tracking
 # This script handles all deployment scenarios with automatic error tracking
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Source error tracking module
 source "$(dirname "$0")/lib/error-tracking.sh"

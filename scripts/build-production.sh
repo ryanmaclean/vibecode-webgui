@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Production build script that bypasses Babel for optimal performance
 # Temporarily moves Babel config to let Next.js use SWC
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Starting production build with SWC optimization..."
 

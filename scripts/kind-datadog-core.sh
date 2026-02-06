@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Core KIND Cluster with Essential Datadog Monitoring
 # Simplified, robust setup focused on getting monitoring working
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

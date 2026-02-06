@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete KIND Cluster Automation with Datadog Monitoring
 # Creates, configures, and monitors a full VibeCode development environment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 
@@ -156,12 +164,16 @@ datadog:
   apm:
     enabled: true
     portEnabled: true
-    
+
+  # Data Streams Monitoring (DSM) - enables Kafka pipeline visibility
+  dataStreamsMonitoring:
+    enabled: true
+
   # Process monitoring
   processAgent:
     enabled: true
     processCollection: true
-    
+
   # Network monitoring
   networkMonitoring:
     enabled: true
@@ -228,6 +240,10 @@ agents:
           value: "true"
         - name: DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL
           value: "true"
+        - name: DD_DATA_STREAMS_ENABLED
+          value: "true"
+        - name: DD_APM_FEATURES
+          value: "data_streams_enabled"
         - name: DD_AC_EXCLUDE
           value: "name:datadog-agent"
         - name: DD_CONTAINER_EXCLUDE

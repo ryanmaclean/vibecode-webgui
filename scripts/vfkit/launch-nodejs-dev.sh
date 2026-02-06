@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Node.js v22 Dev VM Launch Script for vfkit v0.6.1
 #
 # IMPORTANT: This script uses CLI flags, NOT --config YAML
@@ -11,6 +15,10 @@
 # - Alpine kernel and initramfs at ~/.vfkit/vms/vibecode-alpine/kernel/
 # - vfkit v0.6.1 installed (brew install vfkit)
 # - Workspace directory at ~/vibecode-workspace (or customize below)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

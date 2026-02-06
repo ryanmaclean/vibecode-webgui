@@ -6,6 +6,9 @@ metadata:
   labels:
     app: code-server
     component: ide
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "code-server"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   replicas: 3
   strategy:
@@ -21,6 +24,9 @@ spec:
       labels:
         app: code-server
         component: ide
+        tags.datadoghq.com/env: "production"
+        tags.datadoghq.com/service: "code-server"
+        tags.datadoghq.com/version: "1.0.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
@@ -120,6 +126,9 @@ metadata:
   namespace: vibecode-webgui
   labels:
     app: code-server
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "code-server"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   type: ClusterIP
   ports:

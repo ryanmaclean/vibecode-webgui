@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Aggressive Merge Conflict Resolution Script
  * Resolves ALL remaining conflicts by choosing "Updated upstream" version

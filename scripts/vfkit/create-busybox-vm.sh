@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create BusyBox-based VM with latest OpenVSCode Server
 # Ultra-minimal setup with Musl libc
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

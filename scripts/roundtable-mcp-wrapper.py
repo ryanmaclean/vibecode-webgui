@@ -1,8 +1,16 @@
 #!/usr/bin/env python3
 
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
     from vibecode.telemetry import init_telemetry
@@ -17,7 +25,6 @@ Patches the log file path to use a writable location and adds DD tracing.
 """
 import os
 import sys
-from pathlib import Path
 
 # Initialize Datadog tracing before importing the server
 try:

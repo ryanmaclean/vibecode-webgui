@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Dockerfile Layer Optimization Validation Script
 # Issue #459: Verify layer reduction from 57 → 12-15
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

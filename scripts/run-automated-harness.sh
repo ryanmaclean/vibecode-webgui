@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Run the Swift-based automated VM test harness
 # This compiles and executes the standalone test program
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

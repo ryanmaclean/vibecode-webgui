@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Branch Merge Strategy - Based on 5 Agent Analysis
 # Generated: 2025-10-24
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

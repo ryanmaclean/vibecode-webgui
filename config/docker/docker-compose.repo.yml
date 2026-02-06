@@ -14,6 +14,10 @@ services:
       - NODE_ENV=production
       - NEXTAUTH_URL=http://localhost:3000
       - HOSTNAME=0.0.0.0
+      - DD_SERVICE=${DD_SERVICE:-webgui}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
       - DD_IAST_ENABLED=true
       # Gateway base URL for the UI if applicable
       - GATEWAY_BASE_URL=http://localhost:3001
@@ -58,6 +62,8 @@ services:
       - OTEL_RESOURCE_ATTRIBUTES=${OTEL_RESOURCE_ATTRIBUTES:-deployment.environment=${DD_ENV:-dev}}
       - OTEL_EXPORTER_OTLP_ENDPOINT=${OTEL_EXPORTER_OTLP_ENDPOINT:-}
       - OTEL_EXPORTER_OTLP_HEADERS=${OTEL_EXPORTER_OTLP_HEADERS:-}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
       # Local convenience
       - DISABLE_REDIS=${DISABLE_REDIS:-true}
       - ALLOW_START_WITHOUT_REDIS=${ALLOW_START_WITHOUT_REDIS:-true}
@@ -74,6 +80,11 @@ services:
       - "6379:6379"
     volumes:
       - redis_data:/data
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-redis}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     profiles:
       - full
       - obs-demo
@@ -85,6 +96,11 @@ services:
       - "11434:11434"
     volumes:
       - ollama_data:/root/.ollama
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-ollama}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     deploy:
       resources:
         limits:
@@ -102,6 +118,10 @@ services:
       - "3002:8080"
     environment:
       - OLLAMA_BASE_URL=http://ollama:11434
+      - DD_SERVICE=${DD_SERVICE:-openwebui}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     profiles:
       - obs-demo
 

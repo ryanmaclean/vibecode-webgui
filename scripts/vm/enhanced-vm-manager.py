@@ -1,8 +1,31 @@
 #!/usr/bin/env python3
 
+# Datadog Unified Service Tagging
+_dd_service = "enhanced-vm-manager"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
+
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
     from vibecode.telemetry import init_telemetry
@@ -17,7 +40,7 @@ Enhanced VM Manager - Incorporating VirtualBuddy and Viable best practices
 
 # Datadog APM tracing
 try:
-    from ddtrace import tracer, patch_all
+    from ddtrace import patch_all
     patch_all()
 except ImportError:
     pass  # ddtrace not installed
@@ -25,12 +48,10 @@ except ImportError:
 
 import os
 import subprocess
-import shutil
 import uuid
 import json
 from pathlib import Path
-from typing import List, Dict, Optional
-import curses
+from typing import List, Dict
 
 class EnhancedVMManager:
     def __init__(self):
@@ -195,7 +216,6 @@ class EnhancedVMManager:
     def show_tui(self):
         """Show ncurses TUI"""
         # Simplified TUI for now
-        import sys
         from blessed import Terminal
         
         term = Terminal()

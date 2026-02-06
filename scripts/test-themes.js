@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Theme Testing Script for Code-Server
  * 
@@ -10,6 +14,10 @@
 const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class ThemeTester {
     constructor() {

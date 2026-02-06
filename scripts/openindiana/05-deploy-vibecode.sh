@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Deploy VibeCode Application
 # Clone, configure, and deploy VibeCode in lx zone
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

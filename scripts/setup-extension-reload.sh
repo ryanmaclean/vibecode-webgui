@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Install VibeCode extension when code-server reloads
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

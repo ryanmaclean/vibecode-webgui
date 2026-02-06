@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Documentation Validation Script
  * Validates documentation structure, links, and completeness
@@ -7,6 +11,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const glob = require('glob');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class DocumentationValidator {
   constructor() {

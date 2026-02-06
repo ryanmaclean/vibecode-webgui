@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Environment Variable Validation Script
  * Validates all required environment variables are present and properly formatted
@@ -7,6 +11,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Load environment variables, preferring .env then falling back to .env.local
 const envPathPrimary = path.join(__dirname, '../.env');

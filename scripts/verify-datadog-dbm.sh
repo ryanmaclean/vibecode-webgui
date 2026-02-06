@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Verify Datadog Database Monitoring for pgvector on PostgreSQL
 # This script validates that DBM is properly configured and collecting data
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔍 Verifying Datadog Database Monitoring for pgvector on PostgreSQL"
 echo "=================================================================="

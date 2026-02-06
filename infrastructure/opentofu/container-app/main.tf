@@ -18,11 +18,20 @@ provider "azurerm" {
 
 locals {
   name_prefix = "${var.project_name}-${var.environment}"
+  # Common tags including Datadog unified service tagging for APM correlation
   tags = merge(var.tags, {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "OpenTofu"
-    Template    = "container-app"
+    Project      = var.project_name
+    Environment  = var.environment
+    ManagedBy    = "OpenTofu"
+    Template     = "container-app"
+    # Standard tags for resource organization
+    service      = var.service_name
+    env          = var.environment
+    team         = var.team
+    # Datadog unified service tagging (dd.* prefixed)
+    "dd.env"     = var.environment
+    "dd.service" = var.service_name
+    "dd.version" = var.datadog_version
   })
 }
 
@@ -152,6 +161,46 @@ resource "azurerm_container_app" "web" {
      env {
        name       = "AZURE_OPENAI_API_KEY"
         value = var.azure_openai_api_key != "" ? var.azure_openai_api_key : azurerm_cognitive_account.openai.primary_access_key
+      }
+      env {
+        name  = "DD_SERVICE"
+        value = var.datadog_service
+      }
+      env {
+        name  = "DD_ENV"
+        value = var.environment
+      }
+      env {
+        name  = "DD_VERSION"
+        value = var.datadog_version
+      }
+      env {
+        name  = "DD_TRACE_ENABLED"
+        value = "true"
+      }
+      env {
+        name  = "DD_PROFILING_ENABLED"
+        value = "true"
+      }
+      env {
+        name  = "DD_RUNTIME_METRICS_ENABLED"
+        value = "true"
+      }
+      env {
+        name  = "DD_LOGS_INJECTION"
+        value = "true"
+      }
+      env {
+        name  = "NEXT_PUBLIC_DD_APPLICATION_ID"
+        value = var.datadog_rum_application_id
+      }
+      env {
+        name  = "NEXT_PUBLIC_DD_CLIENT_TOKEN"
+        value = var.datadog_rum_client_token
+      }
+      env {
+        name  = "NEXT_PUBLIC_DD_SITE"
+        value = var.datadog_site
       }
     }
     http_scale_rule {

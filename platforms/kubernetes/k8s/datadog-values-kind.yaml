@@ -35,6 +35,10 @@ datadog:
   databaseMonitoring:
     enabled: true
 
+  # Data Streams Monitoring (DSM) - enables Kafka pipeline visibility
+  dataStreamsMonitoring:
+    enabled: true
+
   env:
     - name: DD_APPSEC_ENABLED
       value: "true"
@@ -46,8 +50,10 @@ datadog:
       value: "true"
     - name: DD_LOGS_ENABLED
       value: "true"
+    - name: DD_DATA_STREAMS_ENABLED
+      value: "true"
     - name: DD_APM_FEATURES
-      value: "appsec,profiling,ci_visibility"
+      value: "appsec,profiling,ci_visibility,data_streams_enabled"
 
   confd:
     redisdb.yaml: |

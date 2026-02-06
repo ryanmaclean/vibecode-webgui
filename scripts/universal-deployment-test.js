@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Universal VibeCode Deployment Testing Framework
  * Tests all deployment modes: local, docker, compose, KIND, kubernetes
@@ -10,6 +14,10 @@ const fs = require('fs');
 const path = require('path');
 const http = require('http');
 const https = require('https');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class DeploymentTester {
     constructor() {

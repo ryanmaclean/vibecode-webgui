@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Local Development Setup with Datadog Monitoring
 # Ensures dev/stg/prd parity by including monitoring in local development
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 VibeCode Local Development Setup with Monitoring"
 echo "===================================================="

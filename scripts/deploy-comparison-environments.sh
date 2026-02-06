@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Deploy Comparison Environments Script
 # Sets up both AKS (dev) and Azure Functions (staging) for A/B testing
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Deploying Comparison Environments for A/B Testing"
 echo "=================================================="

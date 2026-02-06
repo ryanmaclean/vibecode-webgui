@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * ValKey Vector Cache Benchmark Runner
  * 
@@ -20,6 +24,10 @@
 // Import required modules
 const { VectorCacheBenchmark } = require('../dist/lib/cache/vector-cache-benchmark');
 const { VectorCacheManager } = require('../dist/lib/cache/vector-cache-strategy');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Parse command line arguments
 const args = process.argv.slice(2);

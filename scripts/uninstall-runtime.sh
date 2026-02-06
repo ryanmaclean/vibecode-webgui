@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -euo pipefail
 
 # Apple Container Runtime Uninstallation Script
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 if [[ $EUID -ne 0 ]]; then
    echo "Error: This script must be run as root (use sudo)"

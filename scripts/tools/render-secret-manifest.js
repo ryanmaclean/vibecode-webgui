@@ -1,6 +1,14 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 const fs = require('fs')
 const path = require('path')
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const envFile = path.resolve('.env.local')
 if (!fs.existsSync(envFile)) {

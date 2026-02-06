@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # AgentAPI Deployment Script
 # Deploys VibeCode workspace with AgentAPI to Kubernetes
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

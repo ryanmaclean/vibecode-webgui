@@ -6,6 +6,9 @@ metadata:
   labels:
     app: openai-agents
     component: runtime
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "openai-agents"
+    tags.datadoghq.com/version: "1.0.0"
   annotations:
     service.beta.kubernetes.io/azure-load-balancer-internal: "true"
     prometheus.io/scrape: "true"
@@ -41,6 +44,9 @@ metadata:
   labels:
     app: openai-agents
     component: runtime
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "openai-agents"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   type: ClusterIP
   clusterIP: None

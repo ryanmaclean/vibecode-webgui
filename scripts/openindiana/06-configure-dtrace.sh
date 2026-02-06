@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Configure DTrace Monitoring for VibeCode
 # Sets up DTrace probes and StatsD integration
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

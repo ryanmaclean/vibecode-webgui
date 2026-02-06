@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # This script helps set up Azure OpenAI service and deployment
 # Prerequisites: Azure CLI must be installed and logged in
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

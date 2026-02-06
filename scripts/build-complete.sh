@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # MIT License - Complete VibeCode build process
 # Builds Swift VM manager, Next.js frontend (if needed), and Tauri app
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

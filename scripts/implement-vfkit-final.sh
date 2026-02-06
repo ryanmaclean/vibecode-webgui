@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode vfkit Final Working Implementation
 # Create a functional macOS VM using vfkit with proper bootloader
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

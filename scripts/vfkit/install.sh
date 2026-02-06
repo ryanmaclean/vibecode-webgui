@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # VibeCode Fun Demo VM - One-Liner Installer
 # Usage: curl -fsSL https://raw.githubusercontent.com/yourrepo/main/scripts/vfkit/install.sh | bash
 # Or locally: curl -fsSL http://localhost:8000/install.sh | bash
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

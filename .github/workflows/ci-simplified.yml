@@ -15,6 +15,10 @@ concurrency:
 
 env:
   NODE_VERSION: '20.11.0'  # Match package.json engines requirement
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
 
 jobs:
   # Code Quality & Security

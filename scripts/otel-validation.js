@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * OpenTelemetry Configuration Validator
  * Validates that OpenTelemetry setup works correctly with current dependencies
@@ -7,6 +11,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 console.log('🔍 OpenTelemetry Configuration Validator');
 console.log('========================================\n');

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Verification script for Monacopilot + Monaco 0.53.0 integration
  * 
@@ -11,6 +15,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 console.log('🔍 Verifying Monacopilot Integration...\n');
 

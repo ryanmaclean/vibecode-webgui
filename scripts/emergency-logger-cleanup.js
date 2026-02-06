@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * EMERGENCY LOGGER IMPORT CLEANUP SCRIPT
  *
@@ -19,6 +23,10 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configuration
 const DRY_RUN = process.argv.includes('--dry-run');

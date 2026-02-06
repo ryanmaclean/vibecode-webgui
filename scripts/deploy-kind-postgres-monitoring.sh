@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deploy KIND Cluster with PostgreSQL Database Monitoring
 # This script creates a complete KIND cluster with Datadog PostgreSQL monitoring
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

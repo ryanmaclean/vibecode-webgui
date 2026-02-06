@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Verify all recommended extensions exist on Open VSX
 # Part of VibeCode security hardening
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

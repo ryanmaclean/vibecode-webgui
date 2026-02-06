@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Vector Database Migration Script for Azure PostgreSQL
  * 
@@ -42,6 +46,10 @@ const { program } = require('commander');
 const { dog } = require('datadog-metrics');
 const path = require('path');
 const fs = require('fs');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configure CLI options
 program

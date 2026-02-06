@@ -16,6 +16,7 @@ case "$ARCH" in
     if [[ ! -f "$DEFAULT_KERNEL" ]]; then
       DEFAULT_KERNEL="$VM_DIR/vmlinuz-host"
     fi
+    DEFAULT_INITRD="$VM_DIR/openvscode-initramfs.cpio.gz"
     PORT=${MICROVM_PORT:-3600}
     HOST=${MICROVM_HOST:-127.0.0.1}
     QEMU_BIN=${QEMU_BIN:-qemu-system-x86_64}
@@ -31,6 +32,7 @@ case "$ARCH" in
     if [[ ! -f "$DEFAULT_KERNEL" ]]; then
       DEFAULT_KERNEL="$VM_DIR"/vmlinuz-6.1.0-40-arm64
     fi
+    DEFAULT_INITRD="$VM_DIR/openvscode-initramfs.cpio.gz"
     PORT=${MICROVM_PORT:-4600}
     HOST=${MICROVM_HOST:-127.0.0.1}
     QEMU_BIN=${QEMU_BIN:-qemu-system-aarch64}
@@ -46,6 +48,19 @@ case "$ARCH" in
     exit 1
     ;;
 esac
+
+if [[ "$ARCH" == "arm64" && ( "$RUNTIME" == "applevf" || "$RUNTIME" == "vf" ) ]]; then
+  APPLEVF_DIR="${MICROVM_APPLEVF_DIR:-$ROOT_DIR/bench-images/apple-vf-fastboot}"
+  if [[ -f "$APPLEVF_DIR/vmlinux-efi-stub" || -f "$APPLEVF_DIR/initramfs-minimal.cpio.gz" ]]; then
+    VM_DIR="$APPLEVF_DIR"
+    if [[ -f "$VM_DIR/vmlinux-efi-stub" ]]; then
+      DEFAULT_KERNEL="$VM_DIR/vmlinux-efi-stub"
+    fi
+    if [[ -f "$VM_DIR/initramfs-minimal.cpio.gz" ]]; then
+      DEFAULT_INITRD="$VM_DIR/initramfs-minimal.cpio.gz"
+    fi
+  fi
+fi
 
 if [[ "$RUNTIME" == "applevf" || "$RUNTIME" == "vf" ]]; then
   if [[ -n ${APPEND_APPLEVF:-} ]]; then
@@ -63,7 +78,7 @@ MEMORY_MB=${MICROVM_MEMORY_MB:-$DEFAULT_MEMORY_MB}
 MACHINE_OPTS+=("-smp" "$CPUS" "-m" "$MEMORY_MB")
 
 KERNEL="${MICROVM_KERNEL:-$DEFAULT_KERNEL}"
-INITRD="${MICROVM_INITRD:-$VM_DIR/openvscode-initramfs.cpio.gz}"
+INITRD="${MICROVM_INITRD:-$DEFAULT_INITRD}"
 PID_FILE="$VM_DIR/.microvm.pid"
 SERIAL_LOG="$VM_DIR/qemu-console.log"
 COMMON_OPTS=("-kernel" "$KERNEL" "-initrd" "$INITRD" "-append" "$APPEND" "-display" "none")

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Run Datadog Agent with FIXED PostgreSQL configuration
 # Fix the dbname + database_autodiscovery conflict
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

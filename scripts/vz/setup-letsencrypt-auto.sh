@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Full Let's Encrypt Automation with DNS Challenge
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 DOMAIN="${1:-openclaw.local}"

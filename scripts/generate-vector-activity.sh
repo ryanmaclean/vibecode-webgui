@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 ## Categories used across generators (global scope for reuse)
+
+# Initialize log aggregation
+init_log_aggregation
+
 categories=("deployment" "kubernetes" "ai-integration" "testing" "security" "monitoring")
 
 # Generate Vector Activity for Datadog DBM Demo

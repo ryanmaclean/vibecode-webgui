@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 5: Create Security Configuration Files
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 5: Creating Security Configurations ==="

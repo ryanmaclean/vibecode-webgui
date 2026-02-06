@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Comprehensive Component Status Audit
 # Tests all components in both Docker Compose and KIND environments
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

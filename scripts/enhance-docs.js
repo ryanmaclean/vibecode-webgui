@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Documentation Enhancement Script
  * Creates enhanced API documentation and improves existing docs structure
@@ -7,6 +11,10 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 async function enhanceDocs() {
   console.log('🚀 Enhancing documentation structure...');

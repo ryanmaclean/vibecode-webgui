@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * VibeCode Deployment Script
  * Automates deployment to various cloud platforms
@@ -9,6 +13,10 @@ const { execSync } = require('child_process')
 const fs = require('fs')
 const path = require('path')
 const readline = require('readline')
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const rl = readline.createInterface({
   input: process.stdin,

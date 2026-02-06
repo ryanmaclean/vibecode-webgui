@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 8: Test Let's Encrypt Locally
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 8: Testing Let's Encrypt ==="

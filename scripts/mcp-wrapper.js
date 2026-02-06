@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Universal MCP server wrapper with Datadog tracing support.
  * Usage: node mcp-wrapper.js <service-name> <package-name>
@@ -7,6 +11,10 @@
 
 const tracer = require('dd-trace');
 const { pathToFileURL } = require('url');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Get service name and package from args
 const [,, serviceName, packageName] = process.argv;

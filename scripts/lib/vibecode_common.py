@@ -347,7 +347,7 @@ class GracefulShutdown:
         signal.signal(signal.SIGTERM, self._signal_handler)
         signal.signal(signal.SIGINT, self._signal_handler)
     
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, signum, _frame):
         """Handle shutdown signals."""
         sig_name = signal.Signals(signum).name
         self.logger.info(f"Received {sig_name}, shutting down gracefully...")
@@ -423,6 +423,78 @@ def init_vibecode_script(
 
 
 # ============================================================================
+# Script Telemetry Wrapper
+# ============================================================================
+
+def run_with_telemetry(
+    main_func: Callable[[], Any],
+    script_name: str,
+    service_name: Optional[str] = None,
+    log_level: int = logging.INFO,
+    enable_metrics: bool = True
+) -> Any:
+    """
+    Run a script main function with Datadog logging/metrics/error tracking.
+
+    Args:
+        main_func: Callable main entrypoint.
+        script_name: Human-friendly script name.
+        service_name: DD_SERVICE override (defaults to script_name).
+        log_level: Logging level.
+        enable_metrics: Whether to emit metrics.
+    """
+    logger, _, metrics, _ = init_vibecode_script(
+        script_name,
+        service_name=service_name,
+        log_level=log_level,
+        enable_metrics=enable_metrics
+    )
+
+    start = time.time()
+    exit_code = 0
+
+    try:
+        from lib import log_aggregation, error_tracking, datadog_logging  # type: ignore
+    except Exception:
+        log_aggregation = None
+        error_tracking = None
+        datadog_logging = None
+
+    if log_aggregation:
+        log_aggregation.init_log_aggregation()
+        log_aggregation.log_script_start(script_name, " ".join(sys.argv[1:]))
+
+    if datadog_logging:
+        datadog_logging.dd_info(f"Script started: {script_name}", f"script:{script_name}")
+
+    if metrics:
+        metrics.increment("script.run", 1, tags=[f"script:{script_name}"])
+    if datadog_logging:
+        datadog_logging.dd_metric("vibecode.script.run", 1, "count", f"script:{script_name}")
+
+    try:
+        return main_func()
+    except Exception as exc:
+        exit_code = 1
+        if log_aggregation:
+            log_aggregation.log_error(f"{script_name} failed: {exc}")
+        if error_tracking:
+            error_tracking.log_error_to_datadog(str(exc), 1, "script", "execution")
+        if datadog_logging:
+            datadog_logging.dd_error(f"{script_name} failed: {exc}", f"script:{script_name}")
+        logger.error("%s failed: %s", script_name, exc, exc_info=True)
+        raise
+    finally:
+        duration = time.time() - start
+        if log_aggregation:
+            log_aggregation.log_script_end(script_name, exit_code, duration)
+        if metrics:
+            metrics.histogram("script.duration_sec", duration, tags=[f"script:{script_name}"])
+        if datadog_logging:
+            datadog_logging.dd_metric("vibecode.script.duration_sec", duration, "gauge", f"script:{script_name}")
+
+
+# ============================================================================
 # Export all
 # ============================================================================
 
@@ -438,4 +510,5 @@ __all__ = [
     'get_script_dir',
     'ensure_dir',
     'init_vibecode_script',
+    'run_with_telemetry',
 ]

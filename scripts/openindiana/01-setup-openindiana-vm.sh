@@ -1,10 +1,18 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # OpenIndiana VM Setup Script for VibeCode
 # Creates optimized VM for running VibeCode with ZFS and DTrace
 #
 # Platforms: UTM (macOS), VirtualBox (cross-platform), QEMU (Linux)
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

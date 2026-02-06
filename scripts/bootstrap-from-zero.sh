@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete Zero-to-Production Kubernetes Automation
 # Handles everything from dependency installation to full deployment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

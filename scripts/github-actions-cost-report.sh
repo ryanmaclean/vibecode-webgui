@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # GitHub Actions Cost Report Generator
 # Run monthly to track cost optimization effectiveness
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "📊 GitHub Actions Cost Optimization Report"
 echo "=========================================="

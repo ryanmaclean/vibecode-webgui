@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -euo pipefail
+
+
+# Initialize log aggregation
+init_log_aggregation
 
 VERSION=${1:-""}
 if [ -z "$VERSION" ]; then

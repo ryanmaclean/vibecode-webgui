@@ -62,13 +62,22 @@ locals {
   name_prefix = "${var.project_name}-${var.environment}"
 
   # Common tags applied to all resources
+  # Includes Datadog unified service tagging for APM correlation
   common_tags = merge(var.additional_tags, {
-    Project     = var.project_name
-    Environment = var.environment
-    ManagedBy   = "terraform"
-    Component   = "vibecode-webgui"
-    CreatedBy   = "terraform"
-    CreatedAt   = timestamp()
+    Project      = var.project_name
+    Environment  = var.environment
+    ManagedBy    = "terraform"
+    Component    = "vibecode-webgui"
+    CreatedBy    = "terraform"
+    CreatedAt    = timestamp()
+    # Standard tags for resource organization
+    service      = var.service_name
+    env          = var.environment
+    team         = var.team
+    # Datadog unified service tagging (dd.* prefixed)
+    "dd.env"     = var.environment
+    "dd.service" = var.service_name
+    "dd.version" = var.app_version
   })
 
   postgres_admin_password = var.postgres_admin_password_override != "" ? var.postgres_admin_password_override : random_password.postgres_admin_password[0].result

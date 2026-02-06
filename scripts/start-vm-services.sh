@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VM Service Startup Script
 # Purpose: Manually start PostgreSQL and OpenVSCode Server after VM boots
 # Usage: ./start-vm-services.sh
@@ -9,6 +13,10 @@
 #   SSH_PORT    - SSH port (default: 2222)
 #   SSH_USER    - SSH username (default: root)
 #   SSH_PASS    - SSH password (default: vibecode)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -o pipefail
 

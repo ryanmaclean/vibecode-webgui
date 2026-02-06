@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 4: Test Tailscale Script
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 4: Testing Tailscale Script ==="

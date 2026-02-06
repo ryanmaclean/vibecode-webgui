@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Verification script for Docker Go installation fix
 # Issue: #506 - Docker build pipeline broken
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

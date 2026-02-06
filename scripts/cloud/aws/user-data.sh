@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -euxo pipefail
+
+
+# Initialize log aggregation
+init_log_aggregation
 
 apt-get update
 apt-get install -y docker.io

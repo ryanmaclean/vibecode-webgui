@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Experiment 4: Create Datadog Dashboard
 # Agent 5: Observability Engineer - Prep Work
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

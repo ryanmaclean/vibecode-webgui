@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Vector Database Performance Benchmark for Azure PostgreSQL
  * 
@@ -39,6 +43,10 @@ const os = require('os');
 const cluster = require('cluster');
 const pMap = require('p-map');
 const { v4: uuidv4 } = require('uuid');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 let dog;
 try {

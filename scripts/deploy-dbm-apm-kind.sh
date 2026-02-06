@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Deploy DBM-APM Configuration to KIND Local Development
 # This script deploys the updated DBM-APM configuration to the local KIND cluster
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

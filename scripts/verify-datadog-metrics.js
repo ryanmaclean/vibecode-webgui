@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Verify Datadog Metrics Integration
  * 
@@ -9,6 +13,10 @@
 
 const https = require('https');
 const { ArgumentParser } = require('argparse');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Parse command line arguments
 const parser = new ArgumentParser({

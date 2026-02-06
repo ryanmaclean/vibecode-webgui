@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Console.log to Structured Logger Migration Tool
  *
@@ -50,6 +54,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configuration
 const DEFAULT_PATHS = ['src/', 'server/', 'scripts/'];

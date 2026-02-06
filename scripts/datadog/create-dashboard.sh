@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Source monitoring library
+
+# Initialize log aggregation
+init_log_aggregation
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 source "$SCRIPT_DIR/lib/datadog-monitoring.sh" 2>/dev/null || true
 init_monitoring "$(basename "$0")"

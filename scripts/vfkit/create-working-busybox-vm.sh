@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create working BusyBox VM with VSCode Server and Claude Code
 # Uses Alpine's initrd as base and adds BusyBox components
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build initramfs based on Gitpod workspace-images for ARM64
 # Extracts Gitpod's setup and builds directly into initramfs (no Docker needed)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -22,6 +22,9 @@ FastAPI service that bridges GitHub webhooks to Gas Town automation (bd/gt).
 - `GASTOWN_WEBHOOK_SYNC_REPOS` - Run `bd repo sync` before handling events (default: false)
 - `GASTOWN_WEBHOOK_SYNC_INTERVAL` - Minimum seconds between syncs (default: 60)
 - `DD_SERVICE` - Datadog service name (default: `gastown-webhook`)
+- `DD_TRACE_ENABLED` - Enable ddtrace APM (default: true when using ddtrace-run)
+- `DD_PROFILING_ENABLED` - Enable Datadog profiling (recommended: true)
+- `DD_LOGS_INJECTION` - Correlate logs with traces (recommended: true)
 
 When enabling cross-rig sync, add additional rigs with `bd repo add <path>` so `bd repo sync` can hydrate them.
 

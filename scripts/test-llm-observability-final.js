@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Test script for Datadog LLM Observability
  * Uses direct tracer integration with proper CommonJS imports
@@ -12,6 +16,10 @@ const dotenv = require('dotenv')
 const root = path.join(__dirname, '..')
 const primary = path.join(root, '.env')
 const local = path.join(root, '.env.local')
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 if (fs.existsSync(primary)) {
   dotenv.config({ path: primary })
 } else if (fs.existsSync(local)) {

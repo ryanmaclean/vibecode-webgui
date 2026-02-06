@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Multimodal AI System Test Validation
  * 
@@ -13,6 +17,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 console.log('🚀 VibeCode Multimodal AI Test Validation');
 console.log('=========================================\n');

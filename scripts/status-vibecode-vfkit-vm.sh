@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 echo "📊 VibeCode VM Status"
 echo "===================="
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 if [ -f "/Users/studio/VibeCode-VMs/VibeCode-Dev/vm.pid" ]; then
     VM_PID=$(cat "/Users/studio/VibeCode-VMs/VibeCode-Dev/vm.pid")

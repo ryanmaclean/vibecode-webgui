@@ -11,6 +11,21 @@ except ImportError:
     pass
 # ------------------------
 
+# Datadog Unified Service Tagging
+_dd_service = "integrate-log-aggregation"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
+
 """
 Automated Log Aggregation Integration Script
 Automatically integrates Datadog log aggregation into existing deployment scripts
@@ -23,11 +38,9 @@ try:
     ddtrace.patch_all()
 except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
-    pass
 
 import os
 import sys
-import re
 import argparse
 from pathlib import Path
 from typing import List, Dict, Any

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete Alpine Linux Kernel Build for Apple Silicon M-Series
 # Agent 30 - Senior Kernel Engineer (Apple Darwin Team)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

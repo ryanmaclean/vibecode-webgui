@@ -1,9 +1,17 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Rebuild Specialized VMs with Complete Initramfs Pattern
 # Based on proven BasicVibeCode implementation
 #
 # This script rebuilds specialized service VMs (Valkey, PostgreSQL, Node.js, etc.)
 # using the working initramfs pattern with virtio network modules + TCP relay
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -189,7 +189,37 @@ variable "datadog_app_key" {
   sensitive   = true
 }
 
+variable "datadog_rum_application_id" {
+  description = "Datadog RUM application ID (public)"
+  type        = string
+  default     = ""
+}
+
+variable "datadog_rum_client_token" {
+  description = "Datadog RUM client token (public)"
+  type        = string
+  default     = ""
+}
+
 # Application Configuration
+variable "app_version" {
+  description = "Application version for Datadog unified service tagging"
+  type        = string
+  default     = "1.0.0"
+}
+
+variable "service_name" {
+  description = "Service name for Datadog unified service tagging"
+  type        = string
+  default     = "vibecode-webgui"
+}
+
+variable "team" {
+  description = "Team name for resource ownership and Datadog tagging"
+  type        = string
+  default     = "platform"
+}
+
 variable "openai_api_key" {
   description = "OpenAI API key (fallback for non-Azure models)"
   type        = string

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Final Component Test - Direct Testing Without Hanging
 # Tests every component of KIND/K8s installation
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

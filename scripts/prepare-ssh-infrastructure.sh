@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Experiment 2: Prepare SSH Infrastructure
 # Agent 4: SSH & Security Engineer - Prep Work
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"

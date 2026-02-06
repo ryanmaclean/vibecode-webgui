@@ -118,3 +118,46 @@ variable "database_name" {
   description = "Database name"
   default     = "vibecode_docs"
 }
+
+variable "datadog_rum_application_id" {
+  type        = string
+  description = "Datadog RUM application ID"
+  default     = ""
+}
+
+variable "datadog_rum_client_token" {
+  type        = string
+  description = "Datadog RUM client token"
+  default     = ""
+  sensitive   = true
+}
+
+variable "datadog_site" {
+  type        = string
+  description = "Datadog site (e.g., datadoghq.com, datadoghq.eu)"
+  default     = "datadoghq.com"
+}
+
+variable "datadog_service" {
+  type        = string
+  description = "Datadog service name"
+  default     = "vibecode-webgui"
+}
+
+variable "datadog_version" {
+  type        = string
+  description = "Datadog version tag"
+  default     = "1.0.0"
+}
+
+variable "service_name" {
+  type        = string
+  description = "Service name for Datadog unified service tagging"
+  default     = "vibecode-webgui"
+}
+
+variable "team" {
+  type        = string
+  description = "Team name for resource ownership and Datadog tagging"
+  default     = "platform"
+}

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Configure private DNS and Let's Encrypt in VM
 # Run this INSIDE the VM
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # PostgreSQL Datadog Monitoring Validation Script
 # Comprehensive validation of PostgreSQL Database Monitoring setup
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

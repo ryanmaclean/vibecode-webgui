@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Healthcheck Validation Script
 # Tests all Docker Compose service healthchecks
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

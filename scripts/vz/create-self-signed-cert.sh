@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create self-signed certificate for .local domains
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 DOMAIN="${1:-openclaw.local}"

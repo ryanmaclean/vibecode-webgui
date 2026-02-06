@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Docker Client Setup Script for VibeCode Unified VM
 # This script configures your macOS environment to use Docker in the VibeCode VM
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

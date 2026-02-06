@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Ultra-Simple Development Start
 # Just run the app with your existing PostgreSQL
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

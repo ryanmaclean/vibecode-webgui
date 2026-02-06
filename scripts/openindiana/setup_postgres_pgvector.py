@@ -1,13 +1,49 @@
 #!/usr/bin/env python3
+from __future__ import annotations
+
+# Datadog Unified Service Tagging
+_dd_service = "setup-postgres-pgvector"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
+
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 """Setup PostgreSQL 16 with pgvector extension.
 
 Optimized for ZFS and vector workloads.
 """
-from __future__ import annotations
+
+
+# -- VibeCode Telemetry --
+import sys
+import os
+try:
+    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
+    from vibecode.telemetry import init_telemetry
+    tracer = init_telemetry(os.path.basename(__file__))
+except ImportError:
+    pass
+# ------------------------
+
 
 # Datadog APM tracing
 try:
-    from ddtrace import tracer, patch_all
+    from ddtrace import patch_all
     patch_all()
 except ImportError:
     pass  # ddtrace not installed
@@ -404,22 +440,30 @@ def save_connection_details(db_password: str) -> None:
     """Save connection details to file."""
     log_info("Saving connection details...")
 
+    # Use environment variables with fallback to configured values
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT', '5432')
+
     credentials = f"""PostgreSQL Connection Details
 =============================
 
-Host: localhost
-Port: 5432
+Host: {db_host}
+Port: {db_port}
 Database: {DB_NAME}
 User: {DB_USER}
 Password: {db_password}
 
-Connection String:
-postgresql://{DB_USER}:{db_password}@localhost:5432/{DB_NAME}
+Environment Variables (recommended for .env):
+DB_USER={DB_USER}
+DB_PASSWORD={db_password}
+DB_HOST={db_host}
+DB_PORT={db_port}
+DB_NAME={DB_NAME}
 
-Connection URL (for .env):
-DATABASE_URL="postgresql://{DB_USER}:{db_password}@localhost:5432/{DB_NAME}?schema=public"
+Connection URL (for .env - uses environment variable interpolation):
+DATABASE_URL="postgresql://${{DB_USER}}:${{DB_PASSWORD}}@${{DB_HOST}}:${{DB_PORT}}/{DB_NAME}?schema=public"
 
-IMPORTANT: Keep this file secure!
+IMPORTANT: Keep this file secure and use environment variables in production!
 """
 
     creds_path = Path("/root/postgres-credentials.txt")
@@ -431,6 +475,10 @@ IMPORTANT: Keep this file secure!
 
 def show_summary(db_password: str) -> None:
     """Display setup summary."""
+    # Use environment variables with fallback to configured values
+    db_host = os.environ.get('DB_HOST', 'localhost')
+    db_port = os.environ.get('DB_PORT', '5432')
+
     print(f"""
 {Colors.GREEN}PostgreSQL Setup Complete!{Colors.NC}
 ================================
@@ -455,15 +503,19 @@ Configuration:
   - Daily automated backups at 2 AM
   - Connection logging enabled
 
-Connection String:
-  postgresql://{DB_USER}:{db_password}@localhost:5432/{DB_NAME}
+Environment Variables for .env:
+  DB_USER={DB_USER}
+  DB_PASSWORD=<see /root/postgres-credentials.txt>
+  DB_HOST={db_host}
+  DB_PORT={db_port}
+  DB_NAME={DB_NAME}
 
 Test Connection:
-  psql -U {DB_USER} -d {DB_NAME} -h localhost
+  psql -U {DB_USER} -d {DB_NAME} -h {db_host}
 
 Next Steps:
   1. Run: ./05-deploy-vibecode.sh
-  2. Update .env with DATABASE_URL
+  2. Update .env with environment variables above
 
 Useful Commands:
   - Status:     systemctl status postgresql

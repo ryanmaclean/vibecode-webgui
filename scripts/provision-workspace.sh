@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode User Workspace Provisioning Script
 # Automated user workspace creation with security and resource management
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

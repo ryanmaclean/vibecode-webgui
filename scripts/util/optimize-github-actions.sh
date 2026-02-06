@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # GitHub Actions Cost Optimization Script
 # Disables expensive workflows and implements release branch strategy
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Optimizing GitHub Actions for cost control..."
 

@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Option 1: Fresh Ubuntu 24.04 base initramfs
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Option 1: Building fresh Ubuntu 24.04 initramfs ==="

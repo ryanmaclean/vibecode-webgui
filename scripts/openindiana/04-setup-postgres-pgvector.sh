@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Setup PostgreSQL 16 with pgvector extension
 # Optimized for ZFS and vector workloads
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

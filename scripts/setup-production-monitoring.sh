@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Production Monitoring and Alerting Setup
 # Configures comprehensive monitoring, alerting, and observability
 # Staff Engineer Implementation - Enterprise monitoring automation
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

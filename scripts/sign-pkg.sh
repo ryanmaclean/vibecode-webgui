@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode PKG Signing Script
 # Creates self-signed certificate and signs PKG for ARD deployment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode ARD Deployment Script
 # Deploys unsigned PKG to remote Macs via Apple Remote Desktop
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

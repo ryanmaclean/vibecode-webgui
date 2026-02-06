@@ -1,0 +1,30 @@
+name: GitHub Actions Cost Monitor
+
+on:
+  schedule:
+    - cron: '0 9 * * MON'  # Weekly on Monday
+  workflow_dispatch:
+
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
+
+jobs:
+  cost-report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Weekly cost reminder
+        run: |
+          echo "GitHub Actions Cost Optimization Active"
+          echo "Current strategy:"
+          echo "  Main branch: Lightweight CI only (~$0.05 per run)"
+          echo "  Release branches: Full CI/CD (~$2-4 per run)"
+          echo ""
+          echo "To run full tests:"
+          echo "  1. Create branch: git checkout -b release/v1.x.x"
+          echo "  2. Push: git push origin release/v1.x.x"
+          echo "  3. Full CI/CD will run automatically"
+          echo ""
+          echo "Expected monthly savings: ~70-80% ($100 -> $20-30)"

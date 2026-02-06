@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # =============================================================================
 # Environment Consolidation Verification Script
 # =============================================================================
@@ -33,6 +37,10 @@
 #   https://github.com/vibecode/webgui/issues/447
 #
 # =============================================================================
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

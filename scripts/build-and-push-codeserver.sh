@@ -1,10 +1,18 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build and push multi-architecture code-server images
 # Usage: ./scripts/build-and-push-codeserver.sh [version]
 # 
 # Prerequisites:
 # - Docker logged in to GHCR: echo $GITHUB_TOKEN | docker login ghcr.io -u USERNAME --password-stdin
 # - Or set GITHUB_TOKEN environment variable
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

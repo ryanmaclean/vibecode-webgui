@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Build and Test UnifiedServicesVibeCodeApp
 # Ensures the app is built and all services work correctly
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

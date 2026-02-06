@@ -14,6 +14,9 @@
 {{ include "code-server-cloud.selectorLabels" . }}
 helm.sh/chart: {{ .Chart.Name }}-{{ .Chart.Version | replace "+" "_" }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
+tags.datadoghq.com/env: {{ .Values.env | default "development" | quote }}
+tags.datadoghq.com/service: {{ .Chart.Name | quote }}
+tags.datadoghq.com/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
 {{- end -}}
 
 {{- define "code-server-cloud.selectorLabels" -}}

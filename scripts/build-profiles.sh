@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build and push code-server with different profiles
 # Usage: ./scripts/build-profiles.sh [version] [profile]
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

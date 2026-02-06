@@ -98,8 +98,15 @@ export function initializeASM(): void {
   console.log('🔒 Initializing Datadog Application Security Monitoring (ASM)...');
 
   try {
-    // Configure ASM with dd-trace
+    // Configure ASM with dd-trace and unified service tagging
     tracer.init({
+      service: process.env.DD_SERVICE || 'vibecode-api',
+      env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
+      version: process.env.DD_VERSION || '1.0.0',
+      tags: {
+        team: 'platform',
+        component: 'asm-security',
+      },
       appsec: {
         enabled: true,
         rules: process.env.DD_APPSEC_RULES || 'recommended',

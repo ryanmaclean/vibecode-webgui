@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete VibeCode Platform Validation Script
 # Validates the entire implementation including secrets automation, Datadog integration, and DBM
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

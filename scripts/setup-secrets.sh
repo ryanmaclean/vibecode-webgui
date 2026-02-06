@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Kubernetes Secrets Automation Script - 2025 Best Practices
 # Automates creation of Kubernetes secrets from environment variables
 # Designed for CI/CD integration and local development
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

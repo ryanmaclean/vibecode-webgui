@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Real Workspace Provisioning Script
 # Creates actual code-server instances in Kubernetes
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

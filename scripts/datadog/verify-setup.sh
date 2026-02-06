@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Datadog Setup Verification Script
 # Checks if Datadog agent is reachable and configuration is valid
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "Datadog Setup Verification" >&2
 echo "=============================" >&2

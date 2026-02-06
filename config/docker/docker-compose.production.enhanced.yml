@@ -33,6 +33,10 @@ volumes:
     driver: local
   cache:
     driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
 
 # ===== SERVICES =====
 services:
@@ -86,6 +90,12 @@ services:
       - DD_AGENT_HOST=datadog-agent
       - DD_TRACE_AGENT_PORT=8126
       - DD_DOGSTATSD_PORT=8125
+
+      # Datadog RUM (public)
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
+      - NEXT_PUBLIC_APP_VERSION=${BUILD_VERSION:-latest}
       
       # Security
       - NEXTAUTH_SECRET=${NEXTAUTH_SECRET:-default-secret-change-me}
@@ -147,6 +157,10 @@ services:
       - POSTGRES_USER=vibecode
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-vibecode123}
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+      - DD_SERVICE=${DD_SERVICE:-postgres}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     volumes:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init-db.sql:ro
@@ -187,6 +201,11 @@ services:
       --save 900 1
       --save 300 10
       --save 60 10000
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-redis}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     volumes:
       - redis_data:/data
       - cache:/var/lib/redis
@@ -222,6 +241,10 @@ services:
       - backend
       - frontend
     environment:
+      - DD_SERVICE=${DD_SERVICE:-datadog-agent}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
       - DD_API_KEY=${DD_API_KEY:-}
       - DD_SITE=${DD_SITE:-datadoghq.com}
       - DD_APM_ENABLED=true
@@ -286,6 +309,11 @@ services:
     restart: unless-stopped
     networks:
       - frontend
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-traefik}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     command:
       - --api.dashboard=true
       - --api.debug=true
@@ -329,6 +357,11 @@ services:
     restart: unless-stopped
     networks:
       - monitoring
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-prometheus}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     command:
       - '--config.file=/etc/prometheus/prometheus.yml'
       - '--storage.tsdb.path=/prometheus'
@@ -361,6 +394,10 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - DD_SERVICE=${DD_SERVICE:-grafana}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     volumes:
       - grafana_data:/var/lib/grafana
       - ./monitoring/grafana/provisioning:/etc/grafana/provisioning
@@ -378,13 +415,6 @@ services:
           memory: 64M
     profiles:
       - monitoring
-
-# ===== ADDITIONAL VOLUMES FOR MONITORING =====
-volumes:
-  prometheus_data:
-    driver: local
-  grafana_data:
-    driver: local
 
 # ===== USAGE EXAMPLES =====
 # Basic production deployment:

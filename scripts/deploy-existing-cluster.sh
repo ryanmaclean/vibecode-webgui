@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deploy to Existing Cluster Script
 # Works with your current KIND cluster and PostgreSQL setup
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Complete Wiki Build Script
 # Ensures ALL markdown files are included in the Astro wiki build
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "📚 VibeCode Complete Wiki Build"
 echo "================================"

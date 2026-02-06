@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # VibeCode KIND Setup - One command to rule them all
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "🚀 VibeCode KIND Setup - Automated"

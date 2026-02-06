@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Path to the file
+
+# Initialize log aggregation
+init_log_aggregation
+
 FILE="/Users/ryan.maclean/vibecode-webgui/src/lib/vector-db/cognitive-search-vector-database-adapter.ts"
 
 # Create backup

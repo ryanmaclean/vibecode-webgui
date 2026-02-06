@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Comprehensive WCAG 2.1 AA Accessibility Testing Script
 # This script runs automated accessibility tests across the entire VibeCode platform
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

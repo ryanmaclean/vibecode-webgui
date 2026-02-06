@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build Apple VZ VM images with Datadog agents for VibeCode Native App
 # Specifically for the Swift VZ VMs currently running
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

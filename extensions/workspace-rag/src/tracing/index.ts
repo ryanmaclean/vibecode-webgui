@@ -47,9 +47,9 @@ export class TracingManager {
 
         try {
             const tracerConfig: any = {
-                service: 'vscode-rag-extension',
-                version: '1.0.0',
-                env: process.env.NODE_ENV || 'development',
+                service: process.env.DD_SERVICE || 'vscode-rag-extension',
+                version: process.env.DD_VERSION || '1.0.0',
+                env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
                 enabled: true,
                 debug: this.config.debug,
                 sampling: {
@@ -57,7 +57,11 @@ export class TracingManager {
                 },
                 flushInterval: 5000,
                 runtimeMetrics: true,
-                logInjection: true
+                logInjection: true,
+                tags: {
+                    team: 'platform',
+                    component: 'vscode-extension',
+                },
             };
 
             // Configure exporters

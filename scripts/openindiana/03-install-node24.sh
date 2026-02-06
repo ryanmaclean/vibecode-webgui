@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Install Node.js 24 in LX Zone
 # Uses NodeSource repository for latest Node.js
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

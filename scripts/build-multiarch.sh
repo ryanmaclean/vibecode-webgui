@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Multi-architecture Docker build script for VibeCode WebGUI
 # Supports ARM64 (Apple Silicon, ARM servers) and AMD64 (Intel/AMD)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e  # Exit on any error
 

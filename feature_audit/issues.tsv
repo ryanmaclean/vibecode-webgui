@@ -1,0 +1,258 @@
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Native Desktop Application
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Tauri 2.9.1 Integration** - Native desktop application built with Rust + Swift
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	OpenVSCode Server Backend** - Full VS Code experience with native Rust CLI (no Docker required)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Cross-Platform Support** - macOS (Intel + Apple Silicon), Linux (x86_64 + ARM64), Windows (x86_64)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Native System Integration** - Platform-native menus, notifications, and system tray support
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Apple Virtualization Framework Integration
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Apple VF Runtime Support** - Native Apple Virtualization Framework for running Linux VMs
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vfkit Integration** - Fast, native VM management without heavy virtualization layers
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	VM Discovery System** - Automatic detection and management of VM images
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Auto-Start Functionality** - Designated VMs start automatically on application launch
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Lima VM Support** - Integration with Lima for lightweight Linux VM management
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	321+ AI Models** - Access to OpenAI GPT-4, Anthropic Claude, Google Gemini, Mistral via OpenRouter
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Multi-Provider Support** - Intelligent routing between AI providers based on task type
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Model Orchestration Dashboard** - Complete management interface with usage analytics
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Monacopilot Integration** - AI-powered code completion in Monaco editor (v1.2.7)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Context-Aware Suggestions** - Intelligent code completion using project context
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Monaco Editor 0.53.0** - Full-featured code editor with IntelliSense
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Syntax Highlighting** - Support for 50+ programming languages
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	TypeScript/JavaScript** - First-class support with full type checking
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Git Integration** - Built-in version control operations
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Multi-Language Support** - Python, Rust, Go, Java, and more
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Native VM Images** - Pre-configured Alpine Linux 3.22 VMs for various services
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-postgresql (10GB) - PostgreSQL database VM
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-valkey (10GB) - Redis-compatible in-memory store
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-nodejs (50GB) - Node.js development environment
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-nodejs-codeserver (50GB) - Node.js + code-server
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-pgvector (20GB) - PostgreSQL with vector extensions
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vibecode-ide (50GB) - Full IDE environment
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	UEFI Boot Support** - Modern boot with VZEFIBootLoader
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Virtio Block Devices** - High-performance disk I/O
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	NAT Networking** - Automatic network configuration
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Datadog Integration** - Optional metrics and APM (3 integration methods: SSH, cloud-init, Lima)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	OpenTelemetry Tracing** - Distributed tracing support with OTLP exporters
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Prometheus Metrics** - Metrics export on port 9090
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Performance Monitoring** - Real-time application performance tracking
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Custom Dashboards** - Pre-configured monitoring visualizations
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Faster Startup Time** - Native Rust backend reduces initialization overhead
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Reduced Memory Footprint** - Tauri's Rust core uses 50-70% less memory than Electron
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Native VM Performance** - Apple Virtualization Framework delivers near-native VM speeds
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Optimized Asset Loading** - Static asset bundling with Tauri resource system
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Efficient Networking** - Native HTTP/WebSocket implementations
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	VM & Virtualization
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Fixed VZ disk attachment configuration (now uses synchronizationMode: .full)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Resolved VM startup crashes by implementing dedicated serial dispatch queue
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Fixed EFI NVRAM file discovery with correct naming pattern (.nvram)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Resolved app sandbox issues for VM image access
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Fixed SwiftUI state management for VM list updates
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Build & Configuration
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Removed VM binaries from repository (added to .gitignore)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Updated dependency management (13 automated dependency updates via Dependabot)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Improved Babel configuration for consistent transpilation
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Enhanced ESLint configuration (0 warnings in production)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Monaco Editor** - Same editor core as VS Code
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	IntelliSense** - Intelligent code completion
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Syntax Highlighting** - 50+ languages supported
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Multi-File Editing** - Tabs and split views
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Find & Replace** - Advanced search with regex support
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Command Palette** - Keyboard-driven workflow (Cmd/Ctrl+Shift+P)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Code Completion** - Monacopilot AI suggestions as you type
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Code Review** - AI-powered code analysis and suggestions
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Refactoring Assistance** - Intelligent code transformation
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Documentation Generation** - Automatic docstring creation
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Bug Detection** - AI-powered static analysis
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Git Integration** - Built-in Git operations
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Visual Diff** - Side-by-side file comparison
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Commit History** - Browse and search commits
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Branch Management** - Create, switch, and merge branches
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Apple Virtualization Framework** - Native macOS VM support
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Lima Integration** - Lightweight Linux VMs
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	vfkit Support** - Fast VM provisioning
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Auto-Discovery** - Automatic VM image detection
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Auto-Start** - Configure VMs to start with application
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	PostgreSQL** - Database development
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Valkey/Redis** - Caching and pub/sub
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Node.js** - JavaScript/TypeScript development
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	code-server** - Browser-based VS Code
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	pgvector** - Vector database for AI embeddings
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Full IDE** - Complete development environment
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	APM Tracing** - Distributed request tracing
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Metrics Collection** - Custom application metrics
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Log Aggregation** - Centralized log management
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Dashboards** - Pre-configured visualizations
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Alerting** - Threshold-based alerts
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Traces** - OpenTelemetry Protocol (OTLP) export
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Metrics** - Prometheus-compatible metrics on :9090
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Context Propagation** - Distributed trace correlation
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Multiple Backends** - Jaeger, Zipkin, Datadog support
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Secure Storage** - Platform keychain integration (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Environment Variables** - Support for `.env` configuration
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Key Rotation** - Easy API key updates
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Multi-Provider** - Manage keys for multiple AI providers
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	CSP Headers** - Strict Content Security Policy
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Domain Allowlisting** - Controlled external connections
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	Sandboxing** - Tauri security sandbox for web content
+1.2.0-2	VibeCode Desktop v1.2.0 - Apple Virtualization Framework	No Telemetry** - Privacy-first design (NEXT_TELEMETRY_DISABLED=1)
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Real-time service monitoring with status indicators
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	VM IP address display
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Interactive control buttons (Start VM, Stop VM, Open URL)
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Console viewer for VM output
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Modern macOS-native interface
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Automatic port forwarding from VM to localhost
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	No need to remember VM IP address
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Dropbear SSH: `localhost:2222`
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	OpenVSCode Server: `localhost:3000`
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	PostgreSQL 16: `localhost:5432`
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Valkey 7.2: `localhost:6379`
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	PostgreSQL data survives VM reboots
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	9p filesystem shared directory (`/Users/Shared/vibecode-data`)
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Database initialization on first boot
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	No data loss on VM restart
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Button in menubar opens browser automatically
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Direct navigation to `http://localhost:3000`
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	No manual URL entry needed
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Start/Stop VM with single click
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Real-time status monitoring
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Console output viewer
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Service health indicators
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Dropbear SSH**
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	OpenVSCode Server**
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	PostgreSQL 16**
+v4.2.0	VibeCode v4.2.0 - Enhanced Menubar App	Valkey 7.2**
+v3.2.1	VibeCode v3.2.1	19+ Commands** for code analysis and monitoring
+v3.2.1	VibeCode v3.2.1	Static Code Analysis** - Works offline, no internet required
+v3.2.1	VibeCode v3.2.1	Cloud Integration** - Optional Datadog account connection for full monitoring
+v3.2.1	VibeCode v3.2.1	Sidebar Panels** - Setup wizard and configuration interface
+v3.2.1	VibeCode v3.2.1	Code Quality Metrics** - Real-time analysis as you code
+v3.2.1	VibeCode v3.2.1	Extension Marketplace Ready** - Seamlessly integrated with VSCode ecosystem
+v3.2.1	VibeCode v3.2.1	Code smell detection
+v3.2.1	VibeCode v3.2.1	Complexity analysis
+v3.2.1	VibeCode v3.2.1	Security vulnerability scanning
+v3.2.1	VibeCode v3.2.1	Best practice recommendations
+v3.2.1	VibeCode v3.2.1	No authentication required for basic analysis
+v3.2.1	VibeCode v3.2.1	Datadog API integration (requires authentication)
+v3.2.1	VibeCode v3.2.1	Cloud log streaming
+v3.2.1	VibeCode v3.2.1	Real-time performance monitoring
+v3.2.1	VibeCode v3.2.1	Team collaboration features
+v3.2.1	VibeCode v3.2.1	Requires valid Datadog account
+v3.2.1	VibeCode v3.2.1	Extension Location**: `/.openvscode-server/extensions/datadog.datadog-vscode-2.0.0/`
+v3.2.1	VibeCode v3.2.1	Extension Files**: 27 files, 41 MB uncompressed
+v3.2.1	VibeCode v3.2.1	Auto-Load**: Extension loads automatically at OpenVSCode startup
+v3.2.1	VibeCode v3.2.1	Init Script Integration**: Modified `/etc/init.d/openvscode` for seamless activation
+v3.2.1	VibeCode v3.2.1	Initramfs Growth**: +3 MB (117 MB → 120 MB)
+v3.2.1	VibeCode v3.2.1	DMG Size**: 253 MB (compression ratio differences from v3.2.0)
+v3.2.1	VibeCode v3.2.1	Boot Time**: No measurable impact (~120 seconds, same as v3.2.0)
+v3.2.1	VibeCode v3.2.1	Memory Usage**: Extension uses ~50 MB when active
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Native Desktop Application
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Tauri 2.9.1 Integration** - Native desktop application built with Rust + Swift
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	OpenVSCode Server Backend** - Full VS Code experience with native Rust CLI (no Docker required)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Cross-Platform Support** - macOS (Intel + Apple Silicon), Linux (x86_64 + ARM64), Windows (x86_64)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Native System Integration** - Platform-native menus, notifications, and system tray support
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Apple Virtualization Framework Integration
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Apple VF Runtime Support** - Native Apple Virtualization Framework for running Linux VMs
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vfkit Integration** - Fast, native VM management without heavy virtualization layers
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	VM Discovery System** - Automatic detection and management of VM images
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Auto-Start Functionality** - Designated VMs start automatically on application launch
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Lima VM Support** - Integration with Lima for lightweight Linux VM management
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	321+ AI Models** - Access to OpenAI GPT-4, Anthropic Claude, Google Gemini, Mistral via OpenRouter
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Multi-Provider Support** - Intelligent routing between AI providers based on task type
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Model Orchestration Dashboard** - Complete management interface with usage analytics
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Monacopilot Integration** - AI-powered code completion in Monaco editor (v1.2.7)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Context-Aware Suggestions** - Intelligent code completion using project context
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Monaco Editor 0.53.0** - Full-featured code editor with IntelliSense
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Syntax Highlighting** - Support for 50+ programming languages
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	TypeScript/JavaScript** - First-class support with full type checking
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Git Integration** - Built-in version control operations
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Multi-Language Support** - Python, Rust, Go, Java, and more
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Native VM Images** - Pre-configured Alpine Linux 3.22 VMs for various services
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-postgresql (10GB) - PostgreSQL database VM
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-valkey (10GB) - Redis-compatible in-memory store
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-nodejs (50GB) - Node.js development environment
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-nodejs-codeserver (50GB) - Node.js + code-server
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-pgvector (20GB) - PostgreSQL with vector extensions
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vibecode-ide (50GB) - Full IDE environment
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	UEFI Boot Support** - Modern boot with VZEFIBootLoader
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Virtio Block Devices** - High-performance disk I/O
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	NAT Networking** - Automatic network configuration
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Datadog Integration** - Optional metrics and APM (3 integration methods: SSH, cloud-init, Lima)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	OpenTelemetry Tracing** - Distributed tracing support with OTLP exporters
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Prometheus Metrics** - Metrics export on port 9090
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Performance Monitoring** - Real-time application performance tracking
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Custom Dashboards** - Pre-configured monitoring visualizations
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Faster Startup Time** - Native Rust backend reduces initialization overhead
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Reduced Memory Footprint** - Tauri's Rust core uses 50-70% less memory than Electron
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Native VM Performance** - Apple Virtualization Framework delivers near-native VM speeds
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Optimized Asset Loading** - Static asset bundling with Tauri resource system
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Efficient Networking** - Native HTTP/WebSocket implementations
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	VM & Virtualization
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Fixed VZ disk attachment configuration (now uses synchronizationMode: .full)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Resolved VM startup crashes by implementing dedicated serial dispatch queue
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Fixed EFI NVRAM file discovery with correct naming pattern (.nvram)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Resolved app sandbox issues for VM image access
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Fixed SwiftUI state management for VM list updates
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Build & Configuration
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Removed VM binaries from repository (added to .gitignore)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Updated dependency management (13 automated dependency updates via Dependabot)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Improved Babel configuration for consistent transpilation
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Enhanced ESLint configuration (0 warnings in production)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Monaco Editor** - Same editor core as VS Code
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	IntelliSense** - Intelligent code completion
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Syntax Highlighting** - 50+ languages supported
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Multi-File Editing** - Tabs and split views
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Find & Replace** - Advanced search with regex support
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Command Palette** - Keyboard-driven workflow (Cmd/Ctrl+Shift+P)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Code Completion** - Monacopilot AI suggestions as you type
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Code Review** - AI-powered code analysis and suggestions
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Refactoring Assistance** - Intelligent code transformation
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Documentation Generation** - Automatic docstring creation
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Bug Detection** - AI-powered static analysis
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Git Integration** - Built-in Git operations
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Visual Diff** - Side-by-side file comparison
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Commit History** - Browse and search commits
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Branch Management** - Create, switch, and merge branches
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Apple Virtualization Framework** - Native macOS VM support
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Lima Integration** - Lightweight Linux VMs
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	vfkit Support** - Fast VM provisioning
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Auto-Discovery** - Automatic VM image detection
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Auto-Start** - Configure VMs to start with application
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	PostgreSQL** - Database development
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Valkey/Redis** - Caching and pub/sub
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Node.js** - JavaScript/TypeScript development
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	code-server** - Browser-based VS Code
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	pgvector** - Vector database for AI embeddings
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Full IDE** - Complete development environment
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	APM Tracing** - Distributed request tracing
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Metrics Collection** - Custom application metrics
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Log Aggregation** - Centralized log management
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Dashboards** - Pre-configured visualizations
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Alerting** - Threshold-based alerts
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Traces** - OpenTelemetry Protocol (OTLP) export
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Metrics** - Prometheus-compatible metrics on :9090
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Context Propagation** - Distributed trace correlation
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Multiple Backends** - Jaeger, Zipkin, Datadog support
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Secure Storage** - Platform keychain integration (macOS Keychain, Windows Credential Manager, Linux Secret Service)
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Environment Variables** - Support for `.env` configuration
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Key Rotation** - Easy API key updates
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Multi-Provider** - Manage keys for multiple AI providers
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	CSP Headers** - Strict Content Security Policy
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Domain Allowlisting** - Controlled external connections
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	Sandboxing** - Tauri security sandbox for web content
+v1.5.0	VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance	No Telemetry** - Privacy-first design (NEXT_TELEMETRY_DISABLED=1)
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	vfkit VM Integration**: Now boots a Linux VM with vfkit before starting code-server
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	Datadog Tracing**: Full tracing of VM boot process (20-second boot time tracked)
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	Professional VS Code development environment**
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	Cross-platform desktop application**
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	Automatic code-server integration**
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	Clean Dark+ theme with no welcome screens**
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	🎨 Professional VS Code interface
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	🌙 Dark theme optimized for coding
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	🚀 **vfkit VM boot with 20-second startup tracking**
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	🔧 Full VS Code extension support
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	📁 Automatic workspace loading
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	🖥️ Native desktop application experience
+v1.1.0	VibeCode v1.1.0 - vfkit VM Integration	📊 **Datadog tracing of VM boot process**
+v1.0.0	VibeCode Services VM v1.0.0	DHCP networking** - Automatic IP assignment via NAT
+v1.0.0	VibeCode Services VM v1.0.0	Interactive console** - Green on black terminal in GUI window
+v1.0.0	VibeCode Services VM v1.0.0	Multiple instances** - Run several VMs simultaneously
+v1.0.0	VibeCode Services VM v1.0.0	Sparse disk** - 1GB disk that grows as needed
+v1.0.0	VibeCode Services VM v1.0.0	Console logging** - Logs saved to `~/VibeCode VMs/*/console.log`

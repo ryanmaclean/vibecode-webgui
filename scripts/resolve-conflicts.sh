@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Script to resolve remaining merge conflicts in VibeCode
+
+# Initialize log aggregation
+init_log_aggregation
+
 echo "🔧 RESOLVING REMAINING MERGE CONFLICTS"
 
 # Find all files with merge conflicts

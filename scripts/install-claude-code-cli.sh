@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Claude Code CLI Installation Script for VibeCode Platform
 # License: Apache 2.0
 # Version: 1.0.0
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

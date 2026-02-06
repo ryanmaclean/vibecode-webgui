@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 6: Enhance Test Framework
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 6: Enhancing Test Framework ==="

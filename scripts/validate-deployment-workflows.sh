@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deployment Workflows Validation Script
 # Validates deployment workflow configurations and prerequisites
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create VM with pre-installed VSCode Server and Claude Code
 # No network dependency during boot
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Testing and Validation
 # Usage: ./vibecode test [subcommand] [options]
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

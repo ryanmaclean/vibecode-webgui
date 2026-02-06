@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # PR Cleanup Quick Commands
 # Repository: ryanmaclean/vibecode-webgui
 # Generated: 2026-01-14 by Agent AH
@@ -11,6 +15,10 @@
 #   safe      - Merge safe dependency updates (10 PRs)
 #   verify    - Check cleanup status
 #   status    - Show current PR and vulnerability status
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

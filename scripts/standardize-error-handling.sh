@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # standardize-error-handling.sh
 # Script to standardize error handling across vector database adapters
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Step 1: Update the vector-db-error-handler.ts file
 echo "Step 1: Updating vector-db-error-handler.ts with standardized naming and consolidated error types"

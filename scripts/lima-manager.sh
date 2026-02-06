@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Lima VM Manager for VibeCode
 # Manages Valkey, PostgreSQL, and Node.js development VMs
 #
@@ -14,6 +18,10 @@
 #   ./scripts/lima-manager.sh validate            # Validate YAML configs
 #   ./scripts/lima-manager.sh test                # Run connectivity tests
 #   ./scripts/lima-manager.sh help                # Show this help
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Analyze Datadog usage and costs for FinOps optimization
 # Queries usage/billing APIs to provide cost analysis and recommendations
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Check required environment variables
 if [ -z "$DD_API_KEY" ] || [ -z "$DD_APP_KEY" ]; then

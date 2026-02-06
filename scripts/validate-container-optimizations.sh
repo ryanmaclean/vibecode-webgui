@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Container Optimization Validation Script
 # Container Team: Validate all optimizations and improvements
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

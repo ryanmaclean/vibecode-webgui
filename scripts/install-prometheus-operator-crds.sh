@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Install Prometheus Operator CRDs for ServiceMonitor support
 # This fixes the Helm chart deployment failures in integration tests
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

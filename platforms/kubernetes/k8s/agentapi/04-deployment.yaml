@@ -8,6 +8,9 @@ metadata:
     component: workspace
     app.kubernetes.io/name: vibecode
     app.kubernetes.io/version: "1.2.0"
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "code-server-workspace"
+    tags.datadoghq.com/version: "1.2.0"
 spec:
   replicas: 1
 
@@ -28,6 +31,9 @@ spec:
         app: code-server
         component: workspace
         app.kubernetes.io/name: vibecode
+        tags.datadoghq.com/env: "production"
+        tags.datadoghq.com/service: "code-server-workspace"
+        tags.datadoghq.com/version: "1.2.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"

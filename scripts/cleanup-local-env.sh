@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # GitOps Environment Cleanup Script
 # Safely removes the local KIND cluster and Docker resources
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🧹 VibeCode GitOps Environment Cleanup"
 echo "====================================="

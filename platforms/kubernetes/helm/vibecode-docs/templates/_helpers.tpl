@@ -42,6 +42,9 @@ app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 app.kubernetes.io/managed-by: {{ .Release.Service }}
 app.kubernetes.io/component: documentation
 app.kubernetes.io/part-of: vibecode
+tags.datadoghq.com/env: {{ .Values.environment | default "development" | quote }}
+tags.datadoghq.com/service: {{ .Chart.Name | quote }}
+tags.datadoghq.com/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
 {{- end }}
 
 {{/*

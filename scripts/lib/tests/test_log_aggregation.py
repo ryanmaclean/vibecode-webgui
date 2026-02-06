@@ -1,4 +1,8 @@
 #!/usr/bin/env python3
+try:
+    import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
+except: pass
+
 
 # -- VibeCode Telemetry --
 import sys
@@ -124,21 +128,21 @@ class TestLogFunctions(TestCase):
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('builtins.print')
-    def test_log_info(self, mock_print, mock_send):
+    def test_log_info(self, mock_print, _mock_send):
         """Test log_info function."""
         log_info("Test message")
         mock_print.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('builtins.print')
-    def test_log_warn(self, mock_print, mock_send):
+    def test_log_warn(self, mock_print, _mock_send):
         """Test log_warn function."""
         log_warn("Warning message")
         mock_print.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('builtins.print')
-    def test_log_error(self, mock_print, mock_send):
+    def test_log_error(self, mock_print, _mock_send):
         """Test log_error function."""
         log_error("Error message")
         mock_print.assert_called()
@@ -149,49 +153,49 @@ class TestStructuredLogFunctions(TestCase):
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_info')
-    def test_log_script_start(self, mock_log_info, mock_send):
+    def test_log_script_start(self, mock_log_info, _mock_send):
         """Test log_script_start function."""
         log_script_start("test_script.py", "--verbose")
         mock_log_info.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_info')
-    def test_log_script_end_success(self, mock_log_info, mock_send):
+    def test_log_script_end_success(self, mock_log_info, _mock_send):
         """Test log_script_end with success."""
         log_script_end("test_script.py", 0, 1.5)
         mock_log_info.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_error')
-    def test_log_script_end_failure(self, mock_log_error, mock_send):
+    def test_log_script_end_failure(self, mock_log_error, _mock_send):
         """Test log_script_end with failure."""
         log_script_end("test_script.py", 1, 2.5)
         mock_log_error.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_info')
-    def test_log_deployment_event(self, mock_log_info, mock_send):
+    def test_log_deployment_event(self, mock_log_info, _mock_send):
         """Test log_deployment_event function."""
         log_deployment_event("deploy", "web-server", "success", "v1.0.0")
         mock_log_info.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_info')
-    def test_log_kubernetes_event(self, mock_log_info, mock_send):
+    def test_log_kubernetes_event(self, mock_log_info, _mock_send):
         """Test log_kubernetes_event function."""
         log_kubernetes_event("create", "pod", "default", "success")
         mock_log_info.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_info')
-    def test_log_database_event(self, mock_log_info, mock_send):
+    def test_log_database_event(self, mock_log_info, _mock_send):
         """Test log_database_event function."""
         log_database_event("migrate", "production", "success", "v2 schema")
         mock_log_info.assert_called()
 
     @mock.patch('log_aggregation.send_log_to_datadog')
     @mock.patch('log_aggregation.log_debug')
-    def test_log_performance_metric(self, mock_log_debug, mock_send):
+    def test_log_performance_metric(self, mock_log_debug, _mock_send):
         """Test log_performance_metric function."""
         log_performance_metric("response_time", 150.0, "ms", "endpoint:api")
         mock_log_debug.assert_called()

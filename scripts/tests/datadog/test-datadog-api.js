@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 // Test Datadog API to verify our CI Visibility data is being received
 const https = require('https');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // You'll need to replace this with your actual Datadog API key
 const DD_API_KEY = process.env.DD_API_KEY || 'your-datadog-api-key-here';

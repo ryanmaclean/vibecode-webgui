@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Docker Doctor - Interactive TUI for Docker troubleshooting
 # Comprehensive Docker repair and diagnostics tool
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

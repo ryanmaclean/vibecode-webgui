@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Vector Database Migration Script
  * Upgrades embedding dimensions from 768 to 1536 dimensions
@@ -16,6 +20,10 @@ const { DefaultAzureCredential } = require('@azure/identity');
 const { setTimeout } = require('timers/promises');
 const path = require('path');
 const fs = require('fs');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configuration
 const config = {

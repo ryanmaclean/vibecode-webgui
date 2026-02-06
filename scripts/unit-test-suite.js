@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * VibeCode Unit Test Suite
  * Tests core functionality programmatically
@@ -9,6 +13,10 @@ const { spawn, exec } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const http = require('http');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class VibeCodeTestSuite {
     constructor() {

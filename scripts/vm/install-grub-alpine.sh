@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Install GRUB bootloader in Alpine VM
 # Issue #955: Fix VM bootloader for Alpine images
 #
 # Usage: Run this script inside an Alpine VM to install GRUB
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

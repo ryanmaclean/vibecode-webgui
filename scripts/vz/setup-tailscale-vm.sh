@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Automated Tailscale Setup for OpenClaw VM
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 TAILSCALE_AUTH_KEY="${TAILSCALE_AUTH_KEY:-}"

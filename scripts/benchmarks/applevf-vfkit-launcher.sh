@@ -21,9 +21,7 @@ fi
 : "${MICROVM_SERIAL_LOG:=/tmp/applevf.log}"
 
 VFKIT_ARGS=(
-  --kernel "$MICROVM_KERNEL"
-  --initrd "$MICROVM_INITRD"
-  --kernel-cmdline "$MICROVM_CMDLINE"
+  --bootloader "linux,kernel=${MICROVM_KERNEL},initrd=${MICROVM_INITRD},cmdline=${MICROVM_CMDLINE}"
   --cpus "$MICROVM_CPUS"
   --memory "$MICROVM_MEMORY_MB"
   --pidfile "$MICROVM_PID_FILE"

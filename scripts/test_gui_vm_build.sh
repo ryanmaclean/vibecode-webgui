@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Test script for GUI VM build
 # Usage: ./scripts/test_gui_vm_build.sh
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 cd "$(dirname "$0")/.."

@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * TypeScript Error Batch Fixer
  * Systematically fixes common TypeScript compilation errors
@@ -8,6 +12,10 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 console.log('🔧 TypeScript Error Batch Fixer');
 console.log('===============================\n');

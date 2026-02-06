@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build K3s + Gitpod tools initramfs for ARM64
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 cd "$(dirname "$0")/.."

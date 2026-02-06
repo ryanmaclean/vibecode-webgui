@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build K3s-based initramfs for VM deployment
 # Creates minimal Alpine Linux + K3s + Helm initramfs
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

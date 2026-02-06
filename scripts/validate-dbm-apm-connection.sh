@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Datadog DBM-APM Connection Validation Script
 # This script validates that the DBM-APM connection is properly configured
 # across DEV, staging, and production environments
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

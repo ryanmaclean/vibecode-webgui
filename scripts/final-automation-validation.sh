@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Final GitOps Automation Validation
 # Complete end-to-end test of the VibeCode GitOps pipeline
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🎯 VibeCode GitOps Automation - Final Validation"
 echo "=============================================="
