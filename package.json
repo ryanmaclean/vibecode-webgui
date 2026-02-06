@@ -149,7 +149,7 @@
     "@heroicons/react": "2.2.0",
     "@huggingface/inference": "4.13.10",
     "@kubernetes/client-node": "1.4.0",
-    "@langchain/core": "^1.0.1",
+    "@langchain/core": "^1.1.19",
     "@langchain/openai": "1.2.4",
     "@modelcontextprotocol/sdk": "1.26.0",
     "@monaco-editor/react": "4.7.0",
