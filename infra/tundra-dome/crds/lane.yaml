@@ -1,0 +1,178 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: lanes.tundra.dome
+  labels:
+    tundra.dome/component: crd
+    tundra.dome/primitive: lane
+spec:
+  group: tundra.dome
+  names:
+    kind: Lane
+    listKind: LaneList
+    plural: lanes
+    singular: lane
+    shortNames:
+      - ln
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required:
+                - priority
+                - kafkaTopic
+              properties:
+                priority:
+                  type: string
+                  enum: [critical, standard, experimental]
+                  description: Priority level of this lane
+                kafkaTopic:
+                  type: string
+                  description: Kafka topic backing this lane
+                displayName:
+                  type: string
+                  description: Human-readable name
+                description:
+                  type: string
+                  description: Description of when to use this lane
+                sla:
+                  type: object
+                  properties:
+                    maxProcessingTime:
+                      type: string
+                      description: "Max time to process a bead (e.g., 1h, 30m)"
+                    maxQueueTime:
+                      type: string
+                      description: "Max time a bead can wait in queue"
+                    targetThroughput:
+                      type: integer
+                      description: Target beads per hour
+                routing:
+                  type: object
+                  properties:
+                    labelSelectors:
+                      type: array
+                      items:
+                        type: object
+                        properties:
+                          key:
+                            type: string
+                          operator:
+                            type: string
+                            enum: [In, NotIn, Exists, DoesNotExist]
+                          values:
+                            type: array
+                            items:
+                              type: string
+                      description: Route beads with matching labels to this lane
+                    sourceSelectors:
+                      type: array
+                      items:
+                        type: string
+                        enum: [github, gitea, jira, manual, webhook]
+                      description: Route beads from these sources
+                quotas:
+                  type: object
+                  properties:
+                    maxConcurrent:
+                      type: integer
+                      description: Max beads in-progress at once
+                    maxQueueDepth:
+                      type: integer
+                      description: Max beads waiting in queue
+                    rateLimit:
+                      type: integer
+                      description: Max beads processed per minute
+                escalation:
+                  type: object
+                  properties:
+                    enabled:
+                      type: boolean
+                      default: true
+                    targetLane:
+                      type: string
+                      description: Lane to escalate to (usually critical)
+                    triggerAfter:
+                      type: string
+                      description: "Time before escalation (e.g., 2h)"
+                    notifyRoles:
+                      type: array
+                      items:
+                        type: string
+                        enum: [mayor, deacon, overseer, witness]
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [active, paused, draining]
+                queueDepth:
+                  type: integer
+                  description: Current number of beads in queue
+                inProgress:
+                  type: integer
+                  description: Beads currently being processed
+                processedTotal:
+                  type: integer
+                  description: Total beads processed
+                processedLastHour:
+                  type: integer
+                  description: Beads processed in last hour
+                avgProcessingTime:
+                  type: string
+                  description: Average processing time
+                slaCompliance:
+                  type: number
+                  description: Percentage of beads meeting SLA
+                lastUpdated:
+                  type: string
+                  format: date-time
+                conditions:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      type:
+                        type: string
+                      status:
+                        type: string
+                      lastTransitionTime:
+                        type: string
+                        format: date-time
+                      reason:
+                        type: string
+                      message:
+                        type: string
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Priority
+          type: string
+          jsonPath: .spec.priority
+        - name: Topic
+          type: string
+          jsonPath: .spec.kafkaTopic
+        - name: Queue
+          type: integer
+          jsonPath: .status.queueDepth
+        - name: In-Progress
+          type: integer
+          jsonPath: .status.inProgress
+        - name: SLA%
+          type: number
+          jsonPath: .status.slaCompliance
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

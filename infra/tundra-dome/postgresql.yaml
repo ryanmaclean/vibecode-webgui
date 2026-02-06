@@ -1,0 +1,105 @@
+# PostgreSQL for Airflow Metadata Database
+# Tundra Dome Turnkey Solution
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: airflow-postgresql-pvc
+  namespace: tundra-dome
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: airflow-postgresql-secret
+  namespace: tundra-dome
+type: Opaque
+stringData:
+  POSTGRES_USER: airflow
+  POSTGRES_PASSWORD: airflow
+  POSTGRES_DB: airflow
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-postgresql
+  namespace: tundra-dome
+  labels:
+    app: airflow-postgresql
+    component: database
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow-postgresql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: airflow-postgresql
+        component: database
+    spec:
+      containers:
+        - name: postgresql
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgresql
+          envFrom:
+            - secretRef:
+                name: airflow-postgresql-secret
+          env:
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: postgresql-data
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - airflow
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - airflow
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: postgresql-data
+          persistentVolumeClaim:
+            claimName: airflow-postgresql-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-postgresql
+  namespace: tundra-dome
+  labels:
+    app: airflow-postgresql
+spec:
+  type: ClusterIP
+  ports:
+    - port: 5432
+      targetPort: 5432
+      name: postgresql
+  selector:
+    app: airflow-postgresql

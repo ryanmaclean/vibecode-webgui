@@ -1,8 +1,14 @@
 # VibeCode Unified v3.0.0 - FINAL Release
 
+> **ARCHIVAL NOTICE**: This document was created during development and contains
+> outdated references. The actual release is available at tag `v3.0.0-unified-app`
+> with artifact `VibeCode-Unified-v3.0.0-Final.dmg` (107 MB, SHA256 checksum).
+> See the [GitHub release](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/v3.0.0-unified-app) for current download links and checksums.
+
 **Release Date**: January 7, 2026
 **Status**: PRODUCTION READY
-**Build**: VibeCode-Unified-v3.0.0-FINAL.dmg (94 MB)
+**Actual Release Tag**: `v3.0.0-unified-app`
+**Build**: VibeCode-Unified-v3.0.0-Final.dmg (107 MB)
 
 ---
 
@@ -22,14 +28,14 @@ Everything boots in **~25 seconds** and runs on **2GB RAM**.
 ## Download
 
 ### DMG File
-- **Name**: `VibeCode-Unified-v3.0.0-FINAL.dmg`
-- **Size**: 94 MB (compressed)
-- **MD5**: `120678f7f3834981b22c532b32a1bd3f`
+- **Name**: `VibeCode-Unified-v3.0.0-Final.dmg`
+- **Size**: 107 MB (112,081,898 bytes)
+- **SHA256**: `7e3a45256d290284d8ddb285737ef28983bb2a1599e32678a05f9f49f62eee7b`
 - **Platform**: macOS 13.0+
-- **Architecture**: Universal (Apple Silicon & Intel)
+- **Architecture**: Apple Silicon (ARM64)
 
 ### Direct Download
-[VibeCode-Unified-v3.0.0-FINAL.dmg](https://github.com/vibecode/vibecode-webgui/releases/download/v3.0.0-FINAL/VibeCode-Unified-v3.0.0-FINAL.dmg)
+[VibeCode-Unified-v3.0.0-Final.dmg](https://github.com/ryanmaclean/vibecode-webgui/releases/download/v3.0.0-unified-app/VibeCode-Unified-v3.0.0-Final.dmg)
 
 ---
 
@@ -423,12 +429,12 @@ This final release represents the culmination of extensive development:
 Verify your download:
 
 ```bash
-# MD5
-md5 VibeCode-Unified-v3.0.0-FINAL.dmg
-# Should be: 120678f7f3834981b22c532b32a1bd3f
+# SHA256
+shasum -a 256 VibeCode-Unified-v3.0.0-Final.dmg
+# Should be: 7e3a45256d290284d8ddb285737ef28983bb2a1599e32678a05f9f49f62eee7b
 
 # Verify file
-file VibeCode-Unified-v3.0.0-FINAL.dmg
+file VibeCode-Unified-v3.0.0-Final.dmg
 # Should be: zlib compressed data
 ```
 
@@ -477,7 +483,7 @@ Built with:
 
 **Status**: READY FOR PRODUCTION
 
-**Download Now**: [VibeCode-Unified-v3.0.0-FINAL.dmg](https://github.com/vibecode/vibecode-webgui/releases/download/v3.0.0-FINAL/VibeCode-Unified-v3.0.0-FINAL.dmg)
+**Download Now**: [VibeCode-Unified-v3.0.0-Final.dmg](https://github.com/ryanmaclean/vibecode-webgui/releases/download/v3.0.0-unified-app/VibeCode-Unified-v3.0.0-Final.dmg)
 
 ---
 

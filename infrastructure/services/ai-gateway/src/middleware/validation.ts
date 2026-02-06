@@ -10,11 +10,21 @@ export const validationMiddleware = (
     const errors = validationResult(req);
 
     if (!errors.isEmpty()) {
-        const validationErrors = errors.array().map(error => ({
-            field: error.type === 'field' ? (error as any).path : error.type,
-            message: error.msg,
-            value: error.type === 'field' ? (error as any).value : undefined
-        }));
+        const validationErrors = errors.array().map(error => {
+            if (error.type === 'field') {
+                const fieldError = error as { type: 'field'; path: string; value: unknown; msg: string };
+                return {
+                    field: fieldError.path,
+                    message: fieldError.msg,
+                    value: fieldError.value
+                };
+            }
+            return {
+                field: error.type,
+                message: error.msg,
+                value: undefined
+            };
+        });
 
         throw new ValidationError('Validation failed', {
             errors: validationErrors,

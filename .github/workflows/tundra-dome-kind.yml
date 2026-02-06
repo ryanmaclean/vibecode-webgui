@@ -1,0 +1,105 @@
+name: Tundra Dome Kind Smoke
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'infra/tundra-dome/**'
+      - '.github/workflows/tundra-dome-kind.yml'
+
+jobs:
+  tundra-dome-kind:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        kind_node:
+          - kindest/node:v1.27.3
+          - kindest/node:v1.28.0
+          - kindest/node:v1.29.2
+    env:
+      DD_API_KEY: ${{ secrets.DD_API_KEY }}
+      DD_SITE: ${{ secrets.DD_SITE || 'datadoghq.com' }}
+      DD_ENV: ci
+      DD_SERVICE: tundra-dome-kind-ci
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up KinD
+        uses: helm/kind-action@v1.10.0
+        with:
+          cluster_name: tundra-dome
+          node_image: ${{ matrix.kind_node }}
+          wait: 120s
+
+      - name: Deploy Tundra Dome Stack
+        run: |
+          cd infra/tundra-dome
+          ./deploy.sh --stack-only
+
+      - name: Wait For Pods
+        run: |
+          kubectl wait --for=condition=available deploy/airflow-api-server -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/airflow-dag-processor -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/airflow-scheduler -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/kafka -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/td-event-emitter -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/tundra-observer -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=available deploy/gt-kafka-consumer -n tundra-dome --timeout=180s
+          kubectl wait --for=condition=ready pod -l app=datadog-agent -n datadog --timeout=180s
+
+      - name: OpenLineage Proxy Smoke
+        run: |
+          kubectl -n tundra-dome run openlineage-smoke --rm -i --restart=Never \
+            --image=python:3.12-alpine --command -- sh -lc '
+              python - <<"PY"
+import json, time, uuid
+import urllib.request
+url = "http://datadog-agent.datadog.svc.cluster.local:8126/openlineage/api/v1/lineage"
+payload = {
+  "eventType": "START",
+  "eventTime": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+  "run": {"runId": str(uuid.uuid4())},
+  "job": {"namespace": "kind", "name": "tundra-openlineage-ci"},
+  "producer": "tundra-dome/ci-smoke",
+  "schemaURL": "https://openlineage.io/spec/1-0-5/OpenLineage.json"
+}
+req = urllib.request.Request(url, data=json.dumps(payload).encode("utf-8"), headers={"Content-Type": "application/json"})
+with urllib.request.urlopen(req, timeout=10) as resp:
+  print("openlineage_proxy_status", resp.status)
+PY
+            '
+
+      - name: Kafka Traffic Smoke
+        run: |
+          BEAD_ID="ci-$(date +%s)"
+          kubectl -n tundra-dome exec deployment/kafka -c kafka -- /opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:9092 --list
+          echo "{\"id\":\"$BEAD_ID\",\"type\":\"bead.lifecycle\",\"ts\":\"$(date -u +%Y-%m-%dT%H:%M:%SZ)\",\"payload\":{\"kind\":\"ci-smoke\"}}" \
+            | kubectl -n tundra-dome exec -i deployment/kafka -c kafka -- /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server localhost:9092 --topic tundra-work-intake
+          for i in $(seq 1 20); do
+            kubectl -n tundra-dome exec deployment/td-event-emitter -c event-emitter -- sh -lc "grep -m1 \"$BEAD_ID\" /var/log/tundra/td-event-emitter.jsonl" && exit 0
+            sleep 2
+          done
+          echo "bead id not observed in td-event-emitter log: $BEAD_ID" >&2
+          exit 1
+
+      - name: Kafka Lag Check
+        run: |
+          mkdir -p artifacts
+          KAFKA_LAG_OUTPUT_DIR="$(pwd)/artifacts" infra/tundra-dome/scripts/kafka_lag_check.sh
+
+      - name: Upload Kafka Lag
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: kafka-lag-${{ matrix.kind_node }}
+          path: artifacts/kafka-lag-*.txt
+
+      - name: Dump Diagnostics On Failure
+        if: failure()
+        run: |
+          kubectl get pods -A
+          kubectl describe pods -n tundra-dome || true
+          kubectl logs -n datadog -l app=datadog-agent --tail=200 || true

@@ -1,0 +1,155 @@
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-cluster-agent
+  namespace: datadog
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-cluster-agent
+rules:
+  - apiGroups: [""]
+    resources:
+      - configmaps
+      - nodes
+      - nodes/proxy
+      - namespaces
+      - pods
+      - services
+      - endpoints
+      - events
+      - persistentvolumes
+      - persistentvolumeclaims
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - daemonsets
+      - statefulsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["rbac.authorization.k8s.io"]
+    resources:
+      - roles
+      - rolebindings
+      - clusterroles
+      - clusterrolebindings
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["autoscaling"]
+    resources:
+      - horizontalpodautoscalers
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources:
+      - leases
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-cluster-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-cluster-agent
+subjects:
+  - kind: ServiceAccount
+    name: datadog-cluster-agent
+    namespace: datadog
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-cluster-agent
+  namespace: datadog
+  labels:
+    app: datadog-cluster-agent
+spec:
+  selector:
+    app: datadog-cluster-agent
+  ports:
+    - name: agent
+      port: 5005
+      targetPort: 5005
+    - name: health
+      port: 5555
+      targetPort: 5555
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: datadog-cluster-agent
+  namespace: datadog
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: datadog-cluster-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-cluster-agent
+    spec:
+      serviceAccountName: datadog-cluster-agent
+      containers:
+        - name: cluster-agent
+          image: gcr.io/datadoghq/cluster-agent:1.18.0
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 5005
+              name: agent
+            - containerPort: 5555
+              name: health
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tundra-dome-secrets
+                  key: DD_API_KEY
+                  optional: true
+            - name: DD_SITE
+              value: datadoghq.com
+            - name: DD_ENV
+              value: kind
+            - name: DD_CLUSTER_NAME
+              value: tundra-dome
+            - name: DD_ORCHESTRATOR_EXPLORER_ENABLED
+              value: "true"
+            - name: DD_LEADER_ELECTION
+              value: "true"
+            - name: DD_CLUSTER_AGENT_AUTH_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-cluster-agent
+                  key: token
+            - name: DD_HEALTH_PORT
+              value: "5555"
+            - name: DD_HEALTH_PORT_ENABLED
+              value: "true"
+            - name: DD_LOG_LEVEL
+              value: INFO
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: health
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            limits:
+              cpu: 300m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-<<<<<<< HEAD
 
 
 # Datadog APM tracing
@@ -11,8 +10,6 @@ except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 """Verify Datadog Trace Search access for a given service/env window."""
 from __future__ import annotations
 # -- VibeCode Telemetry --

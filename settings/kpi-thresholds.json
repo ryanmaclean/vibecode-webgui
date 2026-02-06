@@ -1,0 +1,11 @@
+{
+  "beads_failed_15m": 3,
+  "role_activity_min_15m": 1,
+  "agent_churn_15m": 1,
+  "escalations_stale_4h": 1,
+  "ci_failed_15m": 1,
+  "mail_backlog_15m": 5,
+  "nudges_unanswered_15m": 3,
+  "convoy_stall_4h": 1,
+  "merge_backlog_4h": 1
+}

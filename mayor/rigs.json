@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "rigs": {
+    "vibecode": {
+      "git_url": "https://github.com/ryanmaclean/vibecode-webgui.git",
+      "added_at": "2026-01-19T21:24:36.06351-08:00",
+      "beads": {
+        "repo": "",
+        "prefix": "st"
+      }
+    }
+  }
+}

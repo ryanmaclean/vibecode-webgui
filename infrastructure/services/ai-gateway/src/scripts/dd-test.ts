@@ -22,18 +22,15 @@ process.env.DD_ENV = 'development';
   try {
     const ok = await svc.submitMetric(metricName, 1, tags);
     if (ok) {
-       
-      console.log(`Datadog metric submitted: ${metricName} tags=${tags.join(',')}`);
+      logger.info(`Datadog metric submitted: ${metricName} tags=${tags.join(',')}`);
       logger.info('Datadog test metric submitted', { metric: metricName, tags });
       process.exit(0);
     } else {
-       
-      console.error('Datadog test metric NOT submitted (check API key/site)');
+      logger.error('Datadog test metric NOT submitted (check API key/site)');
       process.exit(2);
     }
   } catch (err) {
-     
-    console.error('Error submitting Datadog test metric', err);
+    logger.error('Error submitting Datadog test metric', { err });
     process.exit(1);
   }
 })();

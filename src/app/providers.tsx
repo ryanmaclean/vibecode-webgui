@@ -14,6 +14,19 @@ import { UserPreferencesProvider } from '@/providers/UserPreferencesProvider'
 import RUMMonitoring from '@/lib/monitoring/rum-client'
 import { getRUMPublicConfig } from '@/lib/monitoring/datadog-env'
 
+// Define Datadog Site type to match @datadog/browser-core
+type DatadogSite = "datadoghq.com" | "us3.datadoghq.com" | "us5.datadoghq.com" | "datadoghq.eu" | "ddog-gov.com" | "ap1.datadoghq.com";
+
+// Type guard for valid Datadog site values
+const isValidDatadogSite = (site: string): site is DatadogSite => {
+  return ["datadoghq.com", "us3.datadoghq.com", "us5.datadoghq.com", "datadoghq.eu", "ddog-gov.com", "ap1.datadoghq.com"].includes(site);
+};
+
+// Safely convert string to DatadogSite with fallback
+const toDatadogSite = (site: string): DatadogSite => {
+  return isValidDatadogSite(site) ? site : "datadoghq.com";
+};
+
 interface ProvidersProps {
   children: ReactNode
 }
@@ -35,7 +48,7 @@ export default function Providers({ children }: ProvidersProps) {
         RUMMonitoring.initializeWithTracking({
           applicationId,
           clientToken,
-          site: site as 'datadoghq.com' | 'datadoghq.eu' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'ddog-gov.com',
+          site: toDatadogSite(site),
           service: 'vibecode-webgui',
           env,
           version,
@@ -50,7 +63,7 @@ export default function Providers({ children }: ProvidersProps) {
         // Initialize Datadog Logs
         datadogLogs.init({
           clientToken,
-          site: site as 'datadoghq.com' | 'datadoghq.eu' | 'us3.datadoghq.com' | 'us5.datadoghq.com' | 'ddog-gov.com',
+          site: toDatadogSite(site),
           forwardErrorsToLogs: true,
           sessionSampleRate: 100,
           service: 'vibecode-webgui',

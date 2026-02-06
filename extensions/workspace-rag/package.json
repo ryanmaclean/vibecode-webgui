@@ -170,7 +170,12 @@
         "workspaceRag.useMLX": {
           "type": "boolean",
           "default": true,
-          "description": "Use MLX for local embedding generation (Apple Silicon only)"
+          "description": "Use MLX for local embedding generation (Apple Silicon only). Deprecated: use workspaceRag.useLocalMLX."
+        },
+        "workspaceRag.useLocalMLX": {
+          "type": "boolean",
+          "default": true,
+          "description": "Use MLX for local embedding generation (Apple Silicon only)."
         }
       }
     }
@@ -204,4 +209,3 @@
     "url": "https://github.com/ryanmaclean/vibecode-webgui/issues"
   }
 }
-

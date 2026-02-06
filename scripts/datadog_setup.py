@@ -1,6 +1,4 @@
 #!/usr/bin/env python3
-
-
 """Datadog installation helper for AKS clusters.
 
 This module wraps the kubectl/helm orchestration required to deploy the
@@ -8,8 +6,6 @@ Datadog agents and cluster agent. It is designed to replace the legacy
 `aks-datadog-setup.sh` script while remaining easy to invoke from shell
 wrappers and tests.
 """
-
-
 from __future__ import annotations
 
 # Datadog APM tracing
@@ -17,22 +13,7 @@ try:
     from ddtrace import tracer, patch_all
     patch_all()
 except ImportError:
-    pass  # ddtrace not installed
-
-<<<<<<< HEAD
-from __future__ import annotations
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
     pass
-# ------------------------
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 
 import argparse
 import os
@@ -64,7 +45,6 @@ def run(cmd: list[str], *, input_text: str | None = None, dry_run: bool = False)
             print(f"[DRY-RUN] with stdin:\n{snippet}")
         return subprocess.CompletedProcess(cmd, 0, "", "")
 
-<<<<<<< HEAD
     try:
         return subprocess.run(  # noqa: S603
             cmd,
@@ -248,5 +228,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover
     sys.exit(main())
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

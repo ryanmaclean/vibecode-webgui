@@ -6,5 +6,28 @@
     "status": "unknown",
     "doc": "docs/feature-audit/feature-1331-documentation-generation.md",
     "sourceRelease": "VibeCode Desktop v1.2.0 - Apple Virtualization Framework (1.2.0-2)"
+  },
+  {
+    "id": "visual-diff",
+    "title": "Visual Diff - Side-by-side file comparison",
+    "status": "implemented",
+    "doc": "docs/feature-audit/visual-diff-feature.md",
+    "sourceRelease": "VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance (v1.5.0)",
+    "dateCompleted": "2026-02-01",
+    "components": [
+      "src/components/editor/VisualDiff.tsx"
+    ],
+    "tests": [
+      "tests/unit/components/VisualDiff.test.tsx"
+    ],
+    "demo": "/demo/visual-diff"
+  },
+  {
+    "id": "vm-auto-start",
+    "title": "VM Auto-Start - Configure VMs to start with application",
+    "note": "Feature Audit tracking for v1.5.0 Apple Virtualization Framework release",
+    "status": "implemented",
+    "doc": "docs/feature-audit/feature-vm-auto-start.md",
+    "sourceRelease": "VibeCode Desktop v1.5.0 - Apple Virtualization Framework & Performance (v1.5.0)"
   }
 ]

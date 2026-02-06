@@ -1,198 +1,343 @@
 #!/usr/bin/env python3
 """Check Status of All Native Homebrew Services.
 
-Displays the status of Redis, PostgreSQL, Node.js, and port usage.
+VibeCode Native Homebrew Management
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import os
 import shutil
 import subprocess
 import sys
+from dataclasses import dataclass, field
+from typing import Optional
 
+# ANSI colors for output
+RED = '\033[0;31m'
+GREEN = '\033[0;32m'
+YELLOW = '\033[1;33m'
+BLUE = '\033[0;34m'
+NC = '\033[0m'
 
-class Colors:
-    """ANSI color codes for terminal output."""
+# Default ports to check
+DEFAULT_PORTS = [6379, 5432, 3000, 8080]
 
-    RED = "\033[0;31m"
-    GREEN = "\033[0;32m"
-    YELLOW = "\033[1;33m"
-    BLUE = "\033[0;34m"
-    NC = "\033[0m"
-
-    @classmethod
-    def disable(cls) -> None:
-        cls.RED = cls.GREEN = cls.YELLOW = ""
-        cls.BLUE = cls.NC = ""
-
-
-if not sys.stdout.isatty():
-    Colors.disable()
-
-
+# Redis password (should be changed in production)
 REDIS_PASSWORD = "VibeCodeChangeInProduction2025"
 
 
-def run_cmd(
+@dataclass
+class ServiceStatus:
+    """Status of a service."""
+
+    name: str
+    running: bool = False
+    version: str = ""
+    port: int = 0
+    details: dict = field(default_factory=dict)
+
+
+def run_command(
     cmd: list[str],
-    capture: bool = True,
     check: bool = False,
-    env: dict[str, str] | None = None,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    run_env = os.environ.copy()
-    if env:
-        run_env.update(env)
-    return subprocess.run(
-        cmd,
-        capture_output=capture,
-        text=True,
-        check=check,
-        env=run_env,
+    capture: bool = True,
+    env: Optional[dict] = None
+) -> tuple[int, str, str]:
+    """Run a command and return the result.
+
+    Args:
+        cmd: Command to run.
+        check: If True, raise on failure.
+        capture: If True, capture output.
+        env: Optional environment variables.
+
+    Returns:
+        Tuple of (return_code, stdout, stderr).
+    """
+    try:
+        merged_env = os.environ.copy()
+        if env:
+            merged_env.update(env)
+
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            env=merged_env
+        )
+        stdout = result.stdout if capture else ""
+        stderr = result.stderr if capture else ""
+        return result.returncode, stdout, stderr
+    except FileNotFoundError:
+        return -1, "", f"Command not found: {cmd[0]}"
+
+
+def check_process_running(process_name: str) -> bool:
+    """Check if a process is running.
+
+    Args:
+        process_name: Name of the process.
+
+    Returns:
+        True if process is running.
+    """
+    rc, _, _ = run_command(["pgrep", "-x", process_name], check=False)
+    return rc == 0
+
+
+def check_port_in_use(port: int) -> bool:
+    """Check if a port is in use.
+
+    Args:
+        port: Port number.
+
+    Returns:
+        True if port is in use.
+    """
+    rc, stdout, _ = run_command(
+        ["lsof", "-nP", f"-iTCP:{port}"],
+        check=False
     )
+    return rc == 0 and "LISTEN" in stdout
 
 
-def is_process_running(name: str) -> bool:
-    """Check if a process is running by name."""
-    result = run_cmd(["pgrep", "-x", name])
-    return result.returncode == 0
+def get_redis_status() -> ServiceStatus:
+    """Get Redis service status.
 
+    Returns:
+        ServiceStatus for Redis.
+    """
+    status = ServiceStatus(name="Redis", port=6379)
 
-def check_redis_status() -> None:
-    """Check and display Redis status."""
-    print(f"{Colors.YELLOW}Redis Status:{Colors.NC}")
-
-    if is_process_running("redis-server"):
-        print(f"  {Colors.GREEN}[OK] Running{Colors.NC}")
+    if check_process_running("redis-server"):
+        status.running = True
 
         # Get Redis info
-        result = run_cmd(["redis-cli", "-a", REDIS_PASSWORD, "INFO", "server"])
-        if result.returncode == 0:
-            for line in result.stdout.splitlines():
-                if line.startswith("redis_version:") or line.startswith("uptime_in_seconds:"):
-                    print(f"    {line}")
+        rc, stdout, _ = run_command([
+            "redis-cli", "-a", REDIS_PASSWORD, "INFO", "server"
+        ], check=False)
 
-        print("    Port: 6379")
-        print(f"    Password: {REDIS_PASSWORD}")
-    else:
-        print(f"  {Colors.RED}[X] Not running{Colors.NC}")
+        if rc == 0:
+            for line in stdout.splitlines():
+                if "redis_version:" in line:
+                    status.version = line.split(":")[1].strip()
+                elif "uptime_in_seconds:" in line:
+                    status.details["uptime_seconds"] = line.split(":")[1].strip()
+
+    return status
 
 
-def check_postgresql_status() -> None:
-    """Check and display PostgreSQL status."""
-    pg_path = "/opt/homebrew/opt/postgresql@16/bin"
-    env = {"PATH": f"{pg_path}:{os.environ.get('PATH', '')}"}
+def get_postgresql_status() -> ServiceStatus:
+    """Get PostgreSQL service status.
 
-    print(f"{Colors.YELLOW}PostgreSQL 16 Status:{Colors.NC}")
+    Returns:
+        ServiceStatus for PostgreSQL.
+    """
+    status = ServiceStatus(name="PostgreSQL 16", port=5432)
+    status.details["user"] = "vibecode"
+    status.details["database"] = "vibecode"
 
-    result = run_cmd(["brew", "services", "list"])
-    is_running = False
-    if result.returncode == 0:
-        for line in result.stdout.splitlines():
+    # Check if running via brew services
+    rc, stdout, _ = run_command(["brew", "services", "list"], check=False)
+
+    if rc == 0 and "postgresql@16" in stdout:
+        for line in stdout.splitlines():
             if "postgresql@16" in line and "started" in line:
-                is_running = True
+                status.running = True
                 break
 
-    if is_running:
-        print(f"  {Colors.GREEN}[OK] Running{Colors.NC}")
-
+    if status.running:
         # Get PostgreSQL version
-        result = run_cmd(["psql", "-d", "postgres", "-t", "-c", "SELECT version();"], env=env)
-        if result.returncode == 0:
-            version = result.stdout.strip().split("\n")[0].strip()
-            print(f"    {version[:60]}...")
+        env = {"PATH": f"/opt/homebrew/opt/postgresql@16/bin:{os.environ.get('PATH', '')}"}
+        rc, stdout, _ = run_command(
+            ["psql", "-d", "postgres", "-t", "-c", "SELECT version();"],
+            check=False,
+            env=env
+        )
+        if rc == 0 and stdout.strip():
+            status.version = stdout.strip().split()[0:2]
+            status.version = " ".join(stdout.strip().split()[0:2])
 
-        print("    Port: 5432")
-        print("    User: vibecode")
-        print("    Database: vibecode")
-    else:
-        print(f"  {Colors.RED}[X] Not running{Colors.NC}")
+    return status
 
 
-def check_nodejs_status() -> None:
-    """Check and display Node.js status."""
-    print(f"{Colors.YELLOW}Node.js:{Colors.NC}")
+def get_nodejs_info() -> ServiceStatus:
+    """Get Node.js information.
 
+    Returns:
+        ServiceStatus with Node.js info.
+    """
+    status = ServiceStatus(name="Node.js")
+
+    # Get node version
     node_path = shutil.which("node")
     if node_path:
-        result = run_cmd(["node", "--version"])
-        node_version = result.stdout.strip() if result.returncode == 0 else "unknown"
+        status.running = True
+        status.details["location"] = node_path
 
-        result = run_cmd(["npm", "--version"])
-        npm_version = result.stdout.strip() if result.returncode == 0 else "unknown"
+        rc, stdout, _ = run_command(["node", "--version"], check=False)
+        if rc == 0:
+            status.version = stdout.strip()
 
-        print(f"    Version: {node_version}")
-        print(f"    npm: {npm_version}")
-        print(f"    Location: {node_path}")
+        rc, stdout, _ = run_command(["npm", "--version"], check=False)
+        if rc == 0:
+            status.details["npm_version"] = stdout.strip()
+
+    return status
+
+
+def print_header() -> None:
+    """Print the status header."""
+    print(f"{BLUE}======================================================================{NC}")
+    print(f"{BLUE}Native Homebrew Services Status{NC}")
+    print(f"{BLUE}======================================================================{NC}")
+    print()
+
+
+def print_service_status(status: ServiceStatus) -> None:
+    """Print status for a service.
+
+    Args:
+        status: Service status to print.
+    """
+    print(f"{YELLOW}{status.name} Status:{NC}")
+
+    if status.running:
+        print(f"  {GREEN}✓ Running{NC}")
+        if status.version:
+            print(f"    Version: {status.version}")
+        if status.port:
+            print(f"    Port: {status.port}")
+        for key, value in status.details.items():
+            # Format key nicely
+            display_key = key.replace("_", " ").title()
+            print(f"    {display_key}: {value}")
     else:
-        print(f"  {Colors.RED}[X] Node.js not found{Colors.NC}")
+        print(f"  {RED}✗ Not running{NC}")
+
+    print()
 
 
-def is_port_in_use(port: int) -> bool:
-    """Check if a port is in use."""
-    result = run_cmd(["lsof", "-nP", f"-iTCP:{port}"])
-    return result.returncode == 0 and "LISTEN" in result.stdout
+def print_nodejs_info(status: ServiceStatus) -> None:
+    """Print Node.js information.
+
+    Args:
+        status: Node.js status.
+    """
+    print(f"{YELLOW}Node.js:{NC}")
+
+    if status.running:
+        print(f"    Version: {status.version}")
+        if "npm_version" in status.details:
+            print(f"    npm: {status.details['npm_version']}")
+        if "location" in status.details:
+            print(f"    Location: {status.details['location']}")
+    else:
+        print(f"    {RED}Not installed{NC}")
+
+    print()
 
 
-def check_port_status() -> None:
-    """Check and display port status."""
-    print(f"{Colors.YELLOW}Port Status:{Colors.NC}")
+def print_port_status(ports: list[int]) -> None:
+    """Print port status.
 
-    ports = [6379, 5432, 3000, 8080]
+    Args:
+        ports: List of ports to check.
+    """
+    print(f"{YELLOW}Port Status:{NC}")
+
     for port in ports:
-        if is_port_in_use(port):
-            print(f"    Port {port}: {Colors.GREEN}[OK] In use{Colors.NC}")
+        if check_port_in_use(port):
+            print(f"    Port {port}: {GREEN}✓ In use{NC}")
         else:
-            print(f"    Port {port}: {Colors.BLUE}Available{Colors.NC}")
+            print(f"    Port {port}: {BLUE}Available{NC}")
 
-
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Disable colored output",
-    )
-
-    args = parser.parse_args(argv)
-
-    if args.no_color:
-        Colors.disable()
-
-    print(f"{Colors.BLUE}======================================================================{Colors.NC}")
-    print(f"{Colors.BLUE}Native Homebrew Services Status{Colors.NC}")
-    print(f"{Colors.BLUE}======================================================================{Colors.NC}")
     print()
 
-    check_redis_status()
-    print()
 
-    check_postgresql_status()
-    print()
+def print_footer() -> None:
+    """Print the status footer."""
+    print(f"{BLUE}======================================================================{NC}")
 
-    check_nodejs_status()
-    print()
 
-    check_port_status()
-    print()
+def main(
+    show_redis: bool = True,
+    show_postgres: bool = True,
+    show_node: bool = True,
+    show_ports: bool = True,
+    ports: Optional[list[int]] = None
+) -> int:
+    """Main entry point.
 
-    print(f"{Colors.BLUE}======================================================================{Colors.NC}")
+    Args:
+        show_redis: Show Redis status.
+        show_postgres: Show PostgreSQL status.
+        show_node: Show Node.js info.
+        show_ports: Show port status.
+        ports: Custom ports to check.
+
+    Returns:
+        Exit code (0 for success).
+    """
+    print_header()
+
+    if show_redis:
+        redis_status = get_redis_status()
+        print_service_status(redis_status)
+
+    if show_postgres:
+        postgres_status = get_postgresql_status()
+        print_service_status(postgres_status)
+
+    if show_node:
+        node_status = get_nodejs_info()
+        print_nodejs_info(node_status)
+
+    if show_ports:
+        check_ports = ports if ports else DEFAULT_PORTS
+        print_port_status(check_ports)
+
+    print_footer()
 
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    parser = argparse.ArgumentParser(
+        description="Check Status of All Native Homebrew Services"
+    )
+    parser.add_argument(
+        '--no-redis',
+        action='store_true',
+        help="Skip Redis status"
+    )
+    parser.add_argument(
+        '--no-postgres',
+        action='store_true',
+        help="Skip PostgreSQL status"
+    )
+    parser.add_argument(
+        '--no-node',
+        action='store_true',
+        help="Skip Node.js info"
+    )
+    parser.add_argument(
+        '--no-ports',
+        action='store_true',
+        help="Skip port status"
+    )
+    parser.add_argument(
+        '--ports',
+        type=int,
+        nargs='+',
+        help="Custom ports to check (default: 6379 5432 3000 8080)"
+    )
+
+    args = parser.parse_args()
+    sys.exit(main(
+        show_redis=not args.no_redis,
+        show_postgres=not args.no_postgres,
+        show_node=not args.no_node,
+        show_ports=not args.no_ports,
+        ports=args.ports
+    ))

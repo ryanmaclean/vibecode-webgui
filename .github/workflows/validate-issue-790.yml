@@ -1,0 +1,44 @@
+name: Validate Issue #790 Fix
+
+on:
+  push:
+    branches: [main, develop]
+    paths:
+      - 'platforms/azure/**'
+      - 'azure/**'
+      - 'scripts/vfkit/**'
+      - 'CHANGELOG.md'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'platforms/azure/**'
+      - 'azure/**'
+      - 'scripts/vfkit/**'
+      - 'CHANGELOG.md'
+  workflow_dispatch:
+
+jobs:
+  validate-issue-790:
+    name: Validate Terminal Fix (Issue #790)
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Run Issue #790 Validation
+        run: |
+          chmod +x platforms/azure/azure/SwiftUI-Apps/validate-issue-790-fix.sh
+          CI=true ./platforms/azure/azure/SwiftUI-Apps/validate-issue-790-fix.sh
+
+      - name: Generate validation summary
+        if: always()
+        run: |
+          echo "## Issue #790 Validation Results" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "This workflow validates that the OpenVSCode terminal fix (Issue #790) is properly documented and maintained." >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Fix Components" >> $GITHUB_STEP_SUMMARY
+          echo "1. **musl-compatible Node.js**: Alpine v25.3.0 binary replaces glibc version" >> $GITHUB_STEP_SUMMARY
+          echo "2. **PATH wrapper**: Restores correct PATH in terminal sessions" >> $GITHUB_STEP_SUMMARY
+          echo "3. **BusyBox utilities**: Provides standard commands (ls, cat, grep, etc.)" >> $GITHUB_STEP_SUMMARY

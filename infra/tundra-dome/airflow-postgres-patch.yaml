@@ -1,0 +1,30 @@
+# Patch Airflow deployments to use PostgreSQL
+# Apply with: kubectl patch deployment <name> -n tundra-dome --patch-file airflow-postgres-patch.yaml
+spec:
+  template:
+    spec:
+      containers:
+        - name: api-server
+          env:
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://airflow:airflow@airflow-postgresql:5432/airflow"
+---
+# For scheduler
+spec:
+  template:
+    spec:
+      containers:
+        - name: scheduler
+          env:
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://airflow:airflow@airflow-postgresql:5432/airflow"
+---
+# For dag-processor
+spec:
+  template:
+    spec:
+      containers:
+        - name: dag-processor
+          env:
+            - name: AIRFLOW__DATABASE__SQL_ALCHEMY_CONN
+              value: "postgresql+psycopg2://airflow:airflow@airflow-postgresql:5432/airflow"

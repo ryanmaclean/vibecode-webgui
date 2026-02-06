@@ -1,0 +1,22 @@
+apiVersion: v2
+name: vibecode-webgui
+description: VibeCode WebGUI - Next.js full-stack web application
+type: application
+version: 1.0.0
+appVersion: "1.5.0"
+home: https://vibecode.dev
+sources:
+  - https://github.com/vibecode/vibecode-webgui
+maintainers:
+  - name: VibeCode Team
+    email: team@vibecode.dev
+keywords:
+  - webgui
+  - nextjs
+  - vibecode
+  - ai
+  - development
+annotations:
+  category: Application
+  licenses: MIT
+dependencies: []

@@ -71,7 +71,7 @@ docker-compose up -d
 
 | File | Changes |
 |------|---------|
-| `docker-compose.yml` | Added `init-secrets` service, password volume |
+| `docker-compose.openvscode.yml` | Added `init-secrets` service, password volume |
 | `.env` | Removed password requirement |
 | `.env.example` | Updated to reflect auto-generation |
 | `/tmp/openvscode-dockerfile/Dockerfile` | Added custom entrypoint |
@@ -129,9 +129,11 @@ $ docker exec openvscode-server cat /home/.openvscode-server/data/User/settings.
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
   "workspaceRag.pgPassword": "Dm1bWa5V6WflahNkIVpsheF9HCWBNj0GroZ3rE4PaLg=",
-  "workspaceRag.useMLX": false
+  "workspaceRag.useLocalMLX": false
 }
 ```
+
+Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ### Both Containers Use Same Password
 
@@ -205,7 +207,7 @@ docker-compose up -d
 # .env file
 POSTGRES_PASSWORD=password  # ❌ Hardcoded
 
-# docker-compose.yml
+# docker-compose.openvscode.yml
 environment:
   POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}  # ❌ From .env
 
@@ -225,7 +227,7 @@ environment:
 # .env file
 # POSTGRES_PASSWORD - Auto-generated! ✅
 
-# docker-compose.yml
+# docker-compose.openvscode.yml
 environment:
   POSTGRES_PASSWORD_FILE: /run/secrets/db_password  # ✅ From volume
 

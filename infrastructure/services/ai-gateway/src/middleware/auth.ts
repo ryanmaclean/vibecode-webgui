@@ -54,12 +54,15 @@ export const authMiddleware = (req: AuthenticatedRequest, res: Response, next: N
             const token = authHeader.substring(7);
 
             try {
-                const decoded = jwt.verify(token, config.auth.jwtSecret) as any;
+                const decoded = jwt.verify(token, config.auth.jwtSecret) as jwt.JwtPayload | string;
+                if (typeof decoded === 'string') {
+                    throw new Error('Invalid JWT payload');
+                }
                 req.user = {
-                    id: decoded.sub || decoded.id,
-                    username: decoded.username,
-                    role: decoded.role || 'user',
-                    permissions: decoded.permissions || ['ai:access']
+                    id: decoded.sub || (decoded.id as string | undefined) || 'unknown',
+                    username: (decoded.username as string | undefined) || 'unknown',
+                    role: (decoded.role as string | undefined) || 'user',
+                    permissions: (decoded.permissions as string[] | undefined) || ['ai:access']
                 };
 
                 logger.debug('JWT authentication successful', {
@@ -198,7 +201,8 @@ export const generateApiKey = (): string => {
     return result;
 };
 
-export const generateJWT = (payload: any, expiresIn?: string): string => {
+export const generateJWT = (payload: Record<string, unknown>, expiresIn?: string): string => {
     const exp = expiresIn || config.auth.jwtExpiration;
-    return jwt.sign(payload, config.auth.jwtSecret, { expiresIn: exp } as any);
+    const signOptions: jwt.SignOptions = { expiresIn: exp };
+    return jwt.sign(payload, config.auth.jwtSecret, signOptions);
 };

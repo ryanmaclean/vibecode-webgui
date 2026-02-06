@@ -1,0 +1,164 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: beads.tundra.dome
+  labels:
+    tundra.dome/component: crd
+    tundra.dome/primitive: bead
+spec:
+  group: tundra.dome
+  names:
+    kind: Bead
+    listKind: BeadList
+    plural: beads
+    singular: bead
+    shortNames:
+      - bd
+  scope: Namespaced
+  versions:
+    - name: v1
+      served: true
+      storage: true
+      schema:
+        openAPIV3Schema:
+          type: object
+          required:
+            - spec
+          properties:
+            spec:
+              type: object
+              required:
+                - title
+                - lane
+              properties:
+                title:
+                  type: string
+                  description: Human-readable title of the work item
+                description:
+                  type: string
+                  description: Detailed description of the work
+                source:
+                  type: string
+                  enum: [github, gitea, jira, manual, webhook]
+                  description: Origin system of the bead
+                sourceId:
+                  type: string
+                  description: ID in the source system (e.g., issue number)
+                sourceUrl:
+                  type: string
+                  description: URL to the source item
+                lane:
+                  type: string
+                  enum: [critical, standard, experimental]
+                  default: standard
+                  description: Priority lane for processing
+                assignedRole:
+                  type: string
+                  enum: [polecat, mayor, deacon, reaper, witness, overseer]
+                  default: polecat
+                  description: Role responsible for this bead
+                assignedCrew:
+                  type: string
+                  description: Specific crew (deployment) to handle this bead
+                labels:
+                  type: object
+                  additionalProperties:
+                    type: string
+                  description: Custom labels for routing and filtering
+                parentBead:
+                  type: string
+                  description: Reference to parent bead (for sub-tasks)
+                dueDate:
+                  type: string
+                  format: date-time
+                  description: Optional deadline
+                maxAttempts:
+                  type: integer
+                  default: 3
+                  description: Max retry attempts before escalation
+            status:
+              type: object
+              properties:
+                phase:
+                  type: string
+                  enum: [created, in-progress, completed, escalated, failed]
+                  default: created
+                attempts:
+                  type: integer
+                  default: 0
+                lastTransition:
+                  type: string
+                  format: date-time
+                message:
+                  type: string
+                  description: Human-readable status message
+                assignedPolecat:
+                  type: string
+                  description: Pod name currently working on this bead
+                startedAt:
+                  type: string
+                  format: date-time
+                completedAt:
+                  type: string
+                  format: date-time
+                history:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      phase:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                      message:
+                        type: string
+                      actor:
+                        type: string
+                sync:
+                  type: object
+                  description: Cross-rig synchronization status
+                  properties:
+                    sourceRig:
+                      type: string
+                      description: The rig where this bead originated
+                    syncedToRigs:
+                      type: array
+                      items:
+                        type: string
+                      description: List of rigs this bead has been synced to
+                    lastSyncTimestamp:
+                      type: string
+                      format: date-time
+                      description: When this bead was last synced
+                    syncVersion:
+                      type: integer
+                      description: Monotonic version counter for conflict resolution
+                    syncState:
+                      type: string
+                      enum: [pending, syncing, synced, conflict, failed]
+                      default: pending
+                      description: Current synchronization state
+                    conflictResolution:
+                      type: string
+                      enum: [source-wins, target-wins, manual]
+                      default: source-wins
+                      description: How to resolve sync conflicts
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Lane
+          type: string
+          jsonPath: .spec.lane
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Source
+          type: string
+          jsonPath: .spec.source
+        - name: Attempts
+          type: integer
+          jsonPath: .status.attempts
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp

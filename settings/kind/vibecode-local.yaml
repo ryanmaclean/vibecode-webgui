@@ -1,0 +1,33 @@
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: KubeletConfiguration
+        evictionHard:
+          nodefs.available: "5%"
+          imagefs.available: "5%"
+        evictionSoft:
+          nodefs.available: "10%"
+          imagefs.available: "10%"
+        evictionSoftGracePeriod:
+          nodefs.available: "1m"
+          imagefs.available: "1m"
+        imageGCHighThresholdPercent: 80
+        imageGCLowThresholdPercent: 60
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: KubeletConfiguration
+        evictionHard:
+          nodefs.available: "5%"
+          imagefs.available: "5%"
+        evictionSoft:
+          nodefs.available: "10%"
+          imagefs.available: "10%"
+        evictionSoftGracePeriod:
+          nodefs.available: "1m"
+          imagefs.available: "1m"
+        imageGCHighThresholdPercent: 80
+        imageGCLowThresholdPercent: 60

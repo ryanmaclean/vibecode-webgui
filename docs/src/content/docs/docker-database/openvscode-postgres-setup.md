@@ -63,7 +63,7 @@ healthcheck:
 
 | File | Purpose |
 |------|---------|
-| `docker-compose.yml` | Service orchestration |
+| `docker-compose.openvscode.yml` | Service orchestration |
 | `.env` | Environment variables (dev) |
 | `.env.example` | Environment template |
 | `init-db.sql` | Database initialization |
@@ -216,9 +216,11 @@ docker-compose exec postgres psql -U postgres -d workspace_rag \
   "workspaceRag.pgDatabase": "workspace_rag",
   "workspaceRag.pgUser": "postgres",
   "workspaceRag.pgPassword": "password",
-  "workspaceRag.useMLX": false
+  "workspaceRag.useLocalMLX": false
 }
 ```
+
+Note: `workspaceRag.useMLX` is still accepted for backward compatibility.
 
 ### Environment Variables (.env)
 
@@ -304,7 +306,7 @@ docker-compose exec postgres psql -U postgres -d workspace_rag \
    ```
 
 3. **Don't expose PostgreSQL port:**
-   - Remove port mapping in docker-compose.yml
+   - Remove port mapping in docker-compose.openvscode.yml
    - Only accessible from OpenVSCode container
 
 4. **Enable SSL:**
@@ -313,7 +315,7 @@ docker-compose exec postgres psql -U postgres -d workspace_rag \
 
 5. **Use environment-specific configs:**
    ```bash
-   docker-compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+   docker-compose -f docker-compose.openvscode.yml -f docker-compose.prod.yml up -d
    ```
 
 ## Troubleshooting

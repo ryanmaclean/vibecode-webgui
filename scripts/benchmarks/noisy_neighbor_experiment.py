@@ -3,289 +3,336 @@
 
 Tests microVM boot performance under various load conditions.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import json
 import os
 import random
+import shutil
 import signal
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
+from multiprocessing import Process
 from pathlib import Path
+from typing import Optional
 
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        BenchmarkResult,
-        calc_stats,
-        get_timestamp,
-        log,
-        save_results,
-        success,
-        warn,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        BenchmarkResult,
-        calc_stats,
-        get_timestamp,
-        log,
-        save_results,
-        success,
-        warn,
-    )
+
+@dataclass
+class ExperimentConfig:
+    """Experiment configuration."""
+
+    num_baseline_runs: int = 5
+    num_concurrent_vms: int = 10
+    num_noisy_runs: int = 5
+    vm_image: str = "bench-images/minivim/bzImage-x86_64"
+    datadog_api_key: str = ""
+    results_dir: Path = field(default_factory=Path)
+
+
+@dataclass
+class ExperimentResults:
+    """Experiment results."""
+
+    experiment_id: str = ""
+    timestamp: str = ""
+    baseline_runs: list[dict] = field(default_factory=list)
+    noisy_runs: list[dict] = field(default_factory=list)
+    baseline_avg_ms: float = 0.0
+    noisy_avg_ms: float = 0.0
+    degradation_percent: float = 0.0
+    acceptable: bool = True
 
 
 def measure_boot_time(run_id: int, label: str) -> int:
     """Measure VM boot time.
 
+    Args:
+        run_id: Run identifier.
+        label: Run label (baseline/noisy).
+
     Returns:
-        Boot time in milliseconds
+        Boot time in milliseconds.
     """
     print(f"  Run {run_id}: Measuring boot time...")
 
-    start_ms = int(time.time() * 1000)
+    start_time = int(time.time() * 1000)
 
     # Check if firecracker is available
-    try:
-        result = subprocess.run(
-            ["firecracker", "--config-file", "/tmp/vm-config.json"],
-            capture_output=True,
-            timeout=30,
-        )
-    except FileNotFoundError:
+    if shutil.which("firecracker"):
+        # Use actual firecracker if available
+        try:
+            subprocess.run(
+                ["firecracker", "--config-file", "/tmp/vm-config.json"],
+                timeout=30,
+                capture_output=True
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+    else:
         # Simulate boot time
         time.sleep(random.random() * 0.1)
-    except subprocess.TimeoutExpired:
-        pass
 
-    end_ms = int(time.time() * 1000)
-    boot_time = end_ms - start_ms
+    end_time = int(time.time() * 1000)
+    boot_time = end_time - start_time
 
     print(f"    Boot time: {boot_time}ms")
     return boot_time
 
 
-def create_background_load(num_vms: int) -> list[subprocess.Popen]:
-    """Create background load (noisy neighbors).
+def background_load_worker() -> None:
+    """Worker function for background load."""
+    while True:
+        # Simulate workload
+        try:
+            subprocess.run(
+                ["dd", "if=/dev/zero", "of=/dev/null", "bs=1M", "count=100"],
+                capture_output=True,
+                timeout=5
+            )
+        except (subprocess.TimeoutExpired, FileNotFoundError):
+            pass
+        time.sleep(0.1)
+
+
+def create_background_load(num_vms: int) -> list[Process]:
+    """Create background load processes.
 
     Args:
-        num_vms: Number of concurrent VMs to simulate
+        num_vms: Number of concurrent VMs to simulate.
 
     Returns:
-        List of background process handles
+        List of background processes.
     """
     print(f"  Creating {num_vms} concurrent VMs for background load...")
 
     processes = []
     for _ in range(num_vms):
-        # Create a process that simulates VM workload
-        proc = subprocess.Popen(
-            ["sh", "-c", "while true; do dd if=/dev/zero of=/dev/null bs=1M count=100 2>/dev/null; sleep 0.1; done"],
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-        )
-        processes.append(proc)
+        p = Process(target=background_load_worker, daemon=True)
+        p.start()
+        processes.append(p)
 
     return processes
 
 
-def stop_background_load(processes: list[subprocess.Popen]) -> None:
+def stop_background_load(processes: list[Process]) -> None:
     """Stop background load processes."""
     print("  Stopping background load...")
-    for proc in processes:
-        try:
-            proc.terminate()
-            proc.wait(timeout=5)
-        except subprocess.TimeoutExpired:
-            proc.kill()
-        except Exception:
-            pass
+    for p in processes:
+        p.terminate()
+        p.join(timeout=1)
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--baseline-runs",
-        type=int,
-        default=int(os.environ.get("NUM_BASELINE_RUNS", 5)),
-        help="Number of baseline runs",
-    )
-    parser.add_argument(
-        "--concurrent-vms",
-        type=int,
-        default=int(os.environ.get("NUM_CONCURRENT_VMS", 10)),
-        help="Number of concurrent VMs for noisy neighbor test",
-    )
-    parser.add_argument(
-        "--noisy-runs",
-        type=int,
-        default=int(os.environ.get("NUM_NOISY_RUNS", 5)),
-        help="Number of noisy runs",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=REPO_ROOT / "artifacts" / "noisy-neighbor-results",
-        help="Output directory",
-    )
-    parser.add_argument(
-        "--dd-api-key",
-        default=os.environ.get("DD_API_KEY"),
-        help="Datadog API key",
-    )
+def run_experiment(config: ExperimentConfig) -> ExperimentResults:
+    """Run the noisy neighbor experiment.
 
-    args = parser.parse_args(argv)
+    Args:
+        config: Experiment configuration.
 
-    timestamp = get_timestamp()
-    output_path = args.output_dir / f"experiment_{timestamp}.json"
+    Returns:
+        Experiment results.
+    """
+    timestamp = datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    results = ExperimentResults(
+        experiment_id=f"noisy-neighbor-{timestamp}",
+        timestamp=timestamp
+    )
 
     print("=== Noisy Neighbor Experiment ===")
-    print(f"Baseline runs: {args.baseline_runs}")
-    print(f"Concurrent VMs: {args.concurrent_vms}")
-    print(f"Noisy runs: {args.noisy_runs}")
-    print(f"Results: {output_path}")
+    print(f"Baseline runs: {config.num_baseline_runs}")
+    print(f"Concurrent VMs: {config.num_concurrent_vms}")
+    print(f"Noisy runs: {config.num_noisy_runs}")
     print()
-
-    # Initialize results
-    results = {
-        "experiment_id": f"noisy-neighbor-{timestamp}",
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "configuration": {
-            "baseline_runs": args.baseline_runs,
-            "concurrent_vms": args.concurrent_vms,
-            "noisy_runs": args.noisy_runs,
-        },
-        "baseline": [],
-        "noisy": [],
-        "summary": {},
-    }
 
     # Phase 1: Baseline measurements
     print("Phase 1: Baseline measurements (no contention)")
     baseline_times = []
 
-    for i in range(1, args.baseline_runs + 1):
+    for i in range(1, config.num_baseline_runs + 1):
         boot_time = measure_boot_time(i, "baseline")
         baseline_times.append(boot_time)
-        results["baseline"].append({"run": i, "boot_time_ms": boot_time})
+        results.baseline_runs.append({"run": i, "boot_time_ms": boot_time})
 
-    baseline_stats = calc_stats(baseline_times)
-    print(f"Baseline average: {baseline_stats['avg']:.2f}ms")
+    if baseline_times:
+        results.baseline_avg_ms = round(sum(baseline_times) / len(baseline_times), 2)
+    print(f"Baseline average: {results.baseline_avg_ms}ms")
     print()
 
     # Phase 2: Measurements with noisy neighbors
-    print(f"Phase 2: Measurements with {args.concurrent_vms} concurrent VMs")
-    background_processes = create_background_load(args.concurrent_vms)
-
-    # Let load stabilize
-    time.sleep(2)
+    print(f"Phase 2: Measurements with {config.num_concurrent_vms} concurrent VMs")
+    background_processes = create_background_load(config.num_concurrent_vms)
+    time.sleep(2)  # Let load stabilize
 
     noisy_times = []
-    try:
-        for i in range(1, args.noisy_runs + 1):
-            boot_time = measure_boot_time(i, "noisy")
-            noisy_times.append(boot_time)
-            results["noisy"].append({"run": i, "boot_time_ms": boot_time})
-    finally:
-        stop_background_load(background_processes)
 
-    noisy_stats = calc_stats(noisy_times)
-    print(f"Noisy average: {noisy_stats['avg']:.2f}ms")
+    for i in range(1, config.num_noisy_runs + 1):
+        boot_time = measure_boot_time(i, "noisy")
+        noisy_times.append(boot_time)
+        results.noisy_runs.append({"run": i, "boot_time_ms": boot_time})
+
+    stop_background_load(background_processes)
+
+    if noisy_times:
+        results.noisy_avg_ms = round(sum(noisy_times) / len(noisy_times), 2)
+    print(f"Noisy average: {results.noisy_avg_ms}ms")
 
     # Calculate degradation
-    if baseline_stats["avg"] > 0:
-        degradation = ((noisy_stats["avg"] - baseline_stats["avg"]) / baseline_stats["avg"]) * 100
-    else:
-        degradation = 0
+    if results.baseline_avg_ms > 0:
+        results.degradation_percent = round(
+            ((results.noisy_avg_ms - results.baseline_avg_ms) / results.baseline_avg_ms) * 100,
+            2
+        )
+    print(f"Performance degradation: {results.degradation_percent}%")
 
-    print(f"Performance degradation: {degradation:.1f}%")
-    print()
+    results.acceptable = results.degradation_percent < 20
 
-    # Update summary
-    results["summary"] = {
-        "baseline_avg_ms": baseline_stats["avg"],
-        "noisy_avg_ms": noisy_stats["avg"],
-        "degradation_percent": degradation,
-        "acceptable": degradation < 20,
+    return results
+
+
+def save_results(results: ExperimentResults, results_dir: Path) -> Path:
+    """Save results to JSON file."""
+    results_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    result_file = results_dir / f"experiment_{timestamp}.json"
+
+    data = {
+        "experiment_id": results.experiment_id,
+        "timestamp": results.timestamp,
+        "configuration": {
+            "baseline_runs": len(results.baseline_runs),
+            "noisy_runs": len(results.noisy_runs)
+        },
+        "baseline": results.baseline_runs,
+        "noisy": results.noisy_runs,
+        "summary": {
+            "baseline_avg_ms": results.baseline_avg_ms,
+            "noisy_avg_ms": results.noisy_avg_ms,
+            "degradation_percent": results.degradation_percent,
+            "acceptable": results.acceptable
+        }
     }
 
-    # Save results
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    with open(output_path, "w") as f:
-        json.dump(results, f, indent=2)
+    result_file.write_text(json.dumps(data, indent=2))
+    return result_file
 
-    # Report results
-    print("=== Experiment Complete ===")
-    print(f"Results saved to: {output_path}")
+
+def send_to_datadog(results: ExperimentResults, api_key: str, num_concurrent: int) -> None:
+    """Send metrics to Datadog."""
+    if not api_key:
+        return
+
     print()
-    print(json.dumps(results["summary"], indent=2))
+    print("Sending metrics to Datadog...")
 
-    # Send to Datadog
-    if args.dd_api_key:
-        print()
-        log("Sending metrics to Datadog...")
-        try:
-            import urllib.request
-
-            payload = json.dumps({
-                "series": [
-                    {
-                        "metric": "minivim.noisy_neighbor.baseline_ms",
-                        "points": [[int(time.time()), baseline_stats["avg"]]],
-                        "type": "gauge",
-                        "tags": ["experiment:noisy-neighbor"],
-                    },
-                    {
-                        "metric": "minivim.noisy_neighbor.degradation_percent",
-                        "points": [[int(time.time()), degradation]],
-                        "type": "gauge",
-                        "tags": ["experiment:noisy-neighbor", f"concurrent_vms:{args.concurrent_vms}"],
-                    },
+    timestamp = int(time.time())
+    data = {
+        "series": [
+            {
+                "metric": "minivim.noisy_neighbor.baseline_ms",
+                "points": [[timestamp, results.baseline_avg_ms]],
+                "type": "gauge",
+                "tags": ["experiment:noisy-neighbor"]
+            },
+            {
+                "metric": "minivim.noisy_neighbor.degradation_percent",
+                "points": [[timestamp, results.degradation_percent]],
+                "type": "gauge",
+                "tags": [
+                    "experiment:noisy-neighbor",
+                    f"concurrent_vms:{num_concurrent}"
                 ]
-            })
+            }
+        ]
+    }
 
-            req = urllib.request.Request(
-                "https://api.datadoghq.com/api/v1/series",
-                data=payload.encode(),
-                headers={
-                    "Content-Type": "application/json",
-                    "DD-API-KEY": args.dd_api_key,
-                },
-            )
+    try:
+        import urllib.request
+        req = urllib.request.Request(
+            "https://api.datadoghq.com/api/v1/series",
+            data=json.dumps(data).encode(),
+            headers={
+                "DD-API-KEY": api_key,
+                "Content-Type": "application/json"
+            }
+        )
+        urllib.request.urlopen(req, timeout=10)
+    except Exception:
+        print("Failed to send metrics to Datadog")
 
-            with urllib.request.urlopen(req, timeout=10):
-                pass
-        except Exception as e:
-            warn(f"Failed to send metrics: {e}")
+
+def main() -> int:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Noisy Neighbor Experiment for MicroVM Launches"
+    )
+    parser.add_argument(
+        "--baseline-runs",
+        type=int,
+        default=int(os.environ.get("NUM_BASELINE_RUNS", "5")),
+        help="Number of baseline runs"
+    )
+    parser.add_argument(
+        "--concurrent-vms",
+        type=int,
+        default=int(os.environ.get("NUM_CONCURRENT_VMS", "10")),
+        help="Number of concurrent VMs for noisy neighbor"
+    )
+    parser.add_argument(
+        "--noisy-runs",
+        type=int,
+        default=int(os.environ.get("NUM_NOISY_RUNS", "5")),
+        help="Number of noisy runs"
+    )
+    parser.add_argument(
+        "--vm-image",
+        default=os.environ.get("VM_IMAGE", "bench-images/minivim/bzImage-x86_64"),
+        help="VM image path"
+    )
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=Path("artifacts/noisy-neighbor-results"),
+        help="Results directory"
+    )
+
+    args = parser.parse_args()
+
+    config = ExperimentConfig(
+        num_baseline_runs=args.baseline_runs,
+        num_concurrent_vms=args.concurrent_vms,
+        num_noisy_runs=args.noisy_runs,
+        vm_image=args.vm_image,
+        datadog_api_key=os.environ.get("DD_API_KEY", ""),
+        results_dir=args.results_dir
+    )
+
+    results = run_experiment(config)
+
+    result_file = save_results(results, config.results_dir)
+    print()
+    print("=== Experiment Complete ===")
+    print(f"Results saved to: {result_file}")
+    print()
+    print(json.dumps({
+        "baseline_avg_ms": results.baseline_avg_ms,
+        "noisy_avg_ms": results.noisy_avg_ms,
+        "degradation_percent": results.degradation_percent,
+        "acceptable": results.acceptable
+    }, indent=2))
+
+    send_to_datadog(results, config.datadog_api_key, config.num_concurrent_vms)
 
     # Check if degradation is acceptable
-    if degradation > 20:
+    if results.degradation_percent > 20:
         print()
-        warn("WARNING: Performance degradation exceeds 20%!")
-        warn("Consider investigating resource contention issues.")
+        print("WARNING: Performance degradation exceeds 20%!")
+        print("Consider investigating resource contention issues.")
         return 1
     else:
         print()
-        success("Performance degradation within acceptable limits (<20%)")
+        print("Performance degradation within acceptable limits (<20%)")
         return 0
 
 

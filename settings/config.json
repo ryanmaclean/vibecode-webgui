@@ -1,0 +1,51 @@
+{
+  "type": "town-settings",
+  "version": 1,
+  "default_agent": "codex",
+  "agents": {
+    "claude-review": {
+      "command": "claude",
+      "args": [
+        "--dangerously-skip-permissions"
+      ]
+    },
+    "codex-impl": {
+      "command": "codex",
+      "args": [
+        "--yolo"
+      ]
+    },
+    "codex-qwen3": {
+      "command": "env",
+      "args": [
+        "CODEX_OSS=1",
+        "CODEX_LOCAL_PROVIDER=ollama",
+        "CODEX_MODEL=qwen3-coder:30b",
+        "codex",
+        "--yolo"
+      ]
+    },
+    "gpt-5.2-codex-lite": {
+      "command": "codex",
+      "args": [
+        "--yolo",
+        "--model",
+        "gpt-5.2-codex-lite"
+      ]
+    },
+    "ollama": {
+      "command": "ollama",
+      "args": [
+        "run",
+        "codellama:7b"
+      ]
+    },
+    "ollama-fast": {
+      "command": "ollama",
+      "args": [
+        "run",
+        "qwen2.5:1.5b"
+      ]
+    }
+  }
+}

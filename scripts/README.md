@@ -18,6 +18,8 @@ This directory contains scripts to set up and manage a local Kubernetes developm
 | `kind-deploy-services.sh` | 📦 Deploy VibeCode services | `./scripts/kind-deploy-services.sh` |
 | `kind-health-check.sh` | 🩺 Validate deployment | `./scripts/kind-health-check.sh` |
 | `start-docker.sh` | 🐳 Docker Desktop helper | `./scripts/start-docker.sh` |
+| `cleanup-branches.sh` | 🌿 **Branch cleanup** - Delete merged Git branches | `./scripts/cleanup-branches.sh` |
+| `update-branch-list.sh` | 🔄 **Update branch list** - Refresh list of deletable branches | `./scripts/update-branch-list.sh` |
 
 ## 🚀 Quick Start
 
@@ -218,6 +220,31 @@ docker system prune -af
 - **[KIND_TROUBLESHOOTING_GUIDE.md](../KIND_TROUBLESHOOTING_GUIDE.md)** - Comprehensive troubleshooting
 - **[REPOSITORY_SCAN_REPORT_JULY_2025.md](../REPOSITORY_SCAN_REPORT_JULY_2025.md)** - Repository status
 - **[ENHANCED_AI_FEATURES.md](../ENHANCED_AI_FEATURES.md)** - AI capabilities
+- **[BRANCH_CLEANUP_GUIDE.md](../docs/BRANCH_CLEANUP_GUIDE.md)** - Branch cleanup documentation
+
+## 🧹 Branch Cleanup
+
+The repository includes tools to clean up merged Git branches:
+
+### Quick Branch Cleanup
+```bash
+# Update the list of deletable branches
+./scripts/update-branch-list.sh
+
+# Review branches to delete
+cat docs/branches-to-delete.txt
+
+# Run cleanup (with confirmation prompt)
+./scripts/cleanup-branches.sh docs/branches-to-delete.txt
+```
+
+### Using GitHub Actions
+1. Go to **Actions** → **Cleanup Merged Branches**
+2. Click **Run workflow**
+3. Start with `dry_run=true` to preview
+4. Then run with `dry_run=false` to execute
+
+See **[BRANCH_CLEANUP_GUIDE.md](../docs/BRANCH_CLEANUP_GUIDE.md)** for detailed instructions.
 
 ## 🔄 Development Workflow
 

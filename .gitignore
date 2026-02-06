@@ -14,6 +14,7 @@ dist/
 # Environment
 .env
 .env.local
+.env.gastown.telemetry
 .env.development.local
 .env.test.local
 .env.production.local
@@ -143,8 +144,57 @@ migration-report.txt
 # Conflict backups
 *.conflict-backup-*
 
-.claude/
+# Claude Code local config (but track skills and settings)
+.claude/*
+!.claude/skills/
+!.claude/settings.json
 .beads/
+!.beads/issues.jsonl
+!.beads/.gitkeep
+!.beads/issues.jsonl
+!.beads/.gitkeep
+
+# Local agent skill installs / IDE helpers
+.adal/
+.agent/
+.agents/
+.augment/
+.cline/
+.codebuddy/
+.codex/skills/
+.commandcode/
+.continue/
+.crush/
+.cursor/
+.factory/
+.gemini/
+.github/skills/
+.goose/
+.iflow/
+.junie/
+.kilocode/
+.kiro/
+.kode/
+.mcpjam/
+.mux/
+.neovate/
+.openclaude/
+.opencode/
+.openhands/
+.pi/
+.pochi/
+.qoder/
+.qwen/
+.roo/
+.trae/
+.vibe/
+.windsurf/
+.zencoder/
+skills/
+!.claude/skills/
+
+# Local exports
+UnifiedOpsDashboard-*.yaml
 *.cpio.gz.pre-*
 *.cpio.gz.broken*
 azure/vmlinuz-arm64
@@ -218,8 +268,6 @@ platforms/kubernetes/*
 !platforms/docker/
 platforms/docker/*
 !platforms/docker/scripts/
-!platforms/tauri/
-!platforms/macos/
 
 # Build directories
 initramfs-rebuild/
@@ -384,30 +432,68 @@ USER_GUIDE_*.md
 PHASE*.md
 PROMISE_VERIFICATION_REPORT.md
 
-.beads/
-=======
-
 # Gas Town local runtime
-.beads/
+.beads/*
+!.beads/
+!.beads/issues.jsonl
+!.beads/.gitkeep
 .runtime/
-.venv/
-
 
 # Gas Town (added by gt)
 .logs/
+# Gas Town HQ .gitignore
+# Track: Role context, handoff docs, beads config/data, rig configs
+# Ignore: Git worktrees (polecats) and clones (mayor/refinery rigs), runtime state
 
-# Gas Town (added by gt)
-# Tauri build artifacts (large)
-src-tauri/target/
+# =============================================================================
+# Runtime state files (transient)
+# =============================================================================
+**/state.json
+**/*.lock
+**/registry.json
+
+# =============================================================================
+# Rig git worktrees (recreate with 'gt sling' or 'gt rig add')
+# =============================================================================
+
+# Polecats - worker worktrees
+**/polecats/
+
+# Mayor rig clones
+**/mayor/rig/
+
+# Refinery working clones
+**/refinery/rig/
+
+# Crew workspaces (user-managed)
+**/crew/
+
+# =============================================================================
+# Runtime state directories (gitignored ephemeral data)
+# =============================================================================
+**/.runtime/
+
+# =============================================================================
+# Rig .beads symlinks (point to ignored mayor/rig/.beads, recreated on setup)
+# =============================================================================
+# Add rig-specific symlinks here, e.g.:
+# gastown/.beads
+
+# =============================================================================
+# OS and editor files
+# =============================================================================
+.DS_Store
+*~
+*.swp
+*.swo
+.vscode/
+.idea/
+
+# =============================================================================
+# Explicitly track (override above patterns)
+# =============================================================================
+# Note: .beads/ has its own .gitignore that handles SQLite files
+# and keeps issues.jsonl, metadata.json, config file as source of truth
 
 # Event logs
 .events.jsonl
-.specstory/
-
-# Local-only runtime artifacts
-.feed.jsonl
-daemon/
-
-# Legacy dispatch scripts (replaced by Python tooling)
-scripts/assign-issues-to-polecats.sh
-scripts/assign-all-to-polecats.sh

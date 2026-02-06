@@ -1,0 +1,351 @@
+#!/usr/bin/env bash
+# td - Tundra Dome CLI (PA-RISC Superdome era)
+# Unified interface for Kafka DSM + Airflow + GT bridge operations
+set -euo pipefail
+
+VERSION="1.1.0"
+SCRIPT_DIR="${TD_HOME:-/Users/studio/gt/daemon/kafka-dsm}"
+AIRFLOW_HOME="${AIRFLOW_HOME:-/Users/studio/gt/airflow}"
+AIRFLOW_VENV="${AIRFLOW_VENV:-/Users/studio/gt/.venv-airflow}"
+OPENCODE_BIN="${OPENCODE_BIN:-$HOME/.opencode/bin/opencode}"
+OPENROUTER_API_KEY="${OPENROUTER_API_KEY:-}"
+
+usage() {
+    cat <<EOF
+td - Tundra Dome CLI v${VERSION}
+PA-RISC Superdome era operations for Kafka DSM + Airflow + GT bridge
+
+USAGE:
+    td <command> [options]
+
+COMMANDS:
+    sling <bead-id> [target]    Sling a bead via Tundra Dome (emits Kafka)
+                                Options: --lane <lane> --message <msg>
+
+    emit [event]                Emit Tundra Dome events to Kafka
+    observe                     Start Tundra observer (watches Kafka topics)
+    consume                     Start GT Kafka consumer bridge
+    produce                     Start GT Kafka emitter/producer
+
+    dispatch                    Run GitHub issue dispatcher
+
+    opencode <subcommand>       OpenCode + OpenRouter operations:
+        test-models             Test which free models are available
+        run <prompt>            Run a prompt with best available free model
+        spawn <polecat-id>      Spawn OpenCode polecat with free model
+        models                  List available OpenRouter models
+
+    airflow <subcommand>        Airflow operations:
+        scheduler               Start Airflow scheduler
+        webserver [--port N]    Start Airflow webserver (default: 8080)
+        dag-processor           Start Airflow DAG processor
+        trigger <dag_id>        Trigger a DAG run
+        list                    List all DAGs
+        status                  Check Airflow status
+
+    topics                      Show Kafka topics configuration
+    status                      Show Tundra Dome system status
+    version                     Show version info
+    help                        Show this help
+
+EXAMPLES:
+    td sling abc123 gt-worker-1 --lane fast --message "urgent task"
+    td observe
+    td airflow scheduler
+    td airflow trigger my_dag
+    td opencode test-models
+    td opencode run "Explain this error"
+    td status
+
+ENVIRONMENT:
+    TD_HOME             Tundra Dome scripts directory (default: /Users/studio/gt/daemon/kafka-dsm)
+    AIRFLOW_HOME        Airflow home directory (default: /Users/studio/gt/airflow)
+    AIRFLOW_VENV        Airflow virtualenv path (default: /Users/studio/gt/.venv-airflow)
+    OPENCODE_BIN        OpenCode binary path (default: ~/.opencode/bin/opencode)
+    OPENROUTER_API_KEY  OpenRouter API key for free model access
+
+EOF
+}
+
+check_script() {
+    local script="$1"
+    if [ ! -f "$script" ]; then
+        echo "Error: Script not found: $script" >&2
+        echo "Is TD_HOME set correctly? Current: $SCRIPT_DIR" >&2
+        exit 1
+    fi
+}
+
+cmd_sling() {
+    check_script "$SCRIPT_DIR/td-sling.sh"
+    exec "$SCRIPT_DIR/td-sling.sh" "$@"
+}
+
+cmd_emit() {
+    check_script "$SCRIPT_DIR/td-event-emitter.sh"
+    exec "$SCRIPT_DIR/td-event-emitter.sh" "$@"
+}
+
+cmd_observe() {
+    check_script "$SCRIPT_DIR/tundra-observer.sh"
+    exec "$SCRIPT_DIR/tundra-observer.sh" "$@"
+}
+
+cmd_consume() {
+    check_script "$SCRIPT_DIR/gt-kafka-consumer.sh"
+    exec "$SCRIPT_DIR/gt-kafka-consumer.sh" "$@"
+}
+
+cmd_produce() {
+    check_script "$SCRIPT_DIR/gt-kafka-emitter.sh"
+    exec "$SCRIPT_DIR/gt-kafka-emitter.sh" "$@"
+}
+
+cmd_dispatch() {
+    check_script "$SCRIPT_DIR/github-issue-dispatcher.sh"
+    exec "$SCRIPT_DIR/github-issue-dispatcher.sh" "$@"
+}
+
+cmd_airflow() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    if [ ! -d "$AIRFLOW_VENV" ]; then
+        echo "Error: Airflow virtualenv not found at: $AIRFLOW_VENV" >&2
+        exit 1
+    fi
+
+    local airflow_bin="$AIRFLOW_VENV/bin/airflow"
+
+    case "$subcmd" in
+        scheduler)
+            exec "$airflow_bin" scheduler "$@"
+            ;;
+        webserver|api-server)
+            local port="${1:-8080}"
+            if [ "$1" = "--port" ]; then
+                port="${2:-8080}"
+            fi
+            exec "$airflow_bin" api-server --port "$port"
+            ;;
+        dag-processor)
+            exec "$airflow_bin" dag-processor "$@"
+            ;;
+        trigger)
+            if [ -z "${1:-}" ]; then
+                echo "Usage: td airflow trigger <dag_id>" >&2
+                exit 1
+            fi
+            exec "$airflow_bin" dags trigger "$@"
+            ;;
+        list)
+            exec "$airflow_bin" dags list "$@"
+            ;;
+        status)
+            echo "=== Airflow Status ==="
+            echo "Airflow Home: $AIRFLOW_HOME"
+            echo "Virtualenv: $AIRFLOW_VENV"
+            "$airflow_bin" version 2>/dev/null || echo "Airflow not responding"
+            echo ""
+            echo "=== Running Airflow Processes ==="
+            pgrep -fl airflow 2>/dev/null || echo "No Airflow processes running"
+            ;;
+        help|*)
+            cat <<AIRFLOW_HELP
+Airflow subcommands:
+    scheduler           Start Airflow scheduler
+    webserver [--port]  Start Airflow webserver
+    dag-processor       Start DAG processor
+    trigger <dag_id>    Trigger a DAG run
+    list                List all DAGs
+    status              Check Airflow status
+AIRFLOW_HELP
+            ;;
+    esac
+}
+
+cmd_opencode() {
+    local subcmd="${1:-help}"
+    shift 2>/dev/null || true
+
+    # Free models known to support tool use (required for OpenCode)
+    local FREE_MODELS=(
+        "openrouter/meta-llama/llama-3.3-70b-instruct:free"
+        "openrouter/google/gemma-3-27b-it:free"
+        "openrouter/tngtech/tng-r1t-chimera:free"
+    )
+
+    case "$subcmd" in
+        test-models|test)
+            echo "=== Testing OpenRouter Free Models ==="
+            if [ -z "$OPENROUTER_API_KEY" ]; then
+                echo "Warning: OPENROUTER_API_KEY not set, using config file" >&2
+            fi
+            for model in "${FREE_MODELS[@]}"; do
+                local model_id="${model#openrouter/}"
+                echo -n "Testing $model_id... "
+                local result
+                result=$(curl -s https://openrouter.ai/api/v1/chat/completions \
+                    -H "Content-Type: application/json" \
+                    -H "Authorization: Bearer ${OPENROUTER_API_KEY:-$(jq -r '.provider.openrouter.options.apiKey // empty' ~/.config/opencode/opencode.json 2>/dev/null)}" \
+                    -d "{\"model\": \"$model_id\", \"messages\": [{\"role\": \"user\", \"content\": \"hi\"}], \"max_tokens\": 5}" 2>/dev/null)
+                if echo "$result" | grep -q '"choices"'; then
+                    echo "✓ AVAILABLE"
+                else
+                    local err=$(echo "$result" | jq -r '.error.message // "unknown error"' 2>/dev/null)
+                    echo "✗ $err"
+                fi
+            done
+            ;;
+        run)
+            if [ -z "$1" ]; then
+                echo "Usage: td opencode run <prompt>" >&2
+                exit 1
+            fi
+            if [ ! -x "$OPENCODE_BIN" ]; then
+                echo "Error: OpenCode not found at $OPENCODE_BIN" >&2
+                echo "Install with: curl -fsSL https://opencode.ai/install | bash" >&2
+                exit 1
+            fi
+            exec "$OPENCODE_BIN" run "$@" --model "${FREE_MODELS[0]}"
+            ;;
+        spawn)
+            local polecat_id="$1"
+            if [ -z "$polecat_id" ]; then
+                echo "Usage: td opencode spawn <polecat-id>" >&2
+                exit 1
+            fi
+            local session="gt-opencode-$polecat_id"
+            local dir="/tmp/opencode-$polecat_id"
+            mkdir -p "$dir"
+            if tmux has-session -t "$session" 2>/dev/null; then
+                echo "Session $session already exists"
+            else
+                tmux new-session -d -s "$session" -c "$dir"
+                tmux send-keys -t "$session" "$OPENCODE_BIN --model ${FREE_MODELS[0]}" Enter
+                echo "Spawned OpenCode polecat: $session"
+            fi
+            ;;
+        models)
+            if [ ! -x "$OPENCODE_BIN" ]; then
+                echo "Error: OpenCode not found at $OPENCODE_BIN" >&2
+                exit 1
+            fi
+            exec "$OPENCODE_BIN" models openrouter 2>/dev/null | grep -E ":free$"
+            ;;
+        help|*)
+            cat <<OPENCODE_HELP
+OpenCode + OpenRouter subcommands:
+    test-models         Test which free models are currently available
+    run <prompt>        Run a prompt with best available free model
+    spawn <id>          Spawn an OpenCode polecat in tmux
+    models              List available free models from OpenRouter
+
+Recommended free models (with tool use support):
+    - meta-llama/llama-3.3-70b-instruct:free  (best for coding)
+    - google/gemma-3-27b-it:free
+    - tngtech/tng-r1t-chimera:free
+
+Setup requirements:
+    1. Install OpenCode v1.1.48+: curl -fsSL https://opencode.ai/install | bash
+    2. Config file at ~/.config/opencode/opencode.json:
+       {
+         "\$schema": "https://opencode.ai/config.json",
+         "provider": {
+           "openrouter": {
+             "options": { "apiKey": "sk-or-v1-..." }
+           }
+         }
+       }
+OPENCODE_HELP
+            ;;
+    esac
+}
+
+cmd_topics() {
+    local topics_file="$SCRIPT_DIR/kafka-topics.txt"
+    if [ -f "$topics_file" ]; then
+        cat "$topics_file"
+    else
+        echo "Kafka topics file not found: $topics_file" >&2
+        exit 1
+    fi
+}
+
+cmd_status() {
+    echo "=== Tundra Dome Status ==="
+    echo "Version: $VERSION"
+    echo "TD_HOME: $SCRIPT_DIR"
+    echo "AIRFLOW_HOME: $AIRFLOW_HOME"
+    echo ""
+
+    echo "=== Scripts ==="
+    for script in td-sling.sh td-event-emitter.sh tundra-observer.sh gt-kafka-consumer.sh gt-kafka-emitter.sh github-issue-dispatcher.sh; do
+        if [ -f "$SCRIPT_DIR/$script" ]; then
+            echo "  [OK] $script"
+        else
+            echo "  [--] $script (not found)"
+        fi
+    done
+    echo ""
+
+    echo "=== Running Processes ==="
+    pgrep -fl "tundra-observer\|kafka-consumer\|kafka-emitter\|td-event" 2>/dev/null || echo "  No Tundra Dome processes running"
+    echo ""
+
+    echo "=== Kafka Topics ==="
+    cmd_topics 2>/dev/null || echo "  Topics file not available"
+}
+
+# Main dispatch
+case "${1:-help}" in
+    sling)
+        shift
+        cmd_sling "$@"
+        ;;
+    emit)
+        shift
+        cmd_emit "$@"
+        ;;
+    observe)
+        shift
+        cmd_observe "$@"
+        ;;
+    consume)
+        shift
+        cmd_consume "$@"
+        ;;
+    produce)
+        shift
+        cmd_produce "$@"
+        ;;
+    dispatch)
+        shift
+        cmd_dispatch "$@"
+        ;;
+    airflow)
+        shift
+        cmd_airflow "$@"
+        ;;
+    opencode|oc)
+        shift
+        cmd_opencode "$@"
+        ;;
+    topics)
+        cmd_topics
+        ;;
+    status)
+        cmd_status
+        ;;
+    version|-v|--version)
+        echo "td version $VERSION"
+        ;;
+    help|-h|--help)
+        usage
+        ;;
+    *)
+        echo "Unknown command: $1" >&2
+        echo "Run 'td help' for usage." >&2
+        exit 1
+        ;;
+esac

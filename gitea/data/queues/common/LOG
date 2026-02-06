@@ -1,0 +1,25 @@
+=============== Feb 1, 2026 (PST) ===============
+12:58:40.678342 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+12:58:40.691075 db@open opening
+12:58:40.691296 version@stat F·[] S·0B[] Sc·[]
+12:58:40.698500 db@janitor F·2 G·0
+12:58:40.698527 db@open done T·7.437875ms
+=============== Feb 1, 2026 (PST) ===============
+13:10:15.664092 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+13:10:15.664518 version@stat F·[] S·0B[] Sc·[]
+13:10:15.664535 db@open opening
+13:10:15.664623 journal@recovery F·1
+13:10:15.664664 journal@recovery recovering @1
+13:10:15.669688 memdb@flush created L0@2 N·28 S·574B "act..igh,v28":"web..low,v19"
+13:10:15.669852 version@stat F·[1] S·574B[574B] Sc·[0.25]
+13:10:15.685464 db@janitor F·3 G·0
+13:10:15.685492 db@open done T·20.9485ms
+=============== Feb 2, 2026 (PST) ===============
+10:49:15.555959 log@legend F·NumFile S·FileSize N·Entry C·BadEntry B·BadBlock Ke·KeyError D·DroppedEntry L·Level Q·SeqNum T·TimeElapsed
+10:49:15.559082 version@stat F·[1] S·574B[574B] Sc·[0.25]
+10:49:15.559106 db@open opening
+10:49:15.559453 journal@recovery F·1
+10:49:15.559588 journal@recovery recovering @3
+10:49:15.560632 version@stat F·[1] S·574B[574B] Sc·[0.25]
+10:49:15.633514 db@janitor F·3 G·0
+10:49:15.633563 db@open done T·74.447709ms

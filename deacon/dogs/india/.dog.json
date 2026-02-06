@@ -1,0 +1,10 @@
+{
+  "name": "india",
+  "state": "idle",
+  "last_active": "2026-02-03T19:37:16.341362-08:00",
+  "worktrees": {
+    "mbp_m1": "/Users/studio/gt/deacon/dogs/india/mbp_m1"
+  },
+  "created_at": "2026-02-02T10:59:52.55721-08:00",
+  "updated_at": "2026-02-03T19:37:16.341362-08:00"
+}

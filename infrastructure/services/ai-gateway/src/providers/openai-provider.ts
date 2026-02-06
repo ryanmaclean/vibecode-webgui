@@ -7,14 +7,8 @@ export class OpenAIProvider implements Provider {
   private baseUrl = process.env.OPENAI_BASE_URL || 'https://api.openai.com/v1';
   private apiKey = process.env.OPENAI_API_KEY || '';
 
-  async chatCompletion(req: ChatRequest, userId?: string): Promise<ChatResponse> {
-    if (!this.apiKey) {
-      throw new Error('OPENAI_API_KEY is required to use OpenAI provider');
-    }
-
-    const url = `${this.baseUrl.replace(/\/$/, '')}/chat/completions`;
-
-    const payload: any = {
+  private buildPayload(req: ChatRequest, userId?: string): Record<string, unknown> {
+    const payload: Record<string, unknown> = {
       model: req.model || 'gpt-4o-mini',
       messages: req.messages.map(m => ({ role: m.role, content: m.content })),
     };
@@ -25,6 +19,18 @@ export class OpenAIProvider implements Provider {
     if (Array.isArray(req.stop)) payload.stop = req.stop;
     if (userId || req.user) payload.user = userId || req.user;
 
+    return payload;
+  }
+
+  async chatCompletion(req: ChatRequest, userId?: string): Promise<ChatResponse> {
+    if (!this.apiKey) {
+      throw new Error('OPENAI_API_KEY is required to use OpenAI provider');
+    }
+
+    const url = `${this.baseUrl.replace(/\/$/, '')}/chat/completions`;
+
+    const payload = this.buildPayload(req, userId);
+
     const resp = await axios.post(url, payload, {
       headers: {
         Authorization: `Bearer ${this.apiKey}`,
@@ -33,11 +39,16 @@ export class OpenAIProvider implements Provider {
       timeout: 60000,
     });
 
-    const data = resp.data;
+    const data = resp.data as {
+      id?: string;
+      model: string;
+      choices?: Array<{ index?: number; message?: { role: 'assistant' | 'user' | 'system'; content: string }; finish_reason?: string | null }>;
+      usage?: { prompt_tokens: number; completion_tokens: number; total_tokens: number };
+    };
     return {
       id: data.id,
       model: data.model,
-      choices: data.choices?.map((c: any, idx: number) => ({
+      choices: data.choices?.map((c, idx) => ({
         index: typeof c.index === 'number' ? c.index : idx,
         message: c.message,
         finish_reason: c.finish_reason ?? null,

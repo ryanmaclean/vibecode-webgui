@@ -1,0 +1,13 @@
+[Unit]
+Description=Tundra NAT64 Gateway
+After=network.target
+
+[Service]
+Type=simple
+EnvironmentFile=/Users/studio/gt/settings/nat64/nat64.env
+ExecStart=/Users/studio/gt/plugins/tundra-nat64/bin/tundra-nat64
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target

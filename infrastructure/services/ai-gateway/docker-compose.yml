@@ -10,6 +10,9 @@ services:
       - REDIS_HOST=redis
       - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
       - JWT_SECRET=${JWT_SECRET}
+      - PROVIDERS_ENABLED=${PROVIDERS_ENABLED:-openrouter}
+      - FORCE_PROVIDER=${FORCE_PROVIDER:-}
+      - ALLOW_PROVIDER_FALLBACK=${ALLOW_PROVIDER_FALLBACK:-true}
     depends_on:
       - redis
     volumes:

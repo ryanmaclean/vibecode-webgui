@@ -21,7 +21,6 @@ export class MLXEmbeddingService {
     constructor(logger: Logger) {
         this.logger = logger;
     }
-
     public async initialize(context?: vscode.ExtensionContext): Promise<void> {
         try {
             const config = vscode.workspace.getConfiguration('workspaceRag');
@@ -159,4 +158,3 @@ export class MLXEmbeddingService {
         };
     }
 }
-

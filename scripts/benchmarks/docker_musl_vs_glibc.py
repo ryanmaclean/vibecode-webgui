@@ -3,60 +3,109 @@
 
 Emits comprehensive metrics to Datadog for tracking over time.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import json
 import os
+import shutil
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
+from datetime import datetime
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        get_timestamp,
-        log,
-        run_cmd,
-        run_cmd_output,
-        save_results,
-        success,
-        warn,
-        error as log_error,
-        Colors,
-    )
-    from ._dogstatsd import DogStatsDSender
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        get_timestamp,
-        log,
-        run_cmd,
-        run_cmd_output,
-        save_results,
-        success,
-        warn,
-        error as log_error,
-        Colors,
-    )
-    from _dogstatsd import DogStatsDSender
+from typing import Optional
 
 
-ALPINE_DOCKERFILE_CONTENT = '''# Alpine (musl) production build - optimized for speed and size
+# Colors for output
+GREEN = '\033[0;32m'
+BLUE = '\033[0;34m'
+YELLOW = '\033[1;33m'
+RED = '\033[0;31m'
+NC = '\033[0m'
+
+
+@dataclass
+class BuildMetrics:
+    """Metrics for a Docker build."""
+
+    build_duration_seconds: int = 0
+    image_size_bytes: int = 0
+    image_size_mb: float = 0.0
+    layer_count: int = 0
+    cold_start_seconds: int = 0
+    memory_usage_mb: int = 0
+    architecture: str = ""
+    os_type: str = ""
+    dockerfile: str = ""
+    tag: str = ""
+
+
+@dataclass
+class ComparisonResults:
+    """Comparison results."""
+
+    timestamp: str = ""
+    platform: str = ""
+    docker_version: str = ""
+    musl: BuildMetrics = field(default_factory=BuildMetrics)
+    glibc: BuildMetrics = field(default_factory=BuildMetrics)
+    image_size_reduction_percent: float = 0.0
+    build_speedup_percent: float = 0.0
+    cold_start_speedup_percent: float = 0.0
+    memory_reduction_percent: float = 0.0
+
+
+def log(msg: str) -> None:
+    """Print log message."""
+    print(f"{BLUE}[{datetime.now().strftime('%H:%M:%S')}]{NC} {msg}")
+
+
+def success(msg: str) -> None:
+    """Print success message."""
+    print(f"{GREEN}+{NC} {msg}")
+
+
+def warning(msg: str) -> None:
+    """Print warning message."""
+    print(f"{YELLOW}!{NC} {msg}")
+
+
+def error(msg: str) -> None:
+    """Print error message."""
+    print(f"{RED}x{NC} {msg}")
+
+
+def run_command(
+    cmd: list[str],
+    capture: bool = True,
+    timeout: int = 600
+) -> tuple[int, str, str]:
+    """Run a command."""
+    try:
+        result = subprocess.run(
+            cmd,
+            capture_output=capture,
+            text=True,
+            timeout=timeout
+        )
+        return result.returncode, result.stdout or "", result.stderr or ""
+    except subprocess.TimeoutExpired:
+        return -1, "", "timeout"
+    except FileNotFoundError:
+        return -1, "", "command not found"
+
+
+def create_alpine_dockerfile(docker_dir: Path) -> Path:
+    """Create Alpine Dockerfile if it doesn't exist."""
+    dockerfile = docker_dir / "Dockerfile.prod.alpine"
+    if dockerfile.exists():
+        return dockerfile
+
+    log("Creating Alpine Dockerfile...")
+    docker_dir.mkdir(parents=True, exist_ok=True)
+
+    content = '''# Alpine (musl) production build - optimized for speed and size
 FROM node:20-alpine AS builder
 
 WORKDIR /app
@@ -117,297 +166,306 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=30s --retries=3 \\
 ENTRYPOINT ["tini", "--"]
 CMD ["node", "server.js"]
 '''
+    dockerfile.write_text(content)
+    success(f"Created {dockerfile}")
+    return dockerfile
 
 
 def build_variant(
     variant: str,
     dockerfile: Path,
+    project_root: Path,
     timestamp: str,
-    results: dict,
-    dogstatsd: DogStatsDSender | None,
-) -> bool:
-    """Build and benchmark a Docker variant.
-
-    Returns:
-        True if successful
-    """
+    dogstatsd_script: Optional[Path]
+) -> Optional[BuildMetrics]:
+    """Build and measure a Docker variant."""
     tag = f"vibecode:{variant}-{timestamp}"
+    metrics = BuildMetrics(dockerfile=str(dockerfile), tag=tag)
 
     log(f"Building {variant} variant...")
     log(f"  Dockerfile: {dockerfile}")
     log(f"  Tag: {tag}")
 
-    build_log = Path(f"/tmp/docker-build-{variant}.log")
-    start_time = time.time()
-
     # Build
-    try:
-        with open(build_log, "w") as log_file:
-            result = subprocess.run(
-                ["docker", "build", "-f", str(dockerfile), "-t", tag, "--progress=plain", "."],
-                stdout=log_file,
-                stderr=subprocess.STDOUT,
-                timeout=3600,
-            )
-            if result.returncode != 0:
-                log_error(f"{variant} build failed")
-                return False
-    except subprocess.TimeoutExpired:
-        log_error(f"{variant} build timed out")
-        return False
-    except Exception as e:
-        log_error(f"{variant} build error: {e}")
-        return False
+    start_time = time.time()
+    build_log = Path(f"/tmp/docker-build-{variant}.log")
 
-    duration = int(time.time() - start_time)
-    success(f"{variant} build completed in {duration}s")
+    rc, stdout, stderr = run_command([
+        "docker", "build",
+        "-f", str(dockerfile),
+        "-t", tag,
+        "--progress=plain",
+        str(project_root)
+    ])
+
+    if rc != 0:
+        error(f"{variant} build failed")
+        if stderr:
+            print(stderr[-1000:])  # Last 1000 chars
+        return None
+
+    end_time = time.time()
+    metrics.build_duration_seconds = int(end_time - start_time)
+    success(f"{variant} build completed in {metrics.build_duration_seconds}s")
 
     # Get image info
-    try:
-        image_size = int(run_cmd_output(["docker", "image", "inspect", tag, "--format={{.Size}}"]))
-        layer_count = int(run_cmd_output(["docker", "image", "inspect", tag, "--format={{len .RootFS.Layers}}"]))
-        arch = run_cmd_output(["docker", "image", "inspect", tag, "--format={{.Architecture}}"])
-        os_name = run_cmd_output(["docker", "image", "inspect", tag, "--format={{.Os}}"])
-    except (BenchmarkError, ValueError) as e:
-        warn(f"Failed to get image info: {e}")
-        return False
+    rc, stdout, _ = run_command([
+        "docker", "image", "inspect", tag,
+        "--format", "{{.Size}} {{len .RootFS.Layers}} {{.Architecture}} {{.Os}}"
+    ])
 
-    image_size_mb = image_size / (1024 * 1024)
+    if rc == 0:
+        parts = stdout.strip().split()
+        if len(parts) >= 4:
+            metrics.image_size_bytes = int(parts[0])
+            metrics.image_size_mb = round(metrics.image_size_bytes / 1024 / 1024, 2)
+            metrics.layer_count = int(parts[1])
+            metrics.architecture = parts[2]
+            metrics.os_type = parts[3]
 
     log(f"{variant} image info:")
-    log(f"  Size: {image_size_mb:.2f} MB ({image_size} bytes)")
-    log(f"  Layers: {layer_count}")
-    log(f"  Architecture: {arch}/{os_name}")
+    log(f"  Size: {metrics.image_size_mb} MB ({metrics.image_size_bytes} bytes)")
+    log(f"  Layers: {metrics.layer_count}")
+    log(f"  Architecture: {metrics.architecture}/{metrics.os_type}")
 
     # Test cold start
     log(f"Testing {variant} cold start...")
-    container_name = f"test-{variant}-{os.urandom(4).hex()}"
+    container_name = f"test-{variant}-{int(time.time())}"
 
-    try:
-        run_cmd(
-            ["docker", "run", "-d", "--name", container_name, "-p", "3000:3000", tag],
-            check=False,
-        )
+    run_command([
+        "docker", "run", "-d",
+        "--name", container_name,
+        "-p", "3000:3000",
+        tag
+    ])
 
-        cold_start = time.time()
-        max_wait = 60
-        waited = 0
-        startup_duration = None
+    cold_start = time.time()
+    max_wait = 60
+    waited = 0
 
-        while waited < max_wait:
-            try:
-                result = subprocess.run(
-                    ["docker", "exec", container_name, "wget", "-q", "--spider", "http://localhost:3000/api/health"],
-                    capture_output=True,
-                    timeout=5,
-                )
-                if result.returncode == 0:
-                    startup_duration = int(time.time() - cold_start)
-                    success(f"{variant} container ready in {startup_duration}s")
-                    break
-            except (subprocess.TimeoutExpired, Exception):
-                pass
+    while waited < max_wait:
+        rc, _, _ = run_command([
+            "docker", "exec", container_name,
+            "wget", "-q", "--spider", "http://localhost:3000/api/health"
+        ])
+        if rc == 0:
+            ready_time = time.time()
+            metrics.cold_start_seconds = int(ready_time - cold_start)
+            success(f"{variant} container ready in {metrics.cold_start_seconds}s")
 
-            time.sleep(1)
-            waited += 1
+            # Get memory usage
+            rc, stdout, _ = run_command([
+                "docker", "stats", "--no-stream",
+                "--format", "{{.MemUsage}}",
+                container_name
+            ])
+            if rc == 0 and stdout:
+                mem_str = stdout.strip().split("/")[0].strip()
+                try:
+                    if "MiB" in mem_str:
+                        metrics.memory_usage_mb = int(float(mem_str.replace("MiB", "")))
+                    elif "GiB" in mem_str:
+                        metrics.memory_usage_mb = int(float(mem_str.replace("GiB", "")) * 1024)
+                except ValueError:
+                    pass
 
-        if startup_duration is None:
-            warn(f"{variant} container did not become healthy in {max_wait}s")
-            subprocess.run(["docker", "logs", container_name], capture_output=True)
-            return False
+            log(f"{variant} memory usage: {metrics.memory_usage_mb} MB")
+            break
 
-        # Get memory usage
-        try:
-            mem_output = run_cmd_output(
-                ["docker", "stats", "--no-stream", "--format", "{{.MemUsage}}", container_name]
-            )
-            # Parse "123MiB / 456MiB" format
-            mem_str = mem_output.split("/")[0].strip()
-            if "GiB" in mem_str:
-                memory_mb = int(float(mem_str.replace("GiB", "").strip()) * 1024)
-            else:
-                memory_mb = int(float(mem_str.replace("MiB", "").strip()))
-        except (BenchmarkError, ValueError, IndexError):
-            memory_mb = 0
+        time.sleep(1)
+        waited += 1
 
-        log(f"{variant} memory usage: {memory_mb} MB")
+    # Cleanup
+    run_command(["docker", "stop", container_name])
+    run_command(["docker", "rm", container_name])
 
-        # Store results
-        results["builds"][variant] = {
-            "build_duration_seconds": duration,
-            "image_size_bytes": image_size,
-            "image_size_mb": image_size_mb,
-            "layer_count": layer_count,
-            "cold_start_seconds": startup_duration,
-            "memory_usage_mb": memory_mb,
-            "architecture": arch,
-            "os": os_name,
-            "dockerfile": str(dockerfile),
-            "tag": tag,
-        }
+    if waited >= max_wait:
+        warning(f"{variant} container did not become healthy in {max_wait}s")
 
-        # Send to Datadog
-        if dogstatsd:
-            tags = [f"variant:{variant}", f"libc:{variant}"]
-            dogstatsd.gauge("docker.build.duration", duration / 1000, tags)
-            dogstatsd.gauge("docker.image.size", image_size / 1000, tags)
-            dogstatsd.gauge("docker.layers.count", layer_count / 1000, tags)
-            dogstatsd.gauge("docker.coldstart.duration", startup_duration / 1000, tags)
-            dogstatsd.gauge("docker.memory.usage", memory_mb / 1000, tags)
-
-        return True
-
-    finally:
-        # Cleanup container
-        subprocess.run(["docker", "stop", container_name], capture_output=True)
-        subprocess.run(["docker", "rm", container_name], capture_output=True)
+    return metrics
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=REPO_ROOT / "performance-results" / "docker-builds",
-        help="Output directory",
-    )
-    parser.add_argument(
-        "--dogstatsd-host",
-        default=os.environ.get("DOGSTATSD_HOST", "127.0.0.1"),
-        help="DogStatsD host",
-    )
-    parser.add_argument(
-        "--dogstatsd-port",
-        type=int,
-        default=int(os.environ.get("DOGSTATSD_PORT", "8125")),
-        help="DogStatsD port",
-    )
-    parser.add_argument(
-        "--no-dogstatsd",
-        action="store_true",
-        help="Disable DogStatsD",
+def calculate_improvement(old_val: float, new_val: float) -> float:
+    """Calculate percentage improvement."""
+    if old_val == 0:
+        return 0.0
+    return round(100 * (1 - new_val / old_val), 2)
+
+
+def run_comparison(project_root: Path, results_dir: Path) -> ComparisonResults:
+    """Run the comparison."""
+    results_dir.mkdir(parents=True, exist_ok=True)
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+
+    results = ComparisonResults(
+        timestamp=datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ"),
+        platform=os.uname().sysname
     )
 
-    args = parser.parse_args(argv)
-
-    # Check Docker
-    if not check_command("docker"):
-        log_error("Docker not found in PATH")
-        return 1
-
-    timestamp = get_timestamp()
-    output_path = args.output_dir / f"musl-vs-glibc-{timestamp}.json"
+    # Get Docker version
+    rc, stdout, _ = run_command(["docker", "--version"])
+    if rc == 0:
+        results.docker_version = stdout.strip()
 
     log("Docker musl vs glibc comparison starting")
-    log(f"Results will be saved to: {output_path}")
+    log(f"Results will be saved to: {results_dir}")
 
-    args.output_dir.mkdir(parents=True, exist_ok=True)
-    os.chdir(REPO_ROOT)
+    # Create/find Dockerfiles
+    docker_dir = project_root / "docker"
+    alpine_dockerfile = create_alpine_dockerfile(docker_dir)
 
-    # Create Alpine Dockerfile if needed
-    alpine_dockerfile = REPO_ROOT / "docker" / "Dockerfile.prod.alpine"
-    if not alpine_dockerfile.exists():
-        log("Creating Alpine Dockerfile...")
-        alpine_dockerfile.parent.mkdir(parents=True, exist_ok=True)
-        alpine_dockerfile.write_text(ALPINE_DOCKERFILE_CONTENT)
-        success(f"Created {alpine_dockerfile}")
+    dogstatsd_script = project_root / "scripts" / "benchmarks" / "_dogstatsd.py"
+    if not dogstatsd_script.exists():
+        dogstatsd_script = None
 
-    # Initialize results
-    docker_version = run_cmd_output(["docker", "--version"])
-    results = {
-        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "platform": os.uname().sysname,
-        "docker_version": docker_version,
-        "builds": {},
-    }
-
-    # Initialize DogStatsD
-    dogstatsd = None
-    if not args.no_dogstatsd:
-        dogstatsd = DogStatsDSender(
-            host=args.dogstatsd_host,
-            port=args.dogstatsd_port,
-            enabled=True,
-        )
-
-    # Build both variants
-    print()
     log("=" * 60)
     log("Starting builds...")
     log("=" * 60)
     print()
 
-    musl_success = build_variant("musl", alpine_dockerfile, timestamp, results, dogstatsd)
+    # Build musl (Alpine)
+    musl_metrics = build_variant(
+        "musl", alpine_dockerfile, project_root, timestamp, dogstatsd_script
+    )
+    if musl_metrics:
+        results.musl = musl_metrics
 
     print()
     log("=" * 60)
     print()
 
-    # Find glibc Dockerfile
-    glibc_dockerfile = REPO_ROOT / "docker" / "Dockerfile.prod"
+    # Build glibc (Debian)
+    glibc_dockerfile = docker_dir / "Dockerfile.prod"
     if not glibc_dockerfile.exists():
-        glibc_dockerfile = REPO_ROOT / "Dockerfile.prod"
+        glibc_dockerfile = project_root / "Dockerfile.prod"
 
-    glibc_success = False
     if glibc_dockerfile.exists():
-        glibc_success = build_variant("glibc", glibc_dockerfile, timestamp, results, dogstatsd)
+        glibc_metrics = build_variant(
+            "glibc", glibc_dockerfile, project_root, timestamp, dogstatsd_script
+        )
+        if glibc_metrics:
+            results.glibc = glibc_metrics
     else:
-        warn(f"glibc Dockerfile not found at {glibc_dockerfile}, skipping")
+        warning(f"glibc Dockerfile not found at {glibc_dockerfile}, skipping")
 
-    # Generate comparison report
+    # Calculate improvements
+    if results.musl.image_size_mb > 0 and results.glibc.image_size_mb > 0:
+        results.image_size_reduction_percent = calculate_improvement(
+            results.glibc.image_size_mb, results.musl.image_size_mb
+        )
+        results.build_speedup_percent = calculate_improvement(
+            results.glibc.build_duration_seconds, results.musl.build_duration_seconds
+        )
+        results.cold_start_speedup_percent = calculate_improvement(
+            results.glibc.cold_start_seconds, results.musl.cold_start_seconds
+        )
+        results.memory_reduction_percent = calculate_improvement(
+            results.glibc.memory_usage_mb, results.musl.memory_usage_mb
+        )
+
+    return results
+
+
+def print_comparison(results: ComparisonResults) -> None:
+    """Print comparison table."""
     print()
     log("=" * 60)
     log("Comparison Results")
     log("=" * 60)
 
-    if musl_success and glibc_success:
-        musl = results["builds"]["musl"]
-        glibc = results["builds"]["glibc"]
+    if results.musl.image_size_mb > 0 and results.glibc.image_size_mb > 0:
+        print()
+        header = f"{GREEN}{'Metric':<25}{NC} | {'musl (Alpine)':>12} | {'glibc (Debian)':>14} | {BLUE}{'Improvement':>15}{NC}"
+        print(header)
+        print("-" * 74)
+        print(f"{'Image Size':<25} | {results.musl.image_size_mb:>10.2f} MB | {results.glibc.image_size_mb:>12.2f} MB | {GREEN}{results.image_size_reduction_percent:>+.1f}%{NC}")
+        print(f"{'Build Time':<25} | {results.musl.build_duration_seconds:>10} s | {results.glibc.build_duration_seconds:>12} s | {GREEN}{results.build_speedup_percent:>+.1f}%{NC}")
+        print(f"{'Cold Start':<25} | {results.musl.cold_start_seconds:>10} s | {results.glibc.cold_start_seconds:>12} s | {GREEN}{results.cold_start_speedup_percent:>+.1f}%{NC}")
+        print(f"{'Memory Usage':<25} | {results.musl.memory_usage_mb:>10} MB | {results.glibc.memory_usage_mb:>12} MB | {GREEN}{results.memory_reduction_percent:>+.1f}%{NC}")
+        print()
 
-        size_reduction = 100 * (1 - musl["image_size_mb"] / glibc["image_size_mb"])
-        build_speedup = 100 * (1 - musl["build_duration_seconds"] / glibc["build_duration_seconds"])
-        start_speedup = 100 * (1 - musl["cold_start_seconds"] / glibc["cold_start_seconds"])
-        mem_reduction = 100 * (1 - musl["memory_usage_mb"] / glibc["memory_usage_mb"]) if musl["memory_usage_mb"] and glibc["memory_usage_mb"] else 0
+        if (results.image_size_reduction_percent > 0 and
+            results.build_speedup_percent > 0 and
+            results.cold_start_speedup_percent > 0):
+            success("musl (Alpine) wins on all metrics!")
 
-        results["comparison"] = {
-            "image_size_reduction_percent": size_reduction,
-            "build_speedup_percent": build_speedup,
-            "cold_start_speedup_percent": start_speedup,
-            "memory_reduction_percent": mem_reduction,
-            "winner": "musl",
+
+def save_results(results: ComparisonResults, results_dir: Path) -> Path:
+    """Save results to JSON file."""
+    timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+    results_file = results_dir / f"musl-vs-glibc-{timestamp}.json"
+
+    data = {
+        "timestamp": results.timestamp,
+        "platform": results.platform,
+        "docker_version": results.docker_version,
+        "builds": {
+            "musl": {
+                "build_duration_seconds": results.musl.build_duration_seconds,
+                "image_size_bytes": results.musl.image_size_bytes,
+                "image_size_mb": results.musl.image_size_mb,
+                "layer_count": results.musl.layer_count,
+                "cold_start_seconds": results.musl.cold_start_seconds,
+                "memory_usage_mb": results.musl.memory_usage_mb,
+                "architecture": results.musl.architecture,
+                "os": results.musl.os_type,
+                "dockerfile": results.musl.dockerfile,
+                "tag": results.musl.tag
+            },
+            "glibc": {
+                "build_duration_seconds": results.glibc.build_duration_seconds,
+                "image_size_bytes": results.glibc.image_size_bytes,
+                "image_size_mb": results.glibc.image_size_mb,
+                "layer_count": results.glibc.layer_count,
+                "cold_start_seconds": results.glibc.cold_start_seconds,
+                "memory_usage_mb": results.glibc.memory_usage_mb,
+                "architecture": results.glibc.architecture,
+                "os": results.glibc.os_type,
+                "dockerfile": results.glibc.dockerfile,
+                "tag": results.glibc.tag
+            }
+        },
+        "comparison": {
+            "image_size_reduction_percent": results.image_size_reduction_percent,
+            "build_speedup_percent": results.build_speedup_percent,
+            "cold_start_speedup_percent": results.cold_start_speedup_percent,
+            "memory_reduction_percent": results.memory_reduction_percent,
+            "winner": "musl"
         }
+    }
 
-        print()
-        print(f"{Colors.GREEN}{'Metric':<25}{Colors.NC} | {'musl (Alpine)':>12} | {'glibc (Debian)':>14} | {Colors.BLUE}{'Improvement':>15}{Colors.NC}")
-        print("-" * 75)
-        print(f"{'Image Size':<25} | {musl['image_size_mb']:>10.2f} MB | {glibc['image_size_mb']:>12.2f} MB | {Colors.GREEN}{size_reduction:>+.1f}%{Colors.NC}")
-        print(f"{'Build Time':<25} | {musl['build_duration_seconds']:>10} s | {glibc['build_duration_seconds']:>12} s | {Colors.GREEN}{build_speedup:>+.1f}%{Colors.NC}")
-        print(f"{'Cold Start':<25} | {musl['cold_start_seconds']:>10} s | {glibc['cold_start_seconds']:>12} s | {Colors.GREEN}{start_speedup:>+.1f}%{Colors.NC}")
-        print(f"{'Memory Usage':<25} | {musl['memory_usage_mb']:>10} MB | {glibc['memory_usage_mb']:>12} MB | {Colors.GREEN}{mem_reduction:>+.1f}%{Colors.NC}")
-        print()
+    results_file.write_text(json.dumps(data, indent=2))
+    return results_file
 
-        success("musl (Alpine) wins on all metrics!")
 
-    elif musl_success:
-        success("musl build completed successfully")
-        print(json.dumps(results["builds"]["musl"], indent=2))
-    elif glibc_success:
-        success("glibc build completed successfully")
-        print(json.dumps(results["builds"]["glibc"], indent=2))
+def main() -> int:
+    """Main entry point."""
+    parser = argparse.ArgumentParser(
+        description="Compare Docker builds: musl (Alpine) vs glibc (Debian)"
+    )
+    parser.add_argument(
+        "--results-dir",
+        type=Path,
+        default=None,
+        help="Results directory"
+    )
+
+    args = parser.parse_args()
+
+    script_dir = Path(__file__).parent.resolve()
+    project_root = script_dir.parent.parent
+
+    if args.results_dir:
+        results_dir = args.results_dir
     else:
-        log_error("Both builds failed")
-        return 1
+        results_dir = project_root / "performance-results" / "docker-builds"
 
-    # Save results
-    with open(output_path, "w") as f:
-        json.dump(results, f, indent=2)
+    results = run_comparison(project_root, results_dir)
+    print_comparison(results)
 
-    log(f"Results saved to: {output_path}")
-    log(f"View with: cat {output_path} | jq")
+    results_file = save_results(results, results_dir)
+    log(f"Results saved to: {results_file}")
+    log("View with: cat {results_file} | jq")
 
     success("Comparison complete!")
     return 0

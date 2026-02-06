@@ -21,13 +21,15 @@ struct VibeCodeApp: App {
             ContentView()
                 .environmentObject(vmManager)
                 .environmentObject(ideManager)
+                .environmentObject(idePreferences)
                 .frame(minWidth: 800, minHeight: 600)
                 .onAppear {
                     NSLog("🟢 VIBECODE: ContentView.onAppear called!")
                     print("🟢 ContentView.onAppear called!")
-                    vmManager.loadAvailableVMs()
-                    // inject shared preferences into manager
+                    // inject shared preferences into managers
+                    vmManager.preferences = idePreferences
                     ideManager.preferences = idePreferences
+                    vmManager.loadAvailableVMs()
                 }
         }
         .commands {
@@ -75,7 +77,8 @@ struct VibeCodeApp: App {
 
         Settings {
             PreferencesView(preferences: idePreferences, ideManager: ideManager)
-                .frame(width: 520, height: 360)
+                .environmentObject(vmManager)
+                .frame(width: 520, height: 480)
         }
     }
 }

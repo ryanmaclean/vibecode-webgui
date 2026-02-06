@@ -54,6 +54,16 @@ python3 scripts/ralph_loop.py
 ---
 *Powered by OpenClaw*
 
+## 🍎 Native macOS Virtualization
+
+VibeCode supports **Apple Virtualization Framework** for native macOS VM performance:
+- **Native Speed**: Direct hardware virtualization without Docker overhead
+- **ASIF Support**: Apple Sparse Image Format on macOS 26+ (2-3x faster I/O)
+- **Full VM Control**: Start, stop, suspend, resume operations
+- **Linux GUI VMs**: Graphics support with VirtIO GPU
+
+See [Apple Virtualization Framework Documentation](docs/features/APPLE_VIRTUALIZATION_FRAMEWORK.md) for details.
+
 ## 🐳 Docker Option (Lightweight)
 If you prefer containers over a full VM:
 ```bash

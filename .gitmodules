@@ -6,3 +6,6 @@
 	path = openvscode-server
 	url = https://github.com/gitpod-io/openvscode-server.git
 
+[submodule "plugins/tundra-nat64"]
+	path = plugins/tundra-nat64
+	url = https://github.com/vitlabuda/tundra-nat64

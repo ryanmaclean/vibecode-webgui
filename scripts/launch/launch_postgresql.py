@@ -1,203 +1,340 @@
 #!/usr/bin/env python3
-"""Quick Launch Script for PostgreSQL VM.
+"""Quick Launch Script for PostgreSQL VM."""
 
-Launches the PostgreSQL VM and monitors its boot process.
-"""
 from __future__ import annotations
 
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
-
-import argparse
 import glob
 import os
 import re
 import shutil
+import signal
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 
-
-class Colors:
-    """ANSI color codes for terminal output."""
-
-    GREEN = "\033[0;32m"
-    BLUE = "\033[0;34m"
-    NC = "\033[0m"
-
-    @classmethod
-    def disable(cls) -> None:
-        cls.GREEN = cls.BLUE = cls.NC = ""
+# ANSI color codes
+GREEN = "\033[0;32m"
+BLUE = "\033[0;34m"
+YELLOW = "\033[1;33m"
+RED = "\033[0;31m"
+NC = "\033[0m"
 
 
-if not sys.stdout.isatty():
-    Colors.disable()
+@dataclass
+class LaunchConfig:
+    """PostgreSQL VM launch configuration."""
+
+    azure_dir: Path = field(
+        default_factory=lambda: Path.home() / "vibecode-webgui" / "azure"
+    )
+    console_log_pattern: str = "/tmp/vibecode-console-*.log"
+    boot_wait_seconds: int = 30
+    postgresql_port: int = 5432
+
+    @property
+    def postgresql_initramfs(self) -> Path:
+        """Get PostgreSQL initramfs path."""
+        return self.azure_dir / "postgresql-standalone.cpio.gz"
+
+    @property
+    def nodejs_initramfs(self) -> Path:
+        """Get Node.js initramfs path."""
+        return self.azure_dir / "nodejs-complete.cpio.gz"
+
+    @property
+    def nodejs_backup(self) -> Path:
+        """Get Node.js backup initramfs path."""
+        return self.azure_dir / "nodejs-backup.cpio.gz"
+
+    @property
+    def vm_executable(self) -> Path:
+        """Get VM executable path."""
+        return (
+            self.azure_dir
+            / "SwiftUI-Apps"
+            / "NodeJSVibeCode.app"
+            / "Contents"
+            / "MacOS"
+            / "NodeJS"
+        )
 
 
-# Configuration
-AZURE_DIR = Path.home() / "vibecode-webgui" / "azure"
-POSTGRESQL_INITRAMFS = AZURE_DIR / "postgresql-standalone.cpio.gz"
-NODEJS_INITRAMFS = AZURE_DIR / "nodejs-complete.cpio.gz"
-BACKUP_INITRAMFS = AZURE_DIR / "nodejs-backup.cpio.gz"
-VM_APP = AZURE_DIR / "SwiftUI-Apps" / "NodeJSVibeCode.app" / "Contents" / "MacOS" / "NodeJS"
-CONSOLE_LOG_PATTERN = "/tmp/vibecode-console-*.log"
-BOOT_WAIT_TIME = 30
+def log_info(msg: str) -> None:
+    """Print info message."""
+    print(msg)
 
 
-def run_cmd(
-    cmd: list[str],
-    capture: bool = True,
-    check: bool = False,
-) -> subprocess.CompletedProcess[str]:
-    """Run a command and return result."""
-    return subprocess.run(cmd, capture_output=capture, text=True, check=check)
+def log_success(msg: str) -> None:
+    """Print success message."""
+    print(f"{GREEN}✓{NC} {msg}")
+
+
+def log_warning(msg: str) -> None:
+    """Print warning message."""
+    print(f"{YELLOW}WARNING:{NC} {msg}")
+
+
+def log_error(msg: str) -> None:
+    """Print error message."""
+    print(f"{RED}ERROR:{NC} {msg}")
+
+
+def print_header() -> None:
+    """Print launch header."""
+    print(f"{BLUE}================================={NC}")
+    print(f"{BLUE}  PostgreSQL VM Quick Launch{NC}")
+    print(f"{BLUE}================================={NC}")
+    print()
 
 
 def kill_running_vms() -> None:
     """Kill any running VMs."""
-    print("Stopping any running VMs...")
-    run_cmd(["killall", "PostgreSQLVibeCode"])
-    run_cmd(["killall", "NodeJS"])
+    log_info("Stopping any running VMs...")
+
+    for process_name in ["PostgreSQLVibeCode", "NodeJS"]:
+        try:
+            subprocess.run(
+                ["killall", process_name],
+                capture_output=True,
+                timeout=5,
+            )
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError):
+            pass
+
     time.sleep(2)
 
 
-def clean_console_logs() -> None:
-    """Remove old console logs."""
-    print("Cleaning old console logs...")
-    for log_file in glob.glob(CONSOLE_LOG_PATTERN):
+def clean_console_logs(pattern: str) -> None:
+    """Clean old console logs.
+
+    Args:
+        pattern: Glob pattern for log files.
+    """
+    log_info("Cleaning old console logs...")
+
+    for log_file in glob.glob(pattern):
         try:
-            Path(log_file).unlink()
+            os.remove(log_file)
         except OSError:
             pass
 
 
-def get_latest_console_log() -> Path | None:
-    """Get the most recent console log file."""
-    logs = sorted(glob.glob(CONSOLE_LOG_PATTERN), key=os.path.getmtime, reverse=True)
-    return Path(logs[0]) if logs else None
+def check_initramfs(config: LaunchConfig) -> bool:
+    """Check if PostgreSQL initramfs exists.
+
+    Args:
+        config: Launch configuration.
+
+    Returns:
+        True if initramfs exists.
+    """
+    if not config.postgresql_initramfs.exists():
+        log_error("PostgreSQL initramfs not found!")
+        return False
+    return True
+
+
+def swap_initramfs(config: LaunchConfig) -> bool:
+    """Swap Node.js initramfs with PostgreSQL.
+
+    Args:
+        config: Launch configuration.
+
+    Returns:
+        True if swap successful.
+    """
+    try:
+        # Backup current nodejs initramfs
+        if config.nodejs_initramfs.exists():
+            shutil.copy(config.nodejs_initramfs, config.nodejs_backup)
+
+        # Copy PostgreSQL initramfs
+        shutil.copy(config.postgresql_initramfs, config.nodejs_initramfs)
+        return True
+    except OSError as e:
+        log_error(f"Failed to swap initramfs: {e}")
+        return False
+
+
+def launch_vm(config: LaunchConfig) -> int | None:
+    """Launch the PostgreSQL VM.
+
+    Args:
+        config: Launch configuration.
+
+    Returns:
+        VM process ID or None on failure.
+    """
+    log_info("Launching PostgreSQL VM...")
+
+    if not config.vm_executable.exists():
+        log_error(f"VM executable not found: {config.vm_executable}")
+        return None
+
+    try:
+        process = subprocess.Popen(
+            [str(config.vm_executable)],
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            cwd=str(config.azure_dir),
+        )
+        return process.pid
+    except OSError as e:
+        log_error(f"Failed to launch VM: {e}")
+        return None
+
+
+def get_latest_console_log(pattern: str) -> Path | None:
+    """Get the most recent console log file.
+
+    Args:
+        pattern: Glob pattern for log files.
+
+    Returns:
+        Path to latest log file or None.
+    """
+    log_files = glob.glob(pattern)
+    if not log_files:
+        return None
+
+    # Sort by modification time, most recent first
+    log_files.sort(key=os.path.getmtime, reverse=True)
+    return Path(log_files[0])
 
 
 def extract_vm_ip(log_path: Path) -> str | None:
-    """Extract VM IP address from console log."""
+    """Extract VM IP address from console log.
+
+    Args:
+        log_path: Path to console log.
+
+    Returns:
+        IP address or None.
+    """
     try:
-        content = log_path.read_text()
-        lines = content.splitlines()[-100:]
+        # Read last 100 lines
+        with open(log_path) as f:
+            lines = f.readlines()[-100:]
+
+        # Search for IP address
+        ip_pattern = re.compile(r"inet\s+(\d+\.\d+\.\d+\.\d+)")
         for line in lines:
-            match = re.search(r"inet (\d+\.\d+\.\d+\.\d+)", line)
+            match = ip_pattern.search(line)
             if match:
                 return match.group(1)
     except OSError:
         pass
+
     return None
 
 
-def main(argv: list[str] | None = None) -> int:
-    """Main entry point."""
-    parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-    )
-    parser.add_argument(
-        "--no-color",
-        action="store_true",
-        help="Disable colored output",
-    )
-    parser.add_argument(
-        "--no-tail",
-        action="store_true",
-        help="Don't tail the console log",
-    )
-    parser.add_argument(
-        "--boot-wait",
-        type=int,
-        default=BOOT_WAIT_TIME,
-        help=f"Boot wait time in seconds (default: {BOOT_WAIT_TIME})",
-    )
+def print_access_instructions(vm_ip: str, port: int) -> None:
+    """Print access instructions.
 
-    args = parser.parse_args(argv)
-
-    if args.no_color:
-        Colors.disable()
-
-    print(f"{Colors.BLUE}================================={Colors.NC}")
-    print(f"{Colors.BLUE}  PostgreSQL VM Quick Launch{Colors.NC}")
-    print(f"{Colors.BLUE}================================={Colors.NC}")
+    Args:
+        vm_ip: VM IP address.
+        port: PostgreSQL port.
+    """
+    print()
+    log_info(f"VM IP Address: {vm_ip}")
+    log_info(f"PostgreSQL Port: {port}")
+    print()
+    log_info("Access Instructions:")
+    log_info(f"  psql -h {vm_ip} -U postgres -d vibecode")
+    print()
+    log_info("Test Connection:")
+    log_info(f"  pg_isready -h {vm_ip} -p {port}")
     print()
 
-    kill_running_vms()
-    clean_console_logs()
 
-    # Check if initramfs exists
-    if not POSTGRESQL_INITRAMFS.exists():
-        print("ERROR: PostgreSQL initramfs not found!")
+def tail_log(log_path: Path) -> None:
+    """Tail the console log file.
+
+    Args:
+        log_path: Path to log file.
+    """
+    log_info(f"Console log: {log_path}")
+    print()
+    log_info("Press Ctrl+C to stop tailing log...")
+
+    try:
+        process = subprocess.Popen(
+            ["tail", "-f", str(log_path)],
+            stdout=sys.stdout,
+            stderr=sys.stderr,
+        )
+        process.wait()
+    except KeyboardInterrupt:
+        print()
+        log_info("Stopped tailing log")
+
+
+def launch_postgresql(config: LaunchConfig | None = None) -> int:
+    """Launch PostgreSQL VM.
+
+    Args:
+        config: Launch configuration (uses defaults if None).
+
+    Returns:
+        Exit code (0 for success, 1 for failure).
+    """
+    if config is None:
+        config = LaunchConfig()
+
+    print_header()
+
+    # Kill running VMs
+    kill_running_vms()
+
+    # Clean console logs
+    clean_console_logs(config.console_log_pattern)
+
+    # Check initramfs
+    if not check_initramfs(config):
+        return 1
+
+    # Swap initramfs
+    if not swap_initramfs(config):
         return 1
 
     # Launch VM
-    print("Launching PostgreSQL VM...")
-
-    # Backup current nodejs initramfs and swap in PostgreSQL
-    if NODEJS_INITRAMFS.exists():
-        shutil.copy2(NODEJS_INITRAMFS, BACKUP_INITRAMFS)
-    shutil.copy2(POSTGRESQL_INITRAMFS, NODEJS_INITRAMFS)
-
-    if not VM_APP.exists():
-        print(f"ERROR: VM app not found: {VM_APP}")
+    vm_pid = launch_vm(config)
+    if vm_pid is None:
         return 1
 
-    proc = subprocess.Popen(
-        [str(VM_APP)],
-        cwd=str(AZURE_DIR),
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
-    )
+    log_info(f"VM PID: {vm_pid}")
+    log_info("Waiting for boot...")
 
-    print(f"VM PID: {proc.pid}")
-    print("Waiting for boot...")
-
-    time.sleep(args.boot_wait)
+    # Wait for boot
+    time.sleep(config.boot_wait_seconds)
 
     # Get console log
-    console_log = get_latest_console_log()
+    console_log = get_latest_console_log(config.console_log_pattern)
 
-    if not console_log:
-        print("WARNING: No console log found")
-        return 1
+    if console_log is None:
+        log_warning("No console log found")
+        return 0
 
     # Extract IP
     vm_ip = extract_vm_ip(console_log)
 
     if vm_ip:
-        print(f"{Colors.GREEN}[OK]{Colors.NC} VM booted successfully")
-        print()
-        print(f"VM IP Address: {vm_ip}")
-        print("PostgreSQL Port: 5432")
-        print()
-        print("Access Instructions:")
-        print(f"  psql -h {vm_ip} -U postgres -d vibecode")
-        print()
-        print("Test Connection:")
-        print(f"  pg_isready -h {vm_ip} -p 5432")
-        print()
+        log_success("VM booted successfully")
+        print_access_instructions(vm_ip, config.postgresql_port)
     else:
-        print("WARNING: Could not determine VM IP")
+        log_warning("Could not determine VM IP")
 
-    print(f"Console log: {console_log}")
-    print()
-
-    if not args.no_tail:
-        print("Press Ctrl+C to stop tailing log...")
-        try:
-            subprocess.run(["tail", "-f", str(console_log)])
-        except KeyboardInterrupt:
-            print()
+    # Tail console log
+    tail_log(console_log)
 
     return 0
+
+
+def main() -> int:
+    """Main entry point."""
+    return launch_postgresql()
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ export class HuggingFaceProvider implements Provider {
 
     // Inference API payload
     const inputs = this.buildPrompt(req.messages);
-    const parameters: Record<string, any> = {};
+    const parameters: Record<string, unknown> = {};
     if (typeof req.max_tokens === 'number') parameters.max_new_tokens = req.max_tokens;
     if (typeof req.temperature === 'number') parameters.temperature = req.temperature;
     if (typeof req.top_p === 'number') parameters.top_p = req.top_p;
@@ -48,11 +48,12 @@ export class HuggingFaceProvider implements Provider {
 
     // The HF Inference API may return an array of generated_text or structured results depending on model
     let text = '';
-    const data = resp.data;
-    if (Array.isArray(data) && data[0]?.generated_text) {
-      text = data[0].generated_text as string;
-    } else if (typeof data === 'object' && data && (data.generated_text || data[0]?.summary_text)) {
-      text = data.generated_text || data[0]?.summary_text || '';
+    const data = resp.data as unknown;
+    if (Array.isArray(data) && typeof data[0]?.generated_text === 'string') {
+      text = data[0].generated_text;
+    } else if (typeof data === 'object' && data) {
+      const record = data as { generated_text?: string; 0?: { summary_text?: string } };
+      text = record.generated_text || record[0]?.summary_text || '';
     } else if (typeof data === 'string') {
       text = data;
     } else {

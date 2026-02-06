@@ -1,16 +1,21 @@
 # VibeCode Unified v3.0.0-FINAL
 
+> **ARCHIVAL NOTICE**: This document was created during development and contains
+> references to `v3.0.0-FINAL` which was later released as `v3.0.0-unified-app`.
+> The DMG is 107 MB (not 94 MB). See the [GitHub release](https://github.com/ryanmaclean/vibecode-webgui/releases/tag/v3.0.0-unified-app) for current download links.
+
 ## START HERE
 
 Welcome! You've received the complete, production-ready VibeCode Unified v3.0.0-FINAL delivery.
 
-**Status**: READY TO USE ✅
+**Status**: READY TO USE
+**Actual Release Tag**: `v3.0.0-unified-app`
 
 ---
 
 ## What You Have
 
-✅ **Working macOS Application** - VibeCode-Unified-v3.0.0-FINAL.dmg (94 MB)
+✅ **Working macOS Application** - VibeCode-Unified-v3.0.0-Final.dmg (107 MB)
 ✅ **4 Services Operational** - OpenVSCode, PostgreSQL, Valkey, SSH
 ✅ **Comprehensive Documentation** - 7 guides covering all needs
 ✅ **Verification Tools** - Automated testing script included
@@ -58,8 +63,8 @@ Welcome! You've received the complete, production-ready VibeCode Unified v3.0.0-
 
 ### Main Application
 ```
-/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/
-  └─ VibeCode-Unified-v3.0.0-FINAL.dmg (94 MB)
+GitHub Release: https://github.com/ryanmaclean/vibecode-webgui/releases/tag/v3.0.0-unified-app
+  └─ VibeCode-Unified-v3.0.0-Final.dmg (107 MB)
 ```
 
 ### Documentation (All in Main Directory)
@@ -84,7 +89,7 @@ Welcome! You've received the complete, production-ready VibeCode Unified v3.0.0-
 
 ### 1. Copy DMG (1 minute)
 ```bash
-hdiutil attach ~/Downloads/VibeCode-Unified-v3.0.0-FINAL.dmg
+hdiutil attach ~/Downloads/VibeCode-Unified-v3.0.0-Final.dmg
 cp -r "/Volumes/VibeCode Unified/VibeCode.app" /Applications/
 hdiutil detach "/Volumes/VibeCode Unified"
 ```
@@ -262,7 +267,7 @@ After installation, you should have:
 ## The Files You Need
 
 ### To Get Running
-- `VibeCode-Unified-v3.0.0-FINAL.dmg` - The application
+- `VibeCode-Unified-v3.0.0-Final.dmg` - The application
 
 ### To Learn How
 - `VIBECODE-QUICK-START.md` - Fast track (3 min)
@@ -296,7 +301,7 @@ You can start using it right now.
 
 ```bash
 # 1. Install (1 min)
-hdiutil attach ~/Downloads/VibeCode-Unified-v3.0.0-FINAL.dmg
+hdiutil attach ~/Downloads/VibeCode-Unified-v3.0.0-Final.dmg
 cp -r "/Volumes/VibeCode Unified/VibeCode.app" /Applications/
 hdiutil detach "/Volumes/VibeCode Unified"
 

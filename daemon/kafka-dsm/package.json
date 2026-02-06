@@ -1,0 +1,10 @@
+{
+  "name": "gastown-kafka-dsm",
+  "version": "1.0.0",
+  "private": true,
+  "type": "commonjs",
+  "dependencies": {
+    "dd-trace": "^5.25.0",
+    "kafkajs": "^2.2.4"
+  }
+}

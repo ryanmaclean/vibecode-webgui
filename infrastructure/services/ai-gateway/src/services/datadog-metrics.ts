@@ -31,7 +31,7 @@ export class DatadogMetricsService {
     }
 
     try {
-      const payload = {
+      const _payload = {
         series: [
           {
             metric,
@@ -42,6 +42,7 @@ export class DatadogMetricsService {
           }
         ]
       };
+      void _payload;
 
       logger.debug('Sending gauge metric to Datadog', { metric, value, tags: options.tags });
       // In production, this would make an actual HTTP request
@@ -61,7 +62,7 @@ export class DatadogMetricsService {
     }
 
     try {
-      const payload = {
+      const _payload = {
         series: [
           {
             metric,
@@ -72,6 +73,7 @@ export class DatadogMetricsService {
           }
         ]
       };
+      void _payload;
 
       logger.debug('Sending counter metric to Datadog', { metric, value, tags: options.tags });
       // In production, this would make an actual HTTP request
@@ -90,7 +92,7 @@ export class DatadogMetricsService {
     }
 
     try {
-      const payload = {
+      const _payload = {
         series: [
           {
             metric,
@@ -101,6 +103,7 @@ export class DatadogMetricsService {
           }
         ]
       };
+      void _payload;
 
       logger.debug('Sending histogram metric to Datadog', { metric, value, tags: options.tags });
       // In production, this would make an actual HTTP request

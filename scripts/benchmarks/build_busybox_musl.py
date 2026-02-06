@@ -1,282 +1,329 @@
 #!/usr/bin/env python3
-"""Build BusyBox with musl libc for static linking.
+"""Build BusyBox with musl static linking.
 
-Creates a statically linked BusyBox binary suitable for minimal initramfs.
+Builds a minimal static BusyBox binary for initramfs use.
 """
-from __future__ import annotations
-
-# Datadog APM tracing
-try:
-    from ddtrace import tracer, patch_all
-    patch_all()
-except ImportError:
-    pass  # ddtrace not installed
-
 
 import argparse
 import os
+import shutil
 import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-
-try:
-    from .benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        detect_cpu_count,
-        log,
-        run_cmd,
-        success,
-        warn,
-    )
-except ImportError:
-    sys.path.insert(0, str(Path(__file__).parent))
-    from benchmark_utils import (
-        REPO_ROOT,
-        BenchmarkError,
-        check_command,
-        detect_cpu_count,
-        log,
-        run_cmd,
-        success,
-        warn,
-    )
+from typing import Optional
 
 
-DEFAULT_BUSYBOX_VERSION = "1.36.1"
-BUSYBOX_URL_TEMPLATE = "https://busybox.net/downloads/busybox-{version}.tar.bz2"
+@dataclass
+class BuildConfig:
+    """Build configuration."""
+
+    arch: str = "x86_64"
+    version: str = "1.36.1"
+    build_root: Path = Path()
+    src_dir: Path = Path()
+
+
+# Colors for output
+GREEN = '\033[0;32m'
+YELLOW = '\033[1;33m'
+RED = '\033[0;31m'
+NC = '\033[0m'
+
+
+def log(msg: str) -> None:
+    """Print log message."""
+    print(f"{GREEN}[INFO]{NC} {msg}")
+
+
+def error(msg: str) -> None:
+    """Print error message."""
+    print(f"{RED}[ERROR]{NC} {msg}", file=sys.stderr)
+
+
+def run_command(
+    cmd: list[str],
+    cwd: Optional[Path] = None,
+    check: bool = True,
+    capture: bool = False,
+    env: Optional[dict] = None
+) -> tuple[int, str, str]:
+    """Run a command."""
+    try:
+        merged_env = os.environ.copy()
+        if env:
+            merged_env.update(env)
+
+        result = subprocess.run(
+            cmd,
+            cwd=cwd,
+            check=check,
+            capture_output=capture,
+            text=True,
+            env=merged_env
+        )
+        return result.returncode, result.stdout or "", result.stderr or ""
+    except subprocess.CalledProcessError as e:
+        return e.returncode, e.stdout or "", e.stderr or ""
+    except FileNotFoundError:
+        return -1, "", f"command not found: {cmd[0]}"
 
 
 def set_bool_config(config_path: Path, key: str, value: str) -> None:
     """Set a boolean config option in .config file."""
     content = config_path.read_text()
+    lines = content.splitlines()
+    new_lines = []
+    found = False
 
-    # Try to replace existing setting
-    if f"{key}=" in content:
-        lines = content.split("\n")
-        new_lines = []
-        for line in lines:
-            if line.startswith(f"{key}="):
-                new_lines.append(f"{key}={value}")
-            else:
-                new_lines.append(line)
-        config_path.write_text("\n".join(new_lines))
-    elif f"# {key} is not set" in content:
-        content = content.replace(f"# {key} is not set", f"{key}={value}")
-        config_path.write_text(content)
-    else:
-        # Append to file
-        with open(config_path, "a") as f:
-            f.write(f"\n{key}={value}\n")
+    for line in lines:
+        if line.startswith(f"{key}="):
+            new_lines.append(f"{key}={value}")
+            found = True
+        elif line == f"# {key} is not set":
+            new_lines.append(f"{key}={value}")
+            found = True
+        else:
+            new_lines.append(line)
+
+    if not found:
+        new_lines.append(f"{key}={value}")
+
+    config_path.write_text("\n".join(new_lines) + "\n")
 
 
 def set_string_config(config_path: Path, key: str, value: str) -> None:
     """Set a string config option in .config file."""
     content = config_path.read_text()
+    lines = content.splitlines()
+    new_lines = []
+    found = False
 
-    if f'{key}="' in content:
-        lines = content.split("\n")
-        new_lines = []
-        for line in lines:
-            if line.startswith(f'{key}="'):
-                new_lines.append(f'{key}="{value}"')
-            else:
-                new_lines.append(line)
-        config_path.write_text("\n".join(new_lines))
-    elif f"# {key} is not set" in content:
-        content = content.replace(f"# {key} is not set", f'{key}="{value}"')
-        config_path.write_text(content)
-    else:
-        with open(config_path, "a") as f:
-            f.write(f'\n{key}="{value}"\n')
+    for line in lines:
+        if line.startswith(f'{key}="'):
+            new_lines.append(f'{key}="{value}"')
+            found = True
+        elif line == f"# {key} is not set":
+            new_lines.append(f'{key}="{value}"')
+            found = True
+        else:
+            new_lines.append(line)
+
+    if not found:
+        new_lines.append(f'{key}="{value}"')
+
+    config_path.write_text("\n".join(new_lines) + "\n")
 
 
 def disable_config(config_path: Path, key: str) -> None:
     """Disable a config option in .config file."""
     content = config_path.read_text()
+    lines = content.splitlines()
+    new_lines = []
+    found = False
 
-    if f"{key}=" in content:
-        lines = content.split("\n")
-        new_lines = []
-        for line in lines:
-            if line.startswith(f"{key}="):
-                new_lines.append(f"# {key} is not set")
-            else:
-                new_lines.append(line)
-        config_path.write_text("\n".join(new_lines))
-    elif f"# {key} is not set" not in content:
-        with open(config_path, "a") as f:
-            f.write(f"\n# {key} is not set\n")
+    for line in lines:
+        if line.startswith(f"{key}="):
+            new_lines.append(f"# {key} is not set")
+            found = True
+        else:
+            new_lines.append(line)
+
+    if not found:
+        new_lines.append(f"# {key} is not set")
+
+    config_path.write_text("\n".join(new_lines) + "\n")
 
 
-def download_busybox(build_root: Path, version: str) -> Path:
-    """Download BusyBox source tarball.
-
-    Returns:
-        Path to extracted source directory
-    """
-    tarball = f"busybox-{version}.tar.bz2"
-    tarball_path = build_root / tarball
-    url = BUSYBOX_URL_TEMPLATE.format(version=version)
-    src_dir = build_root / f"busybox-{version}"
+def download_busybox(config: BuildConfig) -> bool:
+    """Download BusyBox source."""
+    tarball = f"busybox-{config.version}.tar.bz2"
+    tarball_path = config.build_root / tarball
+    url = f"https://busybox.net/downloads/{tarball}"
 
     if not tarball_path.exists():
-        log(f"Downloading BusyBox {version}...")
-        run_cmd(["curl", "-LO", url], cwd=build_root)
+        log(f"Downloading BusyBox {config.version}...")
+        rc, _, stderr = run_command(
+            ["curl", "-LO", url],
+            cwd=config.build_root,
+            check=False
+        )
+        if rc != 0:
+            error(f"Failed to download: {stderr}")
+            return False
 
-    if not src_dir.exists():
-        log("Extracting BusyBox source...")
-        run_cmd(["tar", "-xf", tarball], cwd=build_root)
+    if not config.src_dir.exists():
+        log("Extracting BusyBox...")
+        rc, _, stderr = run_command(
+            ["tar", "-xf", tarball],
+            cwd=config.build_root,
+            check=False
+        )
+        if rc != 0:
+            error(f"Failed to extract: {stderr}")
+            return False
 
-    return src_dir
+    return True
 
 
-def configure_busybox(src_dir: Path, arch: str) -> None:
-    """Configure BusyBox for static musl build."""
+def configure_busybox(config: BuildConfig) -> bool:
+    """Configure BusyBox build."""
     log("Configuring BusyBox...")
 
-    # Clean previous build
-    run_cmd(["make", "distclean"], cwd=src_dir, check=False)
+    # Clean and create defconfig
+    run_command(["make", "distclean"], cwd=config.src_dir, check=False, capture=True)
+    rc, _, stderr = run_command(
+        ["make", "defconfig"],
+        cwd=config.src_dir,
+        check=False,
+        capture=True
+    )
+    if rc != 0:
+        error(f"Failed to create defconfig: {stderr}")
+        return False
 
-    # Start with defconfig
-    run_cmd(["make", "defconfig"], cwd=src_dir)
+    config_path = config.src_dir / ".config"
 
-    config_path = src_dir / ".config"
-
-    # Enable static linking
+    # Enable static build
     set_bool_config(config_path, "CONFIG_STATIC", "y")
 
-    # Enable essential features
+    # Network utilities
     set_bool_config(config_path, "CONFIG_UDHCPC", "y")
     set_string_config(config_path, "CONFIG_UDHCPC_DEFAULT_SCRIPT", "/udhcpc.script")
     set_bool_config(config_path, "CONFIG_IP", "y")
+
+    # Shell
     set_bool_config(config_path, "CONFIG_SH_IS_ASH", "y")
     set_bool_config(config_path, "CONFIG_ASH", "y")
-    set_bool_config(config_path, "CONFIG_LS", "y")
-    set_bool_config(config_path, "CONFIG_CAT", "y")
-    set_bool_config(config_path, "CONFIG_ECHO", "y")
-    set_bool_config(config_path, "CONFIG_GREP", "y")
-    set_bool_config(config_path, "CONFIG_TAR", "y")
-    set_bool_config(config_path, "CONFIG_CP", "y")
-    set_bool_config(config_path, "CONFIG_MKDIR", "y")
-    set_bool_config(config_path, "CONFIG_MV", "y")
-    set_bool_config(config_path, "CONFIG_RM", "y")
-    set_bool_config(config_path, "CONFIG_PWD", "y")
-    set_bool_config(config_path, "CONFIG_SLEEP", "y")
-    set_bool_config(config_path, "CONFIG_INIT", "y")
-    set_bool_config(config_path, "CONFIG_PING", "y")
+
+    # Core utilities
+    for opt in ["CONFIG_LS", "CONFIG_CAT", "CONFIG_ECHO", "CONFIG_GREP",
+                "CONFIG_TAR", "CONFIG_CP", "CONFIG_MKDIR", "CONFIG_MV",
+                "CONFIG_RM", "CONFIG_PWD", "CONFIG_SLEEP", "CONFIG_INIT",
+                "CONFIG_PING"]:
+        set_bool_config(config_path, opt, "y")
 
     # Disable unnecessary features
-    disable_config(config_path, "CONFIG_TC")
-    disable_config(config_path, "CONFIG_FEATURE_IP_TUNNEL")
-    disable_config(config_path, "CONFIG_FEATURE_SYSLOG")
-    disable_config(config_path, "CONFIG_FEATURE_IPV6")
-    disable_config(config_path, "CONFIG_SYSLOGD")
-    disable_config(config_path, "CONFIG_KLOGD")
+    for opt in ["CONFIG_TC", "CONFIG_FEATURE_IP_TUNNEL", "CONFIG_FEATURE_SYSLOG",
+                "CONFIG_FEATURE_IPV6", "CONFIG_SYSLOGD", "CONFIG_KLOGD"]:
+        disable_config(config_path, opt)
 
-    # Run oldconfig with default answers
+    # Run oldconfig
+    log("Running oldconfig...")
     proc = subprocess.Popen(
         ["make", "oldconfig"],
-        cwd=src_dir,
+        cwd=config.src_dir,
         stdin=subprocess.PIPE,
         stdout=subprocess.DEVNULL,
-        stderr=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL
     )
-    # Send newlines to accept defaults
-    proc.communicate(input=b"\n" * 1000)
+    # Send empty responses to accept defaults
+    proc.communicate(input=b"\n" * 100)
+
+    return True
 
 
-def build_busybox(src_dir: Path, arch: str, jobs: int) -> None:
+def build_busybox(config: BuildConfig) -> bool:
     """Build BusyBox."""
-    log(f"Building BusyBox with {jobs} jobs...")
+    log(f"Building BusyBox for {config.arch}...")
 
-    cross_args = []
-    if arch == "arm64":
-        cross_args = ["ARCH=arm64", "CROSS_COMPILE=aarch64-linux-gnu-"]
-    elif arch == "armv7":
-        cross_args = ["ARCH=arm", "CROSS_COMPILE=arm-linux-gnueabihf-"]
+    # Determine cross-compile settings
+    make_args = []
+    if config.arch == "arm64":
+        make_args = ["ARCH=arm64", "CROSS_COMPILE=aarch64-linux-gnu-"]
+    elif config.arch == "armv7":
+        make_args = ["ARCH=arm", "CROSS_COMPILE=arm-linux-gnueabihf-"]
 
-    run_cmd(
-        ["make", f"-j{jobs}"] + cross_args,
-        cwd=src_dir,
+    # Get number of CPUs
+    try:
+        nproc = os.cpu_count() or 4
+    except Exception:
+        nproc = 4
+
+    # Build
+    rc, _, stderr = run_command(
+        ["make", f"-j{nproc}"] + make_args,
+        cwd=config.src_dir,
+        check=False,
+        capture=True
     )
+    if rc != 0:
+        error(f"Build failed: {stderr}")
+        return False
 
-
-def install_busybox(src_dir: Path, build_root: Path, arch: str) -> None:
-    """Install BusyBox to rootfs."""
-    rootfs_dir = build_root / "rootfs"
-    log(f"Installing BusyBox to {rootfs_dir}...")
-
-    cross_args = []
-    if arch == "arm64":
-        cross_args = ["ARCH=arm64", "CROSS_COMPILE=aarch64-linux-gnu-"]
-    elif arch == "armv7":
-        cross_args = ["ARCH=arm", "CROSS_COMPILE=arm-linux-gnueabihf-"]
-
-    run_cmd(
-        ["make", "install", f"CONFIG_PREFIX={rootfs_dir}"] + cross_args,
-        cwd=src_dir,
+    # Install
+    rootfs_dir = config.build_root / "rootfs"
+    rc, _, stderr = run_command(
+        ["make", "install", f"CONFIG_PREFIX={rootfs_dir}"] + make_args,
+        cwd=config.src_dir,
+        check=False
     )
+    if rc != 0:
+        error(f"Install failed: {stderr}")
+        return False
+
+    return True
 
 
-def main(argv: list[str] | None = None) -> int:
+def build(config: BuildConfig) -> int:
+    """Run the full build process.
+
+    Args:
+        config: Build configuration.
+
+    Returns:
+        Exit code.
+    """
+    config.build_root.mkdir(parents=True, exist_ok=True)
+
+    if not download_busybox(config):
+        return 1
+
+    if not configure_busybox(config):
+        return 1
+
+    if not build_busybox(config):
+        return 1
+
+    rootfs_dir = config.build_root / "rootfs"
+    log(f"BusyBox rootfs stored in {rootfs_dir}")
+
+    return 0
+
+
+def main() -> int:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description=__doc__,
-        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description="Build BusyBox with musl static linking"
     )
     parser.add_argument(
         "arch",
         nargs="?",
         default="x86_64",
         choices=["x86_64", "arm64", "armv7"],
-        help="Target architecture (default: x86_64)",
+        help="Target architecture"
     )
     parser.add_argument(
         "--version",
-        default=os.environ.get("BUSYBOX_VERSION", DEFAULT_BUSYBOX_VERSION),
-        help=f"BusyBox version (default: {DEFAULT_BUSYBOX_VERSION})",
-    )
-    parser.add_argument(
-        "--jobs", "-j",
-        type=int,
-        default=detect_cpu_count(),
-        help="Number of parallel jobs",
-    )
-    parser.add_argument(
-        "--output-dir",
-        type=Path,
-        default=REPO_ROOT / "bench-images" / "busybox",
-        help="Output directory",
+        default=os.environ.get("BUSYBOX_VERSION", "1.36.1"),
+        help="BusyBox version"
     )
 
-    args = parser.parse_args(argv)
+    args = parser.parse_args()
 
-    build_root = args.output_dir
-    build_root.mkdir(parents=True, exist_ok=True)
+    # Determine paths
+    script_dir = Path(__file__).parent.resolve()
+    root_dir = script_dir.parent.parent
+    build_root = root_dir / "bench-images" / "busybox"
 
-    try:
-        # Download source
-        src_dir = download_busybox(build_root, args.version)
+    config = BuildConfig(
+        arch=args.arch,
+        version=args.version,
+        build_root=build_root,
+        src_dir=build_root / f"busybox-{args.version}"
+    )
 
-        # Configure
-        configure_busybox(src_dir, args.arch)
-
-        # Build
-        build_busybox(src_dir, args.arch, args.jobs)
-
-        # Install
-        install_busybox(src_dir, build_root, args.arch)
-
-        rootfs_dir = build_root / "rootfs"
-        success(f"BusyBox rootfs stored in {rootfs_dir}")
-
-        return 0
-
-    except BenchmarkError as err:
-        print(f"error: {err}", file=sys.stderr)
-        return 1
+    return build(config)
 
 
 if __name__ == "__main__":

@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 
-<<<<<<< HEAD
 
 
 # Datadog APM tracing
@@ -11,8 +10,6 @@ except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
     pass
 
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)
 """Batch verify Datadog trace search access using a config file."""
 from __future__ import annotations
 # -- VibeCode Telemetry --
@@ -58,7 +55,6 @@ def main() -> None:
         sys.exit(1)
 
     # Load config
-<<<<<<< HEAD
     try:
         with open(config_path, 'r', encoding='utf-8') as f:
             configs = json.load(f)
@@ -172,5 +168,3 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
-=======
->>>>>>> 5146aef79 (feat(scripts): add Datadog APM tracing to all 195 Python scripts)

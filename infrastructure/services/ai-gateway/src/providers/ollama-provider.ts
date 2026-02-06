@@ -12,7 +12,7 @@ export class OllamaProvider implements Provider {
     const model = (req.model || 'llama3.2').replace(/^ollama:/, '');
     const url = `${this.host}/api/chat`;
 
-    const payload: any = {
+    const payload: { model: string; messages: ChatRequest['messages']; stream: boolean; options: Record<string, unknown> } = {
       model,
       messages: req.messages.map(m => ({ role: m.role, content: m.content })),
       stream: false,
@@ -27,7 +27,7 @@ export class OllamaProvider implements Provider {
       timeout: 60000,
     });
 
-    const data = resp.data;
+    const data = resp.data as { message?: { content?: string } };
     // Ollama chat response has structure { message: { role, content }, ... }
     const content = data?.message?.content || '';
 

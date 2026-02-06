@@ -1,0 +1,29 @@
+{
+  "interval_sec": 120,
+  "queries": [
+    {
+      "name": "kafka_lag",
+      "query": "avg:kafka.consumer.lag{*}.as_count()",
+      "threshold": 1000,
+      "op": ">",
+      "action": "nudge",
+      "target": "deacon",
+      "severity": "medium",
+      "lane": "critical",
+      "message": "Kafka consumer lag high",
+      "topic": "tundra-deacon-commands"
+    },
+    {
+      "name": "beads_failed",
+      "query": "sum:tundra.beads.failed{*}.as_count()",
+      "threshold": 5,
+      "op": ">",
+      "action": "escalate",
+      "target": "mayor",
+      "severity": "high",
+      "lane": "critical",
+      "message": "High bead failure rate",
+      "topic": "tundra-mayor-commands"
+    }
+  ]
+}

@@ -1,13 +1,31 @@
+"""Bootstrap test environment module."""
 
-# -- VibeCode Telemetry --
-import sys
-import os
-try:
-    sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../../')))
-    from vibecode.telemetry import init_telemetry
-    tracer = init_telemetry(os.path.basename(__file__))
-except ImportError:
-    pass
-# ------------------------
+from .bootstrap_env import (
+    BOOTSTRAP_TEST_DIR,
+    BOOTSTRAP_TEST_ENV_EXAMPLE,
+    BOOTSTRAP_TEST_ENV_FILE,
+    BOOTSTRAP_TEST_REPO_ROOT,
+    BOOTSTRAP_TEST_SCRIPTS_DIR,
+    export_to_environ,
+    get_bootstrap_paths,
+    init,
+    is_initialized,
+    load_test_env,
+    parse_shell_env_file,
+    reset,
+)
 
-"""Bootstrap validation helpers for pytest suites."""
+__all__ = [
+    "BOOTSTRAP_TEST_DIR",
+    "BOOTSTRAP_TEST_ENV_EXAMPLE",
+    "BOOTSTRAP_TEST_ENV_FILE",
+    "BOOTSTRAP_TEST_REPO_ROOT",
+    "BOOTSTRAP_TEST_SCRIPTS_DIR",
+    "export_to_environ",
+    "get_bootstrap_paths",
+    "init",
+    "is_initialized",
+    "load_test_env",
+    "parse_shell_env_file",
+    "reset",
+]
