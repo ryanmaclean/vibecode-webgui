@@ -187,7 +187,7 @@
     "ai": "6.0.70",
     "async-mutex": "0.5.0",
     "aws-sdk": "2.1693.0",
-    "axios": "1.13.4",
+    "axios": "^1.13.4",
     "bcryptjs": "3.0.3",
     "chokidar": "4.0.3",
     "chromadb": "3.2.2",
@@ -243,7 +243,7 @@
     "ignore": "^7.0.5",
     "tmp": "^0.2.4",
     "@octokit/openapi-types": "24.0.0",
-    "axios": "^1.10.0",
+    "axios": "^1.13.4",
     "diff": "8.0.3",
     "hono": "^4.11.4",
     "fast-xml-parser": "^5.3.4"

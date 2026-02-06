@@ -41,6 +41,21 @@ jest.mock('pg', () => {
   };
 });
 
+// Mock the log aggregation module that the migration script requires
+// The migration script uses CommonJS require() which expects module.exports
+jest.mock('../scripts/vector-db-migrations/lib/log-aggregation-node.js', () => {
+  class MockLogAggregation {
+    constructor() {}
+    log() {}
+    info() {}
+    warn() {}
+    error() {}
+    flush() { return Promise.resolve(); }
+  }
+  // CommonJS export - module.exports = class
+  return MockLogAggregation;
+}, { virtual: true });
+
 jest.mock('datadog-metrics', () => {
   return {
     dog: {

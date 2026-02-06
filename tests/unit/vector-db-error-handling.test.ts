@@ -1,4 +1,4 @@
-import { VectorDbError, VectorDbErrorType, handleVectorDbError } from '../../src/lib/vector-db/vector-db-error-handler';
+import { VectorDbError, VectorDbErrorType, handleVectorDBError } from '../../src/lib/vector-db/vector-db-error-handler';
 
   describe('Performance', () => {
     test('Error handling has minimal overhead', () => {
@@ -22,7 +22,7 @@ import { VectorDbError, VectorDbErrorType, handleVectorDbError } from '../../src
         try {
           throw new Error(`Test error ${i}`);
         } catch (error) {
-          handleVectorDbError(error, 'testOperation', 'test-provider');
+          handleVectorDBError(error, 'testOperation', 'test-provider');
         }
       }
       const endHandler = performance.now();

@@ -324,8 +324,18 @@ describe('GitHubIntegration - Commit History Features', () => {
 
   describe('error handling', () => {
     it('should handle API errors gracefully', async () => {
+      // Override the mock to throw for this test
+      const { Octokit } = require('@octokit/rest')
+      Octokit.mockImplementationOnce(() => ({
+        rest: {
+          users: {
+            getAuthenticated: jest.fn().mockRejectedValue(new Error('Bad credentials'))
+          }
+        }
+      }))
+
       const errorGithub = new GitHubIntegration('invalid-token')
-      
+
       await expect(errorGithub.initialize()).rejects.toThrow()
     })
 
