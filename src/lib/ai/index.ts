@@ -18,6 +18,10 @@ export * from './code-review-automation';
 export * from './performance-optimization';
 export * from './integration-testing';
 
+// Circuit Breaker and Resilience
+export * from './circuit-breaker';
+export * from './resilient-ai-client';
+
 // Types
 export type { Prompt } from './prompts/manager';
 export type { SearchResult } from './search/vector-search';
