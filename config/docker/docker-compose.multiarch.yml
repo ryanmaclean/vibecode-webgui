@@ -238,6 +238,40 @@ services:
     profiles:
       - monitoring
 
+  # Docker-in-Docker for container operations
+  docker:
+    image: docker:27.4.1-dind
+    container_name: vibecode-docker-multiarch
+    privileged: true
+    environment:
+      - DOCKER_TLS_CERTDIR=
+    ports:
+      - "2375:2375"
+    volumes:
+      - docker-data:/var/lib/docker
+    restart: unless-stopped
+    networks:
+      - vibecode-network
+    profiles:
+      - development
+      - docker
+
+  # Dropbear SSH service for remote access
+  dropbear:
+    image: alpine:3.22
+    container_name: vibecode-ssh-multiarch
+    command: sh -c "apk add --no-cache dropbear && dropbear -F -E -B -R -p 22"
+    ports:
+      - "2222:22"
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-dropbear}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
+    restart: unless-stopped
+    networks:
+      - vibecode-network
+
 networks:
   vibecode-network:
     driver: bridge
@@ -255,6 +289,8 @@ volumes:
   prometheus-data:
     driver: local
   grafana-data:
+    driver: local
+  docker-data:
     driver: local
 
 # Docker Compose profiles for different deployment scenarios:
