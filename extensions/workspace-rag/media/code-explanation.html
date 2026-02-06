@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Code Explanation</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            padding: 20px;
+            color: var(--vscode-foreground);
+            background: var(--vscode-editor-background);
+        }
+        h2 {
+            color: var(--vscode-textLink-foreground);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+        }
+        h3 {
+            color: var(--vscode-textLink-foreground);
+            margin-top: 20px;
+        }
+        .complexity {
+            padding: 15px;
+            margin: 15px 0;
+            border-radius: 4px;
+            border: 1px solid var(--vscode-panel-border);
+        }
+        .complexity.simple {
+            background: rgba(0, 255, 0, 0.1);
+            border-color: var(--vscode-testing-iconPassed);
+        }
+        .complexity.moderate {
+            background: rgba(255, 165, 0, 0.1);
+            border-color: var(--vscode-editorWarning-foreground);
+        }
+        .complexity.complex {
+            background: rgba(255, 0, 0, 0.1);
+            border-color: var(--vscode-editorError-foreground);
+        }
+        .complexity.very-complex {
+            background: rgba(139, 0, 0, 0.1);
+            border-color: var(--vscode-editorError-foreground);
+        }
+        .metric {
+            display: inline-block;
+            margin-right: 20px;
+        }
+        .pattern {
+            margin: 10px 0;
+            padding: 12px;
+            border-left: 3px solid var(--vscode-textLink-foreground);
+            background: var(--vscode-editor-inactiveSelectionBackground);
+        }
+        .pattern.design-pattern {
+            border-left-color: var(--vscode-testing-iconPassed);
+        }
+        .pattern.anti-pattern {
+            border-left-color: var(--vscode-editorError-foreground);
+        }
+        .pattern.best-practice {
+            border-left-color: var(--vscode-textLink-foreground);
+        }
+        .pattern h4 {
+            margin: 0 0 8px 0;
+            color: var(--vscode-foreground);
+        }
+        .pattern .confidence {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+        }
+        .warning {
+            margin: 10px 0;
+            padding: 12px;
+            border-left: 3px solid var(--vscode-editorWarning-foreground);
+            background: rgba(255, 165, 0, 0.1);
+        }
+        .warning.error {
+            border-left-color: var(--vscode-editorError-foreground);
+            background: rgba(255, 0, 0, 0.1);
+        }
+        .warning strong {
+            color: var(--vscode-foreground);
+        }
+        .warning em {
+            display: block;
+            margin-top: 5px;
+            color: var(--vscode-descriptionForeground);
+        }
+        .alternative {
+            margin: 10px 0;
+            padding: 12px;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+        .alternative.recommended {
+            border-color: var(--vscode-testing-iconPassed);
+            background: rgba(0, 255, 0, 0.05);
+        }
+        .alternative h4 {
+            margin: 0 0 8px 0;
+        }
+        .alternative .star {
+            color: var(--vscode-testing-iconPassed);
+        }
+        .pros-cons {
+            margin: 8px 0;
+            font-size: 0.95em;
+        }
+        .learning-path {
+            list-style: none;
+            padding: 0;
+            counter-reset: step-counter;
+        }
+        .learning-path li {
+            counter-increment: step-counter;
+            margin: 8px 0;
+            padding-left: 30px;
+            position: relative;
+        }
+        .learning-path li::before {
+            content: counter(step-counter);
+            position: absolute;
+            left: 0;
+            top: 0;
+            background: var(--vscode-textLink-foreground);
+            color: var(--vscode-editor-background);
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85em;
+            font-weight: bold;
+        }
+        .empty-state {
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+            padding: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h2>Code Analysis</h2>
+    
+    <div id="complexity-section">
+        <h3>Complexity: <span id="complexity-level"></span></h3>
+        <div id="complexity-details" class="complexity">
+            <div class="metric">
+                <strong>Score:</strong> <span id="complexity-score"></span>/100
+            </div>
+            <div class="metric">
+                <strong>Cyclomatic:</strong> <span id="cyclomatic"></span>
+            </div>
+            <div class="metric">
+                <strong>Cognitive:</strong> <span id="cognitive"></span>
+            </div>
+            <div class="metric">
+                <strong>Max Nesting:</strong> <span id="nesting"></span>
+            </div>
+        </div>
+    </div>
+
+    <div id="patterns-section" style="display: none;">
+        <h3>Detected Patterns</h3>
+        <div id="patterns-list"></div>
+    </div>
+
+    <div id="warnings-section" style="display: none;">
+        <h3>Warnings</h3>
+        <div id="warnings-list"></div>
+    </div>
+
+    <div id="rationale-section" style="display: none;">
+        <h3>Rationale</h3>
+        <p id="rationale-text"></p>
+    </div>
+
+    <div id="alternatives-section" style="display: none;">
+        <h3>Alternative Approaches</h3>
+        <div id="alternatives-list"></div>
+    </div>
+
+    <div id="learning-section" style="display: none;">
+        <h3>Learning Path</h3>
+        <ol id="learning-path" class="learning-path"></ol>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'showExplanation') {
+                displayExplanation(message.data);
+            }
+        });
+
+        function displayExplanation(explanation) {
+            // Complexity
+            document.getElementById('complexity-level').textContent = explanation.complexity.overall;
+            document.getElementById('complexity-score').textContent = explanation.complexity.score;
+            document.getElementById('cyclomatic').textContent = explanation.complexity.cyclomatic;
+            document.getElementById('cognitive').textContent = explanation.complexity.cognitive;
+            document.getElementById('nesting').textContent = explanation.complexity.nesting;
+            
+            const complexityDiv = document.getElementById('complexity-details');
+            complexityDiv.className = 'complexity ' + explanation.complexity.overall;
+
+            // Patterns
+            if (explanation.patterns && explanation.patterns.length > 0) {
+                document.getElementById('patterns-section').style.display = 'block';
+                const patternsList = document.getElementById('patterns-list');
+                patternsList.innerHTML = explanation.patterns.map(p => `
+                    <div class="pattern ${p.category}">
+                        <h4>${p.name} <span class="confidence">(${(p.confidence * 100).toFixed(0)}% confidence)</span></h4>
+                        <p>${p.description}</p>
+                    </div>
+                `).join('');
+            }
+
+            // Warnings
+            if (explanation.warnings && explanation.warnings.length > 0) {
+                document.getElementById('warnings-section').style.display = 'block';
+                const warningsList = document.getElementById('warnings-list');
+                warningsList.innerHTML = explanation.warnings.map(w => `
+                    <div class="warning ${w.severity}">
+                        <strong>${w.type}:</strong> ${w.message}
+                        <em>Suggestion: ${w.suggestion}</em>
+                    </div>
+                `).join('');
+            }
+
+            // Rationale
+            if (explanation.rationale) {
+                document.getElementById('rationale-section').style.display = 'block';
+                document.getElementById('rationale-text').textContent = explanation.rationale;
+            }
+
+            // Alternatives
+            if (explanation.alternatives && explanation.alternatives.length > 0) {
+                document.getElementById('alternatives-section').style.display = 'block';
+                const alternativesList = document.getElementById('alternatives-list');
+                alternativesList.innerHTML = explanation.alternatives.map(alt => `
+                    <div class="alternative ${alt.recommended ? 'recommended' : ''}">
+                        <h4>${alt.description} ${alt.recommended ? '<span class="star">⭐ Recommended</span>' : ''}</h4>
+                        <div class="pros-cons">
+                            <strong>Pros:</strong> ${alt.pros.join(', ')}
+                        </div>
+                        <div class="pros-cons">
+                            <strong>Cons:</strong> ${alt.cons.join(', ')}
+                        </div>
+                        <div class="pros-cons">
+                            <strong>Complexity:</strong> ${alt.complexity.overall} (score: ${alt.complexity.score})
+                        </div>
+                    </div>
+                `).join('');
+            }
+
+            // Learning Path
+            if (explanation.learningPath && explanation.learningPath.length > 0) {
+                document.getElementById('learning-section').style.display = 'block';
+                const learningPath = document.getElementById('learning-path');
+                learningPath.innerHTML = explanation.learningPath.map(topic => `
+                    <li>${topic}</li>
+                `).join('');
+            }
+        }
+    </script>
+</body>
+</html>

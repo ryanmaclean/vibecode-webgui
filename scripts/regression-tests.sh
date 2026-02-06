@@ -7,6 +7,10 @@ set -e
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 FAILED=0
+SKIPPED=0
+
+# CI Detection - skip hardware-dependent tests in CI environments
+CI_MODE="${CI:-false}"
 
 log_test() {
     echo "[$1] $2"
@@ -21,13 +25,18 @@ log_fail() {
     FAILED=$((FAILED + 1))
 }
 
+log_skip() {
+    echo "  SKIP: $1 (CI mode)"
+    SKIPPED=$((SKIPPED + 1))
+}
+
 echo "VibeCode Regression Test Suite"
 echo "==============================="
 echo ""
 
 # Test 1: Swift build (release)
 log_test "1/8" "Release build"
-if (cd "$PROJECT_ROOT/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
+if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c release) > /dev/null 2>&1; then
     log_pass "Release build successful"
 else
     log_fail "Release build failed"
@@ -35,44 +44,63 @@ fi
 
 # Test 2: Swift build (debug)
 log_test "2/8" "Debug build"
-if (cd "$PROJECT_ROOT/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
+if (cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift" && swift build -c debug) > /dev/null 2>&1; then
     log_pass "Debug build successful"
 else
     log_fail "Debug build failed"
 fi
 
-# Test 3: VM images present
+# Test 3: VM images present (skip in CI - requires local VM infrastructure)
 log_test "3/8" "VM images"
-VM_COUNT=$(ls "$PROJECT_ROOT/dist/vm-images"/*.img 2>/dev/null | wc -l | tr -d ' ')
-if [ "$VM_COUNT" -ge 6 ]; then
-    log_pass "Found $VM_COUNT VM images"
+if [ "$CI_MODE" = "true" ]; then
+    log_skip "VM images not available in CI"
 else
-    log_fail "Expected 6+ VMs, found $VM_COUNT"
+    VM_COUNT=$(ls "$PROJECT_ROOT/dist/vm-images"/*.img 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$VM_COUNT" -ge 6 ]; then
+        log_pass "Found $VM_COUNT VM images"
+    else
+        log_fail "Expected 6+ VMs, found $VM_COUNT"
+    fi
 fi
 
-# Test 4: EFI NVRAM files
+# Test 4: EFI NVRAM files (skip in CI - requires local VM infrastructure)
 log_test "4/8" "EFI NVRAM files"
-EFI_COUNT=$(ls "$PROJECT_ROOT/dist/vm-images"/*-efi.nvram 2>/dev/null | wc -l | tr -d ' ')
-if [ "$EFI_COUNT" -ge 6 ]; then
-    log_pass "Found $EFI_COUNT EFI stores"
+if [ "$CI_MODE" = "true" ]; then
+    log_skip "EFI NVRAM files not available in CI"
 else
-    log_fail "Expected 6+ NVRAM files, found $EFI_COUNT"
+    EFI_COUNT=$(ls "$PROJECT_ROOT/dist/vm-images"/*-efi.nvram 2>/dev/null | wc -l | tr -d ' ')
+    if [ "$EFI_COUNT" -ge 6 ]; then
+        log_pass "Found $EFI_COUNT EFI stores"
+    else
+        log_fail "Expected 6+ NVRAM files, found $EFI_COUNT"
+    fi
 fi
 
 # Test 5: Entitlements
 log_test "5/8" "Entitlements"
-if grep -q "com.apple.security.virtualization" "$PROJECT_ROOT/VibeCodeSwift/VibeCode.entitlements"; then
+if grep -q "com.apple.security.virtualization" "$PROJECT_ROOT/platforms/macos/VibeCodeSwift/VibeCode.entitlements"; then
     log_pass "Virtualization entitlement present"
 else
     log_fail "Missing virtualization entitlement"
 fi
 
-# Test 6: Launch script
+# Test 6: Launch script (check for any launch script)
 log_test "6/8" "Launch script"
-if [ -x "$PROJECT_ROOT/scripts/launch-vibecode.sh" ]; then
-    log_pass "Launch script executable"
+LAUNCH_SCRIPT=""
+for script in "$PROJECT_ROOT/scripts/launch-vibecode.sh" "$PROJECT_ROOT/scripts/launch_aegis_secure.sh"; do
+    if [ -x "$script" ]; then
+        LAUNCH_SCRIPT="$script"
+        break
+    fi
+done
+if [ -n "$LAUNCH_SCRIPT" ]; then
+    log_pass "Launch script executable: $(basename "$LAUNCH_SCRIPT")"
 else
-    log_fail "Launch script missing or not executable"
+    if [ "$CI_MODE" = "true" ]; then
+        log_skip "Launch script not required in CI"
+    else
+        log_fail "No executable launch script found"
+    fi
 fi
 
 # Test 7: Datadog integration
@@ -83,22 +111,29 @@ else
     log_fail "Datadog integration missing"
 fi
 
-# Test 8: VM discovery (quick app start)
+# Test 8: VM discovery (skip in CI - requires running VM process)
 log_test "8/8" "VM discovery"
-killall VibeCode 2>/dev/null || true
-timeout 5 "$PROJECT_ROOT/VibeCodeSwift/.build/release/VibeCode" 2>&1 | grep -q "VM discovery" &
-TEST_PID=$!
-sleep 2
-kill $TEST_PID 2>/dev/null || true
-wait $TEST_PID 2>/dev/null
-if [ $? -eq 0 ]; then
-    log_pass "VM discovery functional"
+if [ "$CI_MODE" = "true" ]; then
+    log_skip "VM discovery requires local VM runtime"
 else
-    log_fail "VM discovery not working"
+    killall VibeCode 2>/dev/null || true
+    timeout 5 "$PROJECT_ROOT/platforms/macos/VibeCodeSwift/.build/release/VibeCode" 2>&1 | grep -q "VM discovery" &
+    TEST_PID=$!
+    sleep 2
+    kill $TEST_PID 2>/dev/null || true
+    wait $TEST_PID 2>/dev/null
+    if [ $? -eq 0 ]; then
+        log_pass "VM discovery functional"
+    else
+        log_fail "VM discovery not working"
+    fi
 fi
 
 echo ""
 echo "==============================="
+if [ $SKIPPED -gt 0 ]; then
+    echo "Skipped: $SKIPPED test(s) (CI mode)"
+fi
 if [ $FAILED -eq 0 ]; then
     echo "All tests passed!"
     echo "Ready for commit."

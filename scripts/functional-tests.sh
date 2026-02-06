@@ -9,6 +9,14 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 FAILED=0
 TEST_VM_TIMEOUT=60
 
+# CI Detection - functional tests require local VM infrastructure
+CI_MODE="${CI:-false}"
+if [ "$CI_MODE" = "true" ]; then
+    echo "CI mode detected - skipping functional tests (requires local VM infrastructure)"
+    echo "These tests should be run locally before committing."
+    exit 0
+fi
+
 log_test() {
     echo "[$1] $2"
 }
@@ -41,15 +49,15 @@ echo "Testing: VM launch + service availability"
 echo ""
 
 # Ensure the release binary is built and signed with entitlements
-cd "$PROJECT_ROOT/VibeCodeSwift"
+cd "$PROJECT_ROOT/platforms/macos/VibeCodeSwift"
 echo "Preparing signed release binary..."
 swift build -c release > /dev/null 2>&1
-codesign --force --sign - --entitlements "$PROJECT_ROOT/VibeCodeSwift/VibeCode.entitlements" .build/release/VibeCode > /dev/null 2>&1
+codesign --force --sign - --entitlements "$PROJECT_ROOT/platforms/macos/VibeCodeSwift/VibeCode.entitlements" .build/release/VibeCode > /dev/null 2>&1
 cd "$PROJECT_ROOT"
 
 # Test 1: Launch VibeCode app
 log_test "1/7" "VibeCode app launch"
-"$PROJECT_ROOT/VibeCodeSwift/.build/release/VibeCode" > /tmp/vibecode-test.log 2>&1 &
+"$PROJECT_ROOT/platforms/macos/VibeCodeSwift/.build/release/VibeCode" > /tmp/vibecode-test.log 2>&1 &
 APP_PID=$!
 sleep 3
 

@@ -1,241 +1,241 @@
 // src/ragService.ts
-import * as vscode from 'vscode';
 import { Logger } from './logger';
-import { TracingManager } from './tracing';
 import { PgvectorClient } from './pgvectorClient';
 import { MLXEmbeddingService } from './mlxEmbeddingService';
-import { ProviderFactory } from './providers/providerFactory';
-import { SafeguardManager } from './safeguards';
-
-export interface RagResponse {
-    answer: string;
-    sources: Array<{ filepath: string; similarity: number }>;
-    metadata: {
-        retrieved_documents: number;
-        best_similarity: number;
-        answer_length: number;
-        model_used: string;
-    };
-}
+import { OpenAI } from 'openai';
+import { getTracingManager } from './tracing';
+import * as vscode from 'vscode';
 
 export class RagService {
     private logger: Logger;
-    private tracing: TracingManager;
     private embeddingService: MLXEmbeddingService;
-    private providerFactory: ProviderFactory;
-    private safeguards: SafeguardManager;
+    private openai: OpenAI | null = null;
 
-    constructor(
-        logger: Logger, 
-        tracing: TracingManager, 
-        embeddingService: MLXEmbeddingService,
-        context: vscode.ExtensionContext
-    ) {
+    constructor(logger: Logger) {
         this.logger = logger;
-        this.tracing = tracing;
-        this.embeddingService = embeddingService;
-        this.providerFactory = new ProviderFactory(context, logger);
-        this.safeguards = new SafeguardManager(logger);
+        this.embeddingService = new MLXEmbeddingService(logger);
     }
 
     public async initialize(context: vscode.ExtensionContext): Promise<void> {
-        // No-op for now, initialization happens in constructor
+        await this.embeddingService.initialize(context);
+        
+        // Initialize OpenAI client for chat completion
+        const apiKey = await context.secrets.get('openaiApiKey');
+        if (apiKey) {
+            this.openai = new OpenAI({ apiKey });
+        }
     }
 
     public async processQuery(
         workspaceId: string,
         query: string,
-        context: vscode.ExtensionContext
-    ): Promise<RagResponse> {
-        return this.tracing.trace('rag.processQuery', async (span) => {
+        dbConfig: any,
+        context?: vscode.ExtensionContext
+    ): Promise<{ answer: string; sources: string[]; metadata: any }> {
+        const tracing = getTracingManager(this.logger);
+
+        return tracing.trace('rag.process_query', async (span) => {
             span.setTag('workspace.id', workspaceId);
             span.setTag('query.length', query.length);
-            span.setTag('query.content', query.substring(0, 100));
-
-            // Validate query
-            const validation = this.safeguards.validateQuery(query);
-            if (!validation.valid) {
-                throw new Error(validation.error);
-            }
-
-            // Rate limiting
-            if (!this.safeguards.checkRateLimit(workspaceId)) {
-                throw new Error('Rate limit exceeded. Please wait a moment before trying again.');
-            }
+            span.setTag('query.content', query.substring(0, 100)); // Sample first 100 chars
 
             try {
                 // Step 1: Generate query embedding
-                this.logger.debug('Generating query embedding');
-                const queryEmbedding = await this.embeddingService.generateEmbedding(query);
-                span.setTag('step.1', 'embedding_generated');
-
-                // Step 2: Retrieve relevant documents
-                this.logger.debug('Retrieving relevant documents');
-                const documents = await this.retrieveDocuments(workspaceId, queryEmbedding);
-                span.setTag('step.2', 'documents_retrieved');
-                span.setTag('documents.count', documents.length);
-
-                if (documents.length === 0) {
-                    return {
-                        answer: "I couldn't find any relevant information in your workspace to answer this question. Try indexing your workspace first.",
-                        sources: [],
-                        metadata: {
-                            retrieved_documents: 0,
-                            best_similarity: 0,
-                            answer_length: 0,
-                            model_used: 'none'
-                        }
-                    };
+                if (!this.embeddingService) {
+                    if (!context) {
+                        throw new Error('Extension context required for initialization');
+                    }
+                    await this.initialize(context);
                 }
 
+                const queryEmbedding = await this.generateQueryEmbedding(query, span);
+                
+                // Step 2: Retrieve relevant documents
+                const documents = await this.retrieveDocuments(workspaceId, queryEmbedding, dbConfig, span);
+                
                 // Step 3: Generate response
-                this.logger.debug('Generating response');
-                const response = await this.generateResponse(query, documents);
-                span.setTag('step.3', 'response_generated');
-                span.setTag('response.length', response.answer.length);
-
+                const response = await this.generateResponse(query, documents, span);
+                
+                // Step 4: Log metrics
+                this.logMetrics(query, documents, response, span);
+                
                 return response;
 
             } catch (error: any) {
                 span.setTag('error', true);
                 span.setTag('error.msg', error.message);
+                span.setTag('error.stack', error.stack);
                 this.logger.error('RAG query processing failed', error);
                 throw error;
             }
         });
     }
 
+    private async generateQueryEmbedding(query: string, parentSpan: any): Promise<number[]> {
+        const tracing = getTracingManager(this.logger);
+        return tracing.trace('rag.generate_query_embedding', async (span) => {
+            span.setTag('step', 'embedding_generation');
+            
+            const embedding = await this.embeddingService.generateEmbedding(query);
+            span.setTag('embedding.dimension', embedding.length);
+            
+            return embedding;
+        }, {}, parentSpan);
+    }
+
     private async retrieveDocuments(
-        workspaceId: string,
-        queryEmbedding: number[]
-    ): Promise<Array<{ filepath: string; content: string; similarity: number }>> {
-        return this.tracing.trace('rag.retrieveDocuments', async (span) => {
+        workspaceId: string, 
+        queryEmbedding: number[], 
+        dbConfig: any,
+        parentSpan: any
+    ): Promise<any[]> {
+        const tracing = getTracingManager(this.logger);
+        return tracing.trace('rag.retrieve_documents', async (span) => {
+            span.setTag('step', 'document_retrieval');
+            span.setTag('workspace.id', workspaceId);
+            span.setTag('query_embedding.dimension', queryEmbedding.length);
+
             const config = vscode.workspace.getConfiguration('workspaceRag');
-            const limit = config.get('retrievalLimit', 5);
+            const retrievalLimit = config.get<number>('retrievalLimit', 5);
 
-            const pgClient = new PgvectorClient({
-                host: config.get('pgHost'),
-                port: config.get('pgPort'),
-                user: config.get('pgUser'),
-                password: config.get('pgPassword'),
-                database: config.get('pgDatabase'),
-            }, this.logger, this.tracing);
-
+            const dbClient = new PgvectorClient(dbConfig, this.logger);
+            
             try {
-                await pgClient.connect();
-                const documents = await pgClient.search(workspaceId, queryEmbedding, limit);
-
+                await dbClient.connect();
+                const documents = await dbClient.search(workspaceId, queryEmbedding, retrievalLimit);
+                
                 span.setTag('retrieval.document_count', documents.length);
                 if (documents.length > 0) {
                     span.setTag('retrieval.best_similarity', documents[0].similarity);
                     span.setTag('retrieval.worst_similarity', documents[documents.length - 1].similarity);
                 }
-
+                
+                this.logger.debug('Documents retrieved', {
+                    count: documents.length,
+                    bestSimilarity: documents[0]?.similarity
+                });
+                
                 return documents;
+                
             } finally {
-                await pgClient.close();
+                await dbClient.close();
             }
-        });
+        }, {}, parentSpan);
     }
 
     private async generateResponse(
-        query: string,
-        documents: Array<{ filepath: string; content: string; similarity: number }>
-    ): Promise<RagResponse> {
-        return this.tracing.trace('rag.generateResponse', async (span) => {
+        query: string, 
+        documents: any[], 
+        parentSpan: any
+    ): Promise<{ answer: string; sources: string[]; metadata: any }> {
+        const tracing = getTracingManager(this.logger);
+        return tracing.trace('rag.generate_response', async (span) => {
+            span.setTag('step', 'response_generation');
             span.setTag('input_documents.count', documents.length);
 
-            // Build context from retrieved documents
+            if (documents.length === 0) {
+                return {
+                    answer: "I couldn't find any relevant information in your workspace to answer this question.",
+                    sources: [],
+                    metadata: { retrieved_documents: 0 }
+                };
+            }
+
+            // Build context from documents
             const context = this.buildContext(documents);
             span.setTag('context.length', context.length);
 
-            // Generate answer
-            let answer: string;
-            let modelUsed: string;
-
-            try {
-                // Use configured LLM provider
-                const provider = await this.providerFactory.createProvider();
-                answer = await this.generateWithProvider(provider, query, context, span);
-                modelUsed = `${provider.providerName}:${provider.defaultModel}`;
-                span.setTag('llm.provider', provider.providerName);
-            } catch (error: any) {
-                this.logger.warn('LLM provider failed, falling back to simple extraction', error);
-                // Fallback to simple extraction
-                answer = this.generateSimpleAnswer(query, documents);
-                modelUsed = 'simple-extraction';
-            }
-
+            const start = Date.now();
+            
+            // Generate answer using LLM
+            const answer = await this.callLanguageModel(query, context, span);
+            
+            span.setTag('generation.duration_ms', Date.now() - start);
             span.setTag('answer.length', answer.length);
-            span.setTag('model.used', modelUsed);
 
-            return {
-                answer,
-                sources: documents.map(doc => ({
-                    filepath: doc.filepath,
-                    similarity: doc.similarity
-                })),
-                metadata: {
-                    retrieved_documents: documents.length,
-                    best_similarity: documents[0]?.similarity || 0,
-                    answer_length: answer.length,
-                    model_used: modelUsed
-                }
+            const sources = documents.map(doc => doc.filepath);
+            const metadata = {
+                retrieved_documents: documents.length,
+                best_similarity: documents[0]?.similarity,
+                answer_length: answer.length
             };
-        });
+
+            return { answer, sources, metadata };
+        }, {}, parentSpan);
     }
 
-    private async generateWithProvider(provider: any, query: string, context: string, span: any): Promise<string> {
-        return this.tracing.trace('rag.llm_inference', async (llmSpan) => {
-            llmSpan.setTag('llm.provider', provider.providerName);
-            llmSpan.setTag('llm.model', provider.defaultModel);
+    private async callLanguageModel(query: string, context: string, span: any): Promise<string> {
+        const tracing = getTracingManager(this.logger);
+        return tracing.trace('rag.llm_inference', async (llmSpan) => {
+            llmSpan.setTag('llm.operation', 'completion');
+            llmSpan.setTag('query.length', query.length);
+            llmSpan.setTag('context.length', context.length);
 
-            const messages = [
-                {
-                    role: 'system' as const,
-                    content: 'You are an expert developer assistant analyzing a codebase. Answer questions based on the provided context. Be specific and reference file names when relevant. If the context does not contain enough information, say so.'
-                },
-                {
-                    role: 'user' as const,
-                    content: `Context:\n${context}\n\nQuestion: ${query}\n\nAnswer:`
-                }
-            ];
+            if (!this.openai) {
+                throw new Error('OpenAI client not initialized. Please set your API key.');
+            }
+
+            const config = vscode.workspace.getConfiguration('workspaceRag');
+            const chatModel = config.get<string>('chatModel', 'gpt-4o-mini');
+
+            const prompt = `You are an expert developer familiar with the codebase. 
+Answer the question based only on the provided context. 
+If the context doesn't contain the answer, say "I don't know."
+Be concise and specific. Include relevant code snippets if helpful.
+
+Context:
+${context}
+
+Question: ${query}`;
 
             try {
-                const response = await provider.generateCompletion(messages, {
-                    temperature: 0.2,
-                    maxTokens: 500
+                const completionResponse = await this.openai.chat.completions.create({
+                    model: chatModel,
+                    messages: [
+                        { 
+                            role: 'system', 
+                            content: 'You are a helpful assistant that answers questions about codebases.' 
+                        },
+                        { role: 'user', content: prompt }
+                    ],
+                    temperature: 0.2
                 });
 
-                llmSpan.setTag('tokens.prompt', response.tokens?.prompt || 0);
-                llmSpan.setTag('tokens.completion', response.tokens?.completion || 0);
-                llmSpan.setTag('tokens.total', response.tokens?.total || 0);
+                llmSpan.setTag('llm.model', chatModel);
+                llmSpan.setTag('llm.tokens', completionResponse.usage?.total_tokens || 0);
 
-                return response.content || 'No response generated.';
+                return completionResponse.choices[0].message.content || "I don't have enough information to answer that question.";
+
             } catch (error: any) {
                 llmSpan.setTag('error', true);
                 llmSpan.setTag('error.msg', error.message);
-                this.logger.error(`${provider.providerName} API call failed`, error);
                 throw error;
             }
+        }, {}, span);
+    }
+
+    private buildContext(documents: any[]): string {
+        return documents.map(doc => 
+            `File: ${doc.filepath}\nSimilarity: ${doc.similarity.toFixed(3)}\nContent: ${doc.content}\n---`
+        ).join('\n');
+    }
+
+    private logMetrics(query: string, documents: any[], response: any, span: any): void {
+        const metrics = {
+            query_length: query.length,
+            documents_retrieved: documents.length,
+            best_similarity: documents[0]?.similarity || 0,
+            answer_length: response.answer.length,
+            sources_count: response.sources.length
+        };
+
+        // Log to span
+        Object.entries(metrics).forEach(([key, value]) => {
+            span.setTag(`metrics.${key}`, value);
         });
-    }
 
-    private generateSimpleAnswer(
-        query: string,
-        documents: Array<{ filepath: string; content: string; similarity: number }>
-    ): string {
-        // Simple fallback: return the most relevant document snippet
-        const topDoc = documents[0];
-        const fileName = topDoc.filepath.split('/').pop() || topDoc.filepath;
-        
-        return `Based on your query "${query}", I found relevant information in ${fileName}:\n\n${topDoc.content.substring(0, 300)}...\n\n(Note: Set an OpenAI API key for more detailed answers)`;
-    }
-
-    private buildContext(documents: Array<{ filepath: string; content: string; similarity: number }>): string {
-        return documents.map((doc, index) => 
-            `[Document ${index + 1}] File: ${doc.filepath} (Similarity: ${doc.similarity.toFixed(3)})\n${doc.content}\n---`
-        ).join('\n\n');
+        // Log to application logs
+        this.logger.info('RAG query metrics', metrics);
     }
 }
 

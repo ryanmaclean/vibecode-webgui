@@ -21,9 +21,37 @@ echo "  Terminal ls Command Fix"
 echo "========================================="
 echo ""
 
+# Auto-detect initramfs location or use environment variable
+INITRAMFS="${INITRAMFS_PATH:-}"
+if [[ -z "$INITRAMFS" ]]; then
+    # Try common locations
+    for path in \
+        "./unified-services-fast.cpio.gz" \
+        "../azure/unified-services-fast.cpio.gz" \
+        "/Users/studio/Documents/vibecode-webgui/azure/unified-services-fast.cpio.gz" \
+        "$(dirname "$0")/unified-services-fast.cpio.gz"; do
+        if [[ -f "$path" ]]; then
+            INITRAMFS="$path"
+            break
+        fi
+    done
+fi
+
+if [[ -z "$INITRAMFS" || ! -f "$INITRAMFS" ]]; then
+    echo "ERROR: initramfs not found. Set INITRAMFS_PATH or place unified-services-fast.cpio.gz in script directory"
+    exit 1
+fi
+TEMP_DIR="/tmp/validate-790-$$"
+
+echo "Step 1: Validate musl-compatible Node.js binary..."
+mkdir -p "$TEMP_DIR"
+cd "$TEMP_DIR"
+gunzip -c "$INITRAMFS" | cpio -idm 2>/dev/null
+
 # Script location for finding source files
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
+
 
 # Default initramfs locations to check
 DEFAULT_INITRAMFS_PATHS=(

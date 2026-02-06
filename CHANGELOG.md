@@ -25,6 +25,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Updated build-unified-services-with-datadog.sh to use Alpine Node.js v25.3.0-r0 (musl-compatible)
+  - Script location: `platforms/azure/azure/build-unified-services-with-datadog.sh`
 - Enhanced Node.js replacement process with verification step
 - Improved error handling for Node.js binary replacement
 

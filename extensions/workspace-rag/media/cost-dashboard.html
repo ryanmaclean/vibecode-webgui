@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Token Usage & Costs</title>
+    <style>
+        body {
+            font-family: var(--vscode-font-family);
+            padding: 20px;
+            color: var(--vscode-foreground);
+            background: var(--vscode-editor-background);
+        }
+
+        h2 {
+            color: var(--vscode-textLink-foreground);
+            border-bottom: 1px solid var(--vscode-panel-border);
+            padding-bottom: 10px;
+        }
+
+        h3 {
+            color: var(--vscode-textLink-foreground);
+            margin-top: 25px;
+        }
+
+        .summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .card {
+            padding: 15px;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+            background: var(--vscode-editor-inactiveSelectionBackground);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            font-size: 1em;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .cost {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--vscode-textLink-foreground);
+            margin: 5px 0;
+        }
+
+        .tokens {
+            font-size: 0.9em;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .budget {
+            margin: 15px 0;
+            padding: 12px;
+            border: 1px solid var(--vscode-panel-border);
+            border-radius: 4px;
+        }
+
+        .budget-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+
+        .budget-label {
+            font-weight: bold;
+            text-transform: capitalize;
+        }
+
+        .budget-amount {
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .budget-bar {
+            height: 20px;
+            background: var(--vscode-progressBar-background);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .budget-fill {
+            height: 100%;
+            background: var(--vscode-testing-iconPassed);
+            transition: width 0.3s ease;
+        }
+
+        .budget-fill.warning {
+            background: var(--vscode-editorWarning-foreground);
+        }
+
+        .budget-fill.danger {
+            background: var(--vscode-editorError-foreground);
+        }
+
+        .budget-percentage {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 0.85em;
+            font-weight: bold;
+            color: var(--vscode-editor-background);
+            text-shadow: 0 0 2px rgba(0, 0, 0, 0.5);
+        }
+
+        .suggestion {
+            margin: 12px 0;
+            padding: 12px;
+            border-left: 3px solid var(--vscode-textLink-foreground);
+            background: var(--vscode-editor-inactiveSelectionBackground);
+        }
+
+        .suggestion.high {
+            border-left-color: var(--vscode-editorError-foreground);
+        }
+
+        .suggestion.medium {
+            border-left-color: var(--vscode-editorWarning-foreground);
+        }
+
+        .suggestion strong {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .suggestion .details {
+            color: var(--vscode-descriptionForeground);
+            margin: 5px 0;
+        }
+
+        .suggestion .savings {
+            color: var(--vscode-testing-iconPassed);
+            font-weight: bold;
+            margin-top: 5px;
+        }
+
+        .empty-state {
+            padding: 20px;
+            text-align: center;
+            color: var(--vscode-descriptionForeground);
+            font-style: italic;
+        }
+
+        .no-budgets {
+            padding: 15px;
+            background: var(--vscode-editor-inactiveSelectionBackground);
+            border-radius: 4px;
+            color: var(--vscode-descriptionForeground);
+        }
+
+        .provider-breakdown {
+            margin: 15px 0;
+        }
+
+        .provider-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--vscode-panel-border);
+        }
+
+        .provider-name {
+            font-weight: bold;
+        }
+
+        .provider-cost {
+            color: var(--vscode-textLink-foreground);
+        }
+    </style>
+</head>
+
+<body>
+    <h2>Token Usage & Cost Dashboard</h2>
+
+    <div class="summary">
+        <div class="card">
+            <h3>Today</h3>
+            <div class="cost" id="daily-cost">$0.00</div>
+            <div class="tokens" id="daily-tokens">0 tokens</div>
+        </div>
+        <div class="card">
+            <h3>This Week</h3>
+            <div class="cost" id="weekly-cost">$0.00</div>
+            <div class="tokens" id="weekly-tokens">0 tokens</div>
+        </div>
+        <div class="card">
+            <h3>This Month</h3>
+            <div class="cost" id="monthly-cost">$0.00</div>
+            <div class="tokens" id="monthly-tokens">0 tokens</div>
+        </div>
+    </div>
+
+    <div id="budgets-section">
+        <h3>Budgets</h3>
+        <div id="budgets-list"></div>
+    </div>
+
+    <div id="providers-section" style="display: none;">
+        <h3>Usage by Provider</h3>
+        <div id="providers-list" class="provider-breakdown"></div>
+    </div>
+
+    <div id="suggestions-section" style="display: none;">
+        <h3>Optimization Suggestions</h3>
+        <div id="suggestions-list"></div>
+    </div>
+
+    <script>
+        const vscode = acquireVsCodeApi();
+
+        window.addEventListener('message', event => {
+            const message = event.data;
+            if (message.command === 'showDashboard') {
+                displayDashboard(message.data);
+            }
+        });
+
+        function displayDashboard(data) {
+            // Summary cards
+            document.getElementById('daily-cost').textContent = '$' + data.daily.totalCost.toFixed(2);
+            document.getElementById('daily-tokens').textContent = data.daily.totalTokens.toLocaleString() + ' tokens';
+
+            document.getElementById('weekly-cost').textContent = '$' + data.weekly.totalCost.toFixed(2);
+            document.getElementById('weekly-tokens').textContent = data.weekly.totalTokens.toLocaleString() + ' tokens';
+
+            document.getElementById('monthly-cost').textContent = '$' + data.monthly.totalCost.toFixed(2);
+            document.getElementById('monthly-tokens').textContent = data.monthly.totalTokens.toLocaleString() + ' tokens';
+
+            // Budgets
+            const budgetsList = document.getElementById('budgets-list');
+            if (data.budgets && data.budgets.length > 0) {
+                budgetsList.innerHTML = data.budgets.map(budget => {
+                    const fillClass = budget.percentUsed > 90 ? 'danger' : budget.percentUsed > 80 ? 'warning' : '';
+                    return `
+                        <div class="budget">
+                            <div class="budget-header">
+                                <span class="budget-label">${budget.period}</span>
+                                <span class="budget-amount">$${budget.current.toFixed(2)} / $${budget.limit.toFixed(2)}</span>
+                            </div>
+                            <div class="budget-bar">
+                                <div class="budget-fill ${fillClass}" style="width: ${Math.min(100, budget.percentUsed)}%"></div>
+                                <div class="budget-percentage">${budget.percentUsed.toFixed(1)}%</div>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } else {
+                budgetsList.innerHTML = '<div class="no-budgets">No budgets set. Use "RAG: Set Budget" command to create one.</div>';
+            }
+
+            // Provider breakdown
+            if (data.weekly.byProvider && data.weekly.byProvider.size > 0) {
+                document.getElementById('providers-section').style.display = 'block';
+                const providersList = document.getElementById('providers-list');
+                const providers = Array.from(data.weekly.byProvider.values());
+                providersList.innerHTML = providers.map(provider => `
+                    <div class="provider-item">
+                        <span class="provider-name">${provider.provider}</span>
+                        <span class="provider-cost">$${provider.cost.toFixed(2)} (${provider.requestCount} requests)</span>
+                    </div>
+                `).join('');
+            }
+
+            // Suggestions
+            if (data.suggestions && data.suggestions.length > 0) {
+                document.getElementById('suggestions-section').style.display = 'block';
+                const suggestionsList = document.getElementById('suggestions-list');
+                suggestionsList.innerHTML = data.suggestions.map(s => `
+                    <div class="suggestion ${s.severity}">
+                        <strong>${s.message}</strong>
+                        <div class="details">${s.details}</div>
+                        ${s.potentialSavings > 0 ? `<div class="savings">Potential savings: $${s.potentialSavings.toFixed(2)}</div>` : ''}
+                    </div>
+                `).join('');
+            }
+        }
+
+        // Request initial data
+        vscode.postMessage({ command: 'ready' });
+    </script>
+</body>
+
+</html>
