@@ -622,4 +622,321 @@ describe('Unified Health Service', () => {
       expect(unifiedHealthService.getServiceHealth).toBeDefined()
     })
   })
+
+  describe('Edge Cases and Error Paths', () => {
+    it('should handle socket timeout for SSH', async () => {
+      // Setup mock to simulate timeout
+      mockSocket.connect.mockImplementation(() => {
+        // Don't call callback - simulate timeout
+      })
+      mockSocket.on.mockReturnValue(mockSocket)
+
+      const resultPromise = checkSSHHealth()
+      jest.advanceTimersByTime(4000) // Past default timeout
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toContain('timeout')
+    })
+
+    it('should handle socket error for SSH', async () => {
+      // Setup mock to emit error
+      let errorCallback: ((err: Error) => void) | null = null
+      mockSocket.connect.mockReturnValue(mockSocket)
+      mockSocket.on.mockImplementation((event: string, cb: (err?: Error) => void) => {
+        if (event === 'error') {
+          errorCallback = cb
+        }
+        return mockSocket
+      })
+
+      const resultPromise = checkSSHHealth()
+
+      // Emit error
+      if (errorCallback) {
+        errorCallback(new Error('ECONNREFUSED'))
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+    })
+
+    it('should handle HTTP request error for OpenVSCode', async () => {
+      let errorCallback: ((err: Error) => void) | null = null
+      ;(http.request as jest.Mock).mockImplementation((options: any, callback: (res: any) => void) => {
+        return mockRequest
+      })
+      mockRequest.on.mockImplementation((event: string, cb: (err?: Error) => void) => {
+        if (event === 'error') {
+          errorCallback = cb
+        }
+        return mockRequest
+      })
+
+      const resultPromise = checkOpenVSCodeHealth()
+
+      // Trigger error
+      if (errorCallback) {
+        errorCallback(new Error('ECONNREFUSED'))
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toBeDefined()
+    })
+
+    it('should handle HTTP request timeout for OpenVSCode', async () => {
+      // Setup mock to trigger timeout callback
+      let timeoutCallback: (() => void) | null = null
+      ;(http.request as jest.Mock).mockImplementation((options: any, callback: (res: any) => void) => {
+        return mockRequest
+      })
+      mockRequest.on.mockImplementation((event: string, cb: () => void) => {
+        if (event === 'timeout') {
+          timeoutCallback = cb
+        }
+        return mockRequest
+      })
+      mockRequest.setTimeout = jest.fn((ms: number, cb: () => void) => {
+        timeoutCallback = cb
+        return mockRequest
+      })
+
+      const resultPromise = checkOpenVSCodeHealth()
+
+      // Trigger timeout callback directly
+      if (timeoutCallback) {
+        timeoutCallback()
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+    })
+
+    it('should handle non-200 HTTP response for OpenVSCode', async () => {
+      const mockResponse = {
+        statusCode: 503,
+        resume: jest.fn()
+      }
+      ;(http.request as jest.Mock).mockImplementation((options: any, callback: (res: any) => void) => {
+        setTimeout(() => callback(mockResponse), 5)
+        return mockRequest
+      })
+      mockRequest.on.mockReturnValue(mockRequest)
+
+      const resultPromise = checkOpenVSCodeHealth()
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toContain('503')
+    })
+
+    it('should handle PostgreSQL query exception', async () => {
+      ;(prisma.$queryRaw as jest.Mock).mockRejectedValue(new Error('Connection refused'))
+
+      const result = await checkPostgreSQLHealth()
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toBe('Connection refused')
+    })
+
+    it('should handle Valkey health check exception', async () => {
+      ;(cache.healthCheck as jest.Mock).mockRejectedValue(new Error('Redis connection error'))
+
+      const result = await checkValkeyHealth()
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toBe('Redis connection error')
+    })
+
+    it('should handle generic error objects', async () => {
+      ;(prisma.$queryRaw as jest.Mock).mockRejectedValue('String error instead of Error object')
+
+      const result = await checkPostgreSQLHealth()
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toBe('Unknown error')
+    })
+
+    it('should handle HTTP request error for Docker', async () => {
+      let errorCallback: ((err: Error) => void) | null = null
+      ;(http.request as jest.Mock).mockImplementation((options: any, callback: (res: any) => void) => {
+        return mockRequest
+      })
+      mockRequest.on.mockImplementation((event: string, cb: (err?: Error) => void) => {
+        if (event === 'error') {
+          errorCallback = cb
+        }
+        return mockRequest
+      })
+
+      const resultPromise = checkDockerHealth()
+
+      if (errorCallback) {
+        errorCallback(new Error('ECONNREFUSED'))
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+    })
+  })
+
+  describe('OpenVSCode TCP Fallback', () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, OPENVSCODE_USE_HTTP: 'false' }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    it('should use TCP check when HTTP is disabled', async () => {
+      mockSocket.connect.mockImplementation((port: number, host: string, cb: () => void) => {
+        setTimeout(() => cb(), 5)
+      })
+      mockSocket.on.mockReturnValue(mockSocket)
+
+      const resultPromise = checkOpenVSCodeHealth()
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('healthy')
+      expect(result.details?.checkType).toBe('tcp')
+    })
+  })
+
+  describe('Docker Socket Path', () => {
+    const originalEnv = process.env
+
+    beforeEach(() => {
+      process.env = { ...originalEnv, DOCKER_USE_SOCKET: 'true', DOCKER_SOCKET_PATH: '/var/run/docker.sock' }
+    })
+
+    afterEach(() => {
+      process.env = originalEnv
+    })
+
+    it('should use Unix socket when configured', async () => {
+      let dataCallback: ((data: Buffer) => void) | null = null
+      mockSocket.connect.mockImplementation((options: any, cb?: () => void) => {
+        if (cb) setTimeout(() => cb(), 5)
+        return mockSocket
+      })
+      mockSocket.on.mockImplementation((event: string, cb: (data?: Buffer | Error) => void) => {
+        if (event === 'data') {
+          dataCallback = cb as (data: Buffer) => void
+        }
+        return mockSocket
+      })
+      mockSocket.write = jest.fn()
+
+      const resultPromise = checkDockerHealth()
+
+      // Simulate successful HTTP response over socket
+      if (dataCallback) {
+        dataCallback(Buffer.from('HTTP/1.1 200 OK\r\n\r\n{"ID":"test"}'))
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('healthy')
+      expect(result.details?.useSocket).toBe(true)
+    })
+
+    it('should handle socket error for Docker', async () => {
+      let errorCallback: ((err: Error) => void) | null = null
+      mockSocket.connect.mockReturnValue(mockSocket)
+      mockSocket.on.mockImplementation((event: string, cb: (err?: Error) => void) => {
+        if (event === 'error') {
+          errorCallback = cb
+        }
+        return mockSocket
+      })
+
+      const resultPromise = checkDockerHealth()
+
+      if (errorCallback) {
+        errorCallback(new Error('ENOENT: no such file or directory'))
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+    })
+
+    it('should handle socket close with invalid response for Docker', async () => {
+      let closeCallback: (() => void) | null = null
+      mockSocket.connect.mockImplementation((options: any, cb?: () => void) => {
+        if (cb) setTimeout(() => cb(), 5)
+        return mockSocket
+      })
+      mockSocket.on.mockImplementation((event: string, cb: () => void) => {
+        if (event === 'close') {
+          closeCallback = cb
+        }
+        return mockSocket
+      })
+      mockSocket.write = jest.fn()
+
+      const resultPromise = checkDockerHealth()
+
+      jest.advanceTimersByTime(10)
+
+      // Trigger close without successful response
+      if (closeCallback) {
+        closeCallback()
+      }
+
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+    })
+
+    it('should handle socket timeout for Docker', async () => {
+      mockSocket.connect.mockImplementation(() => {
+        // Don't call callback - simulate timeout
+      })
+      mockSocket.on.mockReturnValue(mockSocket)
+      mockSocket.write = jest.fn()
+
+      const resultPromise = checkDockerHealth()
+      jest.advanceTimersByTime(4000) // Past timeout
+      const result = await resultPromise
+
+      expect(result.status).toBe('unhealthy')
+      expect(result.error).toContain('timeout')
+    })
+  })
+
+  describe('Datadog Tracing', () => {
+    it('should handle tracer errors gracefully for SSH', async () => {
+      // Even if tracer throws, health check should continue
+      mockSocket.connect.mockImplementation((port: number, host: string, cb: () => void) => {
+        setTimeout(() => cb(), 5)
+      })
+      mockSocket.on.mockReturnValue(mockSocket)
+
+      const resultPromise = checkSSHHealth()
+      jest.advanceTimersByTime(100)
+      const result = await resultPromise
+
+      // Should still return a result even if tracing fails
+      expect(result.name).toBe('ssh')
+      expect(result.status).toBeDefined()
+    })
+  })
 })

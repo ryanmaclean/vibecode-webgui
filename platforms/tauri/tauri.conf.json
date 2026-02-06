@@ -48,10 +48,43 @@
     },
     "linux": {
       "deb": {
-        "depends": []
+        "depends": [
+          "libwebkit2gtk-4.1-0",
+          "libayatana-appindicator3-1",
+          "librsvg2-2",
+          "libssl3",
+          "libdbus-1-3",
+          "libxdo3",
+          "qemu-system-x86",
+          "qemu-utils"
+        ],
+        "files": {
+          "/usr/share/applications/vibecode.desktop": "resources/linux/vibecode.desktop",
+          "/usr/share/icons/hicolor/256x256/apps/vibecode.png": "icons/128x128@2x.png"
+        },
+        "section": "devel",
+        "priority": "optional"
+      },
+      "rpm": {
+        "depends": [
+          "webkit2gtk4.1",
+          "libayatana-appindicator",
+          "librsvg2",
+          "openssl",
+          "dbus",
+          "xdotool",
+          "qemu-system-x86",
+          "qemu-img"
+        ],
+        "release": "1",
+        "epoch": 0
       },
       "appimage": {
-        "bundleMediaFramework": false
+        "bundleMediaFramework": true,
+        "files": {
+          "resources/linux/vibecode.desktop": "vibecode.desktop",
+          "icons/128x128@2x.png": "vibecode.png"
+        }
       }
     }
   },

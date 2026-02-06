@@ -127,6 +127,51 @@ export interface APIKeyConfig {
 }
 
 /**
+ * Cost display mode options
+ */
+export type CostDisplayMode = 'per_request' | 'session' | 'daily' | 'monthly';
+
+/**
+ * Budget alert thresholds configuration
+ */
+export interface BudgetAlertThresholds {
+  /** Warning threshold (percentage of budget) */
+  warning: number;
+  /** Critical threshold (percentage of budget) */
+  critical: number;
+  /** Daily warning threshold */
+  dailyWarning: number;
+  /** Session warning threshold */
+  sessionWarning: number;
+}
+
+/**
+ * AI cost tracking settings
+ */
+export interface AICostSettings {
+  /** Monthly budget limit in USD (0 = unlimited) */
+  monthlyBudget: number;
+  /** Daily budget limit in USD (0 = unlimited) */
+  dailyBudget: number;
+  /** Session budget limit in USD (0 = unlimited) */
+  sessionBudget: number;
+  /** Preferred cost display mode */
+  displayMode: CostDisplayMode;
+  /** Show cost estimates before sending */
+  showEstimatesBeforeSend: boolean;
+  /** Show real-time cost tracking */
+  showRealtimeCosts: boolean;
+  /** Alert thresholds as percentage of budget */
+  alertThresholds: BudgetAlertThresholds;
+  /** Currency for display (default: USD) */
+  displayCurrency: string;
+  /** Enable cost optimization suggestions */
+  enableOptimizationSuggestions: boolean;
+  /** Preferred models for cost optimization */
+  preferredEconomyModels: string[];
+}
+
+/**
  * AI-related settings
  */
 export interface AISettings {
@@ -150,6 +195,8 @@ export interface AISettings {
   availableModels: AIModelConfig[];
   /** Context window size limit */
   contextLimit: number;
+  /** Cost tracking and management settings */
+  costSettings: AICostSettings;
 }
 
 // ============================================================================
@@ -277,6 +324,32 @@ export const DEFAULT_AI_MODELS: AIModelConfig[] = [
 ];
 
 /**
+ * Default budget alert thresholds
+ */
+export const DEFAULT_BUDGET_ALERT_THRESHOLDS: BudgetAlertThresholds = {
+  warning: 75,
+  critical: 90,
+  dailyWarning: 80,
+  sessionWarning: 90,
+};
+
+/**
+ * Default AI cost settings
+ */
+export const DEFAULT_AI_COST_SETTINGS: AICostSettings = {
+  monthlyBudget: 0,
+  dailyBudget: 0,
+  sessionBudget: 0,
+  displayMode: 'session',
+  showEstimatesBeforeSend: true,
+  showRealtimeCosts: true,
+  alertThresholds: DEFAULT_BUDGET_ALERT_THRESHOLDS,
+  displayCurrency: 'USD',
+  enableOptimizationSuggestions: true,
+  preferredEconomyModels: ['gpt-3.5-turbo', 'claude-3-haiku', 'gemini-pro'],
+};
+
+/**
  * Default AI settings
  */
 export const DEFAULT_AI_SETTINGS: AISettings = {
@@ -290,6 +363,7 @@ export const DEFAULT_AI_SETTINGS: AISettings = {
   autoCompleteDelay: 300,
   availableModels: DEFAULT_AI_MODELS,
   contextLimit: 128000,
+  costSettings: DEFAULT_AI_COST_SETTINGS,
 };
 
 /**

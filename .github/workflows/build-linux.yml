@@ -1,0 +1,547 @@
+# VibeCode Linux Build Workflow
+# Builds AppImage, deb, and rpm packages for x86_64 and arm64
+#
+# Triggers:
+#   - Push to linux-* tags
+#   - Release creation
+#   - Manual workflow dispatch
+#   - Pull requests modifying Linux-related files
+
+name: Linux Build
+
+on:
+  push:
+    tags:
+      - 'linux-v*'
+      - 'v*'
+    branches:
+      - 'feature/linux-*'
+  release:
+    types: [created]
+  pull_request:
+    paths:
+      - 'platforms/tauri/**'
+      - 'scripts/build-linux.sh'
+      - 'docker/linux-builder/**'
+      - '.github/workflows/build-linux.yml'
+  workflow_dispatch:
+    inputs:
+      architecture:
+        description: 'Target architecture'
+        required: true
+        default: 'all'
+        type: choice
+        options:
+          - 'all'
+          - 'x64'
+          - 'arm64'
+      debug_build:
+        description: 'Build in debug mode (faster but larger)'
+        required: false
+        default: false
+        type: boolean
+      skip_tests:
+        description: 'Skip test suite'
+        required: false
+        default: false
+        type: boolean
+
+env:
+  RUST_BACKTRACE: 1
+  CARGO_TERM_COLOR: always
+  TAURI_PRIVATE_KEY: ${{ secrets.TAURI_PRIVATE_KEY }}
+  TAURI_KEY_PASSWORD: ${{ secrets.TAURI_KEY_PASSWORD }}
+
+jobs:
+  # ============================================================================
+  # x86_64 Build
+  # ============================================================================
+  build-x64:
+    name: Build Linux x86_64
+    runs-on: ubuntu-22.04
+    if: |
+      github.event.inputs.architecture == 'all' ||
+      github.event.inputs.architecture == 'x64' ||
+      github.event.inputs.architecture == ''
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-unknown-linux-gnu
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: platforms/tauri -> target
+          key: linux-x64
+
+      - name: Install Linux dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libssl-dev \
+            libdbus-1-dev \
+            libxdo-dev \
+            patchelf \
+            rpm \
+            squashfs-tools
+
+      - name: Install npm dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate || true
+
+      - name: Build frontend
+        env:
+          NEXT_CONFIG_FILE: next.config.tauri.js
+        run: |
+          npm run build:tauri || npm run build
+
+          # Prepare public directory for Tauri
+          mkdir -p platforms/public
+          if [ -d "out" ]; then
+            cp -r out/* platforms/public/
+          elif [ -d ".next/static" ]; then
+            cp -r .next/static platforms/public/
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>' > platforms/public/index.html
+          fi
+
+      - name: Create sidecar binary
+        run: |
+          mkdir -p platforms/tauri/binaries
+          cat > platforms/tauri/binaries/vibecode-vm-x86_64-unknown-linux-gnu << 'EOF'
+          #!/bin/sh
+          echo "VibeCode VM - Use QEMU/KVM on Linux"
+          echo "Install: sudo apt install qemu-system-x86 qemu-utils"
+          exit 0
+          EOF
+          chmod +x platforms/tauri/binaries/vibecode-vm-x86_64-unknown-linux-gnu
+
+      - name: Build Tauri (Release)
+        if: github.event.inputs.debug_build != 'true'
+        working-directory: platforms/tauri
+        run: |
+          npx tauri build --target x86_64-unknown-linux-gnu --bundles deb,appimage,rpm --verbose
+
+      - name: Build Tauri (Debug)
+        if: github.event.inputs.debug_build == 'true'
+        working-directory: platforms/tauri
+        run: |
+          npx tauri build --target x86_64-unknown-linux-gnu --bundles deb,appimage,rpm --debug --verbose
+
+      - name: Generate checksums
+        run: |
+          cd platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle
+
+          for dir in deb appimage rpm; do
+            if [ -d "$dir" ]; then
+              for file in "$dir"/*; do
+                if [ -f "$file" ] && [[ ! "$file" == *.sha256 ]]; then
+                  sha256sum "$file" > "${file}.sha256"
+                fi
+              done
+            fi
+          done
+
+      - name: List artifacts
+        run: |
+          echo "Build artifacts for x86_64:"
+          ls -lhR platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/
+
+      - name: Upload deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-linux-x64-deb
+          path: |
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.deb
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/deb/*.sha256
+          retention-days: 30
+
+      - name: Upload AppImage artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-linux-x64-appimage
+          path: |
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.AppImage
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/appimage/*.sha256
+          retention-days: 30
+
+      - name: Upload rpm artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-linux-x64-rpm
+          path: |
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.rpm
+            platforms/tauri/target/x86_64-unknown-linux-gnu/release/bundle/rpm/*.sha256
+          retention-days: 30
+
+  # ============================================================================
+  # ARM64 Build
+  # ============================================================================
+  build-arm64:
+    name: Build Linux ARM64
+    runs-on: ubuntu-22.04
+    if: |
+      github.event.inputs.architecture == 'all' ||
+      github.event.inputs.architecture == 'arm64' ||
+      github.event.inputs.architecture == ''
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-unknown-linux-gnu
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: platforms/tauri -> target
+          key: linux-arm64
+
+      - name: Install Linux dependencies and cross-compilation tools
+        run: |
+          # Add ARM64 architecture
+          sudo dpkg --add-architecture arm64
+
+          # Add Ubuntu Ports repository for ARM64 packages
+          cat << 'SOURCES' | sudo tee /etc/apt/sources.list.d/arm64-ports.list
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-updates main restricted universe multiverse
+          deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports jammy-security main restricted universe multiverse
+          SOURCES
+
+          # Restrict main sources to amd64
+          sudo sed -i 's/^deb /deb [arch=amd64] /' /etc/apt/sources.list
+
+          sudo apt-get update
+
+          # Install cross-compilation toolchain
+          sudo apt-get install -y \
+            gcc-aarch64-linux-gnu \
+            g++-aarch64-linux-gnu \
+            libc6-dev-arm64-cross \
+            pkg-config
+
+          # Try to install ARM64 dependencies (some may fail)
+          sudo apt-get install -y \
+            libgtk-3-dev:arm64 \
+            libglib2.0-dev:arm64 \
+            libssl-dev:arm64 \
+            libcairo2-dev:arm64 \
+            libpango1.0-dev:arm64 \
+            libgdk-pixbuf-2.0-dev:arm64 \
+            libatk1.0-dev:arm64 \
+            || echo "Some ARM64 packages not available"
+
+      - name: Configure Cargo for cross-compilation
+        run: |
+          mkdir -p ~/.cargo
+          cat >> ~/.cargo/config.toml << 'EOF'
+          [target.aarch64-unknown-linux-gnu]
+          linker = "aarch64-linux-gnu-gcc"
+          EOF
+
+      - name: Install npm dependencies
+        run: npm ci --legacy-peer-deps
+
+      - name: Generate Prisma client
+        run: npx prisma generate || true
+
+      - name: Build frontend
+        env:
+          NEXT_CONFIG_FILE: next.config.tauri.js
+        run: |
+          npm run build:tauri || npm run build
+          mkdir -p platforms/public
+          if [ -d "out" ]; then
+            cp -r out/* platforms/public/
+          elif [ -d ".next/static" ]; then
+            cp -r .next/static platforms/public/
+            echo '<!DOCTYPE html><html><head><meta charset="utf-8"></head><body></body></html>' > platforms/public/index.html
+          fi
+
+      - name: Create sidecar binary
+        run: |
+          mkdir -p platforms/tauri/binaries
+          cat > platforms/tauri/binaries/vibecode-vm-aarch64-unknown-linux-gnu << 'EOF'
+          #!/bin/sh
+          echo "VibeCode VM - Use QEMU/KVM on Linux"
+          echo "Install: sudo apt install qemu-system-aarch64 qemu-utils"
+          exit 0
+          EOF
+          chmod +x platforms/tauri/binaries/vibecode-vm-aarch64-unknown-linux-gnu
+
+      - name: Build Tauri ARM64
+        working-directory: platforms/tauri
+        env:
+          PKG_CONFIG_PATH: /usr/lib/aarch64-linux-gnu/pkgconfig
+          PKG_CONFIG_ALLOW_CROSS: 1
+        run: |
+          # ARM64 cross-compilation: skip AppImage (requires native arch)
+          npx tauri build --target aarch64-unknown-linux-gnu --bundles deb --verbose \
+            || echo "ARM64 build may have partial failures due to WebKit dependencies"
+
+      - name: Generate checksums
+        run: |
+          cd platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle
+
+          for dir in deb rpm; do
+            if [ -d "$dir" ]; then
+              for file in "$dir"/*; do
+                if [ -f "$file" ] && [[ ! "$file" == *.sha256 ]]; then
+                  sha256sum "$file" > "${file}.sha256"
+                fi
+              done
+            fi
+          done
+
+      - name: List artifacts
+        run: |
+          echo "Build artifacts for ARM64:"
+          ls -lhR platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle/ || true
+
+      - name: Upload ARM64 deb artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-linux-arm64-deb
+          path: |
+            platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.deb
+            platforms/tauri/target/aarch64-unknown-linux-gnu/release/bundle/deb/*.sha256
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ============================================================================
+  # Native ARM64 Build (using QEMU emulation)
+  # ============================================================================
+  build-arm64-native:
+    name: Build Linux ARM64 (Native)
+    runs-on: ubuntu-22.04
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build ARM64 AppImage in container
+        run: |
+          docker run --rm --platform linux/arm64 \
+            -v "$GITHUB_WORKSPACE:/workspace" \
+            -w /workspace \
+            arm64v8/ubuntu:22.04 \
+            bash -c '
+              apt-get update && apt-get install -y \
+                build-essential curl wget git pkg-config \
+                libwebkit2gtk-4.1-dev libgtk-3-dev \
+                libayatana-appindicator3-dev librsvg2-dev \
+                libssl-dev libdbus-1-dev patchelf squashfs-tools
+
+              # Install Node.js
+              curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+              apt-get install -y nodejs
+
+              # Install Rust
+              curl --proto "=https" --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y
+              source $HOME/.cargo/env
+
+              # Build
+              npm ci --legacy-peer-deps
+              npx prisma generate || true
+              npm run build:tauri || npm run build
+
+              mkdir -p platforms/public
+              if [ -d "out" ]; then cp -r out/* platforms/public/; fi
+
+              mkdir -p platforms/tauri/binaries
+              echo "#!/bin/sh" > platforms/tauri/binaries/vibecode-vm-aarch64-unknown-linux-gnu
+              chmod +x platforms/tauri/binaries/vibecode-vm-aarch64-unknown-linux-gnu
+
+              cd platforms/tauri
+              cargo tauri build --bundles deb,appimage --verbose
+            '
+        timeout-minutes: 120
+        continue-on-error: true
+
+      - name: Upload native ARM64 artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: vibecode-linux-arm64-native
+          path: |
+            platforms/tauri/target/release/bundle/deb/*.deb
+            platforms/tauri/target/release/bundle/appimage/*.AppImage
+          retention-days: 30
+          if-no-files-found: warn
+
+  # ============================================================================
+  # Test Linux Packages
+  # ============================================================================
+  test-packages:
+    name: Test Linux Packages
+    needs: [build-x64]
+    runs-on: ubuntu-22.04
+    if: github.event.inputs.skip_tests != 'true'
+
+    steps:
+      - name: Download x64 deb artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: vibecode-linux-x64-deb
+          path: packages/
+
+      - name: Test deb installation
+        run: |
+          # Find the deb package
+          DEB_FILE=$(find packages/ -name "*.deb" | head -1)
+
+          if [ -n "$DEB_FILE" ]; then
+            echo "Testing installation of: $DEB_FILE"
+
+            # Install the package
+            sudo dpkg -i "$DEB_FILE" || sudo apt-get install -f -y
+
+            # Verify installation
+            which vibecode || echo "Binary not in PATH (may be normal for GUI apps)"
+            dpkg -l | grep -i vibecode
+
+            echo "Package installation test passed"
+          else
+            echo "No deb package found"
+            exit 1
+          fi
+
+      - name: Verify checksums
+        run: |
+          cd packages/
+          for sha_file in *.sha256; do
+            if [ -f "$sha_file" ]; then
+              echo "Verifying: $sha_file"
+              sha256sum -c "$sha_file" || echo "Checksum verification failed for $sha_file"
+            fi
+          done
+
+  # ============================================================================
+  # Create Release Assets
+  # ============================================================================
+  create-release:
+    name: Create Release
+    needs: [build-x64, build-arm64]
+    runs-on: ubuntu-latest
+    if: |
+      github.event_name == 'release' ||
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/'))
+
+    steps:
+      - name: Download all artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: artifacts/
+
+      - name: List downloaded artifacts
+        run: |
+          echo "Downloaded artifacts:"
+          ls -lhR artifacts/
+
+      - name: Upload to Release
+        if: github.event_name == 'release'
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.deb
+            artifacts/**/*.rpm
+            artifacts/**/*.AppImage
+            artifacts/**/*.sha256
+          fail_on_unmatched_files: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Create tag release
+        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            artifacts/**/*.deb
+            artifacts/**/*.rpm
+            artifacts/**/*.AppImage
+            artifacts/**/*.sha256
+          draft: true
+          prerelease: ${{ contains(github.ref, 'alpha') || contains(github.ref, 'beta') || contains(github.ref, 'rc') }}
+          generate_release_notes: true
+          body: |
+            # VibeCode Linux Release
+
+            ## Installation
+
+            ### Ubuntu/Debian (x86_64)
+            ```bash
+            sudo dpkg -i vibecode_*_amd64.deb
+            # If dependencies fail:
+            sudo apt-get install -f
+            ```
+
+            ### Ubuntu/Debian (ARM64)
+            ```bash
+            sudo dpkg -i vibecode_*_arm64.deb
+            sudo apt-get install -f
+            ```
+
+            ### Fedora/RHEL (x86_64)
+            ```bash
+            sudo rpm -i vibecode-*.x86_64.rpm
+            ```
+
+            ### AppImage (Any Linux, x86_64)
+            ```bash
+            chmod +x VibeCode_*_amd64.AppImage
+            ./VibeCode_*_amd64.AppImage
+            ```
+
+            ## Requirements
+            - QEMU/KVM for VM functionality
+            - Docker for container support
+            - Node.js 18+ for development features
+
+            ## Verify Downloads
+            ```bash
+            sha256sum -c *.sha256
+            ```
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

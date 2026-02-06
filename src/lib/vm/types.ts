@@ -6,30 +6,50 @@
 export interface VMProvider {
   /** Provider name (vfkit, lima, qemu, wsl2) */
   name: string;
-  
+
   /** Detect if provider is available on current system */
   detect(): Promise<boolean>;
-  
+
   /** Create and start a new VM */
   create(config: VMConfig): Promise<VM>;
-  
+
   /** Start an existing VM */
   start(vmId: string): Promise<void>;
-  
+
   /** Stop a running VM */
   stop(vmId: string): Promise<void>;
-  
+
   /** Destroy a VM and its resources */
   destroy(vmId: string): Promise<void>;
-  
+
   /** List all VMs managed by this provider */
   list(): Promise<VM[]>;
-  
+
   /** Execute command in VM */
   exec(vmId: string, command: string): Promise<ExecResult>;
-  
+
   /** Get VM status */
   status(vmId: string): Promise<VMStatus>;
+
+  // Snapshot-related methods (optional)
+
+  /** Pause VM (for snapshotting) */
+  pause?(vmId: string): Promise<void>;
+
+  /** Resume a paused VM */
+  resume?(vmId: string): Promise<void>;
+
+  /** Save VM state to file (if supported) */
+  saveState?(vmId: string, statePath: string): Promise<boolean>;
+
+  /** Restore VM state from file (if supported) */
+  restoreState?(vmId: string, statePath: string): Promise<boolean>;
+
+  /** Get VM configuration */
+  getConfig?(vmId: string): Promise<VMConfig | null>;
+
+  /** Get provider capabilities */
+  getCapabilities?(): Promise<ProviderCapabilities>;
 }
 
 export interface VMConfig {

@@ -334,7 +334,7 @@ export class ContextManager {
     const contentLower = item.content.toLowerCase();
     for (const [keyword, boost] of Object.entries(criteria.keywordBoosts)) {
       if (contentLower.includes(keyword.toLowerCase())) {
-        score *= boost;
+        score *= Number(boost);
       }
     }
 
@@ -602,7 +602,7 @@ export class ContextManager {
     }
 
     // Build output based on format
-    for (const [type, items] of grouped) {
+    Array.from(grouped.entries()).forEach(([_type, items]) => {
       for (const item of items) {
         let content = item.content;
 
@@ -621,7 +621,7 @@ export class ContextManager {
 
         parts.push(content);
       }
-    }
+    });
 
     return parts.join(separator);
   }

@@ -1,0 +1,74 @@
+# Docker Compose for VibeCode Linux Builder
+#
+# Usage:
+#   # Build x86_64 packages
+#   docker compose -f docker/linux-builder/docker-compose.yml run --rm builder-x64
+#
+#   # Build ARM64 packages
+#   docker compose -f docker/linux-builder/docker-compose.yml run --rm builder-arm64
+#
+#   # Build all packages
+#   docker compose -f docker/linux-builder/docker-compose.yml run --rm builder-all
+
+version: '3.8'
+
+services:
+  # Base builder service configuration
+  builder-base:
+    build:
+      context: ../..
+      dockerfile: docker/linux-builder/Dockerfile
+      target: builder
+    volumes:
+      - ../..:/workspace
+      - cargo-cache:/root/.cargo/registry
+      - cargo-git:/root/.cargo/git
+      - node-modules:/workspace/node_modules
+    working_dir: /workspace
+    environment:
+      - CARGO_HOME=/root/.cargo
+      - NODE_ENV=production
+
+  # x86_64 builder
+  builder-x64:
+    extends: builder-base
+    command: ["--arch", "x64"]
+
+  # ARM64 builder (uses cross-compilation)
+  builder-arm64:
+    build:
+      context: ../..
+      dockerfile: docker/linux-builder/Dockerfile
+      target: cross-arm64
+    extends: builder-base
+    command: ["--arch", "arm64"]
+    environment:
+      - PKG_CONFIG_ALLOW_CROSS=1
+      - CARGO_TARGET_AARCH64_UNKNOWN_LINUX_GNU_LINKER=aarch64-linux-gnu-gcc
+
+  # Build all architectures
+  builder-all:
+    extends: builder-base
+    command: ["--arch", "all"]
+
+  # Debug build (faster, larger binaries)
+  builder-debug:
+    extends: builder-base
+    command: ["--arch", "all", "--debug"]
+
+  # Signed build
+  builder-signed:
+    extends: builder-base
+    command: ["--arch", "all", "--sign"]
+    volumes:
+      - ../..:/workspace
+      - cargo-cache:/root/.cargo/registry
+      - cargo-git:/root/.cargo/git
+      - node-modules:/workspace/node_modules
+      # Mount GPG keys for signing
+      - ~/.gnupg:/root/.gnupg:ro
+
+volumes:
+  cargo-cache:
+  cargo-git:
+  node-modules:

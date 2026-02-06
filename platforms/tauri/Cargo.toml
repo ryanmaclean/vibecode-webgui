@@ -29,6 +29,13 @@ tower-http = { version = "0.5", features = ["cors"] }
 [target.'cfg(target_os = "macos")'.dependencies]
 libc = "0.2"
 
+[target.'cfg(target_os = "linux")'.dependencies]
+# D-Bus for notifications and system integration
+# dbus = "0.9"  # Uncomment when implementing full D-Bus support
+
+[target.'cfg(target_os = "windows")'.dependencies]
+# Windows-specific dependencies can be added here
+
 [profile.release]
 # optimize for small binary size
 strip = true

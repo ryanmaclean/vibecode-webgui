@@ -339,7 +339,7 @@ export class FileRanker {
     // Apply keyword boosts
     for (const [keyword, boost] of Object.entries(this.criteria.keywordBoosts)) {
       if (contentLower.includes(keyword.toLowerCase())) {
-        score *= boost;
+        score *= Number(boost);
       }
     }
 
