@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Analyze and optimize kernel for Alpine ARM64 VM
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔍 Kernel Optimization Analysis"
 echo "=============================="

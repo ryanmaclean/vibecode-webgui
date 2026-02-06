@@ -9,6 +9,14 @@ services:
       - PORT=5001
       - JSON_LIMIT=1mb
       - WEBHOOK_SECRET=${WEBHOOK_SECRET}
+      - DD_SERVICE=${DD_SERVICE:-gastown-webhook}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
+      - DD_TRACE_ENABLED=true
+      - DD_PROFILING_ENABLED=true
+      - DD_RUNTIME_METRICS_ENABLED=true
+      - DD_LOGS_INJECTION=true
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "node", "-e", "require('http').get('http://localhost:5001/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) })"]

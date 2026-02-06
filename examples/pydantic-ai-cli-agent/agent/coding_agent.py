@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import AsyncIterator, Dict, Any, Optional
 
 from pydantic_ai import Agent, RunContext
-from pydantic_ai.models import Model
 
 from .config import AgentConfig
 from .tools import (
@@ -163,4 +162,3 @@ class CodingAgent:
     async def resume(self):
         """Resume from last checkpoint (if durable execution enabled)"""
         # TODO: Implement durable execution resume
-        pass

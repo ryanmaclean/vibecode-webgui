@@ -2,6 +2,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: gitpod-workspace
+  labels:
+    app: gitpod-workspace
+    tags.datadoghq.com/env: {{ .Values.env | default "development" | quote }}
+    tags.datadoghq.com/service: "gitpod-workspace"
+    tags.datadoghq.com/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
 spec:
   replicas: 1
   selector:
@@ -11,6 +16,9 @@ spec:
     metadata:
       labels:
         app: gitpod-workspace
+        tags.datadoghq.com/env: {{ .Values.env | default "development" | quote }}
+        tags.datadoghq.com/service: "gitpod-workspace"
+        tags.datadoghq.com/version: {{ .Chart.AppVersion | default "1.0.0" | quote }}
     spec:
       containers:
       - name: workspace

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Sanitize test artifacts by redacting secrets and tokens.
  *
@@ -14,6 +18,10 @@ import fs from 'fs/promises';
 import path from 'path';
 
 const TEXT_EXTENSIONS = new Set([
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
   '.log', '.txt', '.json', '.xml', '.md', '.html', '.yml', '.yaml', '.csv'
 ]);
 

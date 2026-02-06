@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Simple Automated Performance Test
 # Proves performance improvements with minimal complexity
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

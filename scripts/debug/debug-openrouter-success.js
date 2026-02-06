@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Debug OpenRouter Response Structure - Success Case
  * Understand the actual response format from OpenRouter

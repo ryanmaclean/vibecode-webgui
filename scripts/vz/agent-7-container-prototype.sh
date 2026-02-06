@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 7: Create Apple Container Prototype
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 7: Apple Container Prototype ==="

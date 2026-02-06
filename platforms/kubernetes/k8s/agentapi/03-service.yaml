@@ -6,6 +6,9 @@ metadata:
   labels:
     app.kubernetes.io/name: vibecode
     app.kubernetes.io/component: workspace
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "code-server-workspace"
+    tags.datadoghq.com/version: "1.0.0"
   annotations:
     prometheus.io/scrape: "true"
     prometheus.io/port: "9090"
@@ -44,6 +47,9 @@ metadata:
   labels:
     app.kubernetes.io/name: vibecode
     app.kubernetes.io/component: workspace
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "code-server-workspace"
+    tags.datadoghq.com/version: "1.0.0"
 spec:
   type: ClusterIP
   clusterIP: None

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Comprehensive onboarding verification script
 # Tests both implementation and runtime behavior
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

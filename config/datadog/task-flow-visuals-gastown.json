@@ -1,0 +1,867 @@
+{
+  "id": "dp9-x46-em2",
+  "title": "Task Flow Visuals - Gastown",
+  "description": "Vega/Vega-Lite views for task flow and role activity.",
+  "author_handle": "ryan@ryanmaclean.com",
+  "author_name": "Ryan MacLean",
+  "layout_type": "ordered",
+  "url": "/dashboard/dp9-x46-em2/task-flow-visuals---gastown",
+  "template_variables": null,
+  "widgets": [
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Stage Mix (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "created",
+                "query": "avg:gastown.beads.created{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "in_progress",
+                "query": "avg:gastown.beads.in_progress{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "completed",
+                "query": "avg:gastown.beads.completed{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "escalated",
+                "query": "avg:gastown.beads.escalated{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "failed",
+                "query": "avg:gastown.polecats.failed{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "created",
+                  "in_progress",
+                  "completed",
+                  "escalated",
+                  "failed"
+                ],
+                "as": [
+                  "stage",
+                  "count"
+                ]
+              }
+            ],
+            "mark": {
+              "type": "bar",
+              "cornerRadiusEnd": 2
+            },
+            "encoding": {
+              "y": {
+                "field": "stage",
+                "type": "nominal",
+                "title": ""
+              },
+              "x": {
+                "field": "count",
+                "type": "quantitative",
+                "title": "Avg (current window)"
+              },
+              "color": {
+                "field": "stage",
+                "type": "nominal",
+                "scale": {
+                  "scheme": "set2"
+                }
+              },
+              "tooltip": [
+                {
+                  "field": "stage",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "id": 573499341609070
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Flow (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "created",
+                "query": "avg:gastown.beads.created{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "in_progress",
+                "query": "avg:gastown.beads.in_progress{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "completed",
+                "query": "avg:gastown.beads.completed{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "escalated",
+                "query": "avg:gastown.beads.escalated{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "failed",
+                "query": "avg:gastown.polecats.failed{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "created",
+                  "in_progress",
+                  "completed",
+                  "escalated",
+                  "failed"
+                ],
+                "as": [
+                  "stage",
+                  "count"
+                ]
+              }
+            ],
+            "mark": {
+              "type": "bar",
+              "cornerRadiusEnd": 2
+            },
+            "encoding": {
+              "x": {
+                "field": "stage",
+                "type": "nominal",
+                "title": "Stage"
+              },
+              "y": {
+                "field": "count",
+                "type": "quantitative",
+                "title": "Avg (current window)"
+              },
+              "color": {
+                "field": "stage",
+                "type": "nominal",
+                "scale": {
+                  "scheme": "set2"
+                }
+              },
+              "tooltip": [
+                {
+                  "field": "stage",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Role Activity Mix (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "mayor",
+                "query": "avg:gastown.mayor.task.count{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "crew",
+                "query": "avg:gastown.crew.assign.count{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "polecats",
+                "query": "avg:gastown.polecats.spawned{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "reaper",
+                "query": "avg:gastown.reaper.tasks_completed{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "convoy",
+                "query": "avg:gastown.convoy.started{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "mail",
+                "query": "avg:gastown.mail.sent{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "nudges",
+                "query": "avg:gastown.nudges.sent{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "mayor",
+                  "crew",
+                  "polecats",
+                  "reaper",
+                  "convoy",
+                  "mail",
+                  "nudges"
+                ],
+                "as": [
+                  "role",
+                  "count"
+                ]
+              }
+            ],
+            "mark": {
+              "type": "bar",
+              "cornerRadiusEnd": 2
+            },
+            "encoding": {
+              "x": {
+                "field": "role",
+                "type": "nominal",
+                "title": ""
+              },
+              "y": {
+                "field": "count",
+                "type": "quantitative",
+                "title": "Avg (current window)"
+              },
+              "color": {
+                "field": "role",
+                "type": "nominal",
+                "legend": null
+              },
+              "tooltip": [
+                {
+                  "field": "role",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      },
+      "id": 8247563113902845
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Flow Fallback (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "created",
+                "query": "avg:gastown.beads.created{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "in_progress",
+                "query": "avg:gastown.beads.in_progress{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "completed",
+                "query": "avg:gastown.beads.completed{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "escalated",
+                "query": "avg:gastown.beads.escalated{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "failed",
+                "query": "avg:gastown.polecats.failed{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "created",
+                  "in_progress",
+                  "completed",
+                  "escalated",
+                  "failed"
+                ],
+                "as": [
+                  "stage",
+                  "count"
+                ]
+              }
+            ],
+            "mark": "arc",
+            "encoding": {
+              "theta": {
+                "field": "count",
+                "type": "quantitative"
+              },
+              "color": {
+                "field": "stage",
+                "type": "nominal",
+                "scale": {
+                  "scheme": "set2"
+                }
+              },
+              "tooltip": [
+                {
+                  "field": "stage",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "note",
+        "content": "Beads Pathway\n\n\ud83d\udfe2 Created \u2192 \ud83d\udfe1 In Progress \u2192 \u2705 Completed\n\n\ud83d\udfe2 Created \u2192 \ud83d\udfe1 In Progress \u2192 \u26a0\ufe0f Escalated\n\n\ud83d\udfe2 Created \u2192 \ud83d\udfe1 In Progress \u2192 \u274c Failed",
+        "background_color": "yellow",
+        "font_size": "14",
+        "text_align": "left",
+        "vertical_align": "top"
+      }
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Flow Matrix (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "c_to_ip",
+                "query": "sum:gastown.flow.edge{from:created,to:in_progress}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "c_to_es",
+                "query": "sum:gastown.flow.edge{from:created,to:escalated}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "c_to_fa",
+                "query": "sum:gastown.flow.edge{from:created,to:failed}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "ip_to_do",
+                "query": "sum:gastown.flow.edge{from:in_progress,to:done}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "c_to_ip",
+                  "c_to_es",
+                  "c_to_fa",
+                  "ip_to_do"
+                ],
+                "as": [
+                  "edge",
+                  "count"
+                ]
+              },
+              {
+                "calculate": "datum.edge == 'c_to_ip' ? 'created' : datum.edge == 'c_to_es' ? 'created' : datum.edge == 'c_to_fa' ? 'created' : 'in_progress'",
+                "as": "from"
+              },
+              {
+                "calculate": "datum.edge == 'c_to_ip' ? 'in_progress' : datum.edge == 'c_to_es' ? 'escalated' : datum.edge == 'c_to_fa' ? 'failed' : 'done'",
+                "as": "to"
+              }
+            ],
+            "mark": "rect",
+            "encoding": {
+              "x": {
+                "field": "from",
+                "type": "nominal",
+                "title": "From"
+              },
+              "y": {
+                "field": "to",
+                "type": "nominal",
+                "title": "To"
+              },
+              "color": {
+                "field": "count",
+                "type": "quantitative"
+              },
+              "tooltip": [
+                {
+                  "field": "from",
+                  "type": "nominal"
+                },
+                {
+                  "field": "to",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Flow Arrows (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "c_to_ip",
+                "query": "sum:gastown.flow.edge{from:created,to:in_progress}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "c_to_es",
+                "query": "sum:gastown.flow.edge{from:created,to:escalated}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "c_to_fa",
+                "query": "sum:gastown.flow.edge{from:created,to:failed}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "ip_to_do",
+                "query": "sum:gastown.flow.edge{from:in_progress,to:done}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "c_to_ip",
+                  "c_to_es",
+                  "c_to_fa",
+                  "ip_to_do"
+                ],
+                "as": [
+                  "edge",
+                  "count"
+                ]
+              },
+              {
+                "calculate": "datum.edge == 'c_to_ip' ? 'created \u2192 in_progress' : datum.edge == 'c_to_es' ? 'created \u2192 escalated' : datum.edge == 'c_to_fa' ? 'created \u2192 failed' : 'in_progress \u2192 done'",
+                "as": "flow"
+              }
+            ],
+            "mark": {
+              "type": "bar",
+              "cornerRadiusEnd": 3
+            },
+            "encoding": {
+              "y": {
+                "field": "flow",
+                "type": "nominal",
+                "title": ""
+              },
+              "x": {
+                "field": "count",
+                "type": "quantitative",
+                "title": "Events"
+              },
+              "color": {
+                "field": "flow",
+                "type": "nominal",
+                "legend": null
+              },
+              "tooltip": [
+                {
+                  "field": "flow",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Task Blockers Timeline (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "blocked",
+                "query": "avg:gastown.convoy.blocked{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "failed",
+                "query": "avg:gastown.failures.count{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "escalated",
+                "query": "avg:gastown.beads.escalated{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "handoff",
+                "query": "avg:gastown.handoff.count{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "blocked",
+                  "failed",
+                  "escalated",
+                  "handoff"
+                ],
+                "as": [
+                  "event",
+                  "value"
+                ]
+              },
+              {
+                "calculate": "datum.event",
+                "as": "event_type"
+              }
+            ],
+            "mark": {
+              "type": "point",
+              "filled": true,
+              "size": 200
+            },
+            "encoding": {
+              "x": {
+                "field": "event_type",
+                "type": "nominal",
+                "title": "Event"
+              },
+              "y": {
+                "field": "value",
+                "type": "quantitative",
+                "title": "Avg (current window)"
+              },
+              "color": {
+                "field": "event_type",
+                "type": "nominal",
+                "legend": null
+              },
+              "tooltip": [
+                {
+                  "field": "event_type",
+                  "type": "nominal"
+                },
+                {
+                  "field": "value",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "wildcard",
+        "title": "Beads Pipeline (Vega-Lite)",
+        "requests": [
+          {
+            "response_format": "scalar",
+            "queries": [
+              {
+                "data_source": "metrics",
+                "name": "created",
+                "query": "sum:gastown.beads.created{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "in_progress",
+                "query": "sum:gastown.beads.in_progress{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "completed",
+                "query": "sum:gastown.beads.completed{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "escalated",
+                "query": "sum:gastown.beads.escalated{*}"
+              },
+              {
+                "data_source": "metrics",
+                "name": "failed",
+                "query": "sum:gastown.polecats.failed{*}"
+              }
+            ]
+          }
+        ],
+        "specification": {
+          "type": "vega-lite",
+          "contents": {
+            "$schema": "https://vega.github.io/schema/vega-lite/v5.json",
+            "data": {
+              "name": "table1"
+            },
+            "transform": [
+              {
+                "fold": [
+                  "created",
+                  "in_progress",
+                  "completed",
+                  "escalated",
+                  "failed"
+                ],
+                "as": [
+                  "stage",
+                  "count"
+                ]
+              },
+              {
+                "calculate": "datum.stage == 'in_progress' ? 'in progress' : datum.stage",
+                "as": "stage_label"
+              }
+            ],
+            "mark": {
+              "type": "bar",
+              "cornerRadiusEnd": 4
+            },
+            "encoding": {
+              "y": {
+                "field": "stage_label",
+                "type": "nominal",
+                "sort": [
+                  "created",
+                  "in progress",
+                  "completed",
+                  "escalated",
+                  "failed"
+                ],
+                "title": "Stage"
+              },
+              "x": {
+                "field": "count",
+                "type": "quantitative",
+                "title": "Events"
+              },
+              "color": {
+                "field": "stage_label",
+                "type": "nominal",
+                "legend": null
+              },
+              "tooltip": [
+                {
+                  "field": "stage_label",
+                  "type": "nominal"
+                },
+                {
+                  "field": "count",
+                  "type": "quantitative"
+                }
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Beads Stages Over Time (Train View)",
+        "requests": [
+          {
+            "q": "sum:gastown.beads.created{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.beads.in_progress{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.beads.completed{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.beads.escalated{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.polecats.failed{*}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "WIP vs Done (current window)",
+        "requests": [
+          {
+            "q": "sum:gastown.beads.in_progress{*} / (sum:gastown.beads.completed{*} + 1)",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Blockers vs Throughput",
+        "requests": [
+          {
+            "q": "sum:gastown.beads.completed{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.failures.count{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.beads.escalated{*}",
+            "display_type": "line"
+          },
+          {
+            "q": "sum:gastown.convoy.blocked{*}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "log_stream",
+        "title": "Bead Provenance Logs",
+        "query": "bead_provenance service:vibecode-webgui",
+        "indexes": [
+          "*"
+        ]
+      }
+    }
+  ],
+  "notify_list": null,
+  "created_at": "2026-02-01T07:15:08.480500+00:00",
+  "modified_at": "2026-02-01T07:16:42.371583+00:00",
+  "restricted_roles": []
+}

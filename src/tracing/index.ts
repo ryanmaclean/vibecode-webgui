@@ -21,9 +21,9 @@ export class TracingManager {
   constructor(logger: Logger, config?: Partial<TracingConfig>) {
     this.logger = logger;
     this.config = {
-      service: 'vscode-rag-extension',
-      version: '1.0.0',
-      env: process.env.NODE_ENV || 'development',
+      service: process.env.DD_SERVICE || 'vscode-rag-extension',
+      version: process.env.DD_VERSION || '1.0.0',
+      env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
       sampleRate: 1.0,
       exporters: ['console'],
       ...config
@@ -44,7 +44,7 @@ export class TracingManager {
       span.setTag('service.env', this.config.env);
 
       try {
-        // Initialize tracer
+        // Initialize tracer with unified service tagging
         tracer.init({
           service: this.config.service,
           version: this.config.version,
@@ -52,6 +52,10 @@ export class TracingManager {
           sampleRate: this.config.sampleRate,
           logInjection: true,
           runtimeMetrics: true,
+          tags: {
+            team: 'platform',
+            component: 'rag-extension',
+          },
         });
 
         // Configure exporters

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deploy Complete RAG Stack on i9-zfs-pop.local
 # Uses ankane/pgvector image (pre-built with pgvector)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

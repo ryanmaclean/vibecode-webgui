@@ -18,7 +18,7 @@ Usage: from scripts.lib.datadog_logging import dd_info, dd_error, dd_metric
 
 # Datadog APM tracing
 try:
-    from ddtrace import tracer, patch_all
+    from ddtrace import patch_all
     patch_all()
 except ImportError:
     pass  # ddtrace not installed
@@ -33,7 +33,6 @@ import time
 from datetime import datetime, timezone
 from enum import IntEnum
 from pathlib import Path
-from typing import Any, Dict, List, Optional
 
 # Datadog configuration
 DD_API_KEY = os.environ.get("DD_API_KEY", os.environ.get("DATADOG_API_KEY", ""))

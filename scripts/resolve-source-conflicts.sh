@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Comprehensive merge conflict resolution script
 # Resolves conflicts in source files only (excludes .backup-conflicts files)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔧 COMPREHENSIVE MERGE CONFLICT RESOLUTION"
 

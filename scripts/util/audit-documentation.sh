@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Documentation Audit Script
 # Analyzes all markdown files in the repository for consolidation
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "📋 Starting comprehensive documentation audit..."
 

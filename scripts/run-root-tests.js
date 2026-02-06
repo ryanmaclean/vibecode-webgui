@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Root Tests Runner
  * 
@@ -16,6 +20,10 @@ import dotenv from 'dotenv';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const ROOT_TESTS_DIR = join(__dirname, '..', 'tests', 'root-tests');
 

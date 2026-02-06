@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /*
  * Verify vector import into Azure PostgreSQL
  * - Checks pgvector extension
@@ -8,6 +12,10 @@
  */
 
 const { Client } = require('pg');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 (async () => {
   try {

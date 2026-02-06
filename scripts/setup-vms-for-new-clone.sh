@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Setup VMs for a fresh clone of the repository
 # Other agents can run this to get bootable VMs
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

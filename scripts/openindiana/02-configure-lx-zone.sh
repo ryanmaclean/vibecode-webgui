@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 #
 # Configure LX-Branded Zone for VibeCode
 # Sets up Debian-compatible zone with ZFS datasets and networking
 #
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

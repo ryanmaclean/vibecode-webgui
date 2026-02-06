@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * VibeCode Development Environment Setup
  * Fixes common setup issues and ensures all deployment modes work
@@ -9,6 +13,10 @@ const { execSync, spawn } = require('child_process');
 const fs = require('fs');
 const path = require('path');
 const os = require('os');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const colors = {
   red: '\x1b[31m',

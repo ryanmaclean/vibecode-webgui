@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Enhanced OpenClaw Installation with Error Handling
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 LOG_FILE="/tmp/openclaw-install.log"

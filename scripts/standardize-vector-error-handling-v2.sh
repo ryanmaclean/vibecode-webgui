@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Standardize Vector Error Handling v2
 # This script updates all vector database adapters to use the new standardized error handling system
 # It includes thorough verification to ensure changes are valid and provides rollback capability
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Automated Security Monitoring Script
 # Continuously monitors for security threats and vulnerabilities
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

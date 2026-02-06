@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Setup Branch Protection Rules for Release Branch Strategy
 # This script configures GitHub branch protection rules to enforce the release branch workflow
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

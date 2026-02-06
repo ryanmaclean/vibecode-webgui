@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * DBM-APM Connection Test Script
  * This script tests the DBM-APM connection by making API calls
@@ -9,6 +13,10 @@
 const https = require('https');
 const http = require('http');
 const { performance } = require('perf_hooks');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configuration
 const config = {

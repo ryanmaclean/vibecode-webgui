@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Helm Chart Validation Script
 # Validates the VibeCode platform Helm chart
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

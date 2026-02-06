@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * VibeCode Performance Testing Suite
  * Comprehensive testing of Tauri vs Electron with Lighthouse, RUM, and CFP metrics
@@ -8,6 +12,10 @@
 const { spawn, exec } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class PerformanceTester {
   constructor() {

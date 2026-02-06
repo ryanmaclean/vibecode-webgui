@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Quick Kubernetes Validation - Focused on Critical Components
 # Tests the specific issues mentioned: every component should have a test
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

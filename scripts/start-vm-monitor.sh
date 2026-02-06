@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Start VM Service Monitor in Background
 # Reports status every 10 seconds to console while running continuously in background
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

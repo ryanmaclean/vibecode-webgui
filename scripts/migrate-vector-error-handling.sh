@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Script to standardize error handling across vector database adapters
 # This script updates all vector database adapters to use the new VectorDbErrorHandler class
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Get the directory of the script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

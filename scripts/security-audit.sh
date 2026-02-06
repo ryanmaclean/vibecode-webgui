@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # VibeCode Security Audit Script
 # Scans the codebase for potential security vulnerabilities
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

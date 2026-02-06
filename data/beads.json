@@ -1,0 +1,26 @@
+[
+  {
+    "bead_id": "bead-demo-agent-1769931792",
+    "agent_id": "demo-agent",
+    "status": "completed",
+    "created_at": 1769931792.434546,
+    "updated_at": 1769931817.1927629,
+    "history": [
+      {
+        "from": "none",
+        "to": "created",
+        "at": "1769931792"
+      },
+      {
+        "from": "created",
+        "to": "in_progress",
+        "at": "1769931806"
+      },
+      {
+        "from": "in_progress",
+        "to": "completed",
+        "at": "1769931817"
+      }
+    ]
+  }
+]

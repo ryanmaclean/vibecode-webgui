@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Compare BusyBox vs Alpine VM performance
 # Tests boot time, memory usage, and OpenVSCode startup
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

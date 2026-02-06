@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -euo pipefail
 
 # Datadog Cloud Network Monitoring Setup for GitHub Actions
 # This script configures CNM for CI/CD environments
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"

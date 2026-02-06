@@ -22,6 +22,20 @@ services:
     environment:
       - NODE_ENV=production
       - NEXT_TELEMETRY_DISABLED=1
+      - DD_TRACE_ENABLED=true
+      - DD_RUNTIME_METRICS_ENABLED=true
+      - DD_PROFILING_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - DD_SERVICE=vibecode-webgui
+      - DD_ENV=production
+      - DD_VERSION=${BUILD_VERSION:-latest}
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-datadog-agent}
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_DOGSTATSD_PORT=8125
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
+      - NEXT_PUBLIC_APP_VERSION=${BUILD_VERSION:-latest}
     volumes:
       # Only mount configuration files for production
       - ./next.config.js:/app/next.config.js:ro
@@ -58,6 +72,20 @@ services:
       - NODE_ENV=development
       - DOCKER=true
       - NEXT_TELEMETRY_DISABLED=1
+      - DD_TRACE_ENABLED=true
+      - DD_RUNTIME_METRICS_ENABLED=true
+      - DD_PROFILING_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - DD_SERVICE=vibecode-webgui
+      - DD_ENV=development
+      - DD_VERSION=dev
+      - DD_AGENT_HOST=${DD_AGENT_HOST:-datadog-agent}
+      - DD_TRACE_AGENT_PORT=8126
+      - DD_DOGSTATSD_PORT=8125
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
+      - NEXT_PUBLIC_APP_VERSION=dev
     volumes:
       # Full source code mount for development
       - .:/app
@@ -86,6 +114,10 @@ services:
     environment:
       - VALKEY_MAXMEMORY=512mb
       - VALKEY_MAXMEMORY_POLICY=allkeys-lru
+      - DD_SERVICE=${DD_SERVICE:-valkey}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     networks:
       - vibecode-network
     restart: unless-stopped
@@ -113,6 +145,10 @@ services:
       - POSTGRES_USER=vibecode
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256 --auth-local=scram-sha-256
+      - DD_SERVICE=${DD_SERVICE:-postgres}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     volumes:
       - postgres-data:/var/lib/postgresql/data
       - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
@@ -139,6 +175,11 @@ services:
       - ./config/nginx.conf:/etc/nginx/nginx.conf:ro
       - ./config/ssl:/etc/nginx/ssl:ro
       - nginx-cache:/var/cache/nginx
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-nginx}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     networks:
       - vibecode-network
     depends_on:
@@ -163,6 +204,11 @@ services:
       - '--web.console.libraries=/etc/prometheus/console_libraries'
       - '--web.console.templates=/etc/prometheus/consoles'
       - '--web.enable-lifecycle'
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-prometheus}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     networks:
       - vibecode-network
     restart: unless-stopped
@@ -177,6 +223,10 @@ services:
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
       - GF_USERS_ALLOW_SIGN_UP=false
+      - DD_SERVICE=${DD_SERVICE:-grafana}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     volumes:
       - grafana-data:/var/lib/grafana
       - ./config/grafana:/etc/grafana/provisioning:ro

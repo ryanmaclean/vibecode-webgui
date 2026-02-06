@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Simple Docker Desktop Fix - Based on actual working solution
 # Fixes the exact issue encountered: Docker daemon connection errors
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

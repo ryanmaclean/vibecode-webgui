@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Automated VM Test Harness
 # Staff Engineer Level: No manual testing required
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

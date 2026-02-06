@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Console to Winston Logger Migration Script
  *
@@ -22,6 +26,10 @@
 const fs = require('fs');
 const path = require('path');
 const { glob } = require('glob');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Configuration
 const CONFIG = {

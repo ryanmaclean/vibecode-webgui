@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Deploy OpenClaw in Apple Container
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Deploying OpenClaw Container ==="

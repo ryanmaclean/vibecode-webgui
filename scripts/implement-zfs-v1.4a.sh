@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode v1.4a - ZFS Optimization Implementation
 # Implements latest ZFS research (2024-2025) for maximum performance
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

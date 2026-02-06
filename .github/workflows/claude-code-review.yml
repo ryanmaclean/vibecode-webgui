@@ -10,6 +10,12 @@ on:
     #   - "src/**/*.js"
     #   - "src/**/*.jsx"
 
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
+
 jobs:
   claude-review:
     # Optional: Filter by PR author

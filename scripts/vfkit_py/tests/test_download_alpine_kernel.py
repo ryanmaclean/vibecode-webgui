@@ -1,8 +1,23 @@
 
 
+
 """Tests for 02-download-alpine-kernel.py functionality."""
 
 from __future__ import annotations
+# Datadog Unified Service Tagging
+_dd_service = "test-download-alpine-kernel"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -19,7 +34,6 @@ import subprocess
 import sys
 import tempfile
 from pathlib import Path
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -257,8 +271,8 @@ class TestMain:
     @patch("scripts.vfkit.download_alpine_kernel.test_connectivity")
     def test_success_returns_zero(
         self,
-        mock_connectivity: MagicMock,
-        mock_summary: MagicMock,
+        _mock_connectivity: MagicMock,
+        _mock_summary: MagicMock,
         mock_extract_uncomp: MagicMock,
         mock_extract: MagicMock,
         mock_download: MagicMock,
@@ -277,7 +291,7 @@ class TestMain:
     @patch("scripts.vfkit.download_alpine_kernel.test_connectivity")
     def test_download_failure_returns_one(
         self,
-        mock_connectivity: MagicMock,
+        _mock_connectivity: MagicMock,
         mock_download: MagicMock,
         tmp_path: Path,
     ) -> None:

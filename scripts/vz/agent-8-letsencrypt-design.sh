@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 8: Let's Encrypt Automation Design
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 8: Designing Let's Encrypt Automation ==="

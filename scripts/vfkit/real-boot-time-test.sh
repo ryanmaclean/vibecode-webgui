@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Test actual VM boot time to shell prompt
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "⏱️  Real VM Boot Time Test"
 echo "========================"

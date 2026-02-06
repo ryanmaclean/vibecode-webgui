@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
+
+
+# Initialize log aggregation
+init_log_aggregation
 
 echo "=== Docker Installation Helper ==="
 echo ""

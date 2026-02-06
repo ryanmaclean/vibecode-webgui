@@ -1,8 +1,23 @@
 
 
+
 """Start the VibeCode WebGUI development environment."""
 
 from __future__ import annotations
+# Datadog Unified Service Tagging
+_dd_service = "start-dev"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -21,9 +36,18 @@ from pathlib import Path
 from typing import Sequence
 
 
-DATABASE_URL = "postgresql://test:test@localhost:5432/testdb"
-NEXTAUTH_SECRET = "test-secret-key-for-local-development"
-NEXTAUTH_URL = "http://localhost:3000"
+# Database connection via environment variables (no hardcoded credentials)
+DB_USER = os.environ.get('DB_USER', 'test')
+DB_PASSWORD = os.environ.get('DB_PASSWORD', 'test')
+DB_HOST = os.environ.get('DB_HOST', 'localhost')
+DB_PORT = os.environ.get('DB_PORT', '5432')
+DB_NAME = os.environ.get('DB_NAME', 'testdb')
+DATABASE_URL = os.environ.get(
+    'DATABASE_URL',
+    f"postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}"
+)
+NEXTAUTH_SECRET = os.environ.get('NEXTAUTH_SECRET', 'test-secret-key-for-local-development')
+NEXTAUTH_URL = os.environ.get('NEXTAUTH_URL', 'http://localhost:3000')
 
 
 def run_command(

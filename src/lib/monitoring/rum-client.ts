@@ -61,13 +61,14 @@ class RUMMonitoring {
     }
 
     const pub = getRUMPublicConfig()
+    // Unified service tagging with NEXT_PUBLIC_DD_* and DD_* fallbacks
     const rumConfig: RUMConfig = {
       applicationId: pub.applicationId || 'vibecode-docs-rum',
       clientToken: pub.clientToken || '',
       site: (pub.site as DatadogSite) || 'datadoghq.com',
-      service: 'vibecode-webgui',
-      env: pub.env || 'development',
-      version: pub.version || '1.0.0',
+      service: process.env.NEXT_PUBLIC_DD_SERVICE || process.env.DD_SERVICE || 'vibecode-webgui',
+      env: pub.env || process.env.NEXT_PUBLIC_DD_ENV || process.env.DD_ENV || 'development',
+      version: pub.version || process.env.NEXT_PUBLIC_DD_VERSION || process.env.DD_VERSION || '1.0.0',
       sessionSampleRate: 100,
       sessionReplaySampleRate: 20,
       trackUserInteractions: true,
@@ -102,7 +103,7 @@ class RUMMonitoring {
         trackViewsManually: false,
         enableExperimentalFeatures: ['clickmap'],
         
-        // Custom global context
+        // Custom global context with unified service tagging
         beforeSend: (event) => {
           // Add custom attributes to all RUM events
           event.context = {
@@ -111,7 +112,9 @@ class RUMMonitoring {
               environment: rumConfig.env,
               version: rumConfig.version,
               commit: process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA || 'unknown'
-            }
+            },
+            team: 'platform',
+            component: 'webgui-frontend',
           };
           return true;
         }

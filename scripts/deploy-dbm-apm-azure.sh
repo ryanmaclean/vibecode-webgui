@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Deploy DBM-APM Configuration to Azure App Service Environments
 # This script deploys the updated DBM-APM configuration to staging and production Azure App Service
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
+
+
+# Initialize log aggregation
+init_log_aggregation
 
 VM_DIR="$HOME/.vibecode/vm"
 KERNEL_VERSION="6.6.68"

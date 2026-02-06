@@ -1,8 +1,31 @@
 #!/usr/bin/env python3
 
+# Datadog Unified Service Tagging
+_dd_service = "vibecode-vm-menu"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
+
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
     from vibecode.telemetry import init_telemetry
@@ -32,14 +55,13 @@ try:
     ddtrace.patch_all()
 except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
-    pass
 
 import os
 import sys
 import subprocess
 import signal
 from pathlib import Path
-from typing import Optional, List, Dict
+from typing import List, Dict
 
 # Add scripts to path for imports
 sys.path.insert(0, str(Path(__file__).parent))
@@ -48,10 +70,7 @@ try:
     from rich.console import Console
     from rich.panel import Panel
     from rich.table import Table
-    from rich.prompt import Prompt, Confirm
-    from rich.text import Text
-    from rich.live import Live
-    from rich.spinner import Spinner
+    from rich.prompt import Confirm
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False

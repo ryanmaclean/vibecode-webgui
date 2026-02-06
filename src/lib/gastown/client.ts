@@ -5,6 +5,7 @@ import {
   GastownWebhookResponse,
   WorkflowFailurePayload,
 } from './types'
+import { incrementGastownMetric, recordBeadFlow, recordBeadStage } from '@/lib/monitoring/gastown-metrics'
 
 const DEFAULT_TIMEOUT_MS = 10_000
 
@@ -90,11 +91,59 @@ export class GastownClient {
         polecat: result.polecat,
       })
 
+      // Emit real host metrics for dashboards
+      incrementGastownMetric('gastown.handoff.count', 1, {
+        source: 'github_actions',
+        status: result.status ?? 'unknown',
+        priority: this.priority,
+      })
+      recordBeadStage('created', {
+        source: 'github_actions',
+        priority: this.priority,
+        role: 'mayor',
+      })
+      recordBeadFlow('created', 'in_progress', {
+        source: 'github_actions',
+        role: result.polecat ? 'polecat' : 'unknown',
+        priority: this.priority,
+      })
+
+      logger.info('bead_provenance', {
+        event_type: 'bead_provenance',
+        bead_id: result.beadId,
+        from: 'created',
+        to: 'in_progress',
+        stage: 'in_progress',
+        source: 'github_actions',
+        role: result.polecat ? 'polecat' : 'unknown',
+        polecat: result.polecat,
+        priority: this.priority,
+        rig: this.rig,
+        status: result.status ?? 'unknown',
+      })
+
       return result
     } catch (error) {
       logger.error('Failed to notify Gastown webhook', {
         traceId,
         error: error instanceof Error ? error.message : error,
+      })
+      incrementGastownMetric('gastown.failures.count', 1, {
+        source: 'github_actions',
+        reason: 'webhook_failed',
+        priority: this.priority,
+      })
+      logger.info('bead_provenance', {
+        event_type: 'bead_provenance',
+        bead_id: traceId,
+        from: 'created',
+        to: 'failed',
+        stage: 'failed',
+        source: 'github_actions',
+        role: 'mayor',
+        priority: this.priority,
+        rig: this.rig,
+        status: 'failed',
       })
       throw error
     } finally {

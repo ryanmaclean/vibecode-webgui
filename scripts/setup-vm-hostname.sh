@@ -1,9 +1,17 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Setup VM hostname on host machine
 # Usage: sudo ./setup-vm-hostname.sh [ip_address]
 #
 # This script adds the vibecode-vm hostname to /etc/hosts so you can access
 # the VM using: ssh root@vibecode-vm, redis-cli -h vibecode-vm, etc.
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 VM_IP="${1:-192.168.64.10}"
 VM_HOSTNAME="vibecode-vm"

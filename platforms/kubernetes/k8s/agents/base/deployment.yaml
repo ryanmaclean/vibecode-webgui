@@ -7,6 +7,9 @@ metadata:
     app: openai-agents
     component: runtime
     version: v1
+    tags.datadoghq.com/env: "production"
+    tags.datadoghq.com/service: "openai-agents"
+    tags.datadoghq.com/version: "1.0.0"
   annotations:
     deployment.kubernetes.io/revision: "1"
     description: "OpenAI Agents runtime deployment"
@@ -27,6 +30,9 @@ spec:
         app: openai-agents
         component: runtime
         version: v1
+        tags.datadoghq.com/env: "production"
+        tags.datadoghq.com/service: "openai-agents"
+        tags.datadoghq.com/version: "1.0.0"
       annotations:
         prometheus.io/scrape: "true"
         prometheus.io/port: "9090"

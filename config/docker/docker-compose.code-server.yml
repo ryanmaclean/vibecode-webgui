@@ -11,5 +11,9 @@ services:
       - ./code-server-config.yaml:/home/coder/.config/code-server/config.yaml
     environment:
       - PASSWORD=${CODE_SERVER_PASSWORD}
+      - DD_SERVICE=${DD_SERVICE:-code-server}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     command: --bind-addr 0.0.0.0:8080 --auth none --disable-telemetry --disable-update-check
     restart: unless-stopped

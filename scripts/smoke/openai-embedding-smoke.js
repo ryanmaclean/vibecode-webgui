@@ -1,7 +1,15 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 const assert = require('assert');
 const OpenAI = require('openai');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 async function main() {
   const apiKey = process.env.OPENAI_API_KEY;

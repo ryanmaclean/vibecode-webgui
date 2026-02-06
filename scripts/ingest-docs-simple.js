@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Simple Documentation Ingestion Script
  * 
@@ -10,6 +14,10 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { Pool } = require('pg');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class SimpleDocumentationIngester {
   constructor() {

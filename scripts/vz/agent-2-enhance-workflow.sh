@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 2: Enhance macOS VM Workflow Documentation
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 2: Enhancing macOS VM Workflow ==="

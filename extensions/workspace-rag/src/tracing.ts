@@ -65,9 +65,9 @@ export class TracingManager {
             );
 
             const tracerConfig: any = {
-                service: 'vscode-rag-extension',
-                version: '1.0.0',
-                env: process.env.NODE_ENV || 'development',
+                service: process.env.DD_SERVICE || 'vscode-rag-extension',
+                version: process.env.DD_VERSION || '1.0.0',
+                env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
                 enabled: true,
                 debug: debugMode,
                 sampling: {
@@ -76,7 +76,11 @@ export class TracingManager {
                 flushInterval: 5000,
                 runtimeMetrics: true,
                 logInjection: true,
-                plugins: true
+                plugins: true,
+                tags: {
+                    team: 'platform',
+                    component: 'vscode-extension',
+                },
             };
 
             // Configure DataDog exporter if enabled

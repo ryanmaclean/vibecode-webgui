@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Colors for output
+
+# Initialize log aggregation
+init_log_aggregation
+
 GREEN='\033[0;32m'
 NC='\033[0m' # No Color
 

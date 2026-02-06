@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Option 2: Use PostgreSQL 14 from Ubuntu 22.04 (matches glibc 2.35)
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Option 2: PostgreSQL 14 for Ubuntu 22.04 ==="

@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 9: Create Monitoring Dashboard
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 9: Creating Monitoring Dashboard ==="

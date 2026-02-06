@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Fix all git merge conflicts automatically
 # This script removes merge conflict markers and keeps the main branch content
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

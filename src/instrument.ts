@@ -151,8 +151,10 @@ function getTracer() {
       // Note: These will be applied on top of the default configuration
       // when the plugins are required
       
-      // Tag all traces with deployment info
+      // Tag all traces with deployment info and unified service tagging
       tags: {
+        team: 'platform',
+        component: 'api',
         'deployment.environment': env,
         'service.name': service,
         'service.version': version,

@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Add frontmatter to markdown files that need it
+
+# Initialize log aggregation
+init_log_aggregation
+
 echo "🔧 Adding frontmatter to markdown files"
 
 DOCS_DIR="/Users/ryan.maclean/vibecode-webgui/docs/src/content/docs"

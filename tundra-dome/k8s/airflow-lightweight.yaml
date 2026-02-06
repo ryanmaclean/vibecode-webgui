@@ -1,0 +1,337 @@
+# Airflow Lightweight Deployment for Tundra Dome
+# Uses base apache/airflow image with startup script to install packages
+# Avoids large custom image that causes disk space issues on KIND
+# Uses PVC to cache installed packages across restarts
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: airflow-data
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+    component: storage
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: standard
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-dags
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+    component: dags
+data:
+  tundra_dome_kafka.py: |
+    from __future__ import annotations
+    from datetime import datetime
+    import json
+    import os
+    from airflow import DAG
+    from airflow.operators.python import PythonOperator
+    from kafka import KafkaProducer
+
+    def emit_bead_event() -> None:
+        brokers = os.environ.get("KAFKA_BROKERS", "localhost:9092").split(",")
+        topic = os.environ.get("KAFKA_TOPIC", "tundra-beads-created")
+        payload = {
+            "ts": datetime.utcnow().isoformat() + "Z",
+            "type": "hook",
+            "bead": f"tundra-{int(datetime.utcnow().timestamp())}",
+            "actor": "tundra/airflow",
+            "payload": {"source": "airflow", "rig": "tundra"},
+            "rig": "tundra",
+            "role": "mayor",
+            "stage": "hooked",
+            "service": "gastown",
+        }
+        producer = KafkaProducer(bootstrap_servers=brokers)
+        producer.send(topic, json.dumps(payload).encode("utf-8"))
+        producer.flush(10)
+        producer.close(5)
+
+    default_args = {"owner": "tundra", "retries": 0}
+
+    with DAG(
+        dag_id="tundra_dome_kafka_emit",
+        description="Emit real bead events into Kafka for DSM + GT/OC coordination",
+        schedule="*/5 * * * *",
+        start_date=datetime(2026, 2, 1),
+        catchup=False,
+        default_args=default_args,
+        tags=["tundra", "gastown", "openclaw", "kafka"],
+    ) as dag:
+        PythonOperator(task_id="emit_bead_event", python_callable=emit_bead_event)
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-openlineage-config
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+    component: openlineage
+data:
+  TRANSPORT: |
+    {"type": "http", "url": "https://api.datadoghq.com/api/intake/openlineage", "auth": {"type": "api_key", "api_key": "${DD_API_KEY}"}}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-startup-script
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+    component: startup
+data:
+  startup.sh: |
+    #!/bin/bash
+    # Tundra Dome Airflow Startup Script
+    # Installs packages to persistent volume and starts Airflow
+    set -e
+
+    AIRFLOW_HOME="${AIRFLOW_HOME:-/opt/airflow}"
+    PACKAGES_DIR="$AIRFLOW_HOME/packages"
+    MARKER_FILE="$PACKAGES_DIR/.installed"
+    DAGS_FOLDER="${AIRFLOW__CORE__DAGS_FOLDER:-$AIRFLOW_HOME/dags}"
+
+    echo "[startup] Airflow home: $AIRFLOW_HOME"
+    echo "[startup] Packages dir: $PACKAGES_DIR"
+
+    # Create directories
+    mkdir -p "$AIRFLOW_HOME/logs" "$AIRFLOW_HOME/dags" "$PACKAGES_DIR"
+
+    # Set PYTHONPATH to include our packages
+    export PYTHONPATH="$PACKAGES_DIR:$PYTHONPATH"
+
+    # Install packages only if not already installed (persisted across restarts)
+    # Pin versions compatible with Airflow 2.9.0 and Python 3.12
+    # Clean up any stale extra-packages that might conflict with base Airflow
+    rm -rf "$AIRFLOW_HOME/extra-packages" 2>/dev/null || true
+
+    MARKER_VERSION="v5"
+    if [ ! -f "$MARKER_FILE" ] || ! grep -q "$MARKER_VERSION" "$MARKER_FILE" 2>/dev/null; then
+        echo "[startup] Installing packages to persistent storage..."
+        # Clean old packages completely when upgrading
+        rm -rf "$PACKAGES_DIR" 2>/dev/null || true
+        mkdir -p "$PACKAGES_DIR"
+        # ONLY install kafka-python-ng (fork that works with Python 3.12)
+        # DO NOT install openlineage here - the base Airflow 2.9.0 image
+        # already has apache-airflow-providers-openlineage==1.6.0 which is compatible
+        pip install --no-cache-dir --target="$PACKAGES_DIR" kafka-python-ng==2.2.2
+        echo "$MARKER_VERSION-$(date -Iseconds)" > "$MARKER_FILE"
+        echo "[startup] Packages installed successfully"
+    else
+        echo "[startup] Packages already installed (marker: $(cat $MARKER_FILE))"
+    fi
+
+    # Copy DAGs from mounted ConfigMap
+    if [ -d "/dags-src" ] && [ "$(ls -A /dags-src/*.py 2>/dev/null)" ]; then
+        echo "[startup] Copying DAGs from ConfigMap..."
+        cp /dags-src/*.py "$DAGS_FOLDER/" 2>/dev/null || true
+        echo "[startup] DAGs copied: $(ls $DAGS_FOLDER/*.py 2>/dev/null | wc -l) files"
+    fi
+
+    # Initialize database if needed
+    if [ ! -f "$AIRFLOW_HOME/airflow.db" ]; then
+        echo "[startup] Initializing Airflow database..."
+        airflow db migrate
+    fi
+
+    # Restore DAG states if available
+    if [ -f "$AIRFLOW_HOME/dag-states.json" ]; then
+        echo "[startup] Restoring DAG states..."
+        python3 << 'RESTORE_EOF'
+    import json
+    import subprocess
+    import os
+    import time
+
+    # Wait for scheduler to be ready
+    time.sleep(30)
+
+    states_file = os.path.join(os.environ.get('AIRFLOW_HOME', '/opt/airflow'), 'dag-states.json')
+    if os.path.exists(states_file):
+        try:
+            with open(states_file, 'r') as f:
+                states = json.load(f)
+            for dag_id, is_paused in states.items():
+                if not is_paused:
+                    print(f"[startup] Unpausing DAG: {dag_id}")
+                    subprocess.run(['airflow', 'dags', 'unpause', dag_id], capture_output=True)
+        except Exception as e:
+            print(f"[startup] Error restoring DAG states: {e}")
+    RESTORE_EOF
+    fi &
+
+    # Background task: Save DAG states periodically
+    (
+        sleep 120  # Wait for initial startup
+        while true; do
+            sleep 300  # Every 5 minutes
+            python3 << 'SAVE_EOF' 2>/dev/null || true
+    import json
+    import sqlite3
+    import os
+
+    AIRFLOW_HOME = os.environ.get('AIRFLOW_HOME', '/opt/airflow')
+    db_path = os.path.join(AIRFLOW_HOME, 'airflow.db')
+    states_file = os.path.join(AIRFLOW_HOME, 'dag-states.json')
+
+    if os.path.exists(db_path):
+        try:
+            conn = sqlite3.connect(db_path)
+            cursor = conn.execute("SELECT dag_id, is_paused FROM dag WHERE is_paused IS NOT NULL")
+            states = {row[0]: bool(row[1]) for row in cursor.fetchall()}
+            conn.close()
+            with open(states_file, 'w') as f:
+                json.dump(states, f)
+            print(f"[state-saver] Saved {len(states)} DAG states")
+        except Exception as e:
+            print(f"[state-saver] Error: {e}")
+    SAVE_EOF
+        done
+    ) &
+
+    echo "[startup] Starting Airflow standalone..."
+    exec airflow standalone
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-api-server
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+    component: airflow
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: airflow-api-server
+  template:
+    metadata:
+      labels:
+        app: airflow-api-server
+        tags.datadoghq.com/service: airflow
+        tags.datadoghq.com/env: tundra-dome
+      annotations:
+        ad.datadoghq.com/airflow.logs: '[{"source": "airflow", "service": "airflow"}]'
+    spec:
+      # No init containers - packages installed by startup script to PVC
+      containers:
+      - name: airflow
+        image: apache/airflow:2.9.0
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/bash", "/opt/startup/startup.sh"]
+        env:
+        - name: AIRFLOW__CORE__LOAD_EXAMPLES
+          value: "false"
+        - name: AIRFLOW__CORE__EXECUTOR
+          value: "SequentialExecutor"
+        - name: AIRFLOW__CORE__DAGS_FOLDER
+          value: "/opt/airflow/dags"
+        - name: AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION
+          value: "false"
+        - name: AIRFLOW__WEBSERVER__EXPOSE_CONFIG
+          value: "true"
+        - name: AIRFLOW__WEBSERVER__RBAC
+          value: "false"
+        - name: KAFKA_BROKERS
+          value: "kafka-service:9092"
+        - name: KAFKA_TOPIC
+          value: "tundra-beads-created"
+        - name: AIRFLOW__OPENLINEAGE__NAMESPACE
+          value: "tundra-dome"
+        - name: PYTHONPATH
+          value: "/opt/airflow/packages:/opt/airflow/extra-packages"
+        - name: AIRFLOW__OPENLINEAGE__TRANSPORT
+          valueFrom:
+            configMapKeyRef:
+              name: airflow-openlineage-config
+              key: TRANSPORT
+        - name: DD_SERVICE
+          value: "airflow"
+        - name: DD_ENV
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.namespace
+        - name: DD_API_KEY
+          valueFrom:
+            secretKeyRef:
+              name: datadog-secret
+              key: api-key
+              optional: true
+        ports:
+        - name: http
+          containerPort: 8080
+          protocol: TCP
+        volumeMounts:
+        - name: airflow-data
+          mountPath: /opt/airflow
+        - name: dags-src
+          mountPath: /dags-src
+          readOnly: true
+        - name: startup-script
+          mountPath: /opt/startup
+          readOnly: true
+        resources:
+          requests:
+            cpu: 200m
+            memory: 1Gi
+          limits:
+            cpu: 2000m
+            memory: 3Gi
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 180  # Longer for package install on first start
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 5
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: http
+          initialDelaySeconds: 120
+          periodSeconds: 15
+          timeoutSeconds: 5
+          failureThreshold: 3
+      volumes:
+      - name: airflow-data
+        persistentVolumeClaim:
+          claimName: airflow-data
+      - name: dags-src
+        configMap:
+          name: airflow-dags
+      - name: startup-script
+        configMap:
+          name: airflow-startup-script
+          defaultMode: 0755
+      terminationGracePeriodSeconds: 60
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-service
+  namespace: tundra-dome
+  labels:
+    app: airflow-api-server
+spec:
+  type: ClusterIP
+  ports:
+  - name: http
+    port: 8080
+    targetPort: http
+    protocol: TCP
+  selector:
+    app: airflow-api-server

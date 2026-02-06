@@ -272,8 +272,6 @@ Co-Authored-By: Claude <noreply@anthropic.com>"""
         print(f"{Colors.YELLOW}\u26a0\ufe0f  {branch} branch not found{Colors.NC}")
         return True
 
-    print()
-    return True
 
 
 def phase3_extract_vfkit_work() -> None:

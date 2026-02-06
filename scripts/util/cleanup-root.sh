@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Clean up the messy root directory
 # Run: ./scripts/util/cleanup-root.sh
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🧹 Cleaning up root directory..."
 

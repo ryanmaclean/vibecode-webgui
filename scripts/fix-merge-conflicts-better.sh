@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Fix merge conflicts by manually resolving each file
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 for file in $files_with_conflicts; do
     echo "Fixing merge conflicts in $file"

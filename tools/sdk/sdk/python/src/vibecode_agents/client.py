@@ -19,8 +19,7 @@ and comprehensive type safety.
 
 import asyncio
 import logging
-from typing import Any, AsyncIterator, Dict, Optional
-from urllib.parse import urljoin
+from typing import Any, Dict, Optional
 
 import httpx
 from pydantic import ValidationError
@@ -43,9 +42,7 @@ from vibecode_agents.models import (
     RateLimitInfo,
     SendMessageResponse,
     StartAgentRequest,
-    StopAgentQuery,
     StopAgentResponse,
-    StreamEventsQuery,
 )
 from vibecode_agents.streaming import EventStream, WebSocketStream
 

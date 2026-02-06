@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Simple Local Deployment Script
 # Works with your existing PostgreSQL container and any Kubernetes setup
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

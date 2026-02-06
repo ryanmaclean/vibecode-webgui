@@ -18,7 +18,7 @@ This module provides automatic error tracking for all Python scripts.
 
 # Datadog APM tracing
 try:
-    from ddtrace import tracer, patch_all
+    from ddtrace import patch_all
     patch_all()
 except ImportError:
     pass  # ddtrace not installed
@@ -33,7 +33,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Callable, Dict, Optional
+from typing import Any, Dict
 
 # Error tracking configuration
 DD_ERROR_TRACKING_ENABLED = os.environ.get("DD_ERROR_TRACKING_ENABLED", "true").lower() == "true"
@@ -394,7 +394,7 @@ class ErrorTracker:
         track_script_start(self.component, "start")
         return self
 
-    def __exit__(self, exc_type: Any, exc_val: Any, exc_tb: Any) -> bool:
+    def __exit__(self, exc_type: Any, exc_val: Any, _exc_tb: Any) -> bool:
         """End error tracking and log any errors."""
         duration = time.time() - self.start_time
         exit_code = 0 if exc_type is None else 1

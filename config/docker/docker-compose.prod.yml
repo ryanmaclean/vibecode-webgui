@@ -14,10 +14,20 @@ services:
       - NODE_ENV=production
       - DOCKER=true
       - NEXT_TELEMETRY_DISABLED=1
+      - DD_SERVICE=vibecode-webgui
+      - DD_ENV=production
+      - DD_VERSION=${BUILD_VERSION:-latest}
+      - DD_TRACE_ENABLED=true
+      - DD_PROFILING_ENABLED=true
+      - DD_RUNTIME_METRICS_ENABLED=true
+      - DD_LOGS_INJECTION=true
+      - NEXT_PUBLIC_DD_APPLICATION_ID=${NEXT_PUBLIC_DD_APPLICATION_ID:-}
+      - NEXT_PUBLIC_DD_CLIENT_TOKEN=${NEXT_PUBLIC_DD_CLIENT_TOKEN:-}
+      - NEXT_PUBLIC_DD_SITE=${NEXT_PUBLIC_DD_SITE:-datadoghq.com}
     networks:
       - vibecode-prod-network
 
-  # Valkey for Redis compatibility  
+  # Valkey for Redis compatibility
   valkey:
     image: valkey/valkey:7-alpine
     container_name: vibecode-valkey-prod
@@ -26,6 +36,11 @@ services:
     volumes:
       - valkey-data-prod:/data
     command: valkey-server --save 900 1 --maxmemory 512mb --appendonly yes
+    environment:
+      - DD_SERVICE=${DD_SERVICE:-valkey}
+      - DD_ENV=${DD_ENV:-development}
+      - DD_VERSION=${DD_VERSION:-0.1.0}
+      - DD_TAGS=team:platform,component:infra
     networks:
       - vibecode-prod-network
 

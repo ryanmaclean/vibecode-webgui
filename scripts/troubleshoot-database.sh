@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Database Connection Troubleshooting Script
 # This script helps diagnose and fix database connection issues for DBM-APM testing
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

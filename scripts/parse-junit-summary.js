@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Parse JUnit XML files in .test-results and produce a concise summary.
  * Outputs:
@@ -11,6 +15,10 @@ import path from 'path';
 
 const RESULTS_DIR = '.test-results';
 const FILES = [
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
   'junit-root.xml',
   'junit-docs.xml',
   'playwright/junit-playwright.xml',

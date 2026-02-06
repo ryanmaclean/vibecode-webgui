@@ -1,11 +1,19 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # =====================================================
 # Datadog Database Monitoring Recommendations Generator
 # =====================================================
 # This script runs all the DBM recommendation scenarios
 # to trigger various Datadog DBM recommendations.
 # =====================================================
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

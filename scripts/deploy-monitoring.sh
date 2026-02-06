@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # VibeCode Platform Monitoring Stack Deployment Script
 # Deploys observability infrastructure using Prometheus and Datadog.
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

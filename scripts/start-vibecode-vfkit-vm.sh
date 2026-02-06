@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 echo "🚀 Starting VibeCode vfkit VM..."
 
 # Check if vfkit is available
+
+# Initialize log aggregation
+init_log_aggregation
+
 if ! command -v vfkit >/dev/null 2>&1; then
     echo "❌ vfkit not found"
     echo "   Install with: brew install vfkit"

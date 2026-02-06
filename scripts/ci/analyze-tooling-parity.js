@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * AI Tooling Parity Analysis Script
  * Analyzes test results from CI matrix and generates parity report
@@ -8,6 +12,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Platform definitions
 const PLATFORMS = [

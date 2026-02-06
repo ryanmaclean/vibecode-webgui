@@ -40,6 +40,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
     this.errorHandler = new VectorDbErrorHandler('postgres', this.config.enableLogging || false, this.config.enableMetrics || false);
+    this.errorHandler = new VectorDbErrorHandler('postgres', this.config.enableLogging || false, this.config.enableMetrics || false);
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -610,6 +611,7 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       },
       similarity: item.similarity
     }));
+  private errorHandler: VectorDbErrorHandler;
   }
 
   /**

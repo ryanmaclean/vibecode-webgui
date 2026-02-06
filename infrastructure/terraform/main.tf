@@ -41,11 +41,20 @@ locals {
   namespace        = "${local.app_name}-${local.environment}"
   
   # Common labels
+  # Includes Datadog unified service tagging for APM correlation
   common_labels = {
     app         = local.app_name
     environment = local.environment
     managed-by  = "terraform"
     version     = var.app_version
+    # Standard tags for resource organization
+    service     = var.service_name
+    env         = local.environment
+    team        = var.team
+    # Datadog unified service tagging (dd.* prefixed)
+    "dd.env"     = local.environment
+    "dd.service" = var.service_name
+    "dd.version" = var.app_version
   }
 
   # Database configuration
@@ -66,6 +75,18 @@ variable "app_version" {
   description = "Application version to deploy"
   type        = string
   default     = "latest"
+}
+
+variable "service_name" {
+  description = "Service name for Datadog unified service tagging"
+  type        = string
+  default     = "vibecode-webgui"
+}
+
+variable "team" {
+  description = "Team name for resource ownership and Datadog tagging"
+  type        = string
+  default     = "platform"
 }
 
 variable "replicas" {
@@ -127,6 +148,18 @@ variable "datadog_app_key" {
   default     = ""
 }
 
+variable "datadog_rum_application_id" {
+  description = "Datadog RUM application ID (public)"
+  type        = string
+  default     = ""
+}
+
+variable "datadog_rum_client_token" {
+  description = "Datadog RUM client token (public)"
+  type        = string
+  default     = ""
+}
+
 # Kubernetes provider configuration
 provider "kubernetes" {
   config_path = "~/.kube/config"
@@ -177,6 +210,10 @@ resource "kubernetes_config_map" "app_config" {
   data = {
     NODE_ENV                    = local.environment
     NEXT_PUBLIC_APP_URL        = "https://${local.app_name}-${local.environment}.yourdomain.com"
+    NEXT_PUBLIC_DD_APPLICATION_ID = var.datadog_rum_application_id
+    NEXT_PUBLIC_DD_CLIENT_TOKEN   = var.datadog_rum_client_token
+    NEXT_PUBLIC_DD_SITE           = "datadoghq.com"
+    NEXT_PUBLIC_APP_VERSION       = var.app_version
     DATABASE_URL               = "postgresql://vibecode:${var.database_password}@postgres:5432/${local.db_name}"
     REDIS_URL                  = "redis://:${random_password.redis_password.result}@redis:6379"
     LITELLM_BASE_URL          = "http://litellm:4000"

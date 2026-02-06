@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # PROOF: Node.js 24 + VSCode Server + AI Tools work in minimal environment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

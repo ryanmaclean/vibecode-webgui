@@ -1,8 +1,16 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode Production Deployment Script
 # Complete deployment pipeline with OAuth configuration and environment validation
 # Staff Engineer Implementation - Production-ready deployment automation
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

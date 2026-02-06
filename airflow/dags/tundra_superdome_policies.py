@@ -203,7 +203,7 @@ def merge_watchdog() -> None:
         })
 
 
-def _dag(dag_id: str, schedule: str, callable_fn) -> DAG:
+def _dag(dag_id: str, schedule: str, _callable_fn) -> DAG:
     return DAG(
         dag_id=dag_id,
         description="Tundra Dome Superdome policy DAG",

@@ -1,8 +1,16 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
 
 # Master Test Runner
 # Orchestrates all component tests across all environments
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Source Datadog logging library
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

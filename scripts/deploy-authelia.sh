@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Deploy Authelia Authentication Server to VibeCode Platform
 # Enterprise-grade 2FA/SSO authentication with hardware key support
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

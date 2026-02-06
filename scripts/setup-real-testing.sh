@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Setup script for real API testing with VibeCode WebGUI
 # This script sets up environment variables and validates the testing environment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🚀 Setting up VibeCode WebGUI for real API testing..."
 

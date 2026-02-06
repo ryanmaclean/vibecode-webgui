@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode Real Functionality Test Suite
 # Tests actual app functionality, not just file existence
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

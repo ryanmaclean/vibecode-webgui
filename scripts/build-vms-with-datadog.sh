@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build VM disk images with Datadog agent pre-installed using cloud-init
 # Agent: Infrastructure Engineer
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

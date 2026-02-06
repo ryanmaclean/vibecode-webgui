@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Find IP addresses of running VZ VMs
 # Experiment 8: Network Diagnostics
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "=================================="
 echo "VM IP Discovery"

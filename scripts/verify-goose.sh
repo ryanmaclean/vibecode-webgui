@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Test script to verify Goose installation in code-server
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔍 Verifying Goose installation..."
 

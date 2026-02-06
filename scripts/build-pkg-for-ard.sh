@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode PKG Builder for Apple Remote Desktop (ARD)
 # Creates proper .pkg installers for remote deployment
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

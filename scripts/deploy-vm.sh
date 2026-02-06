@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VM Deployment Script
 # Deploys any VM for testing or production use
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 VM_NAME=$1
 INITRAMFS=$2

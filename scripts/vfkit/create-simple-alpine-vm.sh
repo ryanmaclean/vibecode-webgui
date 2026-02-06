@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Create simple Alpine ARM64 VM with Node 24 and Claude Code
 # Uses initrd approach (no disk formatting needed)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /* eslint-disable @typescript-eslint/no-require-imports */
 /**
  * Fetches the list of currently working OpenRouter free-tier models,
@@ -9,6 +13,10 @@
 const { writeFile, mkdir } = require('node:fs/promises');
 const { dirname } = require('node:path');
 const process = require('node:process');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const DEFAULT_PROMPT = 'Reply with a single sentence describing what VibeCode does.';
 const DEFAULT_MAX_MODELS = Number(process.env.MAX_FREE_MODELS || 10);

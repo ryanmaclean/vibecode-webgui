@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Boot all 6 VMs via GUI automation or API
 # Agent 2: VM Operations Engineer
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

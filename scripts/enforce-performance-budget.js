@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Performance Budget Enforcement Script
  * 
@@ -8,6 +12,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class PerformanceBudgetEnforcer {
   constructor(budgetFile = './performance-budget.json') {

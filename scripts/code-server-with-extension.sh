@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Start code-server with VibeCode extension
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 EXTENSION_VSIX="$REPO_ROOT/.vscode/extensions/vibecode-ai-assistant-1.0.0.vsix"

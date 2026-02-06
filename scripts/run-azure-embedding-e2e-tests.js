@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 // Script to run the Azure Embedding E2E test with proper environment setup
 import { execSync } from 'child_process';
 import fs from 'fs';
@@ -15,6 +19,10 @@ console.log('🧪 Running Azure Embedding E2E Tests');
 
 // Check if we have the Azure credentials
 const hasAzureCredentials = 
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
   !!process.env.AZURE_OPENAI_API_KEY && 
   !!process.env.AZURE_OPENAI_ENDPOINT && 
   !!process.env.AZURE_OPENAI_DEPLOYMENT_NAME;

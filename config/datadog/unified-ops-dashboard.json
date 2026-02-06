@@ -1,0 +1,117 @@
+{
+  "title": "Unified Ops Dashboard (Gastown + OpenClaw + WebGUI)",
+  "description": "Day-to-day operational view across Gastown, OpenClaw, and VibeCode WebGUI with logs, APM, metrics, and synthetics.",
+  "layout_type": "ordered",
+  "widgets": [
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "OpenClaw Gateway Health",
+        "requests": [
+          {
+            "q": "avg:openclaw.gateway.health{*}",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Tailscale Connected (OpenClaw VM)",
+        "requests": [
+          {
+            "q": "avg:openclaw.tailscale.connected{host:openclaw-vm}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Gastown Beads Hooked",
+        "requests": [
+          {
+            "q": "sum:gastown.beads.hooked{*}.as_count()",
+            "display_type": "bars"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "WebGUI Request Throughput",
+        "requests": [
+          {
+            "q": "sum:trace.express.request.hits{service:vibecode-webgui}.as_count()",
+            "display_type": "area"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "query_value",
+        "title": "WebGUI Error Rate (%)",
+        "requests": [
+          {
+            "q": "sum:trace.express.request.errors{service:vibecode-webgui}.as_count() / sum:trace.express.request.hits{service:vibecode-webgui}.as_count() * 100",
+            "aggregator": "avg"
+          }
+        ],
+        "autoscale": true,
+        "precision": 2
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "WebGUI Latency (avg)",
+        "requests": [
+          {
+            "q": "avg:trace.express.request.duration{service:vibecode-webgui}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "log_stream",
+        "title": "Operational Logs (All Services)",
+        "query": "service:openclaw OR service:gastown-sensei OR service:vibecode-webgui",
+        "indexes": [
+          "*"
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Synthetics API Response (avg)",
+        "requests": [
+          {
+            "q": "avg:synthetics.api.response{*}",
+            "display_type": "line"
+          }
+        ]
+      }
+    },
+    {
+      "definition": {
+        "type": "timeseries",
+        "title": "Synthetics Browser Test Duration (avg)",
+        "requests": [
+          {
+            "q": "avg:synthetics.browser.test_duration{*}",
+            "display_type": "line"
+          }
+        ]
+      }
+    }
+  ]
+}

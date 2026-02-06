@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Agent 3: Test Enhanced Installation Script
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "=== Agent 3: Testing Installation Script ==="

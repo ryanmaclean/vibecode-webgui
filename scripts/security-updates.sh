@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 ################################################################################
 # Security Updates Script - vibecode-webgui
 # Purpose: Automate the application of critical security patches
@@ -11,6 +15,10 @@
 # 2. @modelcontextprotocol/sdk ReDoS (GHSA-8r9q-7v3j-jr4g)
 # 3. langchain Serialization Injection (GHSA-r399-636x-v7f6)
 ################################################################################
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

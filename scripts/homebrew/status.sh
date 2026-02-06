@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Check Status of All Native Homebrew Services
 # VibeCode Native Homebrew Management
 # Last Updated: 2025-10-28
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'

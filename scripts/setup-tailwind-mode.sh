@@ -1,6 +1,14 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Script to switch between Tailwind v4 CDN and Docker modes
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 MODE=${1:-"cdn"}
 

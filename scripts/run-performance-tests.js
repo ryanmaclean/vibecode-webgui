@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Comprehensive Performance Testing Runner
  * Runs Datadog Synthetic tests and Lighthouse audits, then submits results to monitoring
@@ -7,6 +11,10 @@
 const { execSync, spawn } = require('child_process');
 const fs = require('fs').promises;
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const BASE_URL = process.env.BASE_URL || 'http://localhost:3000';
 const OUTPUT_DIR = process.env.OUTPUT_DIR || './performance-results';

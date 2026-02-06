@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Production Database Migration Deployment Script
 # Safely deploys database migrations with pgvector support
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

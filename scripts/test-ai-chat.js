@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 import { spawn } from 'child_process'
 
 const NAMESPACE = process.env.NAMESPACE || 'vibecode-platform'
@@ -9,6 +13,10 @@ const TARGET_PORT = process.env.TARGET_PORT || '80'
 const BASE_URL = `http://127.0.0.1:${LOCAL_PORT}`
 const EMAIL = process.env.TEST_EMAIL || 'developer@vibecode.dev'
 const PASSWORD = process.env.TEST_PASSWORD || 'dev123'
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 function sleep(ms) {
   return new Promise(resolve => setTimeout(resolve, ms))

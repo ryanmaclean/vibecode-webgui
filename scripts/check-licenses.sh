@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # License compatibility check for package.json
 # Ensures all dependencies use MIT, BSD, or Apache licenses
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

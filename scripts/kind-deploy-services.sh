@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # KIND Service Deployment - Deploy VibeCode services to cluster
+
+# Initialize log aggregation
+init_log_aggregation
+
 set -e
 
 echo "🏗️  Deploying VibeCode services to KIND cluster"

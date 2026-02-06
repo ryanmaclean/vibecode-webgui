@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Comprehensive DBM-APM Deployment Script
 # This script deploys DBM-APM configuration to all environments: KIND (local), Staging, and Production
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

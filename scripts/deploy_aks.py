@@ -1,8 +1,31 @@
 #!/usr/bin/env python3
 
+# Datadog Unified Service Tagging
+_dd_service = "deploy-aks"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
+
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), './')))
     from vibecode.telemetry import init_telemetry
@@ -33,7 +56,6 @@ try:
     ddtrace.patch_all()
 except ImportError:
     print("Warning: ddtrace not installed, tracing disabled")
-    pass
 
 import argparse
 import json
@@ -42,15 +64,12 @@ import os
 import signal
 import subprocess
 import sys
-import tempfile
-import threading
 import time
 from dataclasses import dataclass
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple, Union
 
-import yaml
 
 
 @dataclass
@@ -94,12 +113,10 @@ class DeploymentConfig:
 
 class AzureAPIError(Exception):
     """Custom exception for Azure API errors."""
-    pass
 
 
 class DeploymentError(Exception):
     """Custom exception for deployment errors."""
-    pass
 
 
 class ValidationError(DeploymentError):
@@ -108,7 +125,6 @@ class ValidationError(DeploymentError):
 
 class RollbackError(Exception):
     """Custom exception for rollback errors."""
-    pass
 
 
 class AKSDeploymentManager:
@@ -220,7 +236,7 @@ class AKSDeploymentManager:
         logger.info(f"Logging initialized. Log file: {log_file}")
         return logger
 
-    def _signal_handler(self, signum, frame):
+    def _signal_handler(self, signum, _frame):
         """Handle interrupt signals gracefully."""
         self.logger.warning(f"Received signal {signum}. Initiating graceful shutdown...")
         self.interrupted = True

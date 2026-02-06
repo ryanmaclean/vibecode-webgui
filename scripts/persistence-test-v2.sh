@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Persistence Test Script for VM Reboot Cycles - Version 2
 # Tests 5 complete reboot cycles and measures consistency
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 APP_PATH="/Users/ryan.maclean/vibecode-webgui/azure/SwiftUI-Apps/UnifiedServicesVibeCode-v3.0.app"
 VM_IP="192.168.64.10"

@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Script to migrate console.log statements to structured logging
  * This script identifies console.log usage and provides suggestions for migration
@@ -8,6 +12,10 @@
 const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Directories to scan (exclude certain directories)
 const SCAN_DIRS = ['src/app/api', 'src/lib', 'src/components', 'src/hooks'];

@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Detailed VM performance test
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔬 Detailed VM Performance Test"
 echo "=============================="

@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # pgvector Backup and Disaster Recovery Script
 # Handles backup of PostgreSQL with pgvector data and indexes
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

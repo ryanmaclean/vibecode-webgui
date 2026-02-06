@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # VibeCode v3.2.1 Performance Benchmark Suite
 # Compare v3.2.1 (with Datadog) vs v3.2.0 (without Datadog)
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

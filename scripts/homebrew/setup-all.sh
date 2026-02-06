@@ -1,7 +1,15 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Setup All Native Homebrew Services
 # VibeCode Native Homebrew Setup
 # Last Updated: 2025-10-28
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

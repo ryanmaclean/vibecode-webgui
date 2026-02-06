@@ -70,3 +70,23 @@ If you prefer containers over a full VM:
 docker compose up -d
 ```
 This launches the OpenClaw Gateway on port `18789`.
+
+## GitHub Actions Cost Optimization
+
+To control costs, we use a two-tier CI/CD strategy:
+
+### Main Branch (Lightweight)
+- Fast linting and basic unit tests only
+- ~$0.05 per run
+
+### Release Branches (Comprehensive)
+- Full test suite (unit, integration, E2E)
+- Security scans and performance testing
+- Production deployment pipelines
+- ~$2-4 per run
+
+### Creating Release Branches
+```bash
+# Create release branch for full testing
+./create-release-branch.sh v1.2.0
+```

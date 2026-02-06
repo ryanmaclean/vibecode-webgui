@@ -17,10 +17,14 @@ function isTracerInitialized(t: unknown): boolean {
 // Initialize tracer if not already done
 if (!isTracerInitialized(tracer)) {
   tracer.init({
-    service: 'vibecode-ai',
+    service: process.env.DD_SERVICE || 'vibecode-ai',
     env: process.env.DD_ENV || process.env.NODE_ENV || 'development',
     version: process.env.DD_VERSION || '1.0.0',
     logInjection: true,
+    tags: {
+      team: 'platform',
+      component: 'ai-services',
+    },
   });
 }
 

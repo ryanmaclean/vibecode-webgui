@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Master Error Tracking Automation Script
 # This script orchestrates all error tracking automation across the entire project
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 # Source error tracking module
 source "$(dirname "$0")/lib/error-tracking.sh"

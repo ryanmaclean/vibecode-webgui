@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Comprehensive Logger Circular Dependency Fix
 # This script eliminates ALL logger imports to prevent circular dependencies
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 echo "🔥 SYSTEMATIC LOGGER ELIMINATION - Fixing circular dependencies once and for all"
 

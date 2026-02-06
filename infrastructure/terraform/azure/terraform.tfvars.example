@@ -69,6 +69,8 @@ log_analytics_retention_days = 30
 # REQUIRED: Set these via environment variables or update here
 # datadog_api_key = "your-datadog-api-key"
 # datadog_app_key = "your-datadog-app-key"
+# datadog_rum_application_id = "your-rum-application-id"
+# datadog_rum_client_token = "your-rum-client-token"
 
 # Application Configuration (optional - fallback keys)
 # openai_api_key = "your-openai-api-key"  # Fallback for non-Azure models

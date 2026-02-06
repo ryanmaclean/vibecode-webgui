@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # 🐘 VibeCode pgvector + Datadog DBM Demo
 # Just run: ./DEMO.sh
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 clear
 echo "🐘 VibeCode: pgvector + PostgreSQL + Kubernetes + Datadog DBM"

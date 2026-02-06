@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Persistence Test Script for VM Reboot Cycles
 # Tests 5 complete reboot cycles and measures consistency
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 APP_PATH="/tmp/vibecode-clean-test-1768252319/UnifiedServicesVibeCode.app"
 VM_IP="192.168.64.10"

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Build multiple VZ VMs with Datadog in PARALLEL
 # Uses GNU parallel or xargs for concurrent builds
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

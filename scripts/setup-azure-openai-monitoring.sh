@@ -1,7 +1,15 @@
 #!/bin/bash
 
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
+
 # Setup Azure OpenAI Monitoring with Datadog
 # This script configures Datadog to monitor Azure OpenAI services
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

@@ -1,8 +1,23 @@
 
 
+
 """Tests for 03-create-alpine-rootfs.py functionality."""
 
 from __future__ import annotations
+# Datadog Unified Service Tagging
+_dd_service = "test-create-alpine-rootfs"
+_dd_env = __import__("os").environ.get("DD_ENV", "development")
+_dd_version = __import__("os").environ.get("DD_VERSION", "0.1.0")
+try:
+    from ddtrace import config as _dd_config, patch_all as _dd_patch, tracer as _dd_tracer
+    _dd_config.service = _dd_service
+    _dd_config.env = _dd_env
+    _dd_config.version = _dd_version
+    _dd_tracer.set_tags({"team": "platform", "component": "scripts"})
+    _dd_patch()
+except ImportError:
+    pass
+
 # -- VibeCode Telemetry --
 import sys
 import os
@@ -419,16 +434,17 @@ class TestMain:
         mock_create_dir_structure: MagicMock,
         mock_download_minirootfs: MagicMock,
         mock_extract: MagicMock,
-        mock_apk: MagicMock,
-        mock_nodejs: MagicMock,
+        _mock_apk: MagicMock,
+        _mock_nodejs: MagicMock,
         mock_config: MagicMock,
-        mock_init: MagicMock,
-        mock_helpers: MagicMock,
+        _mock_init: MagicMock,
+        _mock_helpers: MagicMock,
         mock_initramfs: MagicMock,
-        mock_summary: MagicMock,
+        _mock_summary: MagicMock,
         tmp_path: Path,
     ) -> None:
         """Successful execution should return 0."""
+        del mock_config  # Required by decorator but not used in test
         rootfs_dir = tmp_path / "rootfs"
         work_dir = tmp_path / "build"
         mock_get_vm_dirs.return_value = (rootfs_dir, work_dir)

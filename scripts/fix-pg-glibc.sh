@@ -1,5 +1,13 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 set -e
+
+
+# Initialize log aggregation
+init_log_aggregation
 
 cd /tmp/ubuntu24-libs
 rm -f *.deb *.tar* debian-binary control.tar*

@@ -1,4 +1,8 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /**
  * Static link audit for Astro docs output.
  * Scans docs/dist for internal href/src references that do not resolve.
@@ -6,6 +10,10 @@
 
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const distRoot = path.resolve(__dirname, '..', 'docs', 'dist');
 const siteBase = process.env.DOCS_SITE_BASE || 'vibecode-webgui';

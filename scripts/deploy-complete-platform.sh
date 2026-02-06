@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete Platform Deployment Script
 # Orchestrates deployment of the entire VibeCode platform with all components
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

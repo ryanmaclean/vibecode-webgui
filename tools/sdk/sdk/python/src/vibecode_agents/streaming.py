@@ -23,7 +23,6 @@ import logging
 from typing import Any, AsyncIterator, Dict, Optional
 
 import httpx
-from sseclient import SSEClient
 
 from vibecode_agents.exceptions import ConnectionError, MessageError, StreamError
 from vibecode_agents.models import SSEEvent, SSEEventType

@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Evaluate all 3 Datadog installation solutions
 # Agent: QA Engineer
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

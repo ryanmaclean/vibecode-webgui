@@ -1,10 +1,18 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 // Simple script to validate Datadog monitoring integration
 const https = require('https');
 const fs = require('fs');
 const path = require('path');
 const dotenv = require('dotenv');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 // Prefer .env at repo root, fallback to .env.local
 const root = path.join(__dirname, '..');

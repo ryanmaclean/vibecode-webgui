@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Quick verification script for VibeCode setup
 # Checks that all major components are properly configured
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

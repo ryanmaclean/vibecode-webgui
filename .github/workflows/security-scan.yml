@@ -10,6 +10,12 @@ on:
     - cron: '0 2 * * 1'
   workflow_dispatch:
 
+env:
+  DD_SERVICE: ${{ github.event.repository.name }}
+  DD_ENV: ci
+  DD_VERSION: ${{ github.sha }}
+  DD_TAGS: team:platform,component:ci
+
 concurrency:
   group: security-scan-${{ github.ref }}
   cancel-in-progress: true

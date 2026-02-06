@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # VibeCode Regression Test Suite
 # Run before commits to ensure no functionality breaks
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

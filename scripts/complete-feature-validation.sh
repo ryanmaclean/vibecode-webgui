@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete feature validation for VibeCode
 # Tests all critical functionality before declaring feature complete
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

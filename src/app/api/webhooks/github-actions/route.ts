@@ -12,6 +12,7 @@ import {
   verifyGitHubSignature,
 } from '@/lib/webhooks/github-actions'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { incrementGastownMetric } from '@/lib/monitoring/gastown-metrics'
 
 const apiRateLimit = createAPIRateLimit(100) // 100 requests per minute - webhooks can be bursty
 
@@ -134,6 +135,18 @@ export async function POST(request: NextRequest) {
 
   try {
     const gastownClient = createGastownClientFromEnv()
+    incrementGastownMetric('gastown.mayor.task.count', 1, {
+      source: 'github_actions',
+      event: 'workflow_run',
+    })
+    logger.info('role_activity', {
+      event_type: 'role_activity',
+      role: 'mayor',
+      source: 'github_actions',
+      action: 'task_assigned',
+      trace_id: traceId,
+      delivery_id: deliveryId,
+    })
     const result = await gastownClient.reportWorkflowFailure(traceId, evaluation.payload, {
       deliveryId,
     })

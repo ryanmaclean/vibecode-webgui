@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Complete Kubernetes Automation Setup
 # Installs ArgoCD, External Secrets, and configures GitOps
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -euo pipefail
 

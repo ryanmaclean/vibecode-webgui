@@ -1,6 +1,14 @@
 #!/bin/bash
+
+# Datadog Log Aggregation
+source "$(dirname "$0")/lib/log-aggregation.sh"
+
 # Rebuild all 6 VMs with services installed
 # Option A: Complete rebuild with proper configuration
+
+# Initialize log aggregation
+init_log_aggregation
+
 
 set -e
 

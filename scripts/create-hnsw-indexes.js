@@ -1,9 +1,17 @@
 #!/usr/bin/env node
+
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
 /*
  * Create/ensure HNSW (cosine) indexes for pgvector on Azure PostgreSQL
  * Tables: rag_chunks.embedding, document_embeddings.embedding
  */
 const { Client } = require('pg');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 (async () => {
   try {

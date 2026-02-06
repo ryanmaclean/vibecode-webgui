@@ -1,8 +1,20 @@
 #!/usr/bin/env python3
 
+# Datadog Log Aggregation
+from scripts.lib.log_aggregation import get_log_aggregation
+
+try:
+    import os as _os; _c = __import__('ddtrace').config; _s = _os.path.basename(__file__).replace('.py',''); _c.service = _s; _c.requests.service = _s; __import__('ddtrace').patch_all()
+except: pass
+
+
 # -- VibeCode Telemetry --
 import sys
 import os
+
+# Initialize log aggregation
+log_agg = get_log_aggregation()
+
 try:
     sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../')))
     from vibecode.telemetry import init_telemetry
@@ -29,7 +41,6 @@ from base64 import b64encode
 from dataclasses import dataclass
 from getpass import getpass
 from pathlib import Path
-from typing import Optional
 
 
 class Color:
@@ -276,8 +287,14 @@ SESSION_SECRET={config.session_secret}
 NEXTAUTH_SECRET={config.nextauth_secret}
 NEXTAUTH_URL=http://localhost:3000
 
-# Database
-DATABASE_URL=postgresql://vibecode:vibecode123@localhost:5432/vibecode_dev
+# Database (configure via environment variables or update these values)
+# Required: DB_USER, DB_PASSWORD, DB_HOST, DB_PORT, DB_NAME
+DB_USER=vibecode
+DB_PASSWORD=  # Set this to your database password
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=vibecode_dev
+DATABASE_URL=postgresql://${{DB_USER}}:${{DB_PASSWORD}}@${{DB_HOST}}:${{DB_PORT}}/${{DB_NAME}}
 REDIS_URL=redis://localhost:6379
 
 # Development Settings

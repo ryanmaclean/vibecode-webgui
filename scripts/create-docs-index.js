@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * Documentation Index Creator
  * 
@@ -9,6 +13,10 @@
 
 const fs = require('fs').promises;
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 class DocumentationIndexer {
   constructor() {

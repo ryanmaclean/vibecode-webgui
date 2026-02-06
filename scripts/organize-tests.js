@@ -1,5 +1,9 @@
 #!/usr/bin/env node
 
+// Datadog Log Aggregation
+const LogAggregation = require("./lib/log-aggregation-node.js");
+
+
 /**
  * VibeCode Test Organization & Validation Script
  * Ensures tests are properly organized and run at appropriate times
@@ -8,6 +12,10 @@
 const { execSync } = require('child_process');
 const fs = require('fs');
 const path = require('path');
+
+// Initialize log aggregation
+const logAggregation = new LogAggregation();
+
 
 const colors = {
   red: '\x1b[31m',
