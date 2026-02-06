@@ -19,7 +19,10 @@ import {
   X,
   ChevronDown,
   Bot,
+  Keyboard,
 } from 'lucide-react'
+import { KeyboardShortcuts } from '@/design-system/components/KeyboardShortcuts'
+import { useKeyboardShortcuts, shortcutCategories } from '@/hooks/useKeyboardShortcuts'
 
 interface NavItem {
   title: string
@@ -152,6 +155,7 @@ export function AppNavigation() {
   const pathname = usePathname()
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { isShortcutsOpen, setIsShortcutsOpen } = useKeyboardShortcuts()
 
   // Close mobile menu on route change
   useEffect(() => {
@@ -210,8 +214,16 @@ export function AppNavigation() {
           })}
         </nav>
 
-        {/* Right side: user info + mobile toggle */}
+        {/* Right side: shortcuts + user info + mobile toggle */}
         <div className="flex items-center gap-3">
+          <button
+            onClick={() => setIsShortcutsOpen(true)}
+            className="hidden md:flex items-center gap-1.5 p-2 rounded-md text-muted-foreground hover:bg-accent hover:text-foreground transition-colors"
+            aria-label="Show keyboard shortcuts"
+            title="Keyboard shortcuts (⌘/)"
+          >
+            <Keyboard className="h-4 w-4" />
+          </button>
           {user && (
             <div className="hidden sm:flex items-center gap-3">
               <span className="text-sm text-muted-foreground">
@@ -307,6 +319,12 @@ export function AppNavigation() {
           )}
         </nav>
       )}
+
+      <KeyboardShortcuts
+        isOpen={isShortcutsOpen}
+        onClose={() => setIsShortcutsOpen(false)}
+        shortcuts={shortcutCategories}
+      />
     </header>
   )
 }

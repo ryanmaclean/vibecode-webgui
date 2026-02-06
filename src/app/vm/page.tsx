@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { Copy, Check, Terminal, Database, Server, Globe, Container } from 'lucide-react'
 import { MultiVMDashboard } from '@/components/vm'
+import { ConsoleModal } from '@/components/console/ConsoleModal'
 import type { VMInstance, VMProfile, VMDashboardStats, CreateVMOptions } from '@/types/multi-vm'
 
 const connectionCards = [
@@ -202,6 +203,7 @@ export default function VMDashboardPage() {
     }
   }, [fetchVMs])
 
+  const [consoleOpen, setConsoleOpen] = useState(false)
   const [copiedCard, setCopiedCard] = useState<string | null>(null)
 
   const handleCopy = useCallback(async (command: string, name: string) => {
@@ -210,8 +212,22 @@ export default function VMDashboardPage() {
     setTimeout(() => setCopiedCard(null), 2000)
   }, [])
 
+  const activeVM = vms.find((vm) => vm.status.status === 'running')
+  const consoleWorkspaceId = activeVM?.id || 'default'
+
   return (
     <>
+      <div className="flex items-center justify-between mb-4">
+        <h1 className="text-2xl font-bold text-gray-900">Virtual Machines</h1>
+        <button
+          onClick={() => setConsoleOpen(true)}
+          className="inline-flex items-center space-x-2 rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
+        >
+          <Terminal className="h-4 w-4" />
+          <span>View Console</span>
+        </button>
+      </div>
+
       <MultiVMDashboard
         vms={vms}
         profiles={profiles}
@@ -264,6 +280,12 @@ export default function VMDashboardPage() {
           })}
         </div>
       </div>
+
+      <ConsoleModal
+        isOpen={consoleOpen}
+        onClose={() => setConsoleOpen(false)}
+        workspaceId={consoleWorkspaceId}
+      />
     </>
   )
 }

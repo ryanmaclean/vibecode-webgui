@@ -1,10 +1,10 @@
 # VibeCode Complete Product Specification
 
-**Version:** 6.1.0
+**Version:** 6.2.0
 **Compiled From:** 48 GitHub Releases (v0.9-beta → v5.1.0-beta)
 **Date:** 2026-02-06
-**Status:** Development (Waves 3-8 complete)
-**Total Pages:** 70+ | **API Routes:** 95+ | **Tests:** 7,133+
+**Status:** Development (Waves 3-9 in progress)
+**Total Pages:** 67 | **API Routes:** 119 | **Tests:** 7,166+ | **Agents Deployed:** 37+
 
 ---
 
@@ -515,13 +515,22 @@ openai → openrouter → anthropic
 | `ai/layout.tsx` | AI section sidebar (Chat, Models, Costs, Prompts) | Implemented (Wave 6) |
 | `vm/layout.tsx` | VM section sidebar (Dashboard, Snapshots) | Implemented (Wave 6) |
 
-### 9.3 Pages Needed
+### 9.3 Recently Added (Wave 8)
 
-| Route | Purpose | APIs Available |
-|-------|---------|---------------|
-| `/containers` | Docker container management | /api/containers, /api/docker/status |
-| `/ai/chat` | AI chat under AI section layout | /api/ai/chat, /api/ai/chat/stream |
-| `/monitoring/alerts` | Service & budget alerts | /api/monitoring/pool-alerts |
+| Route | Purpose | Status |
+|-------|---------|--------|
+| `/containers` | Docker container management (list, run, stop, logs) | Implemented (Wave 8) |
+| `/ai/chat` | AI chat under AI section layout | Implemented (Wave 8) |
+| `/monitoring/alerts` | Service & budget alerts with filtering | Implemented (Wave 8) |
+
+### 9.4 Existing Components Awaiting Integration
+
+| Component | Location | Integration Target |
+|-----------|----------|-------------------|
+| `KeyboardShortcuts` | `src/design-system/components/KeyboardShortcuts.tsx` | Global shortcut handler + help modal |
+| `ConsoleModal` | `src/components/console/ConsoleModal.tsx` | VM dashboard console viewer |
+| `OnboardingDrawer` | `src/components/onboarding/OnboardingDrawer.tsx` | First-run experience |
+| Settings Import/Export | `SettingsPanel` | JSON backup/restore buttons |
 
 ---
 
