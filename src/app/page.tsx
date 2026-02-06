@@ -5,13 +5,16 @@
 
 'use client'
 
-import { Suspense } from 'react'
+import { Suspense, useCallback, useEffect, useState } from 'react'
 import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
 import { useAuth } from '@/hooks/useAuth'
 import { AppNavigation } from '@/components/navigation'
-import { Server, Sparkles, Heart, BarChart3, Settings, Code } from 'lucide-react'
+import { OnboardingDrawer } from '@/components/onboarding/OnboardingDrawer'
+import { Server, Sparkles, Heart, BarChart3, Settings, Code, Rocket } from 'lucide-react'
+
+const ONBOARDING_COMPLETE_KEY = 'vibecode-onboarding-complete'
 
 const PromptInterface = dynamic(
   () => import('@/components/PromptInterface'),
@@ -31,6 +34,21 @@ const PromptInterface = dynamic(
 
 export default function Home() {
   const { isAuthenticated, isLoading, user, logout } = useAuth()
+  const [drawerOpen, setDrawerOpen] = useState(false)
+
+  useEffect(() => {
+    if (!isAuthenticated || isLoading) return
+    const completed = localStorage.getItem(ONBOARDING_COMPLETE_KEY)
+    if (!completed) {
+      const timer = setTimeout(() => setDrawerOpen(true), 1000)
+      return () => clearTimeout(timer)
+    }
+  }, [isAuthenticated, isLoading])
+
+  const handleDrawerClose = useCallback(() => {
+    setDrawerOpen(false)
+    localStorage.setItem(ONBOARDING_COMPLETE_KEY, 'true')
+  }, [])
 
   if (isLoading) {
     return (
@@ -146,8 +164,20 @@ export default function Home() {
       <div className="min-h-screen bg-background">
         <AppNavigation />
 
+        {/* Dashboard Header */}
+        <section className="px-4 sm:px-6 pt-6 pb-2 flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-foreground">Dashboard</h2>
+          <button
+            onClick={() => setDrawerOpen(true)}
+            className="inline-flex items-center gap-2 rounded-lg bg-gradient-to-r from-purple-600 to-indigo-600 px-4 py-2 text-sm font-medium text-white shadow-md transition-all hover:shadow-lg hover:scale-105"
+          >
+            <Rocket className="h-4 w-4" />
+            Get Started
+          </button>
+        </section>
+
         {/* Dashboard Cards */}
-        <section className="px-4 sm:px-6 py-6">
+        <section className="px-4 sm:px-6 py-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
             {dashboardCards.map((card) => {
               const Icon = card.icon
@@ -183,6 +213,8 @@ export default function Home() {
             <PromptInterface />
           </Suspense>
         </div>
+
+        <OnboardingDrawer open={drawerOpen} onClose={handleDrawerClose} />
       </div>
     </div>
   )

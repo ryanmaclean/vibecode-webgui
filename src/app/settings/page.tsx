@@ -2,9 +2,10 @@
 
 import { useCallback, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { Download, Upload, RotateCcw } from 'lucide-react';
+import { Download, Upload, RotateCcw, Wand2 } from 'lucide-react';
 import { SettingsPanel } from '@/components/settings/SettingsPanel';
 import { Button } from '@/components/ui/button';
+import { OnboardingDrawer } from '@/components/onboarding/OnboardingDrawer';
 import { getSettingsManager } from '@/lib/settings/settings-manager';
 import { DEFAULT_APP_SETTINGS } from '@/types/settings';
 import type { AppSettings } from '@/types/settings';
@@ -14,6 +15,7 @@ export default function SettingsPage() {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [panelKey, setPanelKey] = useState(0);
   const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+  const [wizardOpen, setWizardOpen] = useState(false);
 
   const showStatus = useCallback((type: 'success' | 'error', text: string) => {
     setStatusMessage({ type, text });
@@ -144,6 +146,10 @@ export default function SettingsPage() {
                   <RotateCcw className="h-4 w-4 mr-2" aria-hidden="true" />
                   Reset to Defaults
                 </Button>
+                <Button variant="outline" size="sm" onClick={() => setWizardOpen(true)}>
+                  <Wand2 className="h-4 w-4 mr-2" aria-hidden="true" />
+                  Setup Wizard
+                </Button>
               </div>
               {statusMessage && (
                 <span
@@ -160,6 +166,8 @@ export default function SettingsPage() {
           </div>
         </div>
       </div>
+
+      <OnboardingDrawer open={wizardOpen} onClose={() => setWizardOpen(false)} />
     </div>
   );
 }

@@ -6,9 +6,11 @@ import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { logger } from '@/lib/logger'
 import {
   MessageSquare,
+  Bot,
   Cpu,
   DollarSign,
   BookOpen,
+  History,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -16,6 +18,11 @@ const NAV_ITEMS = [
     title: 'Chat',
     href: '/ai/chat',
     icon: MessageSquare,
+  },
+  {
+    title: 'Agents',
+    href: '/ai/agents',
+    icon: Bot,
   },
   {
     title: 'Models',
@@ -31,6 +38,11 @@ const NAV_ITEMS = [
     title: 'Prompts',
     href: '/ai/prompts',
     icon: BookOpen,
+  },
+  {
+    title: 'History',
+    href: '/ai/conversations',
+    icon: History,
   },
 ]
 

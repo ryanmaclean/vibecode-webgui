@@ -1,10 +1,10 @@
 # VibeCode Complete Product Specification
 
-**Version:** 6.2.0
+**Version:** 6.3.0
 **Compiled From:** 48 GitHub Releases (v0.9-beta → v5.1.0-beta)
 **Date:** 2026-02-06
-**Status:** Development (Waves 3-9 in progress)
-**Total Pages:** 67 | **API Routes:** 119 | **Tests:** 7,166+ | **Agents Deployed:** 37+
+**Status:** Development (Waves 3-10 complete)
+**Total Pages:** 71 | **API Routes:** 119 | **Tests:** 7,211+ | **Agents Deployed:** 42+
 
 ---
 
@@ -513,7 +513,7 @@ openai → openrouter → anthropic
 |-----------|---------|--------|
 | `AppNavigation` | Responsive top nav with dropdowns | Implemented (Wave 7) |
 | `ai/layout.tsx` | AI section sidebar (Chat, Models, Costs, Prompts) | Implemented (Wave 6) |
-| `vm/layout.tsx` | VM section sidebar (Dashboard, Snapshots) | Implemented (Wave 6) |
+| `vm/layout.tsx` | VM section sidebar (Dashboard, Logs, Snapshots) | Implemented (Wave 6+9) |
 
 ### 9.3 Recently Added (Wave 8)
 
@@ -523,14 +523,23 @@ openai → openrouter → anthropic
 | `/ai/chat` | AI chat under AI section layout | Implemented (Wave 8) |
 | `/monitoring/alerts` | Service & budget alerts with filtering | Implemented (Wave 8) |
 
-### 9.4 Existing Components Awaiting Integration
+### 9.4 Wave 9 - Component Integration
 
-| Component | Location | Integration Target |
-|-----------|----------|-------------------|
-| `KeyboardShortcuts` | `src/design-system/components/KeyboardShortcuts.tsx` | Global shortcut handler + help modal |
-| `ConsoleModal` | `src/components/console/ConsoleModal.tsx` | VM dashboard console viewer |
-| `OnboardingDrawer` | `src/components/onboarding/OnboardingDrawer.tsx` | First-run experience |
-| Settings Import/Export | `SettingsPanel` | JSON backup/restore buttons |
+| Feature | Target | Status |
+|---------|--------|--------|
+| `useKeyboardShortcuts` hook | Global shortcuts (Cmd+/, Cmd+T, Cmd+O, Cmd+Shift+S/H) | Integrated (Wave 9) |
+| `ConsoleModal` | VM dashboard console viewer | Integrated (Wave 9) |
+| `/vm/logs` | Terminal-style service log viewer (5 tabs) | Implemented (Wave 9) |
+| `OnboardingDrawer` | First-visit experience + settings wizard | Integrated (Wave 10) |
+| Settings Import/Export | JSON backup/restore/reset buttons | Implemented (Wave 9) |
+
+### 9.5 Wave 10 - Design System Integration
+
+| Route | Purpose | Status |
+|-------|---------|--------|
+| `/ai/agents` | Multi-agent workspace with 6 agents, conversations | Implemented (Wave 10) |
+| `/ai/conversations` | Chat history browser with search/filter/archive | Implemented (Wave 10) |
+| `/monitoring/performance` | API latency, VM metrics, endpoint performance table | Implemented (Wave 10) |
 
 ---
 
@@ -589,12 +598,14 @@ openai → openrouter → anthropic
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 7,133+ |
+| Total Tests | 7,211+ |
 | Passing | 7,040+ |
 | Failing | 0 |
 | Skipped | 63 |
 | Coverage (new code) | 87%+ |
 | Wave 6 Page Tests | 48 (7 suites) |
+| Wave 8 Tests | 38 (3 suites) |
+| Wave 9 Tests | 45 (3 suites) |
 | Frameworks | Jest 30.x |
 
 ---
