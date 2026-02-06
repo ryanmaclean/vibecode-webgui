@@ -32,7 +32,7 @@ except ImportError:
     pass  # ddtrace not installed, continue without instrumentation
 
 from transformers import pipeline
-from huggingface_hub import login, HfApi
+from huggingface_hub import login
 
 # --- Main Application Logic ---
 def main():

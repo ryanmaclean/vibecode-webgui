@@ -17,17 +17,14 @@ Production-ready command-line interface for agent management.
 """
 
 import asyncio
-import json
 import logging
 import sys
-from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import List, Optional
 
 try:
     import click
     from rich.console import Console
     from rich.table import Table
-    from rich.live import Live
     from rich.panel import Panel
     from rich.progress import Progress, SpinnerColumn, TextColumn
 except ImportError:
