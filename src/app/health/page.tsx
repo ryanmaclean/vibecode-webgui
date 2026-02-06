@@ -9,18 +9,24 @@
  * - Docker
  *
  * Features:
- * - Auto-refresh via polling (every 5 seconds)
+ * - Real-time updates via WebSocket with polling fallback
  * - Per-service health cards with status, latency, last checked
  * - Restart button per service (calls POST /api/services/restart/[name])
  * - Overall health summary header
+ * - Connection status indicator (green/yellow/red dot)
  */
 
 'use client'
 
 import { useState, useEffect, useCallback, useRef } from 'react'
 import type { AggregatedHealthResponse, ServiceHealthResult, ServiceName } from '@/types/health'
+import type { StatusMessage, ServiceHealth } from '@/types/status-events'
 
 const POLL_INTERVAL_MS = 5000
+const WS_RECONNECT_BASE_MS = 1000
+const WS_RECONNECT_MAX_MS = 30000
+
+type WsConnectionStatus = 'connected' | 'reconnecting' | 'disconnected'
 
 const SERVICE_DISPLAY: Record<ServiceName, { label: string; description: string }> = {
   ssh: { label: 'SSH (Dropbear)', description: 'Secure shell access on port 2222' },
@@ -38,7 +44,12 @@ export default function HealthPage() {
   const [error, setError] = useState<string | null>(null)
   const [restarting, setRestarting] = useState<RestartingState>({})
   const [restartMessages, setRestartMessages] = useState<Record<string, { success: boolean; message: string }>>({})
+  const [wsStatus, setWsStatus] = useState<WsConnectionStatus>('disconnected')
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const wsRef = useRef<WebSocket | null>(null)
+  const reconnectTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const reconnectAttemptRef = useRef(0)
+  const usingWebSocketRef = useRef(false)
 
   const fetchHealth = useCallback(async () => {
     try {
@@ -56,13 +67,117 @@ export default function HealthPage() {
     }
   }, [])
 
+  const convertWsServices = useCallback(
+    (wsServices: ServiceHealth[], overallStatus: string): AggregatedHealthResponse => {
+      const services: ServiceHealthResult[] = wsServices.map((svc) => ({
+        name: svc.name as ServiceName,
+        status: svc.status === 'degraded' ? 'unhealthy' : svc.status as ServiceHealthResult['status'],
+        latencyMs: svc.responseTime ?? 0,
+        lastChecked: svc.lastCheck,
+        error: svc.message,
+        details: svc.details,
+      }))
+
+      const healthy = services.filter((s) => s.status === 'healthy').length
+      const unhealthy = services.filter((s) => s.status === 'unhealthy').length
+      const unknown = services.filter((s) => s.status === 'unknown').length
+
+      return {
+        status: overallStatus as AggregatedHealthResponse['status'],
+        timestamp: new Date().toISOString(),
+        totalCheckTimeMs: services.reduce((sum, s) => sum + s.latencyMs, 0),
+        services,
+        summary: { total: services.length, healthy, unhealthy, unknown },
+      }
+    },
+    []
+  )
+
+  const startPolling = useCallback(() => {
+    if (intervalRef.current) return
+    intervalRef.current = setInterval(fetchHealth, POLL_INTERVAL_MS)
+  }, [fetchHealth])
+
+  const stopPolling = useCallback(() => {
+    if (intervalRef.current) {
+      clearInterval(intervalRef.current)
+      intervalRef.current = null
+    }
+  }, [])
+
+  const connectWebSocket = useCallback(() => {
+    if (wsRef.current && wsRef.current.readyState === WebSocket.OPEN) return
+
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
+    const ws = new WebSocket(`${protocol}//${window.location.host}/api/ws/status`)
+    wsRef.current = ws
+
+    ws.onopen = () => {
+      setWsStatus('connected')
+      reconnectAttemptRef.current = 0
+      usingWebSocketRef.current = true
+      stopPolling()
+    }
+
+    ws.onmessage = (event) => {
+      try {
+        const msg: StatusMessage = JSON.parse(event.data)
+
+        if (msg.type === 'health_update') {
+          const data = convertWsServices(msg.payload.services, msg.payload.overallStatus)
+          setHealthData(data)
+          setError(null)
+          setLoading(false)
+        } else if (msg.type === 'initial_status') {
+          const data = convertWsServices(msg.payload.services, msg.payload.overallStatus)
+          setHealthData(data)
+          setError(null)
+          setLoading(false)
+        }
+      } catch {
+        // Ignore unparseable messages
+      }
+    }
+
+    ws.onclose = () => {
+      wsRef.current = null
+      const attempt = reconnectAttemptRef.current
+      const delay = Math.min(WS_RECONNECT_BASE_MS * Math.pow(2, attempt), WS_RECONNECT_MAX_MS)
+      setWsStatus('reconnecting')
+
+      // Fall back to polling while reconnecting
+      if (usingWebSocketRef.current) {
+        startPolling()
+      }
+
+      reconnectTimeoutRef.current = setTimeout(() => {
+        reconnectAttemptRef.current++
+        connectWebSocket()
+      }, delay)
+    }
+
+    ws.onerror = () => {
+      // onclose will fire after onerror, which handles reconnect
+    }
+  }, [convertWsServices, startPolling, stopPolling])
+
   useEffect(() => {
     fetchHealth()
-    intervalRef.current = setInterval(fetchHealth, POLL_INTERVAL_MS)
+    startPolling()
+    connectWebSocket()
+
     return () => {
-      if (intervalRef.current) clearInterval(intervalRef.current)
+      stopPolling()
+      if (wsRef.current) {
+        usingWebSocketRef.current = false
+        wsRef.current.close()
+        wsRef.current = null
+      }
+      if (reconnectTimeoutRef.current) {
+        clearTimeout(reconnectTimeoutRef.current)
+      }
     }
-  }, [fetchHealth])
+  }, [fetchHealth, startPolling, stopPolling, connectWebSocket])
 
   const handleRestart = async (serviceName: ServiceName) => {
     setRestarting((prev) => ({ ...prev, [serviceName]: true }))
@@ -175,11 +290,41 @@ export default function HealthPage() {
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
         {/* Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Service Health</h1>
-          <p className="mt-2 text-gray-600">
-            Real-time health monitoring for VM stack services
-          </p>
+        <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Service Health</h1>
+            <p className="mt-2 text-gray-600">
+              Real-time health monitoring for VM stack services
+            </p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <span
+                data-testid="ws-status-dot"
+                className={`h-2.5 w-2.5 rounded-full ${
+                  wsStatus === 'connected'
+                    ? 'bg-green-500'
+                    : wsStatus === 'reconnecting'
+                      ? 'bg-yellow-500 animate-pulse'
+                      : 'bg-red-500'
+                }`}
+              ></span>
+              <span data-testid="ws-status-label">
+                {wsStatus === 'connected'
+                  ? 'Live'
+                  : wsStatus === 'reconnecting'
+                    ? 'Reconnecting'
+                    : 'Polling'}
+              </span>
+            </div>
+            <button
+              data-testid="refresh-btn"
+              onClick={fetchHealth}
+              className="px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+            >
+              Refresh
+            </button>
+          </div>
         </div>
 
         {/* Error Banner */}
@@ -312,8 +457,10 @@ export default function HealthPage() {
         {/* Footer info */}
         {healthData && (
           <div className="mt-8 text-center text-sm text-gray-400">
-            Auto-refreshing every {POLL_INTERVAL_MS / 1000} seconds |{' '}
-            Last update: {formatTime(healthData.timestamp)}
+            {wsStatus === 'connected'
+              ? 'Live updates via WebSocket'
+              : `Polling every ${POLL_INTERVAL_MS / 1000} seconds`}
+            {' | '}Last update: {formatTime(healthData.timestamp)}
           </div>
         )}
       </div>

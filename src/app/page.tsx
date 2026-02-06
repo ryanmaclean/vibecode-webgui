@@ -10,6 +10,8 @@ import dynamic from 'next/dynamic'
 import Link from 'next/link'
 
 import { useAuth } from '@/hooks/useAuth'
+import { AppNavigation } from '@/components/navigation'
+import { Server, Sparkles, Heart, BarChart3, Settings, Code } from 'lucide-react'
 
 const PromptInterface = dynamic(
   () => import('@/components/PromptInterface'),
@@ -130,56 +132,44 @@ export default function Home() {
     )
   }
 
+  const dashboardCards = [
+    { title: 'VM Management', description: 'Manage virtual machines', href: '/vm', icon: Server, gradient: 'from-blue-500 to-blue-700' },
+    { title: 'AI Studio', description: 'Models, costs, prompts', href: '/ai/models', icon: Sparkles, gradient: 'from-purple-500 to-purple-700' },
+    { title: 'Health Monitor', description: 'Service health status', href: '/health', icon: Heart, gradient: 'from-red-500 to-red-700' },
+    { title: 'Monitoring', description: 'Metrics & traces', href: '/monitoring', icon: BarChart3, gradient: 'from-green-500 to-green-700' },
+    { title: 'Settings', description: 'App configuration', href: '/settings', icon: Settings, gradient: 'from-amber-500 to-amber-700' },
+    { title: 'Editor', description: 'Code editor', href: '/editor', icon: Code, gradient: 'from-indigo-500 to-indigo-700' },
+  ]
+
   return (
     <div className="dark">
       <div className="min-h-screen bg-background">
-        {/* Header */}
-        <header className="border-b border-border bg-card">
-          <div className="flex items-center justify-between px-6 py-3">
-            <div className="flex items-center gap-3">
-              <div className="w-8 h-8 bg-gradient-primary rounded-lg flex items-center justify-center">
-                <svg
-                  className="h-5 w-5 text-white"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
+        <AppNavigation />
+
+        {/* Dashboard Cards */}
+        <section className="px-4 sm:px-6 py-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {dashboardCards.map((card) => {
+              const Icon = card.icon
+              return (
+                <Link
+                  key={card.href}
+                  href={card.href}
+                  className="group rounded-lg border border-border bg-card p-5 transition-all hover:shadow-lg hover:scale-[1.02]"
                 >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"
-                  />
-                </svg>
-              </div>
-              <div>
-                <h1 className="text-xl font-bold text-foreground">VibeCode</h1>
-                <p className="text-xs text-muted-foreground">AI Development Assistant</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center gap-4">
-              <Link
-                href="/marketplace"
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Template Marketplace
-              </Link>
-              <span className="text-sm text-muted-foreground">
-                Welcome, {user?.name || user?.email}
-              </span>
-              <button
-                onClick={logout}
-                className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Sign Out
-              </button>
-            </div>
+                  <div className={`h-10 w-10 rounded-lg bg-gradient-to-br ${card.gradient} flex items-center justify-center mb-3`}>
+                    <Icon className="h-5 w-5 text-white" />
+                  </div>
+                  <h3 className="text-sm font-semibold text-foreground">{card.title}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">{card.description}</p>
+                </Link>
+              )
+            })}
           </div>
-        </header>
+        </section>
 
         {/* Main Interface */}
-        <div className="h-[calc(100vh-73px)]">
+        <div className="h-[calc(100vh-320px)]">
           <Suspense
             fallback={
               <div className="h-full w-full flex items-center justify-center bg-background">
