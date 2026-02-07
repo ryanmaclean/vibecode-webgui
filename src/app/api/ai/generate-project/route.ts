@@ -1,3 +1,4 @@
+// STUB: Returns mock data
 import { NextRequest, NextResponse } from 'next/server';
 import { z } from 'zod';
 import { createAPIRateLimit } from '@/lib/rate-limiting';

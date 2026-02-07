@@ -1,3 +1,4 @@
+// STUB: Returns mock data
 /**
  * Dashboard AI Usage Metrics API Endpoint
  * Provides AI model usage, costs, and performance metrics

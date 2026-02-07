@@ -1,3 +1,4 @@
+// STUB: Returns mock data
 /**
  * Dashboard Performance Metrics API Endpoint
  * Provides performance metrics over configurable time ranges

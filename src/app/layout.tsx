@@ -5,9 +5,6 @@ import type { Metadata } from "next";
 import "./globals.css";
 import Providers from './providers';
 import Script from 'next/script';
-import { TauriMenuBarProvider } from '@/components/TauriMenuBarProvider';
-import { TauriIdeBootstrapper } from '@/components/TauriIdeBootstrapper';
-import RUMInitializer from '@/components/RUMInitializer';
 import { ErrorBoundary } from '@/components/error/ErrorBoundary';
 
 // Fonts temporarily disabled due to Babel/SWC conflict
@@ -81,10 +78,7 @@ export default function RootLayout({
         >
           Skip to main content
         </a>
-        <RUMInitializer />
         <Providers>
-          <TauriMenuBarProvider />
-          <TauriIdeBootstrapper />
           <ErrorBoundary>
             <main id="main-content">
               {children}

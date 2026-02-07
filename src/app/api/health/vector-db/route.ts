@@ -1,3 +1,4 @@
+// STUB: Returns mock data
 import { NextRequest, NextResponse } from 'next/server';
 // import { logger } from '../../../../lib/logger';
 

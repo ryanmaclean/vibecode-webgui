@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import docsIndex from '@/data/docs-index.json';
+const docsIndex = { documents: [] as any[], metadata: { categories: [] as string[], totalDocuments: 0 } };
 import { validateQueryParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { docsSearchQuerySchema, docsSearchBodySchema } from '@/lib/api/validation/schemas';
 import { sanitizeSearchQuery } from '@/lib/api/validation/sanitize';

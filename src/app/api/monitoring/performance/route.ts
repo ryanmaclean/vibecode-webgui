@@ -1,3 +1,4 @@
+// STUB: Returns mock data
 /**
  * Performance Monitoring API Endpoint
  * Provides performance metrics and optimization insights
