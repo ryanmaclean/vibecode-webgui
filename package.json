@@ -212,7 +212,7 @@
     "jsonwebtoken": "9.0.3",
     "langchain": "1.2.17",
     "lightningcss": "1.19.0",
-    "lucide-react": "0.395.0",
+    "lucide-react": "0.563.0",
     "marked": "17.0.1",
     "monaco-editor": "0.55.1",
     "monacopilot": "1.2.12",
