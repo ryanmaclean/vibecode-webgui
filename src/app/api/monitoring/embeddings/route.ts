@@ -1,20 +1,50 @@
-// STUB: Returns mock data
-import { NextResponse } from 'next/server';
-// import { logger } from '@/lib/logger';
+/**
+ * Embeddings Monitoring API Endpoint
+ * Returns real process metrics for embedding service health
+ */
 
-// Clean up function for graceful shutdown
+import { NextResponse } from 'next/server'
 
-export async function GET() {
+export const dynamic = 'force-dynamic'
+
+export async function GET(request: Request) {
   try {
-    return NextResponse.json({ 
-      status: 'healthy',
-      message: 'Embeddings monitoring endpoint is working',
-      timestamp: new Date().toISOString()
-    });
+    const url = new URL(request.url)
+    const detailed = url.searchParams.get('detailed') === 'true'
+
+    const memUsage = process.memoryUsage()
+    const uptime = process.uptime()
+
+    const metrics = {
+      status: 'operational',
+      timestamp: new Date().toISOString(),
+      service: 'embeddings',
+      uptime: Math.round(uptime),
+      memory: {
+        heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+        heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+        rss: Math.round(memUsage.rss / 1024 / 1024),
+        external: Math.round(memUsage.external / 1024 / 1024),
+      },
+      ...(detailed && {
+        environment: {
+          nodeVersion: process.version,
+          platform: process.platform,
+          arch: process.arch,
+        },
+      }),
+    }
+
+    return NextResponse.json(metrics)
   } catch (error) {
     return NextResponse.json(
-      { error: 'Internal server error' },
+      {
+        status: 'error',
+        error: 'Failed to collect embeddings metrics',
+        message: error instanceof Error ? error.message : 'Unknown error',
+        timestamp: new Date().toISOString()
+      },
       { status: 500 }
-    );
+    )
   }
 }

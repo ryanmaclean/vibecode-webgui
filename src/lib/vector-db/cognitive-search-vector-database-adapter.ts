@@ -121,15 +121,14 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         metrics.increment('azure_search.store_chunks.error');
       }
       
-      throw new VectorDbError({
-        type: VectorDbErrorType.VECTOR_CREATION_FAILED,
-        message: `Error storing chunks in Azure Cognitive Search: ${errorMessage}`,
-        originalError: error instanceof Error ? error : undefined,
-        context: { operation: 'storeChunks', provider: 'azure-search', fileId, chunkCount: chunks.length },
-        timestamp: new Date(),
-        retryable: false,
-        severity: 'medium'
-      });
+      throw new VectorDbError(
+        `Error storing chunks in Azure Cognitive Search: ${errorMessage}`,
+        VectorDbErrorType.VECTOR_OPERATION_FAILED,
+        'storeChunks',
+        'azure-search',
+        { fileId, chunkCount: chunks.length, originalError: error instanceof Error ? error : undefined },
+        false
+      );
     }
   }
 
@@ -227,15 +226,14 @@ export class CognitiveSearchVectorDatabaseAdapter extends BaseVectorDatabaseAdap
         metrics.increment('azure_search.delete_chunks.error');
       }
       
-      throw new VectorDbError({
-        type: VectorDbErrorType.STORAGE_ERROR,
-        message: `Error deleting chunks for file ID ${fileId}: ${errorMessage}`,
-        originalError: error instanceof Error ? error : undefined,
-        context: { operation: 'deleteFileChunks', provider: 'azure-search', fileId },
-        timestamp: new Date(),
-        retryable: true,
-        severity: 'medium'
-      });
+      throw new VectorDbError(
+        `Error deleting chunks for file ID ${fileId}: ${errorMessage}`,
+        VectorDbErrorType.VECTOR_OPERATION_FAILED,
+        'deleteFileChunks',
+        'azure-search',
+        { fileId, originalError: error instanceof Error ? error : undefined },
+        true
+      );
     }
   }
 

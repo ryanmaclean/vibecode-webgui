@@ -34,7 +34,11 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
       ...config,
     } as ExtendedConfig;
 
-    this.errorHandler = new VectorDbErrorHandler();
+    this.errorHandler = new VectorDbErrorHandler(
+      config.provider,
+      this.config.enableLogging,
+      this.config.enableMetrics,
+    );
 
     const apiKey = process.env.OPENROUTER_API_KEY ?? process.env.OPENAI_API_KEY;
     if (apiKey) {
@@ -82,7 +86,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
         });
       }
 
-      throw this.errorHandler.handleError(this.lastError, 'initialize', {
+      throw this.errorHandler.handleError(this.lastError, 'initialize', undefined, undefined, {
         provider: this.config.provider,
       });
     }
@@ -265,7 +269,7 @@ export abstract class BaseVectorDatabaseAdapter implements VectorDatabaseInterfa
         });
       }
 
-      throw this.errorHandler.handleError(this.lastError, 'close', {
+      throw this.errorHandler.handleError(this.lastError, 'close', undefined, undefined, {
         provider: this.config.provider,
       });
     }
