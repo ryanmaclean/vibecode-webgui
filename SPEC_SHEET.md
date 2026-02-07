@@ -1,10 +1,10 @@
 # VibeCode Complete Product Specification
 
-**Version:** 6.4.0
+**Version:** 6.5.0
 **Compiled From:** 48 GitHub Releases (v0.9-beta → v5.1.0-beta)
 **Date:** 2026-02-07
-**Status:** Development (Waves 3-11 complete)
-**Total Pages:** 75 | **API Routes:** 119 | **Tests:** 7,262+ | **Agents Deployed:** 47+
+**Status:** Feature-complete (Waves 3-12 complete)
+**Total Pages:** 76 | **API Routes:** 119 | **Test Files:** 58 | **Tests:** 7,322+ | **Agents Deployed:** 50+
 
 ---
 
@@ -512,8 +512,9 @@ openai → openrouter → anthropic
 | Component | Purpose | Status |
 |-----------|---------|--------|
 | `AppNavigation` | Responsive top nav with dropdowns | Implemented (Wave 7) |
-| `ai/layout.tsx` | AI section sidebar (Chat, Models, Costs, Prompts) | Implemented (Wave 6) |
+| `ai/layout.tsx` | AI section sidebar (Chat, Agents, Models, Costs, Prompts, History) | Implemented (Wave 6+10) |
 | `vm/layout.tsx` | VM section sidebar (Dashboard, Logs, Snapshots) | Implemented (Wave 6+9) |
+| `monitoring/layout.tsx` | Monitoring sidebar (10 sub-pages, usePathname active state) | Fixed (Wave 12) |
 
 ### 9.3 Recently Added (Wave 8)
 
@@ -549,6 +550,14 @@ openai → openrouter → anthropic
 | `/monitoring/api-performance` | 15+ endpoint metrics, latency percentiles, error breakdown | Implemented (Wave 11) |
 | `/monitoring/logs` | Centralized log viewer with level/source filters, 35 mock entries | Implemented (Wave 11) |
 | `/monitoring/datadog` | APM traces, monitors, services, config, VSCode extension | Implemented (Wave 11) |
+
+### 9.7 Wave 12 - Quality & Navigation Fixes
+
+| Change | Purpose | Status |
+|--------|---------|--------|
+| Monitoring layout rewrite | usePathname() + 10 nav links + lucide-react icons | Fixed (Wave 12) |
+| `/ai` landing page | AI Dashboard with 6 cards, quick actions, usage stats | Implemented (Wave 12) |
+| Wave 11 tests | 60 tests for vector-db, api-performance, logs, datadog | Implemented (Wave 12) |
 
 ---
 
@@ -607,7 +616,7 @@ openai → openrouter → anthropic
 
 | Metric | Value |
 |--------|-------|
-| Total Tests | 7,262+ |
+| Total Tests | 7,322+ |
 | Passing | 7,040+ |
 | Failing | 0 |
 | Skipped | 63 |
@@ -616,6 +625,7 @@ openai → openrouter → anthropic
 | Wave 8 Tests | 38 (3 suites) |
 | Wave 9 Tests | 45 (3 suites) |
 | Wave 10 Tests | 51 (3 suites) |
+| Wave 11 Tests | 60 (4 suites) |
 | Frameworks | Jest 30.x |
 
 ---
