@@ -242,21 +242,71 @@ ${violation.recommendation}
 Timestamp: ${violation.timestamp.toISOString()}
   `.trim()
 
-  // TODO: Implement actual email sending
-  // For now, just log
-  logger.info('Email alert would be sent', {
-    recipients: config.recipients,
-    subject,
-    experimentKey: config.experimentKey
-  })
+  const smtpRelayUrl = process.env.SMTP_RELAY_URL
+  if (!smtpRelayUrl) {
+    logger.info('Email alert logged (SMTP_RELAY_URL not configured)', {
+      recipients: config.recipients,
+      subject,
+      body,
+      experimentKey: config.experimentKey
+    })
+    return
+  }
 
-  // In production, use a service like SendGrid, AWS SES, etc.
-  // await sendEmail({
-  //   to: config.recipients,
-  //   subject,
-  //   body,
-  //   html: formatEmailHTML(violation, config)
-  // })
+  const severityColor = violation.severity === 'critical' ? '#dc3545'
+    : violation.severity === 'warning' ? '#ffc107' : '#17a2b8'
+
+  const htmlBody = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+      <div style="background: ${severityColor}; color: white; padding: 12px 16px; border-radius: 4px 4px 0 0;">
+        <h2 style="margin: 0;">${subject}</h2>
+      </div>
+      <div style="border: 1px solid #ddd; border-top: none; padding: 16px; border-radius: 0 0 4px 4px;">
+        <table style="width: 100%; border-collapse: collapse;">
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Experiment</td><td style="padding: 4px 8px;">${config.experimentKey}</td></tr>
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Metric</td><td style="padding: 4px 8px;">${violation.guardrail.metricName}</td></tr>
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Severity</td><td style="padding: 4px 8px;">${violation.severity.toUpperCase()}</td></tr>
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Current Value</td><td style="padding: 4px 8px;">${violation.currentValue.toFixed(4)}</td></tr>
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Threshold</td><td style="padding: 4px 8px;">${violation.threshold.toFixed(4)}</td></tr>
+          <tr><td style="padding: 4px 8px; font-weight: bold;">Difference</td><td style="padding: 4px 8px;">${violation.percentageDifference.toFixed(2)}%</td></tr>
+        </table>
+        <p style="margin-top: 12px; padding: 8px; background: #f8f9fa; border-radius: 4px;">${violation.recommendation}</p>
+        <p style="color: #666; font-size: 12px;">Timestamp: ${violation.timestamp.toISOString()}</p>
+      </div>
+    </div>
+  `.trim()
+
+  try {
+    const response = await fetch(smtpRelayUrl, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        to: config.recipients,
+        subject,
+        text: body,
+        html: htmlBody
+      })
+    })
+
+    if (!response.ok) {
+      logger.error('Email alert delivery failed', {
+        status: response.status,
+        statusText: response.statusText,
+        experimentKey: config.experimentKey
+      })
+    } else {
+      logger.info('Email alert sent successfully', {
+        recipients: config.recipients,
+        subject,
+        experimentKey: config.experimentKey
+      })
+    }
+  } catch (error) {
+    logger.error('Email alert delivery error', {
+      error: (error as Error).message,
+      experimentKey: config.experimentKey
+    })
+  }
 }
 
 /**
@@ -320,21 +370,44 @@ async function sendSlackAlert(
     ]
   }
 
-  // TODO: Implement actual Slack webhook
-  logger.info('Slack alert would be sent', {
-    webhooks: config.recipients,
-    experimentKey: config.experimentKey,
-    message
-  })
+  const webhookUrls = config.recipients.length > 0
+    ? config.recipients
+    : process.env.SLACK_WEBHOOK_URL ? [process.env.SLACK_WEBHOOK_URL] : []
 
-  // In production, send to Slack webhook:
-  // for (const webhook of config.recipients) {
-  //   await fetch(webhook, {
-  //     method: 'POST',
-  //     headers: { 'Content-Type': 'application/json' },
-  //     body: JSON.stringify(message)
-  //   })
-  // }
+  if (webhookUrls.length === 0) {
+    logger.info('Slack alert logged (no webhook URLs configured)', {
+      experimentKey: config.experimentKey,
+      message
+    })
+    return
+  }
+
+  for (const webhookUrl of webhookUrls) {
+    try {
+      const response = await fetch(webhookUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(message)
+      })
+
+      if (!response.ok) {
+        logger.error('Slack webhook delivery failed', {
+          status: response.status,
+          statusText: response.statusText,
+          experimentKey: config.experimentKey
+        })
+      } else {
+        logger.info('Slack alert sent successfully', {
+          experimentKey: config.experimentKey
+        })
+      }
+    } catch (error) {
+      logger.error('Slack webhook delivery error', {
+        error: (error as Error).message,
+        experimentKey: config.experimentKey
+      })
+    }
+  }
 }
 
 /**
@@ -367,19 +440,44 @@ async function sendPagerDutyAlert(
     }
   }
 
-  // TODO: Implement actual PagerDuty Events API call
-  logger.info('PagerDuty alert would be sent', {
-    integrationKey: config.recipients[0],
-    experimentKey: config.experimentKey,
-    event
-  })
+  const routingKey = config.recipients[0] || process.env.PAGERDUTY_ROUTING_KEY
+  if (!routingKey) {
+    logger.info('PagerDuty alert logged (no routing key configured)', {
+      experimentKey: config.experimentKey,
+      event
+    })
+    return
+  }
 
-  // In production, send to PagerDuty:
-  // await fetch('https://events.pagerduty.com/v2/enqueue', {
-  //   method: 'POST',
-  //   headers: { 'Content-Type': 'application/json' },
-  //   body: JSON.stringify(event)
-  // })
+  event.routing_key = routingKey
+
+  try {
+    const response = await fetch('https://events.pagerduty.com/v2/enqueue', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event)
+    })
+
+    if (!response.ok) {
+      const responseBody = await response.text()
+      logger.error('PagerDuty alert delivery failed', {
+        status: response.status,
+        responseBody,
+        experimentKey: config.experimentKey
+      })
+    } else {
+      const data = await response.json()
+      logger.info('PagerDuty alert sent successfully', {
+        dedupKey: data.dedup_key,
+        experimentKey: config.experimentKey
+      })
+    }
+  } catch (error) {
+    logger.error('PagerDuty alert delivery error', {
+      error: (error as Error).message,
+      experimentKey: config.experimentKey
+    })
+  }
 }
 
 /**
@@ -441,29 +539,52 @@ Metric ${guardrail.metricName} is now within acceptable range.
     }
   }
 
-  // TODO: Implement actual Datadog Monitors API call
-  logger.info('Datadog monitor would be created', {
-    experimentKey,
-    monitorConfig
-  })
+  const ddApiKey = process.env.DATADOG_API_KEY
+  const ddAppKey = process.env.DATADOG_APP_KEY
+  const ddSite = process.env.DATADOG_SITE || 'datadoghq.com'
 
-  // In production, create monitor via Datadog API:
-  // const response = await fetch('https://api.datadoghq.com/api/v1/monitor', {
-  //   method: 'POST',
-  //   headers: {
-  //     'Content-Type': 'application/json',
-  //     'DD-API-KEY': process.env.DATADOG_API_KEY,
-  //     'DD-APPLICATION-KEY': process.env.DATADOG_APP_KEY
-  //   },
-  //   body: JSON.stringify(monitorConfig)
-  // })
-  //
-  // const data = await response.json()
-  // return data.id
+  if (!ddApiKey || !ddAppKey) {
+    logger.info('Datadog monitor creation logged (API keys not configured)', {
+      experimentKey,
+      monitorConfig
+    })
+    return `monitor_${experimentKey}_${guardrail.metricName}_${Date.now()}`
+  }
 
-  // Return mock ID for now
-  const mockId = `monitor_${experimentKey}_${guardrail.metricName}_${Date.now()}`
-  return mockId
+  try {
+    const response = await fetch(`https://api.${ddSite}/api/v1/monitor`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'DD-API-KEY': ddApiKey,
+        'DD-APPLICATION-KEY': ddAppKey
+      },
+      body: JSON.stringify(monitorConfig)
+    })
+
+    if (!response.ok) {
+      const responseBody = await response.text()
+      logger.error('Datadog monitor creation failed', {
+        status: response.status,
+        responseBody,
+        experimentKey
+      })
+      return `monitor_${experimentKey}_${guardrail.metricName}_${Date.now()}`
+    }
+
+    const data = await response.json()
+    logger.info('Datadog monitor created successfully', {
+      monitorId: data.id,
+      experimentKey
+    })
+    return String(data.id)
+  } catch (error) {
+    logger.error('Datadog monitor creation error', {
+      error: (error as Error).message,
+      experimentKey
+    })
+    return `monitor_${experimentKey}_${guardrail.metricName}_${Date.now()}`
+  }
 }
 
 /**
@@ -496,17 +617,40 @@ function buildMonitorQuery(experimentKey: string, guardrail: Guardrail): string 
  * @param monitorId - Monitor ID to delete
  */
 export async function deleteDatadogMonitor(monitorId: string): Promise<void> {
-  // TODO: Implement actual Datadog Monitors API call
-  logger.info('Datadog monitor would be deleted', { monitorId })
+  const ddApiKey = process.env.DATADOG_API_KEY
+  const ddAppKey = process.env.DATADOG_APP_KEY
+  const ddSite = process.env.DATADOG_SITE || 'datadoghq.com'
 
-  // In production:
-  // await fetch(`https://api.datadoghq.com/api/v1/monitor/${monitorId}`, {
-  //   method: 'DELETE',
-  //   headers: {
-  //     'DD-API-KEY': process.env.DATADOG_API_KEY,
-  //     'DD-APPLICATION-KEY': process.env.DATADOG_APP_KEY
-  //   }
-  // })
+  if (!ddApiKey || !ddAppKey) {
+    logger.info('Datadog monitor deletion logged (API keys not configured)', { monitorId })
+    return
+  }
+
+  try {
+    const response = await fetch(`https://api.${ddSite}/api/v1/monitor/${encodeURIComponent(monitorId)}`, {
+      method: 'DELETE',
+      headers: {
+        'DD-API-KEY': ddApiKey,
+        'DD-APPLICATION-KEY': ddAppKey
+      }
+    })
+
+    if (!response.ok) {
+      const responseBody = await response.text()
+      logger.error('Datadog monitor deletion failed', {
+        status: response.status,
+        responseBody,
+        monitorId
+      })
+    } else {
+      logger.info('Datadog monitor deleted successfully', { monitorId })
+    }
+  } catch (error) {
+    logger.error('Datadog monitor deletion error', {
+      error: (error as Error).message,
+      monitorId
+    })
+  }
 }
 
 /**

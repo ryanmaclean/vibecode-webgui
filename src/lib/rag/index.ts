@@ -7,6 +7,7 @@ import { vectorStore, SearchResult } from './vector-store';
 import { valkeyCache } from './cache';
 import { embeddingService } from './embeddings';
 import { logger } from '@/lib/logger';
+import { LiteLLMClient, ChatMessage } from '@/lib/ai/litellm-client';
 
 export interface RAGDocument {
   content: string;
@@ -157,19 +158,96 @@ export class RAGSystem {
     query: string,
     searchResults: SearchResult[]
   ): Promise<string> {
-    // This would integrate with your LLM service
-    // For now, just return a placeholder
-    const context = searchResults
-      .map((result, i) => `[${i + 1}] ${result.content}`)
-      .join('\n\n');
-    
+    if (searchResults.length === 0) {
+      return 'No relevant documents found for your query.';
+    }
+
+    // Format search results into a context block, truncating to ~4000 tokens (~16000 chars)
+    const maxContextChars = 16000;
+    let totalChars = 0;
+    const contextParts: string[] = [];
+
+    for (let i = 0; i < searchResults.length; i++) {
+      const result = searchResults[i];
+      const title = result.metadata?.title || `Document ${i + 1}`;
+      const score = (result.similarity * 100).toFixed(1);
+      const snippet = result.content;
+      const entry = `[${i + 1}] Title: ${title}\nRelevance: ${score}%\n${snippet}`;
+
+      if (totalChars + entry.length > maxContextChars) {
+        const remaining = maxContextChars - totalChars;
+        if (remaining > 100) {
+          contextParts.push(entry.substring(0, remaining) + '...');
+        }
+        break;
+      }
+
+      contextParts.push(entry);
+      totalChars += entry.length;
+    }
+
+    const context = contextParts.join('\n\n');
+
     logger.info('Generating answer', {
       query: query.substring(0, 50),
-      contextLength: context.length
+      contextLength: context.length,
+      sourceCount: searchResults.length
     });
-    
-    // TODO: Integrate with LLM service
-    return `Answer based on ${searchResults.length} relevant documents`;
+
+    // Try LLM-powered answer generation
+    try {
+      const llmClient = new LiteLLMClient();
+
+      const systemPrompt = [
+        'You are a helpful assistant that answers questions based on the provided context documents.',
+        'Use ONLY the information from the context below to answer the question.',
+        'If the context does not contain enough information to fully answer, say so.',
+        'Cite document numbers (e.g. [1], [2]) when referencing specific sources.',
+        '',
+        '--- Context ---',
+        context,
+        '--- End Context ---'
+      ].join('\n');
+
+      const messages: ChatMessage[] = [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: query }
+      ];
+
+      const response = await llmClient.chatCompletion({
+        messages,
+        temperature: 0.3,
+        max_tokens: 1024
+      });
+
+      const answer = response.choices?.[0]?.message?.content;
+      if (answer) {
+        logger.info('LLM answer generated', {
+          tokens: response.usage?.total_tokens,
+          model: response.model
+        });
+        return answer;
+      }
+    } catch (error) {
+      logger.warn('LLM generation failed, using structured fallback', {
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+
+    // Structured fallback when LLM is unavailable
+    const lines: string[] = [`Based on ${searchResults.length} relevant documents:`];
+    for (let i = 0; i < searchResults.length; i++) {
+      const result = searchResults[i];
+      const title = result.metadata?.title || `Document ${i + 1}`;
+      const score = (result.similarity * 100).toFixed(1);
+      const excerpt = result.content.length > 200
+        ? result.content.substring(0, 200) + '...'
+        : result.content;
+      lines.push(`\n[${i + 1}] ${title} (${score}% relevant)\n${excerpt}`);
+    }
+    lines.push('\nFor a more detailed answer, ensure an AI provider is configured.');
+
+    return lines.join('\n');
   }
   
   /**

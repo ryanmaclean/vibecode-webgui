@@ -11,6 +11,8 @@ import { Server as SocketIOServer } from 'socket.io'
 import * as Y from 'yjs'
 import { setPersistence } from 'y-websocket/bin/utils'
 import { LeveldbPersistence } from 'y-leveldb'
+import * as fs from 'fs/promises'
+import * as path from 'path'
 
 export interface CollaborationDocument {
   id: string
@@ -34,10 +36,15 @@ export class CollaborationServer {
   private userSessions = new Map<string, Set<string>>() // userId -> Set<documentIds>
   private io: SocketIOServer
   private persistenceDir: string
+  private pendingSaves = new Map<string, NodeJS.Timeout>()
+  private lastSaveTimestamps = new Map<string, number>()
+  private fileBaseDir: string
+  private static readonly SAVE_DEBOUNCE_MS = 2000
 
   constructor(io: SocketIOServer, persistenceDir: string = './data/collaboration') {
     this.io = io
     this.persistenceDir = persistenceDir
+    this.fileBaseDir = process.env.VIBECODE_DATA_DIR || '/tmp/vibecode-collab'
     this.setupSocketHandlers()
     this.setupCleanupRoutine()
   }
@@ -264,6 +271,9 @@ export class CollaborationServer {
     Y.applyUpdate(doc.doc, data.message)
     doc.lastActivity = new Date()
 
+    // Schedule debounced save to persist changes
+    this.scheduleDebouncedSave(data.documentId)
+
     // Broadcast to other users in the document
     socket.to(`collab:${data.documentId}`).emit('collab:sync', {
       documentId: data.documentId,
@@ -307,9 +317,77 @@ export class CollaborationServer {
     metadata.set('lastSavedBy', userId)
     metadata.set('content', content)
 
-    // TODO: Integrate with file system API to save to actual file
-    // This would involve calling the file system API with the project and file path
-    // Debug log removed by user ${userId}`)
+    // Persist to file system
+    await this.writeToFileSystem(doc, content)
+  }
+
+  /**
+   * Write document content to the file system
+   */
+  private async writeToFileSystem(doc: CollaborationDocument, content: string): Promise<void> {
+    try {
+      const targetPath = path.join(this.fileBaseDir, doc.projectId, doc.filePath)
+      const targetDir = path.dirname(targetPath)
+
+      await fs.mkdir(targetDir, { recursive: true })
+      await fs.writeFile(targetPath, content, 'utf-8')
+
+      this.lastSaveTimestamps.set(doc.id, Date.now())
+    } catch (error) {
+      console.error(
+        `[CollaborationServer] Failed to persist document ${doc.id} (${doc.filePath}):`,
+        error instanceof Error ? error.message : error
+      )
+    }
+  }
+
+  /**
+   * Schedule a debounced save for a document after a sync update
+   */
+  private scheduleDebouncedSave(documentId: string): void {
+    // Clear any existing pending save for this document
+    const existing = this.pendingSaves.get(documentId)
+    if (existing) {
+      clearTimeout(existing)
+    }
+
+    const timeout = setTimeout(async () => {
+      this.pendingSaves.delete(documentId)
+      const doc = this.documents.get(documentId)
+      if (!doc) return
+
+      const content = doc.doc.getText('content').toString()
+      await this.writeToFileSystem(doc, content)
+    }, CollaborationServer.SAVE_DEBOUNCE_MS)
+
+    this.pendingSaves.set(documentId, timeout)
+  }
+
+  /**
+   * Flush all pending debounced saves immediately
+   * Useful during shutdown to ensure no data is lost
+   */
+  async flushPendingSaves(): Promise<void> {
+    const flushPromises: Promise<void>[] = []
+
+    for (const [documentId, timeout] of this.pendingSaves.entries()) {
+      clearTimeout(timeout)
+      const doc = this.documents.get(documentId)
+      if (doc) {
+        const content = doc.doc.getText('content').toString()
+        flushPromises.push(this.writeToFileSystem(doc, content))
+      }
+    }
+
+    this.pendingSaves.clear()
+    await Promise.all(flushPromises)
+  }
+
+  /**
+   * Get the last successful save timestamp for a document
+   */
+  getLastSaveTimestamp(documentId: string): number | null {
+    return this.lastSaveTimestamps.get(documentId) ?? null
   }
 
   /**
@@ -403,6 +481,7 @@ export class CollaborationServer {
    * Cleanup all resources
    */
   async destroy(): Promise<void> {
+    await this.flushPendingSaves()
     await this.saveAllDocuments()
 
     for (const doc of this.documents.values()) {
@@ -411,6 +490,7 @@ export class CollaborationServer {
 
     this.documents.clear()
     this.userSessions.clear()
+    this.lastSaveTimestamps.clear()
   }
 }
 
