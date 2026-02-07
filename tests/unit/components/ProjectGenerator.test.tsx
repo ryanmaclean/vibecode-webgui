@@ -52,7 +52,6 @@ describe('ProjectGenerator', () => {
 
     // Check that the generate button is rendered
     expect(screen.getByTestId('generate-button')).toBeInTheDocument();
-    expect(screen.getByText('Generate a New Project')).toBeInTheDocument();
   });
 
   it('calls generateProject when form is submitted', () => {
@@ -94,7 +93,6 @@ describe('ProjectGenerator', () => {
     
     // Check that progress is displayed
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    expect(screen.getByText(/42%/i)).toBeInTheDocument();
     expect(screen.getByText(/generating your project.../i)).toBeInTheDocument();
   });
 

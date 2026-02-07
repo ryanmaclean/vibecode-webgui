@@ -3,30 +3,30 @@
  * Tests for port allocation and management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { PortManager, resetPortManager, SERVICE_PORTS } from '../port-manager';
 
 // Mock net module for port availability checks
-vi.mock('net', () => ({
-  createServer: vi.fn(() => ({
-    once: vi.fn((event, callback) => {
+jest.mock('net', () => ({
+  createServer: jest.fn(() => ({
+    once: jest.fn((event: string, callback: () => void) => {
       if (event === 'listening') {
         // Simulate port is available
         setTimeout(() => callback(), 0);
       }
     }),
-    listen: vi.fn(),
-    close: vi.fn()
+    listen: jest.fn(),
+    close: jest.fn()
   }))
 }));
 
 // Mock the logger
-vi.mock('@/lib/logging', () => ({
-  createServiceLogger: vi.fn().mockReturnValue({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+jest.mock('@/lib/logging', () => ({
+  createServiceLogger: jest.fn().mockReturnValue({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
   })
 }));
 
@@ -42,7 +42,7 @@ describe('PortManager', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('allocatePort', () => {

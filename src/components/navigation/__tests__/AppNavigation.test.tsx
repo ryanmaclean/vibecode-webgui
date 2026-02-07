@@ -38,6 +38,25 @@ jest.mock('lucide-react', () => ({
   X: (props: any) => <svg data-testid="icon-x" {...props} />,
   ChevronDown: (props: any) => <svg data-testid="icon-chevron" {...props} />,
   Bot: (props: any) => <svg data-testid="icon-bot" {...props} />,
+  Keyboard: (props: any) => <svg data-testid="icon-keyboard" {...props} />,
+  Command: (props: any) => <svg data-testid="icon-command" {...props} />,
+}));
+
+// Mock KeyboardShortcuts design-system component
+jest.mock('@/design-system/components/KeyboardShortcuts', () => ({
+  KeyboardShortcuts: ({ isOpen, onClose }: any) =>
+    isOpen ? <div data-testid="keyboard-shortcuts-modal">Shortcuts</div> : null,
+}));
+
+// Mock useKeyboardShortcuts hook
+jest.mock('@/hooks/useKeyboardShortcuts', () => ({
+  useKeyboardShortcuts: () => ({
+    isOpen: false,
+    open: jest.fn(),
+    close: jest.fn(),
+    toggle: jest.fn(),
+  }),
+  shortcutCategories: [],
 }));
 
 import { AppNavigation } from '../AppNavigation';

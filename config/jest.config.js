@@ -25,6 +25,7 @@ const config = {
     '^y-leveldb$': '<rootDir>/tests/__mocks__/y-leveldb.js',
     '^y-websocket/bin/utils$': '<rootDir>/tests/__mocks__/y-websocket/bin/utils.js',
     '^lucide-react$': '<rootDir>/__mocks__/lucide-react.js',
+    '^@/design-system/(.*)$': '<rootDir>/src/design-system/$1',
     '^@/components/ui$': '<rootDir>/src/components/ui',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',

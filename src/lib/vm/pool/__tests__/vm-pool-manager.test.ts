@@ -3,19 +3,19 @@
  * Tests for multi-VM lifecycle management
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
 import { VMPoolManager, resetPoolManager } from '../vm-pool-manager';
 import { resetPortManager } from '../../ports/port-manager';
 import { resetProfilesService } from '../../profiles/vm-profiles';
 import type { VMInstance, CreateVMOptions } from '@/types/multi-vm';
 
 // Mock the provider factory
-vi.mock('../../provider-factory', () => ({
+jest.mock('../../provider-factory', () => ({
   ProviderFactory: {
-    detectProvider: vi.fn().mockResolvedValue({
+    detectProvider: jest.fn().mockResolvedValue({
       name: 'mock-provider',
-      detect: vi.fn().mockResolvedValue(true),
-      create: vi.fn().mockImplementation((config) => Promise.resolve({
+      detect: jest.fn().mockResolvedValue(true),
+      create: jest.fn().mockImplementation((config: any) => Promise.resolve({
         id: `vm-${Date.now()}`,
         name: config.name,
         provider: 'mock-provider',
@@ -25,30 +25,30 @@ vi.mock('../../provider-factory', () => ({
         createdAt: new Date(),
         updatedAt: new Date()
       })),
-      start: vi.fn().mockResolvedValue(undefined),
-      stop: vi.fn().mockResolvedValue(undefined),
-      destroy: vi.fn().mockResolvedValue(undefined),
-      list: vi.fn().mockResolvedValue([]),
-      exec: vi.fn().mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', duration: 100 }),
-      status: vi.fn().mockResolvedValue('running')
+      start: jest.fn().mockResolvedValue(undefined),
+      stop: jest.fn().mockResolvedValue(undefined),
+      destroy: jest.fn().mockResolvedValue(undefined),
+      list: jest.fn().mockResolvedValue([]),
+      exec: jest.fn().mockResolvedValue({ exitCode: 0, stdout: '', stderr: '', duration: 100 }),
+      status: jest.fn().mockResolvedValue('running')
     })
   }
 }));
 
 // Mock fs for state persistence
-vi.mock('fs/promises', () => ({
-  readFile: vi.fn().mockRejectedValue({ code: 'ENOENT' }),
-  writeFile: vi.fn().mockResolvedValue(undefined),
-  mkdir: vi.fn().mockResolvedValue(undefined)
+jest.mock('fs/promises', () => ({
+  readFile: jest.fn().mockRejectedValue({ code: 'ENOENT' }),
+  writeFile: jest.fn().mockResolvedValue(undefined),
+  mkdir: jest.fn().mockResolvedValue(undefined)
 }));
 
 // Mock the logger
-vi.mock('@/lib/logging', () => ({
-  createServiceLogger: vi.fn().mockReturnValue({
-    info: vi.fn(),
-    warn: vi.fn(),
-    error: vi.fn(),
-    debug: vi.fn()
+jest.mock('@/lib/logging', () => ({
+  createServiceLogger: jest.fn().mockReturnValue({
+    info: jest.fn(),
+    warn: jest.fn(),
+    error: jest.fn(),
+    debug: jest.fn()
   })
 }));
 
@@ -77,7 +77,7 @@ describe('VMPoolManager', () => {
   });
 
   afterEach(() => {
-    vi.clearAllMocks();
+    jest.clearAllMocks();
   });
 
   describe('initialization', () => {
