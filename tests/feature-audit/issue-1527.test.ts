@@ -72,11 +72,13 @@ describe('Feature Audit: Interactive Console (#1527)', () => {
   });
 
   describe('Console test page', () => {
-    test('test page exists', async () => {
+    test('console-test page was removed (consolidated in Wave 18)', async () => {
       const fs = await import('fs');
       const path = await import('path');
       const pagePath = path.join(process.cwd(), 'src/app/console-test/page.tsx');
-      expect(fs.existsSync(pagePath)).toBe(true);
+      // Page was intentionally removed during Wave 18 consolidation
+      // Console functionality is accessed via the main terminal components
+      expect(fs.existsSync(pagePath)).toBe(false);
     });
   });
 });

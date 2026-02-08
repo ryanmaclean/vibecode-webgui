@@ -40,6 +40,9 @@ jest.mock('lucide-react', () => ({
   Bot: (props: any) => <svg data-testid="icon-bot" {...props} />,
   Keyboard: (props: any) => <svg data-testid="icon-keyboard" {...props} />,
   Command: (props: any) => <svg data-testid="icon-command" {...props} />,
+  FlaskConical: (props: any) => <svg data-testid="icon-flask" {...props} />,
+  Layers: (props: any) => <svg data-testid="icon-layers" {...props} />,
+  GraduationCap: (props: any) => <svg data-testid="icon-graduation" {...props} />,
 }));
 
 // Mock KeyboardShortcuts design-system component
@@ -51,10 +54,8 @@ jest.mock('@/design-system/components/KeyboardShortcuts', () => ({
 // Mock useKeyboardShortcuts hook
 jest.mock('@/hooks/useKeyboardShortcuts', () => ({
   useKeyboardShortcuts: () => ({
-    isOpen: false,
-    open: jest.fn(),
-    close: jest.fn(),
-    toggle: jest.fn(),
+    isShortcutsOpen: false,
+    setIsShortcutsOpen: jest.fn(),
   }),
   shortcutCategories: [],
 }));
@@ -77,13 +78,16 @@ describe('AppNavigation', () => {
     expect(brandLink).toHaveAttribute('href', '/');
   });
 
-  it('renders all 6 top-level nav items', () => {
+  it('renders all 9 top-level nav items', () => {
     render(<AppNavigation />);
     expect(screen.getByText('Dashboard')).toBeInTheDocument();
     expect(screen.getByText('VM')).toBeInTheDocument();
     expect(screen.getByText('AI')).toBeInTheDocument();
     expect(screen.getByText('Health')).toBeInTheDocument();
     expect(screen.getByText('Monitoring')).toBeInTheDocument();
+    expect(screen.getByText('Workspaces')).toBeInTheDocument();
+    expect(screen.getByText('Experiments')).toBeInTheDocument();
+    expect(screen.getByText('Tutorials')).toBeInTheDocument();
     expect(screen.getByText('Settings')).toBeInTheDocument();
   });
 

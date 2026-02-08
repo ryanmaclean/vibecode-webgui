@@ -1,5 +1,5 @@
 declare module 'weaviate-ts-client' {
-  // Minimal typings to satisfy dynamic import usage in vector-database-abstraction.ts
+  // Minimal typings for weaviate-ts-client
   export class ApiKey {
     constructor(key: string)
   }

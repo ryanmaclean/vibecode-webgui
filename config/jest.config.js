@@ -24,7 +24,7 @@ const config = {
   moduleNameMapper: {
     '^y-leveldb$': '<rootDir>/tests/__mocks__/y-leveldb.js',
     '^y-websocket/bin/utils$': '<rootDir>/tests/__mocks__/y-websocket/bin/utils.js',
-    '^lucide-react$': '<rootDir>/__mocks__/lucide-react.js',
+    '^lucide-react$': '<rootDir>/tests/__mocks__/lucide-react.js',
     '^@/design-system/(.*)$': '<rootDir>/src/design-system/$1',
     '^@/components/ui$': '<rootDir>/src/components/ui',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
@@ -37,8 +37,8 @@ const config = {
     '^@/middleware/(.*)$': '<rootDir>/src/middleware/$1',
     '^@/providers/(.*)$': '<rootDir>/src/providers/$1',
     '^@/instrument$': '<rootDir>/src/instrument.ts',
-    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/cssModule.js',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/cssModule.js',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
   },
 
   // Transform settings (simplified to avoid missing dependencies)
