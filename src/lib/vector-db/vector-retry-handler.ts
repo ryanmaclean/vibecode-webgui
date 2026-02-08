@@ -105,9 +105,9 @@ export class RetryHandler {
       throw this.errorHandler.handleError(
         new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
         operationName,
+        VectorDbErrorType.SERVICE,
+        false,
         {
-          errorType: VectorDbErrorType.SERVICE,
-          retryable: false,
           circuitBroken: true,
           failureCount: this.failures.length,
           resetAfterMs: Math.max(0, this.circuitBrokenUntil - Date.now())
@@ -138,9 +138,9 @@ export class RetryHandler {
           throw this.errorHandler.handleError(
             new Error(`Circuit broken for operation: ${operationName}. Too many recent failures.`),
             operationName,
+            VectorDbErrorType.SERVICE,
+            false,
             {
-              errorType: VectorDbErrorType.SERVICE,
-              retryable: false,
               circuitBroken: true,
               failureCount: this.failures.length,
               resetAfterMs: this.config.circuitResetTimeMs
@@ -173,7 +173,9 @@ export class RetryHandler {
           throw this.errorHandler.handleError(
             err,
             operationName,
-            { retryable: false, retryAttempt: attempt }
+            undefined,
+            false,
+            { retryAttempt: attempt }
           );
         }
 
@@ -207,7 +209,9 @@ export class RetryHandler {
     throw this.errorHandler.handleError(
       lastError || new Error(`Unknown error in operation: ${operationName}`),
       operationName,
-      { retryable: false, maxRetries: this.config.maxRetries, allRetriesFailed: true }
+      undefined,
+      false,
+      { maxRetries: this.config.maxRetries, allRetriesFailed: true }
     );
   }
 

@@ -125,14 +125,47 @@ This is a major release with exciting new features!
  * Compare two semver versions
  */
 function compareVersions(v1: string, v2: string): number {
-  const parts1 = v1.replace(/^v/, '').split(/[.-]/).map(p => parseInt(p, 10) || 0);
-  const parts2 = v2.replace(/^v/, '').split(/[.-]/).map(p => parseInt(p, 10) || 0);
+  const clean1 = v1.replace(/^v/, '');
+  const clean2 = v2.replace(/^v/, '');
 
+  // Split version and prerelease parts
+  const [ver1, pre1] = clean1.split('-', 2);
+  const [ver2, pre2] = clean2.split('-', 2);
+
+  const parts1 = ver1.split('.').map(p => parseInt(p, 10) || 0);
+  const parts2 = ver2.split('.').map(p => parseInt(p, 10) || 0);
+
+  // Compare major.minor.patch
   for (let i = 0; i < Math.max(parts1.length, parts2.length); i++) {
     const p1 = parts1[i] || 0;
     const p2 = parts2[i] || 0;
     if (p1 > p2) return 1;
     if (p1 < p2) return -1;
+  }
+
+  // Same version number: release > prerelease
+  if (!pre1 && pre2) return 1;
+  if (pre1 && !pre2) return -1;
+  if (!pre1 && !pre2) return 0;
+
+  // Both have prereleases, compare them
+  const preParts1 = (pre1 || '').split('.').map(p => { const n = parseInt(p, 10); return isNaN(n) ? p : n; });
+  const preParts2 = (pre2 || '').split('.').map(p => { const n = parseInt(p, 10); return isNaN(n) ? p : n; });
+
+  for (let i = 0; i < Math.max(preParts1.length, preParts2.length); i++) {
+    const a = preParts1[i];
+    const b = preParts2[i];
+    if (a === undefined) return -1;
+    if (b === undefined) return 1;
+    if (typeof a === 'number' && typeof b === 'number') {
+      if (a > b) return 1;
+      if (a < b) return -1;
+    } else {
+      const sa = String(a);
+      const sb = String(b);
+      if (sa > sb) return 1;
+      if (sa < sb) return -1;
+    }
   }
 
   return 0;
@@ -158,29 +191,35 @@ function parseReleaseNotes(body: string): { summary: string; sections: Array<{ t
   const lines = body.split('\n');
   let currentSection: { title: string; items: string[] } | null = null;
   let summary = '';
+  let foundFirstSection = false;
 
   for (const line of lines) {
     const trimmedLine = line.trim();
 
     if (trimmedLine.startsWith('## ') || trimmedLine.startsWith('### ')) {
-      if (currentSection && currentSection.items.length > 0) {
+      if (currentSection) {
         sections.push(currentSection);
       }
       const title = trimmedLine.replace(/^#+ /, '');
       currentSection = { title, items: [] };
+      foundFirstSection = true;
     } else if (trimmedLine.startsWith('- ') || trimmedLine.startsWith('* ')) {
       const item = trimmedLine.replace(/^[-*] /, '');
       if (currentSection) {
         currentSection.items.push(item);
       }
-    } else if (!currentSection && trimmedLine && !trimmedLine.startsWith('#')) {
+    } else if (foundFirstSection && currentSection && currentSection.items.length === 0 && trimmedLine && !trimmedLine.startsWith('#')) {
+      if (!summary) {
+        summary = trimmedLine;
+      }
+    } else if (!foundFirstSection && trimmedLine && !trimmedLine.startsWith('#')) {
       if (!summary) {
         summary = trimmedLine;
       }
     }
   }
 
-  if (currentSection && currentSection.items.length > 0) {
+  if (currentSection) {
     sections.push(currentSection);
   }
 

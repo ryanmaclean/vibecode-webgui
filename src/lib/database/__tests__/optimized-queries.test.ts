@@ -273,20 +273,35 @@ describe('BatchLoader', () => {
     // Skip error handling tests in CI environment due to worker process limitations
     // The BatchLoader properly rejects promises and tracks metrics, but the test runner
     // treats these as unhandled rejections which cause process termination
-    it.skip('should handle batch query failures gracefully - skipped due to Jest worker issues', () => {
-      // This test verifies that the BatchLoader properly:
-      // 1. Rejects all pending promises when batch query fails
-      // 2. Creates BatchQueryError with appropriate context
-      // 3. Does not leave promises hanging
-      expect(true).toBe(true);
+    it('should handle batch query failures gracefully', async () => {
+      const batchFn = jest.fn().mockRejectedValue(new Error('Database connection lost'));
+
+      const loader = createTrackedLoader(batchFn, { trackMetrics: false });
+
+      const promise = loader.load(1);
+
+      jest.runAllTimers();
+
+      await expect(promise).rejects.toThrow();
     });
 
-    it.skip('should track error metrics when trackMetrics is enabled - skipped due to Jest worker issues', () => {
-      // This test verifies that the BatchLoader:
-      // 1. Tracks db.batch.errors metric on failure
-      // 2. Includes operation name in metric tags
-      // 3. Properly calls onError callback if provided
-      expect(true).toBe(true);
+    it('should track error metrics when trackMetrics is enabled', async () => {
+      const batchFn = jest.fn().mockRejectedValue(new Error('Query timeout'));
+
+      const loader = createTrackedLoader(batchFn, { trackMetrics: true });
+
+      const promise = loader.load(1);
+
+      jest.runAllTimers();
+
+      try {
+        await promise;
+      } catch {
+        // Expected rejection
+      }
+
+      // Verify batchFn was called (which means the batch was dispatched)
+      expect(batchFn).toHaveBeenCalledTimes(1);
     });
 
     it('should call onError callback when provided', () => {

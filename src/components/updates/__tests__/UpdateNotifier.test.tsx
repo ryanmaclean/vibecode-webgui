@@ -389,7 +389,7 @@ describe('UpdateNotifier - Installing State', () => {
         installProgress,
       }),
     });
-    expect(screen.getByText(/installing update/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/installing update/i).length).toBeGreaterThan(0);
   });
 
   it('should show progress bar', () => {

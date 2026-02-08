@@ -3,8 +3,7 @@
  * This file contains provider-specific error patterns to enhance error categorization accuracy
  */
 
-// Import VectorDbErrorType from the new handler which has more complete error types
-import { VectorDbErrorType, VectorDBErrorType } from './vector-db-error-handler-new';
+import { VectorDbErrorType, VectorDBErrorType } from './vector-db-error-handler';
 
 /**
  * Generic error object interface for type-safe error handling

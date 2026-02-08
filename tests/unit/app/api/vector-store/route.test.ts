@@ -183,7 +183,7 @@ describe('/api/vector-store', () => {
       expect(data.error.message).toContain('Authentication required');
     });
 
-    it.skip('should validate search parameters', async () => {
+    it('should validate search parameters', async () => {
       const invalidRequest = {
         query: '', // Invalid: empty query
         limit: 10
@@ -195,7 +195,7 @@ describe('/api/vector-store', () => {
 
       expect(response.status).toBe(400);
       expect(data.success).toBe(false);
-      expect(data.error.message).toBe('Invalid request parameters');
+      expect(data.error.code).toBe('VECTOR_STORE_INVALID_REQUEST');
     });
 
     it('should include performance metrics', async () => {
@@ -268,10 +268,9 @@ describe('/api/vector-store', () => {
       expect(data.error.message).toContain('Authentication required');
     });
 
-    it.skip('should validate store parameters', async () => {
+    it('should validate store parameters', async () => {
       const invalidRequest = {
-        workspaceId: 1,
-        documents: [] // Invalid: empty documents array
+        workspaceId: 'not-a-number', // Invalid: should be number
       };
 
       const request = createMockRequest('http://localhost:3000/api/vector-store', 'PUT', invalidRequest);
@@ -343,7 +342,7 @@ describe('/api/vector-store', () => {
       expect(data.error.message).toContain('Authentication required');
     });
 
-    it.skip('should validate delete parameters', async () => {
+    it('should validate delete parameters', async () => {
       const invalidRequest = {}; // Invalid: missing required parameters
 
       const request = createMockRequest('http://localhost:3000/api/vector-store', 'DELETE', invalidRequest);

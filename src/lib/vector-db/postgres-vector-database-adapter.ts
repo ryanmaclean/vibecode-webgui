@@ -10,7 +10,7 @@ import { VectorCacheManager } from '../cache/vector-cache-strategy';
 import { metrics } from '../server-monitoring';
 import { VectorCacheInvalidator } from '../cache/vector-cache-invalidator';
 import { PgVectorSearch } from '../cache/pgvector-search';
-import { VectorDbError, VectorDbErrorHandler } from './vector-db-error-handler';
+import { VectorDbError } from './vector-db-error-handler';
 // import { logger } from '../logger';
 
 /**
@@ -32,7 +32,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
   private prisma: PrismaClient | null = null;
   protected postgresConfig: PostgresVectorDatabaseConfig;
   private cacheInvalidator: VectorCacheInvalidator | null = null;
-  private errorHandler: VectorDbErrorHandler;
 
   /**
    * Constructor for PostgreSQL adapter
@@ -40,7 +39,6 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
    */
   constructor(config: PostgresVectorDatabaseConfig) {
     super(config);
-    this.errorHandler = new VectorDbErrorHandler('postgres', this.config.enableLogging || false, this.config.enableMetrics || false);
     this.postgresConfig = {
       pgPoolSize: 10,
       pgSchemaName: 'public',
@@ -90,6 +88,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       const enhancedError = this.errorHandler.handleError(
         error,
         'initializeProvider',
+        undefined,
+        undefined,
         {
           connectionString: this.postgresConfig.connectionString ? '[REDACTED]' : undefined,
           cacheEnabled: this.config.cacheEnabled
@@ -121,6 +121,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('pgVector extension is not installed in the database'),
           'verifyPgVectorExtension',
+          undefined,
+          undefined,
           { extensionName: 'vector' }
         );
       }
@@ -134,6 +136,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('Vector data type not found, pgVector extension may be incorrectly installed'),
           'verifyPgVectorExtension',
+          undefined,
+          undefined,
           { typeName: 'vector' }
         );
       }
@@ -147,6 +151,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'verifyPgVectorExtension',
+          undefined,
+          undefined,
           { extensionName: 'vector' }
         );
       }
@@ -212,6 +218,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
             throw this.errorHandler.handleError(
               chunkError,
               'storeChunks.insertChunk',
+              undefined,
+              undefined,
               {
                 fileId,
                 chunkId,
@@ -246,6 +254,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'storeChunks',
+          undefined,
+          undefined,
           {
             fileId,
             chunkCount: chunks.length,
@@ -301,6 +311,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
               error: this.errorHandler.handleError(
                 cacheError,
                 'search.cacheRetrieval',
+                undefined,
+                undefined,
                 { embeddingSize: embedding.length }
               )
             });
@@ -493,6 +505,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'search',
+          undefined,
+          undefined,
           {
             embeddingSize: embedding.length,
             workspaceId: options.workspaceId,
@@ -531,6 +545,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'getCachedResults',
+        undefined,
+        undefined,
         {
           embeddingSize: embedding.length,
           options
@@ -582,6 +598,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'cacheResults',
+        undefined,
+        undefined,
         {
           embeddingSize: embedding.length,
           resultCount: results.length,
@@ -681,6 +699,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
+          undefined,
+          undefined,
           {
             query: query.length > 100 ? query.substring(0, 100) + '...' : query,
             workspaceId: options.workspaceId,
@@ -727,6 +747,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'deleteFileChunks',
+        undefined,
+        undefined,
         { fileId }
       );
     }
@@ -827,6 +849,8 @@ export class PostgresVectorDatabaseAdapter extends BaseVectorDatabaseAdapter {
         error: this.errorHandler.handleError(
           error,
           'invalidateCache',
+          undefined,
+          undefined,
           { table, contentType }
         )
       });
