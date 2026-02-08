@@ -1,0 +1,209 @@
+# Tundra Dome Namespace, RBAC, and Secrets
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: tundra-dome
+  labels:
+    tundra.dome/managed: "true"
+    tundra.dome/env: dev
+---
+# Secret template - replace placeholders before applying
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tundra-dome-secrets
+  namespace: tundra-dome
+type: Opaque
+stringData:
+  # GitHub Personal Access Token (required for issue/PR sync)
+  GITHUB_TOKEN: "${GITHUB_TOKEN:-placeholder}"
+  # Datadog API Key (optional, for observability)
+  DD_API_KEY: "${DD_API_KEY:-}"
+  DD_APP_KEY: "${DD_APP_KEY:-}"
+  # Gitea admin credentials
+  GITEA_ADMIN_USER: "tundra"
+  GITEA_ADMIN_PASSWORD: "tundra-dome-admin"
+---
+# ConfigMap for shared environment variables
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tundra-dome-config
+  namespace: tundra-dome
+data:
+  # Kafka configuration
+  KAFKA_BROKERS: "kafka-service:9092"
+  # Datadog configuration
+  DD_ENV: "dev"
+  DD_SITE: "datadoghq.com"
+  # GitHub configuration
+  GITHUB_ORG: "${GITHUB_ORG:-}"
+  GITHUB_REPOS: "${GITHUB_REPOS:-}"
+  # Gitea configuration
+  GITEA_URL: "http://gitea-service:3000"
+  # Controller settings
+  RECONCILE_INTERVAL: "30000"
+---
+# ServiceAccount for controllers
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+---
+# Role for controllers to manage CRDs and resources
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+rules:
+  # Manage Tundra Dome CRDs
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats", "beads", "lanes", "playbooks", "stations", "errands"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats/status", "beads/status", "lanes/status", "playbooks/status", "stations/status", "errands/status"]
+    verbs: ["get", "update", "patch"]
+  # Manage deployments for polecats
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage pods
+  - apiGroups: [""]
+    resources: ["pods", "pods/log"]
+    verbs: ["get", "list", "watch", "delete"]
+  # Manage configmaps and secrets
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # Manage services
+  - apiGroups: [""]
+    resources: ["services"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Events for status reporting
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+---
+# RoleBinding for controller ServiceAccount
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tundra-dome-controller
+subjects:
+  - kind: ServiceAccount
+    name: tundra-dome-controller
+    namespace: tundra-dome
+---
+# ServiceAccount for Airflow DAGs (needs K8s API access)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: airflow-worker
+  namespace: tundra-dome
+---
+# Role for Airflow to query cluster state
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: airflow-worker
+  namespace: tundra-dome
+rules:
+  # Read Tundra Dome resources for monitoring
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats", "beads", "lanes", "playbooks", "stations", "errands"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats/status", "beads/status", "lanes/status"]
+    verbs: ["get"]
+  # Scale polecats
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats/scale"]
+    verbs: ["get", "update", "patch"]
+  # Read deployments for status
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch"]
+  # Read pods for health checks
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+# RoleBinding for Airflow
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: airflow-worker
+  namespace: tundra-dome
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: airflow-worker
+subjects:
+  - kind: ServiceAccount
+    name: airflow-worker
+    namespace: tundra-dome
+---
+# NetworkPolicy - allow internal traffic, restrict external
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: tundra-dome-default
+  namespace: tundra-dome
+spec:
+  podSelector: {}
+  policyTypes:
+    - Ingress
+    - Egress
+  ingress:
+    # Allow all internal namespace traffic
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: tundra-dome
+    # Allow from kube-system (metrics, DNS)
+    - from:
+        - namespaceSelector:
+            matchLabels:
+              kubernetes.io/metadata.name: kube-system
+  egress:
+    # Allow all egress (needed for GitHub API, Datadog)
+    - {}
+---
+# ResourceQuota for the namespace
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: tundra-dome-quota
+  namespace: tundra-dome
+spec:
+  hard:
+    requests.cpu: "8"
+    requests.memory: 16Gi
+    limits.cpu: "16"
+    limits.memory: 32Gi
+    pods: "50"
+    persistentvolumeclaims: "10"
+---
+# LimitRange for default resource limits
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: tundra-dome-limits
+  namespace: tundra-dome
+spec:
+  limits:
+    - default:
+        cpu: 500m
+        memory: 512Mi
+      defaultRequest:
+        cpu: 100m
+        memory: 128Mi
+      type: Container

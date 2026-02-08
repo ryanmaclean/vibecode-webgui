@@ -1,0 +1,40 @@
+# VibeCode Local KIND Cluster Configuration
+# Optimized for AI and VM workloads
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: vibecode-local
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/cluster=vibecode-local,tundra-dome/role=control-plane"
+    extraPortMappings:
+      # Airflow Web UI (offset from others)
+      - containerPort: 30082
+        hostPort: 8082
+        protocol: TCP
+      # Kafka external
+      - containerPort: 30094
+        hostPort: 9094
+        protocol: TCP
+      # Gitea
+      - containerPort: 30302
+        hostPort: 3002
+        protocol: TCP
+      # OpenVSCode Server
+      - containerPort: 30333
+        hostPort: 3333
+        protocol: TCP
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/cluster=vibecode-local,tundra-dome/role=worker,tundra-dome/workload=ai"
+networking:
+  podSubnet: "10.246.0.0/16"
+  serviceSubnet: "10.98.0.0/12"

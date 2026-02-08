@@ -1,0 +1,247 @@
+# Tundra Dome Cluster Registry
+# Defines all KIND clusters and their configurations
+#
+# Each cluster can have different:
+# - Workload focus (what types of beads it handles)
+# - Resource allocation
+# - Enabled components
+# - Polecat specializations
+
+apiVersion: tundra.dome/v1
+kind: ClusterRegistry
+metadata:
+  name: tundra-dome-clusters
+
+# Global defaults applied to all clusters
+defaults:
+  namespace: tundra-dome
+  env: dev
+  kafka:
+    enabled: true
+    replicas: 1
+    retention_hours: 168
+  airflow:
+    enabled: true
+    executor: LocalExecutor
+  gitea:
+    enabled: true
+  datadog:
+    enabled: true
+    site: datadoghq.com
+  federation:
+    enabled: true
+    sync_interval_ms: 5000
+
+# Cluster definitions
+clusters:
+  # Main Tundra Dome cluster - full stack
+  tundra-dome:
+    context: kind-tundra-dome
+    description: "Primary Tundra Dome cluster - full orchestration stack"
+    kind_config: kind-config.yaml
+    role: primary
+    workloads:
+      - orchestration
+      - code-review
+      - issue-triage
+      - github-sync
+    lanes:
+      critical:
+        enabled: true
+        max_concurrent: 10
+        max_queue: 50
+      standard:
+        enabled: true
+        max_concurrent: 20
+        max_queue: 200
+      experimental:
+        enabled: true
+        max_concurrent: 5
+        max_queue: 100
+    polecats:
+      - name: issue-triager
+        replicas: 1
+        lanes: [critical, standard, experimental]
+      - name: code-reviewer
+        replicas: 2
+        lanes: [critical, standard]
+      - name: github-syncer
+        replicas: 2
+        lanes: [standard, experimental]
+      - name: witness
+        replicas: 1
+        role: witness
+      - name: overseer
+        replicas: 1
+        role: overseer
+      - name: reaper
+        replicas: 1
+        role: reaper
+    resources:
+      cpu_limit: "8"
+      memory_limit: "16Gi"
+    nodes:
+      control_plane: 1
+      workers: 2
+    ports:
+      airflow: 8080
+      kafka: 9092
+      gitea: 3000
+      postgresql: 5432
+
+  # Gas Town cluster - metrics and observability focus
+  gastown:
+    context: kind-gastown
+    description: "Gas Town cluster - metrics, observability, and data processing"
+    kind_config: clusters/gastown/kind-config.yaml
+    role: secondary
+    workloads:
+      - metrics-collection
+      - log-processing
+      - dashboard-generation
+      - cost-analysis
+    lanes:
+      critical:
+        enabled: true
+        max_concurrent: 5
+        max_queue: 20
+      standard:
+        enabled: true
+        max_concurrent: 10
+        max_queue: 100
+      experimental:
+        enabled: false
+    polecats:
+      - name: metrics-collector
+        replicas: 2
+        lanes: [critical, standard]
+        skills: [datadog-api, metrics-aggregation]
+      - name: log-processor
+        replicas: 1
+        lanes: [standard]
+        skills: [log-parsing, pattern-detection]
+      - name: dashboard-builder
+        replicas: 1
+        lanes: [standard]
+        skills: [datadog-dashboards, visualization]
+      - name: witness
+        replicas: 1
+        role: witness
+    # Override Airflow config for lighter footprint
+    airflow:
+      enabled: true
+      executor: LocalExecutor
+      parallelism: 4
+    resources:
+      cpu_limit: "4"
+      memory_limit: "8Gi"
+    nodes:
+      control_plane: 1
+      workers: 1
+    ports:
+      airflow: 8081
+      kafka: 9093
+      gitea: 3001
+
+  # VibeCode Local cluster - development and AI workloads
+  vibecode-local:
+    context: kind-vibecode-local
+    description: "VibeCode cluster - AI agents, code generation, VM management"
+    kind_config: clusters/vibecode-local/kind-config.yaml
+    role: secondary
+    workloads:
+      - ai-code-generation
+      - vm-management
+      - mlx-inference
+      - containerization
+    lanes:
+      critical:
+        enabled: true
+        max_concurrent: 3
+        max_queue: 10
+      standard:
+        enabled: true
+        max_concurrent: 5
+        max_queue: 50
+      experimental:
+        enabled: true
+        max_concurrent: 10
+        max_queue: 200
+    polecats:
+      - name: ai-coder
+        replicas: 2
+        lanes: [critical, standard]
+        skills: [llm-api, code-generation, code-review]
+      - name: vm-manager
+        replicas: 1
+        lanes: [standard, experimental]
+        skills: [apple-virtualization, container-runtime]
+      - name: mlx-runner
+        replicas: 1
+        lanes: [experimental]
+        skills: [mlx-inference, coreml]
+      - name: witness
+        replicas: 1
+        role: witness
+    # Experimental lane focus for AI workloads
+    airflow:
+      enabled: true
+      executor: LocalExecutor
+      parallelism: 2
+    resources:
+      cpu_limit: "4"
+      memory_limit: "8Gi"
+    nodes:
+      control_plane: 1
+      workers: 1
+    ports:
+      airflow: 8082
+      kafka: 9094
+      gitea: 3002
+
+# Federation configuration
+federation:
+  # Topics used for cross-cluster sync
+  topics:
+    bead_sync_request: tundra-beads-sync-request
+    bead_sync_complete: tundra-beads-sync-complete
+    cluster_heartbeat: tundra-cluster-heartbeat
+
+  # Routing rules - which beads go where
+  routing:
+    - match:
+        labels:
+          type: metrics
+      target_clusters: [gastown]
+    - match:
+        labels:
+          type: ai-code
+      target_clusters: [vibecode-local]
+    - match:
+        labels:
+          type: code-review
+      target_clusters: [tundra-dome]
+    # Default: primary cluster handles unrouted beads
+    - match: {}
+      target_clusters: [tundra-dome]
+
+  # Conflict resolution
+  conflict_resolution: latest_wins  # or: primary_wins, merge
+
+# GitHub integration
+github:
+  # Repositories to sync across all clusters
+  repos:
+    - org: anthropics
+      name: claude-code
+      mirror_to: all
+      webhook_clusters: [tundra-dome]  # Which clusters receive webhooks
+    # Add more repos as needed
+
+  # Label to cluster routing
+  label_routing:
+    metrics: gastown
+    observability: gastown
+    ai: vibecode-local
+    vm: vibecode-local
+    default: tundra-dome

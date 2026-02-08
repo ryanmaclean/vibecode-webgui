@@ -70,6 +70,10 @@ spec:
     metadata:
       labels:
         app: gitea
+        tags.datadoghq.com/service: tundra-gitea
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/gitea.logs: '[{"source":"gitea","service":"tundra-gitea"}]'
     spec:
       containers:
         - name: gitea
@@ -89,7 +93,7 @@ spec:
             - name: DD_SERVICE
               value: "tundra-gitea"
             - name: DD_ENV
-              value: "kind"
+              value: "dev"
           resources:
             requests:
               cpu: 100m

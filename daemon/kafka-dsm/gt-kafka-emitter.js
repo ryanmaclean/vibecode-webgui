@@ -1,11 +1,8 @@
 'use strict';
 
-require('dd-trace').init({
-  service: process.env.DD_SERVICE || 'gastown-kafka-bead-emitter',
-  env: process.env.DD_ENV || 'local',
-  version: process.env.DD_VERSION || '0.1.0',
-  logInjection: true
-});
+// Use shared tracer config for proper span naming
+const { initTracer } = require('./lib/tracer-config');
+initTracer({ service: process.env.DD_SERVICE || 'gastown-kafka-bead-emitter' });
 
 const fs = require('fs');
 const path = require('path');

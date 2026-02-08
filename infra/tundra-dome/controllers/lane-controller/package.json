@@ -1,0 +1,13 @@
+{
+  "name": "lane-controller",
+  "version": "0.1.0",
+  "description": "Tundra Dome Lane Controller - manages lane quotas and escalation",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "kafkajs": "^2.2.4"
+  }
+}

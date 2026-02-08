@@ -1,11 +1,8 @@
 'use strict';
 
-require('dd-trace').init({
-  service: process.env.DD_SERVICE || 'gastown-action-producer',
-  env: process.env.DD_ENV || 'local',
-  version: process.env.DD_VERSION || '0.1.0',
-  logInjection: true
-});
+// Use shared tracer config for proper span naming
+const { initTracer } = require('./lib/tracer-config');
+initTracer({ service: process.env.DD_SERVICE || 'gastown-action-producer' });
 
 const { Kafka } = require('kafkajs');
 

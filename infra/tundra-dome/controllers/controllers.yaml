@@ -1,0 +1,370 @@
+---
+# Tundra Dome Controllers
+# Deploys: polecat-operator, bead-controller, openlineage-bead-bridge
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+rules:
+  # Watch and manage CRDs
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats", "beads", "lanes", "playbooks", "stations", "errands"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["tundra.dome"]
+    resources: ["polecats/status", "beads/status", "lanes/status"]
+    verbs: ["get", "update", "patch"]
+  # Manage deployments for polecats
+  - apiGroups: ["apps"]
+    resources: ["deployments"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  # Manage configmaps and secrets
+  - apiGroups: [""]
+    resources: ["configmaps", "secrets"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  # View pods for status
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: tundra-dome-controller
+  namespace: tundra-dome
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: tundra-dome-controller
+subjects:
+  - kind: ServiceAccount
+    name: tundra-dome-controller
+    namespace: tundra-dome
+---
+# Polecat Operator
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: polecat-operator
+  namespace: tundra-dome
+  labels:
+    app: polecat-operator
+    tundra.dome/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: polecat-operator
+  template:
+    metadata:
+      labels:
+        app: polecat-operator
+        tundra.dome/component: controller
+        tags.datadoghq.com/service: polecat-operator
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/operator.logs: '[{"source":"nodejs","service":"polecat-operator"}]'
+    spec:
+      serviceAccountName: tundra-dome-controller
+      initContainers:
+        - name: setup
+          image: node:20-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cp /code-src/* /app/
+              cd /app && npm install --production 2>/dev/null || true
+          volumeMounts:
+            - name: code-src
+              mountPath: /code-src
+              readOnly: true
+            - name: app
+              mountPath: /app
+      containers:
+        - name: operator
+          image: node:20-alpine
+          command: ["node", "/app/index.js"]
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: DD_SERVICE
+              value: "polecat-operator"
+            - name: DD_ENV
+              value: "dev"
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: code-src
+          configMap:
+            name: polecat-operator-code
+        - name: app
+          emptyDir: {}
+---
+# Bead Controller
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bead-controller
+  namespace: tundra-dome
+  labels:
+    app: bead-controller
+    tundra.dome/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bead-controller
+  template:
+    metadata:
+      labels:
+        app: bead-controller
+        tundra.dome/component: controller
+        tags.datadoghq.com/service: bead-controller
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/controller.logs: '[{"source":"nodejs","service":"bead-controller"}]'
+    spec:
+      serviceAccountName: tundra-dome-controller
+      initContainers:
+        - name: setup
+          image: node:20-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cp /code-src/* /app/
+              cd /app && npm install --production 2>/dev/null || true
+          volumeMounts:
+            - name: code-src
+              mountPath: /code-src
+              readOnly: true
+            - name: app
+              mountPath: /app
+      containers:
+        - name: controller
+          image: node:20-alpine
+          command: ["node", "/app/index.js"]
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: DD_SERVICE
+              value: "bead-controller"
+            - name: DD_ENV
+              value: "dev"
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: code-src
+          configMap:
+            name: bead-controller-code
+        - name: app
+          emptyDir: {}
+---
+# OpenLineage-Bead Bridge
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: openlineage-bead-bridge
+  namespace: tundra-dome
+  labels:
+    app: openlineage-bead-bridge
+    tundra.dome/component: bridge
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: openlineage-bead-bridge
+  template:
+    metadata:
+      labels:
+        app: openlineage-bead-bridge
+        tundra.dome/component: bridge
+        tags.datadoghq.com/service: openlineage-bead-bridge
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/bridge.logs: '[{"source":"nodejs","service":"openlineage-bead-bridge"}]'
+    spec:
+      serviceAccountName: tundra-dome-controller
+      initContainers:
+        - name: setup
+          image: node:20-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cp /code-src/* /app/
+              cd /app && npm install --production 2>/dev/null || true
+          volumeMounts:
+            - name: code-src
+              mountPath: /code-src
+              readOnly: true
+            - name: app
+              mountPath: /app
+      containers:
+        - name: bridge
+          image: node:20-alpine
+          command: ["node", "/app/index.js"]
+          ports:
+            - containerPort: 5000
+              name: webhook
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: PORT
+              value: "5000"
+            - name: DD_SERVICE
+              value: "openlineage-bead-bridge"
+            - name: DD_ENV
+              value: "dev"
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+      volumes:
+        - name: code-src
+          configMap:
+            name: openlineage-bead-bridge-code
+        - name: app
+          emptyDir: {}
+---
+# Service for OpenLineage webhook
+apiVersion: v1
+kind: Service
+metadata:
+  name: openlineage-bead-bridge
+  namespace: tundra-dome
+spec:
+  selector:
+    app: openlineage-bead-bridge
+  ports:
+    - port: 5000
+      targetPort: 5000
+      name: webhook
+---
+# Lane Controller
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lane-controller
+  namespace: tundra-dome
+  labels:
+    app: lane-controller
+    tundra.dome/component: controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lane-controller
+  template:
+    metadata:
+      labels:
+        app: lane-controller
+        tundra.dome/component: controller
+        tags.datadoghq.com/service: lane-controller
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/controller.logs: '[{"source":"nodejs","service":"lane-controller"}]'
+    spec:
+      serviceAccountName: tundra-dome-controller
+      initContainers:
+        - name: setup
+          image: node:20-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cp /code-src/* /app/
+              cd /app && npm install --production 2>/dev/null || true
+          volumeMounts:
+            - name: code-src
+              mountPath: /code-src
+              readOnly: true
+            - name: app
+              mountPath: /app
+      containers:
+        - name: controller
+          image: node:20-alpine
+          command: ["node", "/app/index.js"]
+          env:
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: RECONCILE_INTERVAL
+              value: "30000"
+            - name: DD_SERVICE
+              value: "lane-controller"
+            - name: DD_ENV
+              value: "dev"
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: code-src
+          configMap:
+            name: lane-controller-code
+        - name: app
+          emptyDir: {}

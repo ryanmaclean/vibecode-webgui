@@ -1,0 +1,13 @@
+{
+  "name": "bead-sync-controller",
+  "version": "0.1.0",
+  "description": "Tundra Dome Bead Federation Controller - syncs beads across clusters",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.20.0",
+    "kafkajs": "^2.2.4"
+  }
+}

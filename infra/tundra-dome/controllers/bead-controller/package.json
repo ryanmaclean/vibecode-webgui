@@ -1,0 +1,17 @@
+{
+  "name": "bead-controller",
+  "version": "1.0.0",
+  "description": "Kubernetes controller for Tundra Dome Bead routing",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "dependencies": {
+    "@kubernetes/client-node": "^0.21.0",
+    "kafkajs": "^2.2.4"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

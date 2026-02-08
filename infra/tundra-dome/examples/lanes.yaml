@@ -22,6 +22,10 @@ spec:
         values: ["critical", "urgent", "p0"]
       - key: sla-bound
         operator: Exists
+    sourceSelectors:
+      - github
+      - jira
+      - webhook
   quotas:
     maxConcurrent: 10
     maxQueueDepth: 50
@@ -50,6 +54,11 @@ spec:
       - key: priority
         operator: In
         values: ["standard", "normal", "p1", "p2"]
+    sourceSelectors:
+      - github
+      - gitea
+      - jira
+      - manual
   quotas:
     maxConcurrent: 50
     maxQueueDepth: 500
@@ -86,6 +95,10 @@ spec:
       - key: can-fail
         operator: In
         values: ["true"]
+    sourceSelectors:
+      - github
+      - gitea
+      - manual
   quotas:
     maxConcurrent: 5
     maxQueueDepth: 100

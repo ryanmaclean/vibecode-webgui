@@ -1,0 +1,211 @@
+# Kafka Stack for Tundra Dome
+# Bitnami Kafka with KRaft mode (no Zookeeper)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: kafka-data-pvc
+  namespace: tundra-dome
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kafka-config
+  namespace: tundra-dome
+data:
+  # KRaft mode configuration
+  KAFKA_CFG_NODE_ID: "1"
+  KAFKA_CFG_PROCESS_ROLES: "broker,controller"
+  KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: "1@kafka-service:9093"
+  KAFKA_CFG_LISTENERS: "PLAINTEXT://:9092,CONTROLLER://:9093,EXTERNAL://:9094"
+  KAFKA_CFG_ADVERTISED_LISTENERS: "PLAINTEXT://kafka-service:9092,EXTERNAL://localhost:9092"
+  KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: "PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT,EXTERNAL:PLAINTEXT"
+  KAFKA_CFG_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+  KAFKA_CFG_INTER_BROKER_LISTENER_NAME: "PLAINTEXT"
+  # Performance tuning for KIND
+  KAFKA_CFG_LOG_RETENTION_HOURS: "168"
+  KAFKA_CFG_LOG_SEGMENT_BYTES: "1073741824"
+  KAFKA_CFG_NUM_PARTITIONS: "3"
+  KAFKA_CFG_DEFAULT_REPLICATION_FACTOR: "1"
+  KAFKA_CFG_OFFSETS_TOPIC_REPLICATION_FACTOR: "1"
+  KAFKA_CFG_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: "1"
+  KAFKA_CFG_TRANSACTION_STATE_LOG_MIN_ISR: "1"
+  # Auto topic creation
+  KAFKA_CFG_AUTO_CREATE_TOPICS_ENABLE: "true"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka
+  namespace: tundra-dome
+  labels:
+    app: kafka
+    tundra.dome/component: infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: kafka
+        tundra.dome/component: infrastructure
+        tags.datadoghq.com/service: tundra-kafka
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/kafka.logs: '[{"source":"kafka","service":"tundra-kafka"}]'
+    spec:
+      nodeSelector:
+        tundra-dome/workload: infrastructure
+      tolerations:
+        - key: "tundra-dome/workload"
+          operator: "Equal"
+          value: "infrastructure"
+          effect: "NoSchedule"
+      containers:
+        - name: kafka
+          image: bitnami/kafka:3.6
+          ports:
+            - containerPort: 9092
+              name: plaintext
+            - containerPort: 9093
+              name: controller
+            - containerPort: 9094
+              name: external
+          envFrom:
+            - configMapRef:
+                name: kafka-config
+          env:
+            - name: KAFKA_KRAFT_CLUSTER_ID
+              value: "tundra-dome-kafka-cluster"
+            - name: ALLOW_PLAINTEXT_LISTENER
+              value: "yes"
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+          volumeMounts:
+            - name: kafka-data
+              mountPath: /bitnami/kafka
+          livenessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 60
+            periodSeconds: 10
+            timeoutSeconds: 5
+          readinessProbe:
+            tcpSocket:
+              port: 9092
+            initialDelaySeconds: 30
+            periodSeconds: 5
+            timeoutSeconds: 3
+      volumes:
+        - name: kafka-data
+          persistentVolumeClaim:
+            claimName: kafka-data-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-service
+  namespace: tundra-dome
+  labels:
+    app: kafka
+spec:
+  type: ClusterIP
+  ports:
+    - port: 9092
+      targetPort: 9092
+      name: plaintext
+    - port: 9093
+      targetPort: 9093
+      name: controller
+  selector:
+    app: kafka
+---
+# NodePort for external access (optional, for local development)
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-external
+  namespace: tundra-dome
+  labels:
+    app: kafka
+spec:
+  type: NodePort
+  ports:
+    - port: 9092
+      targetPort: 9094
+      nodePort: 30092
+      name: external
+  selector:
+    app: kafka
+---
+# Kafka UI for debugging (optional)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kafka-ui
+  namespace: tundra-dome
+  labels:
+    app: kafka-ui
+    tundra.dome/component: infrastructure
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kafka-ui
+  template:
+    metadata:
+      labels:
+        app: kafka-ui
+        tundra.dome/component: infrastructure
+    spec:
+      containers:
+        - name: kafka-ui
+          image: provectuslabs/kafka-ui:latest
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: KAFKA_CLUSTERS_0_NAME
+              value: "tundra-dome"
+            - name: KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS
+              value: "kafka-service:9092"
+            - name: DYNAMIC_CONFIG_ENABLED
+              value: "true"
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-ui
+  namespace: tundra-dome
+  labels:
+    app: kafka-ui
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: kafka-ui

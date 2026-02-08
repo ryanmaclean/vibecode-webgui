@@ -9,9 +9,19 @@ data:
   webhook-producer.js: |
     'use strict';
     
-    require('dd-trace').init({
+    const tracer = require('dd-trace').init({
       service: process.env.DD_SERVICE || 'tundra-gitea-webhook',
-      env: process.env.DD_ENV || 'kind',
+      env: process.env.DD_ENV || 'dev',
+    });
+
+    // Configure kafkajs spans to use topic as resource name
+    tracer.use('kafkajs', {
+      hooks: {
+        produce: (span, { topic }) => {
+          span.setTag('resource.name', topic);
+          span.setTag('kafka.topic', topic);
+        }
+      }
     });
     
     const http = require('http');
@@ -138,6 +148,10 @@ spec:
     metadata:
       labels:
         app: gitea-webhook-producer
+        tags.datadoghq.com/service: tundra-gitea-webhook
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/producer.logs: '[{"source":"nodejs","service":"tundra-gitea-webhook"}]'
     spec:
       containers:
         - name: producer
@@ -150,7 +164,7 @@ spec:
             - name: DD_SERVICE
               value: "tundra-gitea-webhook"
             - name: DD_ENV
-              value: "kind"
+              value: "dev"
             - name: KAFKA_BROKERS
               value: "kafka-service:9092"
             - name: TD_TOPIC_WORK

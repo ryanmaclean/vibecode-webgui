@@ -1,0 +1,219 @@
+# Datadog Agent for Tundra Dome
+# Provides APM, logs, metrics, and custom metrics collection
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: datadog-secret
+  namespace: tundra-dome
+type: Opaque
+stringData:
+  # Set via environment or replace before applying
+  api-key: "${DD_API_KEY:-placeholder}"
+  app-key: "${DD_APP_KEY:-}"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: datadog-config
+  namespace: tundra-dome
+data:
+  # Cluster-specific config
+  DD_CLUSTER_NAME: "${CLUSTER_NAME:-tundra-dome}"
+  DD_ENV: "dev"
+  DD_SITE: "datadoghq.com"
+  # APM
+  DD_APM_ENABLED: "true"
+  DD_APM_NON_LOCAL_TRAFFIC: "true"
+  # Logs
+  DD_LOGS_ENABLED: "true"
+  DD_LOGS_CONFIG_CONTAINER_COLLECT_ALL: "true"
+  # Process monitoring
+  DD_PROCESS_AGENT_ENABLED: "true"
+  # Kubernetes
+  DD_KUBERNETES_POD_LABELS_AS_TAGS: '{"tundra.dome/*":"tundra_%%label%%"}'
+  DD_KUBERNETES_POD_ANNOTATIONS_AS_TAGS: '{"ad.datadoghq.com/*":"dd_%%annotation%%"}'
+  # Custom metrics
+  DD_DOGSTATSD_NON_LOCAL_TRAFFIC: "true"
+---
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: datadog-agent
+  namespace: tundra-dome
+  labels:
+    app: datadog-agent
+    tundra.dome/component: observability
+spec:
+  selector:
+    matchLabels:
+      app: datadog-agent
+  template:
+    metadata:
+      labels:
+        app: datadog-agent
+        tundra.dome/component: observability
+      annotations:
+        container.apparmor.security.beta.kubernetes.io/agent: unconfined
+    spec:
+      serviceAccountName: datadog-agent
+      containers:
+        - name: agent
+          image: gcr.io/datadoghq/agent:7
+          ports:
+            - containerPort: 8125
+              name: dogstatsd
+              protocol: UDP
+            - containerPort: 8126
+              name: traceport
+              protocol: TCP
+          env:
+            - name: DD_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: datadog-secret
+                  key: api-key
+            - name: DD_KUBERNETES_KUBELET_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.hostIP
+            - name: DD_CLUSTER_NAME
+              valueFrom:
+                configMapKeyRef:
+                  name: datadog-config
+                  key: DD_CLUSTER_NAME
+          envFrom:
+            - configMapRef:
+                name: datadog-config
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+          volumeMounts:
+            - name: dockersocket
+              mountPath: /var/run/docker.sock
+              readOnly: true
+            - name: procdir
+              mountPath: /host/proc
+              readOnly: true
+            - name: cgroups
+              mountPath: /host/sys/fs/cgroup
+              readOnly: true
+            - name: pointdir
+              mountPath: /opt/datadog-agent/run
+          livenessProbe:
+            httpGet:
+              path: /live
+              port: 5555
+            initialDelaySeconds: 15
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /ready
+              port: 5555
+            initialDelaySeconds: 15
+            periodSeconds: 15
+      volumes:
+        - name: dockersocket
+          hostPath:
+            path: /var/run/docker.sock
+        - name: procdir
+          hostPath:
+            path: /proc
+        - name: cgroups
+          hostPath:
+            path: /sys/fs/cgroup
+        - name: pointdir
+          hostPath:
+            path: /opt/datadog-agent/run
+            type: DirectoryOrCreate
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: datadog-agent
+  namespace: tundra-dome
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: datadog-agent
+rules:
+  - apiGroups: [""]
+    resources:
+      - nodes
+      - namespaces
+      - pods
+      - services
+      - endpoints
+      - events
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    resourceNames:
+      - datadog-leader-election
+    verbs: ["get", "update"]
+  - apiGroups: [""]
+    resources:
+      - configmaps
+    verbs: ["create"]
+  - apiGroups: ["apps"]
+    resources:
+      - deployments
+      - replicasets
+      - statefulsets
+      - daemonsets
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["batch"]
+    resources:
+      - jobs
+      - cronjobs
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["tundra.dome"]
+    resources:
+      - beads
+      - polecats
+      - lanes
+      - playbooks
+      - stations
+      - errands
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: datadog-agent
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: datadog-agent
+subjects:
+  - kind: ServiceAccount
+    name: datadog-agent
+    namespace: tundra-dome
+---
+# Service for APM trace collection
+apiVersion: v1
+kind: Service
+metadata:
+  name: datadog-agent
+  namespace: tundra-dome
+  labels:
+    app: datadog-agent
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8125
+      targetPort: 8125
+      protocol: UDP
+      name: dogstatsd
+    - port: 8126
+      targetPort: 8126
+      protocol: TCP
+      name: traceport
+  selector:
+    app: datadog-agent

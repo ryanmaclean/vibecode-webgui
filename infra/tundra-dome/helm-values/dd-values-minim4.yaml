@@ -1,0 +1,23 @@
+datadog:
+  apiKey: "35985a0d3e2d1d893e84e8688cf83ee5"
+  site: datadoghq.com
+  clusterName: minim4-tundra-dome
+  apm:
+    portEnabled: true
+  logs:
+    enabled: true
+    containerCollectAll: true
+  kubelet:
+    tlsVerify: false
+agents:
+  containers:
+    agent:
+      env:
+        - name: DD_HOSTNAME
+          valueFrom:
+            fieldRef:
+              fieldPath: spec.nodeName
+clusterAgent:
+  enabled: true
+  metricsProvider:
+    enabled: true

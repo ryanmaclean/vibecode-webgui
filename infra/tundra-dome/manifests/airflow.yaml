@@ -1,0 +1,253 @@
+# Airflow for Tundra Dome - Policy Engine
+# Lightweight deployment with LocalExecutor for KIND
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-config
+  namespace: tundra-dome
+data:
+  AIRFLOW__CORE__EXECUTOR: "LocalExecutor"
+  AIRFLOW__CORE__DAGS_FOLDER: "/opt/airflow/dags"
+  AIRFLOW__CORE__LOAD_EXAMPLES: "False"
+  AIRFLOW__CORE__FERNET_KEY: "tundra-dome-fernet-key-change-in-prod=="
+  AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: "postgresql://airflow:airflow@airflow-postgresql:5432/airflow"
+  AIRFLOW__WEBSERVER__SECRET_KEY: "tundra-dome-secret-key"
+  AIRFLOW__WEBSERVER__EXPOSE_CONFIG: "True"
+  AIRFLOW__WEBSERVER__RBAC: "True"
+  AIRFLOW__SCHEDULER__DAG_DIR_LIST_INTERVAL: "30"
+  AIRFLOW__SCHEDULER__MIN_FILE_PROCESS_INTERVAL: "30"
+  # Kafka provider settings
+  AIRFLOW__PROVIDERS__APACHE_KAFKA__BOOTSTRAP_SERVERS: "kafka-service:9092"
+  # Logging
+  AIRFLOW__LOGGING__LOGGING_LEVEL: "INFO"
+  AIRFLOW__LOGGING__FAB_LOGGING_LEVEL: "WARNING"
+  # Performance
+  AIRFLOW__CORE__PARALLELISM: "8"
+  AIRFLOW__CORE__MAX_ACTIVE_RUNS_PER_DAG: "2"
+  AIRFLOW__CORE__MAX_ACTIVE_TASKS_PER_DAG: "4"
+  # Datadog integration
+  DD_SERVICE: "tundra-airflow"
+  DD_ENV: "dev"
+---
+# DAGs ConfigMap - mounted as volume
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: airflow-dags
+  namespace: tundra-dome
+data:
+  # DAGs will be added via separate files or git-sync
+  __init__.py: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-webserver
+  namespace: tundra-dome
+  labels:
+    app: airflow
+    component: webserver
+    tundra.dome/component: policy-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow
+      component: webserver
+  template:
+    metadata:
+      labels:
+        app: airflow
+        component: webserver
+        tundra.dome/component: policy-engine
+        tags.datadoghq.com/service: tundra-airflow-webserver
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/webserver.logs: '[{"source":"airflow","service":"tundra-airflow-webserver"}]'
+    spec:
+      serviceAccountName: airflow-worker
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL..."
+              until nc -z airflow-postgresql 5432; do
+                sleep 2
+              done
+              echo "PostgreSQL is ready!"
+        - name: init-db
+          image: apache/airflow:2.8.1-python3.11
+          command:
+            - bash
+            - -c
+            - |
+              airflow db migrate
+              airflow users create \
+                --username admin \
+                --password admin \
+                --firstname Tundra \
+                --lastname Admin \
+                --role Admin \
+                --email admin@tundra.dome || true
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+      containers:
+        - name: webserver
+          image: apache/airflow:2.8.1-python3.11
+          command: ["airflow", "webserver"]
+          ports:
+            - containerPort: 8080
+              name: http
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          env:
+            - name: AIRFLOW__WEBSERVER__BASE_URL
+              value: "http://localhost:8080"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: dags
+              mountPath: /opt/airflow/dags
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: dags
+          configMap:
+            name: airflow-dags
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: airflow-scheduler
+  namespace: tundra-dome
+  labels:
+    app: airflow
+    component: scheduler
+    tundra.dome/component: policy-engine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: airflow
+      component: scheduler
+  template:
+    metadata:
+      labels:
+        app: airflow
+        component: scheduler
+        tundra.dome/component: policy-engine
+        tags.datadoghq.com/service: tundra-airflow-scheduler
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/scheduler.logs: '[{"source":"airflow","service":"tundra-airflow-scheduler"}]'
+    spec:
+      serviceAccountName: airflow-worker
+      initContainers:
+        - name: wait-for-db
+          image: busybox:1.36
+          command:
+            - sh
+            - -c
+            - |
+              echo "Waiting for PostgreSQL..."
+              until nc -z airflow-postgresql 5432; do
+                sleep 2
+              done
+              echo "PostgreSQL is ready!"
+        - name: install-providers
+          image: apache/airflow:2.8.1-python3.11
+          command:
+            - pip
+            - install
+            - --user
+            - apache-airflow-providers-apache-kafka
+            - confluent-kafka
+            - kubernetes
+          volumeMounts:
+            - name: pip-packages
+              mountPath: /home/airflow/.local
+      containers:
+        - name: scheduler
+          image: apache/airflow:2.8.1-python3.11
+          command: ["airflow", "scheduler"]
+          envFrom:
+            - configMapRef:
+                name: airflow-config
+          env:
+            - name: PYTHONPATH
+              value: "/home/airflow/.local/lib/python3.11/site-packages"
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+          volumeMounts:
+            - name: dags
+              mountPath: /opt/airflow/dags
+            - name: pip-packages
+              mountPath: /home/airflow/.local
+      volumes:
+        - name: dags
+          configMap:
+            name: airflow-dags
+        - name: pip-packages
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-webserver
+  namespace: tundra-dome
+  labels:
+    app: airflow
+spec:
+  type: ClusterIP
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  selector:
+    app: airflow
+    component: webserver
+---
+# NodePort for external access
+apiVersion: v1
+kind: Service
+metadata:
+  name: airflow-external
+  namespace: tundra-dome
+  labels:
+    app: airflow
+spec:
+  type: NodePort
+  ports:
+    - port: 8080
+      targetPort: 8080
+      nodePort: 30080
+      name: http
+  selector:
+    app: airflow
+    component: webserver

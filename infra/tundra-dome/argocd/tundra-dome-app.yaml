@@ -1,0 +1,150 @@
+# Tundra Dome ArgoCD Application
+# GitOps-based cluster state management
+---
+apiVersion: argoproj.io/v1alpha1
+kind: AppProject
+metadata:
+  name: tundra-dome
+  namespace: argocd
+spec:
+  description: Tundra Dome Autonomous Work System
+  sourceRepos:
+    - '*'
+  destinations:
+    - namespace: tundra-dome
+      server: https://kubernetes.default.svc
+    - namespace: datadog
+      server: https://kubernetes.default.svc
+    - namespace: kafka
+      server: https://kubernetes.default.svc
+    - namespace: airflow
+      server: https://kubernetes.default.svc
+  clusterResourceWhitelist:
+    - group: '*'
+      kind: '*'
+  namespaceResourceWhitelist:
+    - group: '*'
+      kind: '*'
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tundra-dome-crds
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tundra-dome
+  source:
+    repoURL: https://github.com/YOUR_ORG/tundra-dome.git
+    targetRevision: HEAD
+    path: infra/tundra-dome/crds
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tundra-dome
+  syncPolicy:
+    automated:
+      prune: false  # Don't auto-delete CRDs
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+      - Replace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tundra-dome-controllers
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tundra-dome
+  source:
+    repoURL: https://github.com/YOUR_ORG/tundra-dome.git
+    targetRevision: HEAD
+    path: infra/tundra-dome/controllers
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tundra-dome
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tundra-dome-polecats
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tundra-dome
+  source:
+    repoURL: https://github.com/YOUR_ORG/tundra-dome.git
+    targetRevision: HEAD
+    path: infra/tundra-dome/examples
+    directory:
+      include: 'polecat-*.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tundra-dome
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: tundra-dome-lanes
+  namespace: argocd
+  finalizers:
+    - resources-finalizer.argocd.argoproj.io
+spec:
+  project: tundra-dome
+  source:
+    repoURL: https://github.com/YOUR_ORG/tundra-dome.git
+    targetRevision: HEAD
+    path: infra/tundra-dome/examples
+    directory:
+      include: 'lane-*.yaml'
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: tundra-dome
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+---
+apiVersion: argoproj.io/v1alpha1
+kind: ApplicationSet
+metadata:
+  name: tundra-dome-multicluster
+  namespace: argocd
+spec:
+  generators:
+    - clusters:
+        selector:
+          matchLabels:
+            tundra-dome/enabled: "true"
+  template:
+    metadata:
+      name: '{{name}}-tundra-dome'
+    spec:
+      project: tundra-dome
+      source:
+        repoURL: https://github.com/YOUR_ORG/tundra-dome.git
+        targetRevision: HEAD
+        path: infra/tundra-dome/manifests
+      destination:
+        server: '{{server}}'
+        namespace: tundra-dome
+      syncPolicy:
+        automated:
+          prune: true
+          selfHeal: true
+        syncOptions:
+          - CreateNamespace=true

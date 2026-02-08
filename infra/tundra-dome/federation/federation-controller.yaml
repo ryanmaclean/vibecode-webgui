@@ -1,0 +1,79 @@
+# Bead Federation Controller Deployment
+# Syncs beads across Tundra Dome clusters
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bead-federation-controller
+  namespace: tundra-dome
+  labels:
+    app: bead-federation-controller
+    tundra.dome/component: federation
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bead-federation-controller
+  template:
+    metadata:
+      labels:
+        app: bead-federation-controller
+        tundra.dome/component: federation
+        tags.datadoghq.com/service: bead-federation-controller
+        tags.datadoghq.com/env: dev
+      annotations:
+        ad.datadoghq.com/controller.logs: '[{"source":"nodejs","service":"bead-federation-controller"}]'
+    spec:
+      serviceAccountName: tundra-dome-controller
+      initContainers:
+        - name: setup
+          image: node:20-alpine
+          command:
+            - sh
+            - -c
+            - |
+              cp /code-src/* /app/
+              cd /app && npm install --production 2>/dev/null || true
+          volumeMounts:
+            - name: code-src
+              mountPath: /code-src
+              readOnly: true
+            - name: app
+              mountPath: /app
+      containers:
+        - name: controller
+          image: node:20-alpine
+          command: ["node", "/app/index.js"]
+          env:
+            - name: CLUSTER_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.labels['tundra.dome/cluster']
+            - name: NAMESPACE
+              valueFrom:
+                fieldRef:
+                  fieldPath: metadata.namespace
+            - name: KAFKA_BROKERS
+              value: "kafka-service:9092"
+            - name: SYNC_INTERVAL
+              value: "5000"
+            - name: DD_SERVICE
+              value: "bead-federation-controller"
+            - name: DD_ENV
+              value: "dev"
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: code-src
+          configMap:
+            name: bead-federation-controller-code
+        - name: app
+          emptyDir: {}

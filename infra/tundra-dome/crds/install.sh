@@ -13,6 +13,7 @@ if [[ "$1" == "--delete" ]]; then
     kubectl delete crd lanes.tundra.dome 2>/dev/null || true
     kubectl delete crd playbooks.tundra.dome 2>/dev/null || true
     kubectl delete crd stations.tundra.dome 2>/dev/null || true
+    kubectl delete crd errands.tundra.dome 2>/dev/null || true
     echo "CRDs removed."
     exit 0
 fi
@@ -25,6 +26,7 @@ kubectl apply -f "$SCRIPT_DIR/polecat.yaml"
 kubectl apply -f "$SCRIPT_DIR/lane.yaml"
 kubectl apply -f "$SCRIPT_DIR/playbook.yaml"
 kubectl apply -f "$SCRIPT_DIR/station.yaml"
+kubectl apply -f "$SCRIPT_DIR/errand.yaml"
 
 echo ""
 echo "Tundra Dome CRDs installed successfully!"
@@ -35,6 +37,7 @@ echo "  kubectl get polecats   (pc)  - Workers"
 echo "  kubectl get lanes      (ln)  - Priority queues"
 echo "  kubectl get playbooks  (pb)  - Workflows"
 echo "  kubectl get stations   (st)  - Services"
+echo "  kubectl get errands    (er)  - Tasks/jobs"
 echo ""
 echo "Create example resources:"
 echo "  kubectl apply -f $SCRIPT_DIR/../examples/"

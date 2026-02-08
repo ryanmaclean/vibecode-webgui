@@ -1,0 +1,36 @@
+# Gas Town KIND Cluster Configuration
+# Optimized for metrics and observability workloads
+kind: Cluster
+apiVersion: kind.x-k8s.io/v1alpha4
+name: gastown
+nodes:
+  - role: control-plane
+    kubeadmConfigPatches:
+      - |
+        kind: InitConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/cluster=gastown,tundra-dome/role=control-plane"
+    extraPortMappings:
+      # Airflow Web UI (offset from tundra-dome)
+      - containerPort: 30081
+        hostPort: 8081
+        protocol: TCP
+      # Kafka external
+      - containerPort: 30093
+        hostPort: 9093
+        protocol: TCP
+      # Gitea
+      - containerPort: 30301
+        hostPort: 3001
+        protocol: TCP
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/cluster=gastown,tundra-dome/role=worker,tundra-dome/workload=metrics"
+networking:
+  podSubnet: "10.246.0.0/16"
+  serviceSubnet: "10.112.0.0/16"

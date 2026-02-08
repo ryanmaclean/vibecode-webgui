@@ -1,5 +1,5 @@
 # Tundra Dome KIND Cluster Configuration
-# Turnkey solution with worker node for increased capacity
+# Full-stack cluster with Kafka, Airflow, Gitea, and controllers
 kind: Cluster
 apiVersion: kind.x-k8s.io/v1alpha4
 name: tundra-dome
@@ -12,11 +12,11 @@ nodes:
           kubeletExtraArgs:
             node-labels: "tundra-dome/role=control-plane"
     extraPortMappings:
-      # Airflow API
+      # Airflow Web UI
       - containerPort: 30080
         hostPort: 8080
         protocol: TCP
-      # Kafka
+      # Kafka external
       - containerPort: 30092
         hostPort: 9092
         protocol: TCP
@@ -24,13 +24,31 @@ nodes:
       - containerPort: 30432
         hostPort: 5432
         protocol: TCP
+      # Gitea
+      - containerPort: 30300
+        hostPort: 3000
+        protocol: TCP
+      # OpenLineage webhook
+      - containerPort: 30500
+        hostPort: 5000
+        protocol: TCP
   - role: worker
     kubeadmConfigPatches:
       - |
         kind: JoinConfiguration
         nodeRegistration:
           kubeletExtraArgs:
-            node-labels: "tundra-dome/role=worker"
+            node-labels: "tundra-dome/role=worker,tundra-dome/workload=polecats"
+  - role: worker
+    kubeadmConfigPatches:
+      - |
+        kind: JoinConfiguration
+        nodeRegistration:
+          kubeletExtraArgs:
+            node-labels: "tundra-dome/role=worker,tundra-dome/workload=infrastructure"
 networking:
   podSubnet: "10.244.0.0/16"
   serviceSubnet: "10.96.0.0/12"
+# Feature gates for better scheduling
+featureGates:
+  TopologyAwareHints: true

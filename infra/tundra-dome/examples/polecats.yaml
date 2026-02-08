@@ -32,6 +32,18 @@ spec:
     limits:
       cpu: "500m"
       memory: "512Mi"
+  env:
+    - name: DD_SERVICE
+      value: "tundra-github-syncer"
+    - name: DD_ENV
+      value: "dev"
+    - name: GITHUB_TOKEN
+      valueFrom:
+        secretKeyRef:
+          name: github-credentials
+          key: token
+    - name: GITEA_URL
+      value: "http://gitea-service:3000"
   concurrency: 5
   heartbeatInterval: "30s"
   retryPolicy:
@@ -72,6 +84,11 @@ spec:
     limits:
       cpu: "250m"
       memory: "256Mi"
+  env:
+    - name: DD_SERVICE
+      value: "tundra-kafka-emitter"
+    - name: DD_ENV
+      value: "dev"
   concurrency: 10
   heartbeatInterval: "15s"
 ---
@@ -112,6 +129,11 @@ spec:
     limits:
       cpu: "500m"
       memory: "512Mi"
+  env:
+    - name: DD_SERVICE
+      value: "tundra-witness"
+    - name: DD_ENV
+      value: "dev"
   concurrency: 20
   heartbeatInterval: "10s"
 ---
@@ -146,6 +168,13 @@ spec:
     limits:
       cpu: "250m"
       memory: "256Mi"
+  env:
+    - name: DD_SERVICE
+      value: "tundra-reaper"
+    - name: DD_ENV
+      value: "dev"
+    - name: RETENTION_DAYS
+      value: "30"
   concurrency: 2
   heartbeatInterval: "60s"
 ---
@@ -183,5 +212,10 @@ spec:
     limits:
       cpu: "500m"
       memory: "512Mi"
+  env:
+    - name: DD_SERVICE
+      value: "tundra-overseer"
+    - name: DD_ENV
+      value: "dev"
   concurrency: 5
   heartbeatInterval: "30s"

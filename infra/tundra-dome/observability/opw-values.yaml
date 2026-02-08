@@ -1,0 +1,37 @@
+# Datadog Observability Pipelines Worker Values
+# Pipeline ID: 6d29537a-0495-11f1-9364-da7ad0900002
+
+# Configure secrets from environment or secrets manager
+env:
+  - name: SOURCE_DATADOG_AGENT_ADDRESS
+    value: "0.0.0.0:8282"
+  - name: DESTINATION_CLOUDPREM_ENDPOINT_URL
+    value: "https://http-intake.logs.datadoghq.com/v1/input"
+
+# Resource allocation for KIND cluster
+resources:
+  requests:
+    cpu: 100m
+    memory: 256Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# Service configuration
+service:
+  type: ClusterIP
+  ports:
+    - name: datadog-agent
+      port: 8282
+      targetPort: 8282
+
+# Autoscaling disabled for KIND
+autoscaling:
+  enabled: false
+
+# Single replica for dev
+replicaCount: 1
+
+# Pod annotations for Datadog
+podAnnotations:
+  ad.datadoghq.com/opw.logs: '[{"source":"observability-pipelines","service":"opw"}]'

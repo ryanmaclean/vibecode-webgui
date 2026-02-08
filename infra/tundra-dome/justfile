@@ -1,0 +1,420 @@
+# Tundra Dome - Task Automation
+# Run `just` or `just --list` to see available commands
+
+set shell := ["bash", "-uc"]
+
+# Default cluster context
+cluster := "kind-tundra-dome"
+namespace := "tundra-dome"
+
+# ============================================================================
+# Cluster Management
+# ============================================================================
+
+# Create KIND cluster and deploy full stack
+bootstrap:
+    @echo "🚀 Bootstrapping Tundra Dome..."
+    ./tundra-bootstrap.py
+
+# Create just the KIND cluster
+cluster-create:
+    @echo "Creating KIND cluster..."
+    ./tundra-bootstrap.py --cluster-only
+
+# Delete the KIND cluster
+cluster-delete:
+    @echo "Deleting KIND cluster..."
+    ./tundra-bootstrap.py --clean
+
+# Check cluster status
+cluster-status:
+    @kind get clusters
+    @kubectl --context {{cluster}} get nodes
+
+# ============================================================================
+# Deployment Commands
+# ============================================================================
+
+# Full deployment (assumes cluster exists)
+deploy:
+    @echo "Deploying Tundra Dome stack..."
+    ./tundra-cli.py init
+
+# Deploy only CRDs
+deploy-crds:
+    ./tundra-cli.py crds --cluster {{cluster}}
+
+# Deploy only controllers
+deploy-controllers:
+    ./tundra-cli.py controllers --cluster {{cluster}}
+
+# Deploy Kafka stack
+deploy-kafka:
+    ./tundra-cli.py kafka --cluster {{cluster}}
+
+# Deploy Gitea stack
+deploy-gitea:
+    ./tundra-cli.py gitea --cluster {{cluster}}
+
+# Deploy example CRs
+deploy-examples:
+    ./tundra-cli.py examples --cluster {{cluster}}
+
+# Deploy Airflow DAGs (update ConfigMap)
+deploy-dags:
+    @echo "Deploying Airflow DAGs..."
+    kubectl --context {{cluster}} create configmap airflow-dags \
+        --from-file=dags/ \
+        -n {{namespace}} \
+        --dry-run=client -o yaml | kubectl apply -f -
+    kubectl --context {{cluster}} rollout restart deployment/airflow-scheduler -n {{namespace}}
+
+# ============================================================================
+# Status & Verification
+# ============================================================================
+
+# Check full deployment status
+status:
+    ./tundra-cli.py status --cluster {{cluster}}
+
+# Verify deployment
+verify:
+    ./tundra-bootstrap.py --verify-only
+
+# Show all Tundra Dome resources
+resources:
+    @echo "=== Lanes ==="
+    kubectl --context {{cluster}} get lanes -n {{namespace}} -o wide
+    @echo "\n=== Polecats ==="
+    kubectl --context {{cluster}} get polecats -n {{namespace}} -o wide
+    @echo "\n=== Beads ==="
+    kubectl --context {{cluster}} get beads -n {{namespace}} -o wide
+    @echo "\n=== Pods ==="
+    kubectl --context {{cluster}} get pods -n {{namespace}}
+
+# Watch pods in real-time
+watch-pods:
+    watch -n2 kubectl --context {{cluster}} get pods -n {{namespace}}
+
+# ============================================================================
+# Kafka Commands
+# ============================================================================
+
+# List Kafka topics
+kafka-topics:
+    kubectl --context {{cluster}} exec -n {{namespace}} \
+        $(kubectl --context {{cluster}} get pod -n {{namespace}} -l app=kafka -o jsonpath='{.items[0].metadata.name}') \
+        -- kafka-topics.sh --bootstrap-server localhost:9092 --list
+
+# Describe a Kafka topic
+kafka-describe topic:
+    kubectl --context {{cluster}} exec -n {{namespace}} \
+        $(kubectl --context {{cluster}} get pod -n {{namespace}} -l app=kafka -o jsonpath='{.items[0].metadata.name}') \
+        -- kafka-topics.sh --bootstrap-server localhost:9092 --describe --topic {{topic}}
+
+# Consume from a Kafka topic
+kafka-consume topic:
+    kubectl --context {{cluster}} exec -n {{namespace}} -it \
+        $(kubectl --context {{cluster}} get pod -n {{namespace}} -l app=kafka -o jsonpath='{.items[0].metadata.name}') \
+        -- kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic {{topic}} --from-beginning
+
+# Open Kafka UI in browser
+kafka-ui:
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/kafka-ui 8081:8080 &
+    @echo "Kafka UI available at http://localhost:8081"
+
+# ============================================================================
+# Airflow Commands
+# ============================================================================
+
+# Open Airflow in browser (credentials: admin/admin)
+airflow-ui:
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/airflow-webserver 8080:8080 &
+    @echo "Airflow UI available at http://localhost:8080 (admin/admin)"
+
+# View Airflow scheduler logs
+airflow-logs:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=airflow,component=scheduler -f
+
+# List Airflow DAGs
+airflow-dags:
+    kubectl --context {{cluster}} exec -n {{namespace}} \
+        $(kubectl --context {{cluster}} get pod -n {{namespace}} -l app=airflow,component=scheduler -o jsonpath='{.items[0].metadata.name}') \
+        -- airflow dags list
+
+# ============================================================================
+# Gitea Commands
+# ============================================================================
+
+# Open Gitea in browser
+gitea-ui:
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/gitea-service 3000:3000 &
+    @echo "Gitea available at http://localhost:3000"
+
+# View Gitea logs
+gitea-logs:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=gitea -f
+
+# ============================================================================
+# Controller Commands
+# ============================================================================
+
+# View polecat-operator logs
+logs-polecat-operator:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=polecat-operator -f
+
+# View bead-controller logs
+logs-bead-controller:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=bead-controller -f
+
+# View lane-controller logs
+logs-lane-controller:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=lane-controller -f
+
+# View all controller logs
+logs-all:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l tundra.dome/component=controller -f
+
+# ============================================================================
+# Testing & Development
+# ============================================================================
+
+# Create a test bead
+test-bead:
+    @echo "Creating test bead..."
+    @cat <<EOF | kubectl --context {{cluster}} apply -f -
+    apiVersion: tundra.dome/v1
+    kind: Bead
+    metadata:
+      name: test-bead-$(date +%s)
+      namespace: {{namespace}}
+    spec:
+      lane: standard
+      source: manual
+      type: test
+      payload:
+        message: "Test bead created at $(date)"
+    EOF
+
+# Send a test message to Kafka
+test-kafka-produce topic message:
+    kubectl --context {{cluster}} exec -n {{namespace}} \
+        $(kubectl --context {{cluster}} get pod -n {{namespace}} -l app=kafka -o jsonpath='{.items[0].metadata.name}') \
+        -- bash -c "echo '{{message}}' | kafka-console-producer.sh --bootstrap-server localhost:9092 --topic {{topic}}"
+
+# Run smoke tests
+test-smoke:
+    @echo "Running smoke tests..."
+    python3 tests/smoke_test.py --context {{cluster}}
+
+# ============================================================================
+# Cleanup
+# ============================================================================
+
+# Delete all beads
+clean-beads:
+    kubectl --context {{cluster}} delete beads --all -n {{namespace}}
+
+# Delete all polecats
+clean-polecats:
+    kubectl --context {{cluster}} delete polecats --all -n {{namespace}}
+
+# Delete all lanes
+clean-lanes:
+    kubectl --context {{cluster}} delete lanes --all -n {{namespace}}
+
+# Delete all Tundra Dome CRs
+clean-all-crs:
+    kubectl --context {{cluster}} delete beads,polecats,lanes,playbooks,stations,errands --all -n {{namespace}}
+
+# Full cleanup (delete cluster)
+clean: cluster-delete
+
+# ============================================================================
+# Utility
+# ============================================================================
+
+# Shell into a running pod
+shell pod:
+    kubectl --context {{cluster}} exec -n {{namespace}} -it {{pod}} -- /bin/sh
+
+# Port forward multiple services
+port-forward-all:
+    @echo "Starting port forwards..."
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/airflow-webserver 8080:8080 &
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/gitea-service 3000:3000 &
+    kubectl --context {{cluster}} port-forward -n {{namespace}} svc/kafka-ui 8081:8080 &
+    @echo "Services available at:"
+    @echo "  Airflow:  http://localhost:8080"
+    @echo "  Gitea:    http://localhost:3000"
+    @echo "  Kafka UI: http://localhost:8081"
+
+# Kill all port forwards
+port-forward-stop:
+    pkill -f "kubectl.*port-forward" || true
+
+# ============================================================================
+# Multi-Cluster Commands (via tundra-master.py)
+# ============================================================================
+
+# Bootstrap ALL clusters
+bootstrap-all:
+    @echo "🚀 Bootstrapping all Tundra Dome clusters..."
+    ./tundra-master.py bootstrap --all
+
+# Bootstrap specific cluster
+bootstrap-cluster name:
+    @echo "🚀 Bootstrapping {{name}}..."
+    ./tundra-master.py bootstrap --cluster {{name}}
+
+# Deploy to ALL clusters
+deploy-all:
+    @echo "Deploying to all clusters..."
+    ./tundra-master.py deploy --all
+
+# Deploy to specific cluster
+deploy-to name:
+    @echo "Deploying to {{name}}..."
+    ./tundra-master.py deploy --cluster {{name}}
+
+# Status of ALL clusters
+status-all:
+    ./tundra-master.py status
+
+# Verbose status of all clusters
+status-all-verbose:
+    ./tundra-master.py status --verbose
+
+# Sync beads across clusters
+sync:
+    @echo "Syncing beads across clusters..."
+    ./tundra-master.py sync
+
+# Clean ALL clusters
+clean-all:
+    @echo "⚠️  Deleting all Tundra Dome clusters..."
+    ./tundra-master.py clean --all
+
+# Clean specific cluster
+clean-cluster name:
+    @echo "Deleting {{name}}..."
+    ./tundra-master.py clean --cluster {{name}}
+
+# Show cluster registry
+registry:
+    @cat clusters/registry.yaml
+
+# List all known clusters
+clusters:
+    @echo "Registered clusters:"
+    @grep -A1 "^  [a-z]" clusters/registry.yaml | grep "context:" | awk '{print "  - " $2}'
+
+# ============================================================================
+# Cross-Cluster Bead Operations
+# ============================================================================
+
+# Count beads across all clusters
+beads-count-all:
+    @echo "Bead counts across clusters:"
+    @for ctx in kind-tundra-dome kind-gastown kind-vibecode-local; do \
+        count=$$(kubectl --context $$ctx get beads -n {{namespace}} --no-headers 2>/dev/null | wc -l | tr -d ' '); \
+        echo "  $$ctx: $$count beads"; \
+    done
+
+# Show beads in all clusters
+beads-all:
+    @for ctx in kind-tundra-dome kind-gastown kind-vibecode-local; do \
+        echo "=== $$ctx ==="; \
+        kubectl --context $$ctx get beads -n {{namespace}} 2>/dev/null || echo "  (not available)"; \
+        echo ""; \
+    done
+
+# Show synced beads (beads that came from other clusters)
+beads-synced:
+    @echo "Synced beads (from other clusters):"
+    kubectl --context {{cluster}} get beads -n {{namespace}} \
+        -l 'tundra.dome/synced-from' \
+        -o custom-columns='NAME:.metadata.name,FROM:.metadata.labels.tundra\.dome/synced-from,LANE:.spec.lane'
+
+# ============================================================================
+# Federation Controller
+# ============================================================================
+
+# Deploy federation controller
+deploy-federation:
+    @echo "Deploying bead federation controller..."
+    kubectl --context {{cluster}} create configmap bead-federation-controller-code \
+        --from-file=federation/bead-sync-controller/ \
+        -n {{namespace}} \
+        --dry-run=client -o yaml | kubectl apply -f -
+    kubectl --context {{cluster}} apply -f federation/federation-controller.yaml
+
+# View federation controller logs
+logs-federation:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=bead-federation-controller -f
+
+# ============================================================================
+# Datadog Integration
+# ============================================================================
+
+# Deploy Datadog agent (requires DD_API_KEY env var)
+deploy-datadog:
+    @if [ -z "$$DD_API_KEY" ]; then \
+        echo "Error: DD_API_KEY environment variable not set"; \
+        exit 1; \
+    fi
+    @echo "Deploying Datadog agent..."
+    envsubst < manifests/datadog-agent.yaml | kubectl --context {{cluster}} apply -f -
+
+# Check Datadog agent status
+datadog-status:
+    kubectl --context {{cluster}} get pods -n {{namespace}} -l app=datadog-agent
+
+# View Datadog agent logs
+datadog-logs:
+    kubectl --context {{cluster}} logs -n {{namespace}} -l app=datadog-agent -f
+
+# ============================================================================
+# Development Helpers
+# ============================================================================
+
+# Watch all clusters for pod changes
+watch-all:
+    @echo "Watching pods across all clusters (Ctrl+C to stop)..."
+    @while true; do \
+        clear; \
+        echo "=== $(date) ==="; \
+        for ctx in kind-tundra-dome kind-gastown kind-vibecode-local; do \
+            echo "--- $$ctx ---"; \
+            kubectl --context $$ctx get pods -n {{namespace}} 2>/dev/null || echo "  (not available)"; \
+        done; \
+        sleep 5; \
+    done
+
+# Create test beads in all clusters
+test-beads-all:
+    @echo "Creating test beads in all clusters..."
+    @for ctx in kind-tundra-dome kind-gastown kind-vibecode-local; do \
+        kubectl --context $$ctx apply -f - <<EOF
+apiVersion: tundra.dome/v1
+kind: Bead
+metadata:
+  name: test-bead-$$ctx-$$(date +%s)
+  namespace: {{namespace}}
+spec:
+  lane: standard
+  source: smoke-test
+  type: test
+  payload:
+    message: "Test from $$ctx"
+EOF
+        echo "  Created bead in $$ctx"; \
+    done
+
+# Run smoke tests on all clusters
+test-smoke-all:
+    @echo "Running smoke tests on all clusters..."
+    @for ctx in kind-tundra-dome kind-gastown kind-vibecode-local; do \
+        echo "=== Testing $$ctx ==="; \
+        python3 tests/smoke_test.py --context $$ctx || true; \
+    done

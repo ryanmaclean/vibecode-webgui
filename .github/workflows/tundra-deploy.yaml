@@ -1,0 +1,206 @@
+# Tundra Dome Deployment Workflow
+# Automatically deploys to all KIND clusters when changes are pushed
+
+name: Tundra Dome Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'infra/tundra-dome/**'
+      - '.github/workflows/tundra-deploy.yaml'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'infra/tundra-dome/**'
+  workflow_dispatch:
+    inputs:
+      clusters:
+        description: 'Clusters to deploy (comma-separated or "all")'
+        required: false
+        default: 'all'
+      action:
+        description: 'Action to perform'
+        required: true
+        default: 'deploy'
+        type: choice
+        options:
+          - deploy
+          - bootstrap
+          - status
+          - clean
+
+env:
+  DD_API_KEY: ${{ secrets.DD_API_KEY }}
+  DD_APP_KEY: ${{ secrets.DD_APP_KEY }}
+  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+jobs:
+  # Lint and validate manifests
+  validate:
+    name: Validate Manifests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml kubernetes
+
+      - name: Validate YAML syntax
+        run: |
+          cd infra/tundra-dome
+          for file in $(find . -name "*.yaml" -o -name "*.yml"); do
+            echo "Validating: $file"
+            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+          done
+
+      - name: Validate CRD schemas
+        run: |
+          cd infra/tundra-dome/crds
+          for crd in *.yaml; do
+            echo "Checking CRD: $crd"
+            grep -q "apiVersion: apiextensions.k8s.io" "$crd" || echo "Warning: $crd may not be a valid CRD"
+          done
+
+      - name: Lint Python scripts
+        run: |
+          pip install ruff
+          cd infra/tundra-dome
+          ruff check *.py dags/*.py tests/*.py --ignore E501
+
+  # Deploy to clusters (matrix strategy)
+  deploy:
+    name: Deploy to ${{ matrix.cluster }}
+    needs: validate
+    runs-on: macos-latest  # macOS for KIND compatibility
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    strategy:
+      fail-fast: false
+      matrix:
+        cluster:
+          - tundra-dome
+          - gastown
+          - vibecode-local
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install pyyaml kubernetes
+
+      - name: Install KIND
+        run: |
+          brew install kind kubectl
+
+      - name: Check if cluster should be deployed
+        id: check
+        run: |
+          CLUSTERS="${{ github.event.inputs.clusters || 'all' }}"
+          if [[ "$CLUSTERS" == "all" ]] || [[ "$CLUSTERS" == *"${{ matrix.cluster }}"* ]]; then
+            echo "should_deploy=true" >> $GITHUB_OUTPUT
+          else
+            echo "should_deploy=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create KIND cluster
+        if: steps.check.outputs.should_deploy == 'true'
+        run: |
+          cd infra/tundra-dome
+
+          # Determine config file
+          if [[ "${{ matrix.cluster }}" == "tundra-dome" ]]; then
+            CONFIG="kind-config.yaml"
+          else
+            CONFIG="clusters/${{ matrix.cluster }}/kind-config.yaml"
+          fi
+
+          # Create cluster if it doesn't exist
+          if ! kind get clusters | grep -q "${{ matrix.cluster }}"; then
+            kind create cluster --config "$CONFIG"
+          fi
+
+      - name: Deploy Tundra Dome
+        if: steps.check.outputs.should_deploy == 'true'
+        run: |
+          cd infra/tundra-dome
+          ./tundra-cli.py init --cluster "kind-${{ matrix.cluster }}"
+
+      - name: Run smoke tests
+        if: steps.check.outputs.should_deploy == 'true'
+        run: |
+          cd infra/tundra-dome
+          python tests/smoke_test.py --context "kind-${{ matrix.cluster }}"
+
+      - name: Upload deployment logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: deploy-logs-${{ matrix.cluster }}
+          path: infra/tundra-dome/logs/
+
+  # Aggregate status
+  status:
+    name: Deployment Status
+    needs: deploy
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check deployment results
+        run: |
+          echo "Deployment completed for all clusters"
+
+      - name: Notify Datadog
+        if: env.DD_API_KEY != ''
+        run: |
+          curl -X POST "https://api.datadoghq.com/api/v1/events" \
+            -H "Content-Type: application/json" \
+            -H "DD-API-KEY: $DD_API_KEY" \
+            -d '{
+              "title": "Tundra Dome Deployed",
+              "text": "Tundra Dome was deployed to all clusters via GitHub Actions",
+              "tags": ["env:dev", "source:github-actions", "repo:${{ github.repository }}"],
+              "alert_type": "info"
+            }' || true
+
+  # PR validation (doesn't deploy, just validates)
+  pr-check:
+    name: PR Validation
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Validate changes
+        run: |
+          pip install pyyaml
+          cd infra/tundra-dome
+
+          # Check that all YAML is valid
+          for file in $(find . -name "*.yaml" -o -name "*.yml"); do
+            python -c "import yaml; yaml.safe_load(open('$file'))" || exit 1
+          done
+
+          # Check that scripts are syntactically valid
+          python -m py_compile tundra-cli.py
+          python -m py_compile tundra-bootstrap.py
+          python -m py_compile tundra-master.py
+
+          echo "All validations passed!"
