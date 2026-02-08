@@ -4,6 +4,7 @@
  */
 
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
+import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
 import { spawn, exec as execCallback } from 'child_process';
 import { promisify } from 'util';
@@ -36,12 +37,13 @@ export class QEMUProvider implements VMProvider {
   
   async create(config: VMConfig): Promise<VM> {
     logger.info('Creating QEMU VM', { name: config.name, kvm: this.kvm });
-    
-    const vmDir = path.join(this.vmBaseDir, config.name);
-    
+
+    const safeName = validateVMName(config.name);
+    const vmDir = validateVMPath(this.vmBaseDir, safeName);
+
     // Create directory structure
-    await fs.mkdir(path.join(vmDir, 'disks'), { recursive: true });
-    await fs.mkdir(path.join(vmDir, 'logs'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'disks'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'logs'), { recursive: true });
     
     // Download Alpine ISO if needed
     await this.ensureAlpineISO(vmDir);
@@ -181,8 +183,8 @@ export class QEMUProvider implements VMProvider {
    * Ensure Alpine ISO is downloaded
    */
   private async ensureAlpineISO(vmDir: string): Promise<void> {
-    const isoPath = path.join(vmDir, 'alpine-virt-3.22.2-aarch64.iso');
-    
+    const isoPath = validateVMPath(vmDir, 'alpine-virt-3.22.2-aarch64.iso');
+
     try {
       await fs.access(isoPath);
       logger.info('Alpine ISO already exists');
@@ -190,13 +192,14 @@ export class QEMUProvider implements VMProvider {
     } catch {
       // Need to download
     }
-    
+
     logger.info('Downloading Alpine ISO...');
-    
+
     const arch = os.arch() === 'arm64' ? 'aarch64' : 'x86_64';
     const url = `https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/${arch}/alpine-virt-3.22.2-${arch}.iso`;
-    
-    await exec(`curl -L -o ${isoPath} ${url}`);
+    const validatedUrl = validateDownloadUrl(url);
+
+    await exec(`curl -L -o ${isoPath} ${validatedUrl.href}`);
     logger.info('Alpine ISO downloaded');
   }
   
@@ -204,8 +207,8 @@ export class QEMUProvider implements VMProvider {
    * Create QCOW2 disk image
    */
   private async createDisk(vmDir: string, size: string): Promise<string> {
-    const diskPath = path.join(vmDir, 'disks/root.qcow2');
-    
+    const diskPath = validateVMPath(vmDir, 'disks/root.qcow2');
+
     try {
       await fs.access(diskPath);
       logger.info('Disk already exists');
@@ -271,9 +274,9 @@ export class QEMUProvider implements VMProvider {
     proc.unref();
     
     // Save config
-    const configPath = path.join(vmDir, 'config.json');
+    const configPath = validateVMPath(vmDir, 'config.json');
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
-    
+
     // Wait for VM to boot
     await new Promise(resolve => setTimeout(resolve, 5000));
     

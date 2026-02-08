@@ -11,7 +11,7 @@ import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExperimentCard } from '@/components/experiments/ExperimentCard'
-import { mockExperiments, MockExperiment } from '@/lib/experiments/mock-data'
+import { mockExperiments } from '@/lib/experiments/mock-data'
 import { DemoBanner } from '@/components/ui/DemoBanner'
 import Link from 'next/link'
 

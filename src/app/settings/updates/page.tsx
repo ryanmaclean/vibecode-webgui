@@ -6,14 +6,6 @@ import { UpdateNotifier, useUpdateNotifier } from '@/components/updates';
 import { Download, RefreshCw, CheckCircle, Info, AlertCircle, Settings, ArrowLeft } from 'lucide-react';
 import type { UpdateChannel, UpdateStatusResponse } from '@/types/auto-update';
 
-function formatBytes(bytes: number): string {
-  if (bytes === 0) return '0 Bytes';
-  const k = 1024;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
-
 function UpdatesPageContent() {
   const {
     state,
@@ -27,7 +19,6 @@ function UpdatesPageContent() {
 
   const [autoUpdateEnabled, setAutoUpdateEnabled] = useState(true);
   const [selectedChannel, setSelectedChannel] = useState<UpdateChannel>('stable');
-  const [statusPolling, setStatusPolling] = useState<UpdateStatusResponse | null>(null);
   const [lastCheckedDisplay, setLastCheckedDisplay] = useState<string | null>(null);
 
   // Fetch initial status on mount
@@ -35,7 +26,6 @@ function UpdatesPageContent() {
     fetch('/api/updates')
       .then((res) => res.json())
       .then((data: UpdateStatusResponse) => {
-        setStatusPolling(data);
         if (data.lastCheckTime) {
           setLastCheckedDisplay(new Date(data.lastCheckTime).toLocaleString());
         }
