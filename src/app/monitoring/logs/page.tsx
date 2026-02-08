@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react'
 import Link from 'next/link'
+import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
   FileText,
   Search,
@@ -475,6 +476,7 @@ export default function MonitoringLogsPage() {
 
   return (
     <div className="space-y-6">
+      <DemoBanner />
       {/* Breadcrumb */}
       <nav className="flex items-center gap-1 text-sm text-gray-500 dark:text-gray-400">
         <Link

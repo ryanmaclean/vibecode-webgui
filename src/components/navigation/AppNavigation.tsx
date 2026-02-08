@@ -20,6 +20,9 @@ import {
   ChevronDown,
   Bot,
   Keyboard,
+  FlaskConical,
+  Layers,
+  GraduationCap,
 } from 'lucide-react'
 import { KeyboardShortcuts } from '@/design-system/components/KeyboardShortcuts'
 import { useKeyboardShortcuts, shortcutCategories } from '@/hooks/useKeyboardShortcuts'
@@ -66,6 +69,21 @@ const NAV_ITEMS: NavItem[] = [
     title: 'Monitoring',
     href: '/monitoring',
     icon: Activity,
+  },
+  {
+    title: 'Workspaces',
+    href: '/workspaces',
+    icon: Layers,
+  },
+  {
+    title: 'Experiments',
+    href: '/experiments',
+    icon: FlaskConical,
+  },
+  {
+    title: 'Tutorials',
+    href: '/tutorials',
+    icon: GraduationCap,
   },
   {
     title: 'Settings',
@@ -152,7 +170,7 @@ function DropdownMenu({
 }
 
 export function AppNavigation() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? '/'
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { isShortcutsOpen, setIsShortcutsOpen } = useKeyboardShortcuts()

@@ -3,7 +3,7 @@
  * Tests for multi-VM lifecycle management
  */
 
-import { describe, it, expect, beforeEach, afterEach, jest } from '@jest/globals';
+import { describe, it, expect, beforeEach, afterEach } from '@jest/globals';
 import { VMPoolManager, resetPoolManager } from '../vm-pool-manager';
 import { resetPortManager } from '../../ports/port-manager';
 import { resetProfilesService } from '../../profiles/vm-profiles';
@@ -15,7 +15,7 @@ jest.mock('../../provider-factory', () => ({
     detectProvider: jest.fn().mockResolvedValue({
       name: 'mock-provider',
       detect: jest.fn().mockResolvedValue(true),
-      create: jest.fn().mockImplementation((config: any) => Promise.resolve({
+      create: jest.fn().mockImplementation((config: Record<string, unknown>) => Promise.resolve({
         id: `vm-${Date.now()}`,
         name: config.name,
         provider: 'mock-provider',

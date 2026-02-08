@@ -236,7 +236,7 @@ export class WebSocketStatusService extends EventEmitter {
 
     // Update metrics
     this.metrics.totalConnections++;
-    this.metrics.connectionsByIp = new Map(this.connectionsByIp);
+    this.metrics.connectionsByIp = new Map(Array.from(this.connectionsByIp.entries()).map(([ip, set]) => [ip, set.size]));
 
     log.info('Client connected', {
       connectionId,
@@ -465,7 +465,7 @@ export class WebSocketStatusService extends EventEmitter {
     this.lastUpdateByClient.delete(connectionId);
 
     // Update metrics
-    this.metrics.connectionsByIp = new Map(this.connectionsByIp);
+    this.metrics.connectionsByIp = new Map(Array.from(this.connectionsByIp.entries()).map(([ip, set]) => [ip, set.size]));
 
     // Report disconnection metric to Datadog
     this.reportConnectionMetric('disconnect', connectionId);

@@ -1086,13 +1086,16 @@ export class CostTracker {
     switch (type) {
       case 'session_limit':
         return this.sessionUsage.totalCost;
-      case 'daily_limit':
+      case 'daily_limit': {
         const history = this.getUsageHistory();
         const today = new Date().toISOString().split('T')[0];
         const todayData = history.daily.find((d) => d.timestamp.startsWith(today));
         return (todayData?.cost || 0) + this.sessionUsage.totalCost;
-      case 'budget_threshold':
-        return history ? history.allTime.totalCost : 0;
+      }
+      case 'budget_threshold': {
+        const budgetHistory = this.getUsageHistory();
+        return budgetHistory.allTime.totalCost;
+      }
       default:
         return this.sessionUsage.totalCost;
     }

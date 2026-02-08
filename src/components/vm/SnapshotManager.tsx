@@ -466,7 +466,7 @@ function CreateDialog({
         </Button>
         <Button
           onClick={handleCreate}
-          disabled={isCreating || !name.trim() || (sizeEstimate && !sizeEstimate.hasEnoughSpace)}
+          disabled={isCreating || !name.trim() || (sizeEstimate !== null && !sizeEstimate.hasEnoughSpace)}
         >
           {isCreating ? (
             <>

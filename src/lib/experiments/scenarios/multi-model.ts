@@ -278,7 +278,7 @@ export async function askMultiModel(
     request.userId,
     'reward',
     reward,
-    metrics
+    metrics as unknown as import('@prisma/client').Prisma.InputJsonValue
   );
 
   await experimentWarehouse.logMetric(

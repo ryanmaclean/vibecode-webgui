@@ -187,7 +187,7 @@ export class FailureAnalyzer {
       htmlUrl: data.html_url,
       createdAt: data.created_at,
       updatedAt: data.updated_at,
-      runAttempt: data.run_attempt,
+      runAttempt: data.run_attempt ?? 1,
     }
   }
 
@@ -216,8 +216,8 @@ export class FailureAnalyzer {
           status: step.status as WorkflowStep['status'],
           conclusion: step.conclusion as WorkflowStep['conclusion'],
           number: step.number,
-          startedAt: step.started_at,
-          completedAt: step.completed_at,
+          startedAt: step.started_at ?? undefined,
+          completedAt: step.completed_at ?? undefined,
         })),
       }))
   }

@@ -11,6 +11,16 @@ import {
   DollarSign,
   BookOpen,
   History,
+  FolderKanban,
+  Store,
+  Code,
+  Wand2,
+  Upload,
+  Hammer,
+  Sparkles,
+  Wrench,
+  GitCommitHorizontal,
+  AppWindow,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -43,6 +53,56 @@ const NAV_ITEMS = [
     title: 'History',
     href: '/ai/conversations',
     icon: History,
+  },
+  {
+    title: 'Projects',
+    href: '/projects',
+    icon: FolderKanban,
+  },
+  {
+    title: 'Marketplace',
+    href: '/marketplace',
+    icon: Store,
+  },
+  {
+    title: 'Editor',
+    href: '/editor',
+    icon: Code,
+  },
+  {
+    title: 'Agent Builder',
+    href: '/agent-builder',
+    icon: Hammer,
+  },
+  {
+    title: 'Generator',
+    href: '/generate',
+    icon: Wand2,
+  },
+  {
+    title: 'Upload',
+    href: '/upload',
+    icon: Upload,
+  },
+  {
+    title: 'Generative UI',
+    href: '/generative-ui',
+    icon: Sparkles,
+  },
+  {
+    title: 'Codeium',
+    href: '/tools/codeium',
+    icon: Wrench,
+  },
+  {
+    title: 'Gradio',
+    href: '/gradio-editor',
+    icon: AppWindow,
+  },
+  {
+    title: 'GitHub Commits',
+    href: '/github-commits',
+    icon: GitCommitHorizontal,
   },
 ]
 

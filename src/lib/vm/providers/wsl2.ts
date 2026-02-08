@@ -4,6 +4,7 @@
  */
 
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult } from '../types';
+import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
 import { exec as execCallback } from 'child_process';
 import { promisify } from 'util';
@@ -36,26 +37,26 @@ export class WSL2Provider implements VMProvider {
   
   async create(config: VMConfig): Promise<VM> {
     logger.info('Creating WSL2 instance', { name: config.name });
-    
+
     // WSL2 uses distributions, not traditional VMs
     // We'll import Alpine Linux as a custom distribution
-    
-    const distroName = config.name;
-    const installDir = path.join(this.configDir, distroName);
-    
+
+    const distroName = validateVMName(config.name);
+    const installDir = validateVMPath(this.configDir, distroName);
+
     await fs.mkdir(installDir, { recursive: true });
-    
+
     // Download Alpine rootfs
     const rootfsPath = await this.downloadAlpineRootfs(installDir);
-    
+
     // Import as WSL distribution
     await exec(`wsl --import ${distroName} ${installDir} ${rootfsPath}`);
-    
+
     // Configure distribution
     await this.configureDistribution(distroName, config);
-    
+
     // Save config
-    const configPath = path.join(installDir, 'config.json');
+    const configPath = validateVMPath(installDir, 'config.json');
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
     
     return {
@@ -182,8 +183,8 @@ export class WSL2Provider implements VMProvider {
    * Download Alpine Linux rootfs for WSL2
    */
   private async downloadAlpineRootfs(installDir: string): Promise<string> {
-    const rootfsPath = path.join(installDir, 'alpine-rootfs.tar.gz');
-    
+    const rootfsPath = validateVMPath(installDir, 'alpine-rootfs.tar.gz');
+
     try {
       await fs.access(rootfsPath);
       logger.info('Alpine rootfs already exists');
@@ -191,15 +192,16 @@ export class WSL2Provider implements VMProvider {
     } catch {
       // Need to download
     }
-    
+
     logger.info('Downloading Alpine rootfs for WSL2...');
-    
+
     // Alpine provides mini rootfs for containers/WSL
     const url = 'https://dl-cdn.alpinelinux.org/alpine/v3.22/releases/x86_64/alpine-minirootfs-3.22.2-x86_64.tar.gz';
-    
-    await exec(`curl -L -o ${rootfsPath} ${url}`);
+    const validatedUrl = validateDownloadUrl(url);
+
+    await exec(`curl -L -o ${rootfsPath} ${validatedUrl.href}`);
     logger.info('Alpine rootfs downloaded');
-    
+
     return rootfsPath;
   }
   
@@ -220,13 +222,13 @@ export class WSL2Provider implements VMProvider {
     }
     
     // Configure .wslconfig for resource limits
-    const wslConfigPath = path.join(os.homedir(), '.wslconfig');
+    const wslConfigPath = validateVMPath(os.homedir(), '.wslconfig');
     const wslConfig = `
 [wsl2]
 memory=${config.memory}
 processors=${config.cpus}
 `;
-    
+
     try {
       const existing = await fs.readFile(wslConfigPath, 'utf-8');
       if (!existing.includes('[wsl2]')) {

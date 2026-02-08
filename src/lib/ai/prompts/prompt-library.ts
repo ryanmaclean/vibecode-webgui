@@ -72,7 +72,7 @@ export class PromptLibrary {
       throw new PromptLibraryError(
         'Invalid template structure',
         'INVALID_TEMPLATE',
-        { templateId: template?.id }
+        { templateId: (template as unknown as { id?: string })?.id }
       );
     }
 

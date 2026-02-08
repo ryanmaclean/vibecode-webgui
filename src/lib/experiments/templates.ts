@@ -453,7 +453,7 @@ export async function createFromTemplate(
     const experiment = await experimentWarehouse.upsertExperiment(
       experimentKey,
       experimentName,
-      config,
+      JSON.parse(JSON.stringify(config)),
       `Created from template: ${template.name}`,
       ExperimentStatus.DRAFT
     );

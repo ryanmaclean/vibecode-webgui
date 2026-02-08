@@ -170,7 +170,7 @@ export class WebSocketStreamingClient {
       // Subscribe to connection events
       if (this.pool) {
         this.pool.subscribeToConnection(connection.id, this.subscriberId, {
-          onMessage: (data) => this.handleMessage(data),
+          onMessage: (data: unknown) => this.handleMessage(typeof data === 'string' ? data : Buffer.from(data as ArrayBuffer)),
           onClose: () => this.handleDisconnect(),
           onError: (error) => this.handleConnectionError(error)
         })

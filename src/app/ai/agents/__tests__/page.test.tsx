@@ -10,6 +10,7 @@ jest.mock('next/navigation', () => ({
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
+  AlertTriangle: (props: any) => <svg data-testid="alert-triangle-icon" {...props} />,
   Bot: (props: any) => <svg data-testid="bot-icon" {...props} />,
   Code: (props: any) => <svg data-testid="code-icon" {...props} />,
   Bug: (props: any) => <svg data-testid="bug-icon" {...props} />,

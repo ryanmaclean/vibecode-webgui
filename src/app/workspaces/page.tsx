@@ -6,6 +6,7 @@
 'use client'
 
 import { useState, useEffect } from 'react'
+import { DemoBanner } from '@/components/ui/DemoBanner'
 import { Skeleton } from '@/components/ui/skeleton'
 
 export default function WorkspacesPage() {
@@ -87,6 +88,9 @@ export default function WorkspacesPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 pt-6">
+        <DemoBanner />
+      </div>
       {/* Header */}
       <header className="bg-white border-b border-gray-200 px-4 py-6">
         <div className="max-w-7xl mx-auto">

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { DemoBanner } from '@/components/ui/DemoBanner'
 import CostDashboard from '@/components/ai/CostDashboard'
 import CostEstimator from '@/components/ai/CostEstimator'
 import { Button } from '@/components/ui/button'
@@ -13,6 +14,7 @@ export default function AICostsPage() {
 
   return (
     <div className="space-y-6">
+      <DemoBanner />
       {/* Page Header */}
       <div className="flex items-center justify-between">
         <div>

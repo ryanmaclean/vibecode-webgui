@@ -359,9 +359,9 @@ export class GitHubIntegration {
         },
         htmlUrl: commit.html_url,
         stats: commit.stats ? {
-          additions: commit.stats.additions,
-          deletions: commit.stats.deletions,
-          total: commit.stats.total,
+          additions: commit.stats.additions ?? 0,
+          deletions: commit.stats.deletions ?? 0,
+          total: commit.stats.total ?? 0,
         } : undefined,
       }))
     } catch (error) {
@@ -445,7 +445,7 @@ export class GitHubIntegration {
         })) || [],
         parents: commit.parents.map(parent => ({
           sha: parent.sha,
-          htmlUrl: parent.html_url,
+          htmlUrl: parent.html_url ?? '',
         })),
       }
     } catch (error) {

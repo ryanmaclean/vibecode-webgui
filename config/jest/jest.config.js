@@ -16,7 +16,7 @@ const config = {
   testTimeout: 30000,
   
   moduleNameMapper: {
-    '^lucide-react$': '<rootDir>/__mocks__/lucide-react.js',
+    '^lucide-react$': '<rootDir>/tests/__mocks__/lucide-react.js',
     '^@/components/ui$': '<rootDir>/src/components/ui',
     '^@/components/(.*)$': '<rootDir>/src/components/$1',
     '^@/lib/(.*)$': '<rootDir>/src/lib/$1',
@@ -27,8 +27,8 @@ const config = {
     '^@/middleware/(.*)$': '<rootDir>/src/middleware/$1',
     '^@/providers/(.*)$': '<rootDir>/src/providers/$1',
     '^@/instrument$': '<rootDir>/src/instrument.ts',
-    '\\.(css|less|scss|sass)$': '<rootDir>/__mocks__/cssModule.js',
-    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/__mocks__/fileMock.js',
+    '\\.(css|less|scss|sass)$': '<rootDir>/tests/__mocks__/cssModule.js',
+    '\\.(jpg|jpeg|png|gif|eot|otf|webp|svg|ttf|woff|woff2|mp4|webm|wav|mp3|m4a|aac|oga)$': '<rootDir>/tests/__mocks__/fileMock.js',
   },
   
   // Transform settings (simplified to avoid missing dependencies)

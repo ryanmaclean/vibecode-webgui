@@ -79,9 +79,11 @@ jobs:
           pip install pytest pytest-cov
           
       - name: Run Python Tests
+        env:
+          PYTHONPATH: ${{ github.workspace }}
         run: |
           # Run tests with coverage
-          pytest tests/ --cov=scripts --cov-report=xml
+          pytest tests/ --cov=scripts --cov-report=xml -x --tb=short
           
   # 4. Shell Script Analysis (ShellCheck)
   shell-check:

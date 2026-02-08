@@ -92,22 +92,23 @@ async function performHealthCheck(): Promise<HealthCheckResult> {
     const healthResponse = await getCachedHealthChecks();
 
     // Convert unified health service response to WebSocket format
-    const services: ServiceHealth[] = healthResponse.services.map((svc) => ({
+    const aggregated = healthResponse.response;
+    const services: ServiceHealth[] = aggregated.services.map((svc: { name: string; status: string; error?: string; lastChecked?: string; latencyMs?: number; details?: Record<string, unknown> }) => ({
       name: svc.name,
       status: mapStatus(svc.status),
       message: svc.error,
-      lastCheck: svc.lastChecked,
+      lastCheck: svc.lastChecked ?? new Date().toISOString(),
       responseTime: svc.latencyMs,
       details: svc.details,
     }));
 
     // Map aggregated status to HealthStatus
-    const overallStatus: HealthStatus = mapStatus(healthResponse.status);
+    const overallStatus: HealthStatus = mapStatus(aggregated.status);
 
     return {
       services,
       overallStatus,
-      timestamp: healthResponse.timestamp,
+      timestamp: aggregated.timestamp,
     };
   } catch (error) {
     log.error('Failed to perform health check', {

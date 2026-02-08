@@ -2,6 +2,7 @@
 
 import { useState, useMemo } from 'react'
 import Link from 'next/link'
+import { DemoBanner } from '@/components/ui/DemoBanner'
 import {
   MessageSquare,
   Search,
@@ -328,6 +329,7 @@ export default function AIConversationsPage() {
 
   return (
     <div className="space-y-6">
+      <DemoBanner />
       {/* Page Header */}
       <div>
         <div className="flex items-center gap-3 mb-2">

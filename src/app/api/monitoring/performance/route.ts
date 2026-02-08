@@ -47,7 +47,7 @@ export async function GET(request: NextRequest) {
     const memUsage = process.memoryUsage()
     const cpuUsage = getCpuUsagePercent()
     const uptime = process.uptime()
-    const loadAvg = os.loadaverage()
+    const loadAvg = os.loadavg()
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
 

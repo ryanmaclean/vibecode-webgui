@@ -233,9 +233,11 @@ export class SettingsManager {
    */
   private async loadFromTauri(): Promise<Partial<AppSettings> | null> {
     try {
-      // Dynamic import to avoid SSR issues
-      const { invoke } = await import('@tauri-apps/api/core');
-      const settingsJson = await invoke<string>('load_settings');
+      // Dynamic import to avoid SSR issues - type assertion needed since
+      // @tauri-apps/api is only available at runtime in the Tauri shell
+      const tauriCore: { invoke: <T>(cmd: string, args?: Record<string, unknown>) => Promise<T> } =
+        await import(/* webpackIgnore: true */ '@tauri-apps/api/core' as string);
+      const settingsJson = await tauriCore.invoke<string>('load_settings');
       return settingsJson ? JSON.parse(settingsJson) : null;
     } catch (error) {
       console.warn('Tauri settings load failed, falling back to localStorage:', error);
@@ -248,8 +250,9 @@ export class SettingsManager {
    */
   private async saveToTauri(): Promise<void> {
     try {
-      const { invoke } = await import('@tauri-apps/api/core');
-      await invoke('save_settings', { settings: JSON.stringify(this.settings) });
+      const tauriCore: { invoke: (cmd: string, args?: Record<string, unknown>) => Promise<unknown> } =
+        await import(/* webpackIgnore: true */ '@tauri-apps/api/core' as string);
+      await tauriCore.invoke('save_settings', { settings: JSON.stringify(this.settings) });
     } catch (error) {
       console.warn('Tauri settings save failed, falling back to localStorage:', error);
       this.saveToLocalStorage();
@@ -442,7 +445,7 @@ export class SettingsManager {
   /**
    * Update all settings at once
    */
-  public setAll(settings: Partial<AppSettings>): void {
+  public setAll(settings: { general?: Partial<GeneralSettings>; services?: Partial<ServiceSettings>; ai?: Partial<AISettings>; advanced?: Partial<AdvancedSettings> }): void {
     if (settings.general) this.setGeneral(settings.general);
     if (settings.services) this.setServices(settings.services);
     if (settings.ai) this.setAI(settings.ai);
@@ -482,7 +485,7 @@ export class SettingsManager {
     };
 
     // Type-safe assignment
-    (this.settings as Record<string, unknown>)[category] = { ...defaults[category] };
+    (this.settings as unknown as Record<string, unknown>)[category] = { ...defaults[category] };
     this.isDirty = true;
     this.notifyObservers(category, previous, this.settings[category]);
   }

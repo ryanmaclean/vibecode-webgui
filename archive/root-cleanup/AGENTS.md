@@ -1,15 +1,15 @@
 # Agent Instructions
 
-This project uses **bd** (beads) for issue tracking. Run `bd onboard` to get started.
+This project uses **td** (tundra beads) for issue tracking. Run `td onboard` to get started.
 
 ## Quick Reference
 
 ```bash
-bd ready              # Find available work
-bd show <id>          # View issue details
-bd update <id> --status in_progress  # Claim work
-bd close <id>         # Complete work
-bd sync               # Sync with git
+td ready              # Find available work
+td show <id>          # View issue details
+td update <id> --status in_progress  # Claim work
+td close <id>         # Complete work
+td sync               # Sync with git
 ```
 
 ## Landing the Plane (Session Completion)
@@ -24,7 +24,7 @@ bd sync               # Sync with git
 4. **PUSH TO REMOTE** - This is MANDATORY:
    ```bash
    git pull --rebase
-   bd sync
+   td sync
    git push
    git status  # MUST show "up to date with origin"
    ```

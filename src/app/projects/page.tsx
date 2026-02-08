@@ -147,8 +147,8 @@ export default function ProjectsPage() {
 
           <TabsContent value="ai-generator">
             <AIProjectGenerator
-              onProjectGenerated={(projectData) => {
-                handleCreateWorkspace(projectData)
+              onProjectGenerated={(projectData: Record<string, unknown>) => {
+                handleCreateWorkspace(projectData as { files: { path: string; content: string }[]; name: string })
               }}
             />
           </TabsContent>

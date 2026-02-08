@@ -17,6 +17,7 @@ jest.mock('next/link', () => {
 
 // Mock lucide-react icons
 jest.mock('lucide-react', () => ({
+  AlertTriangle: (props: any) => <svg data-testid="alert-triangle-icon" {...props} />,
   MessageSquare: (props: any) => <svg data-testid="message-square-icon" {...props} />,
   Search: (props: any) => <svg data-testid="search-icon" {...props} />,
   Filter: (props: any) => <svg data-testid="filter-icon" {...props} />,

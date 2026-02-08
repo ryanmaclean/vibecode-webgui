@@ -11,7 +11,8 @@ import { useState, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { ExperimentCard } from '@/components/experiments/ExperimentCard'
-import { mockExperiments, MockExperiment } from '@/lib/experiments/mock-data'
+import { mockExperiments } from '@/lib/experiments/mock-data'
+import { DemoBanner } from '@/components/ui/DemoBanner'
 import Link from 'next/link'
 
 type ExperimentStatus = 'all' | 'draft' | 'running' | 'completed' | 'paused' | 'archived'
@@ -69,6 +70,7 @@ export default function ExperimentsPage() {
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="max-w-7xl mx-auto space-y-6">
+        <DemoBanner />
         {/* Header */}
         <div className="flex items-center justify-between">
           <div>

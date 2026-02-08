@@ -37,12 +37,13 @@ export default function Home() {
   const [drawerOpen, setDrawerOpen] = useState(false)
 
   useEffect(() => {
-    if (!isAuthenticated || isLoading) return
+    if (!isAuthenticated || isLoading) return undefined
     const completed = localStorage.getItem(ONBOARDING_COMPLETE_KEY)
     if (!completed) {
       const timer = setTimeout(() => setDrawerOpen(true), 1000)
       return () => clearTimeout(timer)
     }
+    return undefined
   }, [isAuthenticated, isLoading])
 
   const handleDrawerClose = useCallback(() => {

@@ -97,7 +97,7 @@ export async function GET(request: NextRequest) {
         if (doc.description.toLowerCase().includes(term)) score += 6;
 
         // Heading match (medium weight)
-        const headingMatch = doc.headings.find(h => 
+        const headingMatch = doc.headings.find((h: { level: number; text: string; id: string }) =>
           h.text.toLowerCase().includes(term)
         );
         if (headingMatch) {

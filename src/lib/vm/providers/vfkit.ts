@@ -5,6 +5,7 @@
  */
 
 import { VMProvider, VMConfig, VM, VMStatus, ExecResult, PortMapping } from '../types';
+import { validateVMName, validateVMPath, validateDownloadUrl } from '../security';
 import { logger } from '@/lib/logger';
 import { spawn, exec as execCallback } from 'child_process';
 import { promisify } from 'util';
@@ -52,8 +53,9 @@ export class VfkitProvider implements VMProvider {
     logger.info('Creating vfkit VM', { name: config.name });
     const span = getTracer().startSpan('vfkit.create');
     span.setTag('vm.name', config.name);
-    
-    const vmDir = path.join(this.vmBaseDir, config.name);
+
+    const safeName = validateVMName(config.name);
+    const vmDir = validateVMPath(this.vmBaseDir, safeName);
     
     // Create directory structure
     const sDirs = getTracer().startSpan('vfkit.create.directories');
@@ -211,10 +213,10 @@ export class VfkitProvider implements VMProvider {
    * Ported from scripts/vfkit/09-launch-node24-vm.sh
    */
   private async createDirectories(vmDir: string): Promise<void> {
-    await fs.mkdir(path.join(vmDir, 'kernel'), { recursive: true });
-    await fs.mkdir(path.join(vmDir, 'rootfs'), { recursive: true });
-    await fs.mkdir(path.join(vmDir, 'disk'), { recursive: true });
-    await fs.mkdir(path.join(vmDir, 'logs'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'kernel'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'rootfs'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'disk'), { recursive: true });
+    await fs.mkdir(validateVMPath(vmDir, 'logs'), { recursive: true });
   }
   
   /**
@@ -222,9 +224,9 @@ export class VfkitProvider implements VMProvider {
    * Ported from scripts/vfkit/10-upgrade-to-alpine-3.22.sh
    */
   private async ensureKernel(vmDir: string, config: VMConfig): Promise<void> {
-    const kernelDir = path.join(vmDir, 'kernel');
-    const vmlinuxPath = path.join(kernelDir, 'vmlinux');
-    
+    const kernelDir = validateVMPath(vmDir, 'kernel');
+    const vmlinuxPath = validateVMPath(kernelDir, 'vmlinux');
+
     // Check if kernel already exists
     try {
       await fs.access(vmlinuxPath);
@@ -240,11 +242,13 @@ export class VfkitProvider implements VMProvider {
     const baseUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/netboot`;
     const vmlinuzUrl = `${baseUrl}/vmlinuz-virt`;
     const initramfsUrl = `${baseUrl}/initramfs-virt`;
-    const vmlinuzPath = path.join(kernelDir, 'vmlinuz');
-    const initramfsPath = path.join(kernelDir, 'initramfs');
+    const validatedVmlinuzUrl = validateDownloadUrl(vmlinuzUrl);
+    const validatedInitramfsUrl = validateDownloadUrl(initramfsUrl);
+    const vmlinuzPath = validateVMPath(kernelDir, 'vmlinuz');
+    const initramfsPath = validateVMPath(kernelDir, 'initramfs');
     try {
-      await exec(`curl -fL -o ${vmlinuzPath} ${vmlinuzUrl}`);
-      await exec(`curl -fL -o ${initramfsPath} ${initramfsUrl}`);
+      await exec(`curl -fL -o ${vmlinuzPath} ${validatedVmlinuzUrl.href}`);
+      await exec(`curl -fL -o ${initramfsPath} ${validatedInitramfsUrl.href}`);
       await exec(`gunzip -c ${vmlinuzPath} > ${vmlinuxPath} || cp ${vmlinuzPath} ${vmlinuxPath}`);
       logger.info('Netboot kernel downloaded');
       span.finish();
@@ -253,8 +257,9 @@ export class VfkitProvider implements VMProvider {
       logger.warn('Netboot fetch failed, falling back to ISO', { e });
       const isoVer = '3.22.2';
       const isoUrl = `https://dl-cdn.alpinelinux.org/alpine/${alpineVersion}/releases/${arch}/alpine-virt-${isoVer}-${arch}.iso`;
-      const isoPath = path.join(kernelDir, `alpine-virt-${isoVer}-${arch}.iso`);
-      await exec(`curl -L -o ${isoPath} ${isoUrl}`);
+      const validatedIsoUrl = validateDownloadUrl(isoUrl);
+      const isoPath = validateVMPath(kernelDir, `alpine-virt-${isoVer}-${arch}.iso`);
+      await exec(`curl -L -o ${isoPath} ${validatedIsoUrl.href}`);
       const mountPoint = '/tmp/alpine-mount';
       await exec(`mkdir -p ${mountPoint}`);
       await exec(`hdiutil attach ${isoPath} -mountpoint ${mountPoint}`);
@@ -275,8 +280,8 @@ export class VfkitProvider implements VMProvider {
    * Ported from scripts/vfkit/08-create-node24-rootfs.sh
    */
   private async ensureRootfs(vmDir: string, config: VMConfig): Promise<void> {
-    const rootfsPath = path.join(vmDir, 'rootfs/alpine-rootfs.cpio.gz');
-    
+    const rootfsPath = validateVMPath(vmDir, 'rootfs/alpine-rootfs.cpio.gz');
+
     // Check if rootfs already exists
     try {
       await fs.access(rootfsPath);
@@ -299,8 +304,8 @@ export class VfkitProvider implements VMProvider {
    * Create disk image
    */
   private async createDisk(vmDir: string, size: string): Promise<void> {
-    const diskPath = path.join(vmDir, 'disk/root.img');
-    
+    const diskPath = validateVMPath(vmDir, 'disk/root.img');
+
     // Check if disk already exists
     try {
       await fs.access(diskPath);
@@ -358,11 +363,11 @@ export class VfkitProvider implements VMProvider {
     proc.unref();
     
     // Save PID
-    const pidPath = path.join(vmDir, 'vm.pid');
+    const pidPath = validateVMPath(vmDir, 'vm.pid');
     await fs.writeFile(pidPath, proc.pid!.toString());
-    
+
     // Save config
-    const configPath = path.join(vmDir, 'config.json');
+    const configPath = validateVMPath(vmDir, 'config.json');
     await fs.writeFile(configPath, JSON.stringify(config, null, 2));
     
     const bootSpan = getTracer().startSpan('vfkit.boot.wait');

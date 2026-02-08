@@ -33,8 +33,8 @@ jest.mock('ws', () => {
     setTimeout(() => emitter.emit('open'), 0);
     return socket;
   });
-  MockWebSocket.OPEN = 1;
-  MockWebSocket.CLOSED = 3;
+  (MockWebSocket as unknown as Record<string, unknown>).OPEN = 1;
+  (MockWebSocket as unknown as Record<string, unknown>).CLOSED = 3;
   return {
     default: MockWebSocket,
     __esModule: true,

@@ -177,10 +177,9 @@ function AIUsageWidgetInner({
   }, [data])
 
   // Memoize tooltip formatter to prevent recreation on every render
-  const tooltipFormatter = useCallback((value: number | undefined, name: string | undefined) => {
-    if (value === undefined) return ''
-    if (name === 'cost') return `$${value.toFixed(2)}`
-    return value
+  const tooltipFormatter = useCallback((value: string | number | (string | number)[]) => {
+    if (typeof value === 'number') return `${value}`
+    return String(value)
   }, [])
 
   // Memoize tooltip style object to prevent object recreation
