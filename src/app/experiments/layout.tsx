@@ -5,108 +5,42 @@ import Link from 'next/link'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { logger } from '@/lib/logger'
 import {
+  LayoutDashboard,
+  Plus,
   MessageSquare,
-  Bot,
-  Cpu,
-  DollarSign,
-  BookOpen,
-  History,
-  FolderKanban,
-  Store,
-  Code,
-  Wand2,
-  Upload,
-  Hammer,
-  Sparkles,
-  Wrench,
-  GitCommitHorizontal,
-  AppWindow,
+  Mic,
+  GitCompare,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
   {
-    title: 'Chat',
-    href: '/ai/chat',
+    title: 'Dashboard',
+    href: '/experiments',
+    icon: LayoutDashboard,
+  },
+  {
+    title: 'New Experiment',
+    href: '/experiments/new',
+    icon: Plus,
+  },
+  {
+    title: 'Chatbot Performance',
+    href: '/experiments/demos/chatbot-performance',
     icon: MessageSquare,
   },
   {
-    title: 'Agents',
-    href: '/ai/agents',
-    icon: Bot,
+    title: 'Speech to Text',
+    href: '/experiments/demos/speech-to-text',
+    icon: Mic,
   },
   {
-    title: 'Models',
-    href: '/ai/models',
-    icon: Cpu,
-  },
-  {
-    title: 'Costs',
-    href: '/ai/costs',
-    icon: DollarSign,
-  },
-  {
-    title: 'Prompts',
-    href: '/ai/prompts',
-    icon: BookOpen,
-  },
-  {
-    title: 'History',
-    href: '/ai/conversations',
-    icon: History,
-  },
-  {
-    title: 'Projects',
-    href: '/projects',
-    icon: FolderKanban,
-  },
-  {
-    title: 'Marketplace',
-    href: '/marketplace',
-    icon: Store,
-  },
-  {
-    title: 'Editor',
-    href: '/editor',
-    icon: Code,
-  },
-  {
-    title: 'Agent Builder',
-    href: '/agent-builder',
-    icon: Hammer,
-  },
-  {
-    title: 'Generator',
-    href: '/generate',
-    icon: Wand2,
-  },
-  {
-    title: 'Upload',
-    href: '/upload',
-    icon: Upload,
-  },
-  {
-    title: 'Generative UI',
-    href: '/generative-ui',
-    icon: Sparkles,
-  },
-  {
-    title: 'Codeium',
-    href: '/tools/codeium',
-    icon: Wrench,
-  },
-  {
-    title: 'Gradio',
-    href: '/gradio-editor',
-    icon: AppWindow,
-  },
-  {
-    title: 'GitHub Commits',
-    href: '/github-commits',
-    icon: GitCommitHorizontal,
+    title: 'Model Comparison',
+    href: '/experiments/demos/model-comparison',
+    icon: GitCompare,
   },
 ]
 
-export default function AILayout({
+export default function ExperimentsLayout({
   children,
 }: {
   children: React.ReactNode
@@ -121,11 +55,13 @@ export default function AILayout({
           {/* Sidebar */}
           <div className="w-full md:w-64 mb-6 md:mb-0">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">AI</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Experiments</h2>
               <nav className="space-y-1">
                 {NAV_ITEMS.map((item) => {
                   const Icon = item.icon
-                  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                  const isActive = item.href === '/experiments'
+                    ? pathname === '/experiments'
+                    : pathname === item.href || pathname?.startsWith(item.href + '/')
 
                   return (
                     <Link
@@ -154,7 +90,7 @@ export default function AILayout({
           <div className="flex-1">
             <ErrorBoundary
               onError={(error, errorInfo) => {
-                logger.error('AI page error', { error, errorInfo })
+                logger.error('Experiments page error', { error, errorInfo })
               }}
               fallback={
                 <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 text-center">
@@ -174,17 +110,16 @@ export default function AILayout({
                     </svg>
                   </div>
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                    AI Dashboard Error
+                    Experiments Error
                   </h2>
                   <p className="text-gray-600 mb-6">
-                    The AI dashboard encountered an unexpected error.
-                    This could be due to a connection issue or data loading problem.
+                    The experiments page encountered an unexpected error.
                   </p>
                   <button
                     onClick={() => window.location.reload()}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Reload Dashboard
+                    Reload Page
                   </button>
                 </div>
               }

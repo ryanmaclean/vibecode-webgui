@@ -8,6 +8,7 @@
 'use client';
 
 import React, { useState, useCallback, useRef, useEffect } from 'react';
+import { DemoBanner } from '@/components/ui/DemoBanner';
 import {
   Bot,
   Code,
@@ -487,6 +488,7 @@ export default function AIAgentsPage() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-screen-2xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <DemoBanner />
         {/* Header */}
         <div className="mb-6">
           <div className="flex items-center gap-3 mb-2">
