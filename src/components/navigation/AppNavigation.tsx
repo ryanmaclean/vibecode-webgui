@@ -152,7 +152,7 @@ function DropdownMenu({
 }
 
 export function AppNavigation() {
-  const pathname = usePathname()
+  const pathname = usePathname() ?? '/'
   const { user, logout } = useAuth()
   const [mobileOpen, setMobileOpen] = useState(false)
   const { isShortcutsOpen, setIsShortcutsOpen } = useKeyboardShortcuts()

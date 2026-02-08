@@ -291,15 +291,16 @@ export class MLXTracedProvider {
       const duration = Date.now() - startTime;
 
       if (span && metrics.value) {
+        const finalMetrics = metrics.value as MLXInferenceMetrics;
         span.setTag('mlx.tokens.output', tokenCount);
-        span.setTag('mlx.tokens_per_second', metrics.value.tokensPerSecond);
+        span.setTag('mlx.tokens_per_second', finalMetrics.tokensPerSecond);
         span.setTag('mlx.latency.total_ms', duration);
-        span.setTag('mlx.memory.peak_bytes', metrics.value.peakMemoryUsage);
-        span.setTag('mlx.device', metrics.value.computeDevice);
+        span.setTag('mlx.memory.peak_bytes', finalMetrics.peakMemoryUsage);
+        span.setTag('mlx.device', finalMetrics.computeDevice);
         span.setTag('mlx.status', 'success');
       }
 
-      return metrics.value;
+      return metrics.value as MLXInferenceMetrics;
     } catch (error) {
       if (span) {
         span.setTag('mlx.status', 'error');

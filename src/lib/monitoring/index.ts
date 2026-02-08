@@ -67,41 +67,8 @@ export {
 export type { DatadogConfig } from './datadog-integration';
 export { initDatadog, isDatadogEnabled } from './datadog-integration';
 
-// Export from gastown-cli-tracing
-export type {
-  CLITraceContext,
-  CLICommandResult,
-  CLICommandOptions,
-  GTCommandCategory,
-  BDCommandCategory,
-} from './gastown-cli-tracing';
-export {
-  createCLITraceContext,
-  getDatadogEnvVars,
-  categorizeGTCommand,
-  categorizeBDCommand,
-  executeWithTracing,
-  gt,
-  gtUp,
-  gtDown,
-  gtStatus,
-  gtSling,
-  gtRefineryStart,
-  gtRefineryStop,
-  gtPolecatStatus,
-  gtHook,
-  gtMailInbox,
-  bd,
-  bdCreate,
-  bdList,
-  bdShow,
-  bdComplete,
-  bdSearch,
-  executeCommandSequence,
-  executeCommandsParallel,
-  recordCLIMetrics,
-  createTracedCommand,
-} from './gastown-cli-tracing';
+// gastown-cli-tracing module was removed in cleanup wave
+// Re-exports removed: CLITraceContext, CLICommandResult, etc.
 
 // Export from performance utilities
 export type {

@@ -1,65 +1,34 @@
 'use client'
 
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ErrorBoundary } from '@/components/error/ErrorBoundary'
 import { logger } from '@/lib/logger'
+import {
+  Settings,
+  Download,
+} from 'lucide-react'
 
-const navItems = [
+const NAV_ITEMS = [
   {
-    title: 'Dashboard',
-    href: '/vm',
-    icon: (
-      <svg className="mr-3 flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
-      </svg>
-    ),
+    title: 'General',
+    href: '/settings',
+    icon: Settings,
   },
   {
-    title: 'Containers',
-    href: '/containers',
-    icon: (
-      <svg className="mr-3 flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Deploy',
-    href: '/deploy',
-    icon: (
-      <svg className="mr-3 flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Logs',
-    href: '/vm/logs',
-    icon: (
-      <svg className="mr-3 flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-      </svg>
-    ),
-  },
-  {
-    title: 'Snapshots',
-    href: '/vm/snapshots',
-    icon: (
-      <svg className="mr-3 flex-shrink-0 h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
-      </svg>
-    ),
+    title: 'Updates',
+    href: '/settings/updates',
+    icon: Download,
   },
 ]
 
-export default function VMLayout({
+export default function SettingsLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -68,21 +37,29 @@ export default function VMLayout({
           {/* Sidebar */}
           <div className="w-full md:w-64 mb-6 md:mb-0">
             <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-              <h2 className="text-lg font-medium text-gray-900 mb-4">Virtual Machines</h2>
+              <h2 className="text-lg font-medium text-gray-900 mb-4">Settings</h2>
               <nav className="space-y-1">
-                {navItems.map((item) => {
-                  const isActive = pathname === item.href || pathname?.startsWith(item.href + '/')
+                {NAV_ITEMS.map((item) => {
+                  const Icon = item.icon
+                  const isActive = item.href === '/settings'
+                    ? pathname === '/settings'
+                    : pathname === item.href || pathname?.startsWith(item.href + '/')
+
                   return (
                     <Link
                       key={item.href}
                       href={item.href}
+                      onClick={(e) => {
+                        e.preventDefault()
+                        router.push(item.href)
+                      }}
                       className={`flex items-center px-3 py-2 text-sm font-medium rounded-md ${
                         isActive
                           ? 'bg-blue-50 text-blue-700'
                           : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
                       }`}
                     >
-                      {item.icon}
+                      <Icon className="mr-3 flex-shrink-0 h-5 w-5" />
                       {item.title}
                     </Link>
                   )
@@ -95,7 +72,7 @@ export default function VMLayout({
           <div className="flex-1">
             <ErrorBoundary
               onError={(error, errorInfo) => {
-                logger.error('VM page error', { error, errorInfo })
+                logger.error('Settings page error', { error, errorInfo })
               }}
               fallback={
                 <div className="bg-white rounded-lg shadow-sm border border-red-200 p-8 text-center">
@@ -115,17 +92,16 @@ export default function VMLayout({
                     </svg>
                   </div>
                   <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                    VM Dashboard Error
+                    Settings Error
                   </h2>
                   <p className="text-gray-600 mb-6">
-                    The VM dashboard encountered an unexpected error.
-                    This could be due to a connection issue or data loading problem.
+                    The settings page encountered an unexpected error.
                   </p>
                   <button
                     onClick={() => window.location.reload()}
                     className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                   >
-                    Reload Dashboard
+                    Reload Page
                   </button>
                 </div>
               }

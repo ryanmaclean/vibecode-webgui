@@ -26,7 +26,7 @@ import {
   VectorSearchOptions,
   VectorStoreStats
 } from '../interfaces/vector-types';
-import { VectorDbErrorHandler, VectorDbError } from '@/lib/vector-db/vector-db-error-handler';
+import { VectorDbErrorHandler, VectorDbError, VectorDbErrorType } from '@/lib/vector-db/vector-db-error-handler';
 import { metrics } from '@/lib/server-monitoring';
 // import { logger } from '@/lib/logger';
 
@@ -100,9 +100,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
       throw this.errorHandler.handleError(
         error,
         'connect',
-        {
-          connectionString: this.config.connectionString ? '[REDACTED]' : undefined
-        }
+        VectorDbErrorType.CONNECTION_FAILED,
+        true,
+        { connectionString: this.config.connectionString ? '[REDACTED]' : undefined }
       );
     }
   }
@@ -128,6 +128,8 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('pgVector extension is not installed in the database'),
           'verifyPgVectorExtension',
+          VectorDbErrorType.INITIALIZATION,
+          false,
           { extensionName: 'vector' }
         );
       }
@@ -141,6 +143,8 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           new Error('Vector data type not found, pgVector extension may be incorrectly installed'),
           'verifyPgVectorExtension',
+          VectorDbErrorType.INITIALIZATION,
+          false,
           { typeName: 'vector' }
         );
       }
@@ -154,6 +158,8 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         throw this.errorHandler.handleError(
           error,
           'verifyPgVectorExtension',
+          VectorDbErrorType.INITIALIZATION,
+          false,
           { extensionName: 'vector' }
         );
       }
@@ -240,13 +246,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
             throw this.errorHandler.handleError(
               chunkError,
               'storeVectors.insertChunk',
-              {
-                fileId,
-                chunkId,
-                chunkIndex: i + j,
-                contentLength: chunk.content.length,
-                embeddingSize: embedding.length
-              }
+              VectorDbErrorType.QUERY_FAILED,
+              true,
+              { fileId, chunkId, chunkIndex: i + j, contentLength: chunk.content.length, embeddingSize: embedding.length }
             );
           }
         }
@@ -753,11 +755,9 @@ export class PostgreSQLVectorAdapter extends BaseVectorDatabaseAdapter {
         error: this.errorHandler.handleError(
           error,
           'fallbackTextSearch',
-          {
-            query: query.length > 100 ? query.substring(0, 100) + '...' : query,
-            workspaceId: options.workspaceId,
-            fileCount: options.fileIds?.length
-          }
+          VectorDbErrorType.SEARCH,
+          false,
+          { query: query.length > 100 ? query.substring(0, 100) + '...' : query, workspaceId: options.workspaceId, fileCount: options.fileIds?.length }
         )
       });
       return [];

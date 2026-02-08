@@ -4,12 +4,13 @@ import React from 'react'
 import { useRouter } from 'next/navigation'
 import { ProjectGenerator } from '@/components/ProjectGenerator'
 
-interface AIProjectGeneratorProps {
+export interface AIProjectGeneratorProps {
   initialPrompt?: string
   autoStart?: boolean
+  onProjectGenerated?: (projectData: Record<string, unknown>) => void
 }
 
-export function AIProjectGenerator({ initialPrompt, autoStart }: AIProjectGeneratorProps) {
+export function AIProjectGenerator({ initialPrompt, autoStart, onProjectGenerated }: AIProjectGeneratorProps) {
   const router = useRouter()
 
   const handleComplete = (data: { workspaceId: string; projectName: string }) => {

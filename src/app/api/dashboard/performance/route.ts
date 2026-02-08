@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
     const memUsage = process.memoryUsage()
     const totalMem = os.totalmem()
     const freeMem = os.freemem()
-    const loadAvg = os.loadaverage()
+    const loadAvg = os.loadavg()
     const uptime = process.uptime()
 
     return NextResponse.json({

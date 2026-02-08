@@ -11,6 +11,9 @@ import {
   DollarSign,
   BookOpen,
   History,
+  FolderKanban,
+  Store,
+  Code,
 } from 'lucide-react'
 
 const NAV_ITEMS = [
@@ -43,6 +46,21 @@ const NAV_ITEMS = [
     title: 'History',
     href: '/ai/conversations',
     icon: History,
+  },
+  {
+    title: 'Projects',
+    href: '/projects',
+    icon: FolderKanban,
+  },
+  {
+    title: 'Marketplace',
+    href: '/marketplace',
+    icon: Store,
+  },
+  {
+    title: 'Editor',
+    href: '/editor',
+    icon: Code,
   },
 ]
 

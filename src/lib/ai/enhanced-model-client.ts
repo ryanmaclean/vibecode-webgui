@@ -15,7 +15,7 @@ import { OpenAI } from 'openai';
 // import { logger } from '../logger';
 
 
-export type AIProvider = 'openrouter' | 'azure-openai' | 'anthropic' | 'ollama' | 'gemini' | 'bedrock';
+export type AIProvider = 'openrouter' | 'azure-openai' | 'anthropic' | 'ollama' | 'gemini' | 'bedrock' | 'openclaw';
 
 export interface AIModelConfig {
   provider: AIProvider;
@@ -534,7 +534,8 @@ export class EnhancedAIClient {
       'anthropic': ['openrouter', 'azure-openai'],
       'ollama': ['openrouter', 'azure-openai'],
       'gemini': ['openrouter', 'azure-openai'],
-      'bedrock': ['openrouter', 'azure-openai']
+      'bedrock': ['openrouter', 'azure-openai'],
+      'openclaw': ['openrouter', 'azure-openai']
     };
 
     return fallbackMap[primaryProvider] || [];
@@ -620,6 +621,11 @@ export class EnhancedAIClient {
         configured: this.clients.has('bedrock'),
         models: 4,
         estimatedCostPer1kTokens: 0.0025
+      },
+      'openclaw': {
+        configured: this.clients.has('openclaw'),
+        models: 2,
+        estimatedCostPer1kTokens: 0.001
       }
     };
   }

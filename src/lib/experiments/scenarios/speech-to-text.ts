@@ -526,8 +526,8 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     .map(m => m.value);
 
   const latencyTest = tTest(gpt4LatencyValues, gpt41LatencyValues);
-  const latencyImprovement = gpt4Latency && gpt41Latency
-    ? ((gpt4Latency.mean - gpt41Latency.mean) / gpt4Latency.mean) * 100
+  const latencyImprovement = gpt4Latency?.mean && gpt41Latency?.mean
+    ? (((gpt4Latency.mean) - (gpt41Latency.mean)) / (gpt4Latency.mean)) * 100
     : 0;
 
   // Calculate statistical significance for cost
@@ -540,8 +540,8 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     .map(m => m.value);
 
   const costTest = tTest(gpt4CostValues, gpt41CostValues);
-  const costDifference = gpt4Cost && gpt41Cost
-    ? ((gpt41Cost.mean - gpt4Cost.mean) / gpt4Cost.mean) * 100
+  const costDifference = gpt4Cost?.mean && gpt41Cost?.mean
+    ? (((gpt41Cost.mean) - (gpt4Cost.mean)) / (gpt4Cost.mean)) * 100
     : 0;
 
   // Calculate statistical significance for accuracy
@@ -554,8 +554,8 @@ export async function getSpeechExperimentSummary(): Promise<ExperimentSummary> {
     .map(m => m.value);
 
   const accuracyTest = tTest(gpt4AccuracyValues, gpt41AccuracyValues);
-  const accuracyDifference = gpt4Accuracy && gpt41Accuracy
-    ? ((gpt41Accuracy.mean - gpt4Accuracy.mean) / gpt4Accuracy.mean) * 100
+  const accuracyDifference = gpt4Accuracy?.mean && gpt41Accuracy?.mean
+    ? (((gpt41Accuracy.mean) - (gpt4Accuracy.mean)) / (gpt4Accuracy.mean)) * 100
     : 0;
 
   // Check for Sample Ratio Mismatch
@@ -698,7 +698,7 @@ export async function initializeSpeechExperiment(): Promise<void> {
   await warehouse.upsertExperiment(
     experimentKey,
     'GPT-4 vs GPT-4.1 Speech Transcription',
-    {
+    JSON.parse(JSON.stringify({
       variants: Object.entries(variants).map(([key, value]) => ({
         key,
         name: value.name,
@@ -712,7 +712,7 @@ export async function initializeSpeechExperiment(): Promise<void> {
         targetDirection: m.targetDirection
       })),
       guardrails
-    },
+    })),
     hypothesis,
     ExperimentStatus.RUNNING
   );

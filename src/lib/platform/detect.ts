@@ -91,10 +91,8 @@ export function detectArch(): Architecture {
 
   switch (arch) {
     case 'x64':
-    case 'amd64':
       return 'x64';
     case 'arm64':
-    case 'aarch64':
       return 'arm64';
     default:
       return 'unknown';
@@ -336,7 +334,7 @@ export function detectCapabilities(): PlatformCapabilities {
  */
 export function isTauriEnvironment(): boolean {
   // Check for Tauri-specific globals
-  if (typeof window !== 'undefined' && (window as Record<string, unknown>).__TAURI__) {
+  if (typeof window !== 'undefined' && (window as unknown as Record<string, unknown>).__TAURI__) {
     return true;
   }
 

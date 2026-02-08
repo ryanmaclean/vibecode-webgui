@@ -62,6 +62,9 @@ interface VariantMetricStats {
   max: number;
   values: number[];
   mean?: number;
+  p50?: number;
+  p95?: number;
+  stdDev?: number;
 }
 
 interface ExperimentResultsResponse {

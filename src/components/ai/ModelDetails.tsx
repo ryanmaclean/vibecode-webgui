@@ -36,6 +36,7 @@ import {
   BarChart3,
   Cpu,
   Gauge,
+  Gift,
 } from 'lucide-react';
 import type {
   ModelProfile,

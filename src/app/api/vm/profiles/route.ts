@@ -40,8 +40,8 @@ const builtInProfiles: VMProfile[] = [
     config: {},
     resources: { cpuCores: 2, memoryMB: 2048, diskMB: 20480 },
     defaultPorts: [
-      { hostPort: 0, guestPort: 3000, protocol: 'tcp', service: 'dev-server', autoAllocated: true },
-      { hostPort: 0, guestPort: 8080, protocol: 'tcp', service: 'alt-server', autoAllocated: true },
+      { host: 0, guest: 3000, protocol: 'tcp', service: 'dev-server', autoAllocated: true },
+      { host: 0, guest: 8080, protocol: 'tcp', service: 'alt-server', autoAllocated: true },
     ],
     services: ['ssh', 'node', 'python', 'git'],
     category: 'development',
@@ -71,7 +71,7 @@ const builtInProfiles: VMProfile[] = [
     config: {},
     resources: { cpuCores: 4, memoryMB: 8192, diskMB: 40960 },
     defaultPorts: [
-      { hostPort: 0, guestPort: 3000, protocol: 'tcp', service: 'dev-server', autoAllocated: true },
+      { host: 0, guest: 3000, protocol: 'tcp', service: 'dev-server', autoAllocated: true },
     ],
     services: ['ssh', 'node', 'python', 'docker', 'git'],
     category: 'development',

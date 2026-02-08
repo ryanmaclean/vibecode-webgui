@@ -305,7 +305,7 @@ const ModelListItem: React.FC<ModelListItemProps> = ({
 
         <div className="flex items-center gap-2 ml-2 flex-shrink-0">
           {isRecent && (
-            <Clock className="h-3.5 w-3.5 text-gray-400" title="Recently used" />
+            <span title="Recently used"><Clock className="h-3.5 w-3.5 text-gray-400" /></span>
           )}
           {onFavoriteToggle && (
             <button
