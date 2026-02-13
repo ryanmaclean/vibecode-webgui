@@ -1,5 +1,12 @@
 import { subscriptionManager } from '@/lib/file-sync/subscription-manager'
 
+jest.mock('chokidar', () => ({
+  watch: jest.fn(() => ({
+    on: jest.fn().mockReturnThis(),
+    close: jest.fn(),
+  })),
+}))
+
 jest.mock('dd-trace', () => ({
   dogstatsd: {
     increment: jest.fn(),
