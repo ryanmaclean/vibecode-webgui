@@ -25,6 +25,7 @@
 !Dockerfile.production
 !Dockerfile.ingest
 !.npmrc
+!config/next.config.mjs
 
 # Explicitly ignore large/unneeded directories even if whitelisted higher up
 node_modules

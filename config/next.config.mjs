@@ -210,6 +210,12 @@ const nextConfig = {
     return `build-${Date.now()}`
   },
   webpack: (config, { dev, isServer }) => {
+    // Enable WebAssembly support (needed for tiktoken)
+    config.experiments = {
+      ...config.experiments,
+      asyncWebAssembly: true,
+    }
+
     if (!dev) {
       config.devtool = false
     }
