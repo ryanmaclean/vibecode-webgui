@@ -1,0 +1,5 @@
+# Track markdown docs, ignore binary assets
+*
+!.gitignore
+!*.md
+!*/*.md
