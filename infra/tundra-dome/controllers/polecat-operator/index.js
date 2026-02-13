@@ -109,10 +109,12 @@ function createDeploymentSpec(polecat) {
               { name: 'POLECAT_HEARTBEAT_INTERVAL', value: spec.heartbeatInterval || '30s' },
               { name: 'DD_SERVICE', value: `polecat-${name}` },
               { name: 'DD_ENV', value: process.env.DD_ENV || 'dev' },
-              { name: 'DD_AGENT_HOST', valueFrom: { fieldRef: { fieldPath: 'status.hostIP' } } },
+              { name: 'DD_AGENT_HOST', value: 'datadog.datadog.svc.cluster.local' },
               { name: 'DD_LLMOBS_ENABLED', value: 'true' },
               { name: 'DD_LLMOBS_ML_APP', value: 'tundra-dome-polecats' },
-              { name: 'OPENROUTER_API_KEY', valueFrom: { secretKeyRef: { name: 'tundra-dome-secrets', key: 'OPENROUTER_API_KEY', optional: true } } }
+              { name: 'OPENROUTER_API_KEY', valueFrom: { secretKeyRef: { name: 'tundra-dome-secrets', key: 'OPENROUTER_API_KEY', optional: true } } },
+              { name: 'OLLAMA_HOST', value: 'http://host.docker.internal:11434' },
+              { name: 'OLLAMA_MODEL', value: 'mistral:7b' }
             ],
             resources: spec.resources || {
               requests: { cpu: '100m', memory: '256Mi' },
@@ -338,7 +340,59 @@ const consumer = kafka.consumer({
 });
 const producer = kafka.producer();
 
+const http = require('http');
+
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+const OLLAMA_HOST = process.env.OLLAMA_HOST || '';
+const OLLAMA_MODEL = process.env.OLLAMA_MODEL || 'mistral:7b';
+
+// Rate limit retry configuration
+const RATE_LIMIT_MAX_RETRIES = 3;
+const RATE_LIMIT_BASE_DELAY_MS = 5000;  // 5 seconds base
+const RATE_LIMIT_MAX_DELAY_MS = 30000;  // 30 seconds max
+
+function sleep(ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+function getRetryDelay(attempt) {
+  const exponential = RATE_LIMIT_BASE_DELAY_MS * Math.pow(2, attempt);
+  const capped = Math.min(exponential, RATE_LIMIT_MAX_DELAY_MS);
+  const jitter = capped * (0.5 + Math.random() * 0.5); // 50-100% of delay
+  return Math.round(jitter);
+}
+
+// Call host ollama as fallback when OpenRouter rate-limits
+async function callOllama(prompt) {
+  if (!OLLAMA_HOST) return null;
+  const url = new URL(OLLAMA_HOST);
+  const body = JSON.stringify({ model: OLLAMA_MODEL, prompt, stream: false });
+  return new Promise((resolve) => {
+    const req = http.request({
+      hostname: url.hostname,
+      port: url.port || 11434,
+      path: '/api/generate',
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      timeout: 120000
+    }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try {
+          const parsed = JSON.parse(data);
+          resolve({ content: parsed.response || '', tokens: { prompt: 0, completion: 0 } });
+        } catch {
+          resolve(null);
+        }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+    req.write(body);
+    req.end();
+  });
+}
 
 // Feature Flag Tracking for Lane-Based Model Routing
 const featureFlags = {
@@ -347,13 +401,13 @@ const featureFlags = {
   'lane.standard.enabled': true,
   'lane.critical.enabled': true,
 
-  // Model selection flags
-  'model.experimental.provider': 'openrouter',
-  'model.experimental.id': 'deepseek/deepseek-r1-0528:free',
-  'model.standard.provider': 'openrouter',
-  'model.standard.id': 'meta-llama/llama-3.3-70b-instruct:free',
-  'model.critical.provider': 'anthropic',
-  'model.critical.id': 'claude-opus-4-5-20251101',
+  // Model selection flags - ollama primary for all lanes (no rate limits)
+  'model.experimental.provider': 'ollama',
+  'model.experimental.id': 'mistral:7b',
+  'model.standard.provider': 'ollama',
+  'model.standard.id': 'mistral:7b',
+  'model.critical.provider': 'ollama',
+  'model.critical.id': 'mistral:7b',
 
   // Agent capabilities
   'agent.autonomous_fix.enabled': true,
@@ -507,6 +561,8 @@ async function callLLM(modelConfig, prompt, beadId) {
 
 async function processMessage(message) {
   const bead = JSON.parse(message.value.toString());
+  // Normalize bead ID: payload uses 'bead' field, not 'id'
+  if (!bead.id && bead.bead) bead.id = bead.bead;
   const lane = bead.lane || 'standard';
   console.log(\`[PROCESS] Bead: \${bead.id} Lane: \${lane}\`);
 
@@ -551,13 +607,71 @@ Provide a brief 2-3 sentence review focus recommendation.\`;
 
   // Make LLM call if autonomous processing is enabled
   if (autonomousEnabled && prompt) {
-    try {
-      llmResponse = await callLLM(modelConfig, prompt, bead.id);
-      console.log(\`[LLM] Response received: \${llmResponse.content.slice(0, 100)}...\`);
-      console.log(\`[LLM] Tokens: prompt=\${llmResponse.tokens.prompt}, completion=\${llmResponse.tokens.completion}\`);
-    } catch (error) {
-      console.error(\`[LLM] Error calling model: \${error.message}\`);
-      llmResponse = { content: \`Error: \${error.message}\`, tokens: { prompt: 0, completion: 0 } };
+    if (modelConfig.provider === 'ollama') {
+      // Direct ollama call - no rate limits, no retry needed
+      console.log(\`[LLM] Using ollama direct (\${OLLAMA_MODEL}) at \${OLLAMA_HOST}\`);
+      try {
+        llmResponse = await callOllama(prompt);
+        if (llmResponse && llmResponse.content) {
+          console.log(\`[LLM] Ollama response: \${llmResponse.content.slice(0, 100)}...\`);
+        } else {
+          console.error('[LLM] Ollama returned empty response');
+          llmResponse = { content: 'Error: Ollama returned empty response', tokens: { prompt: 0, completion: 0 } };
+        }
+      } catch (error) {
+        console.error(\`[LLM] Ollama error: \${error.message}\`);
+        // Fallback to OpenRouter if ollama fails
+        console.log('[LLM] Ollama failed, trying OpenRouter fallback');
+        try {
+          llmResponse = await callLLM(modelConfig, prompt, bead.id);
+          console.log(\`[LLM] OpenRouter fallback succeeded: \${llmResponse.content.slice(0, 100)}...\`);
+        } catch (orError) {
+          console.error(\`[LLM] OpenRouter fallback also failed: \${orError.message}\`);
+          llmResponse = { content: \`Error: \${error.message}\`, tokens: { prompt: 0, completion: 0 } };
+        }
+      }
+    } else {
+      // OpenRouter path with retry + ollama fallback (for critical lane)
+      let lastError = null;
+      for (let attempt = 0; attempt <= RATE_LIMIT_MAX_RETRIES; attempt++) {
+        try {
+          if (attempt > 0) {
+            const delay = getRetryDelay(attempt - 1);
+            console.log(\`[LLM] Rate limit retry \${attempt}/\${RATE_LIMIT_MAX_RETRIES} after \${delay}ms\`);
+            await sleep(delay);
+          }
+          llmResponse = await callLLM(modelConfig, prompt, bead.id);
+          console.log(\`[LLM] Response received: \${llmResponse.content.slice(0, 100)}...\`);
+          console.log(\`[LLM] Tokens: prompt=\${llmResponse.tokens.prompt}, completion=\${llmResponse.tokens.completion}\`);
+          lastError = null;
+          break;
+        } catch (error) {
+          lastError = error;
+          const isRateLimit = error.message && error.message.toLowerCase().includes('rate limit');
+          if (!isRateLimit) {
+            console.error(\`[LLM] Non-retryable error: \${error.message}\`);
+            break;
+          }
+          console.warn(\`[LLM] Rate limited (attempt \${attempt + 1}/\${RATE_LIMIT_MAX_RETRIES + 1}): \${error.message}\`);
+        }
+      }
+      // Fallback to host ollama if OpenRouter exhausted retries
+      if (lastError && OLLAMA_HOST) {
+        console.log(\`[LLM] OpenRouter failed after retries, falling back to ollama at \${OLLAMA_HOST}\`);
+        try {
+          llmResponse = await callOllama(prompt);
+          if (llmResponse && llmResponse.content) {
+            console.log(\`[LLM] Ollama fallback succeeded: \${llmResponse.content.slice(0, 100)}...\`);
+            lastError = null;
+          }
+        } catch (ollamaError) {
+          console.error(\`[LLM] Ollama fallback also failed: \${ollamaError.message}\`);
+        }
+      }
+      if (lastError) {
+        console.error(\`[LLM] All LLM attempts failed: \${lastError.message}\`);
+        llmResponse = { content: \`Error: \${lastError.message}\`, tokens: { prompt: 0, completion: 0 } };
+      }
     }
   }
 
