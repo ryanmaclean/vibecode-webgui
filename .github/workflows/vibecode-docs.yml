@@ -35,10 +35,12 @@ jobs:
           cache: 'npm'
 
       - name: Install Dependencies
+        working-directory: ./docs
         run: npm ci
 
       - name: Build Astro
-        run: npm run docs:build
+        working-directory: ./docs
+        run: npm run build
         env:
           # Agent 4: Ensure GitHub Pages compatibility
           astro_site: "https://vibecode.github.io"
@@ -47,7 +49,7 @@ jobs:
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ./dist
+          path: ./docs/dist
 
   deploy:
     name: Deploy to GitHub Pages
