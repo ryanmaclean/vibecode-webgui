@@ -76,7 +76,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -f tests/requirements.txt ]; then pip install -r tests/requirements.txt; fi
           # Install test runner and common test dependencies
-          pip install pytest pytest-cov pyyaml
+          pip install pytest pytest-cov pyyaml ddtrace
           
       - name: Run Python Tests
         env:
