@@ -26,6 +26,9 @@ export default [
     ],
   },
   {
+    settings: {
+      react: { version: "19.2" },
+    },
     rules: {
       "no-console": "off",
       "no-debugger": "off",
@@ -35,6 +38,9 @@ export default [
       "import/no-anonymous-default-export": "off",
       "jsx-a11y/alt-text": "off",
       "react-hooks/exhaustive-deps": "off",
+      // eslint-plugin-react 7.x not yet compatible with ESLint 10 API
+      "react/display-name": "off",
+      "react/no-unescaped-entities": "off",
     },
   },
 ];
