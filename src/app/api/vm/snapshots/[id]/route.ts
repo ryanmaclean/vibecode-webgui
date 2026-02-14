@@ -6,6 +6,8 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { getSnapshotManager } from '@/lib/vm/snapshots';
 import type { SnapshotAPIResponse, SnapshotInfo } from '@/types/vm-snapshot';
@@ -27,6 +29,15 @@ export async function GET(
   { params }: RouteParams
 ): Promise<NextResponse<SnapshotAPIResponse<SnapshotInfo>>> {
   const { id } = await params;
+
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
 
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
@@ -80,6 +91,15 @@ export async function DELETE(
   { params }: RouteParams
 ): Promise<NextResponse<SnapshotAPIResponse>> {
   const { id } = await params;
+
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
 
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);

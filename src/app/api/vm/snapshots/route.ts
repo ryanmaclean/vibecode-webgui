@@ -6,6 +6,8 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { getSnapshotManager } from '@/lib/vm/snapshots';
@@ -46,6 +48,15 @@ const createSnapshotSchema = z.object({
  * List all snapshots or filter by VM ID
  */
 export async function GET(request: NextRequest): Promise<NextResponse<SnapshotAPIResponse<SnapshotListResponse>>> {
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
   if (!rateLimitResult.success) {
@@ -109,6 +120,15 @@ export async function GET(request: NextRequest): Promise<NextResponse<SnapshotAP
  * Create a new snapshot
  */
 export async function POST(request: NextRequest): Promise<NextResponse<SnapshotAPIResponse<SnapshotResult>>> {
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
   if (!rateLimitResult.success) {

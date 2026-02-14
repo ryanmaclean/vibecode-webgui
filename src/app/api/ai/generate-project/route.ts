@@ -6,6 +6,8 @@
  */
 
 import { NextRequest, NextResponse } from 'next/server'
+import { getServerSession } from 'next-auth'
+import { authOptions } from '@/lib/auth'
 import { z } from 'zod'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
 
@@ -18,6 +20,15 @@ const generateProjectSchema = z.object({
 const apiRateLimit = createAPIRateLimit(10)
 
 export async function POST(request: NextRequest) {
+  // Authentication check
+  const session = await getServerSession(authOptions)
+  if (!session) {
+    return NextResponse.json(
+      { error: 'Unauthorized' },
+      { status: 401 }
+    )
+  }
+
   try {
     const rateLimitResult = await apiRateLimit(request)
     if (!rateLimitResult.success) {

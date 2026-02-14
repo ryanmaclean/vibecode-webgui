@@ -5,6 +5,8 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import * as os from 'os';
@@ -26,6 +28,15 @@ const MAX_FILE_SIZE = 1024 * 1024 * 1024;
 export async function POST(
   request: NextRequest
 ): Promise<NextResponse<SnapshotAPIResponse<{ snapshotId: string; snapshot?: SnapshotInfo }>>> {
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
+
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
   if (!rateLimitResult.success) {

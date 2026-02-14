@@ -1,3 +1,0 @@
-# Datadog LLM Observability dependencies for Python scripts
-# Install with: pip install -r scripts/requirements-datadog.txt
-ddtrace>=3.0.0

@@ -5,6 +5,8 @@
  */
 
 import { NextResponse, NextRequest } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/lib/auth';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
 import { getSnapshotManager } from '@/lib/vm/snapshots';
@@ -32,6 +34,15 @@ export async function POST(
   { params }: RouteParams
 ): Promise<NextResponse<SnapshotAPIResponse<RestoreResult>>> {
   const { id } = await params;
+
+  // Authentication check
+  const session = await getServerSession(authOptions);
+  if (!session) {
+    return NextResponse.json(
+      { success: false, error: 'Unauthorized' },
+      { status: 401 }
+    );
+  }
 
   // Rate limiting
   const rateLimitResult = await apiRateLimit(request);
