@@ -5,9 +5,11 @@ import { randomUUID } from 'crypto'
 import { Prisma } from '@prisma/client'
 import { getBlockBlobClient, getQueueClient, getUploadsContainerName, getQueueName } from '@/lib/azure/storage'
 import prisma from '@/lib/prisma'
-// import { logger } from '../../../../lib/logger'
+import { createServiceLogger } from '@/lib/logging'
 import { validateFileUpload, generateSecureStorageName } from '@/lib/security/file-validation'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'uploads-pdf' });
 
 
 export const dynamic = 'force-dynamic'
@@ -71,14 +73,14 @@ export async function POST(request: NextRequest) {
   const validationResult = validateFileUpload(file, buffer)
   
   if (!validationResult.isValid) {
-    console.warn('File upload validation failed', {
+    logger.warn('File upload validation failed', {
       errors: validationResult.errors,
       warnings: validationResult.warnings,
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type
     })
-    
+
     return NextResponse.json({
       error: 'File validation failed',
       details: validationResult.errors,
@@ -88,7 +90,7 @@ export async function POST(request: NextRequest) {
 
   // Log warnings even if file passes validation
   if (validationResult.warnings.length > 0) {
-    console.warn('File upload warnings', {
+    logger.warn('File upload warnings', {
       warnings: validationResult.warnings,
       fileName: file.name,
       confidence: validationResult.metadata
@@ -146,7 +148,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Failed to upload PDF to blob storage', { error: error })
+    logger.error('Failed to upload PDF to blob storage', { error: error })
     return NextResponse.json({ error: 'Failed to store PDF. Try again later.' }, { status: 500 })
   }
 
@@ -171,7 +173,7 @@ export async function POST(request: NextRequest) {
     })
     uploadRecordId = upload.id
   } catch (error) {
-    console.error('Failed to record upload metadata', { error: error })
+    logger.error('Failed to record upload metadata', { error: error })
     return NextResponse.json({ error: 'Failed to register upload metadata.' }, { status: 500 })
   }
 
@@ -192,7 +194,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Failed to record ingestion job in database', { error: error })
+    logger.error('Failed to record ingestion job in database', { error: error })
     return NextResponse.json({ error: 'Failed to register ingestion job.' }, { status: 500 })
   }
 
@@ -216,7 +218,7 @@ export async function POST(request: NextRequest) {
     const queueClient = await getQueueClient()
     await queueClient.sendMessage(JSON.stringify(queuePayload))
   } catch (error) {
-    console.error('Failed to enqueue PDF ingestion job', { error: error })
+    logger.error('Failed to enqueue PDF ingestion job', { error: error })
     return NextResponse.json({ error: 'Failed to queue ingestion job.' }, { status: 500 })
   }
 

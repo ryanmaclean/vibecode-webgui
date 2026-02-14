@@ -5,6 +5,9 @@
 
 import { NextRequest, NextResponse } from 'next/server';
 import { generateCSRFToken, getSessionId } from '@/lib/security/csrf-protection';
+import { createServiceLogger } from '@/lib/logging';
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'auth-csrf' });
 
 export const dynamic = 'force-dynamic'
 
@@ -81,7 +84,7 @@ export async function GET(request: NextRequest) {
     return response;
 
   } catch (error) {
-    console.error('CSRF token generation failed:', error);
+    logger.error('CSRF token generation failed', { error });
     return NextResponse.json(
       { error: 'Failed to generate CSRF token' },
       { status: 500 }

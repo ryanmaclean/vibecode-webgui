@@ -11,10 +11,12 @@ import { authOptions } from '@/lib/auth';
 import { VectorSearchService } from '@/lib/vector-search';
 import { EmbeddingGenerator } from '@/lib/embedding-generator';
 import { z } from '@/lib/zod-compat';
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging';
 import { cache, CacheKeys, CacheTTL } from '@/lib/cache/unified-cache-client';
 import crypto from 'crypto';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'vector-search' });
 
 export const dynamic = 'force-dynamic'
 
@@ -89,7 +91,7 @@ export async function POST(request: NextRequest) {
         );
     }
   } catch (error) {
-    console.error('Vector search API error:', error);
+    logger.error('Vector search API error:', error);
     return NextResponse.json(
       { error: 'Internal server error', details: error instanceof Error ? error.message : 'Unknown error' },
       { status: 500 }
@@ -108,7 +110,7 @@ async function handleSearch(body: any) {
   // Try cache first - provides 70-90% reduction in latency for repeated queries
   const cached = await cache.get(cacheKey);
   if (cached) {
-    console.info('Vector search cache hit', { query: query.substring(0, 50), cache_key: cacheKey });
+    logger.info('Vector search cache hit', { query: query.substring(0, 50), cache_key: cacheKey });
     return NextResponse.json({
       ...cached,
       from_cache: true,
@@ -148,7 +150,7 @@ async function handleSearch(body: any) {
 
     // Cache the search results for 30 minutes (longer for expensive vector operations)
     await cache.set(cacheKey, response, CacheTTL.LONG);
-    console.info('Vector search cached', { query: query.substring(0, 50), results_count: results.length });
+    logger.info('Vector search cached', { query: query.substring(0, 50), results_count: results.length });
 
     return NextResponse.json(response);
   } finally {
@@ -243,7 +245,7 @@ async function handleBatchSearch(body: any) {
       }, CacheTTL.LONG);
     }
 
-    console.info('Batch vector search completed', { 
+    logger.info('Batch vector search completed', { 
       total_queries: queries.length,
       cache_hits: cacheHits, 
       cache_misses: cacheMisses,

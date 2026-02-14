@@ -12,6 +12,9 @@ import { getTemplateById } from '@/lib/templates'
 import { llmObservability } from '@/lib/datadog-llm'
 import type { Span } from 'dd-trace'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'projects-template' });
 
 export const dynamic = 'force-dynamic'
 
@@ -167,8 +170,8 @@ export async function POST(request: NextRequest) {
           })
 
         } catch (error) {
-          // Server error logged
-          
+          logger.error('Template generation failed', { error })
+
           const errorMessage = error instanceof Error ? error.message : 'Unknown error'
           
           span?.setTag('error', true)
@@ -222,7 +225,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Server error logged
+    logger.error('Template API error', { error })
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -323,7 +326,7 @@ export async function GET(request: NextRequest) {
     })
 
   } catch (error) {
-    // Server error logged
+    logger.error('Failed to retrieve templates', { error })
     return NextResponse.json(
       { error: 'Failed to retrieve templates' },
       { status: 500 }

@@ -7,6 +7,9 @@ import { NextRequest } from 'next/server'
 import { createHealthResponse, createErrorResponseFromError } from '@/lib/api-utils'
 import { healthCheckQuerySchema } from '@/lib/api/validation/schemas'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'readyz' });
 
 export const dynamic = 'force-dynamic'
 

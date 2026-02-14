@@ -7,9 +7,11 @@ import path from 'path';
 import { validatePathParams, validateRequestBody } from '@/lib/api/validation/middleware';
 import { initGooseParamSchema, initGooseSchema } from '@/lib/api/validation/schemas';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+import { createServiceLogger } from '@/lib/logging';
 
 export const dynamic = 'force-dynamic'
-// import { logger } from '@/lib/logger';
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'workspace-init-goose' });
 const execAsync = promisify(exec);
 
 const apiRateLimit = createAPIRateLimit(10); // 10 requests per minute - initialization is expensive
@@ -71,7 +73,7 @@ export async function POST(
 
     // SECURITY: Validate workspace path exists and is within allowed directory
     if (!workspacePath.startsWith('/workspaces/')) {
-      console.error(`Invalid workspace path attempted: ${workspacePath}`);
+      logger.error(`Invalid workspace path attempted: ${workspacePath}`);
       return NextResponse.json(
         { error: 'Invalid workspace path' },
         { status: 400 }
@@ -105,7 +107,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     
     // In a real implementation, you would write this to the migration file
     // For now, we'll just log it
-    console.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
+    logger.info(`Migration file content for ${workspaceId}:\n${migrationContent}`);
     
     return NextResponse.json({ 
       success: true, 
@@ -113,7 +115,7 @@ DROP TABLE IF EXISTS schema_migrations;`;
     });
 
   } catch (error) {
-    console.error('Error initializing Goose:', error);
+    logger.error('Error initializing Goose:', error);
     return NextResponse.json(
       { error: 'Failed to initialize Goose' },
       { status: 500 }

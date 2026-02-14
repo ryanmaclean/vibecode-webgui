@@ -72,10 +72,12 @@ measure_memory_usage() {
     if ps -p $vm_pid > /dev/null 2>&1; then
         memory_usage=$(ps -p $vm_pid -o %mem= | tr -d ' ')
         echo "✅ $vm_name memory usage: ${memory_usage}%"
-        return $memory_usage
+        echo "$memory_usage"
+        return 0
     else
         echo "❌ $vm_name process not found"
-        return 999
+        echo "999"
+        return 1
     fi
     
     # Stop VM

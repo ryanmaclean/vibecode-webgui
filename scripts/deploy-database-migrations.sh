@@ -76,13 +76,11 @@ PGVECTOR_COUNT=$(echo "$PSQL_OUTPUT" | grep -o 'pgvector_installed.*[0-9]' | gre
 if [ "$PGVECTOR_COUNT" != "1" ]; then
   echo -e "${YELLOW}⚠️  pgvector extension not found, attempting to install...${NC}"
   
-  timeout 30 npx prisma db execute --stdin --schema=prisma/schema.prisma <<EOF || {
+  echo "CREATE EXTENSION IF NOT EXISTS vector;" | timeout 30 npx prisma db execute --stdin --schema=prisma/schema.prisma || {
     echo -e "${RED}❌ ERROR: Failed to install pgvector extension${NC}"
     echo "Please ensure the database user has SUPERUSER privileges or ask your DBA to install the pgvector extension"
     exit 1
   }
-CREATE EXTENSION IF NOT EXISTS vector;
-EOF
   
   echo -e "${GREEN}✅ pgvector extension installed${NC}"
 else

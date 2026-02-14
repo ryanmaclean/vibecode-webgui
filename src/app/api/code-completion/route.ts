@@ -3,12 +3,14 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import OpenAI from 'openai'
-// import { logger } from '../../../lib/logger'
+import { createServiceLogger } from '@/lib/logging'
 import { z } from '@/lib/zod-compat'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { loadSecret } from '@/lib/security/macos-keychain-server'
 import { fetchWithRetry } from '@/lib/utils/fetch'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'code-completion' });
 
 export const dynamic = 'force-dynamic'
 
@@ -934,7 +936,7 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json(completion)
   } catch (error) {
-    console.error('[Code Completion] Error:', { error: error })
+    logger.error('Code completion error', { error });
 
     return NextResponse.json(
       {

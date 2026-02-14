@@ -10,6 +10,9 @@ import { featureFlagEngine } from '@/lib/feature-flags'
 import { appLogger } from '@/lib/server-monitoring'
 import type { ExperimentContext } from '@/lib/feature-flags'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'experiments' });
 
 export const dynamic = 'force-dynamic'
 
@@ -141,7 +144,7 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('Experiments API error:', error)
+    logger.error('Experiments API POST error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
@@ -231,7 +234,7 @@ export async function GET(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('Experiments API error:', error)
+    logger.error('Experiments API GET error', { error });
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }

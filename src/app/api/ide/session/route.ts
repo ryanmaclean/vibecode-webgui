@@ -10,6 +10,9 @@ import { authOptions } from '@/lib/auth';
 import { IDEFactory, IDEConfig, IDEType } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
 import { createAPIRateLimit } from '@/lib/rate-limiting';
+import { createServiceLogger } from '@/lib/logging';
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'ide-session' });
 
 export const dynamic = 'force-dynamic'
 
@@ -96,7 +99,7 @@ export async function POST(request: NextRequest) {
       },
     });
   } catch (error) {
-    console.error('Failed to create IDE session:', error);
+    logger.error('Failed to create IDE session:', error);
     return NextResponse.json(
       { error: error instanceof Error ? error.message : 'Failed to create IDE session' },
       { status: 500 }
@@ -176,7 +179,7 @@ export async function GET(request: NextRequest) {
       })),
     });
   } catch (error) {
-    console.error('Failed to list IDE sessions:', error);
+    logger.error('Failed to list IDE sessions:', error);
     return NextResponse.json(
       { error: 'Failed to list IDE sessions' },
       { status: 500 }

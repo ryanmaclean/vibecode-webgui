@@ -13,9 +13,12 @@ detectDockerRuntime,
   startColima,
   DockerType,
 } from '@/lib/docker/detection';
-// import { logger } from '@/lib/logger';
+import { createServiceLogger } from '@/lib/logging';
 import { z } from '@/lib/zod-compat';
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'docker-status' });
+
 export const dynamic = 'force-dynamic';
 
 const apiRateLimit = createAPIRateLimit(60) // 60 requests per minute - status checks
@@ -53,7 +56,7 @@ export async function GET(request: NextRequest) {
     if (detailed) {
       const report = await getDockerStatusReport();
 
-      console.info('Docker status report generated', {
+      logger.info('Docker status report generated', {
         runtime: report.runtime.dockerType,
         running: report.runtime.running,
         version: report.runtime.version,
@@ -67,7 +70,7 @@ export async function GET(request: NextRequest) {
 
     const status = await detectDockerRuntime();
 
-    console.info('Docker runtime detected', {
+    logger.info('Docker runtime detected', {
       type: status.dockerType,
       running: status.running,
       version: status.version,
@@ -78,7 +81,7 @@ export async function GET(request: NextRequest) {
       data: status,
     });
   } catch (error) {
-    console.error('Error detecting Docker runtime', {
+    logger.error('Error detecting Docker runtime', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 
@@ -123,7 +126,7 @@ export async function POST(request: NextRequest) {
       const result = await startColima();
 
       if (result.success) {
-        console.info('Colima started successfully');
+        logger.info('Colima started successfully');
 
         return NextResponse.json({
           success: true,
@@ -131,7 +134,7 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      console.error('Failed to start Colima', { message: result.message });
+      logger.error('Failed to start Colima', { message: result.message });
 
       return NextResponse.json(
         {
@@ -175,7 +178,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error('Error processing Docker action', {
+    logger.error('Error processing Docker action', {
       error: error instanceof Error ? error.message : 'Unknown error',
     });
 

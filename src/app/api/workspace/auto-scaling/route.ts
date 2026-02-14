@@ -7,12 +7,13 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { workspaceAutoScaler } from '@/lib/workspace/auto-scaler'
-// import { logger } from '@/lib/logger'
+import { createServiceLogger } from '@/lib/logging'
 import { validateRequestBody } from '@/lib/api/validation/middleware'
 import { workspaceIdSchema } from '@/lib/api/validation/schemas'
 import { z } from '@/lib/zod-compat'
-// import { logger } from '@/lib/logger';
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'workspace-auto-scaling' });
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
@@ -136,7 +137,7 @@ export async function GET(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Auto-scaling API error:', error)
+    logger.error('Auto-scaling API error:', error)
     return NextResponse.json(
       {
         status: 'error',
@@ -201,7 +202,7 @@ export async function POST(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Metrics update error:', error)
+    logger.error('Metrics update error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -287,7 +288,7 @@ export async function PUT(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace registration error:', error)
+    logger.error('Workspace registration error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -365,7 +366,7 @@ export async function PATCH(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Config update error:', error)
+    logger.error('Config update error:', error)
     
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -431,7 +432,7 @@ export async function DELETE(request: NextRequest) {
 
     // In a real implementation, you would remove the workspace from tracking
     // For now, we'll just log it
-    console.info(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
+    logger.info(`🗑️  Unregistering workspace ${workspaceId} from auto-scaling`)
 
     return NextResponse.json({
       status: 'success',
@@ -442,7 +443,7 @@ export async function DELETE(request: NextRequest) {
       }
     })
   } catch (error) {
-    console.error('Workspace unregistration error:', error)
+    logger.error('Workspace unregistration error:', error)
     
     return NextResponse.json(
       {

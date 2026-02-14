@@ -9,7 +9,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createSAMLProvider } from '@/lib/auth/saml-provider'
 import { validateQueryParams } from '@/lib/api/validation/middleware'
 import { samlMetadataQuerySchema } from '@/lib/api/validation/schemas'
-// import { logger } from '@/lib/logger'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'auth-saml-metadata' });
 
 export const dynamic = 'force-dynamic'
 
@@ -35,7 +37,7 @@ export async function GET(req: NextRequest) {
     const samlProvider = createSAMLProvider(provider)
 
     if (!samlProvider) {
-      console.error(`SAML provider not configured: ${provider}`)
+      logger.error('SAML provider not configured', { provider });
       return NextResponse.json(
         {
           error: `SAML provider '${provider}' not configured`,
@@ -48,7 +50,7 @@ export async function GET(req: NextRequest) {
 
     // SECURITY: Validate metadata is valid XML before returning
     if (!metadata || typeof metadata !== 'string' || !metadata.includes('<?xml')) {
-      console.error('Invalid SAML metadata generated')
+      logger.error('Invalid SAML metadata generated');
       return NextResponse.json(
         {
           error: 'Invalid SAML metadata',
@@ -65,7 +67,7 @@ export async function GET(req: NextRequest) {
       },
     })
   } catch (error) {
-    console.error('SAML metadata generation error:', error)
+    logger.error('SAML metadata generation error', { error });
 
     return NextResponse.json(
       {

@@ -6,6 +6,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { z } from '@/lib/zod-compat'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'security-csp-report' });
 
 export const dynamic = 'force-dynamic'
 
@@ -80,17 +83,14 @@ export async function POST(request: NextRequest) {
     )
 
     // Log CSP violation
-    const logData = {
+    logger.warn('CSP violation reported', {
       timestamp: new Date().toISOString(),
       service: 'vibecode-webgui',
       source: 'csp-violation',
-      level: 'warning',
       violation: sanitizedViolation,
       userAgent: request.headers.get('user-agent'),
       ip: getClientIP(request),
-    }
-
-    // Server warning noted)
+    })
 
     // In production, you might want to:
     // 1. Send to security monitoring system (Datadog, Splunk, etc.)
@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 })
     }
 
-    // Server error logged
+    logger.error('Failed to process CSP report', { error })
     return NextResponse.json({ error: 'Failed to process report' }, { status: 400 })
   }
 }

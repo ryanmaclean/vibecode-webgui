@@ -2,9 +2,11 @@ import { NextRequest, NextResponse } from 'next/server'
 import { mongodbChatService } from '@/lib/services/chat-mongodb'
 import { getToken } from 'next-auth/jwt'
 import { createAPIRateLimit } from '@/lib/rate-limiting'
+import { createServiceLogger } from '@/lib/logging'
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'chat-mongodb' });
 
 export const dynamic = 'force-dynamic'
-// import { logger } from '@/lib/logger'
 
 const apiRateLimit = createAPIRateLimit(30) // 30 requests per minute
 
@@ -142,14 +144,13 @@ export async function POST(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('MongoDB Chat API Error', {
-      service: 'vibecode-webgui',
+    logger.error('MongoDB Chat API Error', {
       error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined
-    })
+    });
 
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : String(error)
       },
@@ -223,11 +224,10 @@ export async function GET(request: NextRequest) {
             }
           })
         } catch (mongoError) {
-          console.error('MongoDB health check failed', {
-            service: 'mongodb-chat-health',
+          logger.error('MongoDB health check failed', {
             error: mongoError instanceof Error ? mongoError.message : String(mongoError)
-          })
-          
+          });
+
           return NextResponse.json({
             success: false,
             mongodb: {
@@ -251,13 +251,12 @@ export async function GET(request: NextRequest) {
         )
     }
   } catch (error) {
-    console.error('MongoDB Chat GET API Error', {
-      service: 'vibecode-webgui',
+    logger.error('MongoDB Chat GET API Error', {
       error: error instanceof Error ? error.message : String(error)
-    })
+    });
 
     return NextResponse.json(
-      { 
+      {
         error: 'Internal server error',
         details: error instanceof Error ? error.message : String(error)
       },

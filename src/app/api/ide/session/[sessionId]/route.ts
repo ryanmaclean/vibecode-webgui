@@ -10,6 +10,9 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { IDEFactory } from '@/lib/ide';
 import { getSessionStore } from '@/lib/ide/session/store';
+import { createServiceLogger } from '@/lib/logging';
+
+const logger = createServiceLogger({ service: 'vibecode-webgui', component: 'ide-session-id' });
 
 export const dynamic = 'force-dynamic'
 
@@ -71,7 +74,7 @@ export async function GET(
       },
     });
   } catch (error) {
-    console.error('Failed to get IDE session:', error);
+    logger.error('Failed to get IDE session:', error);
     return NextResponse.json(
       { error: 'Failed to get IDE session' },
       { status: 500 }
@@ -124,7 +127,7 @@ export async function DELETE(
       message: 'Session stopped successfully',
     });
   } catch (error) {
-    console.error('Failed to stop IDE session:', error);
+    logger.error('Failed to stop IDE session:', error);
     return NextResponse.json(
       { error: 'Failed to stop IDE session' },
       { status: 500 }
@@ -212,7 +215,7 @@ export async function PATCH(
       { status: 400 }
     );
   } catch (error) {
-    console.error('Failed to update IDE session:', error);
+    logger.error('Failed to update IDE session:', error);
     return NextResponse.json(
       { error: 'Failed to update IDE session' },
       { status: 500 }
